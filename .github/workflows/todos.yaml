@@ -1,0 +1,13 @@
+name: "TODOs"
+permissions:
+  issues: write
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  todos:
+    uses: devantler-tech/reusable-workflows/.github/workflows/reusable-workflow-todos.yaml@53eda0dc533761c17be282658e8ed6fdbb1d9221 # v1.3.0
+    secrets:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
