@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/cmd/inputs"
 	"github.com/spf13/cobra"
 )
 

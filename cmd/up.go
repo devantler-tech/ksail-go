@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/devantler-tech/ksail/cmd/inputs"
-	factory "github.com/devantler-tech/ksail/internal/factories"
+	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/spf13/cobra"
 )
 

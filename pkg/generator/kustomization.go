@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
-	"github.com/devantler-tech/ksail/pkg/io"
-	"github.com/devantler-tech/ksail/pkg/marshaller"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
+	"github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/marshaller"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 

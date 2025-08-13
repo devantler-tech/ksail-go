@@ -3,7 +3,7 @@ package inputs
 import (
 	"testing"
 
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 )
 
 func TestSetInputsOrFallback(t *testing.T) {

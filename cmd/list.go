@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail/cmd/inputs"
-	"github.com/devantler-tech/ksail/internal/ui/quiet"
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
+	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/internal/ui/quiet"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/spf13/cobra"
 )
 

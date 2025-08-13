@@ -21,14 +21,14 @@ Take control of Kubernetes without the chaos. ⚡ KSail is your all-in-one SDK f
 #### Go Install
 
 ```bash
-go install github.com/devantler-tech/ksail@latest
+go install github.com/devantler-tech/ksail-go@latest
 ksail --help
 ```
 
 #### From Source
 
 ```bash
-git clone https://github.com/devantler-tech/ksail.git
+git clone https://github.com/devantler-tech/ksail-go.git
 go build -o ksail
 ./ksail --help
 ```

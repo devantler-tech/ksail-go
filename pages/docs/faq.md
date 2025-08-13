@@ -6,7 +6,7 @@ nav_order: 4
 # Frequently Asked Questions
 
 > [!NOTE]
-> If you have a question that is not answered here, please [open an issue](https://github.com/devantler-tech/ksail/issues/new). I will do my best to answer it and add it to this list if it occurs frequently
+> If you have a question that is not answered here, please [open an issue](https://github.com/devantler-tech/ksail-go/issues/new). I will do my best to answer it and add it to this list if it occurs frequently
 
 - [How do I configure local DNS?](#how-do-i-configure-local-dns)
   - [Option 1: Use `traefik.me` to resolve `*.traefik.me` to 127.0.0.1](#option-1-use-traefikme-to-resolve-traefikme-to-127001)

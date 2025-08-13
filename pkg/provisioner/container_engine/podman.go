@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/docker/docker/client"
 )
 

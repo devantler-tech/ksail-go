@@ -1,4 +1,4 @@
-module github.com/devantler-tech/ksail
+module github.com/devantler-tech/ksail-go
 
 go 1.24.6
 

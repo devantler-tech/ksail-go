@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/devantler-tech/ksail/internal/utils"
+	"github.com/devantler-tech/ksail-go/internal/utils"
 	helmclient "github.com/mittwald/go-helm-client"
 )
 

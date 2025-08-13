@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"slices"
 
-	"github.com/devantler-tech/ksail/internal/utils"
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
+	"github.com/devantler-tech/ksail-go/internal/utils"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
 	kindcmd "sigs.k8s.io/kind/pkg/cmd"

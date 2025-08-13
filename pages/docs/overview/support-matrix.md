@@ -103,4 +103,4 @@ KSail aims to support a wide range of use cases by providing the flexibility to 
   </tbody>
 </table>
 
-If you would like to see additional tools supported, please open an issue or pull request on [GitHub](https://github.com/devantler-tech/ksail).
+If you would like to see additional tools supported, please open an issue or pull request on [GitHub](https://github.com/devantler-tech/ksail-go).

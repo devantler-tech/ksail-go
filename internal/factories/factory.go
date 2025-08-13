@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail/internal/loader"
-	"github.com/devantler-tech/ksail/internal/utils"
-	ksailcluster "github.com/devantler-tech/ksail/pkg/apis/v1alpha1/cluster"
-	reconciliationtoolbootstrapper "github.com/devantler-tech/ksail/pkg/bootstrapper/reconciliation_tool"
-	clusterprovisioner "github.com/devantler-tech/ksail/pkg/provisioner/cluster"
-	containerengineprovisioner "github.com/devantler-tech/ksail/pkg/provisioner/container_engine"
+	"github.com/devantler-tech/ksail-go/internal/loader"
+	"github.com/devantler-tech/ksail-go/internal/utils"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
+	reconciliationtoolbootstrapper "github.com/devantler-tech/ksail-go/pkg/bootstrapper/reconciliation_tool"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
 )
 
 func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.ClusterProvisioner, error) {

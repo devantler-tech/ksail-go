@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/devantler-tech/ksail/pkg/marshaller"
+	"github.com/devantler-tech/ksail-go/pkg/marshaller"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
