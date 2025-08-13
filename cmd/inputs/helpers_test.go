@@ -48,7 +48,7 @@ func TestSetInputsOrFallback(t *testing.T) {
 	})
 }
 
-func TestinputOrFallback(t *testing.T) {
+func TestInputOrFallback(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
 		if got := inputOrFallback("", "fallback"); got != "fallback" {
 			t.Fatalf("expected 'fallback', got '%q'", got)
