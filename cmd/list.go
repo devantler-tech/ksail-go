@@ -25,7 +25,7 @@ var listCmd = &cobra.Command{
 
 func handleList() error {
 	if err := quiet.SilenceStdout(func() error {
-    InitServices()
+		InitServices()
 		return nil
 	}); err != nil {
 		return err
@@ -41,6 +41,10 @@ func list() error {
 	} else {
 		distributions = []ksailcluster.Distribution{ksailConfig.Spec.Distribution}
 	}
+	_, err := containerEngineProvisioner.CheckReady()
+	if err != nil {
+		return err
+	}
 	clusterDistributionPairs, err := fetchClusterDistributionPairs(distributions)
 	if err != nil {
 		return err
@@ -53,7 +57,6 @@ func fetchClusterDistributionPairs(distributions []ksailcluster.Distribution) ([
 	clusterDistributionPair := make([][2]string, 0)
 	for _, distribution := range distributions {
 		ksailConfig.Spec.Distribution = distribution
-		containerEngineProvisioner.CheckReady()
 		clusters, err := clusterProvisioner.List()
 		if err != nil {
 			return nil, err
