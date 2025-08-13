@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 
   Create ephemeral clusters for development and CI purposes, deploy and update workloads, test and validate behavior — all through one concise, declarative interface. Stop stitching together a dozen CLIs; KSail gives you a consistent UX built on the tools you already trust.`,
 	SilenceErrors: true,
-  SilenceUsage:  true,
+	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return handleRoot(cmd)
 	},
@@ -57,13 +57,26 @@ func Execute() {
 }
 
 // InitServices initializes the services required by the CLI.
-func InitServices() {
-	ksailConfig, _ = loader.NewKSailConfigLoader().Load()
+func InitServices() error {
+	ksailConfig, err := loader.NewKSailConfigLoader().Load()
+	if err != nil {
+		return err
+	}
 	inputs.SetInputsOrFallback(&ksailConfig)
-	clusterProvisioner, _ = factory.ClusterProvisioner(&ksailConfig)
-	containerEngineProvisioner, _ = factory.ContainerEngineProvisioner(&ksailConfig)
-	reconciliationToolBootstrapper, _ = factory.ReconciliationTool(&ksailConfig)
+	clusterProvisioner, err = factory.ClusterProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+	containerEngineProvisioner, err = factory.ContainerEngineProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+	reconciliationToolBootstrapper, err = factory.ReconciliationTool(&ksailConfig)
+	if err != nil {
+		return err
+	}
 	configValidator = validators.NewConfigValidator(&ksailConfig)
+	return nil
 }
 
 // --- internals ---
