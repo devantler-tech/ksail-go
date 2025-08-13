@@ -1,9 +1,15 @@
 name: CD - Go
 on:
   workflow_dispatch:
+
+
 jobs:
-  # Goreleaser
   cd:
-    uses: avamsi/go-nogo/.github/workflows/ci.yml@main
-    with:
-      runs-on: ubuntu-latest
+    name: noop
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📑 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
