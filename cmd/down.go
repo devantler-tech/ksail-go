@@ -15,7 +15,7 @@ var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Destroy an existing Kubernetes cluster",
 	Long:  "Destroy an existing Kubernetes cluster specified by --name or by the loaded kind config.",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return handleDown()
 	},
 }
@@ -24,7 +24,9 @@ var downCmd = &cobra.Command{
 
 // handleDown handles the down command.
 func handleDown() error {
-	InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	return teardown()
 }

@@ -16,7 +16,7 @@ var upCmd = &cobra.Command{
 	Long: `Provision a new Kubernetes cluster using the 'ksail.yaml' configuration.
 
   If not found in the current directory, it will search the parent directories, and use the first one it finds.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return handleUp()
 	},
 }
@@ -25,7 +25,9 @@ var upCmd = &cobra.Command{
 
 // handleUp handles the up command.
 func handleUp() error {
-  InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	err := configValidator.Validate()
 	if err != nil {

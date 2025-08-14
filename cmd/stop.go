@@ -14,7 +14,7 @@ var stopCmd = &cobra.Command{
 	Use:   "stop",
 	Short: "Stop an existing Kubernetes cluster",
 	Long:  "Stop an existing Kubernetes cluster specified by --name or by the loaded kind config.",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return handleStop()
 	},
 }
@@ -23,7 +23,9 @@ var stopCmd = &cobra.Command{
 
 // handleStop handles the stop command.
 func handleStop() error {
-	InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	return stop()
 }

@@ -20,7 +20,9 @@ var startCmd = &cobra.Command{
 
 // handleStart handles the start command.
 func handleStart() error {
-	InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	return start()
 }

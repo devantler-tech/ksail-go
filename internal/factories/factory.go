@@ -15,7 +15,9 @@ import (
 func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
 	if ksailConfig.Spec.ContainerEngine == ksailcluster.ContainerEnginePodman {
 		podmanSock := fmt.Sprintf("unix:///run/user/%d/podman/podman.sock", os.Getuid())
-		os.Setenv("DOCKER_HOST", podmanSock)
+		if err := os.Setenv("DOCKER_HOST", podmanSock); err != nil {
+			return nil, fmt.Errorf("failed to set DOCKER_HOST: %w", err)
+		}
 	}
 
 	var provisioner clusterprovisioner.ClusterProvisioner

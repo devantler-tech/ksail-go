@@ -66,7 +66,7 @@ func locateProjectRoot() (string, error) {
 }
 
 func (v *ConfigValidator) checkContextName(cfg *ksailcluster.Cluster) error {
-	expected := ""
+	var expected string
 	switch cfg.Spec.Distribution {
 	case ksailcluster.DistributionKind:
 		expected = fmt.Sprintf("kind-%s", cfg.Metadata.Name)

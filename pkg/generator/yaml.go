@@ -24,7 +24,7 @@ func (g *YAMLGenerator[T]) Generate(model T, opts Options) (string, error) {
 		return "", err
 	}
 	// write if requested
-	return g.FileWriter.TryWrite(modelYAML, opts.Output, opts.Force)
+	return g.TryWrite(modelYAML, opts.Output, opts.Force)
 }
 
 // TryWrite writes content to opts.Output if set, handling force/overwrite messaging.

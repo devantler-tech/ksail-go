@@ -26,9 +26,7 @@ var listCmd = &cobra.Command{
 
 func handleList() error {
 	if err := quiet.SilenceStdout(func() error {
-		InitServices()
-
-		return nil
+		return InitServices()
 	}); err != nil {
 		return err
 	}

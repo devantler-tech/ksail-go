@@ -37,7 +37,7 @@ var rootCmd = &cobra.Command{
 		`from one simple command line tool.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		return handleRoot(cmd)
 	},
 }
