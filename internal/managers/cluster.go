@@ -25,8 +25,8 @@ type OperationParams struct {
 	PastMsg   string
 }
 
-// ExecuteOperation performs a cluster operation (start, stop, etc.) with the given parameters.
-func (cm *ClusterManager) ExecuteOperation(params OperationParams, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
+// ExecuteClusterLifecycleOperation performs a cluster lifecycle operation (start, stop, etc.) with the given parameters.
+func (cm *ClusterManager) ExecuteClusterLifecycleOperation(params OperationParams, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
 	fmt.Println()
 
 	provisioner, err := factory.ClusterProvisioner(cm.config)

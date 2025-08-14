@@ -34,7 +34,7 @@ func start() error {
 		VerbMsg:   "starting",
 		PastMsg:   "started",
 	}
-	return clusterManager.ExecuteOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+	return clusterManager.ExecuteClusterLifecycleOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
 		return provisioner.Start(name)
 	})
 }

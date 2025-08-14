@@ -37,7 +37,7 @@ func stop() error {
 		VerbMsg:   "stopping",
 		PastMsg:   "stopped",
 	}
-	return clusterManager.ExecuteOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+	return clusterManager.ExecuteClusterLifecycleOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
 		return provisioner.Stop(name)
 	})
 }
