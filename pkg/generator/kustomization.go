@@ -23,6 +23,7 @@ func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
 		TypeMeta:  ktypes.TypeMeta{APIVersion: "kustomize.config.k8s.io/v1beta1", Kind: "Kustomization"},
 		Resources: []string{},
 	}
+
 	outputFile := filepath.Join(opts.Output, "kustomization.yaml")
 	if err := os.MkdirAll(filepath.Dir(outputFile), 0755); err != nil {
 		return "", fmt.Errorf("create kustomization dir: %w", err)

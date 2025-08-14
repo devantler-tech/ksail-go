@@ -42,11 +42,10 @@ func teardown() error {
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► destroying '%s'\n", ksailConfig.Metadata.Name)
 	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
-
 	if err != nil {
 		return err
 	}
-  
+
 	if !exists {
 		fmt.Printf("✔ '%s' not found\n", ksailConfig.Metadata.Name)
 

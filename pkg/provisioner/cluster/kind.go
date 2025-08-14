@@ -64,6 +64,7 @@ func (k *KindClusterProvisioner) Start(name string) error {
 		// Start each node container by name
 		cmd := exec.Command("docker", "start", n.String())
 		var stderr bytes.Buffer
+
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("docker start failed: %v: %s", err, stderr.String())
@@ -89,6 +90,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 		// Stop each node container by name
 		cmd := exec.Command("docker", "stop", n.String())
 		var stderr bytes.Buffer
+
 		cmd.Stderr = &stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("docker stop failed: %v: %s", err, stderr.String())

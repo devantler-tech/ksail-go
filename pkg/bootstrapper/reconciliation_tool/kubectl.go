@@ -126,6 +126,7 @@ func (b *KubectlBootstrapper) buildRESTConfig() (*rest.Config, error) {
 		overrides.CurrentContext = b.context
 	}
 	clientCfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
+
 	restConfig, err := clientCfg.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build rest config: %w", err)

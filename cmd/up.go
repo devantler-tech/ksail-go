@@ -43,7 +43,6 @@ func handleUp() error {
 // provision provisions a cluster based on the provided configuration.
 func provision() error {
 	// TODO: Create local registry 'ksail-registry' with a docker provisioner
-
 	err := provisionCluster()
 	if err != nil {
 		return err

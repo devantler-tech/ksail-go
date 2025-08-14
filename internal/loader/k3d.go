@@ -46,9 +46,8 @@ func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 		config = &v1alpha5.SimpleConfig{Servers: 1, Agents: 0}
 	}
 	fmt.Println("✔ config loaded")
-  fmt.Println()
+	fmt.Println()
 	return *config, nil
-
 }
 
 func NewK3dConfigLoader() *K3dConfigLoader {
