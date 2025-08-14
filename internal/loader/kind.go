@@ -20,7 +20,7 @@ func (cl *KindConfigLoader) Load() (v1alpha4.Cluster, error) {
     for dir := "./"; ; dir = filepath.Dir(dir) {
         configPath := filepath.Join(dir, "kind.yaml")
         if _, err := os.Stat(configPath); err == nil {
-            data, err := os.ReadFile(configPath)
+            data, err := os.ReadFile(configPath) // #nosec G304 - config file path is controlled
             if err != nil {
                 return v1alpha4.Cluster{}, fmt.Errorf("read kind config: %w", err)
             }

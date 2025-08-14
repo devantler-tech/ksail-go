@@ -62,7 +62,7 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	}
 	for _, n := range nodes {
 		// Start each node container by name
-		cmd := exec.Command("docker", "start", n.String())
+		cmd := exec.Command("docker", "start", n.String()) // #nosec G204 - container name from Kind API
 		var stderr bytes.Buffer
 
 		cmd.Stderr = &stderr
@@ -88,7 +88,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	}
 	for _, n := range nodes {
 		// Stop each node container by name
-		cmd := exec.Command("docker", "stop", n.String())
+		cmd := exec.Command("docker", "stop", n.String()) // #nosec G204 - container name from Kind API
 		var stderr bytes.Buffer
 
 		cmd.Stderr = &stderr

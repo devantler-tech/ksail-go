@@ -26,7 +26,7 @@ func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
 	}
 
 	outputFile := filepath.Join(opts.Output, "kustomization.yaml")
-	if err := os.MkdirAll(filepath.Dir(outputFile), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outputFile), 0750); err != nil {
 		return "", fmt.Errorf("create kustomization dir: %w", err)
 	}
 	out, err := g.Marshaller.Marshal(&kustomization)
