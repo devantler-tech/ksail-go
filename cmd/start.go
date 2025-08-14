@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/internal/managers"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +29,12 @@ func handleStart() error {
 }
 
 func start() error {
-	return clusterOperation("▶️ Starting", "starting", "started", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+	params := managers.OperationParams{
+		ActionMsg: "▶️ Starting",
+		VerbMsg:   "starting",
+		PastMsg:   "started",
+	}
+	return clusterManager.ExecuteOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
 		return provisioner.Start(name)
 	})
 }

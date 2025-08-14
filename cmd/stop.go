@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/internal/managers"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,12 @@ func handleStop() error {
 }
 
 func stop() error {
-	return clusterOperation("⏹️ Stopping", "stopping", "stopped", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+	params := managers.OperationParams{
+		ActionMsg: "⏹️ Stopping",
+		VerbMsg:   "stopping",
+		PastMsg:   "stopped",
+	}
+	return clusterManager.ExecuteOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
 		return provisioner.Stop(name)
 	})
 }
