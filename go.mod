@@ -3,7 +3,7 @@ module github.com/devantler-tech/ksail-go
 go 1.24.6
 
 require (
-	github.com/docker/docker v27.0.3+incompatible
+	github.com/docker/docker v28.0.0+incompatible
 	github.com/fatih/color v1.18.0
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/mittwald/go-helm-client v0.12.18
