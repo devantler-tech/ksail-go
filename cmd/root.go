@@ -144,3 +144,47 @@ func printGreenCyan(line string) {
 		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
 	}
 }
+
+// clusterOperation performs a common cluster operation (start/stop) with shared validation logic.
+func clusterOperation(actionMsg, verbMsg, pastMsg string, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
+	fmt.Println()
+
+	provisioner, err := factory.ClusterProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+
+	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Printf("%s '%s'\n", actionMsg, ksailConfig.Metadata.Name)
+	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+
+	ready, err := containerEngineProvisioner.CheckReady()
+	if err != nil || !ready {
+		return fmt.Errorf("container engine '%s' is not ready: %v", ksailConfig.Spec.ContainerEngine, err)
+	}
+
+	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+	fmt.Printf("► %s '%s'\n", verbMsg, ksailConfig.Metadata.Name)
+
+	exists, err := provisioner.Exists(ksailConfig.Metadata.Name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		fmt.Printf("✔ '%s' not found\n", ksailConfig.Metadata.Name)
+		return nil
+	}
+
+	if err := operation(provisioner, ksailConfig.Metadata.Name); err != nil {
+		return err
+	}
+
+	fmt.Printf("✔ '%s' %s\n", ksailConfig.Metadata.Name, pastMsg)
+	return nil
+}
