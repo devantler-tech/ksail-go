@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// reconcileCmd represents the reconcile command
+// reconcileCmd represents the reconcile command.
 var reconcileCmd = &cobra.Command{
 	Use:   "reconcile",
 	Short: "A brief description of your command",
@@ -26,6 +26,7 @@ to quickly create a Cobra application.`,
 
 func handleReconcile() error {
   InitServices()
+
 	err := configValidator.Validate()
 	if err != nil {
 		return err
@@ -37,14 +38,4 @@ func handleReconcile() error {
 
 func init() {
 	rootCmd.AddCommand(reconcileCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// reconcileCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// reconcileCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

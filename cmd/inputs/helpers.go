@@ -21,5 +21,6 @@ func inputOrFallback[T comparable](input, fallback T) T {
 	if !reflect.DeepEqual(input, *new(T)) {
 		return input
 	}
+
 	return fallback
 }

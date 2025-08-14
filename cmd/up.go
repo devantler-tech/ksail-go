@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// upCmd represents the up command
+// upCmd represents the up command.
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Provision a new Kubernetes cluster",
@@ -26,14 +26,17 @@ var upCmd = &cobra.Command{
 // handleUp handles the up command.
 func handleUp() error {
   InitServices()
+
 	err := configValidator.Validate()
 	if err != nil {
 		return err
 	}
+  
 	// TODO: Validate workloads
 	if err := provision(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -84,15 +87,20 @@ func provision() error {
 	}
 
 	results := make([]result, len(bootstrapTasks))
+
 	var wg sync.WaitGroup
 
 	for i, task := range bootstrapTasks {
 		wg.Add(1)
-		go func(i int, taskName string, fn func() error) {
+
+		closure := func(i int, taskName string, fn func() error) {
 			defer wg.Done()
+
 			results[i] = result{name: taskName, err: fn()}
-		}(i, task.name, task.fn)
+		}
+		go closure(i, task.name, task.fn)
 	}
+
 	wg.Wait()
 
 	// Sequential output
@@ -114,27 +122,34 @@ func provisionCluster() error {
 	fmt.Println()
 	fmt.Printf("🚀 Provisioning '%s'\n", ksailConfig.Metadata.Name)
 	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
 		return fmt.Errorf("container engine '%s' is not ready: %v", ksailConfig.Spec.ContainerEngine, err)
 	}
+
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► provisioning '%s'\n", ksailConfig.Metadata.Name)
+
 	if inputs.Force {
 		exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
 		if err != nil {
 			return err
 		}
+
 		if exists {
 			if err := clusterProvisioner.Delete(ksailConfig.Metadata.Name); err != nil {
 				return err
 			}
 		}
 	}
+
 	if err := clusterProvisioner.Create(ksailConfig.Metadata.Name); err != nil {
 		return err
 	}
+
 	fmt.Printf("✔ '%s' created\n", ksailConfig.Metadata.Name)
+
 	return nil
 }
 
@@ -146,8 +161,14 @@ func bootstrapReconciliationTool() error {
 
 	fmt.Println()
 	fmt.Printf("⚙️ Bootstrapping '%s' to '%s'\n", ksailConfig.Spec.ReconciliationTool, ksailConfig.Metadata.Name)
-	_ = reconciliationToolBootstrapper.Install()
+
+	err = reconciliationToolBootstrapper.Install()
+	if err != nil {
+		return err
+	}
+
 	fmt.Printf("✔ '%s' installed\n", ksailConfig.Spec.ReconciliationTool)
+
 	return nil
 }
 

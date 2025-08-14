@@ -15,7 +15,8 @@ var listCmd = &cobra.Command{
 	Short: "List running clusters",
 	Long: `List running clusters.
 
-  Defaults to listing all clusters from the distribution selected in the nearest 'ksail.yaml'. To list clusters from all distributions, use --all.`,
+  Defaults to listing all clusters from the distribution selected in the nearest 'ksail.yaml'.
+  To list clusters from all distributions, use --all.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return handleList()
 	},
@@ -26,10 +27,12 @@ var listCmd = &cobra.Command{
 func handleList() error {
 	if err := quiet.SilenceStdout(func() error {
 		InitServices()
+
 		return nil
 	}); err != nil {
 		return err
 	}
+
 	return list()
 }
 
@@ -41,30 +44,37 @@ func list() error {
 	} else {
 		distributions = []ksailcluster.Distribution{ksailConfig.Spec.Distribution}
 	}
+
 	_, err := containerEngineProvisioner.CheckReady()
 	if err != nil {
 		return err
 	}
+
 	clusterDistributionPairs, err := fetchClusterDistributionPairs(distributions)
 	if err != nil {
 		return err
 	}
+
 	return displayClusterDistributionPairs(clusterDistributionPairs)
 }
 
 // fetchClusterDistributionPairs retrieves the list of clusters for the given distributions.
 func fetchClusterDistributionPairs(distributions []ksailcluster.Distribution) ([][2]string, error) {
 	clusterDistributionPair := make([][2]string, 0)
+
 	for _, distribution := range distributions {
 		ksailConfig.Spec.Distribution = distribution
+
 		clusters, err := clusterProvisioner.List()
 		if err != nil {
 			return nil, err
 		}
+
 		for _, c := range clusters {
 			clusterDistributionPair = append(clusterDistributionPair, [2]string{c, distribution.String()})
 		}
 	}
+
 	return clusterDistributionPair, nil
 }
 
@@ -77,6 +87,7 @@ func displayClusterDistributionPairs(clusterDistributionPairs [][2]string) error
 	} else {
 		fmt.Println("✔ no clusters found")
 	}
+
 	return nil
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// initCmd represents the init command
+// initCmd represents the init command.
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Scaffold a new project",
@@ -32,17 +32,22 @@ var initCmd = &cobra.Command{
 func handleInit() error {
 	cfg := ksailcluster.NewCluster()
 	inputs.SetInputsOrFallback(cfg)
+
 	return scaffold(cfg)
 }
 
 // scaffold generates initial project files according to the provided configuration.
 func scaffold(cfg *ksailcluster.Cluster) error {
 	scaffolder := utils.NewScaffolder(*cfg)
+
 	fmt.Println("📝 Scaffolding new project")
+
 	if err := scaffolder.Scaffold(inputs.Output, inputs.Force); err != nil {
 		return err
 	}
+
 	fmt.Println("✔ project scaffolded")
+
 	return nil
 }
 

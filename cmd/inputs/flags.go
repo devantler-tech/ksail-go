@@ -11,7 +11,8 @@ var (
 	Distribution       ksailcluster.Distribution
 	ReconciliationTool ksailcluster.ReconciliationTool
 	SourceDirectory    string
-	// cli flag only
+
+	// cli flag only.
 	Output string
 	Force  bool
 	All    bool
@@ -48,6 +49,7 @@ func AddForceFlag(cmd *cobra.Command, description ...string) {
 	if len(description) > 0 {
 		desc = description[0]
 	}
+
 	cmd.Flags().BoolVarP(&Force, "force", "f", false, desc)
 }
 
@@ -57,6 +59,7 @@ func AddAllFlag(cmd *cobra.Command, description ...string) {
 	if len(description) > 0 {
 		desc = description[0]
 	}
+  
 	cmd.Flags().BoolVarP(&All, "all", "a", false, desc)
 }
 

@@ -29,13 +29,12 @@ var (
 //go:embed assets/ascii-art.txt
 var asciiArt string
 
-// rootCmd represents the root command
+// rootCmd represents the root command.
 var rootCmd = &cobra.Command{
 	Use:   "ksail",
 	Short: "SDK for operating and managing K8s clusters and workloads",
-	Long: `KSail is an SDK for operating and managing Kubernetes clusters and workloads.
-
-  Create ephemeral clusters for development and CI purposes, deploy and update workloads, test and validate behavior — all through one concise, declarative interface. Stop stitching together a dozen CLIs; KSail gives you a consistent UX built on the tools you already trust.`,
+	Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
+		`from one simple command line tool.`,
 	SilenceErrors: true,
 	SilenceUsage:  true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,20 +61,26 @@ func InitServices() error {
 	if err != nil {
 		return err
 	}
+
 	inputs.SetInputsOrFallback(&ksailConfig)
+
 	clusterProvisioner, err = factory.ClusterProvisioner(&ksailConfig)
 	if err != nil {
 		return err
 	}
+
 	containerEngineProvisioner, err = factory.ContainerEngineProvisioner(&ksailConfig)
 	if err != nil {
 		return err
 	}
+
 	reconciliationToolBootstrapper, err = factory.ReconciliationTool(&ksailConfig)
 	if err != nil {
 		return err
 	}
+
 	configValidator = validators.NewConfigValidator(&ksailConfig)
+
 	return nil
 }
 
@@ -84,35 +89,58 @@ func InitServices() error {
 // handleRoot handles the root command.
 func handleRoot(cmd *cobra.Command) error {
 	printASCIIArt()
+
 	return cmd.Help()
 }
 
 func printASCIIArt() {
+	const yellowLines = 4
+
 	lines := strings.Split(asciiArt, "\n")
+
 	for i, line := range lines {
-		if i < 4 {
-			fmt.Println("\x1b[1;33m" + line + "\x1b[0m")
-		} else if i == 4 {
-			fmt.Println("\x1b[1;34m" + line + "\x1b[0m")
-		} else if i > 4 && i < 7 {
-			// Add bounds checks to avoid panics if ascii-art changes
-			if len(line) >= 38 {
-				fmt.Print("\x1b[1;32m" + line[:32] + "\x1b[0m")
-				fmt.Print("\x1B[36m" + line[32:37] + "\x1b[0m")
-				fmt.Print("\x1b[1;34m" + line[37:38] + "\x1b[0m")
-				fmt.Println("\x1B[36m" + line[38:] + "\x1b[0m")
-			} else {
-				fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
-			}
-		} else if i > 6 && i < len(lines)-2 {
-			if len(line) >= 32 {
-				fmt.Print("\x1b[1;32m" + line[:32] + "\x1b[0m")
-				fmt.Println("\x1B[36m" + line[32:] + "\x1b[0m")
-			} else {
-				fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
-			}
-		} else {
-			fmt.Println("\x1b[1;34m" + line + "\x1b[0m")
+		switch {
+		case i < yellowLines:
+			printYellow(line)
+		case i == yellowLines:
+			printBlue(line)
+		case i > yellowLines && i < 7:
+			printGreenBlueCyan(line)
+		case i > 6 && i < len(lines)-2:
+			printGreenCyan(line)
+		default:
+			printBlue(line)
 		}
+	}
+}
+
+func printYellow(line string) {
+	fmt.Println("\x1b[1;33m" + line + "\x1b[0m")
+}
+
+func printBlue(line string) {
+	fmt.Println("\x1b[1;34m" + line + "\x1b[0m")
+}
+
+func printGreenBlueCyan(line string) {
+	charThirtyEight := 38
+	if len(line) >= charThirtyEight {
+		fmt.Print("\x1b[1;32m" + line[:32] + "\x1b[0m")
+		fmt.Print("\x1B[36m" + line[32:37] + "\x1b[0m")
+		fmt.Print("\x1b[1;34m" + line[37:charThirtyEight] + "\x1b[0m")
+		fmt.Println("\x1B[36m" + line[38:] + "\x1b[0m")
+	} else {
+		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
+	}
+}
+
+const greenCyanSplitIndex = 32
+
+func printGreenCyan(line string) {
+	if len(line) >= greenCyanSplitIndex {
+		fmt.Print("\x1b[1;32m" + line[:greenCyanSplitIndex] + "\x1b[0m")
+		fmt.Println("\x1B[36m" + line[greenCyanSplitIndex:] + "\x1b[0m")
+	} else {
+		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
 	}
 }
