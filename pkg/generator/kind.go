@@ -12,6 +12,7 @@ import (
 // KindGenerator generates a kind Cluster YAML.
 type KindGenerator struct {
 	io.FileWriter
+
 	Cluster    *ksailcluster.Cluster
 	Marshaller marshaller.Marshaller[*v1alpha4.Cluster]
 }

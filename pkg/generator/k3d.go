@@ -13,6 +13,7 @@ import (
 // K3dGenerator generates a k3d SimpleConfig YAML.
 type K3dGenerator struct {
 	io.FileWriter
+
 	Cluster    *ksailcluster.Cluster
 	Marshaller marshaller.Marshaller[*v1alpha5.SimpleConfig]
 }

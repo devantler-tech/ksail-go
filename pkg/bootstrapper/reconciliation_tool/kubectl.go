@@ -48,8 +48,15 @@ func (b *KubectlBootstrapper) Install() error {
 		return err
 	}
 
-	// --- CRD ---
-	apiExtClient, err := apiextensionsclient.NewForConfig(restConfigWrapper)
+	if err := b.installCRD(restConfigWrapper); err != nil {
+		return err
+	}
+
+	return b.installApplySetCR(restConfigWrapper)
+}
+
+func (b *KubectlBootstrapper) installCRD(restConfig *rest.Config) error {
+	apiExtClient, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
@@ -71,12 +78,18 @@ func (b *KubectlBootstrapper) Install() error {
 		return err
 	}
 	fmt.Println("✔ applysets crd 'applysets.k8s.devantler.tech' applied")
+	return nil
+}
 
-	// --- CR (ApplySet parent) ---
-	dynClient, err := dynamic.NewForConfig(restConfigWrapper)
+func (b *KubectlBootstrapper) installApplySetCR(restConfig *rest.Config) error {
+	dynClient, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
+
+	context, cancel := context.WithTimeout(context.Background(), b.timeout)
+	defer cancel()
+
 	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
 	const applySetName = "ksail"
 	_, err = dynClient.Resource(gvr).Get(context, applySetName, metav1.GetOptions{})

@@ -84,32 +84,58 @@ func (v *ConfigValidator) checkContextName(cfg *ksailcluster.Cluster) error {
 func (v *ConfigValidator) checkDistributionConfig(root string, cfg *ksailcluster.Cluster) error {
 	fileName := cfg.Spec.DistributionConfig
 	path := filepath.Join(root, fileName)
+	data, err := v.readConfigFile(path)
+	if err != nil {
+		return err
+	}
+
+	return v.validateConfigByDistribution(data, cfg)
+}
+
+func (v *ConfigValidator) readConfigFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("► '%s' not found, skipping distribution config validation\n", path)
-			return nil
+			return nil, nil
 		}
-		return fmt.Errorf("read distribution config '%s': %w", path, err)
+		return nil, fmt.Errorf("read distribution config '%s': %w", path, err)
+	}
+	return data, nil
+}
+
+func (v *ConfigValidator) validateConfigByDistribution(data []byte, cfg *ksailcluster.Cluster) error {
+	if data == nil {
+		return nil
 	}
 
 	switch cfg.Spec.Distribution {
 	case ksailcluster.DistributionKind:
-		var kindCfg v1alpha4.Cluster
-		if err := yaml.Unmarshal(data, &kindCfg); err != nil {
-			return fmt.Errorf("unmarshal kind config: %w", err)
-		}
-		if kindCfg.Name != "" && kindCfg.Name != cfg.Metadata.Name {
-			return fmt.Errorf("%s name '%s' does not match ksail.yaml metadata.name '%s'", cfg.Spec.DistributionConfig, kindCfg.Name, cfg.Metadata.Name)
-		}
+		return v.validateKindConfig(data, cfg)
 	case ksailcluster.DistributionK3d:
-		var k3dCfg v1alpha5.SimpleConfig
-		if err := yaml.Unmarshal(data, &k3dCfg); err != nil {
-			return fmt.Errorf("unmarshal k3d config: %w", err)
-		}
-		if k3dCfg.Name != "" && k3dCfg.Name != cfg.Metadata.Name {
-			return fmt.Errorf("%s metadata.name '%s' does not match ksail.yaml metadata.name '%s'", cfg.Spec.DistributionConfig, k3dCfg.Name, cfg.Metadata.Name)
-		}
+		return v.validateK3dConfig(data, cfg)
+	}
+	return nil
+}
+
+func (v *ConfigValidator) validateKindConfig(data []byte, cfg *ksailcluster.Cluster) error {
+	var kindCfg v1alpha4.Cluster
+	if err := yaml.Unmarshal(data, &kindCfg); err != nil {
+		return fmt.Errorf("unmarshal kind config: %w", err)
+	}
+	if kindCfg.Name != "" && kindCfg.Name != cfg.Metadata.Name {
+		return fmt.Errorf("%s name '%s' does not match ksail.yaml metadata.name '%s'", cfg.Spec.DistributionConfig, kindCfg.Name, cfg.Metadata.Name)
+	}
+	return nil
+}
+
+func (v *ConfigValidator) validateK3dConfig(data []byte, cfg *ksailcluster.Cluster) error {
+	var k3dCfg v1alpha5.SimpleConfig
+	if err := yaml.Unmarshal(data, &k3dCfg); err != nil {
+		return fmt.Errorf("unmarshal k3d config: %w", err)
+	}
+	if k3dCfg.Name != "" && k3dCfg.Name != cfg.Metadata.Name {
+		return fmt.Errorf("%s metadata.name '%s' does not match ksail.yaml metadata.name '%s'", cfg.Spec.DistributionConfig, k3dCfg.Name, cfg.Metadata.Name)
 	}
 	return nil
 }

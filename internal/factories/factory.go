@@ -17,6 +17,7 @@ func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.C
 		podmanSock := fmt.Sprintf("unix:///run/user/%d/podman/podman.sock", os.Getuid())
 		os.Setenv("DOCKER_HOST", podmanSock)
 	}
+
 	var provisioner clusterprovisioner.ClusterProvisioner
 	switch ksailConfig.Spec.Distribution {
 	case ksailcluster.DistributionKind:
@@ -24,12 +25,14 @@ func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.C
 		if err != nil {
 			return nil, err
 		}
+
 		provisioner = clusterprovisioner.NewKindClusterProvisioner(ksailConfig, &kindConfig)
 	case ksailcluster.DistributionK3d:
 		k3dConfig, err := loader.NewK3dConfigLoader().Load()
 		if err != nil {
 			return nil, err
 		}
+
 		provisioner = clusterprovisioner.NewK3dClusterProvisioner(ksailConfig, &k3dConfig)
 	default:
 		return nil, fmt.Errorf("unsupported distribution '%s'", ksailConfig.Spec.Distribution)
@@ -53,7 +56,9 @@ func ReconciliationTool(cfg *ksailcluster.Cluster) (reconciliationtoolbootstrapp
 	if err != nil {
 		return nil, err
 	}
+
 	var reconciliationToolBootstrapper reconciliationtoolbootstrapper.Bootstrapper
+
 	switch cfg.Spec.ReconciliationTool {
 	case ksailcluster.ReconciliationToolKubectl:
 		reconciliationToolBootstrapper = reconciliationtoolbootstrapper.NewKubectlBootstrapper(

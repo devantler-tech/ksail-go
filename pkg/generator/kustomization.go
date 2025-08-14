@@ -14,6 +14,7 @@ import (
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
 	io.FileWriter
+
 	KSailConfig    *ksailcluster.Cluster
 	Marshaller marshaller.Marshaller[*ktypes.Kustomization]
 }
