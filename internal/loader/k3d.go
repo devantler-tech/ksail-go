@@ -20,7 +20,7 @@ func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 	for dir := "./"; ; dir = filepath.Dir(dir) {
 		configPath := filepath.Join(dir, "k3d.yaml")
 		if _, err := os.Stat(configPath); err == nil {
-			data, err := os.ReadFile(configPath) // #nosec G304 - config file path is controlled
+			data, err := os.ReadFile(filepath.Clean(configPath))
 			if err != nil {
 				return v1alpha5.SimpleConfig{}, fmt.Errorf("read k3d config: %w", err)
 			}

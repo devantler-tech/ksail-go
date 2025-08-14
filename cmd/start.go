@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/internal/loader"
 	"github.com/devantler-tech/ksail-go/internal/managers"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
 
@@ -29,14 +29,15 @@ func handleStart() error {
 }
 
 func start() error {
-	params := managers.OperationParams{
-		ActionMsg: "▶️ Starting",
-		VerbMsg:   "starting",
-		PastMsg:   "started",
+	ksailConfig, err := loader.NewKSailConfigLoader().Load()
+	if err != nil {
+		return err
 	}
-	return clusterManager.ExecuteClusterLifecycleOperation(params, func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
-		return provisioner.Start(name)
-	})
+
+	inputs.SetInputsOrFallback(&ksailConfig)
+
+	clusterManager := managers.NewClusterManager(&ksailConfig)
+	return clusterManager.StartCluster()
 }
 
 func init() {

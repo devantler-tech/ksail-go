@@ -9,7 +9,6 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
 	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/devantler-tech/ksail-go/internal/loader"
-	"github.com/devantler-tech/ksail-go/internal/managers"
 	"github.com/devantler-tech/ksail-go/internal/ui/notify"
 	"github.com/devantler-tech/ksail-go/internal/validators"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
@@ -25,7 +24,7 @@ var (
 	containerEngineProvisioner     containerengineprovisioner.ContainerEngineProvisioner
 	reconciliationToolBootstrapper reconciliationtoolbootstrapper.Bootstrapper
 	configValidator                *validators.ConfigValidator
-	clusterManager                 *managers.ClusterManager
+
 )
 
 //go:embed assets/ascii-art.txt
@@ -99,7 +98,7 @@ func InitServices() error {
 		configValidator.SetDistributionConfigs(nil, &k3dCfg)
 	}
 
-	clusterManager = managers.NewClusterManager(&ksailConfig)
+
 
 	return nil
 }

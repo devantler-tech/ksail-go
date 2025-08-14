@@ -18,15 +18,22 @@ func NewClusterManager(config *ksailcluster.Cluster) *ClusterManager {
 	return &ClusterManager{config: config}
 }
 
-// OperationParams encapsulates the parameters for cluster operations.
-type OperationParams struct {
-	ActionMsg string
-	VerbMsg   string
-	PastMsg   string
+// StartCluster starts the cluster.
+func (cm *ClusterManager) StartCluster() error {
+	return cm.executeClusterOperation("▶️ Starting", "starting", "started", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+		return provisioner.Start(name)
+	})
 }
 
-// ExecuteClusterLifecycleOperation performs a cluster lifecycle operation (start, stop, etc.) with the given parameters.
-func (cm *ClusterManager) ExecuteClusterLifecycleOperation(params OperationParams, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
+// StopCluster stops the cluster.
+func (cm *ClusterManager) StopCluster() error {
+	return cm.executeClusterOperation("⏹️ Stopping", "stopping", "stopped", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
+		return provisioner.Stop(name)
+	})
+}
+
+// executeClusterOperation is a helper method that handles the common cluster operation logic.
+func (cm *ClusterManager) executeClusterOperation(actionMsg, verbMsg, pastMsg string, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
 	fmt.Println()
 
 	provisioner, err := factory.ClusterProvisioner(cm.config)
@@ -40,7 +47,7 @@ func (cm *ClusterManager) ExecuteClusterLifecycleOperation(params OperationParam
 	}
 
 	fmt.Println()
-	fmt.Printf("%s '%s'\n", params.ActionMsg, cm.config.Metadata.Name)
+	fmt.Printf("%s '%s'\n", actionMsg, cm.config.Metadata.Name)
 	fmt.Printf("► checking '%s' is ready\n", cm.config.Spec.ContainerEngine)
 
 	ready, err := containerEngineProvisioner.CheckReady()
@@ -49,7 +56,7 @@ func (cm *ClusterManager) ExecuteClusterLifecycleOperation(params OperationParam
 	}
 
 	fmt.Printf("✔ '%s' is ready\n", cm.config.Spec.ContainerEngine)
-	fmt.Printf("► %s '%s'\n", params.VerbMsg, cm.config.Metadata.Name)
+	fmt.Printf("► %s '%s'\n", verbMsg, cm.config.Metadata.Name)
 
 	exists, err := provisioner.Exists(cm.config.Metadata.Name)
 	if err != nil {
@@ -65,6 +72,6 @@ func (cm *ClusterManager) ExecuteClusterLifecycleOperation(params OperationParam
 		return err
 	}
 
-	fmt.Printf("✔ '%s' %s\n", cm.config.Metadata.Name, params.PastMsg)
+	fmt.Printf("✔ '%s' %s\n", cm.config.Metadata.Name, pastMsg)
 	return nil
 }
