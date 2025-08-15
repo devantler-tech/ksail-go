@@ -1,6 +1,5 @@
+version: "2"
 linters:
-  enable:
-    - wsl
   default: all
 linters-settings:
   depguard:
