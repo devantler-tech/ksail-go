@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/devantler-tech/ksail-go/internal/ui/quiet"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/spf13/cobra"
@@ -36,6 +37,11 @@ func handleList() error {
 
 // list lists clusters from the given cfg.
 func list() error {
+	ksailConfig, err := LoadKSailConfig()
+	if err != nil {
+		return err
+	}
+
 	var distributions []ksailcluster.Distribution
 	if inputs.All {
 		distributions = []ksailcluster.Distribution{ksailcluster.DistributionKind, ksailcluster.DistributionK3d}
@@ -43,7 +49,12 @@ func list() error {
 		distributions = []ksailcluster.Distribution{ksailConfig.Spec.Distribution}
 	}
 
-	_, err := containerEngineProvisioner.CheckReady()
+	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+
+	_, err = containerEngineProvisioner.CheckReady()
 	if err != nil {
 		return err
 	}
@@ -61,15 +72,22 @@ func fetchClusterDistributionPairs(distributions []ksailcluster.Distribution) ([
 	clusterDistributionPair := make([][2]string, 0)
 
 	for _, distribution := range distributions {
-		ksailConfig.Spec.Distribution = distribution
+		// Create a temp config for each distribution
+		tempConfig := ksailcluster.Cluster{}
+		tempConfig.Spec.Distribution = distribution
+
+		clusterProvisioner, err := factory.ClusterProvisioner(&tempConfig)
+		if err != nil {
+			return nil, err
+		}
 
 		clusters, err := clusterProvisioner.List()
 		if err != nil {
 			return nil, err
 		}
 
-		for _, c := range clusters {
-			clusterDistributionPair = append(clusterDistributionPair, [2]string{c, distribution.String()})
+		for _, cluster := range clusters {
+			clusterDistributionPair = append(clusterDistributionPair, [2]string{cluster, distribution.String()})
 		}
 	}
 

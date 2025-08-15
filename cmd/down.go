@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +34,20 @@ func handleDown() error {
 
 // teardown tears down a cluster using the provided name or the loaded kind config name.
 func teardown() error {
+	ksailConfig, err := LoadKSailConfig()
+	if err != nil {
+		return err
+	}
+
+	inputs.SetInputsOrFallback(&ksailConfig)
+
 	fmt.Printf("🔥 Destroying '%s'\n", ksailConfig.Metadata.Name)
 	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+
+	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
 
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
@@ -43,6 +56,12 @@ func teardown() error {
 
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► destroying '%s'\n", ksailConfig.Metadata.Name)
+
+	clusterProvisioner, err := factory.ClusterProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
+
 	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
 	if err != nil {
 		return err

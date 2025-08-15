@@ -28,9 +28,15 @@ func handleStart() error {
 }
 
 func start() error {
+	ksailConfig, err := LoadKSailConfig()
+	if err != nil {
+		return err
+	}
+
 	inputs.SetInputsOrFallback(&ksailConfig)
 
 	clusterManager := managers.NewClusterManager(&ksailConfig)
+
 	return clusterManager.StartOrStopCluster(managers.Start)
 }
 

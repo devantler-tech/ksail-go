@@ -6,6 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
 	factory "github.com/devantler-tech/ksail-go/internal/factories"
+	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/spf13/cobra"
 )
 
@@ -44,8 +45,15 @@ func handleUp() error {
 
 // provision provisions a cluster based on the provided configuration.
 func provision() error {
+	ksailConfig, err := LoadKSailConfig()
+	if err != nil {
+		return err
+	}
+
+	inputs.SetInputsOrFallback(&ksailConfig)
+
 	// TODO: Create local registry 'ksail-registry' with a docker provisioner
-	err := provisionCluster()
+	err = provisionCluster(&ksailConfig)
 	if err != nil {
 		return err
 	}
@@ -79,7 +87,9 @@ func provision() error {
 			// TODO: Bootstrap Metrics Server with a metrics server provisioner
 			return nil
 		}},
-		{"ReconciliationTool", bootstrapReconciliationTool},
+		{"ReconciliationTool", func() error {
+			return bootstrapReconciliationTool(&ksailConfig)
+		}},
 	}
 
 	type result struct {
@@ -119,10 +129,15 @@ func provision() error {
 }
 
 // provisionCluster provisions a cluster based on the provided configuration.
-func provisionCluster() error {
+func provisionCluster(ksailConfig *ksailcluster.Cluster) error {
 	fmt.Println()
 	fmt.Printf("🚀 Provisioning '%s'\n", ksailConfig.Metadata.Name)
 	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+
+	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(ksailConfig)
+	if err != nil {
+		return err
+	}
 
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
@@ -131,6 +146,11 @@ func provisionCluster() error {
 
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► provisioning '%s'\n", ksailConfig.Metadata.Name)
+
+	clusterProvisioner, err := factory.ClusterProvisioner(ksailConfig)
+	if err != nil {
+		return err
+	}
 
 	if inputs.Force {
 		exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
@@ -154,8 +174,8 @@ func provisionCluster() error {
 	return nil
 }
 
-func bootstrapReconciliationTool() error {
-	reconciliationToolBootstrapper, err := factory.ReconciliationTool(&ksailConfig)
+func bootstrapReconciliationTool(ksailConfig *ksailcluster.Cluster) error {
+	reconciliationToolBootstrapper, err := factory.ReconciliationTool(ksailConfig)
 	if err != nil {
 		return err
 	}

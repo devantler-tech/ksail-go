@@ -1,3 +1,4 @@
+// Package cmd provides the command-line interface for KSail.
 package cmd
 
 import (
@@ -12,19 +13,12 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/ui/notify"
 	"github.com/devantler-tech/ksail-go/internal/validators"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
-	reconciliationtoolbootstrapper "github.com/devantler-tech/ksail-go/pkg/bootstrapper/reconciliation_tool"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 var (
-	ksailConfig                    ksailcluster.Cluster
-	clusterProvisioner             clusterprovisioner.ClusterProvisioner
-	containerEngineProvisioner     containerengineprovisioner.ContainerEngineProvisioner
-	reconciliationToolBootstrapper reconciliationtoolbootstrapper.Bootstrapper
-	configValidator                *validators.ConfigValidator
-
+	configValidator *validators.ConfigValidator
 )
 
 //go:embed assets/ascii-art.txt
@@ -65,17 +59,17 @@ func InitServices() error {
 
 	inputs.SetInputsOrFallback(&ksailConfig)
 
-	clusterProvisioner, err = factory.ClusterProvisioner(&ksailConfig)
+	_, err = factory.ClusterProvisioner(&ksailConfig)
 	if err != nil {
 		return err
 	}
 
-	containerEngineProvisioner, err = factory.ContainerEngineProvisioner(&ksailConfig)
+	_, err = factory.ContainerEngineProvisioner(&ksailConfig)
 	if err != nil {
 		return err
 	}
 
-	reconciliationToolBootstrapper, err = factory.ReconciliationTool(&ksailConfig)
+	_, err = factory.ReconciliationTool(&ksailConfig)
 	if err != nil {
 		return err
 	}
@@ -89,18 +83,23 @@ func InitServices() error {
 		if err != nil {
 			return err
 		}
+
 		configValidator.SetDistributionConfigs(&kindCfg, nil)
 	case ksailcluster.DistributionK3d:
 		k3dCfg, err := loader.NewK3dConfigLoader().Load()
 		if err != nil {
 			return err
 		}
+
 		configValidator.SetDistributionConfigs(nil, &k3dCfg)
 	}
 
-
-
 	return nil
+}
+
+// LoadKSailConfig loads the KSail configuration.
+func LoadKSailConfig() (ksailcluster.Cluster, error) {
+	return loader.NewKSailConfigLoader().Load()
 }
 
 // --- internals ---
@@ -117,15 +116,15 @@ func printASCIIArt() {
 
 	lines := strings.Split(asciiArt, "\n")
 
-	for i, line := range lines {
+	for index, line := range lines {
 		switch {
-		case i < yellowLines:
+		case index < yellowLines:
 			printYellow(line)
-		case i == yellowLines:
+		case index == yellowLines:
 			printBlue(line)
-		case i > yellowLines && i < 7:
+		case index > yellowLines && index < 7:
 			printGreenBlueCyan(line)
-		case i > 6 && i < len(lines)-2:
+		case index > 6 && index < len(lines)-2:
 			printGreenCyan(line)
 		default:
 			printBlue(line)
@@ -134,22 +133,22 @@ func printASCIIArt() {
 }
 
 func printYellow(line string) {
-	fmt.Println("\x1b[1;33m" + line + "\x1b[0m")
+	_, _ = color.New(color.FgYellow, color.Bold).Println(line)
 }
 
 func printBlue(line string) {
-	fmt.Println("\x1b[1;34m" + line + "\x1b[0m")
+	_, _ = color.New(color.FgBlue, color.Bold).Println(line)
 }
 
 func printGreenBlueCyan(line string) {
 	charThirtyEight := 38
 	if len(line) >= charThirtyEight {
-		fmt.Print("\x1b[1;32m" + line[:32] + "\x1b[0m")
-		fmt.Print("\x1B[36m" + line[32:37] + "\x1b[0m")
-		fmt.Print("\x1b[1;34m" + line[37:charThirtyEight] + "\x1b[0m")
-		fmt.Println("\x1B[36m" + line[38:] + "\x1b[0m")
+		_, _ = color.New(color.FgGreen, color.Bold).Print(line[:32])
+		_, _ = color.New(color.FgCyan).Print(line[32:37])
+		_, _ = color.New(color.FgBlue, color.Bold).Print(line[37:charThirtyEight])
+		_, _ = color.New(color.FgCyan).Println(line[38:])
 	} else {
-		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
+		_, _ = color.New(color.FgGreen, color.Bold).Println(line)
 	}
 }
 
@@ -157,9 +156,9 @@ const greenCyanSplitIndex = 32
 
 func printGreenCyan(line string) {
 	if len(line) >= greenCyanSplitIndex {
-		fmt.Print("\x1b[1;32m" + line[:greenCyanSplitIndex] + "\x1b[0m")
-		fmt.Println("\x1B[36m" + line[greenCyanSplitIndex:] + "\x1b[0m")
+		_, _ = color.New(color.FgGreen, color.Bold).Print(line[:greenCyanSplitIndex])
+		_, _ = color.New(color.FgCyan).Println(line[greenCyanSplitIndex:])
 	} else {
-		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
+		_, _ = color.New(color.FgGreen, color.Bold).Println(line)
 	}
 }
