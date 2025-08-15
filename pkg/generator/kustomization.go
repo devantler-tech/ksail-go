@@ -29,6 +29,7 @@ func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(outputFile), 0750); err != nil {
 		return "", fmt.Errorf("create kustomization dir: %w", err)
 	}
+
 	out, err := g.Marshaller.Marshal(&kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)

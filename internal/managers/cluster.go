@@ -96,5 +96,6 @@ func (cm *ClusterManager) executeOperation(actionMsg, verbMsg, pastMsg string, p
 	}
 
 	fmt.Printf("✔ '%s' %s\n", cm.config.Metadata.Name, pastMsg)
+
 	return nil
 }

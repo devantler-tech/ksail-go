@@ -21,6 +21,7 @@ func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.C
 	}
 
 	var provisioner clusterprovisioner.ClusterProvisioner
+
 	switch ksailConfig.Spec.Distribution {
 	case ksailcluster.DistributionKind:
 		kindConfig, err := loader.NewKindConfigLoader().Load()
@@ -39,6 +40,7 @@ func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.C
 	default:
 		return nil, fmt.Errorf("unsupported distribution '%s'", ksailConfig.Spec.Distribution)
 	}
+
 	return provisioner, nil
 }
 
@@ -78,5 +80,6 @@ func ReconciliationTool(cfg *ksailcluster.Cluster) (reconciliationtoolbootstrapp
 	default:
 		return nil, fmt.Errorf("unsupported reconciliation tool '%s'", cfg.Spec.ReconciliationTool)
 	}
+
 	return reconciliationToolBootstrapper, nil
 }

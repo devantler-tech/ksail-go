@@ -17,6 +17,7 @@ type K3dConfigLoader struct {
 
 func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 	fmt.Println("⏳ Loading K3d config")
+
 	for dir := "./"; ; dir = filepath.Dir(dir) {
 		configPath := filepath.Join(dir, "k3d.yaml")
 		if _, err := os.Stat(configPath); err == nil {
@@ -24,34 +25,43 @@ func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 			if err != nil {
 				return v1alpha5.SimpleConfig{}, fmt.Errorf("read k3d config: %w", err)
 			}
+
 			cfg := &v1alpha5.SimpleConfig{}
 			if err := cl.Marshaller.Unmarshal(data, cfg); err != nil {
 				return v1alpha5.SimpleConfig{}, fmt.Errorf("unmarshal k3d config: %w", err)
 			}
+
 			fmt.Printf("► '%s' found\n", configPath)
 			fmt.Println("✔ config loaded")
-      fmt.Println()
+			fmt.Println()
+
 			return *cfg, nil
 		}
+
 		parent := filepath.Dir(dir)
 		if parent == dir || dir == "" {
 			break
 		}
 	}
+
 	fmt.Println("► './k3d.yaml' not found, using default configuration")
+
 	var config *v1alpha5.SimpleConfig
 	if cl.Default != nil {
 		config = cl.Default
 	} else {
 		config = &v1alpha5.SimpleConfig{Servers: 1, Agents: 0}
 	}
+
 	fmt.Println("✔ config loaded")
 	fmt.Println()
+
 	return *config, nil
 }
 
 func NewK3dConfigLoader() *K3dConfigLoader {
 	m := marshaller.NewMarshaller[*v1alpha5.SimpleConfig]()
+
 	return &K3dConfigLoader{
 		Marshaller: m,
 		Default:    &v1alpha5.SimpleConfig{},

@@ -8,9 +8,13 @@ func SilenceStdout(f func() error) error {
 	if err != nil {
 		return err
 	}
-	defer devNull.Close()
+
+	defer func() { _ = devNull.Close() }()
+
 	old := os.Stdout
 	os.Stdout = devNull
+
 	defer func() { os.Stdout = old }()
+
 	return f()
 }

@@ -21,7 +21,9 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 	for _, opt := range options {
 		opt(c)
 	}
+
 	c.SetDefaults()
+
 	return c
 }
 
@@ -108,39 +110,50 @@ func (c *Cluster) SetDefaults() {
 	if c.Metadata.Name == "" {
 		c.Metadata.Name = "ksail-default"
 	}
+
 	if c.Spec.DistributionConfig == "" {
 		c.Spec.DistributionConfig = "kind.yaml"
 	}
+
 	if c.Spec.SourceDirectory == "" {
 		c.Spec.SourceDirectory = "k8s"
 	}
+
 	if c.Spec.Connection.Kubeconfig == "" {
 		c.Spec.Connection.Kubeconfig = "~/.kube/config"
 	}
+
 	if c.Spec.Connection.Context == "" {
 		c.Spec.Connection.Context = "kind-ksail-default"
 	}
+
 	if c.Spec.Connection.Timeout.Duration == 0 {
 		c.Spec.Connection.Timeout = metav1.Duration{Duration: 5 * time.Minute}
 	}
+
 	if c.Spec.Distribution == "" {
 		c.Spec.Distribution = DistributionKind
 	}
+
 	if c.Spec.ContainerEngine == "" {
 		c.Spec.ContainerEngine = ContainerEngineDocker
 	}
+
 	if c.Spec.ReconciliationTool == "" {
 		c.Spec.ReconciliationTool = ReconciliationToolKubectl
 	}
+
 	if c.Spec.CNI == "" {
 		c.Spec.CNI = CNIDefault
 	}
+
 	if c.Spec.CSI == "" {
 		c.Spec.CSI = CSIDefault
 	}
 	if c.Spec.IngressController == "" {
 		c.Spec.IngressController = IngressControllerDefault
 	}
+
 	if c.Spec.GatewayController == "" {
 		c.Spec.GatewayController = GatewayControllerDefault
 	}
@@ -184,7 +197,8 @@ func (e *ContainerEngine) Set(value string) error {
 			return nil
 		}
 	}
- return fmt.Errorf("invalid container engine: %s (valid options: %s, %s)", value, ContainerEngineDocker, ContainerEnginePodman)
+
+	return fmt.Errorf("invalid container engine: %s (valid options: %s, %s)", value, ContainerEngineDocker, ContainerEnginePodman)
 }
 
 // --- pflag Values ---

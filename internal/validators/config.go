@@ -33,15 +33,20 @@ func (v *ConfigValidator) Validate() error {
 	if v.cfg == nil {
 		return errors.New("config is nil")
 	}
+
 	fmt.Println("🕵 Validating project files and config")
 	fmt.Println("► validating config")
+
 	if err := v.checkContextName(v.cfg); err != nil {
 		return err
 	}
+
 	if err := v.checkDistributionConfig(v.cfg); err != nil {
 		return err
 	}
+
 	fmt.Println("✔ configuration is valid")
+
 	return nil
 }
 
@@ -49,6 +54,7 @@ func (v *ConfigValidator) Validate() error {
 
 func (v *ConfigValidator) checkContextName(cfg *ksailcluster.Cluster) error {
 	var expected string
+
 	switch cfg.Spec.Distribution {
 	case ksailcluster.DistributionKind:
 		expected = fmt.Sprintf("kind-%s", cfg.Metadata.Name)
@@ -57,9 +63,11 @@ func (v *ConfigValidator) checkContextName(cfg *ksailcluster.Cluster) error {
 	default:
 		return fmt.Errorf("unsupported distribution '%s'", cfg.Spec.Distribution)
 	}
+
 	if ctx := cfg.Spec.Connection.Context; ctx != "" && ctx != expected {
 		return fmt.Errorf("spec.connection.context '%s' does not match expected '%s'", ctx, expected)
 	}
+
 	return nil
 }
 
@@ -74,6 +82,7 @@ func (v *ConfigValidator) checkDistributionConfig(cfg *ksailcluster.Cluster) err
 			return v.validateK3dConfig(v.k3dCfg, cfg)
 		}
 	}
+
 	return nil
 }
 
@@ -81,6 +90,7 @@ func (v *ConfigValidator) validateKindConfig(kindCfg *v1alpha4.Cluster, cfg *ksa
 	if kindCfg.Name != "" && kindCfg.Name != cfg.Metadata.Name {
 		return fmt.Errorf("kind config name '%s' does not match ksail.yaml metadata.name '%s'", kindCfg.Name, cfg.Metadata.Name)
 	}
+
 	return nil
 }
 
@@ -88,5 +98,6 @@ func (v *ConfigValidator) validateK3dConfig(k3dCfg *v1alpha5.SimpleConfig, cfg *
 	if k3dCfg.Name != "" && k3dCfg.Name != cfg.Metadata.Name {
 		return fmt.Errorf("k3d config metadata.name '%s' does not match ksail.yaml metadata.name '%s'", k3dCfg.Name, cfg.Metadata.Name)
 	}
+
 	return nil
 }

@@ -13,7 +13,9 @@ func ExpandPath(path string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		return filepath.Join(usr.HomeDir, path[2:]), nil
 	}
+
 	return path, nil
 }

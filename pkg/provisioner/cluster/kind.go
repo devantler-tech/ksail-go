@@ -88,6 +88,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	}
 
 	ctx := context.Background()
+
 	for _, n := range nodes {
 		// Stop each node container using Docker SDK
 		timeout := 30 // 30 seconds timeout
