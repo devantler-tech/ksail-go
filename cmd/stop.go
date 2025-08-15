@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
-	"github.com/devantler-tech/ksail-go/internal/loader"
 	"github.com/devantler-tech/ksail-go/internal/managers"
 	"github.com/spf13/cobra"
 )
@@ -32,15 +31,10 @@ func handleStop() error {
 }
 
 func stop() error {
-	ksailConfig, err := loader.NewKSailConfigLoader().Load()
-	if err != nil {
-		return err
-	}
-
 	inputs.SetInputsOrFallback(&ksailConfig)
 
 	clusterManager := managers.NewClusterManager(&ksailConfig)
-	return clusterManager.StopCluster()
+	return clusterManager.StartOrStopCluster(managers.Stop)
 }
 
 func init() {

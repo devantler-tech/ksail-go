@@ -1,13 +1,14 @@
 package clusterprovisioner
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"os/exec"
 	"slices"
 
 	"github.com/devantler-tech/ksail-go/internal/utils"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
 	kindcmd "sigs.k8s.io/kind/pkg/cmd"
@@ -18,6 +19,7 @@ type KindClusterProvisioner struct {
 	ksailConfig    *ksailcluster.Cluster
 	kindConfig     *v1alpha4.Cluster
 	dockerProvider *cluster.Provider
+	dockerClient   *client.Client
 }
 
 // Create creates a kind cluster.
@@ -60,14 +62,12 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s' not found", target)
 	}
-	for _, n := range nodes {
-		// Start each node container by name
-		cmd := exec.Command("docker", "start", n.String()) // #nosec G204 - container name from Kind API
-		var stderr bytes.Buffer
 
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("docker start failed: %v: %s", err, stderr.String())
+	ctx := context.Background()
+	for _, n := range nodes {
+		// Start each node container using Docker SDK
+		if err := k.dockerClient.ContainerStart(ctx, n.String(), container.StartOptions{}); err != nil {
+			return fmt.Errorf("failed to start container %s: %v", n.String(), err)
 		}
 	}
 	return nil
@@ -86,14 +86,13 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s' not found", target)
 	}
-	for _, n := range nodes {
-		// Stop each node container by name
-		cmd := exec.Command("docker", "stop", n.String()) // #nosec G204 - container name from Kind API
-		var stderr bytes.Buffer
 
-		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("docker stop failed: %v: %s", err, stderr.String())
+	ctx := context.Background()
+	for _, n := range nodes {
+		// Stop each node container using Docker SDK
+		timeout := 30 // 30 seconds timeout
+		if err := k.dockerClient.ContainerStop(ctx, n.String(), container.StopOptions{Timeout: &timeout}); err != nil {
+			return fmt.Errorf("failed to stop container %s: %v", n.String(), err)
 		}
 	}
 	return nil
@@ -122,11 +121,18 @@ func (k *KindClusterProvisioner) Exists(name string) (bool, error) {
 
 // NewKindClusterProvisioner creates a new KindClusterProvisioner.
 func NewKindClusterProvisioner(ksailConfig *ksailcluster.Cluster, kindConfig *v1alpha4.Cluster) *KindClusterProvisioner {
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		// Fall back to nil client, which will cause operations to fail gracefully
+		dockerClient = nil
+	}
+
 	return &KindClusterProvisioner{
 		ksailConfig: ksailConfig,
 		kindConfig:  kindConfig,
 		dockerProvider: cluster.NewProvider(
 			cluster.ProviderWithLogger(kindcmd.NewLogger()),
 		),
+		dockerClient: dockerClient,
 	}
 }

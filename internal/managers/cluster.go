@@ -8,6 +8,16 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 )
 
+// ClusterOperation represents the type of cluster operation to perform.
+type ClusterOperation int
+
+const (
+	// Start represents starting a cluster.
+	Start ClusterOperation = iota
+	// Stop represents stopping a cluster.
+	Stop
+)
+
 // ClusterManager manages cluster operations like start, stop, and status checks.
 type ClusterManager struct {
 	config *ksailcluster.Cluster
@@ -18,22 +28,35 @@ func NewClusterManager(config *ksailcluster.Cluster) *ClusterManager {
 	return &ClusterManager{config: config}
 }
 
-// StartCluster starts the cluster.
-func (cm *ClusterManager) StartCluster() error {
-	return cm.executeClusterOperation("▶️ Starting", "starting", "started", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
-		return provisioner.Start(name)
-	})
+// StartOrStopCluster starts or stops the cluster based on the operation type.
+func (cm *ClusterManager) StartOrStopCluster(operation ClusterOperation) error {
+	// Derive messages and operation from operation type
+	actionMsg, verbMsg, pastMsg, provisionerOp, err := cm.getOperationDetails(operation)
+	if err != nil {
+		return err
+	}
+
+	return cm.executeOperation(actionMsg, verbMsg, pastMsg, provisionerOp)
 }
 
-// StopCluster stops the cluster.
-func (cm *ClusterManager) StopCluster() error {
-	return cm.executeClusterOperation("⏹️ Stopping", "stopping", "stopped", func(provisioner clusterprovisioner.ClusterProvisioner, name string) error {
-		return provisioner.Stop(name)
-	})
+// getOperationDetails returns the operation details based on the operation type.
+func (cm *ClusterManager) getOperationDetails(operation ClusterOperation) (string, string, string, func(clusterprovisioner.ClusterProvisioner, string) error, error) {
+	switch operation {
+	case Start:
+		return "▶️ Starting", "starting", "started", func(p clusterprovisioner.ClusterProvisioner, name string) error {
+			return p.Start(name)
+		}, nil
+	case Stop:
+		return "⏹️ Stopping", "stopping", "stopped", func(p clusterprovisioner.ClusterProvisioner, name string) error {
+			return p.Stop(name)
+		}, nil
+	default:
+		return "", "", "", nil, fmt.Errorf("unsupported operation: %d", operation)
+	}
 }
 
-// executeClusterOperation is a helper method that handles the common cluster operation logic.
-func (cm *ClusterManager) executeClusterOperation(actionMsg, verbMsg, pastMsg string, operation func(clusterprovisioner.ClusterProvisioner, string) error) error {
+// executeOperation executes the cluster operation with the given parameters.
+func (cm *ClusterManager) executeOperation(actionMsg, verbMsg, pastMsg string, provisionerOp func(clusterprovisioner.ClusterProvisioner, string) error) error {
 	fmt.Println()
 
 	provisioner, err := factory.ClusterProvisioner(cm.config)
@@ -68,7 +91,7 @@ func (cm *ClusterManager) executeClusterOperation(actionMsg, verbMsg, pastMsg st
 		return nil
 	}
 
-	if err := operation(provisioner, cm.config.Metadata.Name); err != nil {
+	if err := provisionerOp(provisioner, cm.config.Metadata.Name); err != nil {
 		return err
 	}
 
