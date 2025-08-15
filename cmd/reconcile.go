@@ -25,7 +25,9 @@ to quickly create a Cobra application.`,
 // --- internals ---
 
 func handleReconcile() error {
-  InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	err := configValidator.Validate()
 	if err != nil {

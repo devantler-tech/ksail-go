@@ -15,25 +15,32 @@ import (
 func ClusterProvisioner(ksailConfig *ksailcluster.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
 	if ksailConfig.Spec.ContainerEngine == ksailcluster.ContainerEnginePodman {
 		podmanSock := fmt.Sprintf("unix:///run/user/%d/podman/podman.sock", os.Getuid())
-		os.Setenv("DOCKER_HOST", podmanSock)
+		if err := os.Setenv("DOCKER_HOST", podmanSock); err != nil {
+			return nil, fmt.Errorf("failed to set DOCKER_HOST: %w", err)
+		}
 	}
+
 	var provisioner clusterprovisioner.ClusterProvisioner
+
 	switch ksailConfig.Spec.Distribution {
 	case ksailcluster.DistributionKind:
 		kindConfig, err := loader.NewKindConfigLoader().Load()
 		if err != nil {
 			return nil, err
 		}
+
 		provisioner = clusterprovisioner.NewKindClusterProvisioner(ksailConfig, &kindConfig)
 	case ksailcluster.DistributionK3d:
 		k3dConfig, err := loader.NewK3dConfigLoader().Load()
 		if err != nil {
 			return nil, err
 		}
+
 		provisioner = clusterprovisioner.NewK3dClusterProvisioner(ksailConfig, &k3dConfig)
 	default:
 		return nil, fmt.Errorf("unsupported distribution '%s'", ksailConfig.Spec.Distribution)
 	}
+
 	return provisioner, nil
 }
 
@@ -53,7 +60,9 @@ func ReconciliationTool(cfg *ksailcluster.Cluster) (reconciliationtoolbootstrapp
 	if err != nil {
 		return nil, err
 	}
+
 	var reconciliationToolBootstrapper reconciliationtoolbootstrapper.Bootstrapper
+
 	switch cfg.Spec.ReconciliationTool {
 	case ksailcluster.ReconciliationToolKubectl:
 		reconciliationToolBootstrapper = reconciliationtoolbootstrapper.NewKubectlBootstrapper(
@@ -71,5 +80,6 @@ func ReconciliationTool(cfg *ksailcluster.Cluster) (reconciliationtoolbootstrapp
 	default:
 		return nil, fmt.Errorf("unsupported reconciliation tool '%s'", cfg.Spec.ReconciliationTool)
 	}
+
 	return reconciliationToolBootstrapper, nil
 }

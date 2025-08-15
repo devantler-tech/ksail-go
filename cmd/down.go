@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Destroy an existing Kubernetes cluster",
 	Long:  "Destroy an existing Kubernetes cluster specified by --name or by the loaded kind config.",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		return handleDown()
 	},
 }
@@ -24,15 +25,29 @@ var downCmd = &cobra.Command{
 
 // handleDown handles the down command.
 func handleDown() error {
-	InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	return teardown()
 }
 
 // teardown tears down a cluster using the provided name or the loaded kind config name.
 func teardown() error {
+	ksailConfig, err := LoadKSailConfig()
+	if err != nil {
+		return err
+	}
+
+	inputs.SetInputsOrFallback(&ksailConfig)
+
 	fmt.Printf("🔥 Destroying '%s'\n", ksailConfig.Metadata.Name)
 	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+
+	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(&ksailConfig)
+	if err != nil {
+		return err
+	}
 
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
@@ -41,12 +56,17 @@ func teardown() error {
 
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► destroying '%s'\n", ksailConfig.Metadata.Name)
-	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
 
+	clusterProvisioner, err := factory.ClusterProvisioner(&ksailConfig)
 	if err != nil {
 		return err
 	}
-  
+
+	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
+	if err != nil {
+		return err
+	}
+
 	if !exists {
 		fmt.Printf("✔ '%s' not found\n", ksailConfig.Metadata.Name)
 

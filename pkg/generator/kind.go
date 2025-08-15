@@ -12,6 +12,7 @@ import (
 // KindGenerator generates a kind Cluster YAML.
 type KindGenerator struct {
 	io.FileWriter
+
 	Cluster    *ksailcluster.Cluster
 	Marshaller marshaller.Marshaller[*v1alpha4.Cluster]
 }
@@ -21,6 +22,7 @@ func (g *KindGenerator) Generate(opts Options) (string, error) {
 		TypeMeta: v1alpha4.TypeMeta{APIVersion: "kind.x-k8s.io/v1alpha4", Kind: "Cluster"},
 	}
 	v1alpha4.SetDefaultsCluster(&cfg)
+
 	out, err := g.Marshaller.Marshal(&cfg)
 	if err != nil {
 		return "", fmt.Errorf("marshal kind config: %w", err)

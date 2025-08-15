@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
-	factory "github.com/devantler-tech/ksail-go/internal/factories"
+	"github.com/devantler-tech/ksail-go/internal/managers"
 	"github.com/spf13/cobra"
 )
 
@@ -22,54 +20,24 @@ var startCmd = &cobra.Command{
 
 // handleStart handles the start command.
 func handleStart() error {
-  InitServices()
+	if err := InitServices(); err != nil {
+		return err
+	}
 
 	return start()
 }
 
 func start() error {
-	fmt.Println()
-
-	provisioner, err := factory.ClusterProvisioner(&ksailConfig)
+	ksailConfig, err := LoadKSailConfig()
 	if err != nil {
 		return err
 	}
 
-	containerEngineProvisioner, err := factory.ContainerEngineProvisioner(&ksailConfig)
-	if err != nil {
-		return err
-	}
+	inputs.SetInputsOrFallback(&ksailConfig)
 
-	fmt.Println()
-	fmt.Printf("▶️ Starting '%s'\n", ksailConfig.Metadata.Name)
-	fmt.Printf("► checking '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
+	clusterManager := managers.NewClusterManager(&ksailConfig)
 
-	ready, err := containerEngineProvisioner.CheckReady()
-	if err != nil || !ready {
-		return fmt.Errorf("container engine '%s' is not ready: %v", ksailConfig.Spec.ContainerEngine, err)
-	}
-
-	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
-	fmt.Printf("► starting '%s'\n", ksailConfig.Metadata.Name)
-
-	exists, err := provisioner.Exists(ksailConfig.Metadata.Name)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		fmt.Printf("✔ '%s' not found\n", ksailConfig.Metadata.Name)
-
-		return nil
-	}
-
-	if err := provisioner.Start(ksailConfig.Metadata.Name); err != nil {
-		return err
-	}
-
-	fmt.Printf("✔ '%s' started\n", ksailConfig.Metadata.Name)
-
-	return nil
+	return clusterManager.StartOrStopCluster(managers.Start)
 }
 
 func init() {

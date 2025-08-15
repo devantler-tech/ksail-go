@@ -24,8 +24,10 @@ func (FileWriter) TryWrite(content string, output string, force bool) (string, e
 	} else {
 		fmt.Printf("► generating '%s'\n", output)
 	}
-	if err := os.WriteFile(output, []byte(content), 0644); err != nil {
+
+	if err := os.WriteFile(output, []byte(content), 0600); err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", output, err)
 	}
+
 	return content, nil
 }
