@@ -30,7 +30,7 @@ func (b *FluxBootstrapper) Install() error {
 		return err
 	}
 
-  // TODO: Apply FluxInstance that syncs with local 'ksail-registry'
+	// TODO: Apply FluxInstance that syncs with local 'ksail-registry'
 	return nil
 }
 

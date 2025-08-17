@@ -59,7 +59,7 @@ func AddAllFlag(cmd *cobra.Command, description ...string) {
 	if len(description) > 0 {
 		desc = description[0]
 	}
-  
+
 	cmd.Flags().BoolVarP(&All, "all", "a", false, desc)
 }
 

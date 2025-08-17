@@ -14,8 +14,8 @@ import (
 
 // K3dClusterProvisioner implements provisioning for k3d clusters.
 type K3dClusterProvisioner struct {
-	cfg *ksailcluster.Cluster
-	simpleCfg   *conf.SimpleConfig
+	cfg       *ksailcluster.Cluster
+	simpleCfg *conf.SimpleConfig
 }
 
 var _ ClusterProvisioner = (*K3dClusterProvisioner)(nil)

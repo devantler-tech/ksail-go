@@ -25,7 +25,7 @@ var stopCmd = &cobra.Command{
 
 // handleStop handles the stop command.
 func handleStop() error {
-  InitServices()
+	InitServices()
 
 	return stop()
 }

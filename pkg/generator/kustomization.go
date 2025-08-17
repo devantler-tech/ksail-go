@@ -14,8 +14,8 @@ import (
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
 	io.FileWriter
-	KSailConfig    *ksailcluster.Cluster
-	Marshaller marshaller.Marshaller[*ktypes.Kustomization]
+	KSailConfig *ksailcluster.Cluster
+	Marshaller  marshaller.Marshaller[*ktypes.Kustomization]
 }
 
 func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
@@ -36,7 +36,7 @@ func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
 
 func NewKustomizationGenerator(cfg *ksailcluster.Cluster) *KustomizationGenerator {
 	return &KustomizationGenerator{
-		KSailConfig:    cfg,
-		Marshaller: marshaller.NewMarshaller[*ktypes.Kustomization](),
+		KSailConfig: cfg,
+		Marshaller:  marshaller.NewMarshaller[*ktypes.Kustomization](),
 	}
 }

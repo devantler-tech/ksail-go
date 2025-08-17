@@ -30,7 +30,7 @@ func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 			}
 			fmt.Printf("► '%s' found\n", configPath)
 			fmt.Println("✔ config loaded")
-      fmt.Println()
+			fmt.Println()
 			return *cfg, nil
 		}
 		parent := filepath.Dir(dir)
@@ -46,7 +46,7 @@ func (cl *K3dConfigLoader) Load() (v1alpha5.SimpleConfig, error) {
 		config = &v1alpha5.SimpleConfig{Servers: 1, Agents: 0}
 	}
 	fmt.Println("✔ config loaded")
-  fmt.Println()
+	fmt.Println()
 	return *config, nil
 
 }

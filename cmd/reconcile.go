@@ -25,14 +25,14 @@ to quickly create a Cobra application.`,
 // --- internals ---
 
 func handleReconcile() error {
-  InitServices()
+	InitServices()
 
 	err := configValidator.Validate()
 	if err != nil {
 		return err
 	}
-  // TODO: Validate workloads
-  // TODO: Reconcile
+	// TODO: Validate workloads
+	// TODO: Reconcile
 	return nil
 }
 

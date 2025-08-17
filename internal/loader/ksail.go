@@ -30,7 +30,7 @@ func (cl *KSailConfigLoader) Load() (ksailcluster.Cluster, error) {
 			}
 			fmt.Printf("► '%s' found\n", configPath)
 			fmt.Println("✔ config loaded")
-      fmt.Println()
+			fmt.Println()
 			return *cfg, nil
 		}
 		parent := filepath.Dir(dir)
@@ -44,7 +44,7 @@ func (cl *KSailConfigLoader) Load() (ksailcluster.Cluster, error) {
 		cfg = ksailcluster.NewCluster()
 	}
 	fmt.Println("✔ config loaded")
-  fmt.Println()
+	fmt.Println()
 	return *cfg, nil
 }
 

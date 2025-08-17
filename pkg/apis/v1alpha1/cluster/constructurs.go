@@ -184,7 +184,7 @@ func (e *ContainerEngine) Set(value string) error {
 			return nil
 		}
 	}
- return fmt.Errorf("invalid container engine: %s (valid options: %s, %s)", value, ContainerEngineDocker, ContainerEnginePodman)
+	return fmt.Errorf("invalid container engine: %s (valid options: %s, %s)", value, ContainerEngineDocker, ContainerEnginePodman)
 }
 
 // --- pflag Values ---

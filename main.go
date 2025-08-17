@@ -14,4 +14,3 @@ func main() {
 	cmd.SetVersionInfo(version, commit, date)
 	cmd.Execute()
 }
-

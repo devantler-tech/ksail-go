@@ -25,13 +25,13 @@ var upCmd = &cobra.Command{
 
 // handleUp handles the up command.
 func handleUp() error {
-  InitServices()
+	InitServices()
 
 	err := configValidator.Validate()
 	if err != nil {
 		return err
 	}
-  
+
 	// TODO: Validate workloads
 	if err := provision(); err != nil {
 		return err

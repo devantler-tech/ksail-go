@@ -46,7 +46,7 @@ func teardown() error {
 	if err != nil {
 		return err
 	}
-  
+
 	if !exists {
 		fmt.Printf("✔ '%s' not found\n", ksailConfig.Metadata.Name)
 
