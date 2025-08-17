@@ -14,4 +14,4 @@ With its user-friendly CLI and rapid feedback loop, KSail is perfect for experim
 
 Additionally, it streamlines the management of configurations and resources, making your learning process more efficient and effective.
 
-If you have a problem on your journey to become a Kubernetes expert, please open an issue on GitHub, or reach out to me on my [Contact Me](https://devantler.com/contact/) page.
+If you have a problem on your journey to become a Kubernetes expert, please open an issue on GitHub, or reach out to me on my [Contact Me](https://devantler.tech/contact/) page.
