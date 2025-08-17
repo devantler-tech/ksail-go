@@ -1,0 +1,10 @@
+{
+  "Verbose": false,
+  "Debug": false,
+  "IgnoreDefaults": false,
+  "SpacesAfterTabs": false,
+  "NoColor": false,
+  "Exclude": [],
+  "AllowedContentTypes": [],
+  "PassedFiles": []
+}
