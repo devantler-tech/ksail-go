@@ -1,4 +1,5 @@
-package utils
+// Package pathutils provides utilities for manipulating filesystem paths.
+package pathutils
 
 import (
 	"os/user"
@@ -13,7 +14,9 @@ func ExpandPath(path string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		return filepath.Join(usr.HomeDir, path[2:]), nil
 	}
+
 	return path, nil
 }

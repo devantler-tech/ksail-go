@@ -16,6 +16,7 @@ linters:
           allow:
             - $gostd
             - github.com/devantler-tech/ksail-go
+            - github.com/fatih/color
             - github.com/k3d-io/k3d
             - github.com/spf13/cobra
             - sigs.k8s.io

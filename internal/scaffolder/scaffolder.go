@@ -1,13 +1,15 @@
-package utils
+// Package scaffolder provides utilities for scaffolding KSail project files and configuration.
+package scaffolder
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	gen "github.com/devantler-tech/ksail-go/pkg/generator"
 )
 
+// Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
 	KSailConfig            ksailcluster.Cluster
 	KSailYAMLGenerator     *gen.YAMLGenerator[ksailcluster.Cluster]
@@ -16,6 +18,7 @@ type Scaffolder struct {
 	KustomizationGenerator *gen.KustomizationGenerator
 }
 
+// Scaffold generates project files and configurations.
 func (s *Scaffolder) Scaffold(output string, force bool) error {
 	// generate ksail.yaml file
 	_, err := s.KSailYAMLGenerator.Generate(s.KSailConfig, gen.Options{Output: output + "ksail.yaml", Force: force})
@@ -34,9 +37,9 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 			return err
 		}
 	case ksailcluster.DistributionTind:
-		return fmt.Errorf("talos-in-docker distribution is not yet implemented")
+		return errors.New("talos-in-docker distribution is not yet implemented")
 	default:
-		return fmt.Errorf("provided distribution is unknown")
+		return errors.New("provided distribution is unknown")
 	}
 
 	if _, err := s.KustomizationGenerator.Generate(gen.Options{Output: filepath.Join(output, s.KSailConfig.Spec.SourceDirectory), Force: force}); err != nil {
@@ -46,6 +49,7 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	return nil
 }
 
+// NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
 func NewScaffolder(cfg ksailcluster.Cluster) *Scaffolder {
 	ksailGen := gen.NewYAMLGenerator[ksailcluster.Cluster]()
 	kindGen := gen.NewKindGenerator(&cfg)

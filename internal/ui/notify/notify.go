@@ -8,22 +8,34 @@ import (
 )
 
 const (
-	// Leading symbols for messages
+	// Leading symbols for messages.
 	errorSymbol = "✗ "
 	warnSymbol  = "⚠ "
 )
 
 // Errorf prints a red error message to stderr, prefixed with a symbol.
-func Errorf(format string, a ...interface{}) {
+func Errorf(format string, a ...any) {
 	c := fcolor.New(fcolor.FgRed)
-	c.Fprintf(os.Stderr, errorSymbol+format+"\n", a...)
+
+	_, err := c.Fprintf(os.Stderr, errorSymbol+format+"\n", a...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "notify: failed to print error message: %v\n", err)
+	}
 }
 
 // Error prints a red error message to stderr without a trailing newline, prefixed with a symbol.
 func Error(a ...interface{}) {
-	c := fcolor.New(fcolor.FgRed)
-	c.Fprint(os.Stderr, errorSymbol)
-	c.Fprint(os.Stderr, fmt.Sprint(a...))
+	errorColor := fcolor.New(fcolor.FgRed)
+
+	_, err := errorColor.Fprint(os.Stderr, errorSymbol)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "notify: failed to print error symbol: %v\n", err)
+	}
+
+	_, err = errorColor.Fprint(os.Stderr, fmt.Sprint(a...))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "notify: failed to print error message: %v\n", err)
+	}
 }
 
 // Errorln prints a red error message to stderr with a trailing newline, prefixed with a symbol.

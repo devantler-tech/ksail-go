@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
-	"github.com/devantler-tech/ksail-go/internal/utils"
+	"github.com/devantler-tech/ksail-go/internal/scaffolder"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +38,7 @@ func handleInit() error {
 
 // scaffold generates initial project files according to the provided configuration.
 func scaffold(cfg *ksailcluster.Cluster) error {
-	scaffolder := utils.NewScaffolder(*cfg)
+	scaffolder := scaffolder.NewScaffolder(*cfg)
 
 	fmt.Println("📝 Scaffolding new project")
 
