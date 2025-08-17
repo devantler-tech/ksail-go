@@ -13,11 +13,18 @@ import (
 
 var errRootTest = errors.New("boom")
 
-func TestMain(m *testing.M) {
-	v := m.Run()
-	// Sort snapshots to ensure deterministic order and clean obsolete ones
-	snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	os.Exit(v)
+func TestMain(main *testing.M) {
+	exitCode := main.Run()
+
+	cleaned, err := snaps.Clean(main, snaps.CleanOpts{Sort: true})
+	if err != nil {
+		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	_ = cleaned
+
+	os.Exit(exitCode)
 }
 
 func TestNewRootCmd_VersionFormatting(test *testing.T) {
