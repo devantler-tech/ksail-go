@@ -1,9 +1,14 @@
+// Package main is the entry point for the KSail application.
 package main
 
 import (
+	"os"
+
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 )
 
+//nolint:gochecknoglobals
 var (
 	version = "dev"
 	commit  = "none"
@@ -11,7 +16,13 @@ var (
 )
 
 func main() {
-	cmd.SetVersionInfo(version, commit, date)
-	cmd.Execute()
-}
+	rootCmd := cmd.NewRootCmd(version, commit, date)
 
+	err := rootCmd.Execute()
+	if err != nil {
+		notify.Errorln(err)
+		os.Exit(1)
+	}
+
+	os.Exit(0)
+}
