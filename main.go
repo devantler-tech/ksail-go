@@ -8,8 +8,15 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 )
 
+//nolint:gochecknoglobals
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
-	rootCmd := cmd.NewRootCmd()
+	rootCmd := cmd.NewRootCmd(version, commit, date)
 
 	err := rootCmd.Execute()
 	if err != nil {

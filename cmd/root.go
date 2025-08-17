@@ -13,15 +13,8 @@ import (
 
 // const servicesContextKey contextKey = "services"
 
-//nolint:gochecknoglobals
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-)
-
 // NewRootCmd creates and returns the root command with version info and subcommands.
-func NewRootCmd() *cobra.Command {
+func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ksail",
 		Short: "SDK for operating and managing K8s clusters and workloads",

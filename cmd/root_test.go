@@ -1,4 +1,4 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -24,10 +25,10 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 	test.Parallel()
 
 	// Act
-	version = "1.2.3"
-	commit = "abc123"
-	date = "2025-08-17"
-	cmd := NewRootCmd()
+	version := "1.2.3"
+	commit := "abc123"
+	date := "2025-08-17"
+	cmd := cmd.NewRootCmd(version, commit, date)
 
 	// Assert
 	expectedVersion := version + " (Built on " + date + " from Git SHA " + commit + ")"
@@ -42,7 +43,7 @@ func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
 
 	test.Parallel()
 
-	root := NewRootCmd()
+	root := cmd.NewRootCmd("", "", "")
 	root.SetOut(&out)
 
 	// Act
@@ -64,7 +65,7 @@ func TestExecute_PropagatesError(test *testing.T) {
 	}
 
 	// Act
-	err := Execute(failing)
+	err := cmd.Execute(failing)
 
 	// Assert
 	if err == nil || err.Error() != "boom" {
