@@ -44,7 +44,7 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 	}
 }
 
-func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
+func TestExecute_ShowsHelp(test *testing.T) {
 	// Arrange
 	test.Parallel()
 
