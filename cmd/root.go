@@ -2,20 +2,11 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
 )
-
-// ErrServicesNotInContext is returned when services are not found in the command context.
-var ErrServicesNotInContext = errors.New(
-	"services not found in context - ensure PersistentPreRunE is properly configured",
-)
-
-// ErrInvalidServicesType is returned when the services type in context is invalid.
-var ErrInvalidServicesType = errors.New("invalid services type in context")
 
 // contextKey is an unexported type for keys defined in this package.
 // type contextKey string
@@ -35,9 +26,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	}
 
 	// Set version if available
-	if version != "" {
-		cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
-	}
+	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
 	// Add all subcommands
 	// cmd.AddCommand(NewInitCmd())

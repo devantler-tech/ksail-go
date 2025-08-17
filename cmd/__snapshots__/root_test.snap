@@ -1,0 +1,12 @@
+
+[TestRootCmd_NoArgs_ShowsHelp - 1]
+KSail helps you easily create, manage, and test local Kubernetes clusters and workloads from one simple command line tool.
+
+Usage:
+  ksail [flags]
+
+Flags:
+  -h, --help      help for ksail
+  -v, --version   version for ksail
+
+---
