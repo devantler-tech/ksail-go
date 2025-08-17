@@ -18,7 +18,7 @@ var ErrServicesNotInContext = errors.New(
 var ErrInvalidServicesType = errors.New("invalid services type in context")
 
 // contextKey is an unexported type for keys defined in this package.
-type contextKey string
+// type contextKey string
 
 // const servicesContextKey contextKey = "services"
 
