@@ -20,14 +20,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewRootCmd_VersionFormatting(test *testing.T) {
+	// Arrange
 	test.Parallel()
 
+	// Act
 	version = "1.2.3"
 	commit = "abc123"
 	date = "2025-08-17"
-
 	cmd := NewRootCmd()
 
+	// Assert
 	expectedVersion := version + " (Built on " + date + " from Git SHA " + commit + ")"
 	if cmd.Version != expectedVersion {
 		test.Fatalf("unexpected version string. want %q, got %q", expectedVersion, cmd.Version)
@@ -35,20 +37,23 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 }
 
 func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
+	// Arrange
+	var out bytes.Buffer
+
 	test.Parallel()
 
 	root := NewRootCmd()
-
-	// Capture command's help output (cobra writes help to OutOrStdout)
-	var out bytes.Buffer
-
 	root.SetOut(&out)
 
-	// Snapshot the help output
+	// Act
+	_ = root.Execute()
+
+	// Assert
 	snaps.MatchSnapshot(test, out.String())
 }
 
 func TestExecute_PropagatesError(test *testing.T) {
+	// Arrange
 	test.Parallel()
 
 	failing := &cobra.Command{
@@ -58,7 +63,10 @@ func TestExecute_PropagatesError(test *testing.T) {
 		},
 	}
 
+	// Act
 	err := Execute(failing)
+
+	// Assert
 	if err == nil || err.Error() != "boom" {
 		test.Fatalf("expected error 'boom', got %v", err)
 	}
