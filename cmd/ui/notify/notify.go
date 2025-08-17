@@ -96,45 +96,26 @@ func Activityln(args ...any) {
 
 // notifyf prints a symbol and a formatted message with a trailing newline using the provided color and writer.
 func notifyf(out io.Writer, col *fcolor.Color, symbol, format string, args ...any) {
-	_, err := col.Fprint(out, symbol)
-	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
-		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print symbol: %v\n", err)
-	}
-
-	_, err = col.Fprintf(out, format+"\n", args...)
-	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
-		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)
-	}
+	allArgs := append([]any{symbol}, args...)
+	_, err := col.Fprintf(out, "%s"+format+"\n", allArgs...)
+	handleNotifyError(err)
 }
 
 // notify prints a symbol and message without a trailing newline using the provided color and writer.
 func notify(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
-	_, err := col.Fprint(out, symbol)
-	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
-		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print symbol: %v\n", err)
-	}
-
-	_, err = col.Fprint(out, fmt.Sprint(args...))
-	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
-		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)
-	}
+	_, err := col.Fprint(out, symbol, fmt.Sprint(args...))
+	handleNotifyError(err)
 }
 
 // notifyln prints a symbol and message with a trailing newline using the provided color and writer.
 func notifyln(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
-	_, err := col.Fprint(out, symbol)
-	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
-		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print symbol: %v\n", err)
-	}
+	_, err := col.Fprintln(out, symbol, fmt.Sprint(args...))
+	handleNotifyError(err)
+}
 
-	_, err = col.Fprintln(out, fmt.Sprint(args...))
+// notifyf prints a symbol and a formatted message with a trailing newline using the provided color and writer.
+func handleNotifyError(err error) {
 	if err != nil {
-		// Ignore error from error printing to avoid infinite recursion
 		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)
 	}
 }
