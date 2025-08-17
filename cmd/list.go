@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
-	"github.com/devantler-tech/ksail-go/internal/ui/quiet"
+	"github.com/devantler-tech/ksail-go/cmd/ui/quiet"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +25,12 @@ var listCmd = &cobra.Command{
 // --- internals ---
 
 func handleList() error {
-	if err := quiet.SilenceStdout(func() error {
+	err := quiet.SilenceStdout(func() error {
 		InitServices()
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 

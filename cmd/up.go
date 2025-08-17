@@ -43,7 +43,6 @@ func handleUp() error {
 // provision provisions a cluster based on the provided configuration.
 func provision() error {
 	// TODO: Create local registry 'ksail-registry' with a docker provisioner
-
 	err := provisionCluster()
 	if err != nil {
 		return err
@@ -125,7 +124,7 @@ func provisionCluster() error {
 
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
-		return fmt.Errorf("container engine '%s' is not ready: %v", ksailConfig.Spec.ContainerEngine, err)
+		return fmt.Errorf("container engine '%s' is not ready: %w", ksailConfig.Spec.ContainerEngine, err)
 	}
 
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
@@ -138,7 +137,8 @@ func provisionCluster() error {
 		}
 
 		if exists {
-			if err := clusterProvisioner.Delete(ksailConfig.Metadata.Name); err != nil {
+			err := clusterProvisioner.Delete(ksailConfig.Metadata.Name)
+			if err != nil {
 				return err
 			}
 		}

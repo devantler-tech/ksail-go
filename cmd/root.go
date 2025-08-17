@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/devantler-tech/ksail-go/cmd/inputs"
+	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	factory "github.com/devantler-tech/ksail-go/internal/factories"
 	"github.com/devantler-tech/ksail-go/internal/loader"
-	"github.com/devantler-tech/ksail-go/internal/ui/notify"
 	"github.com/devantler-tech/ksail-go/internal/validators"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	reconciliationtoolbootstrapper "github.com/devantler-tech/ksail-go/pkg/bootstrapper/reconciliation_tool"
@@ -49,7 +49,8 @@ func SetVersionInfo(version, commit, date string) {
 
 // Execute runs the root command.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+	if err != nil {
 		notify.Errorf("%s", err)
 		os.Exit(1)
 	}

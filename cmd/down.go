@@ -36,13 +36,13 @@ func teardown() error {
 
 	ready, err := containerEngineProvisioner.CheckReady()
 	if err != nil || !ready {
-		return fmt.Errorf("container engine '%s' is not ready: %v", ksailConfig.Spec.ContainerEngine, err)
+		return fmt.Errorf("container engine '%s' is not ready: %w", ksailConfig.Spec.ContainerEngine, err)
 	}
 
 	fmt.Printf("✔ '%s' is ready\n", ksailConfig.Spec.ContainerEngine)
 	fmt.Printf("► destroying '%s'\n", ksailConfig.Metadata.Name)
-	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
 
+	exists, err := clusterProvisioner.Exists(ksailConfig.Metadata.Name)
 	if err != nil {
 		return err
 	}

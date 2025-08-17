@@ -42,7 +42,8 @@ func scaffold(cfg *ksailcluster.Cluster) error {
 
 	fmt.Println("📝 Scaffolding new project")
 
-	if err := scaffolder.Scaffold(inputs.Output, inputs.Force); err != nil {
+	err := scaffolder.Scaffold(inputs.Output, inputs.Force)
+	if err != nil {
 		return err
 	}
 
