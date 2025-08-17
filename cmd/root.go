@@ -56,10 +56,7 @@ func Execute(cmd *cobra.Command) error {
 func handleRootRunE(cmd *cobra.Command, _ []string) error {
 	asciiart.PrintKSailLogo()
 
-	err := cmd.Help()
-	if err != nil {
-		return fmt.Errorf("failed to display help: %w", err)
-	}
+	_ = cmd.Help()
 
 	return nil
 }

@@ -53,7 +53,7 @@ func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
 	snaps.MatchSnapshot(test, out.String())
 }
 
-func TestExecute_PropagatesError(test *testing.T) {
+func TestExecute_ReturnsError(test *testing.T) {
 	// Arrange
 	test.Parallel()
 
@@ -70,5 +70,25 @@ func TestExecute_PropagatesError(test *testing.T) {
 	// Assert
 	if err == nil || err.Error() != "boom" {
 		test.Fatalf("expected error 'boom', got %v", err)
+	}
+}
+
+func TestExecute_ReturnsNil(test *testing.T) {
+	// Arrange
+	test.Parallel()
+
+	succeeding := &cobra.Command{
+		Use: "ok",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return nil
+		},
+	}
+
+	// Act
+	err := cmd.Execute(succeeding)
+
+	// Assert
+	if err != nil {
+		test.Fatalf("expected no error, got %v", err)
 	}
 }
