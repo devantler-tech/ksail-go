@@ -57,7 +57,7 @@ func Execute(cmd *cobra.Command) error {
 func handleRootRunE(cmd *cobra.Command, _ []string) error {
 	asciiart.PrintKSailLogo(os.Stdout)
 
-	// The err from cmd.Help() can safely be ignored, as it can never fail at runtime.
+	// The err can safely be ignored, as it can never fail at runtime.
 	_ = cmd.Help()
 
 	return nil
