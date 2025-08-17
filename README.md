@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/devantler-tech/ksail-go/graph/badge.svg?token=HSUfhaiXwq)](https://codecov.io/gh/devantler-tech/ksail-go)
+
 # ksail
 
 > [!IMPORTANT]
