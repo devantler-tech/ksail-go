@@ -20,7 +20,7 @@ func main() {
 
 	err := rootCmd.Execute()
 	if err != nil {
-		notify.Errorln(err)
+		notify.Errorln(rootCmd.ErrOrStderr(), err)
 		os.Exit(1)
 	}
 
