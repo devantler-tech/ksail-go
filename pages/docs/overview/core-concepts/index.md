@@ -40,7 +40,7 @@ By understanding the foundational concepts of cloud-native technologies and how 
       <td>An open-source system for automating deployment, scaling, and management of containerized applications.</td>
     </tr>
     <tr>
-      <td><a href="https://kubernetes-sigs.github.io/kustomize/">Kustomize</a></td>
+      <td><a href="https://kubectl.docs.kubernetes.io/guides/introduction/kustomize/">Kustomize</a></td>
       <td>A tool for customizing Kubernetes configurations without modifying the original YAML files.</td>
     </tr>
     <tr>
