@@ -16,7 +16,7 @@ func TestErrorf(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.ErrorfTo(&out, "%s: %d", "oops", 42)
+	notify.Errorf(&out, "%s: %d", "oops", 42)
 	got := out.String()
 	want := notify.ErrorSymbol + "oops: 42\n"
 
@@ -33,7 +33,7 @@ func TestError(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.ErrorTo(&out, "oops")
+	notify.Error(&out, "oops")
 	got := out.String()
 	want := notify.ErrorSymbol + "oops"
 
@@ -50,7 +50,7 @@ func TestErrorln(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.ErrorlnTo(&out, "oops")
+	notify.Errorln(&out, "oops")
 	got := out.String()
 	want := notify.ErrorSymbol + "oops\n"
 
@@ -67,7 +67,7 @@ func TestWarnf(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.WarnfTo(&out, "%s", "careful")
+	notify.Warnf(&out, "%s", "careful")
 	got := out.String()
 	want := notify.WarningSymbol + "careful\n"
 
@@ -84,7 +84,7 @@ func TestWarn(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.WarnTo(&out, "careful")
+	notify.Warn(&out, "careful")
 	got := out.String()
 	want := notify.WarningSymbol + "careful"
 
@@ -101,7 +101,7 @@ func TestWarnln(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.WarnlnTo(&out, "careful")
+	notify.Warnln(&out, "careful")
 	got := out.String()
 	want := notify.WarningSymbol + "careful\n"
 
@@ -118,7 +118,7 @@ func TestSuccessf(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.SuccessfTo(&out, "%s", "done")
+	notify.Successf(&out, "%s", "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done\n"
 
@@ -135,7 +135,7 @@ func TestSuccess(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.SuccessTo(&out, "done")
+	notify.Success(&out, "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done"
 
@@ -152,7 +152,7 @@ func TestSuccessln(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.SuccesslnTo(&out, "done")
+	notify.Successln(&out, "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done\n"
 
@@ -169,7 +169,7 @@ func TestActivityf(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.ActivityfTo(&out, "%s", "working")
+	notify.Activityf(&out, "%s", "working")
 	got := out.String()
 	want := notify.ActivitySymbol + "working\n"
 
@@ -186,7 +186,7 @@ func TestActivity(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.ActivityTo(&out, "working")
+	notify.Activity(&out, "working")
 	got := out.String()
 	want := notify.ActivitySymbol + "working"
 
@@ -203,7 +203,7 @@ func TestActivityln(test *testing.T) {
 	var out bytes.Buffer
 
 	// Act
-	notify.ActivitylnTo(&out, "working")
+	notify.Activityln(&out, "working")
 	got := out.String()
 	want := notify.ActivitySymbol + "working\n"
 
