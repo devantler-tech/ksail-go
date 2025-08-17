@@ -39,9 +39,9 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 
 func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
 	// Arrange
-	var out bytes.Buffer
-
 	test.Parallel()
+
+	var out bytes.Buffer
 
 	root := cmd.NewRootCmd("", "", "")
 	root.SetOut(&out)

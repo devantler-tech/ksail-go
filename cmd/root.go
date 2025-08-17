@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func Execute(cmd *cobra.Command) error {
 
 // handleRootRunE handles the root command.
 func handleRootRunE(cmd *cobra.Command, _ []string) error {
-	asciiart.PrintKSailLogo()
+	asciiart.PrintKSailLogo(os.Stdout)
 
 	_ = cmd.Help()
 
