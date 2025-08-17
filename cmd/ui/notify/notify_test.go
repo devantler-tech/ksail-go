@@ -137,7 +137,7 @@ func TestSuccess(test *testing.T) {
   // Act
 	notify.SuccessTo(&out, "done")
 	got := out.String()
-	want := notify.SuccessSymbol + "done\n"
+	want := notify.SuccessSymbol + "done"
 
   // Assert
 	if got != want {

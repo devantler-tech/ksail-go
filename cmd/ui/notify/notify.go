@@ -145,7 +145,7 @@ func notify(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
 
 // notifyln prints a symbol and message with a trailing newline using the provided color and writer.
 func notifyln(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
-	_, err := col.Fprintln(out, symbol, fmt.Sprint(args...))
+	_, err := col.Fprintln(out, symbol+fmt.Sprint(args...))
 	handleNotifyError(err)
 }
 
