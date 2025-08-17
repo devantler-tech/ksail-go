@@ -1,10 +1,6 @@
 version: "2"
 linters:
   default: all
-  disable:
-    - wsl
-  enable:
-    - wsl_v5
   settings:
     depguard:
       rules:
