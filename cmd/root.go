@@ -20,7 +20,7 @@ var ErrInvalidServicesType = errors.New("invalid services type in context")
 // contextKey is an unexported type for keys defined in this package.
 type contextKey string
 
-const servicesContextKey contextKey = "services"
+// const servicesContextKey contextKey = "services"
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
