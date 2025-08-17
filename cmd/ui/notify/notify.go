@@ -21,75 +21,111 @@ const (
 )
 
 // Errorf prints a red error message to stderr, prefixed with a symbol.
-func Errorf(format string, args ...any) {
+func Errorf(format string, args ...any) { ErrorfTo(os.Stderr, format, args...) }
+
+// ErrorfTo prints a red error message to the provided writer, prefixed with a symbol.
+func ErrorfTo(out io.Writer, format string, args ...any) {
 	color := fcolor.New(fcolor.FgRed)
-	notifyf(os.Stderr, color, ErrorSymbol, format, args...)
+	notifyf(out, color, ErrorSymbol, format, args...)
 }
 
 // Error prints a red error message to stderr without a trailing newline, prefixed with a symbol.
-func Error(args ...any) {
+func Error(args ...any) { ErrorTo(os.Stderr, args...) }
+
+// ErrorTo prints a red error message to the provided writer without a trailing newline, prefixed with a symbol.
+func ErrorTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgRed)
-	notify(os.Stderr, color, ErrorSymbol, args...)
+	notify(out, color, ErrorSymbol, args...)
 }
 
 // Errorln prints a red error message to stderr with a trailing newline, prefixed with a symbol.
-func Errorln(args ...any) {
+func Errorln(args ...any) { ErrorlnTo(os.Stderr, args...) }
+
+// ErrorlnTo prints a red error message to the provided writer with a trailing newline, prefixed with a symbol.
+func ErrorlnTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgRed)
-	notifyln(os.Stderr, color, ErrorSymbol, args...)
+	notifyln(out, color, ErrorSymbol, args...)
 }
 
 // Warnf prints a yellow warning message to stdout, prefixed with a symbol.
-func Warnf(format string, args ...any) {
+func Warnf(format string, args ...any) { WarnfTo(os.Stdout, format, args...) }
+
+// WarnfTo prints a yellow warning message to the provided writer, prefixed with a symbol.
+func WarnfTo(out io.Writer, format string, args ...any) {
 	color := fcolor.New(fcolor.FgYellow)
-	notifyf(os.Stdout, color, WarningSymbol, format, args...)
+	notifyf(out, color, WarningSymbol, format, args...)
 }
 
 // Warn prints a yellow warning message to stdout without a trailing newline, prefixed with a symbol.
-func Warn(args ...any) {
+func Warn(args ...any) { WarnTo(os.Stdout, args...) }
+
+// WarnTo prints a yellow warning message to the provided writer without a trailing newline, prefixed with a symbol.
+func WarnTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgYellow)
-	notify(os.Stdout, color, WarningSymbol, args...)
+	notify(out, color, WarningSymbol, args...)
 }
 
 // Warnln prints a yellow warning message to stdout with a trailing newline, prefixed with a symbol.
-func Warnln(args ...any) {
+func Warnln(args ...any) { WarnlnTo(os.Stdout, args...) }
+
+// WarnlnTo prints a yellow warning message to the provided writer with a trailing newline, prefixed with a symbol.
+func WarnlnTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgYellow)
-	notifyln(os.Stdout, color, WarningSymbol, args...)
+	notifyln(out, color, WarningSymbol, args...)
 }
 
 // Successf prints a green success message to stdout, prefixed with a symbol.
-func Successf(format string, args ...any) {
+func Successf(format string, args ...any) { SuccessfTo(os.Stdout, format, args...) }
+
+// SuccessfTo prints a green success message to the provided writer, prefixed with a symbol.
+func SuccessfTo(out io.Writer, format string, args ...any) {
 	color := fcolor.New(fcolor.FgGreen)
-	notifyf(os.Stdout, color, SuccessSymbol, format, args...)
+	notifyf(out, color, SuccessSymbol, format, args...)
 }
 
 // Success prints a green success message to stdout without a trailing newline, prefixed with a symbol.
-func Success(args ...any) {
+func Success(args ...any) { SuccessTo(os.Stdout, args...) }
+
+// SuccessTo prints a green success message to the provided writer without a trailing newline, prefixed with a symbol.
+func SuccessTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgGreen)
-	notify(os.Stdout, color, SuccessSymbol, args...)
+	notify(out, color, SuccessSymbol, args...)
 }
 
 // Successln prints a green success message to stdout with a trailing newline, prefixed with a symbol.
-func Successln(args ...any) {
+func Successln(args ...any) { SuccesslnTo(os.Stdout, args...) }
+
+// SuccesslnTo prints a green success message to the provided writer with a trailing newline, prefixed with a symbol.
+func SuccesslnTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgGreen)
-	notifyln(os.Stdout, color, SuccessSymbol, args...)
+	notifyln(out, color, SuccessSymbol, args...)
 }
 
 // Activityf prints a blue activity message to stdout, prefixed with a symbol.
-func Activityf(format string, args ...any) {
+func Activityf(format string, args ...any) { ActivityfTo(os.Stdout, format, args...) }
+
+// ActivityfTo prints a blue activity message to the provided writer, prefixed with a symbol.
+func ActivityfTo(out io.Writer, format string, args ...any) {
 	color := fcolor.New(fcolor.FgBlue)
-	notifyf(os.Stdout, color, ActivitySymbol, format, args...)
+	notifyf(out, color, ActivitySymbol, format, args...)
 }
 
 // Activity prints a blue activity message to stdout without a trailing newline, prefixed with a symbol.
-func Activity(args ...any) {
+func Activity(args ...any) { ActivityTo(os.Stdout, args...) }
+
+// ActivityTo prints a blue activity message to the provided writer without a trailing newline, prefixed with a symbol.
+func ActivityTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgBlue)
-	notify(os.Stdout, color, ActivitySymbol, args...)
+	notify(out, color, ActivitySymbol, args...)
 }
 
 // Activityln prints a blue activity message to stdout with a trailing newline, prefixed with a symbol.
-func Activityln(args ...any) {
+func Activityln(args ...any) { ActivitylnTo(os.Stdout, args...) }
+
+// ActivitylnTo prints a blue activity message to the provided writer with a trailing newline, prefixed with a symbol.
+func ActivitylnTo(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgBlue)
-	notifyln(os.Stdout, color, ActivitySymbol, args...)
+	notifyln(out, color, ActivitySymbol, args...)
 }
 
 // --- internals ---
@@ -109,7 +145,7 @@ func notify(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
 
 // notifyln prints a symbol and message with a trailing newline using the provided color and writer.
 func notifyln(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
-	_, err := col.Fprintln(out, symbol, fmt.Sprint(args...))
+	_, err := col.Fprintln(out, symbol+fmt.Sprint(args...))
 	handleNotifyError(err)
 }
 
