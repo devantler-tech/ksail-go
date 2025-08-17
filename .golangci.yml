@@ -23,7 +23,9 @@ linters:
     exhaustruct:
       exclude:
         - '.+/cobra\.Command$'
-    forbidigo:
-      forbid:
-        - pattern: ^(fmt\\.Print(|f|ln)|print|println)$
-          pkg: ^(?!github.com/devantler-tech/ksail-go/cmd).*$
+
+  exclusions:
+    rules:
+      - path: 'cmd/.+'
+        linters:
+          - forbidigo
