@@ -69,7 +69,7 @@ func handleRootRunE(cmd *cobra.Command, _ []string) error {
 
 	err := cmd.Help()
 	if err != nil {
-		return fmt.Errorf("%w", err)
+		return fmt.Errorf("failed to display help: %w", err)
 	}
 
 	return nil
