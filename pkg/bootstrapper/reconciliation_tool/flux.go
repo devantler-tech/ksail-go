@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/utils"
+	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	helmclient "github.com/mittwald/go-helm-client"
 )
 
@@ -40,6 +40,7 @@ func (b *FluxBootstrapper) Uninstall() error {
 	if err != nil {
 		return err
 	}
+
 	return client.UninstallReleaseByName("flux-operator")
 }
 
@@ -63,16 +64,20 @@ func helmInstallOrUpgradeFluxOperator(b *FluxBootstrapper) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
+
 	_, err = client.InstallOrUpgradeChart(ctx, &spec, nil)
+
 	return err
 }
 
 func (b *FluxBootstrapper) newHelmClient() (helmclient.Client, error) {
-	kubeconfigPath, _ := utils.ExpandPath(b.kubeconfig)
+	kubeconfigPath, _ := pathutils.ExpandPath(b.kubeconfig)
+
 	data, err := os.ReadFile(kubeconfigPath)
 	if err != nil {
 		return nil, err
 	}
+
 	opts := &helmclient.KubeConfClientOptions{
 		Options: &helmclient.Options{
 			Namespace: "flux-system",
@@ -80,5 +85,6 @@ func (b *FluxBootstrapper) newHelmClient() (helmclient.Client, error) {
 		KubeConfig:  data,
 		KubeContext: b.context,
 	}
+
 	return helmclient.NewClientFromKubeConf(opts)
 }

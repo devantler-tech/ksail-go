@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"slices"
 
-	"github.com/devantler-tech/ksail-go/internal/utils"
+	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -26,6 +26,7 @@ func (k *KindClusterProvisioner) Create(name string) error {
 	if target == "" {
 		target = k.ksailConfig.Metadata.Name
 	}
+
 	return k.dockerProvider.Create(
 		target,
 		cluster.CreateWithV1Alpha4Config(k.kindConfig),
@@ -40,10 +41,12 @@ func (k *KindClusterProvisioner) Delete(name string) error {
 	if target == "" {
 		target = k.ksailConfig.Metadata.Name
 	}
-	kubeconfigPath, err := utils.ExpandPath(k.ksailConfig.Spec.Connection.Kubeconfig)
+
+	kubeconfigPath, err := pathutils.ExpandPath(k.ksailConfig.Spec.Connection.Kubeconfig)
 	if err != nil {
 		return err
 	}
+
 	return k.dockerProvider.Delete(target, kubeconfigPath)
 }
 
@@ -53,22 +56,30 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	if target == "" {
 		target = k.ksailConfig.Metadata.Name
 	}
+
 	nodes, err := k.dockerProvider.ListNodes(target)
 	if err != nil {
 		return err
 	}
+
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s' not found", target)
 	}
+
 	for _, n := range nodes {
 		// Start each node container by name
 		cmd := exec.Command("docker", "start", n.String())
+
 		var stderr bytes.Buffer
+
 		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("docker start failed: %v: %s", err, stderr.String())
+
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("docker start failed: %w: %s", err, stderr.String())
 		}
 	}
+
 	return nil
 }
 
@@ -78,22 +89,30 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	if target == "" {
 		target = k.ksailConfig.Metadata.Name
 	}
+
 	nodes, err := k.dockerProvider.ListNodes(target)
 	if err != nil {
 		return err
 	}
+
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s' not found", target)
 	}
+
 	for _, n := range nodes {
 		// Stop each node container by name
 		cmd := exec.Command("docker", "stop", n.String())
+
 		var stderr bytes.Buffer
+
 		cmd.Stderr = &stderr
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("docker stop failed: %v: %s", err, stderr.String())
+
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Errorf("docker stop failed: %w: %s", err, stderr.String())
 		}
 	}
+
 	return nil
 }
 
@@ -108,13 +127,16 @@ func (k *KindClusterProvisioner) Exists(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	target := name
 	if target == "" {
 		target = k.ksailConfig.Metadata.Name
 	}
+
 	if slices.Contains(clusters, target) {
 		return true, nil
 	}
+
 	return false, nil
 }
 

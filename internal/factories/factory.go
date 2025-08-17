@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/devantler-tech/ksail-go/internal/loader"
-	"github.com/devantler-tech/ksail-go/internal/utils"
+	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	ksailcluster "github.com/devantler-tech/ksail-go/pkg/apis/v1alpha1/cluster"
 	reconciliationtoolbootstrapper "github.com/devantler-tech/ksail-go/pkg/bootstrapper/reconciliation_tool"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
@@ -49,7 +49,7 @@ func ContainerEngineProvisioner(cfg *ksailcluster.Cluster) (containerengineprovi
 }
 
 func ReconciliationTool(cfg *ksailcluster.Cluster) (reconciliationtoolbootstrapper.Bootstrapper, error) {
-	kubeconfigPath, err := utils.ExpandPath(cfg.Spec.Connection.Kubeconfig)
+	kubeconfigPath, err := pathutils.ExpandPath(cfg.Spec.Connection.Kubeconfig)
 	if err != nil {
 		return nil, err
 	}

@@ -30,6 +30,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	if target == "" {
 		target = k.cfg.Metadata.Name
 	}
+
 	k.simpleCfg.Name = target
 
 	// Transform SimpleConfig -> ClusterConfig
@@ -46,6 +47,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	if err := k3dclient.ClusterRun(ctx, rt, clusterCfg); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -53,11 +55,14 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 func (k *K3dClusterProvisioner) Delete(name string) error {
 	ctx := context.Background()
 	rt := k3drt.SelectedRuntime
+
 	target := name
 	if target == "" {
 		target = k.cfg.Metadata.Name
 	}
+
 	cluster := &k3dtypes.Cluster{Name: target}
+
 	return k3dclient.ClusterDelete(ctx, rt, cluster, k3dtypes.ClusterDeleteOpts{})
 }
 
@@ -65,14 +70,17 @@ func (k *K3dClusterProvisioner) Delete(name string) error {
 func (k *K3dClusterProvisioner) Start(name string) error {
 	ctx := context.Background()
 	rt := k3drt.SelectedRuntime
+
 	target := name
 	if target == "" {
 		target = k.cfg.Metadata.Name
 	}
+
 	c, err := k3dclient.ClusterGet(ctx, rt, &k3dtypes.Cluster{Name: target})
 	if err != nil {
 		return err
 	}
+
 	return k3dclient.ClusterStart(ctx, rt, c, k3dtypes.ClusterStartOpts{})
 }
 
@@ -80,14 +88,17 @@ func (k *K3dClusterProvisioner) Start(name string) error {
 func (k *K3dClusterProvisioner) Stop(name string) error {
 	ctx := context.Background()
 	rt := k3drt.SelectedRuntime
+
 	target := name
 	if target == "" {
 		target = k.cfg.Metadata.Name
 	}
+
 	c, err := k3dclient.ClusterGet(ctx, rt, &k3dtypes.Cluster{Name: target})
 	if err != nil {
 		return err
 	}
+
 	return k3dclient.ClusterStop(ctx, rt, c)
 }
 
@@ -95,14 +106,17 @@ func (k *K3dClusterProvisioner) Stop(name string) error {
 func (k *K3dClusterProvisioner) List() ([]string, error) {
 	ctx := context.Background()
 	rt := k3drt.SelectedRuntime
+
 	clusters, err := k3dclient.ClusterList(ctx, rt)
 	if err != nil {
 		return nil, err
 	}
+
 	out := make([]string, 0, len(clusters))
 	for _, c := range clusters {
 		out = append(out, c.Name)
 	}
+
 	return out, nil
 }
 
@@ -112,10 +126,12 @@ func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	target := name
 	if target == "" {
 		target = k.cfg.Metadata.Name
 	}
+
 	return slices.Contains(clusters, target), nil
 }
 

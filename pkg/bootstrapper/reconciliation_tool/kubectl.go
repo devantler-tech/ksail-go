@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/utils"
+	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,18 +58,24 @@ func (b *KubectlBootstrapper) Install() error {
 	defer cancel()
 
 	const crdName = "applysets.k8s.devantler.tech"
+
 	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(context, crdName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		fmt.Println("► applying applysets crd 'applysets.k8s.devantler.tech'")
-		if err := b.applyCRD(context, apiExtClient); err != nil {
+
+		err := b.applyCRD(context, apiExtClient)
+		if err != nil {
 			return err
 		}
-		if err := b.waitForCRDEstablished(context, apiExtClient, crdName); err != nil {
+
+		err = b.waitForCRDEstablished(context, apiExtClient, crdName)
+		if err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	}
+
 	fmt.Println("✔ applysets crd 'applysets.k8s.devantler.tech' applied")
 
 	// --- CR (ApplySet parent) ---
@@ -77,18 +83,25 @@ func (b *KubectlBootstrapper) Install() error {
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
+
 	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
+
 	const applySetName = "ksail"
+
 	_, err = dynClient.Resource(gvr).Get(context, applySetName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		fmt.Println("► applying applysets cr 'ksail'")
-		if err := b.applyApplySetCR(context, dynClient, gvr, applySetName); err != nil {
+
+		err := b.applyApplySetCR(context, dynClient, gvr, applySetName)
+		if err != nil {
 			return err
 		}
 	} else if err != nil {
 		return fmt.Errorf("failed to get ApplySet CR: %w", err)
 	}
+
 	fmt.Println("✔ applysets cr 'ksail' applied")
+
 	return nil
 }
 
@@ -98,6 +111,7 @@ func (b *KubectlBootstrapper) Uninstall() error {
 	if err != nil {
 		return err
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
@@ -105,6 +119,7 @@ func (b *KubectlBootstrapper) Uninstall() error {
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
+
 	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
 	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", metav1.DeleteOptions{}) // ignore errors (including NotFound)
 
@@ -112,24 +127,30 @@ func (b *KubectlBootstrapper) Uninstall() error {
 	if err != nil {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
+
 	_ = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{})
+
 	return nil
 }
 
 // --- internals ---
 
 func (b *KubectlBootstrapper) buildRESTConfig() (*rest.Config, error) {
-	kubeconfigPath, _ := utils.ExpandPath(b.kubeconfig)
+	kubeconfigPath, _ := pathutils.ExpandPath(b.kubeconfig)
 	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+
 	overrides := &clientcmd.ConfigOverrides{}
 	if b.context != "" {
 		overrides.CurrentContext = b.context
 	}
+
 	clientCfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
+
 	restConfig, err := clientCfg.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build rest config: %w", err)
 	}
+
 	return restConfig, nil
 }
 
@@ -146,12 +167,15 @@ func (b *KubectlBootstrapper) applyCRD(ctx context.Context, c *apiextensionsclie
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing CRD for update: %w", getErr)
 		}
+
 		crd.ResourceVersion = existing.ResourceVersion
 		if _, uerr := c.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{}); uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
+
 		return nil
 	}
+
 	return err
 }
 
@@ -159,22 +183,27 @@ func (b *KubectlBootstrapper) waitForCRDEstablished(ctx context.Context, c *apie
 	// Poll every 500ms until Established=True or timeout
 	pollCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
+
 	return wait.PollUntilContextTimeout(pollCtx, 500*time.Millisecond, b.timeout, true, func(ctx context.Context) (bool, error) {
 		crd, err := c.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
+
 			return false, err
 		}
+
 		for _, cond := range crd.Status.Conditions {
 			if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
 				return true, nil
 			}
+
 			if cond.Type == apiextensionsv1.NamesAccepted && cond.Status == apiextensionsv1.ConditionFalse && cond.Reason == "MultipleNamesNotAllowed" {
 				return false, errors.New(cond.Message)
 			}
 		}
+
 		return false, nil
 	})
 }
@@ -187,17 +216,22 @@ func (b *KubectlBootstrapper) applyApplySetCR(ctx context.Context, dyn dynamic.I
 	// Ensure GVK since yaml->map won't set it.
 	u.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	u.SetName(name)
+
 	_, err := dyn.Resource(gvr).Create(ctx, &u, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing ApplySet: %w", getErr)
 		}
+
 		u.SetResourceVersion(existing.GetResourceVersion())
+
 		if _, uerr := dyn.Resource(gvr).Update(ctx, &u, metav1.UpdateOptions{}); uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}
+
 		return nil
 	}
+
 	return err
 }
