@@ -12,4 +12,8 @@ linters:
           allow:
             - $gostd
             - github.com/devantler-tech/ksail-go
+            - github.com/k3d-io/k3d
             - github.com/spf13/cobra
+            - sigs.k8s.io
+    revive:
+      enable-all-rules: true

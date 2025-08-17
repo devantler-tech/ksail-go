@@ -28,23 +28,31 @@ func (v *ConfigValidator) Validate() error {
 	if v.cfg == nil {
 		return errors.New("config is nil")
 	}
+
 	fmt.Println("🕵 Validating project files and config")
 	fmt.Println("► locating config")
+
 	projectRoot, err := locateProjectRoot()
 	if err != nil {
 		fmt.Println("✔ skipping config validation")
 		fmt.Println("  - no configuration files found in current or parent directories")
+
 		return nil
 	}
+
 	fmt.Printf("✔ located config in '%s'\n", projectRoot)
 	fmt.Printf("► validating config in '%s'\n", projectRoot)
+
 	if err := v.checkContextName(v.cfg); err != nil {
 		return err
 	}
+
 	if err := v.checkDistributionConfig(projectRoot, v.cfg); err != nil {
 		return err
 	}
+
 	fmt.Println("✔ configuration is valid")
+
 	return nil
 }
 
