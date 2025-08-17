@@ -55,7 +55,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 func Execute(cmd *cobra.Command) error {
 	err := cmd.Execute()
 	if err != nil {
-		return fmt.Errorf("command execution failed: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
