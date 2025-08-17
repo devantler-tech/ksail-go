@@ -13,11 +13,18 @@ import (
 
 var errRootTest = errors.New("boom")
 
-func TestMain(m *testing.M) {
-	v := m.Run()
-	// Sort snapshots to ensure deterministic order and clean obsolete ones
-	snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	os.Exit(v)
+func TestMain(main *testing.M) {
+	exitCode := main.Run()
+
+	cleaned, err := snaps.Clean(main, snaps.CleanOpts{Sort: true})
+	if err != nil {
+		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	_ = cleaned
+
+	os.Exit(exitCode)
 }
 
 func TestNewRootCmd_VersionFormatting(test *testing.T) {
@@ -39,9 +46,9 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 
 func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
 	// Arrange
-	var out bytes.Buffer
-
 	test.Parallel()
+
+	var out bytes.Buffer
 
 	root := cmd.NewRootCmd("", "", "")
 	root.SetOut(&out)
@@ -53,7 +60,7 @@ func TestRootCmd_NoArgs_ShowsHelp(test *testing.T) {
 	snaps.MatchSnapshot(test, out.String())
 }
 
-func TestExecute_PropagatesError(test *testing.T) {
+func TestExecute_ReturnsError(test *testing.T) {
 	// Arrange
 	test.Parallel()
 
@@ -70,5 +77,25 @@ func TestExecute_PropagatesError(test *testing.T) {
 	// Assert
 	if err == nil || err.Error() != "boom" {
 		test.Fatalf("expected error 'boom', got %v", err)
+	}
+}
+
+func TestExecute_ReturnsNil(test *testing.T) {
+	// Arrange
+	test.Parallel()
+
+	succeeding := &cobra.Command{
+		Use: "ok",
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return nil
+		},
+	}
+
+	// Act
+	err := cmd.Execute(succeeding)
+
+	// Assert
+	if err != nil {
+		test.Fatalf("expected no error, got %v", err)
 	}
 }

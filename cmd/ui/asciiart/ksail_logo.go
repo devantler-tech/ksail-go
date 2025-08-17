@@ -3,15 +3,23 @@ package asciiart
 
 import (
 	_ "embed"
-	"fmt"
+	"io"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 //go:embed ksail.txt
 var ksailLogo string
 
+const (
+	greenCyanSplitIndex = 32
+	blueStartIndex      = 37
+	cyanStartIndex      = 38
+)
+
 // PrintKSailLogo displays the KSail ASCII art with colored formatting.
-func PrintKSailLogo() {
+func PrintKSailLogo(writer io.Writer) {
 	const yellowLines = 4
 
 	lines := strings.Split(ksailLogo, "\n")
@@ -19,46 +27,47 @@ func PrintKSailLogo() {
 	for index, line := range lines {
 		switch {
 		case index < yellowLines:
-			printYellowPart(line)
+			printlnc(writer, colorYellow(), line)
 		case index == yellowLines:
-			printBluePart(line)
+			printlnc(writer, colorBlue(), line)
 		case index > yellowLines && index < 7:
-			printGreenBlueCyanPart(line)
+			printGreenBlueCyanPart(writer, line)
 		case index > 6 && index < len(lines)-2:
-			printGreenCyanPart(line)
+			printGreenCyanPart(writer, line)
 		default:
-			printBluePart(line)
+			printlnc(writer, colorBlue(), line)
 		}
 	}
 }
 
-func printYellowPart(line string) {
-	fmt.Println("\x1b[1;33m" + line + "\x1b[0m")
-}
+// --- internals ---
 
-func printBluePart(line string) {
-	fmt.Println("\x1b[1;34m" + line + "\x1b[0m")
-}
+// small helpers to reduce repetition.
+func printc(out io.Writer, c *color.Color, s string)   { _, _ = c.Fprint(out, s) }
+func printlnc(out io.Writer, c *color.Color, s string) { _, _ = c.Fprintln(out, s) }
 
-func printGreenBlueCyanPart(line string) {
-	charThirtyEight := 38
-	if len(line) >= charThirtyEight {
-		fmt.Print("\x1b[1;32m" + line[:32] + "\x1b[0m")
-		fmt.Print("\x1B[36m" + line[32:37] + "\x1b[0m")
-		fmt.Print("\x1b[1;34m" + line[37:charThirtyEight] + "\x1b[0m")
-		fmt.Println("\x1B[36m" + line[38:] + "\x1b[0m")
+// color constructors (avoid package globals for linter compliance).
+func colorYellow() *color.Color { return color.New(color.Bold, color.FgYellow) }
+func colorBlue() *color.Color   { return color.New(color.Bold, color.FgBlue) }
+func colorGreen() *color.Color  { return color.New(color.Bold, color.FgGreen) }
+func colorCyan() *color.Color   { return color.New(color.FgCyan) }
+
+func printGreenBlueCyanPart(out io.Writer, line string) {
+	if len(line) >= cyanStartIndex {
+		printc(out, colorGreen(), line[:greenCyanSplitIndex])
+		printc(out, colorCyan(), line[greenCyanSplitIndex:blueStartIndex])
+		printc(out, colorBlue(), line[blueStartIndex:cyanStartIndex])
+		printlnc(out, colorCyan(), line[cyanStartIndex:])
 	} else {
-		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
+		printlnc(out, colorGreen(), line)
 	}
 }
 
-const greenCyanSplitIndex = 32
-
-func printGreenCyanPart(line string) {
+func printGreenCyanPart(out io.Writer, line string) {
 	if len(line) >= greenCyanSplitIndex {
-		fmt.Print("\x1b[1;32m" + line[:greenCyanSplitIndex] + "\x1b[0m")
-		fmt.Println("\x1B[36m" + line[greenCyanSplitIndex:] + "\x1b[0m")
+		printc(out, colorGreen(), line[:greenCyanSplitIndex])
+		printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
 	} else {
-		fmt.Println("\x1b[1;32m" + line + "\x1b[0m")
+		printlnc(out, colorGreen(), line)
 	}
 }
