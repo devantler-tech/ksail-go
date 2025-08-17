@@ -4,7 +4,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
@@ -56,9 +55,9 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 func Execute(cmd *cobra.Command) error {
 	err := cmd.Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		os.Exit(1)
+		return fmt.Errorf("command execution failed: %w", err)
 	}
+
 	return nil
 }
 
