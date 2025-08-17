@@ -135,7 +135,7 @@ func TestSuccess(test *testing.T) {
 	var out bytes.Buffer
 
   // Act
-	notify.SuccessfTo(&out, "%s", "done")
+	notify.SuccessTo(&out, "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done\n"
 
