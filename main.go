@@ -11,6 +11,6 @@ var (
 )
 
 func main() {
-	cmd.SetVersionInfo(version, commit, date)
-	cmd.Execute()
+	rootCmd := cmd.NewRootCmd(version, commit, date)
+  rootCmd.Execute()
 }

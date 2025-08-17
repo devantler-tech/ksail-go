@@ -20,3 +20,6 @@ linters:
             - github.com/k3d-io/k3d
             - github.com/spf13/cobra
             - sigs.k8s.io
+    exhaustruct:
+      exclude:
+        - '.+/cobra\.Command$'
