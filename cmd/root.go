@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
 )
 
@@ -17,10 +18,10 @@ var ErrServicesNotInContext = errors.New(
 // ErrInvalidServicesType is returned when the services type in context is invalid.
 var ErrInvalidServicesType = errors.New("invalid services type in context")
 
-// // contextKey is an unexported type for keys defined in this package.
-// type contextKey string
+// contextKey is an unexported type for keys defined in this package.
+type contextKey string
 
-// const servicesContextKey contextKey = "services"
+const servicesContextKey contextKey = "services"
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
@@ -65,7 +66,7 @@ func Execute(cmd *cobra.Command) error {
 
 // handleRootRunE handles the root command.
 func handleRootRunE(cmd *cobra.Command, _ []string) error {
-	//asciiart.PrintKSailLogo()
+	asciiart.PrintKSailLogo()
 
 	err := cmd.Help()
 	if err != nil {
