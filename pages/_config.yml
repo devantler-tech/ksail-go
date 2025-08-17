@@ -22,6 +22,8 @@ gh_edit_repository: https://github.com/devantler-tech/ksail-go
 gh_edit_branch: main
 gh_edit_view_mode: tree
 
+color_scheme: dark
+
 back_to_top: true
 back_to_top_text: "Back to top"
 
@@ -32,15 +34,3 @@ defaults:
       path: "" # an empty string here means all files in the project
     values:
       layout: "default"
-
-exclude:
-  - .github/
-  - .vscode/
-  - src/
-  - tests/
-  - .editorconfig
-  - .gitignore
-  - .releaserc
-  - Dockerfile
-  - KSail.slnx
-  - entitlements.xml
