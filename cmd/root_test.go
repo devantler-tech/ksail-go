@@ -22,9 +22,9 @@ func TestMain(m *testing.M) {
 func TestNewRootCmd_VersionFormatting(test *testing.T) {
 	test.Parallel()
 
-	version := "1.2.3"
-	commit := "abc123"
-	date := "2025-08-17"
+	version = "1.2.3"
+	commit = "abc123"
+	date = "2025-08-17"
 
 	cmd := NewRootCmd()
 
