@@ -60,7 +60,6 @@ jobs:
           ./ksail start
           ./ksail update
           ./ksail down
-          ./ksail down
       
       - name: 🧹 Cleanup
         run: |
