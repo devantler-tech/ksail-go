@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/inputs"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,8 @@ func NewInitCmd() *cobra.Command {
 	}
 
 	// Add flags for initialization options
-	inputs.AddInitFlags(cmd)
+	cmd.Flags().String("container-engine", "Docker", "Container engine to use (Docker, Podman)")
+	cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d)")
 
 	return cmd
 }

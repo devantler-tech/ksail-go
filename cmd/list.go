@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/inputs"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
@@ -17,7 +16,7 @@ func NewListCmd() *cobra.Command {
 	}
 
 	// Add flags
-	inputs.AddListFlags(cmd)
+	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
 	return cmd
 }

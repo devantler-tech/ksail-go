@@ -55,9 +55,8 @@ jobs:
           ./ksail up
           ./ksail status
           ./ksail list
-          ./ksail stop
           ./ksail start
-          ./ksail update
+          ./ksail reconcile
           ./ksail down
 
       - name: 🧹 Cleanup

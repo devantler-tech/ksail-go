@@ -23,11 +23,11 @@ Available Commands:
   help        Help about any command
   init        Initialize a new KSail project
   list        List Kubernetes clusters
+  reconcile   Reconcile workloads in the Kubernetes cluster
   start       Start a stopped Kubernetes cluster
   status      Show status of the Kubernetes cluster
   stop        Stop the Kubernetes cluster
   up          Start the Kubernetes cluster
-  update      Update the Kubernetes cluster
 
 Flags:
   -h, --help      help for ksail

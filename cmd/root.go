@@ -36,7 +36,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd.AddCommand(NewStopCmd())
 	cmd.AddCommand(NewListCmd())
 	cmd.AddCommand(NewStatusCmd())
-	cmd.AddCommand(NewUpdateCmd())
+	cmd.AddCommand(NewReconcileCmd())
 
 	return cmd
 }
