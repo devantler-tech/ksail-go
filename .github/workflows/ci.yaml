@@ -3,14 +3,104 @@ name: CI - Go (Repo)
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions: {}
 
 jobs:
   ci:
+    # Only run CI job on push to main
+    if: github.event_name == 'push'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@520deec4d29878861a424a93f35ac7b310406380 # v1.11.7
     permissions:
       contents: write
       issues: write
       packages: read
       pull-requests: write
+
+  system-test:
+    name: System test
+    runs-on: ubuntu-latest
+    # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
+    needs: [ci]
+    if: always() && (needs.ci.result == 'success' || (github.event_name == 'pull_request' && needs.ci.result == 'skipped'))
+    strategy:
+      matrix:
+        init-args:
+          - "init --container-engine Docker --distribution Kind --deployment-tool Kubectl"
+          - "init --container-engine Docker --distribution Kind --deployment-tool Kubectl --secret-manager SOPS"
+          - "init --container-engine Docker --distribution Kind --deployment-tool Flux"
+          - "init --container-engine Docker --distribution Kind --deployment-tool Flux --secret-manager SOPS"
+          - "init --container-engine Docker --distribution Kind --cni Default"
+          - "init --container-engine Docker --distribution Kind --cni Cilium"
+          - "init --container-engine Docker --distribution Kind --cni None"
+          - "init --container-engine Docker --distribution Kind --csi Default"
+          - "init --container-engine Docker --distribution Kind --csi LocalPathProvisioner"
+          - "init --container-engine Docker --distribution Kind --csi None"
+          - "init --container-engine Docker --distribution Kind --ingress-controller Default"
+          - "init --container-engine Docker --distribution Kind --ingress-controller Traefik"
+          - "init --container-engine Docker --distribution Kind --ingress-controller None"
+          - "init --container-engine Docker --distribution Kind --gateway-controller Default"
+          - "init --container-engine Docker --distribution Kind --gateway-controller None"
+          - "init --container-engine Docker --distribution Kind --metrics-server True"
+          - "init --container-engine Docker --distribution Kind --metrics-server False"
+          - "init --container-engine Docker --distribution Kind --mirror-registries True"
+          - "init --container-engine Docker --distribution Kind --mirror-registries False"
+          - "init --container-engine Docker --distribution K3d --deployment-tool Kubectl"
+          - "init --container-engine Docker --distribution K3d --deployment-tool Kubectl --secret-manager SOPS"
+          - "init --container-engine Docker --distribution K3d --deployment-tool Flux"
+          - "init --container-engine Docker --distribution K3d --deployment-tool Flux --secret-manager SOPS"
+          - "init --container-engine Docker --distribution K3d --cni Default"
+          - "init --container-engine Docker --distribution K3d --cni Cilium"
+          - "init --container-engine Docker --distribution K3d --cni None"
+          - "init --container-engine Docker --distribution K3d --csi Default"
+          - "init --container-engine Docker --distribution K3d --csi LocalPathProvisioner"
+          - "init --container-engine Docker --distribution K3d --csi None"
+          - "init --container-engine Docker --distribution K3d --ingress-controller Default"
+          - "init --container-engine Docker --distribution K3d --ingress-controller Traefik"
+          - "init --container-engine Docker --distribution K3d --ingress-controller None"
+          - "init --container-engine Docker --distribution K3d --gateway-controller Default"
+          - "init --container-engine Docker --distribution K3d --gateway-controller None"
+          - "init --container-engine Docker --distribution K3d --metrics-server True"
+          - "init --container-engine Docker --distribution K3d --metrics-server False"
+          - "init --container-engine Docker --distribution K3d --mirror-registries True"
+          - "init --container-engine Docker --distribution K3d --mirror-registries False"
+          - "init --container-engine Podman --distribution Kind"
+          - "init --container-engine Podman --distribution K3d"
+    steps:
+      - name: 📑 Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      
+      - name: 📦 Download dependencies
+        run: go mod download
+      
+      - name: 🏗️ Build application
+        run: go build -o ksail .
+      
+      - name: 🧪 Run system test
+        run: |
+          ./ksail ${{ matrix.init-args }}
+          ./ksail up
+          ./ksail status
+          ./ksail list
+          ./ksail list --all
+          ./ksail stop
+          ./ksail start
+          ./ksail update
+          ./ksail down
+          ./ksail down
+      
+      - name: 🧹 Cleanup
+        run: |
+          if [ -d "k8s" ]; then rm -rf "k8s"; fi
+          if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
+          if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
+          if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
+          if [ -f ".sops.yaml" ]; then rm ".sops.yaml"; fi
