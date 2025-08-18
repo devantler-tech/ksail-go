@@ -47,7 +47,7 @@ func TestUpCmd_Execute(test *testing.T) {
 
 	got := out.String()
 
-	expected := "✔ Cluster started successfully (stub implementation)\n"
+	expected := "✔ Cluster created and started successfully (stub implementation)\n"
 
 	if got != expected {
 		test.Fatalf("expected output %q, got %q", expected, got)

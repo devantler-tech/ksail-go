@@ -20,7 +20,7 @@ func NewUpCmd() *cobra.Command {
 
 // handleUpRunE handles the up command.
 func handleUpRunE(cmd *cobra.Command, _ []string) error {
-	notify.Successln(cmd.OutOrStdout(), "Cluster started successfully (stub implementation)")
+	notify.Successln(cmd.OutOrStdout(), "Cluster created and started successfully (stub implementation)")
 
 	return nil
 }
