@@ -41,6 +41,50 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+dockers:
+  - image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/devantler-tech/ksail-go"
+      - "--label=org.opencontainers.image.description=KSail - Kubernetes Cluster Management CLI"
+      - "--platform=linux/amd64"
+    goarch: amd64
+    goos: linux
+  - image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-arm64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/devantler-tech/ksail-go"
+      - "--label=org.opencontainers.image.description=KSail - Kubernetes Cluster Management CLI"
+      - "--platform=linux/arm64"
+    goarch: arm64
+    goos: linux
+
+docker_manifests:
+  - name_template: "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/devantler-tech/ksail-go:latest"
+    image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:latest-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-arm64"
+
 changelog:
   use: github
   sort: asc
