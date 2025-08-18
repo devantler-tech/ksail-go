@@ -1,6 +1,6 @@
 # KSail Go - Kubernetes Cluster Management CLI
 
-KSail is a Go-based CLI tool for managing local Kubernetes clusters and workloads declaratively. It supports multiple distributions (Kind, K3d) and reconciliation tools (Kubectl, Flux) to streamline local Kubernetes development.
+KSail is a Go-based CLI tool for managing local Kubernetes clusters and workloads declaratively. **Currently a work-in-progress migration from a previous implementation.** The core CLI structure exists but most functionality is planned/under development.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -9,165 +9,163 @@ Always reference these instructions first and fallback to search or bash command
 ### Bootstrap and Build
 
 - **Install Go 1.24.6+**: Verify with `go version`
-- **Download dependencies**: `go mod download` (completes in ~30 seconds)
-- **Build the application**: `go build -o ksail .` -- takes 75 seconds initially, 7 seconds when cached. NEVER CANCEL. Set timeout to 180+ seconds.
+- **Download dependencies**: `go mod download` (completes in ~5 seconds)
+- **Build the application**: `go build -o ksail .` -- takes <0.1 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install golangci-lint v2**: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
 
 ### Required Dependencies
 
-- **Docker**: Container runtime - verify with `docker --version`
-- **Kind**: Local Kubernetes clusters - verify with `kind version`
-- **kubectl**: Kubernetes CLI - verify with `kubectl version --client`
-- **Go 1.24.6+**: Programming language runtime
+- **Go 1.24.6+**: Programming language runtime (required)
+- **Docker**: Container runtime - verify with `docker --version` (for future functionality)
+- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)  
+- **kubectl**: Kubernetes CLI - verify with `kubectl version --client` (for future functionality)
 
 ### Testing and Validation
 
-- **Run tests**: `go test -v ./...` -- takes 14 seconds. NEVER CANCEL. Set timeout to 60+ seconds.
-- **Run linter**: `~/go/bin/golangci-lint run` -- takes 33 seconds. NEVER CANCEL. Set timeout to 120+ seconds.
-  - **WARNING**: Linter currently reports 336 issues including depguard violations - this is expected
-  - Focus on new issues you introduce, not existing ones
+- **Run tests**: `go test -v ./...` -- takes ~3 seconds. Set timeout to 60+ seconds for safety.
+- **Run linter**: `~/go/bin/golangci-lint run` -- takes ~3 seconds. Set timeout to 60+ seconds for safety.
+  - **Current State**: Linter reports 0 issues (clean codebase)
+  - Always check that new code doesn't introduce linting violations
 
-### Application Usage
+### Application Usage (Current State)
 
-- **Get help**: `./ksail --help`
-- **Initialize project**: `./ksail init --name test-cluster` (creates ksail.yaml, kind.yaml, k8s/kustomization.yaml)
-- **Provision cluster**: `./ksail up` -- takes 34 seconds for Kind cluster. NEVER CANCEL. Set timeout to 300+ seconds.
-- **List clusters**: `./ksail list`
-- **Destroy cluster**: `./ksail down`
+- **Get help**: `./ksail --help` (shows basic usage)
+- **Get version**: `./ksail --version` (shows dev version info)
+- **Current Status**: Only basic CLI structure implemented - no subcommands available yet
+- **Planned Commands**: `init`, `up`, `down`, `list`, `reconcile` (not yet implemented)
 
 ## Validation Scenarios
 
 ### CRITICAL: Always test complete workflows after making changes
 
 1. **Build Validation**:
-
    - Run `go build -o ksail .`
    - Verify `./ksail --help` shows usage
+   - Verify `./ksail --version` shows version info
 
-2. **Project Initialization**:
-
-   - Create test directory: `mkdir -p /tmp/ksail-test && cd /tmp/ksail-test`
-   - Run `./ksail init --name test-cluster`
-   - Verify files created: `ksail.yaml`, `kind.yaml`, `k8s/kustomization.yaml`
-   - **IMPORTANT**: Edit `ksail.yaml` to fix context name from `kind-ksail-default` to `kind-test-cluster`
-
-3. **Cluster Lifecycle Test**:
-
-   - Run `./ksail up` (provisions Kind cluster)
-   - Run `./ksail list` (should show running cluster)
-   - Run `./ksail down` (destroys cluster)
-   - Run `./ksail list` (should show no clusters)
-
-4. **Development Workflow**:
+2. **Development Workflow** (Current Implementation):
    - Run tests: `go test -v ./...`
    - Check build: `go build -o ksail .`
    - Basic functionality: `./ksail --help`
+   - Linting: `~/go/bin/golangci-lint run`
+
+3. **Future Workflow Testing** (When Implemented):
+   - Project initialization with `ksail init`
+   - Cluster lifecycle with `ksail up/down`
+   - Cluster listing with `ksail list`
 
 ## Build and Timing Information
 
-### NEVER CANCEL Commands - Exact Timeouts Required
+### Command Timings (Measured on Current System)
 
-- **`go build -o ksail .`**: 75 seconds initial build, 7 seconds cached -- SET TIMEOUT TO 180+ SECONDS
-- **`go test -v ./...`**: 14 seconds measured -- SET TIMEOUT TO 60+ SECONDS
-- **`~/go/bin/golangci-lint run`**: 33 seconds measured -- SET TIMEOUT TO 120+ SECONDS
-- **`./ksail up` (cluster creation)**: 21-34 seconds measured -- SET TIMEOUT TO 300+ SECONDS
-- **`go mod download`**: 30 seconds measured -- SET TIMEOUT TO 120+ SECONDS
+- **`go build -o ksail .`**: <0.1 seconds when cached -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go test -v ./...`**: ~3 seconds -- SET TIMEOUT TO 60+ SECONDS for safety  
+- **`~/go/bin/golangci-lint run`**: ~3 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go mod download`**: ~5 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 
 ### Linting Expectations
 
-- **Known Issues**: 336 linting issues exist (depguard, wsl, revive, etc.)
-- **Focus**: Only address NEW issues you introduce
-- **Config**: Uses `.golangci.yaml` with v2 format
+- **Current State**: 0 linting issues (clean codebase)
+- **Config File**: `.golangci.yml` (note: .yml extension, not .yaml)
 - **Command**: `~/go/bin/golangci-lint run` (use full path, not system golangci-lint)
+- **Focus**: Ensure new code doesn't introduce violations
 
 ## Codebase Navigation
 
-### Key Directories
+### Current Directory Structure
 
-- **`cmd/`**: CLI command implementations (init.go, up.go, down.go, etc.)
-- **`pkg/apis/v1alpha1/cluster/`**: Core cluster API types and constructors
-- **`pkg/provisioner/`**: Cluster provisioning logic (Kind, K3d)
-- **`pkg/bootstrapper/`**: Reconciliation tool setup (Kubectl, Flux)
-- **`internal/validators/`**: Configuration validation logic
-- **`internal/loader/`**: Configuration file loading
-- **`pages/docs/`**: Jekyll-based documentation
-
-### Important Files
-
+- **`cmd/`**: CLI command implementations  
+  - `root.go` - Main CLI setup with Cobra framework
+  - `root_test.go` - Tests for root command
+  - `ui/` - User interface utilities (notify, quiet, asciiart)
 - **`main.go`**: Application entry point
-- **`go.mod`**: Go module dependencies
-- **`.golangci.yaml`**: Linter configuration (v2 format)
-- **`ksail.yaml`**: Generated cluster configuration
-- **`kind.yaml`**: Generated Kind cluster config
+- **`.golangci.yml`**: Linter configuration (v2 format)
+- **`go.mod`**: Go module dependencies (cobra, fatih/color, go-snaps)
 
-### Command Structure
+### Key Files and Patterns
 
-- **Root**: `cmd/root.go` - Main CLI setup
-- **Init**: `cmd/init.go` - Project scaffolding
-- **Up**: `cmd/up.go` - Cluster provisioning
-- **Down**: `cmd/down.go` - Cluster destruction
-- **List**: `cmd/list.go` - Cluster listing
+- **CLI Framework**: Uses Cobra for command structure
+- **Testing**: Uses go-snaps for snapshot testing
+- **UI**: Colored output via fatih/color with symbols (✓, ✗, ⚠, ►)
+- **Entry Point**: `main.go` creates root command and handles execution
+
+### Planned Structure (Not Yet Implemented)
+
+- **`cmd/init.go`**: Project scaffolding command
+- **`cmd/up.go`**: Cluster provisioning command  
+- **`cmd/down.go`**: Cluster destruction command
+- **`cmd/list.go`**: Cluster listing command
+- **`pkg/`**: Core business logic packages (future)
+- **`internal/`**: Private application code (future)
 
 ## Configuration Files
 
-### Generated by `ksail init`
+### Current Configuration
 
-- **`ksail.yaml`**: Main KSail configuration (API version: ksail.dev/v1alpha1)
-- **`kind.yaml`**: Kind cluster configuration (kindest/node:v1.33.1 image)
-- **`k8s/kustomization.yaml`**: Kustomize entry point
+- **`.golangci.yml`**: Comprehensive linting rules with depguard for import restrictions
+- **`go.mod`**: Go 1.23.9+ with Cobra, color, and testing dependencies
+- **`.github/workflows/`**: Minimal CI/CD setup (currently no-op CD)
 
-### Context Name Validation
+### Build Configuration
 
-- **CRITICAL**: KSail validates that `spec.connection.context` matches expected pattern
-- **Pattern**: `kind-{cluster-name}` for Kind clusters
-- **Fix**: When using `--name test-cluster`, context should be `kind-test-cluster`
+- **No Makefile**: Uses standard Go commands
+- **No Docker**: Pure Go build process  
+- **Module**: `github.com/devantler-tech/ksail-go`
 
 ## Development Workflow
 
 ### Making Changes
 
-1. **Always** run tests first: `go test -v ./...`
+1. **Always** validate current state first: `go test -v ./...`
 2. **Always** build after changes: `go build -o ksail .`
 3. **Always** test basic CLI: `./ksail --help`
-4. **Always** test real scenario (init → up → down workflow)
-5. **Always** run linter before committing: `~/go/bin/golangci-lint run`
+4. **Always** run linter: `~/go/bin/golangci-lint run`
+5. **Always** ensure tests pass before committing
 
-### Testing New Features
+### Adding New Features
 
-1. Create isolated test directory in `/tmp/`
-2. Test `ksail init` with various parameters
-3. Verify generated configuration files
-4. Test cluster provisioning if relevant
-5. Clean up test clusters with `ksail down`
+1. **Follow existing patterns**: Study `cmd/root.go` and `cmd/ui/` structure
+2. **Use Cobra framework**: For new CLI commands
+3. **Add tests**: Follow snapshot testing pattern in `*_test.go` files
+4. **Update help text**: Ensure CLI help stays accurate
+5. **Test UI components**: Use existing notify/quiet/asciiart patterns
+
+### Testing Strategies
+
+- **Unit Tests**: Located in `*_test.go` files alongside source
+- **Snapshot Testing**: Uses go-snaps for output validation
+- **CLI Testing**: Test command execution and help output
+- **Current Coverage**: Basic CLI structure and UI components only
 
 ## Troubleshooting
 
 ### Common Issues
 
 - **Build fails**: Check Go version (need 1.24.6+), run `go mod download`
-- **Linter fails**: Install correct version with install script, use `~/go/bin/golangci-lint`
-- **Context validation error**: Check ksail.yaml context name matches `kind-{cluster-name}`
-- **Dependencies missing**: Verify Docker, Kind, kubectl are installed and accessible
+- **Linter fails**: Install with install script, use `~/go/bin/golangci-lint`
+- **Import violations**: Check `.golangci.yml` depguard rules for allowed packages
+- **Test failures**: Check snapshot files in `__snapshots__/` directories
 
 ### Known Limitations
 
-- **Reconciliation tool**: "unsupported reconciliation tool ''" error at end of `ksail up` (known issue, cluster still works)
-- **Depguard**: Many import violations exist (work around existing issues)
-- **Test coverage**: Minimal - only one test file in `cmd/inputs/helpers_test.go`
+- **Limited functionality**: Most CLI commands not yet implemented
+- **No cluster operations**: Kubernetes functionality is planned, not implemented
+- **Minimal testing**: Test coverage limited to existing components
 
 ## CI/CD Information
 
 ### GitHub Actions
 
-- **CI**: Uses `avamsi/go-nogo/.github/workflows/ci.yml@main`
-- **CD**: Currently no-op (`noop` job)
-- **Location**: `.github/workflows/` and `workflows/` directories
+- **CD**: Currently no-op (`.github/workflows/cd.yaml`)
+- **CI**: Uses external workflow reference (likely in separate repo)
+- **Future**: Will need comprehensive testing when functionality expands
 
-### Future Integration
+### Development Approach
 
-- Project follows GitHub Flow with PR-based development
-- KSail can be used in CI/CD for E2E testing (see `pages/docs/use-cases/e2e-testing-in-cicd.md`)
+- **Work in Progress**: Core infrastructure exists, functionality being added incrementally
+- **Clean Slate**: Current state has 0 linting issues, maintain this standard
+- **Cobra Framework**: All CLI development should follow established Cobra patterns
 
 ---
 
-**Last Updated**: Based on repository state with Go 1.24.6, Kind v0.29.0, Docker 28.0.4
+**Last Updated**: Based on current repository state as of Go 1.24.6, minimal CLI implementation
