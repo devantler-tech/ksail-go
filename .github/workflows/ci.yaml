@@ -36,19 +36,19 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           persist-credentials: false
-      
+
       - name: ⚙️ Setup Go
         uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           cache: true
-      
+
       - name: 📦 Download dependencies
         run: go mod download
-      
+
       - name: 🏗️ Build application
         run: go build -o ksail .
-      
+
       - name: 🧪 Run system test
         run: |
           ./ksail ${{ matrix.init-args }}
@@ -59,7 +59,7 @@ jobs:
           ./ksail start
           ./ksail update
           ./ksail down
-      
+
       - name: 🧹 Cleanup
         run: |
           if [ -d "k8s" ]; then rm -rf "k8s"; fi
