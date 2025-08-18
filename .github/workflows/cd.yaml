@@ -3,7 +3,7 @@ name: CD - Go
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -18,8 +18,8 @@ jobs:
       - name: 📑 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          # Fetch full history for changelog generation
           fetch-depth: 0
+          persist-credentials: false
 
       - name: ⚙️ Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -31,7 +31,7 @@ jobs:
         uses: goreleaser/goreleaser-action@c72a7afd78a36906d866b9a7b1ef02be5ac42e1a # v6.6.1
         with:
           distribution: goreleaser
-          version: '~> v2'
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

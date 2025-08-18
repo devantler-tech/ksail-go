@@ -17,7 +17,6 @@ builds:
     goarch:
       - amd64
       - arm64
-
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
@@ -40,7 +39,7 @@ archives:
       - LICENSE*
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 changelog:
   use: github
@@ -60,10 +59,10 @@ changelog:
     - title: Features
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
-    - title: 'Bug fixes'
+    - title: "Bug fixes"
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: 'Performance improvements'
+    - title: "Performance improvements"
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
       order: 2
     - title: Others
@@ -77,25 +76,25 @@ release:
   mode: replace
   header: |
     ## KSail {{ .Tag }} ({{ .Date }})
-    
+
     Welcome to this new release of KSail! 🎉
   footer: |
     ## Docker Images
-    
+
     Docker images are available at:
     - `ghcr.io/devantler-tech/ksail-go:{{ .Tag }}`
     - `ghcr.io/devantler-tech/ksail-go:latest`
 
     ## Installation
-    
+
     ### Homebrew
     ```bash
     brew install devantler-tech/taps/ksail
     ```
-    
+
     ### Download Binary
     Download the binary for your platform from the assets below.
-    
+
     ### Go Install
     ```bash
     go install github.com/devantler-tech/ksail-go@{{ .Tag }}
@@ -104,5 +103,5 @@ release:
     ---
 
     **Full Changelog**: https://github.com/devantler-tech/ksail-go/compare/{{ .PreviousTag }}...{{ .Tag }}
-    
+
     Released by [GoReleaser](https://github.com/goreleaser/goreleaser) 🚀
