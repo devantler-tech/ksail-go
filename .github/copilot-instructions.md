@@ -66,7 +66,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Linting Expectations
 
 - **Current State**: 0 linting issues (clean codebase)
-- **Config File**: `.golangci.yml` (note: .yml not .yaml)
+- **Config File**: `.golangci.yml` (note: .yml extension, not .yaml)
 - **Command**: `~/go/bin/golangci-lint run` (use full path, not system golangci-lint)
 - **Focus**: Ensure new code doesn't introduce violations
 
