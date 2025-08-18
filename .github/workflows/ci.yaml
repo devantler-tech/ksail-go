@@ -12,4 +12,5 @@ jobs:
     permissions:
       contents: write
       issues: write
+      packages: read
       pull-requests: write
