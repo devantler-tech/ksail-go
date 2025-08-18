@@ -65,3 +65,27 @@ jobs:
           if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
+
+  system-test-status:
+    name: System test status
+    runs-on: ubuntu-latest
+    needs: [system-test]
+    if: always()
+    steps:
+      - name: Summarize matrix result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "system-test result: $MATRIX_RESULT"
+          case "$MATRIX_RESULT" in
+            success|skipped)
+              echo "All matrix runs succeeded or were skipped."
+              exit 0
+              ;;
+            *)
+              echo "At least one matrix run failed."
+              exit 1
+              ;;
+          esac
+        env:
+          MATRIX_RESULT: ${{ needs.system-test.result }}
