@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: read
-  packages: read
+permissions: {}
 
 jobs:
   ci:
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@520deec4d29878861a424a93f35ac7b310406380 # v1.11.7
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
