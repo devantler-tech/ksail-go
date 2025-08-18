@@ -29,13 +29,14 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
 	// Add all subcommands
-	// cmd.AddCommand(NewInitCmd())
-	// cmd.AddCommand(NewUpCmd())
-	// cmd.AddCommand(NewDownCmd())
-	// cmd.AddCommand(NewStartCmd())
-	// cmd.AddCommand(NewStopCmd())
-	// cmd.AddCommand(NewListCmd())
-	// cmd.AddCommand(NewReconcileCmd())
+	cmd.AddCommand(NewInitCmd())
+	cmd.AddCommand(NewUpCmd())
+	cmd.AddCommand(NewDownCmd())
+	cmd.AddCommand(NewStartCmd())
+	cmd.AddCommand(NewStopCmd())
+	cmd.AddCommand(NewListCmd())
+	cmd.AddCommand(NewStatusCmd())
+	cmd.AddCommand(NewUpdateCmd())
 
 	return cmd
 }
