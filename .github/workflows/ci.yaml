@@ -73,12 +73,19 @@ jobs:
     if: always()
     steps:
       - name: Summarize matrix result
+        shell: bash
         run: |
-          echo "system-test result: ${{ needs.system-test.result }}"
-          if [ "${{ needs.system-test.result }}" = "success" ] || [ "${{ needs.system-test.result }}" = "skipped" ]; then
-            echo "All matrix runs succeeded or were skipped."
-            exit 0
-          else
-            echo "At least one matrix run failed."
-            exit 1
-          fi
+          set -Eeuo pipefail
+          echo "system-test result: $MATRIX_RESULT"
+          case "$MATRIX_RESULT" in
+            success|skipped)
+              echo "All matrix runs succeeded or were skipped."
+              exit 0
+              ;;
+            *)
+              echo "At least one matrix run failed."
+              exit 1
+              ;;
+          esac
+        env:
+          MATRIX_RESULT: ${{ needs.system-test.result }}
