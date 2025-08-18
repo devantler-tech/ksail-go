@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
     needs: [ci]
-    if: always() && (needs.ci.result == 'success' || (github.event_name == 'pull_request' && needs.ci.result == 'skipped'))
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:
         init-args:
