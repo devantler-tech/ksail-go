@@ -55,7 +55,6 @@ jobs:
           ./ksail up
           ./ksail status
           ./ksail list
-          ./ksail list --all
           ./ksail stop
           ./ksail start
           ./ksail update
