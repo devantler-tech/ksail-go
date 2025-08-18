@@ -12,6 +12,9 @@ jobs:
   ci:
     if: github.event_name == 'push'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@520deec4d29878861a424a93f35ac7b310406380 # v1.11.7
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
       contents: write
       issues: write
