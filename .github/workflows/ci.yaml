@@ -1,4 +1,4 @@
-name: CI - Go
+name: CI - Go (Repo)
 
 on:
   push:
@@ -12,4 +12,5 @@ jobs:
     permissions:
       contents: write
       issues: write
+      packages: read
       pull-requests: write
