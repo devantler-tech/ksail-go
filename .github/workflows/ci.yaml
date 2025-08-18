@@ -67,4 +67,3 @@ jobs:
           if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
-          if [ -f ".sops.yaml" ]; then rm ".sops.yaml"; fi
