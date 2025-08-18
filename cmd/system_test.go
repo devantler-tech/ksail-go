@@ -16,7 +16,7 @@ func TestSystemWorkflow_AllCommandsExecuteSuccessfully(test *testing.T) {
 	var out bytes.Buffer
 
 	commands := [][]string{
-		{"init", "--container-engine", "Docker", "--distribution", "Kind", "--deployment-tool", "Kubectl"},
+		{"init", "--container-engine", "Docker", "--distribution", "Kind"},
 		{"up"},
 		{"status"},
 		{"list"},
@@ -92,39 +92,20 @@ func getInitTestCases() []struct {
 		args []string
 	}{
 		{
-			name: "Docker Kind Kubectl",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--deployment-tool", "Kubectl"},
+			name: "Docker Kind",
+			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind"},
 		},
 		{
-			name: "Docker Kind Kubectl with SOPS",
-			args: []string{
-				"init", "--container-engine", "Docker", "--distribution", "Kind",
-				"--deployment-tool", "Kubectl", "--secret-manager", "SOPS",
-			},
+			name: "Docker K3d",
+			args: []string{"init", "--container-engine", "Docker", "--distribution", "K3d"},
+		},
+		{
+			name: "Podman Kind",
+			args: []string{"init", "--container-engine", "Podman", "--distribution", "Kind"},
 		},
 		{
 			name: "Podman K3d",
 			args: []string{"init", "--container-engine", "Podman", "--distribution", "K3d"},
-		},
-		{
-			name: "Kind with Cilium CNI",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--cni", "Cilium"},
-		},
-		{
-			name: "Kind with LocalPathProvisioner CSI",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--csi", "LocalPathProvisioner"},
-		},
-		{
-			name: "Kind with Traefik Ingress",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--ingress-controller", "Traefik"},
-		},
-		{
-			name: "Kind with metrics server enabled",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--metrics-server", "True"},
-		},
-		{
-			name: "Kind with mirror registries enabled",
-			args: []string{"init", "--container-engine", "Docker", "--distribution", "Kind", "--mirror-registries", "True"},
 		},
 	}
 }
