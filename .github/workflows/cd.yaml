@@ -29,6 +29,13 @@ jobs:
           # cache-poisoning risk for runtime artifacts (see https://docs.zizmor.sh/audits/#cache-poisoning)
           cache: false
 
+      - name: 🔐 Login to GHCR
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 🏗️ Run GoReleaser
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
