@@ -14,6 +14,11 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
 archives:
   - formats: [tar.gz]
@@ -29,17 +34,118 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: "checksums.txt"
+
+dockers:
+  - image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/devantler-tech/ksail-go"
+      - "--label=org.opencontainers.image.description=KSail - Kubernetes Cluster Management CLI"
+      - "--platform=linux/amd64"
+    goarch: amd64
+    goos: linux
+  - image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-arm64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/devantler-tech/ksail-go"
+      - "--label=org.opencontainers.image.description=KSail - Kubernetes Cluster Management CLI"
+      - "--platform=linux/arm64"
+    goarch: arm64
+    goos: linux
+
+docker_manifests:
+  - name_template: "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:{{ .Tag }}-arm64"
+  - name_template: "ghcr.io/devantler-tech/ksail-go:latest"
+    image_templates:
+      - "ghcr.io/devantler-tech/ksail-go:latest-amd64"
+      - "ghcr.io/devantler-tech/ksail-go:latest-arm64"
 
 changelog:
+  use: github
   sort: asc
   filters:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^build:"
+      - "merge conflict"
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "Performance improvements"
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
 
 release:
-  footer: >-
+  github:
+    owner: devantler-tech
+    name: ksail-go
+  draft: false
+  mode: replace
+  header: |
+    ## KSail {{ .Tag }} ({{ .Date }})
+
+    Welcome to this new release of KSail! 🎉
+  footer: |
+    ## Docker Images
+
+    Docker images are available at:
+    - `ghcr.io/devantler-tech/ksail-go:{{ .Tag }}`
+    - `ghcr.io/devantler-tech/ksail-go:latest`
+
+    ## Installation
+
+    ### Homebrew
+    ```bash
+    brew install devantler-tech/taps/ksail
+    ```
+
+    ### Download Binary
+    Download the binary for your platform from the assets below.
+
+    ### Go Install
+    ```bash
+    go install github.com/devantler-tech/ksail-go@{{ .Tag }}
+    ```
 
     ---
 
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+    **Full Changelog**: https://github.com/devantler-tech/ksail-go/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    Released by [GoReleaser](https://github.com/goreleaser/goreleaser) 🚀

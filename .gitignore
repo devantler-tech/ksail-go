@@ -11,3 +11,8 @@ k8s/
 
 # Added by goreleaser init:
 dist/
+
+# GoReleaser artifacts that shouldn't be committed
+completions/
+manpages/
+LICENSE.md
