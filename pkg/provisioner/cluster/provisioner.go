@@ -1,3 +1,4 @@
+// Package clusterprovisioner provides an interface for managing Kubernetes clusters.
 package clusterprovisioner
 
 // ClusterProvisioner defines methods for managing Kubernetes clusters.
