@@ -6,32 +6,33 @@ import (
 
 	"go.uber.org/mock/gomock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-	nodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
-func newProvisionerForTest(t *testing.T) (*KindClusterProvisioner, *MockKindProvider) {
+var errorBoom = errors.New("boom")
+
+func newProvisionerForTest(t *testing.T) (*KindClusterProvisioner, *MockKindProvider, *MockDockerClient) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	provider := NewMockKindProvider(ctrl)
-	client := dockerclient.NewMockDockerClient(ctrl)
+	client := NewMockDockerClient(ctrl)
 
 	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
-	p := NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
+	provisioner := NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
 
-	return p, provider
+	return provisioner, provider, client
 }
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		Create("my-cluster", gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
 	// Act
-	err := p.Create("my-cluster")
+	err := provisioner.Create("my-cluster")
 
 	// Assert
 	if err != nil {
@@ -39,17 +40,69 @@ func TestCreate_Success(t *testing.T) {
 	}
 }
 
+func TestStart_Success(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{"kind-control-plane", "kind-worker"}, nil)
+
+	// Expect ContainerStart called twice with any args
+	client.
+		EXPECT().
+		ContainerStart(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(2).
+		Return(nil)
+
+	// Act
+	err := provisioner.Start("")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Start() unexpected error: %v", err)
+	}
+}
+
+func TestStop_Success(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{"kind-control-plane", "kind-worker", "kind-worker2"}, nil)
+
+	client.
+		EXPECT().
+		ContainerStop(gomock.Any(), gomock.Any(), gomock.Any()).
+		Times(3).
+		Return(nil)
+
+	// Act
+	err := provisioner.Stop("")
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Stop() unexpected error: %v", err)
+	}
+}
+
+// fake nodes removed; provider returns node names directly now.
 func TestCreate_UsesConfigNameWhenEmpty(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		Create("cfg-name", gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil)
 
 	// Act
-	err := p.Create("")
+	err := provisioner.Create("")
 
 	// Assert
 	if err != nil {
@@ -60,15 +113,15 @@ func TestCreate_UsesConfigNameWhenEmpty(t *testing.T) {
 func TestCreate_Error(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
-	expected := errors.New("boom")
+	provisioner, provider, _ := newProvisionerForTest(t)
+	expected := errorBoom
 	provider.
 		EXPECT().
 		Create("my-cluster", gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(expected)
 
 	// Act
-	err := p.Create("my-cluster")
+	err := provisioner.Create("my-cluster")
 
 	// Assert
 	if err == nil {
@@ -79,14 +132,14 @@ func TestCreate_Error(t *testing.T) {
 func TestDelete_UsesConfigNameWhenEmpty(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		Delete("cfg-name", gomock.Any()).
 		Return(nil)
 
 	// Act
-	err := p.Delete("")
+	err := provisioner.Delete("")
 
 	// Assert
 	if err != nil {
@@ -97,14 +150,14 @@ func TestDelete_UsesConfigNameWhenEmpty(t *testing.T) {
 func TestDelete_WithExplicitName(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		Delete("custom", gomock.Any()).
 		Return(nil)
 
 	// Act
-	err := p.Delete("custom")
+	err := provisioner.Delete("custom")
 
 	// Assert
 	if err != nil {
@@ -115,7 +168,7 @@ func TestDelete_WithExplicitName(t *testing.T) {
 func TestDelete_Error(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	expected := errors.New("cannot delete")
 	provider.
 		EXPECT().
@@ -123,7 +176,7 @@ func TestDelete_Error(t *testing.T) {
 		Return(expected)
 
 	// Act
-	err := p.Delete("")
+	err := provisioner.Delete("")
 
 	// Assert
 	if err == nil {
@@ -134,14 +187,14 @@ func TestDelete_Error(t *testing.T) {
 func TestList_Success(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		List().
 		Return([]string{"a", "b"}, nil)
 
 	// Act
-	got, err := p.List()
+	got, err := provisioner.List()
 
 	// Assert
 	if err != nil {
@@ -156,14 +209,14 @@ func TestList_Success(t *testing.T) {
 func TestList_Error(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		List().
 		Return(nil, errors.New("list failed"))
 
 	// Act
-	_, err := p.List()
+	_, err := provisioner.List()
 
 	// Assert
 	if err == nil {
@@ -174,14 +227,14 @@ func TestList_Error(t *testing.T) {
 func TestExists_True(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		List().
 		Return([]string{"x", "cfg-name"}, nil)
 
 	// Act
-	exists, err := p.Exists("")
+	exists, err := provisioner.Exists("")
 
 	// Assert
 	if err != nil {
@@ -196,14 +249,14 @@ func TestExists_True(t *testing.T) {
 func TestExists_False(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		List().
 		Return([]string{"x", "y"}, nil)
 
 	// Act
-	exists, err := p.Exists("not-here")
+	exists, err := provisioner.Exists("not-here")
 
 	// Assert
 	if err != nil {
@@ -218,14 +271,14 @@ func TestExists_False(t *testing.T) {
 func TestExists_Error(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		List().
 		Return(nil, errors.New("boom"))
 
 	// Act
-	_, err := p.Exists("any")
+	_, err := provisioner.Exists("any")
 
 	// Assert
 	if err == nil {
@@ -236,14 +289,14 @@ func TestExists_Error(t *testing.T) {
 func TestStart_ListNodesError(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		ListNodes("cfg-name").
 		Return(nil, errors.New("cannot list"))
 
 	// Act
-	err := p.Start("")
+	err := provisioner.Start("")
 
 	// Assert
 	if err == nil {
@@ -254,14 +307,14 @@ func TestStart_ListNodesError(t *testing.T) {
 func TestStart_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		ListNodes("cfg-name").
-		Return([]nodes.Node{}, nil)
+		Return([]string{}, nil)
 
 	// Act
-	err := p.Start("")
+	err := provisioner.Start("")
 
 	// Assert
 	if err == nil {
@@ -276,14 +329,14 @@ func TestStart_ClusterNotFound(t *testing.T) {
 func TestStop_ListNodesError(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		ListNodes("cfg-name").
 		Return(nil, errors.New("cannot list"))
 
 	// Act
-	err := p.Stop("")
+	err := provisioner.Stop("")
 
 	// Assert
 	if err == nil {
@@ -294,14 +347,14 @@ func TestStop_ListNodesError(t *testing.T) {
 func TestStop_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	p, provider := newProvisionerForTest(t)
+	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.
 		EXPECT().
 		ListNodes("cfg-name").
-		Return([]nodes.Node{}, nil)
+		Return([]string{}, nil)
 
 	// Act
-	err := p.Stop("")
+	err := provisioner.Stop("")
 
 	// Assert
 	if err == nil {

@@ -16,7 +16,6 @@ import (
 	container "github.com/docker/docker/api/types/container"
 	gomock "go.uber.org/mock/gomock"
 	cluster "sigs.k8s.io/kind/pkg/cluster"
-	nodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 // MockKindProvider is a mock of KindProvider interface.
@@ -92,10 +91,10 @@ func (mr *MockKindProviderMockRecorder) List() *gomock.Call {
 }
 
 // ListNodes mocks base method.
-func (m *MockKindProvider) ListNodes(name string) ([]nodes.Node, error) {
+func (m *MockKindProvider) ListNodes(name string) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListNodes", name)
-	ret0, _ := ret[0].([]nodes.Node)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

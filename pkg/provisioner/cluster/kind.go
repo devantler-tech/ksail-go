@@ -11,7 +11,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
-	nodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 // ErrClusterNotFound is returned when a cluster is not found.
@@ -22,14 +21,14 @@ type KindProvider interface {
 	Create(name string, opts ...cluster.CreateOption) error
 	Delete(name, kubeconfigPath string) error
 	List() ([]string, error)
-	ListNodes(name string) ([]nodes.Node, error)
+	ListNodes(name string) ([]string, error)
 }
 
+// DockerClient describes the subset of methods from Docker's API used here.
 type DockerClient interface {
 	ContainerStart(ctx context.Context, name string, options container.StartOptions) error
 	ContainerStop(ctx context.Context, name string, options container.StopOptions) error
 }
-
 
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
@@ -42,7 +41,12 @@ type KindClusterProvisioner struct {
 // NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
 // for the kind provider and docker client. This supports both production wiring
 // and unit testing via mocks.
-func NewKindClusterProvisioner(kindConfig *v1alpha4.Cluster, kubeConfig string, provider KindProvider, client DockerClient) *KindClusterProvisioner {
+func NewKindClusterProvisioner(
+	kindConfig *v1alpha4.Cluster,
+	kubeConfig string,
+	provider KindProvider,
+	client DockerClient,
+) *KindClusterProvisioner {
 	return &KindClusterProvisioner{
 		kubeConfig: kubeConfig,
 		kindConfig: kindConfig,
@@ -103,10 +107,8 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dockerStartTimeout)
 	defer cancel()
 
-	for _, n := range nodes {
+	for _, name := range nodes {
 		// Start each node container by name using Docker SDK
-		name := n.String()
-
 		err := k.client.ContainerStart(ctx, name, container.StartOptions{
 			CheckpointID:  "",
 			CheckpointDir: "",
@@ -137,9 +139,8 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dockerStopTimeout)
 	defer cancel()
 
-	for _, n := range nodes {
+	for _, name := range nodes {
 		// Stop each node container by name using Docker SDK
-		name := n.String()
 		// Graceful stop with default timeout
 		err := k.client.ContainerStop(ctx, name, container.StopOptions{
 			Signal:  "",
@@ -180,22 +181,6 @@ func (k *KindClusterProvisioner) Exists(name string) (bool, error) {
 }
 
 // --- internals ---
-
-type kindProviderAdapter struct{ p *cluster.Provider }
-
-func (a kindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
-	return a.p.Create(name, opts...)
-}
-
-func (a kindProviderAdapter) Delete(name, kubeconfigPath string) error {
-	return a.p.Delete(name, kubeconfigPath)
-}
-
-func (a kindProviderAdapter) List() ([]string, error) { return a.p.List() }
-
-func (a kindProviderAdapter) ListNodes(name string) ([]nodes.Node, error) {
-	return a.p.ListNodes(name)
-}
 
 func setName(name string, kindConfigName string) string {
 	target := name
