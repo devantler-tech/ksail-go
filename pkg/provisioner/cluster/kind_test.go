@@ -45,13 +45,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	if err == nil {
-		t.Fatalf("Create() expected error, got nil")
-	}
-
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Create() error = %v, want wrapped errBoom", err)
-	}
+	assertErrWrappedContains(t, err, errBoom, "", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -153,23 +147,12 @@ func TestExists_Error_ListFailed(t *testing.T) {
 	exists, err := provisioner.Exists("any")
 
 	// Assert
-	if err == nil {
-		t.Fatalf("Exists() expected error, got nil")
-	}
-
 	if exists {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Exists() error = %v, want wrapped errBoom", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to list kind clusters") {
-		t.Fatalf("Exists() error message = %q, want to contain failed to list kind clusters", err.Error())
-	}
+	assertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "Exists()")
 }
-
 
 func TestList_Success(t *testing.T) {
 	t.Parallel()
@@ -206,17 +189,7 @@ func TestList_Error_ListFailed(t *testing.T) {
 	_, err := provisioner.List()
 
 	// Assert
-	if err == nil {
-		t.Fatalf("List() expected error, got nil")
-	}
-
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("List() error = %v, want wrapped errBoom", err)
-	}
-
-	if !strings.Contains(err.Error(), "failed to list kind clusters") {
-		t.Fatalf("List() error message = %q, want to contain failed to list kind clusters", err.Error())
-	}
+	assertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
@@ -289,17 +262,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 	err := provisioner.Start("")
 
 	// Assert
-	if err == nil {
-		t.Fatalf("Start() expected error, got nil")
-	}
-
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Start() error = %v, want wrapped errBoom", err)
-	}
-
-	if !strings.Contains(err.Error(), "docker start failed for kind-control-plane") {
-		t.Fatalf("Start() error message = %q, want to contain docker start failed for kind-control-plane", err.Error())
-	}
+	assertErrWrappedContains(t, err, errBoom, "docker start failed for kind-control-plane", "Start()")
 }
 
 func TestStop_Error_ClusterNotFound(t *testing.T) {
@@ -346,17 +309,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 	err := provisioner.Stop("")
 
 	// Assert
-	if err == nil {
-		t.Fatalf("Stop() expected error, got nil")
-	}
-
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Stop() error = %v, want wrapped errBoom", err)
-	}
-
-	if !strings.Contains(err.Error(), "docker stop failed for kind-control-plane") {
-		t.Fatalf("Stop() error message = %q, want to contain docker stop failed for kind-control-plane", err.Error())
-	}
+	assertErrWrappedContains(t, err, errBoom, "docker stop failed for kind-control-plane", "Stop()")
 }
 
 func TestStop_Success(t *testing.T) {
@@ -454,5 +407,23 @@ func runDeleteSuccess(t *testing.T, inputName, expectedName string) {
 	err := provisioner.Delete(inputName)
 	if err != nil {
 		t.Fatalf("Delete() unexpected error: %v", err)
+	}
+}
+
+// assertErrWrappedContains is a small helper to verify an error exists, wraps a target error,
+// and optionally contains a given substring in its message.
+func assertErrWrappedContains(t *testing.T, got error, want error, contains string, ctx string) {
+	t.Helper()
+
+	if got == nil {
+		t.Fatalf("%s expected error, got nil", ctx)
+	}
+
+	if !errors.Is(got, want) {
+		t.Fatalf("%s error = %v, want wrapped %v", ctx, got, want)
+	}
+
+	if contains != "" && !strings.Contains(got.Error(), contains) {
+		t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
 	}
 }
