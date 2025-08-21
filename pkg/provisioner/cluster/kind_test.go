@@ -11,7 +11,13 @@ import (
 
 var errBoom = errors.New("boom")
 
-func newProvisionerForTest(t *testing.T) (*clusterprovisioner.KindClusterProvisioner, *clusterprovisioner.MockKindProvider, *clusterprovisioner.MockDockerClient) {
+func newProvisionerForTest(
+	t *testing.T,
+) (
+	*clusterprovisioner.KindClusterProvisioner,
+	*clusterprovisioner.MockKindProvider,
+	*clusterprovisioner.MockDockerClient,
+) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
 	provider := clusterprovisioner.NewMockKindProvider(ctrl)
