@@ -20,6 +20,7 @@ linters:
     exhaustruct:
       exclude:
         - '.+/cobra\.Command$'
+        - '.+/v1alpha4\.Cluster$'
 
   exclusions:
     rules:
