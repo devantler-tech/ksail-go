@@ -75,6 +75,11 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	nodes, err := k.dockerProvider.ListNodes(target)
 	if len(nodes) == 0 || err != nil {
 		return fmt.Errorf("cluster '%s': %w", target, err)
+	if err != nil {
+		return fmt.Errorf("cluster '%s': %w", target, err)
+	}
+	if len(nodes) == 0 {
+		return fmt.Errorf("cluster '%s': no nodes found", target)
 	}
 
 	// Create a Docker client
