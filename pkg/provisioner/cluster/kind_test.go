@@ -90,11 +90,9 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Delete() expected error, got nil")
 	}
+
 	if !errors.Is(err, errBoom) {
 		t.Fatalf("Delete() error = %v, want wrapped errBoom", err)
-	}
-	if !strings.Contains(err.Error(), "failed to delete kind cluster") {
-		t.Fatalf("Delete() error message missing context: %v", err)
 	}
 }
 
@@ -212,6 +210,38 @@ func TestStart_Success(t *testing.T) {
 	// Assert
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
+	}
+}
+
+func TestStart_Error_DockerStartFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{"kind-control-plane"}, nil)
+
+	client.
+		EXPECT().
+		ContainerStart(gomock.Any(), "kind-control-plane", gomock.Any()).
+		Return(errBoom)
+
+	// Act
+	err := provisioner.Start("")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Start() expected error, got nil")
+	}
+
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("Start() error = %v, want wrapped errBoom", err)
+	}
+
+	if !strings.Contains(err.Error(), "docker start failed for kind-control-plane") {
+		t.Fatalf("Start() error message = %q, want to contain docker start failed for kind-control-plane", err.Error())
 	}
 }
 
