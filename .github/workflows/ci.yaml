@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   ci:
     if: github.event_name == 'push'
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@27b4d9664c93c311eb57d787a056a90b49c7a8f9 # v1.11.10
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@3a194c159b1086182818ddbbd5a4c177c785cbb7 # v1.11.11
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
