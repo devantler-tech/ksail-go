@@ -11,39 +11,36 @@ import (
 
 var errBoom = errors.New("boom")
 
-func TestCreate_Success_WithName(t *testing.T) {
+func TestCreate_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Create("my-cluster", gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(nil)
 
-	// Act
-	err := provisioner.Create("my-cluster")
-
-	// Assert
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
+	cases := []struct {
+		name         string
+		inputName    string
+		expectedName string
+	}{
+		{name: "with name", inputName: "my-cluster", expectedName: "my-cluster"},
+		{name: "without name uses cfg", inputName: "", expectedName: "cfg-name"},
 	}
-}
 
-func TestCreate_Success_WithoutName(t *testing.T) {
-	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Create("cfg-name", gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange
+			provisioner, provider, _ := newProvisionerForTest(t)
+			provider.
+				EXPECT().
+				Create(tc.expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(nil)
 
-	// Act
-	err := provisioner.Create("")
+			// Act
+			err := provisioner.Create(tc.inputName)
 
-	// Assert
-	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
+			// Assert
+			if err != nil {
+				t.Fatalf("Create() unexpected error: %v", err)
+			}
+		})
 	}
 }
 
@@ -69,39 +66,36 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	}
 }
 
-func TestDelete_Success_WithoutName(t *testing.T) {
+func TestDelete_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Delete("cfg-name", gomock.Any()).
-		Return(nil)
 
-	// Act
-	err := provisioner.Delete("")
-
-	// Assert
-	if err != nil {
-		t.Fatalf("Delete() unexpected error: %v", err)
+	cases := []struct {
+		name         string
+		inputName    string
+		expectedName string
+	}{
+		{name: "without name uses cfg", inputName: "", expectedName: "cfg-name"},
+		{name: "with name", inputName: "custom", expectedName: "custom"},
 	}
-}
 
-func TestDelete_Success_WithName(t *testing.T) {
-	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Delete("custom", gomock.Any()).
-		Return(nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			// Arrange
+			provisioner, provider, _ := newProvisionerForTest(t)
+			provider.
+				EXPECT().
+				Delete(tc.expectedName, gomock.Any()).
+				Return(nil)
 
-	// Act
-	err := provisioner.Delete("custom")
+			// Act
+			err := provisioner.Delete(tc.inputName)
 
-	// Assert
-	if err != nil {
-		t.Fatalf("Delete() unexpected error: %v", err)
+			// Assert
+			if err != nil {
+				t.Fatalf("Delete() unexpected error: %v", err)
+			}
+		})
 	}
 }
 
