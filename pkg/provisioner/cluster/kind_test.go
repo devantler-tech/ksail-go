@@ -27,7 +27,21 @@ func TestCreate_Success(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			runCreateSuccess(t, testCase.inputName, testCase.expectedName)
+			runActionSuccess(
+				t,
+				"Create()",
+				testCase.inputName,
+				testCase.expectedName,
+				func(p *clusterprovisioner.MockKindProvider, name string) {
+					p.
+						EXPECT().
+						Create(name, gomock.Any(), gomock.Any(), gomock.Any()).
+						Return(nil)
+				},
+				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
+					return prov.Create(name)
+				},
+			)
 		})
 	}
 }
@@ -63,7 +77,21 @@ func TestDelete_Success(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			runDeleteSuccess(t, testCase.inputName, testCase.expectedName)
+			runActionSuccess(
+				t,
+				"Delete()",
+				testCase.inputName,
+				testCase.expectedName,
+				func(p *clusterprovisioner.MockKindProvider, name string) {
+					p.
+						EXPECT().
+						Delete(name, gomock.Any()).
+						Return(nil)
+				},
+				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
+					return prov.Delete(name)
+				},
+			)
 		})
 	}
 }
@@ -380,33 +408,24 @@ func runClusterNotFoundTest(
 	}
 }
 
-// helper to run a successful Create() flow with expectation and assertion.
-func runCreateSuccess(t *testing.T, inputName, expectedName string) {
+// helper to run a successful action (Create/Delete) flow with expectation and assertion.
+type expectProviderFn func(*clusterprovisioner.MockKindProvider, string)
+type actionFn func(*clusterprovisioner.KindClusterProvisioner, string) error
+
+func runActionSuccess(
+	t *testing.T,
+	label string,
+	inputName, expectedName string,
+	expect expectProviderFn,
+	action actionFn,
+) {
 	t.Helper()
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Create(expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(nil)
+	expect(provider, expectedName)
 
-	err := provisioner.Create(inputName)
+	err := action(provisioner, inputName)
 	if err != nil {
-		t.Fatalf("Create() unexpected error: %v", err)
-	}
-}
-
-// helper to run a successful Delete() flow with expectation and assertion.
-func runDeleteSuccess(t *testing.T, inputName, expectedName string) {
-	t.Helper()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Delete(expectedName, gomock.Any()).
-		Return(nil)
-
-	err := provisioner.Delete(inputName)
-	if err != nil {
-		t.Fatalf("Delete() unexpected error: %v", err)
+		t.Fatalf("%s unexpected error: %v", label, err)
 	}
 }
 
