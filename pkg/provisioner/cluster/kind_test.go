@@ -140,6 +140,37 @@ func TestExists_Success_True(t *testing.T) {
 	}
 }
 
+func TestExists_Error_ListFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		List().
+		Return(nil, errBoom)
+
+	// Act
+	exists, err := provisioner.Exists("any")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Exists() expected error, got nil")
+	}
+
+	if exists {
+		t.Fatalf("Exists() got true, want false when error occurs")
+	}
+
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("Exists() error = %v, want wrapped errBoom", err)
+	}
+
+	if !strings.Contains(err.Error(), "failed to list kind clusters") {
+		t.Fatalf("Exists() error message = %q, want to contain failed to list kind clusters", err.Error())
+	}
+}
+
+
 func TestList_Success(t *testing.T) {
 	t.Parallel()
 	// Arrange
@@ -159,6 +190,32 @@ func TestList_Success(t *testing.T) {
 
 	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
 		t.Fatalf("List() got %v, want [a b]", got)
+	}
+}
+
+func TestList_Error_ListFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		List().
+		Return(nil, errBoom)
+
+	// Act
+	_, err := provisioner.List()
+
+	// Assert
+	if err == nil {
+		t.Fatalf("List() expected error, got nil")
+	}
+
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("List() error = %v, want wrapped errBoom", err)
+	}
+
+	if !strings.Contains(err.Error(), "failed to list kind clusters") {
+		t.Fatalf("List() error message = %q, want to contain failed to list kind clusters", err.Error())
 	}
 }
 
@@ -267,6 +324,38 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	// Assert
 	if err == nil {
 		t.Fatalf("Stop() expected error, got nil")
+	}
+}
+
+func TestStop_Error_DockerStopFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{"kind-control-plane"}, nil)
+
+	client.
+		EXPECT().
+		ContainerStop(gomock.Any(), "kind-control-plane", gomock.Any()).
+		Return(errBoom)
+
+	// Act
+	err := provisioner.Stop("")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Stop() expected error, got nil")
+	}
+
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("Stop() error = %v, want wrapped errBoom", err)
+	}
+
+	if !strings.Contains(err.Error(), "docker stop failed for kind-control-plane") {
+		t.Fatalf("Stop() error message = %q, want to contain docker stop failed for kind-control-plane", err.Error())
 	}
 }
 
