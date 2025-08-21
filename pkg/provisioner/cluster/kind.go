@@ -2,6 +2,7 @@ package clusterprovisioner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -13,6 +14,9 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 	kindcmd "sigs.k8s.io/kind/pkg/cmd"
 )
+
+// ErrClusterNotFound is returned when a cluster is not found.
+var ErrClusterNotFound = errors.New("cluster not found")
 
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
@@ -78,7 +82,7 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	}
 
 	if len(nodes) == 0 {
-		return fmt.Errorf("cluster '%s': no nodes found", target)
+		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
 	// Create a Docker client
@@ -120,7 +124,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	}
 
 	if len(nodes) == 0 {
-		return fmt.Errorf("cluster '%s' not found", target)
+		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
 	// Create a Docker client
