@@ -73,6 +73,27 @@ func TestDelete_Success(t *testing.T) {
 	}
 }
 
+func TestDelete_Error_DeleteFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		Delete("bad", gomock.Any()).
+		Return(errBoom)
+
+	// Act
+	err := provisioner.Delete("bad")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Delete() expected error, got nil")
+	}
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("Delete() error = %v, want wrapped errBoom", err)
+	}
+}
+
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 	// Arrange

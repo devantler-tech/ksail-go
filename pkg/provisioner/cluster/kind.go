@@ -78,12 +78,9 @@ func (k *KindClusterProvisioner) Create(name string) error {
 func (k *KindClusterProvisioner) Delete(name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	kubeconfigPath, err := pathutils.ExpandHomePath(k.kubeConfig)
-	if err != nil {
-		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
-	}
+	kubeconfigPath, _ := pathutils.ExpandHomePath(k.kubeConfig)
 
-	err = k.provider.Delete(target, kubeconfigPath)
+	err := k.provider.Delete(target, kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to delete kind cluster: %w", err)
 	}
