@@ -57,7 +57,7 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	_ = root.Execute()
 
 	// Assert
-	snaps.MatchSnapshot(test, out.String())
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestExecute_ReturnsError(t *testing.T) {
