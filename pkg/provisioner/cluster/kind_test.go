@@ -273,24 +273,20 @@ func TestStart_Success(t *testing.T) {
 
 func TestStart_Error_DockerStartFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, client := newProvisionerForTest(t)
-
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{"kind-control-plane"}, nil)
-
-	client.
-		EXPECT().
-		ContainerStart(gomock.Any(), "kind-control-plane", gomock.Any()).
-		Return(errBoom)
-
-	// Act
-	err := provisioner.Start("")
-
-	// Assert
-	assertErrWrappedContains(t, err, errBoom, "docker start failed for kind-control-plane", "Start()")
+	runDockerOperationFailureTest(
+		t,
+		"Start",
+		func(client *clusterprovisioner.MockDockerClient) {
+			client.
+				EXPECT().
+				ContainerStart(gomock.Any(), "kind-control-plane", gomock.Any()).
+				Return(errBoom)
+		},
+		func(p *clusterprovisioner.KindClusterProvisioner) error {
+			return p.Start("")
+		},
+		"docker start failed for kind-control-plane",
+	)
 }
 
 func TestStop_Error_ClusterNotFound(t *testing.T) {
@@ -320,24 +316,20 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 
 func TestStop_Error_DockerStopFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, client := newProvisionerForTest(t)
-
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{"kind-control-plane"}, nil)
-
-	client.
-		EXPECT().
-		ContainerStop(gomock.Any(), "kind-control-plane", gomock.Any()).
-		Return(errBoom)
-
-	// Act
-	err := provisioner.Stop("")
-
-	// Assert
-	assertErrWrappedContains(t, err, errBoom, "docker stop failed for kind-control-plane", "Stop()")
+	runDockerOperationFailureTest(
+		t,
+		"Stop",
+		func(client *clusterprovisioner.MockDockerClient) {
+			client.
+				EXPECT().
+				ContainerStop(gomock.Any(), "kind-control-plane", gomock.Any()).
+				Return(errBoom)
+		},
+		func(p *clusterprovisioner.KindClusterProvisioner) error {
+			return p.Stop("")
+		},
+		"docker stop failed for kind-control-plane",
+	)
 }
 
 func TestStop_Success(t *testing.T) {
@@ -445,4 +437,30 @@ func assertErrWrappedContains(t *testing.T, got error, want error, contains stri
 	if contains != "" && !strings.Contains(got.Error(), contains) {
 		t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
 	}
+}
+
+// runDockerOperationFailureTest is a helper to DRY up the repeated Docker operation failure scenarios.
+func runDockerOperationFailureTest(
+	t *testing.T,
+	actionName string,
+	expectDockerCall func(*clusterprovisioner.MockDockerClient),
+	action func(*clusterprovisioner.KindClusterProvisioner) error,
+	expectedErrorMsg string,
+) {
+	t.Helper()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{"kind-control-plane"}, nil)
+
+	expectDockerCall(client)
+
+	// Act
+	err := action(provisioner)
+
+	// Assert
+	assertErrWrappedContains(t, err, errBoom, expectedErrorMsg, actionName+"()")
 }
