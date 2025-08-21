@@ -26,20 +26,7 @@ func TestCreate_Success(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			// Arrange
-			provisioner, provider, _ := newProvisionerForTest(t)
-			provider.
-				EXPECT().
-				Create(testCase.expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(nil)
-
-			// Act
-			err := provisioner.Create(testCase.inputName)
-
-			// Assert
-			if err != nil {
-				t.Fatalf("Create() unexpected error: %v", err)
-			}
+			runCreateSuccess(t, testCase.inputName, testCase.expectedName)
 		})
 	}
 }
@@ -81,20 +68,7 @@ func TestDelete_Success(t *testing.T) {
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			// Arrange
-			provisioner, provider, _ := newProvisionerForTest(t)
-			provider.
-				EXPECT().
-				Delete(testCase.expectedName, gomock.Any()).
-				Return(nil)
-
-			// Act
-			err := provisioner.Delete(testCase.inputName)
-
-			// Assert
-			if err != nil {
-				t.Fatalf("Delete() unexpected error: %v", err)
-			}
+			runDeleteSuccess(t, testCase.inputName, testCase.expectedName)
 		})
 	}
 }
@@ -306,5 +280,35 @@ func runClusterNotFoundTest(
 
 	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
 		t.Fatalf("%s() error = %v, want ErrClusterNotFound", actionName, err)
+	}
+}
+
+// helper to run a successful Create() flow with expectation and assertion.
+func runCreateSuccess(t *testing.T, inputName, expectedName string) {
+	t.Helper()
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		Create(expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	err := provisioner.Create(inputName)
+	if err != nil {
+		t.Fatalf("Create() unexpected error: %v", err)
+	}
+}
+
+// helper to run a successful Delete() flow with expectation and assertion.
+func runDeleteSuccess(t *testing.T, inputName, expectedName string) {
+	t.Helper()
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		Delete(expectedName, gomock.Any()).
+		Return(nil)
+
+	err := provisioner.Delete(inputName)
+	if err != nil {
+		t.Fatalf("Delete() unexpected error: %v", err)
 	}
 }
