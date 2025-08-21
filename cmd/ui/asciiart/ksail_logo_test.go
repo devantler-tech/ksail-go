@@ -18,5 +18,5 @@ func TestPrintKSailLogo(t *testing.T) {
 	asciiart.PrintKSailLogo(&writer)
 
 	// Assert
-	snaps.MatchSnapshot(test, writer.String())
+	snaps.MatchSnapshot(t, writer.String())
 }
