@@ -11,24 +11,6 @@ import (
 
 var errBoom = errors.New("boom")
 
-func newProvisionerForTest(
-	t *testing.T,
-) (
-	*clusterprovisioner.KindClusterProvisioner,
-	*clusterprovisioner.MockKindProvider,
-	*clusterprovisioner.MockDockerClient,
-) {
-	t.Helper()
-	ctrl := gomock.NewController(t)
-	provider := clusterprovisioner.NewMockKindProvider(ctrl)
-	client := clusterprovisioner.NewMockDockerClient(ctrl)
-
-	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
-	provisioner := clusterprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
-
-	return provisioner, provider, client
-}
-
 func TestCreate_Success_WithName(t *testing.T) {
 	t.Parallel()
 	// Arrange
@@ -169,24 +151,9 @@ func TestList_Success(t *testing.T) {
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{}, nil)
-
-	// Act
-	err := provisioner.Start("")
-
-	// Assert
-	if err == nil {
-		t.Fatalf("Start() expected error, got nil")
-	}
-
-	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
-		t.Fatalf("Start() error = %v, want ErrClusterNotFound", err)
-	}
+	runClusterNotFoundTest(t, "Start", func(p *clusterprovisioner.KindClusterProvisioner) error {
+		return p.Start("")
+	})
 }
 
 func TestStart_Error_NoNodesFound(t *testing.T) {
@@ -235,24 +202,9 @@ func TestStart_Success(t *testing.T) {
 
 func TestStop_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
-	// Arrange
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{}, nil)
-
-	// Act
-	err := provisioner.Stop("")
-
-	// Assert
-	if err == nil {
-		t.Fatalf("Stop() expected error, got nil")
-	}
-
-	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
-		t.Fatalf("Stop() error = %v, want ErrClusterNotFound", err)
-	}
+	runClusterNotFoundTest(t, "Stop", func(p *clusterprovisioner.KindClusterProvisioner) error {
+		return p.Stop("")
+	})
 }
 
 func TestStop_Error_NoNodesFound(t *testing.T) {
@@ -295,5 +247,48 @@ func TestStop_Success(t *testing.T) {
 	// Assert
 	if err != nil {
 		t.Fatalf("Stop() unexpected error: %v", err)
+	}
+}
+
+// --- internals ---
+
+func newProvisionerForTest(
+	t *testing.T,
+) (
+	*clusterprovisioner.KindClusterProvisioner,
+	*clusterprovisioner.MockKindProvider,
+	*clusterprovisioner.MockDockerClient,
+) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	provider := clusterprovisioner.NewMockKindProvider(ctrl)
+	client := clusterprovisioner.NewMockDockerClient(ctrl)
+
+	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
+	provisioner := clusterprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
+
+	return provisioner, provider, client
+}
+
+// helper to DRY up the repeated "cluster not found" error scenario for Start/Stop.
+func runClusterNotFoundTest(
+	t *testing.T,
+	actionName string,
+	action func(*clusterprovisioner.KindClusterProvisioner) error,
+) {
+	t.Helper()
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		ListNodes("cfg-name").
+		Return([]string{}, nil)
+
+	err := action(provisioner)
+	if err == nil {
+		t.Fatalf("%s() expected error, got nil", actionName)
+	}
+
+	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
+		t.Fatalf("%s() error = %v, want ErrClusterNotFound", actionName, err)
 	}
 }
