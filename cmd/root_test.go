@@ -27,9 +27,9 @@ func TestMain(main *testing.M) {
 	os.Exit(exitCode)
 }
 
-func TestNewRootCmd_VersionFormatting(test *testing.T) {
+func TestNewRootCmd_VersionFormatting(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	// Act
 	version := "1.2.3"
@@ -40,13 +40,13 @@ func TestNewRootCmd_VersionFormatting(test *testing.T) {
 	// Assert
 	expectedVersion := version + " (Built on " + date + " from Git SHA " + commit + ")"
 	if cmd.Version != expectedVersion {
-		test.Fatalf("unexpected version string. want %q, got %q", expectedVersion, cmd.Version)
+		t.Fatalf("unexpected version string. want %q, got %q", expectedVersion, cmd.Version)
 	}
 }
 
-func TestExecute_ShowsHelp(test *testing.T) {
+func TestExecute_ShowsHelp(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -57,12 +57,12 @@ func TestExecute_ShowsHelp(test *testing.T) {
 	_ = root.Execute()
 
 	// Assert
-	snaps.MatchSnapshot(test, out.String())
+	snaps.MatchSnapshot(t, out.String())
 }
 
-func TestExecute_ReturnsError(test *testing.T) {
+func TestExecute_ReturnsError(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	failing := &cobra.Command{
 		Use: "fail",
@@ -76,13 +76,13 @@ func TestExecute_ReturnsError(test *testing.T) {
 
 	// Assert
 	if err == nil || err.Error() != "boom" {
-		test.Fatalf("expected error 'boom', got %v", err)
+		t.Fatalf("expected error 'boom', got %v", err)
 	}
 }
 
-func TestExecute_ReturnsNil(test *testing.T) {
+func TestExecute_ReturnsNil(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	succeeding := &cobra.Command{
 		Use: "ok",
@@ -96,6 +96,6 @@ func TestExecute_ReturnsNil(test *testing.T) {
 
 	// Assert
 	if err != nil {
-		test.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 }

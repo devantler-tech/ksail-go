@@ -8,9 +8,9 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
-func TestPrintKSailLogo(test *testing.T) {
+func TestPrintKSailLogo(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var writer bytes.Buffer
 
@@ -18,5 +18,5 @@ func TestPrintKSailLogo(test *testing.T) {
 	asciiart.PrintKSailLogo(&writer)
 
 	// Assert
-	snaps.MatchSnapshot(test, writer.String())
+	snaps.MatchSnapshot(t, writer.String())
 }
