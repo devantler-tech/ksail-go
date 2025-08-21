@@ -88,4 +88,4 @@ jobs:
               ;;
           esac
         env:
-          MATRIX_RESULT: ${{ needs.system-t.result }}
+          MATRIX_RESULT: ${{ needs.system-test.result }}
