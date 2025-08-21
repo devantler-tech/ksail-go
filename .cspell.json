@@ -19,6 +19,7 @@
     "apierrors",
     "apiextensions",
     "Apiextensions",
+    "pathutils",
     "apiextensionsclient",
     "apiextensionsv",
     "apimachinery",
