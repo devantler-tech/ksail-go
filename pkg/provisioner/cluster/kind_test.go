@@ -1,23 +1,24 @@
-package clusterprovisioner
+package clusterprovisioner_test
 
 import (
 	"errors"
 	"testing"
 
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"go.uber.org/mock/gomock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 var errBoom = errors.New("boom")
 
-func newProvisionerForTest(t *testing.T) (*KindClusterProvisioner, *MockKindProvider, *MockDockerClient) {
+func newProvisionerForTest(t *testing.T) (*clusterprovisioner.KindClusterProvisioner, *clusterprovisioner.MockKindProvider, *clusterprovisioner.MockDockerClient) {
 	t.Helper()
 	ctrl := gomock.NewController(t)
-	provider := NewMockKindProvider(ctrl)
-	client := NewMockDockerClient(ctrl)
+	provider := clusterprovisioner.NewMockKindProvider(ctrl)
+	client := clusterprovisioner.NewMockDockerClient(ctrl)
 
 	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
-	provisioner := NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
+	provisioner := clusterprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
 
 	return provisioner, provider, client
 }
@@ -177,7 +178,7 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 		t.Fatalf("Start() expected error, got nil")
 	}
 
-	if !errors.Is(err, ErrClusterNotFound) {
+	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
 		t.Fatalf("Start() error = %v, want ErrClusterNotFound", err)
 	}
 }
@@ -243,7 +244,7 @@ func TestStop_Error_ClusterNotFound(t *testing.T) {
 		t.Fatalf("Stop() expected error, got nil")
 	}
 
-	if !errors.Is(err, ErrClusterNotFound) {
+	if !errors.Is(err, clusterprovisioner.ErrClusterNotFound) {
 		t.Fatalf("Stop() error = %v, want ErrClusterNotFound", err)
 	}
 }
