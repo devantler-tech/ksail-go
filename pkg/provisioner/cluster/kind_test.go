@@ -47,6 +47,28 @@ func TestCreate_Success_WithoutName(t *testing.T) {
 	}
 }
 
+func TestCreate_Error_CreateFailed(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	provisioner, provider, _ := newProvisionerForTest(t)
+	provider.
+		EXPECT().
+		Create("my-cluster", gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(errBoom)
+
+	// Act
+	err := provisioner.Create("my-cluster")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Create() expected error, got nil")
+	}
+
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("Create() error = %v, want wrapped errBoom", err)
+	}
+}
+
 func TestDelete_Success_WithoutName(t *testing.T) {
 	t.Parallel()
 	// Arrange
