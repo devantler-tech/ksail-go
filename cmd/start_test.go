@@ -7,30 +7,30 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 )
 
-func TestNewStartCmd(test *testing.T) {
+func TestNewStartCmd(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	// Act
 	cmd := cmd.NewStartCmd()
 
 	// Assert
 	if cmd == nil {
-		test.Fatal("expected command to be created")
+		t.Fatal("expected command to be created")
 	}
 
 	if cmd.Use != "start" {
-		test.Fatalf("expected Use to be 'start', got %q", cmd.Use)
+		t.Fatalf("expected Use to be 'start', got %q", cmd.Use)
 	}
 
 	if cmd.Short != "Start a stopped Kubernetes cluster" {
-		test.Fatalf("expected Short description, got %q", cmd.Short)
+		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
 
-func TestStartCmd_Execute(test *testing.T) {
+func TestStartCmd_Execute(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -42,7 +42,7 @@ func TestStartCmd_Execute(test *testing.T) {
 
 	// Assert
 	if err != nil {
-		test.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 
 	got := out.String()
@@ -50,6 +50,6 @@ func TestStartCmd_Execute(test *testing.T) {
 	expected := "✔ Cluster started successfully (stub implementation)\n"
 
 	if got != expected {
-		test.Fatalf("expected output %q, got %q", expected, got)
+		t.Fatalf("expected output %q, got %q", expected, got)
 	}
 }

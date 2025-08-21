@@ -9,9 +9,9 @@ import (
 
 // writer helpers no longer needed; we call *To(out, ...) variants directly
 
-func TestErrorf(test *testing.T) {
+func TestErrorf(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -22,13 +22,13 @@ func TestErrorf(test *testing.T) {
 
   // Assert
 	if got != want {
-		test.Fatalf("stderr mismatch. want %q, got %q", want, got)
+		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestError(test *testing.T) {
+func TestError(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -39,13 +39,13 @@ func TestError(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stderr mismatch. want %q, got %q", want, got)
+		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestErrorln(test *testing.T) {
+func TestErrorln(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -56,13 +56,13 @@ func TestErrorln(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stderr mismatch. want %q, got %q", want, got)
+		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestWarnf(test *testing.T) {
+func TestWarnf(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -73,13 +73,13 @@ func TestWarnf(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestWarn(test *testing.T) {
+func TestWarn(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -90,13 +90,13 @@ func TestWarn(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestWarnln(test *testing.T) {
+func TestWarnln(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -107,13 +107,13 @@ func TestWarnln(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestSuccessf(test *testing.T) {
+func TestSuccessf(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -124,13 +124,13 @@ func TestSuccessf(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestSuccess(test *testing.T) {
+func TestSuccess(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -141,13 +141,13 @@ func TestSuccess(test *testing.T) {
 
   // Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestSuccessln(test *testing.T) {
+func TestSuccessln(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -158,13 +158,13 @@ func TestSuccessln(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestActivityf(test *testing.T) {
+func TestActivityf(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -175,13 +175,13 @@ func TestActivityf(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestActivity(test *testing.T) {
+func TestActivity(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -192,13 +192,13 @@ func TestActivity(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestActivityln(test *testing.T) {
+func TestActivityln(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -209,6 +209,6 @@ func TestActivityln(test *testing.T) {
 
 	// Assert
 	if got != want {
-		test.Fatalf("stdout mismatch. want %q, got %q", want, got)
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
 }

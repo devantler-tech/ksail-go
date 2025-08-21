@@ -7,30 +7,30 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 )
 
-func TestNewListCmd(test *testing.T) {
+func TestNewListCmd(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	// Act
 	cmd := cmd.NewListCmd()
 
 	// Assert
 	if cmd == nil {
-		test.Fatal("expected command to be created")
+		t.Fatal("expected command to be created")
 	}
 
 	if cmd.Use != "list" {
-		test.Fatalf("expected Use to be 'list', got %q", cmd.Use)
+		t.Fatalf("expected Use to be 'list', got %q", cmd.Use)
 	}
 
 	if cmd.Short != "List Kubernetes clusters" {
-		test.Fatalf("expected Short description, got %q", cmd.Short)
+		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
 
-func TestListCmd_Execute_Default(test *testing.T) {
+func TestListCmd_Execute_Default(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -42,7 +42,7 @@ func TestListCmd_Execute_Default(test *testing.T) {
 
 	// Assert
 	if err != nil {
-		test.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 
 	got := out.String()
@@ -50,13 +50,13 @@ func TestListCmd_Execute_Default(test *testing.T) {
 	expected := "✔ Listing running clusters (stub implementation)\n"
 
 	if got != expected {
-		test.Fatalf("expected output %q, got %q", expected, got)
+		t.Fatalf("expected output %q, got %q", expected, got)
 	}
 }
 
-func TestListCmd_Execute_All(test *testing.T) {
+func TestListCmd_Execute_All(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	var out bytes.Buffer
 
@@ -69,7 +69,7 @@ func TestListCmd_Execute_All(test *testing.T) {
 
 	// Assert
 	if err != nil {
-		test.Fatalf("expected no error, got %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 
 	got := out.String()
@@ -77,23 +77,23 @@ func TestListCmd_Execute_All(test *testing.T) {
 	expected := "✔ Listing all clusters (stub implementation)\n"
 
 	if got != expected {
-		test.Fatalf("expected output %q, got %q", expected, got)
+		t.Fatalf("expected output %q, got %q", expected, got)
 	}
 }
 
-func TestListCmd_Flags(test *testing.T) {
+func TestListCmd_Flags(t *testing.T) {
 	// Arrange
-	test.Parallel()
+	t.Parallel()
 
 	cmd := cmd.NewListCmd()
 
 	// Act & Assert
 	allFlag := cmd.Flags().Lookup("all")
 	if allFlag == nil {
-		test.Fatal("expected all flag to exist")
+		t.Fatal("expected all flag to exist")
 	}
 
 	if allFlag.DefValue != "false" {
-		test.Fatalf("expected all flag default to be 'false', got %q", allFlag.DefValue)
+		t.Fatalf("expected all flag default to be 'false', got %q", allFlag.DefValue)
 	}
 }

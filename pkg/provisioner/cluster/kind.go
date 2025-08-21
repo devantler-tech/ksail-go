@@ -9,32 +9,45 @@ import (
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	"github.com/docker/docker/api/types/container"
-	dockerClient "github.com/docker/go-sdk/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
-	kindcmd "sigs.k8s.io/kind/pkg/cmd"
+	nodes "sigs.k8s.io/kind/pkg/cluster/nodes"
 )
 
 // ErrClusterNotFound is returned when a cluster is not found.
 var ErrClusterNotFound = errors.New("cluster not found")
 
+// KindProvider describes the subset of methods from kind's Provider used here.
+type KindProvider interface {
+	Create(name string, opts ...cluster.CreateOption) error
+	Delete(name, kubeconfigPath string) error
+	List() ([]string, error)
+	ListNodes(name string) ([]nodes.Node, error)
+}
+
+type DockerClient interface {
+	ContainerStart(ctx context.Context, name string, options container.StartOptions) error
+	ContainerStop(ctx context.Context, name string, options container.StopOptions) error
+}
+
+
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
 	kubeConfig string
 	kindConfig *v1alpha4.Cluster
-	provider   *cluster.Provider
-	client     *dockerClient.Client
+	provider   KindProvider
+	client     DockerClient
 }
 
-// NewKindClusterProvisioner creates a new KindClusterProvisioner.
-func NewKindClusterProvisioner(kindConfig *v1alpha4.Cluster, kubeConfig string) *KindClusterProvisioner {
+// NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
+// for the kind provider and docker client. This supports both production wiring
+// and unit testing via mocks.
+func NewKindClusterProvisioner(kindConfig *v1alpha4.Cluster, kubeConfig string, provider KindProvider, client DockerClient) *KindClusterProvisioner {
 	return &KindClusterProvisioner{
 		kubeConfig: kubeConfig,
 		kindConfig: kindConfig,
-		provider: cluster.NewProvider(
-			cluster.ProviderWithLogger(kindcmd.NewLogger()),
-		),
-		client: dockerClient.DefaultClient,
+		provider:   provider,
+		client:     client,
 	}
 }
 
@@ -167,6 +180,22 @@ func (k *KindClusterProvisioner) Exists(name string) (bool, error) {
 }
 
 // --- internals ---
+
+type kindProviderAdapter struct{ p *cluster.Provider }
+
+func (a kindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
+	return a.p.Create(name, opts...)
+}
+
+func (a kindProviderAdapter) Delete(name, kubeconfigPath string) error {
+	return a.p.Delete(name, kubeconfigPath)
+}
+
+func (a kindProviderAdapter) List() ([]string, error) { return a.p.List() }
+
+func (a kindProviderAdapter) ListNodes(name string) ([]nodes.Node, error) {
+	return a.p.ListNodes(name)
+}
 
 func setName(name string, kindConfigName string) string {
 	target := name
