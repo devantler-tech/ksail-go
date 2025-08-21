@@ -73,11 +73,10 @@ func (k *KindClusterProvisioner) Start(name string) error {
 	target := setName(name, k.kindConfig.Name)
 
 	nodes, err := k.dockerProvider.ListNodes(target)
-	if len(nodes) == 0 || err != nil {
-		return fmt.Errorf("cluster '%s': %w", target, err)
 	if err != nil {
 		return fmt.Errorf("cluster '%s': %w", target, err)
 	}
+
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s': no nodes found", target)
 	}
@@ -116,11 +115,10 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 	target := setName(name, k.kindConfig.Name)
 
 	nodes, err := k.dockerProvider.ListNodes(target)
-	if len(nodes) == 0 || err != nil {
-		return fmt.Errorf("cluster '%s' not found: %w", target, err)
 	if err != nil {
 		return fmt.Errorf("failed to list nodes for cluster '%s': %w", target, err)
 	}
+
 	if len(nodes) == 0 {
 		return fmt.Errorf("cluster '%s' not found", target)
 	}
