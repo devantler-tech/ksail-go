@@ -18,16 +18,16 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 	input := "~/some/nested/dir"
 
 	// Act
-	got, err := ExpandPath(input)
+	got, err := ExpandHomePath(input)
 	if err != nil {
-		t.Fatalf("ExpandPath returned error: %v", err)
+		t.Fatalf("ExpandHomePath returned error: %v", err)
 	}
 
 	want := filepath.Join(usr.HomeDir, "some", "nested", "dir")
 
 	// Assert
 	if got != want {
-		t.Fatalf("ExpandPath(%q) = %q, want %q", input, got, want)
+		t.Fatalf("ExpandHomePath(%q) = %q, want %q", input, got, want)
 	}
 }
 
@@ -42,14 +42,14 @@ func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
 
 	for _, inputPath := range cases {
 		// Act
-		got, err := ExpandPath(inputPath)
+		got, err := ExpandHomePath(inputPath)
 		if err != nil {
-			t.Fatalf("ExpandPath returned error for %q: %v", inputPath, err)
+			t.Fatalf("ExpandHomePath returned error for %q: %v", inputPath, err)
 		}
 
 		// Assert
 		if got != inputPath {
-			t.Fatalf("ExpandPath(%q) = %q, want unchanged", inputPath, got)
+			t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", inputPath, got)
 		}
 	}
 }
@@ -61,13 +61,13 @@ func TestExpandPath_TildeOnlyUnchanged(t *testing.T) {
 	input := "~" // No trailing slash, function should leave unchanged
 
 	// Act
-	got, err := ExpandPath(input)
+	got, err := ExpandHomePath(input)
 	if err != nil {
-		t.Fatalf("ExpandPath returned error: %v", err)
+		t.Fatalf("ExpandHomePath returned error: %v", err)
 	}
 
 	// Assert
 	if got != input {
-		t.Fatalf("ExpandPath(%q) = %q, want unchanged", input, got)
+		t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", input, got)
 	}
 }

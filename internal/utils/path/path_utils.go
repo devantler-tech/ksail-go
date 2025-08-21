@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// ExpandPath expands the given path, replacing the home directory shortcut with the full path.
-func ExpandPath(path string) (string, error) {
+// ExpandHomePath expands the home directory shortcut with the full path.
+func ExpandHomePath(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") {
 		usr, _ := user.Current()
 

@@ -1,5 +1,3 @@
-// Package clusterprovisioner provides implementations of the Provisioner interface
-// for provisioning cl
 package clusterprovisioner
 
 import (
@@ -78,7 +76,7 @@ func (k *KindClusterProvisioner) Create(name string) error {
 func (k *KindClusterProvisioner) Delete(name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	kubeconfigPath, err := pathutils.ExpandPath(k.kubeConfig)
+	kubeconfigPath, err := pathutils.ExpandHomePath(k.kubeConfig)
 	if err != nil {
 		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
