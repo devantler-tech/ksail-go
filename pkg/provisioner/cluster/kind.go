@@ -9,7 +9,7 @@ import (
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	dockerClient "github.com/docker/go-sdk/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
 	kindcmd "sigs.k8s.io/kind/pkg/cmd"
@@ -20,9 +20,10 @@ var ErrClusterNotFound = errors.New("cluster not found")
 
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
-	kubeConfig     string
-	kindConfig     *v1alpha4.Cluster
-	dockerProvider *cluster.Provider
+	kubeConfig string
+	kindConfig *v1alpha4.Cluster
+	provider   *cluster.Provider
+	client     *dockerClient.Client
 }
 
 // NewKindClusterProvisioner creates a new KindClusterProvisioner.
@@ -30,9 +31,10 @@ func NewKindClusterProvisioner(kindConfig *v1alpha4.Cluster, kubeConfig string) 
 	return &KindClusterProvisioner{
 		kubeConfig: kubeConfig,
 		kindConfig: kindConfig,
-		dockerProvider: cluster.NewProvider(
+		provider: cluster.NewProvider(
 			cluster.ProviderWithLogger(kindcmd.NewLogger()),
 		),
+		client: dockerClient.DefaultClient,
 	}
 }
 
@@ -40,7 +42,7 @@ func NewKindClusterProvisioner(kindConfig *v1alpha4.Cluster, kubeConfig string) 
 func (k *KindClusterProvisioner) Create(name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	err := k.dockerProvider.Create(
+	err := k.provider.Create(
 		target,
 		cluster.CreateWithV1Alpha4Config(k.kindConfig),
 		cluster.CreateWithDisplayUsage(true),
@@ -62,7 +64,7 @@ func (k *KindClusterProvisioner) Delete(name string) error {
 		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	err = k.dockerProvider.Delete(target, kubeconfigPath)
+	err = k.provider.Delete(target, kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to delete kind cluster: %w", err)
 	}
@@ -76,7 +78,7 @@ func (k *KindClusterProvisioner) Start(name string) error {
 
 	target := setName(name, k.kindConfig.Name)
 
-	nodes, err := k.dockerProvider.ListNodes(target)
+	nodes, err := k.provider.ListNodes(target)
 	if err != nil {
 		return fmt.Errorf("cluster '%s': %w", target, err)
 	}
@@ -85,22 +87,14 @@ func (k *KindClusterProvisioner) Start(name string) error {
 		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
-	// Create a Docker client
 	ctx, cancel := context.WithTimeout(context.Background(), dockerStartTimeout)
 	defer cancel()
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
-	}
-
-	defer func() { _ = cli.Close() }()
 
 	for _, n := range nodes {
 		// Start each node container by name using Docker SDK
 		name := n.String()
 
-		err := cli.ContainerStart(ctx, name, container.StartOptions{
+		err := k.client.ContainerStart(ctx, name, container.StartOptions{
 			CheckpointID:  "",
 			CheckpointDir: "",
 		})
@@ -118,7 +112,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 
 	target := setName(name, k.kindConfig.Name)
 
-	nodes, err := k.dockerProvider.ListNodes(target)
+	nodes, err := k.provider.ListNodes(target)
 	if err != nil {
 		return fmt.Errorf("failed to list nodes for cluster '%s': %w", target, err)
 	}
@@ -127,22 +121,14 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
-	// Create a Docker client
 	ctx, cancel := context.WithTimeout(context.Background(), dockerStopTimeout)
 	defer cancel()
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
-	}
-
-	defer func() { _ = cli.Close() }()
 
 	for _, n := range nodes {
 		// Stop each node container by name using Docker SDK
 		name := n.String()
 		// Graceful stop with default timeout
-		err := cli.ContainerStop(ctx, name, container.StopOptions{
+		err := k.client.ContainerStop(ctx, name, container.StopOptions{
 			Signal:  "",
 			Timeout: nil,
 		})
@@ -156,7 +142,7 @@ func (k *KindClusterProvisioner) Stop(name string) error {
 
 // List returns all kind clusters.
 func (k *KindClusterProvisioner) List() ([]string, error) {
-	clusters, err := k.dockerProvider.List()
+	clusters, err := k.provider.List()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list kind clusters: %w", err)
 	}
@@ -166,7 +152,7 @@ func (k *KindClusterProvisioner) List() ([]string, error) {
 
 // Exists checks if a kind cluster exists.
 func (k *KindClusterProvisioner) Exists(name string) (bool, error) {
-	clusters, err := k.dockerProvider.List()
+	clusters, err := k.provider.List()
 	if err != nil {
 		return false, fmt.Errorf("failed to list kind clusters: %w", err)
 	}
