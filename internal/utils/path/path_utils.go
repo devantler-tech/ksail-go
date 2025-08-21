@@ -2,7 +2,6 @@
 package pathutils
 
 import (
-	"fmt"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -11,10 +10,7 @@ import (
 // ExpandPath expands the given path, replacing the home directory shortcut with the full path.
 func ExpandPath(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") {
-		usr, err := user.Current()
-		if err != nil {
-			return "", fmt.Errorf("failed to get current user: %w", err)
-		}
+		usr, _ := user.Current()
 
 		return filepath.Join(usr.HomeDir, path[2:]), nil
 	}
