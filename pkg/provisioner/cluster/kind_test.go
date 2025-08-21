@@ -2,6 +2,7 @@ package clusterprovisioner_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
@@ -91,6 +92,9 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	}
 	if !errors.Is(err, errBoom) {
 		t.Fatalf("Delete() error = %v, want wrapped errBoom", err)
+	}
+	if !strings.Contains(err.Error(), "failed to delete kind cluster") {
+		t.Fatalf("Delete() error message missing context: %v", err)
 	}
 }
 
