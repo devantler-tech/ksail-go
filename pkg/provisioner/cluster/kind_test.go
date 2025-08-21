@@ -23,18 +23,18 @@ func TestCreate_Success(t *testing.T) {
 		{name: "without name uses cfg", inputName: "", expectedName: "cfg-name"},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			// Arrange
 			provisioner, provider, _ := newProvisionerForTest(t)
 			provider.
 				EXPECT().
-				Create(tc.expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
+				Create(testCase.expectedName, gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(nil)
 
 			// Act
-			err := provisioner.Create(tc.inputName)
+			err := provisioner.Create(testCase.inputName)
 
 			// Assert
 			if err != nil {
@@ -78,18 +78,18 @@ func TestDelete_Success(t *testing.T) {
 		{name: "with name", inputName: "custom", expectedName: "custom"},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			// Arrange
 			provisioner, provider, _ := newProvisionerForTest(t)
 			provider.
 				EXPECT().
-				Delete(tc.expectedName, gomock.Any()).
+				Delete(testCase.expectedName, gomock.Any()).
 				Return(nil)
 
 			// Act
-			err := provisioner.Delete(tc.inputName)
+			err := provisioner.Delete(testCase.inputName)
 
 			// Assert
 			if err != nil {
