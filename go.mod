@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/gkampitakis/go-snaps v0.5.14
 	github.com/spf13/cobra v1.9.1
-	go.uber.org/mock v0.5.0
+	go.uber.org/mock v0.6.0
 	sigs.k8s.io/kind v0.29.0
 )
 
