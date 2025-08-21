@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/dockerclient"
 	"go.uber.org/mock/gomock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	nodes "sigs.k8s.io/kind/pkg/cluster/nodes"
