@@ -1,3 +1,5 @@
+// Package clusterprovisioner provides implementations of the Provisioner interface
+// for provisioning cl
 package clusterprovisioner
 
 import (
