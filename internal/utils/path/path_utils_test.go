@@ -1,9 +1,11 @@
-package pathutils
+package pathutils_test
 
 import (
 	"os/user"
 	"path/filepath"
 	"testing"
+
+	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 )
 
 func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
@@ -18,7 +20,7 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 	input := "~/some/nested/dir"
 
 	// Act
-	got, err := ExpandHomePath(input)
+	got, err := pathutils.ExpandHomePath(input)
 	if err != nil {
 		t.Fatalf("ExpandHomePath returned error: %v", err)
 	}
@@ -42,7 +44,7 @@ func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
 
 	for _, inputPath := range cases {
 		// Act
-		got, err := ExpandHomePath(inputPath)
+		got, err := pathutils.ExpandHomePath(inputPath)
 		if err != nil {
 			t.Fatalf("ExpandHomePath returned error for %q: %v", inputPath, err)
 		}
@@ -61,7 +63,7 @@ func TestExpandPath_TildeOnlyUnchanged(t *testing.T) {
 	input := "~" // No trailing slash, function should leave unchanged
 
 	// Act
-	got, err := ExpandHomePath(input)
+	got, err := pathutils.ExpandHomePath(input)
 	if err != nil {
 		t.Fatalf("ExpandHomePath returned error: %v", err)
 	}
