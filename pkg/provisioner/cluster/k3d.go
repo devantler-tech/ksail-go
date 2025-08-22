@@ -19,13 +19,24 @@ type K3dClusterProvisioner struct {
 
 var _ ClusterProvisioner = (*K3dClusterProvisioner)(nil)
 
+// Allow stubbing in tests by routing calls through variables.
+var (
+	k3dClusterRun  = client.ClusterRun
+	k3dClusterGet  = client.ClusterGet
+	k3dClusterStop = client.ClusterStop
+	k3dClusterStart = client.ClusterStart
+	k3dClusterDelete = client.ClusterDelete
+	k3dClusterList = client.ClusterList
+	k3dTransformSimpleToClusterConfig = config.TransformSimpleToClusterConfig
+)
+
 // NewK3dClusterProvisioner constructs a k3d provisioner instance using only the k3d SimpleConfig.
 func NewK3dClusterProvisioner(simpleCfg *v1alpha5.SimpleConfig) *K3dClusterProvisioner {
 	return &K3dClusterProvisioner{config: simpleCfg}
 }
 
 // Create provisions a k3d cluster using the loaded SimpleConfig.
-func (k *K3dClusterProvisioner) Create(name string, ctx context.Context) error {
+func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	// Ensure name in SimpleConfig; default to ksail name
@@ -34,7 +45,7 @@ func (k *K3dClusterProvisioner) Create(name string, ctx context.Context) error {
 	k.config.Name = target
 
 	// Transform SimpleConfig -> ClusterConfig
-	clusterCfg, err := config.TransformSimpleToClusterConfig(ctx, runtime, *k.config, "k3d.yaml")
+	clusterCfg, err := k3dTransformSimpleToClusterConfig(ctx, runtime, *k.config, "k3d.yaml")
 	if err != nil {
 		return fmt.Errorf("failed to transform simple config to cluster config: %w", err)
 	}
@@ -44,7 +55,7 @@ func (k *K3dClusterProvisioner) Create(name string, ctx context.Context) error {
 	clusterCfg.KubeconfigOpts.SwitchCurrentContext = true
 
 	// Run full create sequence
-	err = client.ClusterRun(ctx, runtime, clusterCfg)
+	err = k3dClusterRun(ctx, runtime, clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to run k3d cluster: %w", err)
 	}
@@ -53,14 +64,14 @@ func (k *K3dClusterProvisioner) Create(name string, ctx context.Context) error {
 }
 
 // Delete tears down a k3d cluster.
-func (k *K3dClusterProvisioner) Delete(name string, ctx context.Context) error {
+func (k *K3dClusterProvisioner) Delete(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := k.resolveName(name)
 
 	cluster := &types.Cluster{Name: target}
 
-	err := client.ClusterDelete(ctx, runtime, cluster, types.ClusterDeleteOpts{
+	err := k3dClusterDelete(ctx, runtime, cluster, types.ClusterDeleteOpts{
 		SkipRegistryCheck: false,
 	})
 	if err != nil {
@@ -71,17 +82,17 @@ func (k *K3dClusterProvisioner) Delete(name string, ctx context.Context) error {
 }
 
 // Start starts an existing k3d cluster.
-func (k *K3dClusterProvisioner) Start(name string, ctx context.Context) error {
+func (k *K3dClusterProvisioner) Start(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := k.resolveName(name)
 
-	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
+	c, err := k3dClusterGet(ctx, runtime, &types.Cluster{Name: target})
 	if err != nil {
 		return fmt.Errorf("failed to get k3d cluster %q: %w", target, err)
 	}
 
-	err = client.ClusterStart(ctx, runtime, c, types.ClusterStartOpts{
+	err = k3dClusterStart(ctx, runtime, c, types.ClusterStartOpts{
 		WaitForServer:   false,
 		Timeout:         0,
 		NodeHooks:       nil,
@@ -97,17 +108,17 @@ func (k *K3dClusterProvisioner) Start(name string, ctx context.Context) error {
 }
 
 // Stop stops a running k3d cluster.
-func (k *K3dClusterProvisioner) Stop(name string, ctx context.Context) error {
+func (k *K3dClusterProvisioner) Stop(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := k.resolveName(name)
 
-	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
+	c, err := k3dClusterGet(ctx, runtime, &types.Cluster{Name: target})
 	if err != nil {
 		return fmt.Errorf("failed to get k3d cluster %q: %w", target, err)
 	}
 
-	err = client.ClusterStop(ctx, runtime, c)
+	err = k3dClusterStop(ctx, runtime, c)
 	if err != nil {
 		return fmt.Errorf("failed to stop k3d cluster %q: %w", target, err)
 	}
@@ -119,7 +130,7 @@ func (k *K3dClusterProvisioner) Stop(name string, ctx context.Context) error {
 func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	rt := runtimes.SelectedRuntime
 
-	clusters, err := client.ClusterList(ctx, rt)
+	clusters, err := k3dClusterList(ctx, rt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list k3d clusters: %w", err)
 	}
@@ -133,7 +144,7 @@ func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
 }
 
 // Exists returns whether the ksail cluster name exists in k3d.
-func (k *K3dClusterProvisioner) Exists(name string, ctx context.Context) (bool, error) {
+func (k *K3dClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
 	clusters, err := k.List(ctx)
 	if err != nil {
 		return false, err

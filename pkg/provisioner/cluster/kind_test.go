@@ -40,7 +40,7 @@ func TestCreate_Success(t *testing.T) {
 						Return(nil)
 				},
 				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
-					return prov.Create(name, context.Background())
+					return prov.Create(context.Background(), name)
 				},
 			)
 		})
@@ -57,7 +57,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 		Return(errBoom)
 
 	// Act
-	err := provisioner.Create("my-cluster", context.Background())
+	err := provisioner.Create(context.Background(), "my-cluster")
 
 	// Assert
 	assertErrWrappedContains(t, err, errBoom, "", "Create()")
@@ -90,7 +90,7 @@ func TestDelete_Success(t *testing.T) {
 						Return(nil)
 				},
 				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
-					return prov.Delete(name, context.Background())
+					return prov.Delete(context.Background(), name)
 				},
 			)
 		})
@@ -107,7 +107,7 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 		Return(errBoom)
 
 	// Act
-	err := provisioner.Delete("bad", context.Background())
+	err := provisioner.Delete(context.Background(), "bad")
 
 	// Assert
 	if err == nil {
@@ -129,7 +129,7 @@ func TestExists_Success_False(t *testing.T) {
 		Return([]string{"x", "y"}, nil)
 
 	// Act
-	exists, err := provisioner.Exists("not-here", context.Background())
+	exists, err := provisioner.Exists(context.Background(), "not-here")
 
 	// Assert
 	if err != nil {
@@ -151,7 +151,7 @@ func TestExists_Success_True(t *testing.T) {
 		Return([]string{"x", "cfg-name"}, nil)
 
 	// Act
-	exists, err := provisioner.Exists("", context.Background())
+	exists, err := provisioner.Exists(context.Background(), "")
 
 	// Assert
 	if err != nil {
@@ -173,7 +173,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		Return(nil, errBoom)
 
 	// Act
-	exists, err := provisioner.Exists("any", context.Background())
+	exists, err := provisioner.Exists(context.Background(), "any")
 
 	// Assert
 	if exists {
@@ -224,7 +224,7 @@ func TestList_Error_ListFailed(t *testing.T) {
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 	runClusterNotFoundTest(t, "Start", func(p *clusterprovisioner.KindClusterProvisioner) error {
-		return p.Start("", context.Background())
+		return p.Start(context.Background(), "")
 	})
 }
 
@@ -238,7 +238,7 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 		Return(nil, errBoom)
 
 	// Act
-	err := provisioner.Start("", context.Background())
+	err := provisioner.Start(context.Background(), "")
 
 	// Assert
 	if err == nil {
@@ -264,7 +264,7 @@ func TestStart_Success(t *testing.T) {
 		Return(nil)
 
 	// Act
-	err := provisioner.Start("", context.Background())
+	err := provisioner.Start(context.Background(), "")
 
 	// Assert
 	if err != nil {
@@ -284,7 +284,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 				Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
-			return p.Start("", context.Background())
+			return p.Start(context.Background(), "")
 		},
 		"docker start failed for kind-control-plane",
 	)
@@ -293,7 +293,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 func TestStop_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 	runClusterNotFoundTest(t, "Stop", func(p *clusterprovisioner.KindClusterProvisioner) error {
-		return p.Stop("", context.Background())
+		return p.Stop(context.Background(), "")
 	})
 }
 
@@ -307,7 +307,7 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 		Return(nil, errBoom)
 
 	// Act
-	err := provisioner.Stop("", context.Background())
+	err := provisioner.Stop(context.Background(), "")
 
 	// Assert
 	if err == nil {
@@ -327,7 +327,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 				Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
-			return p.Stop("", context.Background())
+			return p.Stop(context.Background(), "")
 		},
 		"docker stop failed for kind-control-plane",
 	)
@@ -350,7 +350,7 @@ func TestStop_Success(t *testing.T) {
 		Return(nil)
 
 	// Act
-	err := provisioner.Stop("", context.Background())
+	err := provisioner.Stop(context.Background(), "")
 
 	// Assert
 	if err != nil {
