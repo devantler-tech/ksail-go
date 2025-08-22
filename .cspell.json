@@ -15,6 +15,7 @@
     "Activityln",
     "afero",
     "varargs",
+    "dockerclient",
     "alecthomas",
     "ansiterm",
     "apierrors",
