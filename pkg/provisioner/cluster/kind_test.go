@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	"go.uber.org/mock/gomock"
+	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -33,10 +33,7 @@ func TestCreate_Success(t *testing.T) {
 				testCase.inputName,
 				testCase.expectedName,
 				func(p *clusterprovisioner.MockKindProvider, name string) {
-					p.
-						EXPECT().
-						Create(name, gomock.Any(), gomock.Any(), gomock.Any()).
-						Return(nil)
+					p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				},
 				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
 					return prov.Create(name)
@@ -50,10 +47,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Create("my-cluster", gomock.Any(), gomock.Any(), gomock.Any()).
-		Return(errBoom)
+	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(errBoom)
 
 	// Act
 	err := provisioner.Create("my-cluster")
@@ -83,10 +77,7 @@ func TestDelete_Success(t *testing.T) {
 				testCase.inputName,
 				testCase.expectedName,
 				func(p *clusterprovisioner.MockKindProvider, name string) {
-					p.
-						EXPECT().
-						Delete(name, gomock.Any()).
-						Return(nil)
+					p.On("Delete", name, mock.Anything).Return(nil)
 				},
 				func(prov *clusterprovisioner.KindClusterProvisioner, name string) error {
 					return prov.Delete(name)
@@ -100,10 +91,7 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		Delete("bad", gomock.Any()).
-		Return(errBoom)
+	provider.On("Delete", "bad", mock.Anything).Return(errBoom)
 
 	// Act
 	err := provisioner.Delete("bad")
@@ -122,10 +110,7 @@ func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		List().
-		Return([]string{"x", "y"}, nil)
+	provider.On("List").Return([]string{"x", "y"}, nil)
 
 	// Act
 	exists, err := provisioner.Exists("not-here")
@@ -144,10 +129,7 @@ func TestExists_Success_True(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		List().
-		Return([]string{"x", "cfg-name"}, nil)
+	provider.On("List").Return([]string{"x", "cfg-name"}, nil)
 
 	// Act
 	exists, err := provisioner.Exists("")
@@ -166,10 +148,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		List().
-		Return(nil, errBoom)
+	provider.On("List").Return(nil, errBoom)
 
 	// Act
 	exists, err := provisioner.Exists("any")
@@ -186,10 +165,7 @@ func TestList_Success(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		List().
-		Return([]string{"a", "b"}, nil)
+	provider.On("List").Return([]string{"a", "b"}, nil)
 
 	// Act
 	got, err := provisioner.List()
@@ -208,10 +184,7 @@ func TestList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		List().
-		Return(nil, errBoom)
+	provider.On("List").Return(nil, errBoom)
 
 	// Act
 	_, err := provisioner.List()
@@ -231,10 +204,7 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return(nil, errBoom)
+	provider.On("ListNodes", "cfg-name").Return(nil, errBoom)
 
 	// Act
 	err := provisioner.Start("")
@@ -250,17 +220,10 @@ func TestStart_Success(t *testing.T) {
 	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{"kind-control-plane", "kind-worker"}, nil)
+	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane", "kind-worker"}, nil)
 
 	// Expect ContainerStart called twice with any args
-	client.
-		EXPECT().
-		ContainerStart(gomock.Any(), gomock.Any(), gomock.Any()).
-		Times(2).
-		Return(nil)
+	client.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything).Return(nil).Times(2)
 
 	// Act
 	err := provisioner.Start("")
@@ -277,10 +240,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 		t,
 		"Start",
 		func(client *clusterprovisioner.MockDockerClient) {
-			client.
-				EXPECT().
-				ContainerStart(gomock.Any(), "kind-control-plane", gomock.Any()).
-				Return(errBoom)
+			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
 			return p.Start("")
@@ -300,10 +260,7 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return(nil, errBoom)
+	provider.On("ListNodes", "cfg-name").Return(nil, errBoom)
 
 	// Act
 	err := provisioner.Stop("")
@@ -320,10 +277,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 		t,
 		"Stop",
 		func(client *clusterprovisioner.MockDockerClient) {
-			client.
-				EXPECT().
-				ContainerStop(gomock.Any(), "kind-control-plane", gomock.Any()).
-				Return(errBoom)
+			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
 			return p.Stop("")
@@ -337,16 +291,9 @@ func TestStop_Success(t *testing.T) {
 	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{"kind-control-plane", "kind-worker", "kind-worker2"}, nil)
+	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane", "kind-worker", "kind-worker2"}, nil)
 
-	client.
-		EXPECT().
-		ContainerStop(gomock.Any(), gomock.Any(), gomock.Any()).
-		Times(3).
-		Return(nil)
+	client.On("ContainerStop", mock.Anything, mock.Anything, mock.Anything).Return(nil).Times(3)
 
 	// Act
 	err := provisioner.Stop("")
@@ -367,9 +314,8 @@ func newProvisionerForTest(
 	*clusterprovisioner.MockDockerClient,
 ) {
 	t.Helper()
-	ctrl := gomock.NewController(t)
-	provider := clusterprovisioner.NewMockKindProvider(ctrl)
-	client := clusterprovisioner.NewMockDockerClient(ctrl)
+	provider := clusterprovisioner.NewMockKindProvider(t)
+	client := clusterprovisioner.NewMockDockerClient(t)
 
 	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
 	provisioner := clusterprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
@@ -385,10 +331,7 @@ func runClusterNotFoundTest(
 ) {
 	t.Helper()
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{}, nil)
+	provider.On("ListNodes", "cfg-name").Return([]string{}, nil)
 
 	err := action(provisioner)
 	if err == nil {
@@ -451,10 +394,7 @@ func runDockerOperationFailureTest(
 	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
-	provider.
-		EXPECT().
-		ListNodes("cfg-name").
-		Return([]string{"kind-control-plane"}, nil)
+	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane"}, nil)
 
 	expectDockerCall(client)
 
