@@ -25,15 +25,11 @@ func NewK3dClusterProvisioner(simpleCfg *v1alpha5.SimpleConfig) *K3dClusterProvi
 }
 
 // Create provisions a k3d cluster using the loaded SimpleConfig.
-func (k *K3dClusterProvisioner) Create(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Create(name string, ctx context.Context) error {
 	runtime := runtimes.SelectedRuntime
 
 	// Ensure name in SimpleConfig; default to ksail name
-	target := name
-	if target == "" {
-		target = k.config.Name
-	}
+	target := k.resolveName(name)
 
 	k.config.Name = target
 
@@ -57,14 +53,10 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 }
 
 // Delete tears down a k3d cluster.
-func (k *K3dClusterProvisioner) Delete(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Delete(name string, ctx context.Context) error {
 	runtime := runtimes.SelectedRuntime
 
-	target := name
-	if target == "" {
-		target = k.config.Name
-	}
+	target := k.resolveName(name)
 
 	cluster := &types.Cluster{Name: target}
 
@@ -79,14 +71,10 @@ func (k *K3dClusterProvisioner) Delete(name string) error {
 }
 
 // Start starts an existing k3d cluster.
-func (k *K3dClusterProvisioner) Start(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Start(name string, ctx context.Context) error {
 	runtime := runtimes.SelectedRuntime
 
-	target := name
-	if target == "" {
-		target = k.config.Name
-	}
+	target := k.resolveName(name)
 
 	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
 	if err != nil {
@@ -109,14 +97,10 @@ func (k *K3dClusterProvisioner) Start(name string) error {
 }
 
 // Stop stops a running k3d cluster.
-func (k *K3dClusterProvisioner) Stop(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Stop(name string, ctx context.Context) error {
 	runtime := runtimes.SelectedRuntime
 
-	target := name
-	if target == "" {
-		target = k.config.Name
-	}
+	target := k.resolveName(name)
 
 	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
 	if err != nil {
@@ -132,8 +116,7 @@ func (k *K3dClusterProvisioner) Stop(name string) error {
 }
 
 // List returns cluster names managed by k3d.
-func (k *K3dClusterProvisioner) List() ([]string, error) {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	rt := runtimes.SelectedRuntime
 
 	clusters, err := client.ClusterList(ctx, rt)
@@ -150,16 +133,25 @@ func (k *K3dClusterProvisioner) List() ([]string, error) {
 }
 
 // Exists returns whether the ksail cluster name exists in k3d.
-func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
-	clusters, err := k.List()
+func (k *K3dClusterProvisioner) Exists(name string, ctx context.Context) (bool, error) {
+	clusters, err := k.List(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	target := name
-	if target == "" {
-		target = k.config.Name
-	}
+	target := k.resolveName(name)
 
 	return slices.Contains(clusters, target), nil
+}
+
+// --- internals ---
+
+// resolveName determines the effective cluster name to operate on.
+// If the provided name is empty, it falls back to the provisioner's configured name.
+func (k *K3dClusterProvisioner) resolveName(name string) string {
+	if name != "" {
+		return name
+	}
+
+	return k.config.Name
 }
