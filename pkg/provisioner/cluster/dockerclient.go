@@ -1,5 +1,7 @@
 package clusterprovisioner
 
+//go:generate mockgen -destination mock_dockerclient_test.go -package clusterprovisioner github.com/devantler-tech/ksail-go/pkg/provisioner/cluster DockerClient
+
 import (
 	"context"
 

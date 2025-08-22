@@ -2,6 +2,8 @@
 // for provisioning clusters in different providers.
 package clusterprovisioner
 
+//go:generate mockgen -destination mock_kind_test.go -package clusterprovisioner github.com/devantler-tech/ksail-go/pkg/provisioner/cluster KindProvider
+
 import (
 	"context"
 	"errors"
