@@ -21,6 +21,7 @@ linters:
       exclude:
         - '.+/cobra\.Command$'
         - '.+/v1alpha4\.Cluster$'
+        - '.+/types\.Cluster$'
 
   exclusions:
     rules:

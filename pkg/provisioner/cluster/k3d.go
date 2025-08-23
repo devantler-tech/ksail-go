@@ -5,23 +5,69 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/k3d-io/k3d/v5/pkg/client"
-	"github.com/k3d-io/k3d/v5/pkg/config"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
 )
 
+// K3dClientProvider describes the subset of methods from k3d's client used here.
+type K3dClientProvider interface {
+	ClusterRun(ctx context.Context, runtime runtimes.Runtime, clusterConfig *v1alpha5.ClusterConfig) error
+	ClusterDelete(
+		ctx context.Context,
+		runtime runtimes.Runtime,
+		cluster *types.Cluster,
+		opts types.ClusterDeleteOpts,
+	) error
+	ClusterGet(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*types.Cluster, error)
+	ClusterStart(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster, opts types.ClusterStartOpts) error
+	ClusterStop(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) error
+	ClusterList(ctx context.Context, runtime runtimes.Runtime) ([]*types.Cluster, error)
+}
+
+// K3dConfigProvider describes the subset of methods from k3d's config used here.
+type K3dConfigProvider interface {
+	TransformSimpleToClusterConfig(
+		ctx context.Context,
+		runtime runtimes.Runtime,
+		simpleConfig v1alpha5.SimpleConfig,
+		filename string,
+	) (*v1alpha5.ClusterConfig, error)
+}
+
 // K3dClusterProvisioner implements provisioning for k3d clusters.
 type K3dClusterProvisioner struct {
-	simpleCfg *v1alpha5.SimpleConfig
+	simpleCfg      *v1alpha5.SimpleConfig
+	clientProvider K3dClientProvider
+	configProvider K3dConfigProvider
 }
 
 var _ ClusterProvisioner = (*K3dClusterProvisioner)(nil)
 
 // NewK3dClusterProvisioner constructs a k3d provisioner instance.
-func NewK3dClusterProvisioner(simpleCfg *v1alpha5.SimpleConfig) *K3dClusterProvisioner {
-	return &K3dClusterProvisioner{simpleCfg: simpleCfg}
+func NewK3dClusterProvisioner(
+  simpleCfg *v1alpha5.SimpleConfig,
+  clientProvider K3dClientProvider,
+  configProvider K3dConfigProvider,
+) *K3dClusterProvisioner {
+	return &K3dClusterProvisioner{
+		simpleCfg:      simpleCfg,
+		clientProvider: clientProvider,
+		configProvider: configProvider,
+	}
+}
+
+// NewK3dClusterProvisionerWithProviders constructs a k3d provisioner instance with custom providers for testing.
+func NewK3dClusterProvisionerWithProviders(
+	simpleCfg *v1alpha5.SimpleConfig,
+	clientProvider K3dClientProvider,
+	configProvider K3dConfigProvider,
+) *K3dClusterProvisioner {
+	return &K3dClusterProvisioner{
+		simpleCfg:      simpleCfg,
+		clientProvider: clientProvider,
+		configProvider: configProvider,
+	}
 }
 
 // Create provisions a k3d cluster using the loaded SimpleConfig.
@@ -38,7 +84,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	k.simpleCfg.Name = target
 
 	// Transform SimpleConfig -> ClusterConfig
-	clusterCfg, err := config.TransformSimpleToClusterConfig(ctx, runtime, *k.simpleCfg, "k3d.yaml")
+	clusterCfg, err := k.configProvider.TransformSimpleToClusterConfig(ctx, runtime, *k.simpleCfg, "k3d.yaml")
 	if err != nil {
 		return fmt.Errorf("transform simple to cluster config: %w", err)
 	}
@@ -48,7 +94,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	clusterCfg.KubeconfigOpts.SwitchCurrentContext = true
 
 	// Run full create sequence
-	err = client.ClusterRun(ctx, runtime, clusterCfg)
+	err = k.clientProvider.ClusterRun(ctx, runtime, clusterCfg)
 	if err != nil {
 		return fmt.Errorf("cluster run: %w", err)
 	}
@@ -72,7 +118,7 @@ func (k *K3dClusterProvisioner) Delete(name string) error {
 
 	var opts types.ClusterDeleteOpts
 
-	err := client.ClusterDelete(ctx, runtime, &cluster, opts)
+	err := k.clientProvider.ClusterDelete(ctx, runtime, &cluster, opts)
 	if err != nil {
 		return fmt.Errorf("cluster delete: %w", err)
 	}
@@ -94,14 +140,14 @@ func (k *K3dClusterProvisioner) Start(name string) error {
 
 	cluster.Name = target
 
-	k3dCluster, err := client.ClusterGet(ctx, runtime, &cluster)
+	k3dCluster, err := k.clientProvider.ClusterGet(ctx, runtime, &cluster)
 	if err != nil {
 		return fmt.Errorf("cluster get: %w", err)
 	}
 
 	var startOpts types.ClusterStartOpts
 
-	err = client.ClusterStart(ctx, runtime, k3dCluster, startOpts)
+	err = k.clientProvider.ClusterStart(ctx, runtime, k3dCluster, startOpts)
 	if err != nil {
 		return fmt.Errorf("cluster start: %w", err)
 	}
@@ -123,12 +169,12 @@ func (k *K3dClusterProvisioner) Stop(name string) error {
 
 	cluster.Name = target
 
-	c, err := client.ClusterGet(ctx, runtime, &cluster)
+	c, err := k.clientProvider.ClusterGet(ctx, runtime, &cluster)
 	if err != nil {
 		return fmt.Errorf("cluster get: %w", err)
 	}
 
-	err = client.ClusterStop(ctx, runtime, c)
+	err = k.clientProvider.ClusterStop(ctx, runtime, c)
 	if err != nil {
 		return fmt.Errorf("cluster stop: %w", err)
 	}
@@ -141,7 +187,7 @@ func (k *K3dClusterProvisioner) List() ([]string, error) {
 	ctx := context.Background()
 	runtime := runtimes.SelectedRuntime
 
-	clusters, err := client.ClusterList(ctx, runtime)
+	clusters, err := k.clientProvider.ClusterList(ctx, runtime)
 	if err != nil {
 		return nil, fmt.Errorf("cluster list: %w", err)
 	}
@@ -168,5 +214,3 @@ func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
 
 	return slices.Contains(clusters, target), nil
 }
-
-// constructor placed above methods per funcorder linter
