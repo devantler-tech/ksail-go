@@ -11,6 +11,7 @@ import (
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
@@ -26,18 +27,12 @@ type KindProvider interface {
 	ListNodes(name string) ([]string, error)
 }
 
-// DockerClient describes the subset of methods from Docker's API used here.
-type DockerClient interface {
-	ContainerStart(ctx context.Context, name string, options container.StartOptions) error
-	ContainerStop(ctx context.Context, name string, options container.StopOptions) error
-}
-
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
 	kubeConfig string
 	kindConfig *v1alpha4.Cluster
 	provider   KindProvider
-	client     DockerClient
+	client     client.ContainerAPIClient
 }
 
 // NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
@@ -47,7 +42,7 @@ func NewKindClusterProvisioner(
 	kindConfig *v1alpha4.Cluster,
 	kubeConfig string,
 	provider KindProvider,
-	client DockerClient,
+	client client.ContainerAPIClient,
 ) *KindClusterProvisioner {
 	return &KindClusterProvisioner{
 		kubeConfig: kubeConfig,

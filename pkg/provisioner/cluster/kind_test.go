@@ -239,7 +239,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 	runDockerOperationFailureTest(
 		t,
 		"Start",
-		func(client *clusterprovisioner.MockDockerClient) {
+	func(client *clusterprovisioner.MockContainerAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
@@ -276,7 +276,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 	runDockerOperationFailureTest(
 		t,
 		"Stop",
-		func(client *clusterprovisioner.MockDockerClient) {
+	func(client *clusterprovisioner.MockContainerAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *clusterprovisioner.KindClusterProvisioner) error {
@@ -311,11 +311,11 @@ func newProvisionerForTest(
 ) (
 	*clusterprovisioner.KindClusterProvisioner,
 	*clusterprovisioner.MockKindProvider,
-	*clusterprovisioner.MockDockerClient,
+	*clusterprovisioner.MockContainerAPIClient,
 ) {
 	t.Helper()
 	provider := clusterprovisioner.NewMockKindProvider(t)
-	client := clusterprovisioner.NewMockDockerClient(t)
+	client := clusterprovisioner.NewMockContainerAPIClient(t)
 
 	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
 	provisioner := clusterprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
@@ -386,7 +386,7 @@ func assertErrWrappedContains(t *testing.T, got error, want error, contains stri
 func runDockerOperationFailureTest(
 	t *testing.T,
 	actionName string,
-	expectDockerCall func(*clusterprovisioner.MockDockerClient),
+	expectDockerCall func(*clusterprovisioner.MockContainerAPIClient),
 	action func(*clusterprovisioner.KindClusterProvisioner) error,
 	expectedErrorMsg string,
 ) {

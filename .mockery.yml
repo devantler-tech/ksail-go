@@ -1,0 +1,15 @@
+recursive: true
+
+packages:
+  github.com/devantler-tech/ksail-go:
+    config:
+      all: true
+  github.com/docker/docker/client:
+    config:
+      recursive: false
+      dir: pkg/provisioner/cluster
+      filename: mocks_containerapiclient_test.go
+      pkgname: clusterprovisioner
+    interfaces:
+      ContainerAPIClient:
+        config: {}
