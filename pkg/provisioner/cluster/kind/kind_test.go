@@ -15,32 +15,21 @@ var errBoom = errors.New("boom")
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name         string
-		inputName    string
-		expectedName string
-	}{
-		{name: "with name", inputName: "my-cluster", expectedName: "my-cluster"},
-		{name: "without name uses cfg", inputName: "", expectedName: "cfg-name"},
-	}
-
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			runActionSuccess(
-				t,
-				"Create()",
-				testCase.inputName,
-				testCase.expectedName,
-				func(p *kindprovisioner.MockKindProvider, name string) {
-					p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-				},
-				func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-					return prov.Create(name)
-				},
-			)
-		})
-	}
+	cases := testutil.DefaultNameCases("cfg-name")
+	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+		runActionSuccess(
+			t,
+			"Create()",
+			c.InputName,
+			c.ExpectedName,
+			func(p *kindprovisioner.MockKindProvider, name string) {
+				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			},
+			func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
+				return prov.Create(name)
+			},
+		)
+	})
 }
 
 func TestCreate_Error_CreateFailed(t *testing.T) {
@@ -59,32 +48,26 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 func TestDelete_Success(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name         string
-		inputName    string
-		expectedName string
-	}{
-		{name: "without name uses cfg", inputName: "", expectedName: "cfg-name"},
-		{name: "with name", inputName: "custom", expectedName: "custom"},
+	// order doesn't matter for copy detection; reusing the same helper
+	cases := []testutil.NameCase{
+		{Name: "without name uses cfg", InputName: "", ExpectedName: "cfg-name"},
+		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
 	}
 
-	for _, testCase := range cases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			runActionSuccess(
-				t,
-				"Delete()",
-				testCase.inputName,
-				testCase.expectedName,
-				func(p *kindprovisioner.MockKindProvider, name string) {
-					p.On("Delete", name, mock.Anything).Return(nil)
-				},
-				func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-					return prov.Delete(name)
-				},
-			)
-		})
-	}
+	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+		runActionSuccess(
+			t,
+			"Delete()",
+			c.InputName,
+			c.ExpectedName,
+			func(p *kindprovisioner.MockKindProvider, name string) {
+				p.On("Delete", name, mock.Anything).Return(nil)
+			},
+			func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
+				return prov.Delete(name)
+			},
+		)
+	})
 }
 
 func TestDelete_Error_DeleteFailed(t *testing.T) {
@@ -97,13 +80,7 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	err := provisioner.Delete("bad")
 
 	// Assert
-	if err == nil {
-		t.Fatalf("Delete() expected error, got nil")
-	}
-
-	if !errors.Is(err, errBoom) {
-		t.Fatalf("Delete() error = %v, want wrapped errBoom", err)
-	}
+	testutil.AssertErrWrappedContains(t, err, errBoom, "", "Delete()")
 }
 
 func TestExists_Success_False(t *testing.T) {
@@ -171,13 +148,8 @@ func TestList_Success(t *testing.T) {
 	got, err := provisioner.List()
 
 	// Assert
-	if err != nil {
-		t.Fatalf("List() unexpected error: %v", err)
-	}
-
-	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
-		t.Fatalf("List() got %v, want [a b]", got)
-	}
+	testutil.AssertNoError(t, err, "List()")
+	testutil.AssertStringsEqualOrder(t, got, []string{"a", "b"}, "List()")
 }
 
 func TestList_Error_ListFailed(t *testing.T) {
