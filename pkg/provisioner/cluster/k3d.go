@@ -2,6 +2,7 @@ package clusterprovisioner
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/k3d-io/k3d/v5/pkg/client"
@@ -17,6 +18,11 @@ type K3dClusterProvisioner struct {
 }
 
 var _ ClusterProvisioner = (*K3dClusterProvisioner)(nil)
+
+// NewK3dClusterProvisioner constructs a k3d provisioner instance.
+func NewK3dClusterProvisioner(simpleCfg *v1alpha5.SimpleConfig) *K3dClusterProvisioner {
+	return &K3dClusterProvisioner{simpleCfg: simpleCfg}
+}
 
 // Create provisions a k3d cluster using the loaded SimpleConfig.
 func (k *K3dClusterProvisioner) Create(name string) error {
@@ -34,7 +40,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	// Transform SimpleConfig -> ClusterConfig
 	clusterCfg, err := config.TransformSimpleToClusterConfig(ctx, runtime, *k.simpleCfg, "k3d.yaml")
 	if err != nil {
-		return err
+		return fmt.Errorf("transform simple to cluster config: %w", err)
 	}
 
 	// Default kubeconfig options similar to CLI
@@ -42,8 +48,9 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 	clusterCfg.KubeconfigOpts.SwitchCurrentContext = true
 
 	// Run full create sequence
-	if err := client.ClusterRun(ctx, runtime, clusterCfg); err != nil {
-		return err
+	err = client.ClusterRun(ctx, runtime, clusterCfg)
+	if err != nil {
+		return fmt.Errorf("cluster run: %w", err)
 	}
 
 	return nil
@@ -59,9 +66,18 @@ func (k *K3dClusterProvisioner) Delete(name string) error {
 		target = k.simpleCfg.Name
 	}
 
-	cluster := &types.Cluster{Name: target}
+	var cluster types.Cluster
 
-	return client.ClusterDelete(ctx, runtime, cluster, types.ClusterDeleteOpts{})
+	cluster.Name = target
+
+	var opts types.ClusterDeleteOpts
+
+	err := client.ClusterDelete(ctx, runtime, &cluster, opts)
+	if err != nil {
+		return fmt.Errorf("cluster delete: %w", err)
+	}
+
+	return nil
 }
 
 // Start starts an existing k3d cluster.
@@ -74,12 +90,23 @@ func (k *K3dClusterProvisioner) Start(name string) error {
 		target = k.simpleCfg.Name
 	}
 
-	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
+	var cluster types.Cluster
+
+	cluster.Name = target
+
+	k3dCluster, err := client.ClusterGet(ctx, runtime, &cluster)
 	if err != nil {
-		return err
+		return fmt.Errorf("cluster get: %w", err)
 	}
 
-	return client.ClusterStart(ctx, runtime, c, types.ClusterStartOpts{})
+	var startOpts types.ClusterStartOpts
+
+	err = client.ClusterStart(ctx, runtime, k3dCluster, startOpts)
+	if err != nil {
+		return fmt.Errorf("cluster start: %w", err)
+	}
+
+	return nil
 }
 
 // Stop stops a running k3d cluster.
@@ -92,12 +119,21 @@ func (k *K3dClusterProvisioner) Stop(name string) error {
 		target = k.simpleCfg.Name
 	}
 
-	c, err := client.ClusterGet(ctx, runtime, &types.Cluster{Name: target})
+	var cluster types.Cluster
+
+	cluster.Name = target
+
+	c, err := client.ClusterGet(ctx, runtime, &cluster)
 	if err != nil {
-		return err
+		return fmt.Errorf("cluster get: %w", err)
 	}
 
-	return client.ClusterStop(ctx, runtime, c)
+	err = client.ClusterStop(ctx, runtime, c)
+	if err != nil {
+		return fmt.Errorf("cluster stop: %w", err)
+	}
+
+	return nil
 }
 
 // List returns cluster names managed by k3d.
@@ -107,7 +143,7 @@ func (k *K3dClusterProvisioner) List() ([]string, error) {
 
 	clusters, err := client.ClusterList(ctx, runtime)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cluster list: %w", err)
 	}
 
 	out := make([]string, 0, len(clusters))
@@ -122,7 +158,7 @@ func (k *K3dClusterProvisioner) List() ([]string, error) {
 func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
 	clusters, err := k.List()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("list: %w", err)
 	}
 
 	target := name
@@ -133,7 +169,4 @@ func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
 	return slices.Contains(clusters, target), nil
 }
 
-// NewK3dClusterProvisioner constructs a k3d provisioner instance.
-func NewK3dClusterProvisioner(simpleCfg *v1alpha5.SimpleConfig) *K3dClusterProvisioner {
-	return &K3dClusterProvisioner{simpleCfg: simpleCfg}
-}
+// constructor placed above methods per funcorder linter
