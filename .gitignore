@@ -16,3 +16,6 @@ dist/
 completions/
 manpages/
 LICENSE.md
+
+# megalinter
+megalinter-reports/
