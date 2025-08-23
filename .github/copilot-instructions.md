@@ -8,22 +8,22 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Bootstrap and Build
 
-- **Install Go 1.24.6+**: Verify with `go version`
+- **Install Go 1.23.9+**: Verify with `go version` (project requires 1.23.9+ per go.mod, runtime is 1.24.6)
 - **Download dependencies**: `go mod download` (completes in ~5 seconds)
-- **Build the application**: `go build -o ksail .` -- takes <0.1 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
+- **Build the application**: `go build -o ksail .` -- takes ~7 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install golangci-lint v2**: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
 
 ### Required Dependencies
 
-- **Go 1.24.6+**: Programming language runtime (required)
+- **Go 1.23.9+**: Programming language runtime (required)
 - **Docker**: Container runtime - verify with `docker --version` (for future functionality)
 - **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)  
 - **kubectl**: Kubernetes CLI - verify with `kubectl version --client` (for future functionality)
 
 ### Testing and Validation
 
-- **Run tests**: `go test -v ./...` -- takes ~3 seconds. Set timeout to 60+ seconds for safety.
-- **Run linter**: `~/go/bin/golangci-lint run` -- takes ~3 seconds. Set timeout to 60+ seconds for safety.
+- **Run tests**: `go test -v ./...` -- takes ~16 seconds. Set timeout to 60+ seconds for safety.
+- **Run linter**: `~/go/bin/golangci-lint run` -- takes ~8 seconds. Set timeout to 60+ seconds for safety.
   - **Current State**: Linter reports 0 issues (clean codebase)
   - Always check that new code doesn't introduce linting violations
 
@@ -31,36 +31,26 @@ Always reference these instructions first and fallback to search or bash command
 
 - **Get help**: `./ksail --help` (shows basic usage)
 - **Get version**: `./ksail --version` (shows dev version info)
-- **Current Status**: Only basic CLI structure implemented - no subcommands available yet
-- **Planned Commands**: `init`, `up`, `down`, `list`, `reconcile` (not yet implemented)
+- **Current Status**: CLI structure implemented with working stub commands
+- **Available Commands**: `init`, `up`, `down`, `start`, `stop`, `list`, `status`, `reconcile` (all implemented as working stubs)
 
 ## Validation Scenarios
 
 ### CRITICAL: Always test complete workflows after making changes
 
-1. **Build Validation**:
-   - Run `go build -o ksail .`
-   - Verify `./ksail --help` shows usage
-   - Verify `./ksail --version` shows version info
+1. **Build Validation**: Run `go build -o ksail .`, verify `./ksail --help` shows usage, verify `./ksail --version` shows version info
 
-2. **Development Workflow** (Current Implementation):
-   - Run tests: `go test -v ./...`
-   - Check build: `go build -o ksail .`
-   - Basic functionality: `./ksail --help`
-   - Linting: `~/go/bin/golangci-lint run`
+2. **Development Workflow**: Run tests: `go test -v ./...`, check build: `go build -o ksail .`, basic functionality: `./ksail --help`, linting: `~/go/bin/golangci-lint run`
 
-3. **Future Workflow Testing** (When Implemented):
-   - Project initialization with `ksail init`
-   - Cluster lifecycle with `ksail up/down`
-   - Cluster listing with `ksail list`
+3. **Command Testing** (All commands work as stubs): Project initialization with `ksail init`, cluster lifecycle with `ksail up/down`, cluster listing with `ksail list`
 
 ## Build and Timing Information
 
 ### Command Timings (Measured on Current System)
 
-- **`go build -o ksail .`**: <0.1 seconds when cached -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`go test -v ./...`**: ~3 seconds -- SET TIMEOUT TO 60+ SECONDS for safety  
-- **`~/go/bin/golangci-lint run`**: ~3 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go build -o ksail .`**: ~7 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go test -v ./...`**: ~16 seconds -- SET TIMEOUT TO 60+ SECONDS for safety  
+- **`~/go/bin/golangci-lint run`**: ~8 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~5 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 
 ### Linting Expectations
@@ -77,10 +67,15 @@ Always reference these instructions first and fallback to search or bash command
 - **`cmd/`**: CLI command implementations  
   - `root.go` - Main CLI setup with Cobra framework
   - `root_test.go` - Tests for root command
+  - `init.go`, `up.go`, `down.go`, `list.go`, etc. - Working stub command implementations
   - `ui/` - User interface utilities (notify, quiet, asciiart)
+- **`pkg/`**: Core business logic packages
+  - `provisioner/cluster/` - Kubernetes cluster provisioning logic (real implementation with mocks)
+- **`internal/`**: Private application code
+  - `utils/path/` - Path utility functions
 - **`main.go`**: Application entry point
 - **`.golangci.yml`**: Linter configuration (v2 format)
-- **`go.mod`**: Go module dependencies (cobra, fatih/color, go-snaps)
+- **`go.mod`**: Go module dependencies (cobra, fatih/color, go-snaps, docker, kind)
 
 ### Key Files and Patterns
 
@@ -88,23 +83,23 @@ Always reference these instructions first and fallback to search or bash command
 - **Testing**: Uses go-snaps for snapshot testing
 - **UI**: Colored output via fatih/color with symbols (✓, ✗, ⚠, ►)
 - **Entry Point**: `main.go` creates root command and handles execution
+- **Repository Size**: ~5000 lines of Go code across 31 files
 
-### Planned Structure (Not Yet Implemented)
+### Current Implementation Status
 
-- **`cmd/init.go`**: Project scaffolding command
-- **`cmd/up.go`**: Cluster provisioning command  
-- **`cmd/down.go`**: Cluster destruction command
-- **`cmd/list.go`**: Cluster listing command
-- **`pkg/`**: Core business logic packages (future)
-- **`internal/`**: Private application code (future)
+- **CLI Commands**: All major commands implemented as working stubs (init, up, down, start, stop, list, status, reconcile)
+- **Package Structure**: Proper separation with cmd/, pkg/, internal/ directories
+- **Cluster Provisioning**: Real implementation in pkg/provisioner/cluster with Kind integration
+- **Testing**: Comprehensive test coverage (26 tests) with mocks and snapshot testing
+- **Future Development**: Stubs provide framework for full implementation
 
 ## Configuration Files
 
 ### Current Configuration
 
 - **`.golangci.yml`**: Comprehensive linting rules with depguard for import restrictions
-- **`go.mod`**: Go 1.23.9+ with Cobra, color, and testing dependencies
-- **`.github/workflows/`**: Minimal CI/CD setup (currently no-op CD)
+- **`go.mod`**: Go 1.23.9+ with Cobra, color, testing, Docker, and Kind dependencies
+- **`.github/workflows/`**: Complex CI/CD with matrix testing across container engines and distributions
 
 ### Build Configuration
 
@@ -135,30 +130,32 @@ Always reference these instructions first and fallback to search or bash command
 - **Unit Tests**: Located in `*_test.go` files alongside source
 - **Snapshot Testing**: Uses go-snaps for output validation
 - **CLI Testing**: Test command execution and help output
-- **Current Coverage**: Basic CLI structure and UI components only
+- **Mock Testing**: pkg/provisioner/cluster uses mocks for Docker API testing
+- **Current Coverage**: CLI structure, UI components, and cluster provisioning logic
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **Build fails**: Check Go version (need 1.24.6+), run `go mod download`
+- **Build fails**: Check Go version (need 1.23.9+), run `go mod download`
 - **Linter fails**: Install with install script, use `~/go/bin/golangci-lint`
 - **Import violations**: Check `.golangci.yml` depguard rules for allowed packages
 - **Test failures**: Check snapshot files in `__snapshots__/` directories
 
 ### Known Limitations
 
-- **Limited functionality**: Most CLI commands not yet implemented
-- **No cluster operations**: Kubernetes functionality is planned, not implemented
-- **Minimal testing**: Test coverage limited to existing components
+- **Stub implementations**: Most CLI commands return success messages but don't perform real operations
+- **Work in progress**: Core infrastructure exists, full functionality being added incrementally
+- **System dependencies**: Real cluster operations will require Docker, Kind, kubectl
 
 ## CI/CD Information
 
 ### GitHub Actions
 
-- **CD**: Currently no-op (`.github/workflows/cd.yaml`)
-- **CI**: Uses external workflow reference (likely in separate repo)
-- **Future**: Will need comprehensive testing when functionality expands
+- **CI**: Uses external reusable workflow (`devantler-tech/reusable-workflows`) for Go CI/CD
+- **System Tests**: Matrix testing across container engines (Docker/Podman) and distributions (Kind/K3d)
+- **Coverage**: Codecov integration for test coverage reporting
+- **Validation**: Tests all CLI commands in realistic scenarios
 
 ### Development Approach
 
@@ -168,4 +165,4 @@ Always reference these instructions first and fallback to search or bash command
 
 ---
 
-**Last Updated**: Based on current repository state as of Go 1.24.6, minimal CLI implementation
+**Last Updated**: Based on current repository state as of Go 1.23.9, CLI stub implementation
