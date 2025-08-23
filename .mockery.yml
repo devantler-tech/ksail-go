@@ -12,4 +12,3 @@ packages:
       pkgname: clusterprovisioner
     interfaces:
       ContainerAPIClient:
-        config: {}
