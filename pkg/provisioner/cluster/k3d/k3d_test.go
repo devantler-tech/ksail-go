@@ -1,10 +1,11 @@
-package clusterprovisioner_test
+package k3dprovisioner_test
 
 import (
 	"errors"
 	"testing"
 
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	"github.com/devantler-tech/ksail-go/internal/testutil"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/stretchr/testify/mock"
@@ -32,14 +33,21 @@ func TestK3dCreate_Success(t *testing.T) {
 				"Create()",
 				testCase.inputName,
 				testCase.expectedName,
-				//nolint:lll // Long function signature for test readability
-				func(clientProvider *clusterprovisioner.MockK3dClientProvider, configProvider *clusterprovisioner.MockK3dConfigProvider, _ string) {
-					//nolint:exhaustruct // Test struct doesn't need all fields
-					//nolint:lll // Long line for test readability
-					configProvider.On("TransformSimpleToClusterConfig", mock.Anything, mock.Anything, mock.Anything, "k3d.yaml").Return(&v1alpha5.ClusterConfig{}, nil)
+				func(
+					clientProvider *k3dprovisioner.MockK3dClientProvider,
+					configProvider *k3dprovisioner.MockK3dConfigProvider,
+					_ string,
+				) {
+					configProvider.On(
+						"TransformSimpleToClusterConfig",
+						mock.Anything,
+						mock.Anything,
+						mock.Anything,
+						"k3d.yaml",
+					).Return(&v1alpha5.ClusterConfig{}, nil)
 					clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 				},
-				func(prov *clusterprovisioner.K3dClusterProvisioner, name string) error {
+				func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
 					return prov.Create(name)
 				},
 			)
@@ -51,14 +59,19 @@ func TestK3dCreate_Error_TransformFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, _, configProvider := newK3dProvisionerForTest(t)
-	//nolint:lll // Long line for test readability
-	configProvider.On("TransformSimpleToClusterConfig", mock.Anything, mock.Anything, mock.Anything, "k3d.yaml").Return(nil, errK3dBoom)
+	configProvider.On(
+		"TransformSimpleToClusterConfig",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		"k3d.yaml",
+	).Return(nil, errK3dBoom)
 
 	// Act
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "transform simple to cluster config", "Create()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "transform simple to cluster config", "Create()")
 }
 
 func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
@@ -66,15 +79,20 @@ func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
 	// Arrange
 	provisioner, clientProvider, configProvider := newK3dProvisionerForTest(t)
 
-	//nolint:exhaustruct // Test struct doesn't need all fields
-	configProvider.On("TransformSimpleToClusterConfig", mock.Anything, mock.Anything, mock.Anything, "k3d.yaml").Return(&v1alpha5.ClusterConfig{}, nil)
+	configProvider.On(
+		"TransformSimpleToClusterConfig",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		"k3d.yaml",
+	).Return(&v1alpha5.ClusterConfig{}, nil)
 	clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(errK3dBoom)
 
 	// Act
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
 }
 
 func TestK3dDelete_Success(t *testing.T) {
@@ -97,13 +115,13 @@ func TestK3dDelete_Success(t *testing.T) {
 				"Delete()",
 				testCase.inputName,
 				testCase.expectedName,
-				//nolint:lll // Long function signature for test readability
-				func(clientProvider *clusterprovisioner.MockK3dClientProvider, _ *clusterprovisioner.MockK3dConfigProvider, name string) {
+
+				func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
 					clientProvider.On("ClusterDelete", mock.Anything, mock.Anything, mock.MatchedBy(func(cluster *types.Cluster) bool {
 						return cluster.Name == name
 					}), mock.Anything).Return(nil)
 				},
-				func(prov *clusterprovisioner.K3dClusterProvisioner, name string) error {
+				func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
 					return prov.Delete(name)
 				},
 			)
@@ -121,7 +139,7 @@ func TestK3dDelete_Error_DeleteFailed(t *testing.T) {
 	err := provisioner.Delete("bad")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
 }
 
 func TestK3dStart_Success(t *testing.T) {
@@ -144,14 +162,14 @@ func TestK3dStart_Success(t *testing.T) {
 				"Start()",
 				testCase.inputName,
 				testCase.expectedName,
-				func(clientProvider *clusterprovisioner.MockK3dClientProvider, _ *clusterprovisioner.MockK3dConfigProvider, name string) {
+				func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
 					cluster := &types.Cluster{Name: name}
 					clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.MatchedBy(func(c *types.Cluster) bool {
 						return c.Name == name
 					})).Return(cluster, nil)
 					clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).Return(nil)
 				},
-				func(prov *clusterprovisioner.K3dClusterProvisioner, name string) error {
+				func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
 					return prov.Start(name)
 				},
 			)
@@ -169,7 +187,7 @@ func TestK3dStart_Error_GetFailed(t *testing.T) {
 	err := provisioner.Start("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster get", "Start()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster get", "Start()")
 }
 
 func TestK3dStart_Error_StartFailed(t *testing.T) {
@@ -185,7 +203,7 @@ func TestK3dStart_Error_StartFailed(t *testing.T) {
 	err := provisioner.Start("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster start", "Start()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster start", "Start()")
 }
 
 func TestK3dStop_Success(t *testing.T) {
@@ -208,15 +226,14 @@ func TestK3dStop_Success(t *testing.T) {
 				"Stop()",
 				testCase.inputName,
 				testCase.expectedName,
-				//nolint:lll // Long function signature for test readability
-				func(clientProvider *clusterprovisioner.MockK3dClientProvider, _ *clusterprovisioner.MockK3dConfigProvider, name string) {
+				func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
 					cluster := &types.Cluster{Name: name}
 					clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.MatchedBy(func(c *types.Cluster) bool {
 						return c.Name == name
 					})).Return(cluster, nil)
 					clientProvider.On("ClusterStop", mock.Anything, mock.Anything, cluster).Return(nil)
 				},
-				func(prov *clusterprovisioner.K3dClusterProvisioner, name string) error {
+				func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
 					return prov.Stop(name)
 				},
 			)
@@ -234,7 +251,7 @@ func TestK3dStop_Error_GetFailed(t *testing.T) {
 	err := provisioner.Stop("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster get", "Stop()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster get", "Stop()")
 }
 
 func TestK3dStop_Error_StopFailed(t *testing.T) {
@@ -250,7 +267,7 @@ func TestK3dStop_Error_StopFailed(t *testing.T) {
 	err := provisioner.Stop("my-cluster")
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster stop", "Stop()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster stop", "Stop()")
 }
 
 func TestK3dList_Success(t *testing.T) {
@@ -286,7 +303,7 @@ func TestK3dList_Error_ListFailed(t *testing.T) {
 	_, err := provisioner.List()
 
 	// Assert
-	assertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
+	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
 }
 
 func TestK3dExists_Success_False(t *testing.T) {
@@ -359,27 +376,23 @@ func TestK3dExists_Error_ListFailed(t *testing.T) {
 func newK3dProvisionerForTest(
 	t *testing.T,
 ) (
-	*clusterprovisioner.K3dClusterProvisioner,
-	*clusterprovisioner.MockK3dClientProvider,
-	*clusterprovisioner.MockK3dConfigProvider,
+	*k3dprovisioner.K3dClusterProvisioner,
+	*k3dprovisioner.MockK3dClientProvider,
+	*k3dprovisioner.MockK3dConfigProvider,
 ) {
 	t.Helper()
-	clientProvider := clusterprovisioner.NewMockK3dClientProvider(t)
-	configProvider := clusterprovisioner.NewMockK3dConfigProvider(t)
+	clientProvider := k3dprovisioner.NewMockK3dClientProvider(t)
+	configProvider := k3dprovisioner.NewMockK3dConfigProvider(t)
 
-	//nolint:exhaustruct // Test struct doesn't need all fields
 	cfg := &v1alpha5.SimpleConfig{}
 	cfg.Name = "cfg-name"
-	provisioner := clusterprovisioner.NewK3dClusterProvisionerWithProviders(cfg, clientProvider, configProvider)
+	provisioner := k3dprovisioner.NewK3dClusterProvisionerWithProviders(cfg, clientProvider, configProvider)
 
 	return provisioner, clientProvider, configProvider
 }
 
-// helper to run a successful k3d action (Create/Delete/Start/Stop) flow with expectation and assertion.
-//
-//nolint:lll // Long line for test readability
-type expectK3dProviderFn func(*clusterprovisioner.MockK3dClientProvider, *clusterprovisioner.MockK3dConfigProvider, string)
-type k3dActionFn func(*clusterprovisioner.K3dClusterProvisioner, string) error
+type expectK3dProviderFn func(*k3dprovisioner.MockK3dClientProvider, *k3dprovisioner.MockK3dConfigProvider, string)
+type k3dActionFn func(*k3dprovisioner.K3dClusterProvisioner, string) error
 
 func runK3dActionSuccess(
 	t *testing.T,

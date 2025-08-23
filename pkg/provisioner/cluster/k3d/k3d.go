@@ -1,4 +1,4 @@
-package clusterprovisioner
+package k3dprovisioner
 
 import (
 	"context"
@@ -10,31 +10,6 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/types"
 )
 
-// K3dClientProvider describes the subset of methods from k3d's client used here.
-type K3dClientProvider interface {
-	ClusterRun(ctx context.Context, runtime runtimes.Runtime, clusterConfig *v1alpha5.ClusterConfig) error
-	ClusterDelete(
-		ctx context.Context,
-		runtime runtimes.Runtime,
-		cluster *types.Cluster,
-		opts types.ClusterDeleteOpts,
-	) error
-	ClusterGet(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*types.Cluster, error)
-	ClusterStart(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster, opts types.ClusterStartOpts) error
-	ClusterStop(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) error
-	ClusterList(ctx context.Context, runtime runtimes.Runtime) ([]*types.Cluster, error)
-}
-
-// K3dConfigProvider describes the subset of methods from k3d's config used here.
-type K3dConfigProvider interface {
-	TransformSimpleToClusterConfig(
-		ctx context.Context,
-		runtime runtimes.Runtime,
-		simpleConfig v1alpha5.SimpleConfig,
-		filename string,
-	) (*v1alpha5.ClusterConfig, error)
-}
-
 // K3dClusterProvisioner implements provisioning for k3d clusters.
 type K3dClusterProvisioner struct {
 	simpleCfg      *v1alpha5.SimpleConfig
@@ -42,13 +17,11 @@ type K3dClusterProvisioner struct {
 	configProvider K3dConfigProvider
 }
 
-var _ ClusterProvisioner = (*K3dClusterProvisioner)(nil)
-
 // NewK3dClusterProvisioner constructs a k3d provisioner instance.
 func NewK3dClusterProvisioner(
-  simpleCfg *v1alpha5.SimpleConfig,
-  clientProvider K3dClientProvider,
-  configProvider K3dConfigProvider,
+	simpleCfg *v1alpha5.SimpleConfig,
+	clientProvider K3dClientProvider,
+	configProvider K3dConfigProvider,
 ) *K3dClusterProvisioner {
 	return &K3dClusterProvisioner{
 		simpleCfg:      simpleCfg,

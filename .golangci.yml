@@ -22,6 +22,8 @@ linters:
         - '.+/cobra\.Command$'
         - '.+/v1alpha4\.Cluster$'
         - '.+/types\.Cluster$'
+        - '.+/v1alpha5\.SimpleConfig$'
+        - '.+/v1alpha5\.ClusterConfig$'
 
   exclusions:
     rules:
