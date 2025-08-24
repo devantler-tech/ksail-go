@@ -307,6 +307,7 @@ func runK3dNamedActionCases(
 
 	cases := testutil.DefaultNameCases("cfg-name")
 	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+		t.Helper()
 		runK3dActionSuccess(t, label, c.InputName, c.ExpectedName, expect, action)
 	})
 }

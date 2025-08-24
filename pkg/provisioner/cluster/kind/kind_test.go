@@ -16,12 +16,13 @@ func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 
 	cases := testutil.DefaultNameCases("cfg-name")
-	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+	testutil.RunNameCases(t, cases, func(t *testing.T, nameCase testutil.NameCase) {
+		t.Helper()
 		runActionSuccess(
 			t,
 			"Create()",
-			c.InputName,
-			c.ExpectedName,
+			nameCase.InputName,
+			nameCase.ExpectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
@@ -55,6 +56,7 @@ func TestDelete_Success(t *testing.T) {
 	}
 
 	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+		t.Helper()
 		runActionSuccess(
 			t,
 			"Delete()",
