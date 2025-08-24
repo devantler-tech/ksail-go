@@ -1,4 +1,4 @@
-// Package testutil provides testing utilities to aid in writing tests.
+// Package testutil provides testing utilities to aid with name-based test cases.
 package testutil
 
 import "testing"
