@@ -55,13 +55,13 @@ func TestDelete_Success(t *testing.T) {
 		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
 	}
 
-	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+	testutil.RunNameCases(t, cases, func(t *testing.T, nameCase testutil.NameCase) {
 		t.Helper()
 		runActionSuccess(
 			t,
 			"Delete()",
-			c.InputName,
-			c.ExpectedName,
+			nameCase.InputName,
+			nameCase.ExpectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},

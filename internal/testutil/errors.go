@@ -1,4 +1,4 @@
-// Package testutil provides helpers for assertions and error checks in tests.
+// Package testutil provides testing utilities to aid in writing tests.
 package testutil
 
 import (

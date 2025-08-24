@@ -1,3 +1,4 @@
+// Package testutil provides testing utilities to aid in writing tests.
 package testutil
 
 import "testing"
