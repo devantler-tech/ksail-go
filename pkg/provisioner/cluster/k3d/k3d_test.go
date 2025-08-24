@@ -270,7 +270,7 @@ func newK3dProvisionerForTest(
 
 	cfg := &v1alpha5.SimpleConfig{}
 	cfg.Name = "cfg-name"
-	provisioner := k3dprovisioner.NewK3dClusterProvisionerWithProviders(cfg, clientProvider, configProvider)
+	provisioner := k3dprovisioner.NewK3dClusterProvisioner(cfg, clientProvider, configProvider)
 
 	return provisioner, clientProvider, configProvider
 }

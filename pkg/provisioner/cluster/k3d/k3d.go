@@ -30,19 +30,6 @@ func NewK3dClusterProvisioner(
 	}
 }
 
-// NewK3dClusterProvisionerWithProviders constructs a k3d provisioner instance with custom providers for testing.
-func NewK3dClusterProvisionerWithProviders(
-	simpleCfg *v1alpha5.SimpleConfig,
-	clientProvider K3dClientProvider,
-	configProvider K3dConfigProvider,
-) *K3dClusterProvisioner {
-	return &K3dClusterProvisioner{
-		simpleCfg:      simpleCfg,
-		clientProvider: clientProvider,
-		configProvider: configProvider,
-	}
-}
-
 // Create provisions a k3d cluster using the loaded SimpleConfig.
 func (k *K3dClusterProvisioner) Create(name string) error {
 	ctx := context.Background()
