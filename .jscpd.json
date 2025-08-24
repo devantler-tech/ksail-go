@@ -6,6 +6,7 @@
     "**/.venv/**",
     "**/report/**",
     "**/megalinter-reports/**",
+    "**/__snapshots__/**",
     "**/hardis-report/**",
     "**/*cache*/**",
     "**/*.json",

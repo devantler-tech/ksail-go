@@ -17,7 +17,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **Go 1.23.9+**: Programming language runtime (required)
 - **Docker**: Container runtime - verify with `docker --version` (for future functionality)
-- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)  
+- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)
 - **kubectl**: Kubernetes CLI - verify with `kubectl version --client` (for future functionality)
 
 ### Testing and Validation
@@ -49,7 +49,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Command Timings (Measured on Current System)
 
 - **`go build -o ksail .`**: ~7 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`go test -v ./...`**: ~16 seconds -- SET TIMEOUT TO 60+ SECONDS for safety  
+- **`go test -v ./...`**: ~16 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`~/go/bin/golangci-lint run`**: ~8 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~5 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 
@@ -64,7 +64,7 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Current Directory Structure
 
-- **`cmd/`**: CLI command implementations  
+- **`cmd/`**: CLI command implementations
   - `root.go` - Main CLI setup with Cobra framework
   - `root_test.go` - Tests for root command
   - `init.go`, `up.go`, `down.go`, `list.go`, etc. - Working stub command implementations
@@ -104,7 +104,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Build Configuration
 
 - **No Makefile**: Uses standard Go commands
-- **No Docker**: Pure Go build process  
+- **No Docker**: Pure Go build process
 - **Module**: `github.com/devantler-tech/ksail-go`
 
 ## Development Workflow
