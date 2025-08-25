@@ -4,7 +4,6 @@ package podmanprovisioner
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/docker/docker/client"
 )
@@ -15,14 +14,7 @@ type PodmanProvisioner struct {
 }
 
 // NewPodmanProvisioner creates a new PodmanProvisioner with a provided client.
-func NewPodmanProvisioner(client client.APIClient) *PodmanProvisioner {
-	podmanSock := fmt.Sprintf("unix:///run/user/%d/podman/podman.sock", os.Getuid())
-
-	err := os.Setenv("DOCKER_HOST", podmanSock)
-	if err != nil {
-		panic(fmt.Sprintf("failed to set DOCKER_HOST: %v", err))
-	}
-
+func NewPodmanProvisioner(client client.APIClient) (*PodmanProvisioner) {
 	return &PodmanProvisioner{client: client}
 }
 
