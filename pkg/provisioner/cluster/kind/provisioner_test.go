@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutil"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -213,7 +214,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 	runDockerOperationFailureTest(
 		t,
 		"Start",
-		func(client *kindprovisioner.MockContainerAPIClient) {
+		func(client *provisioner.MockContainerAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *kindprovisioner.KindClusterProvisioner) error {
@@ -250,7 +251,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 	runDockerOperationFailureTest(
 		t,
 		"Stop",
-		func(client *kindprovisioner.MockContainerAPIClient) {
+		func(client *provisioner.MockContainerAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
 		},
 		func(p *kindprovisioner.KindClusterProvisioner) error {
@@ -285,11 +286,11 @@ func newProvisionerForTest(
 ) (
 	*kindprovisioner.KindClusterProvisioner,
 	*kindprovisioner.MockKindProvider,
-	*kindprovisioner.MockContainerAPIClient,
+	*provisioner.MockContainerAPIClient,
 ) {
 	t.Helper()
 	provider := kindprovisioner.NewMockKindProvider(t)
-	client := kindprovisioner.NewMockContainerAPIClient(t)
+	client := provisioner.NewMockContainerAPIClient(t)
 
 	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
 	provisioner := kindprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
@@ -342,7 +343,7 @@ func runActionSuccess(
 func runDockerOperationFailureTest(
 	t *testing.T,
 	actionName string,
-	expectDockerCall func(*kindprovisioner.MockContainerAPIClient),
+	expectDockerCall func(*provisioner.MockContainerAPIClient),
 	action func(*kindprovisioner.KindClusterProvisioner) error,
 	expectedErrorMsg string,
 ) {

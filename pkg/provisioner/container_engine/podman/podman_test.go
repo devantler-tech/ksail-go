@@ -1,4 +1,4 @@
-package dockerprovisioner_test
+package podmanprovisioner_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	dockerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/docker"
+	podmanprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/podman"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ import (
 
 var errBoom = errors.New("boom")
 
-func TestNewDockerProvisioner_Success(t *testing.T) {
+func TestNewPodmanProvisioner_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -24,20 +24,20 @@ func TestNewDockerProvisioner_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	// Act
-	provisioner := dockerprovisioner.NewDockerProvisioner(cli)
+	provisioner := podmanprovisioner.NewPodmanProvisioner(cli)
 
 	// Assert
 	assert.NotNil(t, provisioner)
 }
 
-func TestNewDockerProvisioner_WithMockClient(t *testing.T) {
+func TestNewPodmanProvisioner_WithMockClient(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
 
 	// Act
-	provisioner := dockerprovisioner.NewDockerProvisioner(mockClient)
+	provisioner := podmanprovisioner.NewPodmanProvisioner(mockClient)
 
 	// Assert
 	assert.NotNil(t, provisioner)
@@ -91,16 +91,16 @@ func TestCheckReady_Error_PingFailed(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	assert.False(t, ready)
-	assert.Contains(t, err.Error(), "docker ping failed")
+	assert.Contains(t, err.Error(), "podman ping failed")
 	assert.Contains(t, err.Error(), "boom")
 	mockClient.AssertExpectations(t)
 }
 
-// newProvisionerForTest creates a DockerProvisioner with mocked dependencies for testing.
-func newProvisionerForTest(t *testing.T) (*dockerprovisioner.DockerProvisioner, *provisioner.MockAPIClient) {
+// newProvisionerForTest creates a PodmanProvisioner with mocked dependencies for testing.
+func newProvisionerForTest(t *testing.T) (*podmanprovisioner.PodmanProvisioner, *provisioner.MockAPIClient) {
 	t.Helper()
 	mockClient := provisioner.NewMockAPIClient(t)
-	provisioner := dockerprovisioner.NewDockerProvisioner(mockClient)
+	provisioner := podmanprovisioner.NewPodmanProvisioner(mockClient)
 
 	return provisioner, mockClient
 }
