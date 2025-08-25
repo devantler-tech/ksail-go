@@ -7,8 +7,9 @@ packages:
   github.com/docker/docker/client:
     config:
       recursive: false
-      dir: pkg/provisioner/cluster/kind
-      filename: mocks_containerapiclient_test.go
-      pkgname: kindprovisioner
+      dir: pkg/provisioner
+      filename: mocks_test.go
+      pkgname: provisioner
     interfaces:
       ContainerAPIClient:
+      APIClient:
