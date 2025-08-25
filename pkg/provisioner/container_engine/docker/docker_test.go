@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
+	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
 	dockerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/docker"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/testutils"
 	"github.com/docker/docker/client"
@@ -15,14 +16,22 @@ func TestNewDockerProvisioner_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	require.NoError(t, err)
+	cli := CreateDockerClient(t)
 
 	// Act
 	provisioner := dockerprovisioner.NewDockerProvisioner(cli)
 
 	// Assert
 	assert.NotNil(t, provisioner)
+}
+
+func CreateDockerClient(t *testing.T) *client.Client {
+	t.Helper()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	require.NoError(t, err)
+
+	return cli
 }
 
 func TestNewDockerProvisioner_WithMockClient(t *testing.T) {
@@ -39,30 +48,26 @@ func TestNewDockerProvisioner_WithMockClient(t *testing.T) {
 }
 
 func TestCheckReady_Success(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	provisioner, mockClient := newProvisionerForTest(t)
-
-	// Act & Assert
-	testutils.TestCheckReadySuccess(t, provisioner, mockClient)
+  t.Parallel()
+	testutils.TestCheckReadySuccess(
+		t,
+		func(
+			mockClient *provisioner.MockAPIClient,
+		) containerengineprovisioner.ContainerEngineProvisioner {
+			return dockerprovisioner.NewDockerProvisioner(mockClient)
+		},
+	)
 }
 
 func TestCheckReady_Error_PingFailed(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	provisioner, mockClient := newProvisionerForTest(t)
-
-	// Act & Assert
-	testutils.TestCheckReadyError(t, provisioner, mockClient, "docker ping failed")
-}
-
-// newProvisionerForTest creates a DockerProvisioner with mocked dependencies for testing.
-func newProvisionerForTest(t *testing.T) (*dockerprovisioner.DockerProvisioner, *provisioner.MockAPIClient) {
-	t.Helper()
-	mockClient := provisioner.NewMockAPIClient(t)
-	provisioner := dockerprovisioner.NewDockerProvisioner(mockClient)
-
-	return provisioner, mockClient
+  t.Parallel()
+	testutils.TestCheckReadyError(
+		t,
+		func(
+			mockClient *provisioner.MockAPIClient,
+		) containerengineprovisioner.ContainerEngineProvisioner {
+			return dockerprovisioner.NewDockerProvisioner(mockClient)
+		},
+		"docker ping failed",
+	)
 }

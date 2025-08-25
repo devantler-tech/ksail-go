@@ -4,19 +4,17 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
+	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
 	podmanprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/podman"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/testutils"
-	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewPodmanProvisioner_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	require.NoError(t, err)
+	cli := testutils.CreateTestDockerClient(t)
 
 	// Act
 	provisioner := podmanprovisioner.NewPodmanProvisioner(cli)
@@ -39,30 +37,26 @@ func TestNewPodmanProvisioner_WithMockClient(t *testing.T) {
 }
 
 func TestCheckReady_Success(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	provisioner, mockClient := newProvisionerForTest(t)
-
-	// Act & Assert
-	testutils.TestCheckReadySuccess(t, provisioner, mockClient)
+  t.Parallel()
+	testutils.TestCheckReadySuccess(
+		t,
+		func(
+			mockClient *provisioner.MockAPIClient,
+		) containerengineprovisioner.ContainerEngineProvisioner {
+			return podmanprovisioner.NewPodmanProvisioner(mockClient)
+		},
+	)
 }
 
 func TestCheckReady_Error_PingFailed(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	provisioner, mockClient := newProvisionerForTest(t)
-
-	// Act & Assert
-	testutils.TestCheckReadyError(t, provisioner, mockClient, "podman ping failed")
-}
-
-// newProvisionerForTest creates a PodmanProvisioner with mocked dependencies for testing.
-func newProvisionerForTest(t *testing.T) (*podmanprovisioner.PodmanProvisioner, *provisioner.MockAPIClient) {
-	t.Helper()
-	mockClient := provisioner.NewMockAPIClient(t)
-	provisioner := podmanprovisioner.NewPodmanProvisioner(mockClient)
-
-	return provisioner, mockClient
+  t.Parallel()
+	testutils.TestCheckReadyError(
+		t,
+		func(
+			mockClient *provisioner.MockAPIClient,
+		) containerengineprovisioner.ContainerEngineProvisioner {
+			return podmanprovisioner.NewPodmanProvisioner(mockClient)
+		},
+		"podman ping failed",
+	)
 }

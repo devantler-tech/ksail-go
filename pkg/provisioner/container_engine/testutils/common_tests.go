@@ -16,13 +16,16 @@ import (
 
 var errBoom = errors.New("boom")
 
-// TestCheckReadySuccess tests the CheckReady method for successful scenarios.
-func TestCheckReadySuccess(
-	t *testing.T,
-	provisioner containerengineprovisioner.ContainerEngineProvisioner,
-	mockClient *provisioner.MockAPIClient,
-) {
+// ProvisionerFactory is a function type that creates a provisioner with a mock client.
+type ProvisionerFactory func(*provisioner.MockAPIClient) containerengineprovisioner.ContainerEngineProvisioner
+
+// TestCheckReadySuccess runs a common test pattern for CheckReady success scenarios.
+func TestCheckReadySuccess(t *testing.T, factory ProvisionerFactory) {
 	t.Helper()
+
+	// Arrange
+	mockClient := provisioner.NewMockAPIClient(t)
+	provisioner := factory(mockClient)
 
 	expectedPing := types.Ping{
 		APIVersion:     "1.41",
@@ -44,14 +47,13 @@ func TestCheckReadySuccess(
 	mockClient.AssertExpectations(t)
 }
 
-// TestCheckReadyError tests the CheckReady method for error scenarios.
-func TestCheckReadyError(
-	t *testing.T,
-	provisioner containerengineprovisioner.ContainerEngineProvisioner,
-	mockClient *provisioner.MockAPIClient,
-	expectedErrorSubstring string,
-) {
+// TestCheckReadyError runs a common test pattern for CheckReady error scenarios.
+func TestCheckReadyError(t *testing.T, factory ProvisionerFactory, expectedErrorSubstring string) {
 	t.Helper()
+
+	// Arrange
+	mockClient := provisioner.NewMockAPIClient(t)
+	provisioner := factory(mockClient)
 
 	mockClient.On("Ping", mock.MatchedBy(func(_ context.Context) bool {
 		return true
@@ -73,3 +75,5 @@ func TestCheckReadyError(
 	assert.Contains(t, err.Error(), "boom")
 	mockClient.AssertExpectations(t)
 }
+
+
