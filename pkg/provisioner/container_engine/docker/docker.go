@@ -13,14 +13,9 @@ type DockerProvisioner struct {
 	client client.APIClient
 }
 
-// NewDockerProvisioner creates a new DockerProvisioner.
-func NewDockerProvisioner() (*DockerProvisioner, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %w", err)
-	}
-
-	return &DockerProvisioner{client: cli}, nil
+// NewDockerProvisioner creates a new DockerProvisioner with a provided client.
+func NewDockerProvisioner(client client.APIClient) *DockerProvisioner {
+	return &DockerProvisioner{client: client}
 }
 
 // CheckReady checks if the Docker service/socket is available using the Docker API client.
