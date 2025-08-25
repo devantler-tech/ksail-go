@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutil"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	"github.com/stretchr/testify/mock"
@@ -16,8 +16,8 @@ var errBoom = errors.New("boom")
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 
-	cases := testutil.DefaultNameCases("cfg-name")
-	testutil.RunNameCases(t, cases, func(t *testing.T, nameCase testutil.NameCase) {
+	cases := testutils.DefaultNameCases("cfg-name")
+	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
 		runActionSuccess(
 			t,
@@ -44,19 +44,19 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errBoom, "", "Create()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
 	t.Parallel()
 
 	// order doesn't matter for copy detection; reusing the same helper
-	cases := []testutil.NameCase{
+	cases := []testutils.NameCase{
 		{Name: "without name uses cfg", InputName: "", ExpectedName: "cfg-name"},
 		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
 	}
 
-	testutil.RunNameCases(t, cases, func(t *testing.T, nameCase testutil.NameCase) {
+	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
 		runActionSuccess(
 			t,
@@ -83,7 +83,7 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	err := provisioner.Delete("bad")
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errBoom, "", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "", "Delete()")
 }
 
 func TestExists_Success_False(t *testing.T) {
@@ -138,7 +138,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	testutil.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "Exists()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "Exists()")
 }
 
 func TestList_Success(t *testing.T) {
@@ -151,8 +151,8 @@ func TestList_Success(t *testing.T) {
 	got, err := provisioner.List()
 
 	// Assert
-	testutil.AssertNoError(t, err, "List()")
-	testutil.AssertStringsEqualOrder(t, got, []string{"a", "b"}, "List()")
+	testutils.AssertNoError(t, err, "List()")
+	testutils.AssertStringsEqualOrder(t, got, []string{"a", "b"}, "List()")
 }
 
 func TestList_Error_ListFailed(t *testing.T) {
@@ -165,7 +165,7 @@ func TestList_Error_ListFailed(t *testing.T) {
 	_, err := provisioner.List()
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
@@ -359,5 +359,5 @@ func runDockerOperationFailureTest(
 	err := action(provisioner)
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errBoom, expectedErrorMsg, actionName+"()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, expectedErrorMsg, actionName+"()")
 }

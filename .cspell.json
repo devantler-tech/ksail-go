@@ -266,7 +266,7 @@
     "notifyln",
     "NYQKS",
     "oadwz",
-    "testutil",
+    "testutils.",
     "namecases",
     "kindprovisioner",
     "subtests",
