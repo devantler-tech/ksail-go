@@ -1,4 +1,4 @@
-// Package testutils. provides testing utilities to aid with assertions in tests.
+// Package testutils provides testing utilities to aid with assertions in tests.
 package testutils
 
 import (
