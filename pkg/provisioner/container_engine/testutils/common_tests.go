@@ -1,5 +1,5 @@
 // Package testutils provides common test utilities for container engine provisioners.
-package containerengineprovisioner
+package testutils
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
+	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,7 +19,7 @@ var errBoom = errors.New("boom")
 // TestCheckReadySuccess tests the CheckReady method for successful scenarios.
 func TestCheckReadySuccess(
 	t *testing.T,
-	provisioner ContainerEngineProvisioner,
+	provisioner containerengineprovisioner.ContainerEngineProvisioner,
 	mockClient *provisioner.MockAPIClient,
 ) {
 	t.Helper()
@@ -46,7 +47,7 @@ func TestCheckReadySuccess(
 // TestCheckReadyError tests the CheckReady method for error scenarios.
 func TestCheckReadyError(
 	t *testing.T,
-	provisioner ContainerEngineProvisioner,
+	provisioner containerengineprovisioner.ContainerEngineProvisioner,
 	mockClient *provisioner.MockAPIClient,
 	expectedErrorSubstring string,
 ) {

@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
 	dockerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/docker"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/testutils"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,7 +45,7 @@ func TestCheckReady_Success(t *testing.T) {
 	provisioner, mockClient := newProvisionerForTest(t)
 
 	// Act & Assert
-	containerengineprovisioner.TestCheckReadySuccess(t, provisioner, mockClient)
+	testutils.TestCheckReadySuccess(t, provisioner, mockClient)
 }
 
 func TestCheckReady_Error_PingFailed(t *testing.T) {
@@ -55,7 +55,7 @@ func TestCheckReady_Error_PingFailed(t *testing.T) {
 	provisioner, mockClient := newProvisionerForTest(t)
 
 	// Act & Assert
-	containerengineprovisioner.TestCheckReadyError(t, provisioner, mockClient, "docker ping failed")
+	testutils.TestCheckReadyError(t, provisioner, mockClient, "docker ping failed")
 }
 
 // newProvisionerForTest creates a DockerProvisioner with mocked dependencies for testing.
