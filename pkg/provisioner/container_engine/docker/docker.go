@@ -26,5 +26,11 @@ func (d *DockerProvisioner) CheckReady() (bool, error) {
 func NewDockerProvisioner() *DockerProvisioner {
 	cli, _ := client.NewClientWithOpts(client.FromEnv)
 
-	return &DockerProvisioner{client: cli}
+func NewDockerProvisioner() (*DockerProvisioner, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DockerProvisioner{client: cli}, nil
 }
