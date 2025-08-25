@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutil"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/types"
@@ -42,7 +42,7 @@ func TestK3dCreate_Error_TransformFailed(t *testing.T) {
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "transform simple to cluster config", "Create()")
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "transform simple to cluster config", "Create()")
 }
 
 func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
@@ -57,7 +57,7 @@ func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
 }
 
 func TestK3dDelete_Success(t *testing.T) {
@@ -86,7 +86,7 @@ func TestK3dDelete_Error_DeleteFailed(t *testing.T) {
 	err := provisioner.Delete("bad")
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
 }
 
 func TestK3dStart_Success(t *testing.T) {
@@ -173,8 +173,8 @@ func TestK3dList_Success(t *testing.T) {
 	got, err := provisioner.List()
 
 	// Assert
-	testutil.AssertNoError(t, err, "List()")
-	testutil.AssertStringsEqualOrder(t, got, []string{"cluster-a", "cluster-b"}, "List()")
+	testutils.AssertNoError(t, err, "List()")
+	testutils.AssertStringsEqualOrder(t, got, []string{"cluster-a", "cluster-b"}, "List()")
 }
 
 func TestK3dList_Error_ListFailed(t *testing.T) {
@@ -187,7 +187,7 @@ func TestK3dList_Error_ListFailed(t *testing.T) {
 	_, err := provisioner.List()
 
 	// Assert
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
 }
 
 func TestK3dExists_Success_False(t *testing.T) {
@@ -305,8 +305,8 @@ func runK3dNamedActionCases(
 ) {
 	t.Helper()
 
-	cases := testutil.DefaultNameCases("cfg-name")
-	testutil.RunNameCases(t, cases, func(t *testing.T, c testutil.NameCase) {
+	cases := testutils.DefaultNameCases("cfg-name")
+	testutils.RunNameCases(t, cases, func(t *testing.T, c testutils.NameCase) {
 		t.Helper()
 		runK3dActionSuccess(t, label, c.InputName, c.ExpectedName, expect, action)
 	})
@@ -324,7 +324,7 @@ func runK3dClusterGetError(
 	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.Anything).Return(nil, errK3dBoom)
 
 	err := action(provisioner)
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, "cluster get", label)
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster get", label)
 }
 
 // runK3dClusterOpErrorAfterGet DRYs the scenario where ClusterGet succeeds
@@ -343,7 +343,7 @@ func runK3dClusterOpErrorAfterGet(
 	expectOp(clientProvider, cluster)
 
 	err := action(provisioner)
-	testutil.AssertErrWrappedContains(t, err, errK3dBoom, expectedMsg, label)
+	testutils.AssertErrWrappedContains(t, err, errK3dBoom, expectedMsg, label)
 }
 
 // expectTransformSimpleToClusterConfigOK sets up a successful TransformSimpleToClusterConfig expectation.

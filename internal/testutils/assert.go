@@ -1,5 +1,5 @@
-// Package testutil provides testing utilities to aid with assertions in tests.
-package testutil
+// Package testutils provides testing utilities to aid with assertions in tests.
+package testutils
 
 import (
 	"reflect"
