@@ -10,7 +10,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **Install Go 1.23.9+**: Verify with `go version` (project requires 1.23.9+ per go.mod, runtime is 1.24.6)
 - **Download dependencies**: `go mod download` (completes in ~5 seconds)
-- **Build the application**: `go build -o ksail .` -- takes ~7 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
+- **Build the application**: `go build -o ksail .` -- takes ~11 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install golangci-lint v2**: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
 
 ### Required Dependencies
@@ -22,8 +22,8 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Testing and Validation
 
-- **Run tests**: `go test -v ./...` -- takes ~16 seconds. Set timeout to 60+ seconds for safety.
-- **Run linter**: `~/go/bin/golangci-lint run` -- takes ~8 seconds. Set timeout to 60+ seconds for safety.
+- **Run tests**: `go test -v ./...` -- takes ~28 seconds. Set timeout to 60+ seconds for safety.
+- **Run linter**: `~/go/bin/golangci-lint run` -- takes ~14 seconds. Set timeout to 60+ seconds for safety.
   - **Current State**: Linter reports 0 issues (clean codebase)
   - Always check that new code doesn't introduce linting violations
 
@@ -48,9 +48,9 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Command Timings (Measured on Current System)
 
-- **`go build -o ksail .`**: ~7 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`go test -v ./...`**: ~16 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`~/go/bin/golangci-lint run`**: ~8 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go build -o ksail .`**: ~11 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go test -v ./...`**: ~28 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`~/go/bin/golangci-lint run`**: ~14 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~5 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 
 ### Linting Expectations
@@ -83,7 +83,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Testing**: Uses go-snaps for snapshot testing
 - **UI**: Colored output via fatih/color with symbols (✓, ✗, ⚠, ►)
 - **Entry Point**: `main.go` creates root command and handles execution
-- **Repository Size**: ~5000 lines of Go code across 31 files
+- **Repository Size**: ~14,800 lines of Go code across 48 files
 
 ### Current Implementation Status
 
@@ -165,4 +165,4 @@ Always reference these instructions first and fallback to search or bash command
 
 ---
 
-**Last Updated**: Based on current repository state as of Go 1.23.9, CLI stub implementation
+**Last Updated**: Based on current repository state as of Go 1.24.6, CLI stub implementation
