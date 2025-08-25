@@ -13,6 +13,12 @@ Always reference these instructions first and fallback to search or bash command
 - **Build the application**: `go build -o ksail .` -- takes ~11 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install golangci-lint v2**: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
 
+### Additional Development Tools (Optional)
+
+- **mega-linter**: For comprehensive linting (used in CONTRIBUTING.md): Install per [mega-linter docs](https://megalinter.io/latest/mega-linter-runner/#installation)
+- **mockery**: For generating mocks: Install per [mockery docs](https://vektra.github.io/mockery/v3.5/installation/)
+  - Configuration in `.mockery.yml` - supports `mockery` command to regenerate mocks
+
 ### Required Dependencies
 
 - **Go 1.23.9+**: Programming language runtime (required)
@@ -100,6 +106,8 @@ Always reference these instructions first and fallback to search or bash command
 - **`.golangci.yml`**: Comprehensive linting rules with depguard for import restrictions
 - **`go.mod`**: Go 1.23.9+ with Cobra, color, testing, Docker, and Kind dependencies
 - **`.github/workflows/`**: Complex CI/CD with matrix testing across container engines and distributions
+- **`.mockery.yml`**: Mockery configuration for generating test mocks
+- **`.mega-linter.yml`**: Mega-linter configuration (alternative to golangci-lint)
 
 ### Build Configuration
 
@@ -139,8 +147,10 @@ Always reference these instructions first and fallback to search or bash command
 
 - **Build fails**: Check Go version (need 1.23.9+), run `go mod download`
 - **Linter fails**: Install with install script, use `~/go/bin/golangci-lint`
+- **Linter warnings about deprecated 'wsl'**: Expected deprecation warnings about wsl linter, can be ignored
 - **Import violations**: Check `.golangci.yml` depguard rules for allowed packages
 - **Test failures**: Check snapshot files in `__snapshots__/` directories
+- **Mock generation**: Run `mockery` to regenerate mocks if tests fail due to interface changes
 
 ### Known Limitations
 
@@ -154,6 +164,9 @@ Always reference these instructions first and fallback to search or bash command
 
 - **CI**: Uses external reusable workflow (`devantler-tech/reusable-workflows`) for Go CI/CD
 - **System Tests**: Matrix testing across container engines (Docker/Podman) and distributions (Kind/K3d)
+  - Tests all CLI commands: `init`, `up`, `status`, `list`, `start`, `reconcile`, `down` 
+  - Runs with different configurations: `--container-engine Docker/Podman --distribution Kind/K3d`
+  - Cannot be run locally, only in CI environment
 - **Coverage**: Codecov integration for test coverage reporting
 - **Validation**: Tests all CLI commands in realistic scenarios
 
