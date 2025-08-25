@@ -45,6 +45,7 @@
     "buildx",
     "BZFTAJ",
     "cbor",
+    "apiclient",
     "cenkalti",
     "cespare",
     "cfssl",
