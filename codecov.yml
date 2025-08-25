@@ -1,3 +1,4 @@
 ignore:
-  - "main.go"
+  - "**/mocks.go"
   - "internal/testutils"
+  - "main.go"
