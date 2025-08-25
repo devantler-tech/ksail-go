@@ -46,6 +46,7 @@
     "BZFTAJ",
     "cbor",
     "apiclient",
+    "podmanprovisioner",
     "cenkalti",
     "cespare",
     "cfssl",
