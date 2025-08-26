@@ -24,3 +24,16 @@ func AssertErrWrappedContains(t *testing.T, got error, want error, contains stri
         t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
     }
 }
+
+// AssertErrContains asserts that an error is non-nil and its message contains the provided substring.
+func AssertErrContains(t *testing.T, got error, contains string, ctx string) {
+    t.Helper()
+
+    if got == nil {
+        t.Fatalf("%s expected error, got nil", ctx)
+    }
+
+    if contains != "" && !strings.Contains(got.Error(), contains) {
+        t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
+    }
+}

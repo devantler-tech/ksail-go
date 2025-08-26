@@ -23,3 +23,12 @@ func AssertStringsEqualOrder(t *testing.T, got, want []string, ctx string) {
 		t.Fatalf("%s got %v, want %v", ctx, got, want)
 	}
 }
+
+// AssertEqualString asserts that two strings are equal.
+func AssertEqualString(t *testing.T, got, want, ctx string) {
+	t.Helper()
+
+	if got != want {
+		t.Fatalf("%s got %q, want %q", ctx, got, want)
+	}
+}

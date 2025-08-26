@@ -3,7 +3,6 @@ package io_test
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
@@ -22,10 +21,7 @@ func TestFileWriter_TryWrite_EmptyOutput(t *testing.T) {
 
 	// Assert
 	testutils.AssertNoError(t, err, "TryWrite()")
-
-	if result != content {
-		t.Fatalf("TryWrite() = %q, want %q", result, content)
-	}
+	testutils.AssertEqualString(t, result, content, "TryWrite()")
 }
 
 func TestFileWriter_TryWrite_NewFile(t *testing.T) {
@@ -42,18 +38,12 @@ func TestFileWriter_TryWrite_NewFile(t *testing.T) {
 
 	// Assert
 	testutils.AssertNoError(t, err, "TryWrite()")
-
-	if result != content {
-		t.Fatalf("TryWrite() = %q, want %q", result, content)
-	}
+	testutils.AssertEqualString(t, result, content, "TryWrite()")
 
 	// Verify file was written
-	writtenContent, err := os.ReadFile(outputPath)
+	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	testutils.AssertNoError(t, err, "ReadFile()")
-
-	if string(writtenContent) != content {
-		t.Fatalf("written file content = %q, want %q", string(writtenContent), content)
-	}
+	testutils.AssertEqualString(t, string(writtenContent), content, "written file content")
 }
 
 func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
@@ -75,18 +65,12 @@ func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
 
 	// Assert
 	testutils.AssertNoError(t, err, "TryWrite()")
-
-	if result != newContent {
-		t.Fatalf("TryWrite() = %q, want %q", result, newContent)
-	}
+	testutils.AssertEqualString(t, result, newContent, "TryWrite()")
 
 	// Verify file was NOT overwritten
-	writtenContent, err := os.ReadFile(outputPath)
+	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	testutils.AssertNoError(t, err, "ReadFile()")
-
-	if string(writtenContent) != originalContent {
-		t.Fatalf("file content = %q, want %q (should not be overwritten)", string(writtenContent), originalContent)
-	}
+	testutils.AssertEqualString(t, string(writtenContent), originalContent, "file content (should not be overwritten)")
 }
 
 func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
@@ -108,18 +92,12 @@ func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
 
 	// Assert
 	testutils.AssertNoError(t, err, "TryWrite()")
-
-	if result != newContent {
-		t.Fatalf("TryWrite() = %q, want %q", result, newContent)
-	}
+	testutils.AssertEqualString(t, result, newContent, "TryWrite()")
 
 	// Verify file was overwritten
-	writtenContent, err := os.ReadFile(outputPath)
+	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	testutils.AssertNoError(t, err, "ReadFile()")
-
-	if string(writtenContent) != newContent {
-		t.Fatalf("file content = %q, want %q (should be overwritten)", string(writtenContent), newContent)
-	}
+	testutils.AssertEqualString(t, string(writtenContent), newContent, "file content (should be overwritten)")
 }
 
 func TestFileWriter_TryWrite_StatError(t *testing.T) {
@@ -140,17 +118,8 @@ func TestFileWriter_TryWrite_StatError(t *testing.T) {
 	result, err := writer.TryWrite(content, outputPath, false)
 
 	// Assert - expect error containing specific message
-	if err == nil {
-		t.Fatal("TryWrite() expected error for stat failure, got nil")
-	}
-
-	if result != "" {
-		t.Fatalf("TryWrite() = %q, want empty string on error", result)
-	}
-
-	if !strings.Contains(err.Error(), "failed to check file") {
-		t.Fatalf("TryWrite() error = %q, want to contain 'failed to check file'", err.Error())
-	}
+	testutils.AssertErrContains(t, err, "failed to check file", "TryWrite() stat failure")
+	testutils.AssertEqualString(t, result, "", "TryWrite() result on error")
 }
 
 func TestFileWriter_TryWrite_WriteError(t *testing.T) {
@@ -167,17 +136,8 @@ func TestFileWriter_TryWrite_WriteError(t *testing.T) {
 	result, err := writer.TryWrite(content, invalidPath, false)
 
 	// Assert - expect error containing specific message
-	if err == nil {
-		t.Fatal("TryWrite() expected error for write failure, got nil")
-	}
-
-	if result != "" {
-		t.Fatalf("TryWrite() = %q, want empty string on error", result)
-	}
-
-	if !strings.Contains(err.Error(), "failed to write file") {
-		t.Fatalf("TryWrite() error = %q, want to contain 'failed to write file'", err.Error())
-	}
+	testutils.AssertErrContains(t, err, "failed to write file", "TryWrite() write failure")
+	testutils.AssertEqualString(t, result, "", "TryWrite() result on error")
 }
 
 

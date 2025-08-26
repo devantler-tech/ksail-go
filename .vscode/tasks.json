@@ -1,0 +1,89 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "go: build",
+      "command": "go",
+      "args": ["build", "./..."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": ["$go"],
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "go build ./..."
+    },
+    {
+      "type": "shell",
+      "label": "go: test",
+      "command": "go",
+      "args": ["test", "./..."],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": ["$go"],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "detail": "go test ./..."
+    },
+    {
+      "type": "shell",
+      "label": "go: lint",
+      "command": "golangci-lint",
+      "args": ["run", "--timeout", "5m"],
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": ["$go"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "golangci-lint run"
+    },
+    {
+      "type": "shell",
+      "label": "go: mega-lint",
+      "command": "mega-linter-runner",
+      "args": ["--fix", "-f", "go"],
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "mega-linter-runner --fix -f go",
+      "problemMatcher": ["$go"]
+    }
+  ]
+}
