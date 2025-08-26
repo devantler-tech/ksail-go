@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Tests are intentionally minimal and explicit to keep coverage high and behavior clear.
@@ -16,16 +17,16 @@ func TestReadFileSafe_NormalRead(t *testing.T) {
 
 	// Arrange
 	base := t.TempDir()
-	p := filepath.Join(base, "file.txt")
+	filePath := filepath.Join(base, "file.txt")
 	want := []byte("hello safe")
-	err := os.WriteFile(p, want, 0600)
-	assert.NoError(t, err, "WriteFile setup")
+	err := os.WriteFile(filePath, want, 0600)
+	require.NoError(t, err, "WriteFile setup")
 
 	// Act
-	got, err := ioutils.ReadFileSafe(base, p)
+	got, err := ioutils.ReadFileSafe(base, filePath)
 
 	// Assert
-	assert.NoError(t, err, "ReadFileSafe")
+	require.NoError(t, err, "ReadFileSafe")
 	assert.Equal(t, string(want), string(got), "content")
 }
 
@@ -36,7 +37,7 @@ func TestReadFileSafe_OutsideBase(t *testing.T) {
 	base := t.TempDir()
 	outside := filepath.Join(os.TempDir(), "outside-test-file.txt")
 	err := os.WriteFile(outside, []byte("nope"), 0600)
-	assert.NoError(t, err, "WriteFile setup")
+	require.NoError(t, err, "WriteFile setup")
 
 	// Act
 	_, err = ioutils.ReadFileSafe(base, outside)
@@ -53,7 +54,7 @@ func TestReadFileSafe_TraversalAttempt(t *testing.T) {
 	parent := filepath.Join(base, "..", "traversal.txt")
 	absParent, _ := filepath.Abs(parent)
 	err := os.WriteFile(absParent, []byte("traversal"), 0600)
-	assert.NoError(t, err, "WriteFile setup parent")
+	require.NoError(t, err, "WriteFile setup parent")
 
 	attempt := filepath.Join(base, "..", "traversal.txt")
 

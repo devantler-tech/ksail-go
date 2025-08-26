@@ -10,6 +10,7 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var errK3dBoom = errors.New("k3d boom")
@@ -174,7 +175,7 @@ func TestK3dList_Success(t *testing.T) {
 	got, err := provisioner.List()
 
 	// Assert
-	assert.NoError(t, err, "List()")
+	require.NoError(t, err, "List()")
 	assert.Equal(t, []string{"cluster-a", "cluster-b"}, got, "List()")
 }
 

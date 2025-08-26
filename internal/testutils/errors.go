@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // AssertErrWrappedContains verifies that an error exists, wraps a target error,
@@ -14,9 +15,9 @@ func AssertErrWrappedContains(t *testing.T, got error, want error, contains stri
 
 	// Assert the error type/unwrap match first
 	if want != nil {
-		assert.ErrorIs(t, got, want, ctx)
+		require.ErrorIs(t, got, want, ctx)
 	} else {
-		assert.Error(t, got, ctx)
+		require.Error(t, got, ctx)
 	}
 
 	// And optionally assert the message content
