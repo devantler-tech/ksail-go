@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -151,8 +152,8 @@ func TestList_Success(t *testing.T) {
 	got, err := provisioner.List()
 
 	// Assert
-	testutils.AssertNoError(t, err, "List()")
-	testutils.AssertStringsEqualOrder(t, got, []string{"a", "b"}, "List()")
+	assert.NoError(t, err, "List()")
+	assert.Equal(t, []string{"a", "b"}, got, "List()")
 }
 
 func TestList_Error_ListFailed(t *testing.T) {

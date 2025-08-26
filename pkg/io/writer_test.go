@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFileWriter_TryWrite_EmptyOutput(t *testing.T) {
@@ -20,8 +21,8 @@ func TestFileWriter_TryWrite_EmptyOutput(t *testing.T) {
 	result, err := writer.TryWrite(content, "", false)
 
 	// Assert
-	testutils.AssertNoError(t, err, "TryWrite()")
-	testutils.AssertEqualString(t, result, content, "TryWrite()")
+	assert.NoError(t, err, "TryWrite()")
+	assert.Equal(t, content, result, "TryWrite()")
 }
 
 func TestFileWriter_TryWrite_NewFile(t *testing.T) {
@@ -37,13 +38,13 @@ func TestFileWriter_TryWrite_NewFile(t *testing.T) {
 	result, err := writer.TryWrite(content, outputPath, false)
 
 	// Assert
-	testutils.AssertNoError(t, err, "TryWrite()")
-	testutils.AssertEqualString(t, result, content, "TryWrite()")
+	assert.NoError(t, err, "TryWrite()")
+	assert.Equal(t, content, result, "TryWrite()")
 
 	// Verify file was written
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	testutils.AssertNoError(t, err, "ReadFile()")
-	testutils.AssertEqualString(t, string(writtenContent), content, "written file content")
+	assert.NoError(t, err, "ReadFile()")
+	assert.Equal(t, content, string(writtenContent), "written file content")
 }
 
 func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
@@ -58,19 +59,19 @@ func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
 
 	// Create existing file
 	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
-	testutils.AssertNoError(t, err, "WriteFile() setup")
+	assert.NoError(t, err, "WriteFile() setup")
 
 	// Act
 	result, err := writer.TryWrite(newContent, outputPath, false)
 
 	// Assert
-	testutils.AssertNoError(t, err, "TryWrite()")
-	testutils.AssertEqualString(t, result, newContent, "TryWrite()")
+	assert.NoError(t, err, "TryWrite()")
+	assert.Equal(t, newContent, result, "TryWrite()")
 
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	testutils.AssertNoError(t, err, "ReadFile()")
-	testutils.AssertEqualString(t, string(writtenContent), originalContent, "file content (should not be overwritten)")
+	assert.NoError(t, err, "ReadFile()")
+	assert.Equal(t, originalContent, string(writtenContent), "file content (should not be overwritten)")
 }
 
 func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
@@ -85,19 +86,19 @@ func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
 
 	// Create existing file
 	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
-	testutils.AssertNoError(t, err, "WriteFile() setup")
+	assert.NoError(t, err, "WriteFile() setup")
 
 	// Act
 	result, err := writer.TryWrite(newContent, outputPath, true)
 
 	// Assert
-	testutils.AssertNoError(t, err, "TryWrite()")
-	testutils.AssertEqualString(t, result, newContent, "TryWrite()")
+	assert.NoError(t, err, "TryWrite()")
+	assert.Equal(t, newContent, result, "TryWrite()")
 
 	// Verify file was overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	testutils.AssertNoError(t, err, "ReadFile()")
-	testutils.AssertEqualString(t, string(writtenContent), newContent, "file content (should be overwritten)")
+	assert.NoError(t, err, "ReadFile()")
+	assert.Equal(t, newContent, string(writtenContent), "file content (should be overwritten)")
 }
 
 func TestFileWriter_TryWrite_StatError(t *testing.T) {
@@ -112,14 +113,14 @@ func TestFileWriter_TryWrite_StatError(t *testing.T) {
 	// Create a directory with no permissions to simulate stat error
 	restrictedDir := filepath.Join(tempDir, "restricted")
 	err := os.Mkdir(restrictedDir, 0000)
-	testutils.AssertNoError(t, err, "Mkdir() setup")
+	assert.NoError(t, err, "Mkdir() setup")
 
 	// Act
 	result, err := writer.TryWrite(content, outputPath, false)
 
 	// Assert - expect error containing specific message
 	testutils.AssertErrContains(t, err, "failed to check file", "TryWrite() stat failure")
-	testutils.AssertEqualString(t, result, "", "TryWrite() result on error")
+	assert.Equal(t, "", result, "TryWrite() result on error")
 }
 
 func TestFileWriter_TryWrite_WriteError(t *testing.T) {
@@ -137,7 +138,7 @@ func TestFileWriter_TryWrite_WriteError(t *testing.T) {
 
 	// Assert - expect error containing specific message
 	testutils.AssertErrContains(t, err, "failed to write file", "TryWrite() write failure")
-	testutils.AssertEqualString(t, result, "", "TryWrite() result on error")
+	assert.Equal(t, "", result, "TryWrite() result on error")
 }
 
 

@@ -2,38 +2,39 @@
 package testutils
 
 import (
-	"errors"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // AssertErrWrappedContains verifies that an error exists, wraps a target error,
 // and optionally contains a given substring in its message. "ctx" describes the calling context.
 func AssertErrWrappedContains(t *testing.T, got error, want error, contains string, ctx string) {
-    t.Helper()
+	t.Helper()
 
-    if got == nil {
-        t.Fatalf("%s expected error, got nil", ctx)
-    }
+	// Assert the error type/unwrap match first
+	if want != nil {
+		assert.ErrorIs(t, got, want, ctx)
+	} else {
+		assert.Error(t, got, ctx)
+	}
 
-    if !errors.Is(got, want) {
-        t.Fatalf("%s error = %v, want wrapped %v", ctx, got, want)
-    }
-
-    if contains != "" && !strings.Contains(got.Error(), contains) {
-        t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
-    }
+	// And optionally assert the message content
+	if contains != "" {
+		assert.ErrorContains(t, got, contains, ctx)
+	}
 }
 
 // AssertErrContains asserts that an error is non-nil and its message contains the provided substring.
 func AssertErrContains(t *testing.T, got error, contains string, ctx string) {
-    t.Helper()
+	t.Helper()
 
-    if got == nil {
-        t.Fatalf("%s expected error, got nil", ctx)
-    }
+	if contains == "" {
+		assert.Error(t, got, ctx)
 
-    if contains != "" && !strings.Contains(got.Error(), contains) {
-        t.Fatalf("%s error message = %q, want to contain %s", ctx, got.Error(), contains)
-    }
+		return
+	}
+
+	// ErrorContains also asserts non-nil
+	assert.ErrorContains(t, got, contains, ctx)
 }
