@@ -164,7 +164,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **CI**: Uses external reusable workflow (`devantler-tech/reusable-workflows`) for Go CI/CD
 - **System Tests**: Matrix testing across container engines (Docker/Podman) and distributions (Kind/K3d)
-  - Tests all CLI commands: `init`, `up`, `status`, `list`, `start`, `reconcile`, `down` 
+  - Tests all CLI commands: `init`, `up`, `status`, `list`, `start`, `reconcile`, `down`
   - Runs with different configurations: `--container-engine Docker/Podman --distribution Kind/K3d`
   - Cannot be run locally, only in CI environment
 - **Coverage**: Codecov integration for test coverage reporting
