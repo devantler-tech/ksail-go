@@ -160,13 +160,13 @@ func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
 }
 
 // assertBadUnmarshalError runs the provided unmarshal op and asserts the wrapped error.
-func assertBadUnmarshalError(t *testing.T, op func(mar marshaller.Marshaller[bad], model *bad) error) {
+func assertBadUnmarshalError(t *testing.T, operation func(mar marshaller.Marshaller[bad], model *bad) error) {
 	t.Helper()
 
 	mar := yamlmarshaller.NewMarshaller[bad]()
 	model := bad{F: func() {}}
 
-	err := op(mar, &model)
+	err := operation(mar, &model)
 
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to unmarshal YAML")
