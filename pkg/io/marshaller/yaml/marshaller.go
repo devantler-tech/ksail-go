@@ -20,7 +20,7 @@ func NewMarshaller[T any]() marshaller.Marshaller[T] {
 func (g *YAMLMarshaller[T]) Marshal(model T) (string, error) {
 	data, err := yaml.Marshal(model)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
 	return string(data), nil
