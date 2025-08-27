@@ -7,8 +7,8 @@ type Marshaller[T any] interface {
 	Marshal(model T) (string, error)
 
 	// Unmarshal deserializes the model from a byte representation.
-	Unmarshal(data []byte, model T) error
+	Unmarshal(data []byte, model *T) error
 
 	// UnmarshalString deserializes the model from a string representation.
-	UnmarshalString(data string, model T) error
+	UnmarshalString(data string, model *T) error
 }
