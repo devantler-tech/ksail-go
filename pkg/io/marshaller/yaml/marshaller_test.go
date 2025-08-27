@@ -116,3 +116,61 @@ func TestUnmarshalString_Success(t *testing.T) {
 	testutils.MustUnmarshalString[sample](t, mar, data, &got)
 	assert.Equal(t, want, got)
 }
+
+func TestMarshal_Error_UnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	// Arrange: a type that cannot be marshaled (contains a func field)
+	type bad struct {
+		F func()
+	}
+
+	mar := yamlmarshaller.NewMarshaller[bad]()
+	input := bad{F: func() {}}
+
+	// Act
+	yamlText, err := mar.Marshal(input)
+
+	// Assert
+	require.Error(t, err)
+	assert.Empty(t, yamlText)
+	assert.ErrorContains(t, err, "failed to marshal YAML")
+}
+
+func TestUnmarshal_Error_UnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	// Arrange: a type that cannot be unmarshaled (contains a func field)
+	type bad struct {
+		F func()
+	}
+
+	mar := yamlmarshaller.NewMarshaller[bad]()
+	input := bad{F: func() {}}
+
+	// Act
+	err := mar.Unmarshal([]byte("F: !!js/function 'function() {}'"), &input)
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to unmarshal YAML")
+}
+
+func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	// Arrange: a type that cannot be unmarshaled (contains a func field)
+	type bad struct {
+		F func()
+	}
+
+	mar := yamlmarshaller.NewMarshaller[bad]()
+	input := bad{F: func() {}}
+
+	// Act
+	err := mar.UnmarshalString("F: !!js/function 'function() {}'", &input)
+
+	// Assert
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to unmarshal YAML")
+}
