@@ -1,3 +1,4 @@
+// Package yamlmarshaller provides functionality for marshaling and unmarshaling YAML documents.
 package yamlmarshaller
 
 import (
@@ -9,6 +10,11 @@ import (
 
 // YAMLMarshaller marshals/unmarshals YAML documents for a model type.
 type YAMLMarshaller[T any] struct{}
+
+// NewMarshaller creates a new YAMLMarshaller instance implementing Marshaller.
+func NewMarshaller[T any]() marshaller.Marshaller[T] {
+	return &YAMLMarshaller[T]{}
+}
 
 // Marshal serializes the model into a string representation.
 func (g *YAMLMarshaller[T]) Marshal(model T) (string, error) {
@@ -38,9 +44,4 @@ func (g *YAMLMarshaller[T]) UnmarshalString(data string, model *T) error {
 	}
 
 	return nil
-}
-
-// NewMarshaller creates a new YAMLMarshaller instance implementing Marshaller.
-func NewMarshaller[T any]() marshaller.Marshaller[T] {
-	return &YAMLMarshaller[T]{}
 }
