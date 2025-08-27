@@ -4,9 +4,13 @@ package cluster
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 const (
+  // Group is the API group for KSail.
 	Group      = "ksail.dev"
+  // Version is the API version for KSail.
 	Version    = "v1alpha1"
+  // Kind is the kind for KSail clusters.
 	Kind       = "Cluster"
+  // APIVersion is the full API version for KSail.
 	APIVersion = Group + "/" + Version
 )
 
@@ -44,19 +48,26 @@ type Connection struct {
 type Distribution string
 
 const (
+	// DistributionKind is the kind distribution.
 	DistributionKind Distribution = "Kind"
+	// DistributionK3d is the K3d distribution.
 	DistributionK3d  Distribution = "K3d"
+	// DistributionTind is the Talos in Docker distribution.
 	DistributionTind Distribution = "Tind"
 )
 
-// validDistributions enumerates supported distribution values.
-var validDistributions = []Distribution{DistributionKind, DistributionK3d, DistributionTind}
+// validDistributions returns supported distribution values.
+func validDistributions() []Distribution {
+	return []Distribution{DistributionKind, DistributionK3d, DistributionTind}
+}
 
 // CNI defines the CNI options for a KSail cluster.
 type CNI string
 
 const (
+	// CNIDefault is the default CNI.
 	CNIDefault CNI = "Default"
+	// CNICilium is the Cilium CNI.
 	CNICilium  CNI = "Cilium"
 )
 
@@ -64,7 +75,9 @@ const (
 type CSI string
 
 const (
+	// CSIDefault is the default CSI.
 	CSIDefault          CSI = "Default"
+	// CSILocalPathStorage is the LocalPathStorage CSI.
 	CSILocalPathStorage CSI = "LocalPathStorage"
 )
 
@@ -72,8 +85,11 @@ const (
 type IngressController string
 
 const (
+  // IngressControllerDefault is the default Ingress Controller
 	IngressControllerDefault IngressController = "Default"
+  // IngressControllerTraefik is the Traefik Ingress Controller
 	IngressControllerTraefik IngressController = "Traefik"
+  // IngressControllerNone is no Ingress Controller
 	IngressControllerNone    IngressController = "None"
 )
 
@@ -81,9 +97,13 @@ const (
 type GatewayController string
 
 const (
+  // GatewayControllerDefault is the default Gateway Controller
 	GatewayControllerDefault GatewayController = "Default"
+  // GatewayControllerTraefik is the Traefik Gateway Controller
 	GatewayControllerTraefik GatewayController = "Traefik"
+  // GatewayControllerCilium is the Cilium Gateway Controller
 	GatewayControllerCilium  GatewayController = "Cilium"
+  // GatewayControllerNone is no Gateway Controller
 	GatewayControllerNone    GatewayController = "None"
 )
 
@@ -91,28 +111,37 @@ const (
 type ReconciliationTool string
 
 const (
+  // ReconciliationToolKubectl is the kubectl reconciliation tool.
 	ReconciliationToolKubectl ReconciliationTool = "Kubectl"
+  // ReconciliationToolFlux is the Flux reconciliation tool.
 	ReconciliationToolFlux    ReconciliationTool = "Flux"
+  // ReconciliationToolArgoCD is the ArgoCD reconciliation tool.
 	ReconciliationToolArgoCD  ReconciliationTool = "ArgoCD"
 )
 
 // validReconciliationTools enumerates supported reconciliation tool values.
-var validReconciliationTools = []ReconciliationTool{
-	ReconciliationToolKubectl,
-	ReconciliationToolFlux,
-	ReconciliationToolArgoCD,
+func validReconciliationTools() []ReconciliationTool {
+  return []ReconciliationTool{
+    ReconciliationToolKubectl,
+    ReconciliationToolFlux,
+    ReconciliationToolArgoCD,
+  }
 }
 
 // ContainerEngine defines the container engine used for local cluster lifecycle.
 type ContainerEngine string
 
 const (
+  // ContainerEngineDocker is the Docker container engine.
 	ContainerEngineDocker ContainerEngine = "Docker"
+  // ContainerEnginePodman is the Podman container engine.
 	ContainerEnginePodman ContainerEngine = "Podman"
 )
 
 // validContainerEngines enumerates supported container engines.
-var validContainerEngines = []ContainerEngine{ContainerEngineDocker, ContainerEnginePodman}
+func validContainerEngines() []ContainerEngine {
+  return []ContainerEngine{ContainerEngineDocker, ContainerEnginePodman}
+}
 
 // Options holds optional settings for distributions, networking, and deployment tools.
 type Options struct {
@@ -124,7 +153,7 @@ type Options struct {
 
 	Kubectl OptionsKubectl `json:"kubectl,omitzero"`
 	Flux    OptionsFlux    `json:"flux,omitzero"`
-	ArgoCD  OptionsArgoCD  `json:"argoCD,omitzero"`
+	ArgoCD  OptionsArgoCD  `json:"argocd,omitzero"`
 
 	Helm      OptionsHelm      `json:"helm,omitzero"`
 	Kustomize OptionsKustomize `json:"kustomize,omitzero"`

@@ -2,6 +2,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,23 +10,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// --- Errors ---
+
+// ErrInvalidDistribution is returned when an invalid distribution is specified.
+var ErrInvalidDistribution = errors.New("invalid distribution")
+
+// ErrInvalidReconciliationTool is returned when an invalid reconciliation tool is specified.
+var ErrInvalidReconciliationTool = errors.New("invalid reconciliation tool")
+
+// ErrInvalidContainerEngine is returned when an invalid container engine is specified.
+var ErrInvalidContainerEngine = errors.New("invalid container engine")
+
 // --- Constructors ---
 
 // NewCluster creates a new KSail cluster with the given options.
 func NewCluster(options ...func(*Cluster)) *Cluster {
-	c := &Cluster{
+	cluster := &Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
 	}
 	for _, opt := range options {
-		opt(c)
+		opt(cluster)
 	}
 
-	c.SetDefaults()
+	cluster.SetDefaults()
 
-	return c
+	return cluster
 }
 
 // WithMetadataName sets the name of the cluster.
@@ -107,13 +119,14 @@ func WithSpecReconciliationTool(reconciliationTool ReconciliationTool) func(*Clu
 
 // --- Defaults ---
 
+// SetDefaults sets default values for the Cluster fields if they are not already set.
 func (c *Cluster) SetDefaults() {
-	c.setMetadataNameDefault()
+	c.setMetadataDefaults()
 	c.setSpecDefaults()
 	c.setSpecConnectionDefaults()
 }
 
-func (c *Cluster) setMetadataNameDefault() {
+func (c *Cluster) setMetadataDefaults() {
 	if c.Metadata.Name == "" {
 		c.Metadata.Name = "ksail-default"
 	}
@@ -178,7 +191,7 @@ func (c *Cluster) setSpecConnectionDefaults() {
 // Set for Distribution.
 func (d *Distribution) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
-	for _, dist := range validDistributions {
+	for _, dist := range validDistributions() {
 		if strings.EqualFold(value, string(dist)) {
 			*d = dist
 
@@ -186,14 +199,14 @@ func (d *Distribution) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("invalid distribution: %s (valid options: %s, %s, %s)",
-		value, DistributionKind, DistributionK3d, DistributionTind)
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionTind)
 }
 
 // Set for ReconciliationTool.
 func (d *ReconciliationTool) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
-	for _, tool := range validReconciliationTools {
+	for _, tool := range validReconciliationTools() {
 		if strings.EqualFold(value, string(tool)) {
 			*d = tool
 
@@ -201,13 +214,13 @@ func (d *ReconciliationTool) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("invalid reconciliation tool: %s (valid options: %s, %s, %s)",
-		value, ReconciliationToolKubectl, ReconciliationToolFlux, ReconciliationToolArgoCD)
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidReconciliationTool, value, ReconciliationToolKubectl, ReconciliationToolFlux, ReconciliationToolArgoCD)
 }
 
 // Set for ContainerEngine.
 func (e *ContainerEngine) Set(value string) error {
-	for _, engine := range validContainerEngines {
+	for _, engine := range validContainerEngines() {
 		if strings.EqualFold(value, string(engine)) {
 			*e = engine
 
@@ -216,8 +229,11 @@ func (e *ContainerEngine) Set(value string) error {
 	}
 
 	return fmt.Errorf(
-		"invalid container engine: %s (valid options: %s, %s)",
-		value, ContainerEngineDocker, ContainerEnginePodman,
+		"%w: %s (valid options: %s, %s)",
+		ErrInvalidContainerEngine,
+		value,
+		ContainerEngineDocker,
+		ContainerEnginePodman,
 	)
 }
 
