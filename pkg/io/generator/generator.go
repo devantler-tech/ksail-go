@@ -2,6 +2,6 @@
 package generator
 
 // Generator is implemented by specific distribution generators (kind, k3d, kustomization).
-type Generator interface {
-	Generate(model any) (string, error)
+type Generator[T any] interface {
+	Generate(model T) (string, error)
 }
