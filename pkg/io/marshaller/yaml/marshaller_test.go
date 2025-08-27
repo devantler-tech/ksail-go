@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +16,11 @@ type sample struct {
 	Count  int      `json:"count"          yaml:"count"`
 	Active bool     `json:"active"         yaml:"active"`
 	Tags   []string `json:"tags,omitempty" yaml:"tags,omitempty"`
+}
+
+// bad is a type that cannot be marshaled/unmarshaled due to the func field.
+type bad struct {
+	F func()
 }
 
 func TestMarshal_Success(t *testing.T) {
@@ -140,37 +146,28 @@ func TestMarshal_Error_UnsupportedType(t *testing.T) {
 func TestUnmarshal_Error_UnsupportedType(t *testing.T) {
 	t.Parallel()
 
-	// Arrange: a type that cannot be unmarshaled (contains a func field)
-	type bad struct {
-		F func()
-	}
-
-	mar := yamlmarshaller.NewMarshaller[bad]()
-	input := bad{F: func() {}}
-
-	// Act
-	err := mar.Unmarshal([]byte("F: !!js/function 'function() {}'"), &input)
-
-	// Assert
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "failed to unmarshal YAML")
+	assertBadUnmarshalError(t, func(mar marshaller.Marshaller[bad], model *bad) error {
+		return mar.Unmarshal([]byte("F: !!js/function 'function() {}'"), model)
+	})
 }
 
 func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
 	t.Parallel()
 
-	// Arrange: a type that cannot be unmarshaled (contains a func field)
-	type bad struct {
-		F func()
-	}
+	assertBadUnmarshalError(t, func(mar marshaller.Marshaller[bad], model *bad) error {
+		return mar.UnmarshalString("F: !!js/function 'function() {}'", model)
+	})
+}
+
+// assertBadUnmarshalError runs the provided unmarshal op and asserts the wrapped error.
+func assertBadUnmarshalError(t *testing.T, op func(mar marshaller.Marshaller[bad], model *bad) error) {
+	t.Helper()
 
 	mar := yamlmarshaller.NewMarshaller[bad]()
-	input := bad{F: func() {}}
+	model := bad{F: func() {}}
 
-	// Act
-	err := mar.UnmarshalString("F: !!js/function 'function() {}'", &input)
+	err := op(mar, &model)
 
-	// Assert
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to unmarshal YAML")
 }
