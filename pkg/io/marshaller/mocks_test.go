@@ -96,7 +96,7 @@ func (_c *MockMarshaller_Marshal_Call[T]) RunAndReturn(run func(model T) (string
 }
 
 // Unmarshal provides a mock function for the type MockMarshaller
-func (_mock *MockMarshaller[T]) Unmarshal(data []byte, model T) error {
+func (_mock *MockMarshaller[T]) Unmarshal(data []byte, model *T) error {
 	ret := _mock.Called(data, model)
 
 	if len(ret) == 0 {
@@ -104,7 +104,7 @@ func (_mock *MockMarshaller[T]) Unmarshal(data []byte, model T) error {
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func([]byte, T) error); ok {
+	if returnFunc, ok := ret.Get(0).(func([]byte, *T) error); ok {
 		r0 = returnFunc(data, model)
 	} else {
 		r0 = ret.Error(0)
@@ -119,20 +119,20 @@ type MockMarshaller_Unmarshal_Call[T any] struct {
 
 // Unmarshal is a helper method to define mock.On call
 //   - data []byte
-//   - model T
+//   - model *T
 func (_e *MockMarshaller_Expecter[T]) Unmarshal(data interface{}, model interface{}) *MockMarshaller_Unmarshal_Call[T] {
 	return &MockMarshaller_Unmarshal_Call[T]{Call: _e.mock.On("Unmarshal", data, model)}
 }
 
-func (_c *MockMarshaller_Unmarshal_Call[T]) Run(run func(data []byte, model T)) *MockMarshaller_Unmarshal_Call[T] {
+func (_c *MockMarshaller_Unmarshal_Call[T]) Run(run func(data []byte, model *T)) *MockMarshaller_Unmarshal_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 []byte
 		if args[0] != nil {
 			arg0 = args[0].([]byte)
 		}
-		var arg1 T
+		var arg1 *T
 		if args[1] != nil {
-			arg1 = args[1].(T)
+			arg1 = args[1].(*T)
 		}
 		run(
 			arg0,
@@ -147,13 +147,13 @@ func (_c *MockMarshaller_Unmarshal_Call[T]) Return(err error) *MockMarshaller_Un
 	return _c
 }
 
-func (_c *MockMarshaller_Unmarshal_Call[T]) RunAndReturn(run func(data []byte, model T) error) *MockMarshaller_Unmarshal_Call[T] {
+func (_c *MockMarshaller_Unmarshal_Call[T]) RunAndReturn(run func(data []byte, model *T) error) *MockMarshaller_Unmarshal_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UnmarshalString provides a mock function for the type MockMarshaller
-func (_mock *MockMarshaller[T]) UnmarshalString(data string, model T) error {
+func (_mock *MockMarshaller[T]) UnmarshalString(data string, model *T) error {
 	ret := _mock.Called(data, model)
 
 	if len(ret) == 0 {
@@ -161,7 +161,7 @@ func (_mock *MockMarshaller[T]) UnmarshalString(data string, model T) error {
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string, T) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, *T) error); ok {
 		r0 = returnFunc(data, model)
 	} else {
 		r0 = ret.Error(0)
@@ -176,20 +176,20 @@ type MockMarshaller_UnmarshalString_Call[T any] struct {
 
 // UnmarshalString is a helper method to define mock.On call
 //   - data string
-//   - model T
+//   - model *T
 func (_e *MockMarshaller_Expecter[T]) UnmarshalString(data interface{}, model interface{}) *MockMarshaller_UnmarshalString_Call[T] {
 	return &MockMarshaller_UnmarshalString_Call[T]{Call: _e.mock.On("UnmarshalString", data, model)}
 }
 
-func (_c *MockMarshaller_UnmarshalString_Call[T]) Run(run func(data string, model T)) *MockMarshaller_UnmarshalString_Call[T] {
+func (_c *MockMarshaller_UnmarshalString_Call[T]) Run(run func(data string, model *T)) *MockMarshaller_UnmarshalString_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 T
+		var arg1 *T
 		if args[1] != nil {
-			arg1 = args[1].(T)
+			arg1 = args[1].(*T)
 		}
 		run(
 			arg0,
@@ -204,7 +204,7 @@ func (_c *MockMarshaller_UnmarshalString_Call[T]) Return(err error) *MockMarshal
 	return _c
 }
 
-func (_c *MockMarshaller_UnmarshalString_Call[T]) RunAndReturn(run func(data string, model T) error) *MockMarshaller_UnmarshalString_Call[T] {
+func (_c *MockMarshaller_UnmarshalString_Call[T]) RunAndReturn(run func(data string, model *T) error) *MockMarshaller_UnmarshalString_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }
