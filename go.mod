@@ -9,7 +9,7 @@ require (
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	sigs.k8s.io/kind v0.29.0
 )
 
