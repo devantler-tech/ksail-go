@@ -18,13 +18,17 @@ linters:
             - github.com/spf13/cobra
             - github.com/stretchr/testify
             - sigs.k8s.io
+            - k8s.io
     exhaustruct:
       exclude:
         - '.+/cobra\.Command$'
-        - '.+/v1alpha4\.Cluster$'
         - '.+/types\.Cluster$'
-        - '.+/v1alpha5\.SimpleConfig$'
+        - '.+/v1alpha1\.Cluster$'
+        - '.+/v1alpha1\.Spec$'
+        - '.+/v1alpha4\.Cluster$'
         - '.+/v1alpha5\.ClusterConfig$'
+        - '.+/v1alpha5\.SimpleConfig$'
+        - '.+\.ObjectMeta$'
 
   exclusions:
     rules:
