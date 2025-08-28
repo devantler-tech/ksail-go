@@ -1,4 +1,4 @@
-// Package cluster provides model definitions for a KSail cluster.
+// Package v1alpha1 provides model definitions for a KSail cluster.
 package v1alpha1
 
 import (
