@@ -1,4 +1,4 @@
-package generator_test
+package yamlgenerator_test
 
 import (
 	"os"

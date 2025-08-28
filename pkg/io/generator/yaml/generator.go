@@ -1,5 +1,5 @@
-// Package generator provides YAML generation functionality for arbitrary models.
-package generator
+// Package yamlgenerator provides YAML generation functionality for arbitrary models.
+package yamlgenerator
 
 import (
 	"fmt"
@@ -22,6 +22,16 @@ type YAMLGenerator[T any] struct {
 	Marshaller marshaller.Marshaller[T]
 }
 
+// NewYAMLGenerator creates a new YAMLGenerator instance.
+func NewYAMLGenerator[T any]() *YAMLGenerator[T] {
+	m := yamlmarshaller.NewMarshaller[T]()
+
+	return &YAMLGenerator[T]{
+		FileWriter: io.FileWriter{},
+		Marshaller: m,
+	}
+}
+
 // Generate converts a model to YAML string format and optionally writes to file.
 func (g *YAMLGenerator[T]) Generate(model T, opts Options) (string, error) {
 	// marshal model
@@ -41,14 +51,4 @@ func (g *YAMLGenerator[T]) Generate(model T, opts Options) (string, error) {
 	}
 
 	return modelYAML, nil
-}
-
-// NewYAMLGenerator creates a new YAMLGenerator instance.
-func NewYAMLGenerator[T any]() *YAMLGenerator[T] {
-	m := yamlmarshaller.NewMarshaller[T]()
-
-	return &YAMLGenerator[T]{
-		FileWriter: io.FileWriter{},
-		Marshaller: m,
-	}
 }
