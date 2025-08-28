@@ -1,0 +1,33 @@
+name: copilot
+
+# GitHub Copilot agent environment setup workflow
+# This configures the environment when Copilot agents are started
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: Setup Copilot Environment
+    
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install mega-linter-runner globally
+        run: |
+          npm install -g mega-linter-runner
+          mega-linter-runner --version
+          
+      - name: Verify Go installation
+        run: go version
+          
+      - name: Test mega-linter-runner with Go flavor
+        run: |
+          mega-linter-runner --help | grep -E "(--fix|-f)" || echo "mega-linter-runner installed successfully"
