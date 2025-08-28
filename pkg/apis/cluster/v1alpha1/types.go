@@ -85,11 +85,11 @@ const (
 type IngressController string
 
 const (
-	// IngressControllerDefault is the default Ingress Controller
+	// IngressControllerDefault is the default Ingress Controller.
 	IngressControllerDefault IngressController = "Default"
-	// IngressControllerTraefik is the Traefik Ingress Controller
+	// IngressControllerTraefik is the Traefik Ingress Controller.
 	IngressControllerTraefik IngressController = "Traefik"
-	// IngressControllerNone is no Ingress Controller
+	// IngressControllerNone is no Ingress Controller.
 	IngressControllerNone IngressController = "None"
 )
 
@@ -97,13 +97,13 @@ const (
 type GatewayController string
 
 const (
-	// GatewayControllerDefault is the default Gateway Controller
+	// GatewayControllerDefault is the default Gateway Controller.
 	GatewayControllerDefault GatewayController = "Default"
-	// GatewayControllerTraefik is the Traefik Gateway Controller
+	// GatewayControllerTraefik is the Traefik Gateway Controller.
 	GatewayControllerTraefik GatewayController = "Traefik"
-	// GatewayControllerCilium is the Cilium Gateway Controller
+	// GatewayControllerCilium is the Cilium Gateway Controller.
 	GatewayControllerCilium GatewayController = "Cilium"
-	// GatewayControllerNone is no Gateway Controller
+	// GatewayControllerNone is no Gateway Controller.
 	GatewayControllerNone GatewayController = "None"
 )
 
