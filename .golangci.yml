@@ -21,12 +21,14 @@ linters:
             - k8s.io
     exhaustruct:
       exclude:
-        - '.+/cluster\.Cluster'
         - '.+/cobra\.Command$'
         - '.+/types\.Cluster$'
+        - '.+/v1alpha1\.Cluster$'
+        - '.+/v1alpha1\.Spec$'
         - '.+/v1alpha4\.Cluster$'
         - '.+/v1alpha5\.ClusterConfig$'
         - '.+/v1alpha5\.SimpleConfig$'
+        - '.+\.ObjectMeta$'
 
   exclusions:
     rules:
