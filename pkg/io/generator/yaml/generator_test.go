@@ -148,3 +148,31 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	assert.Equal(t, result, string(fileContent), "File should be overwritten with new content")
 	assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
 }
+
+func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	gen := generator.NewYAMLGenerator[TestModel]()
+	model := TestModel{
+		Name:    "test-app",
+		Version: "5.0.0",
+		Enabled: true,
+	}
+
+	// Use an invalid file path that will cause a write error
+	// On Unix systems, paths starting with null byte are invalid
+	invalidPath := "/dev/null/invalid/path/test.yaml"
+	opts := generator.Options{
+		Output: invalidPath,
+		Force:  true,
+	}
+
+	// Act
+	result, err := gen.Generate(model, opts)
+
+	// Assert
+	require.Error(t, err, "Generate should fail when file write fails")
+	assert.Contains(t, err.Error(), "failed to write YAML to file", "Error should mention file write failure")
+	assert.Empty(t, result, "Result should be empty on error")
+}
