@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,7 +72,7 @@ func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
 	assert.Contains(t, result, "Enabled: false", "YAML should contain enabled")
 
 	// Verify file was created
-	fileContent, err := os.ReadFile(outputPath) //nolint:gosec // test file path is safe
+	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	require.NoError(t, err, "File should be created")
 	assert.Equal(t, result, string(fileContent), "File content should match result")
 }
@@ -107,7 +108,7 @@ func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	assert.Contains(t, result, "Name: test-app", "YAML should be generated")
 
 	// Verify file was not overwritten
-	fileContent, err := os.ReadFile(outputPath) //nolint:gosec // test file path is safe
+	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	require.NoError(t, err, "File should exist")
 	assert.Equal(t, existingContent, string(fileContent), "File should not be overwritten")
 }
@@ -143,7 +144,7 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	assert.Contains(t, result, "Name: test-app", "YAML should be generated")
 
 	// Verify file was overwritten
-	fileContent, err := os.ReadFile(outputPath) //nolint:gosec // test file path is safe
+	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	require.NoError(t, err, "File should exist")
 	assert.Equal(t, result, string(fileContent), "File should be overwritten with new content")
 	assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
