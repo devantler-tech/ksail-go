@@ -19,3 +19,4 @@ LICENSE.md
 
 # megalinter
 megalinter-reports/
+*megalinter_file_names*.txt
