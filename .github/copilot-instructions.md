@@ -9,26 +9,31 @@ Always reference these instructions first and fallback to search or bash command
 ### Bootstrap and Build
 
 - **Install Go 1.23.9+**: Verify with `go version` (project requires 1.23.9+ per go.mod, runtime is 1.24.6)
-- **Download dependencies**: `go mod download` (completes in ~5 seconds)
+- **Download dependencies**: `go mod download` (completes in ~15 seconds)
 - **Build the application**: `go build -o ksail .` -- takes ~11 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install golangci-lint v2**: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
+  - **CRITICAL**: Always use `~/go/bin/golangci-lint run`, not system golangci-lint
 
 ### Additional Development Tools (Optional)
 
 - **mega-linter**: For comprehensive linting (used in CONTRIBUTING.md): Install per [mega-linter docs](https://megalinter.io/latest/mega-linter-runner/#installation)
 - **mockery**: For generating mocks: Install per [mockery docs](https://vektra.github.io/mockery/v3.5/installation/)
   - Configuration in `.mockery.yml` - supports `mockery` command to regenerate mocks
+  - **Current Environment**: Not installed by default - install only if modifying interface code
 
 ### Required Dependencies
 
 - **Go 1.23.9+**: Programming language runtime (required)
 - **Docker**: Container runtime - verify with `docker --version` (for future functionality)
-- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)
+  - **Current Environment**: Docker 28.0.4 available
+- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)  
+  - **Current Environment**: Kind v0.29.0 available
 - **kubectl**: Kubernetes CLI - verify with `kubectl version --client` (for future functionality)
+  - **Current Environment**: kubectl v1.33.4 available
 
 ### Testing and Validation
 
-- **Run tests**: `go test -v ./...` -- takes ~28 seconds. Set timeout to 60+ seconds for safety.
+- **Run tests**: `go test -v ./...` -- takes ~33 seconds. Set timeout to 60+ seconds for safety.
 - **Run linter**: `~/go/bin/golangci-lint run` -- takes ~14 seconds. Set timeout to 60+ seconds for safety.
   - **Current State**: Linter reports 0 issues (clean codebase)
   - Always check that new code doesn't introduce linting violations
@@ -50,14 +55,29 @@ Always reference these instructions first and fallback to search or bash command
 
 3. **Command Testing** (All commands work as stubs): Project initialization with `ksail init`, cluster lifecycle with `ksail up/down`, cluster listing with `ksail list`
 
+4. **MANDATORY Full Workflow Test**: After any changes, run this complete validation:
+   ```bash
+   # Complete development validation workflow
+   go test -v ./...              # ~33 seconds - ALL tests must pass
+   go build -o ksail .           # ~11 seconds - must build successfully
+   ./ksail --help               # Must show help without errors
+   ./ksail --version            # Must show version info
+   ~/go/bin/golangci-lint run   # ~15 seconds - must show 0 issues (ignore wsl warnings)
+   
+   # Test core functionality
+   ./ksail init --container-engine Docker --distribution Kind
+   ./ksail up && ./ksail status && ./ksail list && ./ksail down
+   ```
+
 ## Build and Timing Information
 
 ### Command Timings (Measured on Current System)
 
 - **`go build -o ksail .`**: ~11 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`go test -v ./...`**: ~28 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`~/go/bin/golangci-lint run`**: ~14 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`go mod download`**: ~5 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go test -v ./...`**: ~33 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`~/go/bin/golangci-lint run`**: ~15 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **`go mod download`**: ~15 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
+- **NEVER CANCEL**: All commands may take longer on different systems. Always wait for completion.
 
 ### Linting Expectations
 
@@ -89,7 +109,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Testing**: Uses go-snaps for snapshot testing
 - **UI**: Colored output via fatih/color with symbols (✓, ✗, ⚠, ►)
 - **Entry Point**: `main.go` creates root command and handles execution
-- **Repository Size**: ~14,800 lines of Go code across 48 files
+- **Repository Size**: ~16,300 lines of Go code across 62 files
 
 ### Current Implementation Status
 
@@ -147,7 +167,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **Build fails**: Check Go version (need 1.23.9+), run `go mod download`
 - **Linter fails**: Install with install script, use `~/go/bin/golangci-lint`
-- **Linter warnings about deprecated 'wsl'**: Expected deprecation warnings about wsl linter, can be ignored
+- **Linter warnings about deprecated 'wsl'**: Expected deprecation warnings about wsl linter, can be ignored. Linter suggests migrating to wsl_v5 but current configuration works correctly.
 - **Import violations**: Check `.golangci.yml` depguard rules for allowed packages
 - **Test failures**: Check snapshot files in `__snapshots__/` directories
 - **Mock generation**: Run `mockery` to regenerate mocks if tests fail due to interface changes
@@ -178,4 +198,4 @@ Always reference these instructions first and fallback to search or bash command
 
 ---
 
-**Last Updated**: Based on current repository state as of Go 1.24.6, CLI stub implementation
+**Last Updated**: Based on current repository state as of Go 1.24.6, CLI stub implementation. Validated on GitHub Actions environment with Docker 28.0.4, Kind v0.29.0, kubectl v1.33.4.
