@@ -1,5 +1,5 @@
 // Package cluster provides model definitions for a KSail cluster.
-package cluster
+package v1alpha1
 
 import (
 	"errors"
