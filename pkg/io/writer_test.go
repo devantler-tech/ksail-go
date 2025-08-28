@@ -22,8 +22,8 @@ func TestFileWriter_TryWrite_EmptyOutput(t *testing.T) {
 	result, err := writer.TryWrite(content, "", false)
 
 	// Assert
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, content, result, "TryWrite()")
+	require.Error(t, err, "TryWrite()")
+	assert.Empty(t, result, "TryWrite() result on error")
 }
 
 func TestFileWriter_TryWrite_NewFile(t *testing.T) {
