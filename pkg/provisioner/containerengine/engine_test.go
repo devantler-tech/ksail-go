@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnifiedContainerEngine_CheckReady(t *testing.T) {
+func TestContainerEngine_CheckReady(t *testing.T) {
 	tests := []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
@@ -42,7 +42,7 @@ func TestUnifiedContainerEngine_CheckReady(t *testing.T) {
 			mockClient := provisioner.NewMockAPIClient(t)
 			tt.setupMock(mockClient)
 
-			engine := &UnifiedContainerEngine{
+			engine := &ContainerEngine{
 				client: mockClient,
 				name:   tt.engineName,
 			}
@@ -59,8 +59,8 @@ func TestUnifiedContainerEngine_CheckReady(t *testing.T) {
 	}
 }
 
-func TestUnifiedContainerEngine_Name(t *testing.T) {
-	engine := &UnifiedContainerEngine{
+func TestContainerEngine_Name(t *testing.T) {
+	engine := &ContainerEngine{
 		name: "Docker",
 	}
 

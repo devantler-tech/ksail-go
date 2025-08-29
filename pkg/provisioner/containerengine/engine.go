@@ -8,27 +8,19 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// ContainerEngine represents a container engine that can be used for local cluster management.
-type ContainerEngine interface {
-	// CheckReady checks if the container engine is available and ready.
-	CheckReady() (bool, error)
-	// Name returns the name of the container engine.
-	Name() string
-}
-
-// UnifiedContainerEngine implements the ContainerEngine interface with auto-detection.
-type UnifiedContainerEngine struct {
+// ContainerEngine implements container engine detection and management with auto-detection.
+type ContainerEngine struct {
 	client client.APIClient
 	name   string
 }
 
-// NewUnifiedContainerEngine creates a new container engine with auto-detection.
+// NewContainerEngine creates a new container engine with auto-detection.
 // It tries to connect to a container engine and returns the first available one.
-func NewUnifiedContainerEngine() (*UnifiedContainerEngine, error) {
+func NewContainerEngine() (*ContainerEngine, error) {
 	// Try Docker first (most common)
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err == nil {
-		engine := &UnifiedContainerEngine{
+		engine := &ContainerEngine{
 			client: dockerClient,
 			name:   "Docker",
 		}
@@ -43,7 +35,7 @@ func NewUnifiedContainerEngine() (*UnifiedContainerEngine, error) {
 		client.WithAPIVersionNegotiation(),
 	)
 	if err == nil {
-		engine := &UnifiedContainerEngine{
+		engine := &ContainerEngine{
 			client: podmanClient,
 			name:   "Podman",
 		}
@@ -58,7 +50,7 @@ func NewUnifiedContainerEngine() (*UnifiedContainerEngine, error) {
 		client.WithAPIVersionNegotiation(),
 	)
 	if err == nil {
-		engine := &UnifiedContainerEngine{
+		engine := &ContainerEngine{
 			client: podmanSystemClient,
 			name:   "Podman",
 		}
@@ -71,7 +63,7 @@ func NewUnifiedContainerEngine() (*UnifiedContainerEngine, error) {
 }
 
 // CheckReady checks if the container engine is available using the API client.
-func (u *UnifiedContainerEngine) CheckReady() (bool, error) {
+func (u *ContainerEngine) CheckReady() (bool, error) {
 	ctx := context.Background()
 
 	_, err := u.client.Ping(ctx)
@@ -83,11 +75,11 @@ func (u *UnifiedContainerEngine) CheckReady() (bool, error) {
 }
 
 // Name returns the name of the detected container engine.
-func (u *UnifiedContainerEngine) Name() string {
+func (u *ContainerEngine) Name() string {
 	return u.name
 }
 
 // GetClient returns the underlying Docker API client.
-func (u *UnifiedContainerEngine) GetClient() client.APIClient {
+func (u *ContainerEngine) GetClient() client.APIClient {
 	return u.client
 }
