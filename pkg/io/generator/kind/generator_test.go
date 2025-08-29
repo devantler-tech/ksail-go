@@ -33,9 +33,7 @@ func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
-	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
-	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
-	assert.Contains(t, result, "name: test-cluster", "YAML should contain cluster name")
+	assertKindYAML(t, result, "test-cluster")
 }
 
 func TestKindGenerator_Generate_WithFile(t *testing.T) {
@@ -56,14 +54,10 @@ func TestKindGenerator_Generate_WithFile(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
-	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
-	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
-	assert.Contains(t, result, "name: file-cluster", "YAML should contain cluster name")
+	assertKindYAML(t, result, "file-cluster")
 
 	// Verify file was written
-	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	require.NoError(t, err, "File should exist")
-	assert.Equal(t, result, string(fileContent), "File content should match result")
+	assertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
@@ -88,9 +82,7 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
-	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
-	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
-	assert.Contains(t, result, "name: existing-no-force", "YAML should contain cluster name")
+	assertKindYAML(t, result, "existing-no-force")
 
 	// Verify existing file was NOT overwritten
 	fileContent, rfErr := ioutils.ReadFileSafe(tempDir, outputPath)
@@ -120,9 +112,7 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
-	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
-	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
-	assert.Contains(t, result, "name: existing-with-force", "YAML should contain cluster name")
+	assertKindYAML(t, result, "existing-with-force")
 
 	// Verify existing file WAS overwritten
 	fileContent, rfErr := ioutils.ReadFileSafe(tempDir, outputPath)
@@ -193,9 +183,28 @@ func createTestCluster(name string) *v1alpha4.Cluster {
 	}
 
 	// Add a minimal control plane node to ensure kind processes the cluster correctly
-	cluster.Nodes = append(cluster.Nodes, v1alpha4.Node{
-		Role: v1alpha4.ControlPlaneRole,
-	})
+	var node v1alpha4.Node
+
+	node.Role = v1alpha4.ControlPlaneRole
+	cluster.Nodes = append(cluster.Nodes, node)
 
 	return cluster
+}
+
+// assertKindYAML ensures the generated YAML contains the expected boilerplate and cluster name.
+func assertKindYAML(t *testing.T, result string, clusterName string) {
+	t.Helper()
+	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
+	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
+	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
+}
+
+// assertFileEquals compares the file content with the expected string.
+func assertFileEquals(t *testing.T, dir, path, expected string) {
+	t.Helper()
+
+	fileContent, err := ioutils.ReadFileSafe(dir, path)
+
+	require.NoError(t, err, "File should exist")
+	assert.Equal(t, expected, string(fileContent))
 }
