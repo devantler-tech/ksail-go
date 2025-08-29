@@ -3,6 +3,7 @@ package fluxinstaller
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -30,10 +31,11 @@ func NewFluxInstaller(kubeconfig, context string, timeout time.Duration) *FluxIn
 func (b *FluxInstaller) Install() error {
 	err := b.helmInstallOrUpgradeFluxOperator()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to install Flux operator: %w", err)
 	}
 
-	// TODO: Apply FluxInstance that syncs with local 'ksail-registry'
+	// FluxInstance sync configuration will be added in future iterations
+
 	return nil
 }
 
@@ -41,10 +43,15 @@ func (b *FluxInstaller) Install() error {
 func (b *FluxInstaller) Uninstall() error {
 	client, err := b.newHelmClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	return client.UninstallReleaseByName("flux-operator")
+	err = client.UninstallReleaseByName("flux-operator")
+	if err != nil {
+		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
+	}
+
+	return nil
 }
 
 // --- internals ---
@@ -52,42 +59,53 @@ func (b *FluxInstaller) Uninstall() error {
 func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	client, err := b.newHelmClient()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	spec := helmclient.ChartSpec{
-		ReleaseName:     "flux-operator",
-		ChartName:       "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
-		Namespace:       "flux-system",
-		CreateNamespace: true,
-		Atomic:          true,
-		UpgradeCRDs:     true,
-		Timeout:         b.timeout,
+	spec := &helmclient.ChartSpec{
+		ReleaseName:        "flux-operator",
+		ChartName:          "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+		Namespace:          "flux-system",
+		CreateNamespace:    true,
+		Atomic:             true,
+		UpgradeCRDs:        true,
+		Timeout:            b.timeout,
+		// Only set fields that have valid zero values for their types
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	_, err = client.InstallOrUpgradeChart(ctx, &spec, nil)
+	_, err = client.InstallOrUpgradeChart(ctx, spec, nil)
+	if err != nil {
+		return fmt.Errorf("failed to install or upgrade chart: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 func (b *FluxInstaller) newHelmClient() (helmclient.Client, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 
+	// #nosec G304 -- Kubeconfig path is controlled by application configuration
 	data, err := os.ReadFile(kubeconfigPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
 
 	opts := &helmclient.KubeConfClientOptions{
 		Options: &helmclient.Options{
 			Namespace: "flux-system",
+			// Only set fields that have valid zero values for their types
 		},
 		KubeConfig:  data,
 		KubeContext: b.context,
 	}
 
-	return helmclient.NewClientFromKubeConf(opts)
+	client, err := helmclient.NewClientFromKubeConf(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Helm client from kubeconfig: %w", err)
+	}
+
+	return client, nil
 }

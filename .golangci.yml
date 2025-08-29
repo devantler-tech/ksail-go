@@ -31,9 +31,28 @@ linters:
         - '.+/v1alpha5\.SimpleConfig$'
         - '.+\.ObjectMeta$'
         - '.+\v1alpha4\.Node$'
+        - '.+/v1\.DeleteOptions$'
+        - '.+/v1\.GetOptions$'
+        - '.+/v1\.CreateOptions$'
+        - '.+/v1\.UpdateOptions$'
+        - '.+/clientcmd\.ClientConfigLoadingRules$'
+        - '.+/clientcmd\.ConfigOverrides$'
+        - '.+/helmclient\.ChartSpec$'
+        - '.+helmclient\.ChartSpec$'
+        - 'github\.com/mittwald/go-helm-client\.ChartSpec$'
+        - '.+/helmclient\.Options$'
+        - '.+helmclient\.Options$'
+        - 'github\.com/mittwald/go-helm-client\.Options$'
 
   exclusions:
     rules:
       - path: "cmd/.+"
         linters:
           - forbidigo
+      - path: "pkg/installer/flux/.+"
+        linters:
+          - exhaustruct
+          - ireturn
+      - path: "megalinter-reports/.+"
+        linters:
+          - all

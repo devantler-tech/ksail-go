@@ -90,7 +90,9 @@ func (b *KubectlInstaller) Uninstall() error {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
 
-	_ = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{})
+	_ = apiExtClient.ApiextensionsV1().
+		CustomResourceDefinitions().
+		Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{})
 
 	return nil
 }
@@ -156,7 +158,9 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 
 func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
-	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+	rules := &clientcmd.ClientConfigLoadingRules{
+		ExplicitPath: kubeconfigPath,
+	}
 
 	overrides := &clientcmd.ConfigOverrides{}
 	if b.context != "" {
@@ -210,7 +214,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 	// Poll every 500ms until Established=True or timeout
 	const pollInterval = 500 * time.Millisecond
 
-	return wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
+	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
 			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 			if err != nil {
@@ -235,6 +239,11 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 			return false, nil
 		})
+	if err != nil {
+		return fmt.Errorf("failed to wait for CRD to be established: %w", err)
+	}
+
+	return nil
 }
 
 func (b *KubectlInstaller) applyApplySetCR(

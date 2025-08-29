@@ -269,3 +269,168 @@ func TestKubectlInstaller_ApplyApplySetCR_YAMLUnmarshalError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "yaml")
 }
+
+func TestKubectlInstaller_InstallWithValidKubeconfig_ConnectError(t *testing.T) {
+	t.Parallel()
+
+	// Create a valid kubeconfig that points to a non-existent server
+	tempKubeconfig := `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://non-existent-server:8443
+    insecure-skip-tls-verify: true
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+users:
+- name: test-user
+  user:
+    token: test-token
+`
+
+	tmpDir := t.TempDir()
+	kubeconfigPath := tmpDir + "/kubeconfig"
+	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
+	require.NoError(t, err)
+
+	// Arrange
+	installer := kubectlinstaller.NewKubectlInstaller(
+		kubeconfigPath,
+		"test-context",
+		1*time.Second, // Short timeout for faster test
+	)
+
+	// Act
+	err = installer.Install()
+
+	// Assert
+	require.Error(t, err)
+	// Should fail when trying to connect to the Kubernetes API
+	assert.True(t, strings.Contains(err.Error(), "connection") ||
+		strings.Contains(err.Error(), "failed to check CRD existence") ||
+		strings.Contains(err.Error(), "failed to create"))
+}
+
+func TestKubectlInstaller_UninstallWithValidKubeconfig_ConnectError(t *testing.T) {
+	t.Parallel()
+
+	// Create a valid kubeconfig that points to a non-existent server
+	tempKubeconfig := `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://non-existent-server:8443
+    insecure-skip-tls-verify: true
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+users:
+- name: test-user
+  user:
+    token: test-token
+`
+
+	tmpDir := t.TempDir()
+	kubeconfigPath := tmpDir + "/kubeconfig"
+	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
+	require.NoError(t, err)
+
+	// Arrange
+	installer := kubectlinstaller.NewKubectlInstaller(
+		kubeconfigPath,
+		"test-context",
+		1*time.Second, // Short timeout for faster test
+	)
+
+	// Act
+	err = installer.Uninstall()
+
+	// Assert
+	// Uninstall ignores deletion errors, so it should succeed even if server is unreachable
+	require.NoError(t, err)
+}
+
+func TestKubectlInstaller_BuildRESTConfig_MalformedKubeconfig(t *testing.T) {
+	t.Parallel()
+
+	// Create a malformed kubeconfig file
+	malformedKubeconfig := `
+this is not valid yaml: [
+`
+
+	tmpDir := t.TempDir()
+	kubeconfigPath := tmpDir + "/kubeconfig"
+	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), 0600)
+	require.NoError(t, err)
+
+	// Arrange
+	installer := kubectlinstaller.NewKubectlInstaller(
+		kubeconfigPath,
+		"test-context",
+		5*time.Minute,
+	)
+
+	// Act
+	err = installer.Install()
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to build rest config")
+}
+
+func TestKubectlInstaller_EmptyContextName(t *testing.T) {
+	t.Parallel()
+
+	// Create a valid kubeconfig
+	tempKubeconfig := `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://test-server:8443
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+users:
+- name: test-user
+  user:
+    token: test-token
+`
+
+	tmpDir := t.TempDir()
+	kubeconfigPath := tmpDir + "/kubeconfig"
+	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
+	require.NoError(t, err)
+
+	// Arrange - empty context should use current-context from kubeconfig
+	installer := kubectlinstaller.NewKubectlInstaller(
+		kubeconfigPath,
+		"", // Empty context
+		1*time.Second,
+	)
+
+	// Act
+	err = installer.Install()
+
+	// Assert
+	require.Error(t, err)
+	// Should fail when trying to connect to the server, but config should be built successfully
+	assert.True(t, strings.Contains(err.Error(), "connection") ||
+		strings.Contains(err.Error(), "failed to check CRD existence") ||
+		strings.Contains(err.Error(), "failed to create"))
+}
