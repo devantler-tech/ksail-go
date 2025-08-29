@@ -175,11 +175,11 @@ func testKustomizationMarshalError(
 	t.Helper()
 
 	// Arrange
-	cluster := createCluster("marshal-error-cluster")
-	gen := generator.NewKustomizationGenerator(cluster)
+	gen := generator.NewKustomizationGenerator(createTestCluster("marshal-error-cluster"))
 	gen.Marshaller = generatortestutils.MarshalFailer[*ktypes.Kustomization]{
 		Marshaller: nil,
 	}
+	cluster := createCluster("marshal-error-cluster")
 
 	// Act & Assert
 	generatortestutils.TestGeneratorMarshalError[*v1alpha1.Cluster, *ktypes.Kustomization](
