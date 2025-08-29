@@ -1,0 +1,182 @@
+// Package eksprovisioner provides implementations of the Provisioner interface
+// for provisioning EKS clusters in AWS.
+package eksprovisioner
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+)
+
+// ErrClusterNotFound is returned when a cluster is not found.
+var ErrClusterNotFound = fmt.Errorf("cluster not found")
+
+// EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
+type EKSClusterProvisioner struct {
+	clusterConfig         *v1alpha5.ClusterConfig
+	providerConstructor   EKSProviderConstructor
+	clusterActionsFactory EKSClusterActionsFactory
+	clusterLister         EKSClusterLister
+	clusterCreator        EKSClusterCreator
+}
+
+// NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
+// for the eksctl provider and cluster actions. This supports both production wiring
+// and unit testing via mocks.
+func NewEKSClusterProvisioner(
+	clusterConfig *v1alpha5.ClusterConfig,
+	providerConstructor EKSProviderConstructor,
+	clusterActionsFactory EKSClusterActionsFactory,
+	clusterLister EKSClusterLister,
+	clusterCreator EKSClusterCreator,
+) *EKSClusterProvisioner {
+	return &EKSClusterProvisioner{
+		clusterConfig:         clusterConfig,
+		providerConstructor:   providerConstructor,
+		clusterActionsFactory: clusterActionsFactory,
+		clusterLister:         clusterLister,
+		clusterCreator:        clusterCreator,
+	}
+}
+
+// Create creates an EKS cluster.
+func (e *EKSClusterProvisioner) Create(name string) error {
+	ctx := context.Background()
+
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	// Create provider with explicit config
+	providerConfig := &v1alpha5.ProviderConfig{
+		Region: e.clusterConfig.Metadata.Region,
+	}
+
+	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	err = e.clusterCreator.CreateCluster(ctx, e.clusterConfig, ctl)
+	if err != nil {
+		return fmt.Errorf("failed to create EKS cluster: %w", err)
+	}
+
+	return nil
+}
+
+// Delete deletes an EKS cluster.
+func (e *EKSClusterProvisioner) Delete(name string) error {
+	ctx := context.Background()
+
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	// Create provider with explicit config
+	providerConfig := &v1alpha5.ProviderConfig{
+		Region: e.clusterConfig.Metadata.Region,
+	}
+
+	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	clusterActions, err := e.clusterActionsFactory.NewClusterActions(ctx, e.clusterConfig, ctl)
+	if err != nil {
+		return fmt.Errorf("failed to create cluster actions: %w", err)
+	}
+
+	// Use reasonable defaults for deletion parameters
+	waitInterval := 30 * time.Second
+	podEvictionWaitPeriod := 10 * time.Minute
+	wait := true
+	force := false
+	disableNodegroupEviction := false
+	parallel := 4
+
+	err = clusterActions.Delete(ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel)
+	if err != nil {
+		return fmt.Errorf("failed to delete EKS cluster: %w", err)
+	}
+
+	return nil
+}
+
+// Start starts an EKS cluster (no-op for EKS as clusters are always running).
+func (e *EKSClusterProvisioner) Start(name string) error {
+	// EKS clusters are always running when they exist, so this is a no-op
+	exists, err := e.Exists(name)
+	if err != nil {
+		return fmt.Errorf("failed to check if cluster exists: %w", err)
+	}
+
+	if !exists {
+		return ErrClusterNotFound
+	}
+
+	return nil
+}
+
+// Stop stops an EKS cluster (no-op for EKS as clusters cannot be stopped).
+func (e *EKSClusterProvisioner) Stop(name string) error {
+	// EKS clusters cannot be stopped, only deleted, so this is a no-op
+	exists, err := e.Exists(name)
+	if err != nil {
+		return fmt.Errorf("failed to check if cluster exists: %w", err)
+	}
+
+	if !exists {
+		return ErrClusterNotFound
+	}
+
+	return nil
+}
+
+// List lists all EKS clusters.
+func (e *EKSClusterProvisioner) List() ([]string, error) {
+	ctx := context.Background()
+
+	// Create provider with explicit config
+	providerConfig := &v1alpha5.ProviderConfig{
+		Region: e.clusterConfig.Metadata.Region,
+	}
+
+	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	descriptions, err := e.clusterLister.GetClusters(ctx, ctl, false, 100)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
+	}
+
+	clusterNames := make([]string, 0, len(descriptions))
+	for _, desc := range descriptions {
+		clusterNames = append(clusterNames, desc.Name)
+	}
+
+	return clusterNames, nil
+}
+
+// Exists checks if an EKS cluster exists.
+func (e *EKSClusterProvisioner) Exists(name string) (bool, error) {
+	clusters, err := e.List()
+	if err != nil {
+		return false, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	return slices.Contains(clusters, target), nil
+}
+
+// setName returns name if non-empty, otherwise returns defaultName.
+func setName(name, defaultName string) string {
+	if name == "" {
+		return defaultName
+	}
+	return name
+}

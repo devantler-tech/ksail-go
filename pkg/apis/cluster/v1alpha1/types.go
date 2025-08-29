@@ -148,6 +148,7 @@ type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
 	Tind OptionsTind `json:"talosInDocker,omitzero"`
+	EKS  OptionsEKS  `json:"eks,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
@@ -172,6 +173,30 @@ type OptionsK3d struct {
 // OptionsTind defines options specific to the Tind distribution.
 type OptionsTind struct {
 	// Add any specific fields for the Tind distribution here.
+}
+
+// OptionsEKS defines options specific to the EKS distribution.
+type OptionsEKS struct {
+	// AWSRegion specifies the AWS region for the EKS cluster
+	AWSRegion string `json:"awsRegion,omitzero"`
+
+	// AWSProfile specifies the AWS profile to use for authentication
+	AWSProfile string `json:"awsProfile,omitzero"`
+
+	// NodeType specifies the EC2 instance type for worker nodes
+	NodeType string `json:"nodeType,omitzero"`
+
+	// MinNodes specifies the minimum number of worker nodes
+	MinNodes int `json:"minNodes,omitzero"`
+
+	// MaxNodes specifies the maximum number of worker nodes
+	MaxNodes int `json:"maxNodes,omitzero"`
+
+	// DesiredNodes specifies the desired number of worker nodes
+	DesiredNodes int `json:"desiredNodes,omitzero"`
+
+	// KubernetesVersion specifies the Kubernetes version for the cluster
+	KubernetesVersion string `json:"kubernetesVersion,omitzero"`
 }
 
 // OptionsCilium defines options for the Cilium CNI.
