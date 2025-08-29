@@ -61,8 +61,8 @@ func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen := generator.NewKustomizationGenerator(createTestCluster("existing-no-force"))
 	cluster := createTestCluster("existing-no-force")
+	gen := generator.NewKustomizationGenerator(cluster)
 
 	// Act & Assert
 	generatortestutils.TestExistingFile(
