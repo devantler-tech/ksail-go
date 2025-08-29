@@ -54,11 +54,13 @@ const (
 	DistributionK3d Distribution = "K3d"
 	// DistributionTind is the Talos in Docker distribution.
 	DistributionTind Distribution = "Tind"
+	// DistributionEKS is the EKS distribution.
+	DistributionEKS Distribution = "EKS"
 )
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionKind, DistributionK3d, DistributionTind}
+	return []Distribution{DistributionKind, DistributionK3d, DistributionTind, DistributionEKS}
 }
 
 // CNI defines the CNI options for a KSail cluster.

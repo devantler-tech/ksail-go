@@ -1,0 +1,106 @@
+ cspell
+ github copilot instructions
+ github workflows cd
+ github workflows ci
+ github workflows copilot setup steps
+ github workflows release
+ github workflows sync labels
+ github workflows todos
+ gitignore
+ golangci
+ goreleaser
+ jscpd
+ markdownlint
+ mega linter
+ mockery
+ releaserc
+ vscode tasks
+ yamllint
+CONTRIBUTING
+Dockerfile
+README
+cmd down
+cmd down test
+cmd init
+cmd init test
+cmd list
+cmd list test
+cmd reconcile
+cmd reconcile test
+cmd root
+cmd root test
+cmd start
+cmd start test
+cmd status
+cmd status test
+cmd stop
+cmd stop test
+cmd ui asciiart ksail
+cmd ui asciiart ksail logo
+cmd ui asciiart ksail logo test
+cmd ui notify notify
+cmd ui notify notify test
+cmd ui quiet quiet
+cmd up
+cmd up test
+codecov
+internal testutils errors
+internal testutils file
+internal testutils marshal
+internal testutils namecases
+internal testutils string
+internal utils path path utils
+internal utils path path utils test
+main
+pkg apis cluster v1alpha1 constructors
+pkg apis cluster v1alpha1 constructors test
+pkg apis cluster v1alpha1 types
+pkg io generator eks generator
+pkg io generator eks generator test
+pkg io generator generator
+pkg io generator k3d gitkeep
+pkg io generator k3d generator
+pkg io generator k3d generator test
+pkg io generator kind generator
+pkg io generator kind generator test
+pkg io generator kustomization gitkeep
+pkg io generator mocks test
+pkg io generator testutils common tests
+pkg io generator testutils generator
+pkg io generator testutils marshal failer
+pkg io generator yaml generator
+pkg io generator yaml generator test
+pkg io marshaller marshaller
+pkg io marshaller mocks test
+pkg io marshaller yaml marshaller
+pkg io marshaller yaml marshaller test
+pkg io reader
+pkg io reader test
+pkg io writer
+pkg io writer test
+pkg provisioner cluster eks mocks test
+pkg provisioner cluster eks provider
+pkg provisioner cluster eks provisioner
+pkg provisioner cluster eks provisioner test
+pkg provisioner cluster k3d client provider
+pkg provisioner cluster k3d config provider
+pkg provisioner cluster k3d mocks test
+pkg provisioner cluster k3d provisioner
+pkg provisioner cluster k3d provisioner test
+pkg provisioner cluster kind mocks test
+pkg provisioner cluster kind provisioner
+pkg provisioner cluster kind provisioner test
+pkg provisioner cluster mocks test
+pkg provisioner cluster provisioner
+pkg provisioner mocks
+pkg provisioner provider aws provisioner
+pkg provisioner provider aws provisioner test
+pkg provisioner provider docker provisioner
+pkg provisioner provider docker provisioner test
+pkg provisioner provider mocks test
+pkg provisioner provider podman provisioner
+pkg provisioner provider podman provisioner test
+pkg provisioner provider provisioner
+pkg provisioner provider testutils common tests
+pkg provisioner provider testutils constructor
+renovate
