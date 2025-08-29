@@ -11,7 +11,6 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -68,13 +67,14 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	cluster := createTestCluster("existing-cluster")
 
 	// Act & Assert
-	generatortestutils.TestExistingFileNoForce(
+	generatortestutils.TestExistingFile(
 		t,
 		gen,
 		cluster,
 		"k3d-config.yaml",
 		assertK3dYAML,
 		"existing-cluster",
+		false,
 	)
 }
 
@@ -86,13 +86,14 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	cluster := createTestCluster("force-cluster")
 
 	// Act & Assert
-	generatortestutils.TestExistingFileWithForce(
+	generatortestutils.TestExistingFile(
 		t,
 		gen,
 		cluster,
 		"k3d-config.yaml",
 		assertK3dYAML,
 		"force-cluster",
+		true,
 	)
 }
 
@@ -123,24 +124,12 @@ func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	gen := generator.NewK3dGenerator()
-	gen.Marshaller = testutils.MarshalFailer[*v1alpha5.SimpleConfig]{
-		Marshaller: nil,
-	}
-	cluster := createTestCluster("marshal-error-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "marshal k3d config")
-	assert.Empty(t, result)
+	// Act & Assert
+	generatortestutils.TestK3dMarshalError(
+		t,
+		createTestCluster,
+		"marshal k3d config",
+	)
 }
 
 // createTestCluster creates a minimal test cluster configuration.

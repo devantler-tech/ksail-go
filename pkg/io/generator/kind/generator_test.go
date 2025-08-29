@@ -66,13 +66,14 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	cluster := createTestCluster("existing-no-force")
 
 	// Act & Assert
-	generatortestutils.TestExistingFileNoForce(
+	generatortestutils.TestExistingFile(
 		t,
 		gen,
 		cluster,
 		"kind-config.yaml",
 		assertKindYAML,
 		"existing-no-force",
+		false,
 	)
 }
 
@@ -84,13 +85,14 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	cluster := createTestCluster("existing-with-force")
 
 	// Act & Assert
-	generatortestutils.TestExistingFileWithForce(
+	generatortestutils.TestExistingFile(
 		t,
 		gen,
 		cluster,
 		"kind-config.yaml",
 		assertKindYAML,
 		"existing-with-force",
+		true,
 	)
 }
 
@@ -122,24 +124,12 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
-	gen := generator.NewKindGenerator()
-	gen.Marshaller = testutils.MarshalFailer[*v1alpha4.Cluster]{
-		Marshaller: nil,
-	}
-	cluster := createTestCluster("marshal-error-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "marshal kind config")
-	assert.Empty(t, result)
+	// Act & Assert
+	generatortestutils.TestKindMarshalError(
+		t,
+		createTestCluster,
+		"marshal kind config",
+	)
 }
 
 // createTestCluster creates a minimal test cluster configuration.
