@@ -18,8 +18,8 @@ func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen := generator.NewKustomizationGenerator(createTestCluster("test-cluster"))
 	cluster := createTestCluster("test-cluster")
+	gen := generator.NewKustomizationGenerator(cluster)
 	opts := yamlgenerator.Options{
 		Output: "",
 		Force:  false,
