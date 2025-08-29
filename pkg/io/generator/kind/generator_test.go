@@ -1,20 +1,18 @@
 package kindgenerator_test
 
 import (
-	"errors"
 	"path/filepath"
 	"testing"
 
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var errBoom = errors.New("boom")
+
 
 func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
@@ -118,22 +116,15 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-// marshalFailer overrides only Marshal to fail; other methods are satisfied via embedding.
-type marshalFailer struct {
-	marshaller.Marshaller[*v1alpha4.Cluster]
-}
 
-func (m marshalFailer) Marshal(_ *v1alpha4.Cluster) (string, error) {
-	return "", errBoom
-}
 
 func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	gen := generator.NewKindGenerator()
-	gen.Marshaller = marshalFailer{
-		Marshaller: nil,
+	gen.Marshaller = testutils.MarshalFailer[*v1alpha4.Cluster]{
+		MarshallerInterface: nil,
 	}
 	cluster := createTestCluster("marshal-error-cluster")
 	opts := yamlgenerator.Options{

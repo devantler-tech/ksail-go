@@ -2,6 +2,7 @@
 package testutils
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +15,9 @@ import (
 
 // File permissions for temporary test files.
 const testFileMode = 0o600
+
+// ErrBoom is a common error for testing marshal failures.
+var ErrBoom = errors.New("boom")
 
 // Generator is a generic interface for any YAML generator that can be tested with these utilities.
 type Generator[T any] interface {
@@ -44,6 +48,46 @@ func SetupExistingFile(t *testing.T, filename string) (string, string, string) {
 	return tempDir, outputPath, existingContent
 }
 
+// TestExistingFile runs a common test pattern for generators with existing files.
+func TestExistingFile[T any](
+	t *testing.T,
+	gen Generator[T],
+	cluster T,
+	filename string,
+	assertContent func(*testing.T, string, string),
+	clusterName string,
+	force bool,
+) {
+	t.Helper()
+
+	// Arrange
+	tempDir, outputPath, existingContent := SetupExistingFile(t, filename)
+	opts := yamlgenerator.Options{
+		Output: outputPath,
+		Force:  force,
+	}
+
+	// Act
+	result, err := gen.Generate(cluster, opts)
+
+	// Assert
+	require.NoError(t, err, "Generate should succeed")
+	assertContent(t, result, clusterName)
+
+	if force {
+		// Verify file was overwritten
+		AssertFileEquals(t, tempDir, outputPath, result)
+
+		// Additional check: ensure old content was replaced
+		fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
+		require.NoError(t, err, "File should exist")
+		assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
+	} else {
+		// Verify file was NOT overwritten
+		AssertFileEquals(t, tempDir, outputPath, existingContent)
+	}
+}
+
 // TestExistingFileNoForce runs a common test pattern for generators with existing files and no force flag.
 func TestExistingFileNoForce[T any](
 	t *testing.T,
@@ -54,23 +98,7 @@ func TestExistingFileNoForce[T any](
 	clusterName string,
 ) {
 	t.Helper()
-
-	// Arrange
-	tempDir, outputPath, existingContent := SetupExistingFile(t, filename)
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertContent(t, result, clusterName)
-
-	// Verify file was NOT overwritten
-	AssertFileEquals(t, tempDir, outputPath, existingContent)
+	TestExistingFile(t, gen, cluster, filename, assertContent, clusterName, false)
 }
 
 // TestExistingFileWithForce runs a common test pattern for generators with existing files and force flag.
@@ -83,26 +111,33 @@ func TestExistingFileWithForce[T any](
 	clusterName string,
 ) {
 	t.Helper()
+	TestExistingFile(t, gen, cluster, filename, assertContent, clusterName, true)
+}
 
-	// Arrange
-	tempDir, outputPath, existingContent := SetupExistingFile(t, filename)
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  true,
-	}
+// MarshallerInterface represents a generic marshaller interface for testing.
+type MarshallerInterface[T any] interface {
+	Marshal(config T) (string, error)
+	Unmarshal(data []byte, model *T) error
+	UnmarshalString(data string, model *T) error
+}
 
-	// Act
-	result, err := gen.Generate(cluster, opts)
+// MarshalFailer is a generic marshal failer that can be used with any config type.
+// It embeds the marshaller interface and overrides only the Marshal method to fail.
+type MarshalFailer[T any] struct {
+	MarshallerInterface[T]
+}
 
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertContent(t, result, clusterName)
+// Marshal always returns an error for testing purposes.
+func (m MarshalFailer[T]) Marshal(_ T) (string, error) {
+	return "", ErrBoom
+}
 
-	// Verify file was overwritten
-	AssertFileEquals(t, tempDir, outputPath, result)
+// Unmarshal placeholder implementation (not used in tests).
+func (m MarshalFailer[T]) Unmarshal(_ []byte, _ *T) error {
+	return nil
+}
 
-	// Additional check: ensure old content was replaced
-	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	require.NoError(t, err, "File should exist")
-	assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
+// UnmarshalString placeholder implementation (not used in tests).
+func (m MarshalFailer[T]) UnmarshalString(_ string, _ *T) error {
+	return nil
 }

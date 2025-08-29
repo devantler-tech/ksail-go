@@ -1,7 +1,6 @@
 package k3dgenerator_test
 
 import (
-	"errors"
 	"path/filepath"
 	"testing"
 
@@ -9,14 +8,13 @@ import (
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var errBoom = errors.New("boom")
+
 
 func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
@@ -119,22 +117,15 @@ func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-// marshalFailer overrides only Marshal to fail; other methods are satisfied via embedding.
-type marshalFailer struct {
-	marshaller.Marshaller[*v1alpha5.SimpleConfig]
-}
 
-func (m marshalFailer) Marshal(_ *v1alpha5.SimpleConfig) (string, error) {
-	return "", errBoom
-}
 
 func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	gen := generator.NewK3dGenerator()
-	gen.Marshaller = marshalFailer{
-		Marshaller: nil,
+	gen.Marshaller = testutils.MarshalFailer[*v1alpha5.SimpleConfig]{
+		MarshallerInterface: nil,
 	}
 	cluster := createTestCluster("marshal-error-cluster")
 	opts := yamlgenerator.Options{
