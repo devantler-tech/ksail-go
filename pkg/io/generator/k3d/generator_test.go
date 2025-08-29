@@ -4,9 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
-	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
+	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,7 +68,7 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	cluster := createTestCluster("existing-cluster")
 
 	// Act & Assert
-	testutils.TestExistingFileNoForce(
+	generatortestutils.TestExistingFileNoForce(
 		t,
 		gen,
 		cluster,
@@ -85,7 +86,7 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	cluster := createTestCluster("force-cluster")
 
 	// Act & Assert
-	testutils.TestExistingFileWithForce(
+	generatortestutils.TestExistingFileWithForce(
 		t,
 		gen,
 		cluster,

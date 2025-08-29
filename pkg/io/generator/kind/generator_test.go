@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
-	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
+	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,7 +66,7 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	cluster := createTestCluster("existing-no-force")
 
 	// Act & Assert
-	testutils.TestExistingFileNoForce(
+	generatortestutils.TestExistingFileNoForce(
 		t,
 		gen,
 		cluster,
@@ -83,7 +84,7 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	cluster := createTestCluster("existing-with-force")
 
 	// Act & Assert
-	testutils.TestExistingFileWithForce(
+	generatortestutils.TestExistingFileWithForce(
 		t,
 		gen,
 		cluster,
