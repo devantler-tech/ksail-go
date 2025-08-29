@@ -52,3 +52,29 @@ func TestExistingFile[T any](
 	}
 }
 
+// TestFileWriteError runs a common test pattern for generators with file write errors.
+func TestFileWriteError[T any](
+	t *testing.T,
+	gen generator.Generator[T, yamlgenerator.Options],
+	cluster T,
+	filename string,
+	expectedErrorContains string,
+) {
+	t.Helper()
+
+	// Arrange - Use an invalid file path that will cause a write error
+	invalidPath := "/dev/null/invalid/path/" + filename
+	opts := yamlgenerator.Options{
+		Output: invalidPath,
+		Force:  true,
+	}
+
+	// Act
+	result, err := gen.Generate(cluster, opts)
+
+	// Assert
+	require.Error(t, err, "Generate should fail when file write fails")
+	assert.Contains(t, err.Error(), expectedErrorContains, "Error should mention write failure")
+	assert.Empty(t, result, "Result should be empty on error")
+}
+
