@@ -159,13 +159,13 @@ func testK3dMarshalError(
 
 	// Arrange
 	gen := generator.NewK3dGenerator()
-	gen.Marshaller = testutils.MarshalFailer[*v1alpha5.SimpleConfig]{
+	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha5.SimpleConfig]{
 		Marshaller: nil,
 	}
 	cluster := createCluster("marshal-error-cluster")
 
 	// Act & Assert
-	testutils.TestGeneratorMarshalError[*v1alpha1.Cluster, *v1alpha5.SimpleConfig](
+	generatortestutils.TestGeneratorMarshalError[*v1alpha1.Cluster, *v1alpha5.SimpleConfig](
 		t,
 		gen,
 		cluster,

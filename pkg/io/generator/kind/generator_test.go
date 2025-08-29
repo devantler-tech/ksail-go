@@ -165,13 +165,13 @@ func testKindMarshalError(
 
 	// Arrange
 	gen := generator.NewKindGenerator()
-	gen.Marshaller = testutils.MarshalFailer[*v1alpha4.Cluster]{
+	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha4.Cluster]{
 		Marshaller: nil,
 	}
 	cluster := createCluster("marshal-error-cluster")
 
 	// Act & Assert
-	testutils.TestGeneratorMarshalError[*v1alpha4.Cluster, *v1alpha4.Cluster](
+	generatortestutils.TestGeneratorMarshalError[*v1alpha4.Cluster, *v1alpha4.Cluster](
 		t,
 		gen,
 		cluster,
