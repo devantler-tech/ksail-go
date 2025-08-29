@@ -25,3 +25,10 @@ report/
 
 # megalinter temp files
 *-megalinter_file_names_cspell.txt
+
+# coverage files
+coverage.out
+coverage_engine.out
+
+# megalinter output
+megalinter_output.log

@@ -12,6 +12,7 @@ func TestMain(t *testing.T) {
 	// Test that main builds and can show help
 	if os.Getenv("BE_CRASHER") == "1" {
 		main()
+
 		return
 	}
 
@@ -28,14 +29,16 @@ func TestMainHelp(t *testing.T) {
 	if os.Getenv("BE_HELP_TESTER") == "1" {
 		// Reset os.Args to simulate help flag
 		os.Args = []string{"ksail", "--help"}
+
 		main()
+
 		return
 	}
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestMainHelp")
 	cmd.Env = append(os.Environ(), "BE_HELP_TESTER=1")
 	output, err := cmd.CombinedOutput()
-	
+
 	// Help should exit with 0 and show usage
 	assert.NoError(t, err, "help command should succeed")
 	assert.Contains(t, string(output), "Usage:", "help output should contain usage info")
