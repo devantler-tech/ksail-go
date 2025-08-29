@@ -15,12 +15,12 @@ func TestErrorf(t *testing.T) {
 
 	var out bytes.Buffer
 
-  // Act
+	// Act
 	notify.Errorf(&out, "%s: %d", "oops", 42)
 	got := out.String()
 	want := notify.ErrorSymbol + "oops: 42\n"
 
-  // Assert
+	// Assert
 	if got != want {
 		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
 	}
@@ -32,7 +32,7 @@ func TestError(t *testing.T) {
 
 	var out bytes.Buffer
 
-  // Act
+	// Act
 	notify.Error(&out, "oops")
 	got := out.String()
 	want := notify.ErrorSymbol + "oops"
@@ -117,7 +117,7 @@ func TestSuccessf(t *testing.T) {
 
 	var out bytes.Buffer
 
-  // Act
+	// Act
 	notify.Successf(&out, "%s", "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done\n"
@@ -134,12 +134,12 @@ func TestSuccess(t *testing.T) {
 
 	var out bytes.Buffer
 
-  // Act
+	// Act
 	notify.Success(&out, "done")
 	got := out.String()
 	want := notify.SuccessSymbol + "done"
 
-  // Assert
+	// Assert
 	if got != want {
 		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
 	}
@@ -185,7 +185,7 @@ func TestActivity(t *testing.T) {
 
 	var out bytes.Buffer
 
-  // Act
+	// Act
 	notify.Activity(&out, "working")
 	got := out.String()
 	want := notify.ActivitySymbol + "working"
