@@ -19,3 +19,6 @@ LICENSE.md
 
 # megalinter
 megalinter-reports/
+
+# jscpd reports
+report/
