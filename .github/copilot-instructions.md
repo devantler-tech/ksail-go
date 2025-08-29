@@ -72,7 +72,7 @@ Always reference these instructions first and fallback to search or bash command
    go build -o ksail .                 # ~0.2 seconds - must build successfully
    ./ksail --help                      # Must show help without errors
    ./ksail --version                   # Must show version info
-   mega-linter-runner -f go  -e GOTOOLCHAIN=auto           # Primary linting tool - takes 3-5 minutes, auto-fixes issues
+   mega-linter-runner -f go  -e GOTOOLCHAIN=auto           # Primary linting tool - takes 10+ minutes, auto-fixes issues
    # Alternative if mega-linter not available: ~/go/bin/golangci-lint run
 
    # Test core functionality
@@ -104,7 +104,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **`go build -o ksail .`**: ~0.2 seconds when cached, ~1s first time -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go test -v ./...`**: ~31 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`mega-linter-runner -f go -e GOTOOLCHAIN=auto`**: Primary linting tool, takes 3-5 minutes (runs multiple linters and security scanners) -- SET TIMEOUT TO 300+ SECONDS for safety
+- **`mega-linter-runner -f go -e GOTOOLCHAIN=auto`**: Primary linting tool, takes 10+ minutes (runs multiple linters and security scanners) -- SET TIMEOUT TO 600+ SECONDS for safety
 - **`~/go/bin/golangci-lint run`**: ~31 seconds (alternative linter) -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~15 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **NEVER CANCEL**: All commands may take longer on different systems. Always wait for completion.

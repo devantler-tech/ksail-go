@@ -27,8 +27,10 @@ func TestCreate_Success(t *testing.T) {
 			"Create()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor,
+				clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
+				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).
+					Return(&eks.ClusterProvider{}, nil)
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
@@ -78,12 +80,16 @@ func TestDelete_Success(t *testing.T) {
 			"Delete()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterActionsFactory *eksprovisioner.MockEKSClusterActionsFactory, _ string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor,
+				clusterActionsFactory *eksprovisioner.MockEKSClusterActionsFactory, _ string) {
+				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).
+					Return(&eks.ClusterProvider{}, nil)
 
 				mockClusterActions := eksprovisioner.NewMockEKSClusterActions(t)
-				clusterActionsFactory.On("NewClusterActions", mock.Anything, mock.Anything, mock.Anything).Return(mockClusterActions, nil)
-				mockClusterActions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				clusterActionsFactory.On("NewClusterActions", mock.Anything, mock.Anything, mock.Anything).
+					Return(mockClusterActions, nil)
+				mockClusterActions.On("Delete", mock.Anything, mock.Anything, mock.Anything, 
+					mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
 				return prov.Delete(name)

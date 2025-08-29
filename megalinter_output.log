@@ -1,0 +1,563 @@
+Pulling docker image oxsecurity/megalinter-go:v8 ... 
+INFO: this operation can be long during the first use of mega-linter-runner
+The next runs, it will be immediate (thanks to docker cache !)
+v8: Pulling from oxsecurity/megalinter-go
+Digest: sha256:4e71fadd86beb350e4e61db9ce239331e1b78b189140c029620bd1100c4b1a87
+Status: Image is up to date for oxsecurity/megalinter-go:v8
+docker.io/oxsecurity/megalinter-go:v8
+Command: docker run --platform linux/amd64 --rm -v /var/run/docker.sock:/var/run/docker.sock:rw -v /home/runner/work/ksail-go/ksail-go:/tmp/lint:rw -e APPLY_FIXES=all -e GOTOOLCHAIN=auto oxsecurity/megalinter-go:v8
+Skipped setting git safe.directory DEFAULT_WORKSPACE:  ...
+Setting git safe.directory default: /github/workspace ...
+Setting git safe.directory to /tmp/lint ...
+[MegaLinter init] ONE-SHOT RUN
+[config] /tmp/lint/.mega-linter.yml + Environment variables
+
+    .:oool'                                  ,looo;                           
+    .xNXNXl                                 .dXNNXo.                          
+     lXXXX0c.                              'oKXXN0;                           
+     .oKNXNX0kxdddddddoc,.    .;lodddddddxk0XXXX0c                            
+      .:kKXXXXXXXXXXXXNXX0dllx0XXXXXXXXXXXXXXXKd,                             
+        .,cdkOOOOOOOO0KXXXXXXXXXXK0OOOOOOOkxo:'                               
+                      'ckKXNNNXkc'                                            
+              ':::::;.  .c0XX0l.  .;::::;.                                    
+              'xXXXXXx'   :kx:   ;OXXXXKd.                                    
+               .dKNNXXO;   ..   :0XXXXKl.                                     
+                .lKXXXX0:     .lKXXXX0:                                       
+                  :0XXXXKl.  .dXXXXXk,                                        
+                   ;kXXXXKd:cxXXXXXx'                                         
+                    'xXNXXXXXXXXXKo.                                          
+                     .oKXXXXNXXX0l.                                           
+                      .lKNNXNNXO:                                             
+                        ,looool'                                              
+
+==========================================================
+=============   MegaLinter, by OX.security   =============
+=========  https://ox.security?ref=megalinter  ===========
+==========================================================
+
+----------------------------------------------------------------------------------------------------
+------------------------------------ MegaLinter, by OX Security ------------------------------------
+----------------------------------------------------------------------------------------------------
+ - Image Creation Date: 2025-06-15T16:21:14Z
+ - Image Revision: e08c2b05e3dbc40af4c23f41172ef1e068a7d651
+ - Image Version: v8.8.0
+----------------------------------------------------------------------------------------------------
+The MegaLinter documentation can be found at:
+ - https://megalinter.io/8.8.0
+----------------------------------------------------------------------------------------------------
+MegaLinter initialization
+MegaLinter will analyze workspace [/tmp/lint]
+
+/usr/local/lib/python3.13/site-packages/azure/__init__.py:5: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+[Activation] ANSIBLE_ANSIBLE_LINT has been set inactive, as none of these files has been found: ['.ansible-lint', '.ansible-lint.yml', '.ansible-lint.yaml', '.config/ansible-lint.yml', '.config/ansible-lint.yaml']
+[Activation] EDITORCONFIG_EDITORCONFIG_CHECKER has been set inactive, as none of these files has been found: ['.editorconfig']
+[Activation] JAVASCRIPT_ES has been set inactive, as none of these files has been found: ['.eslintrc.json', '.eslintrc.yml', '.eslintrc.yaml', '.eslintrc.js', '.eslintrc.cjs', 'package.json:eslintConfig']
+[Activation] JSON_NPM_PACKAGE_JSON_LINT has been set inactive, as none of these files has been found: ['package.json']
+[Activation] JSX_ESLINT has been set inactive, as none of these files has been found: ['eslint.config.js', 'eslint.config.mjs', 'eslint.config.cjs', '.eslintrc.json', '.eslintrc.yml', '.eslintrc.yaml', '.eslintrc.js', '.eslintrc.cjs', 'package.json:eslintConfig']
+[Activation] KUBERNETES_KUBECONFORM has been set inactive, as subdirectory has not been found: kubernetes (set value "any" to always activate)
+[Activation] KUBERNETES_HELM has been set inactive, as none of these files has been found: ['Chart.yml', 'Chart.yaml']
+[Activation] KUBERNETES_KUBESCAPE has been set inactive, as none of these files has been found: ['Chart.yml', 'Chart.yaml']
+[Activation] REPOSITORY_LS_LINT has been set inactive, as none of these files has been found: ['.ls-lint.yml']
+[SemgrepLinter] Deactivated because no ruleset has been defined
+[Activation] SALESFORCE_SFDX_SCANNER_APEX has been set inactive, as subdirectory has not been found: force-app (set value "any" to always activate)
+[Activation] SALESFORCE_SFDX_SCANNER_AURA has been set inactive, as subdirectory has not been found: force-app (set value "any" to always activate)
+[Activation] SALESFORCE_SFDX_SCANNER_LWC has been set inactive, as subdirectory has not been found: force-app (set value "any" to always activate)
+[Activation] SALESFORCE_LIGHTNING_FLOW_SCANNER has been set inactive, as subdirectory has not been found: force-app (set value "any" to always activate)
+[Activation] SPELL_PROSELINT has been set inactive, as none of these files has been found: ['.proselintrc', 'proselint/config.json']
+[Activation] SPELL_VALE has been set inactive, as none of these files has been found: ['.vale.ini']
+[Activation] SQL_SQLFLUFF has been set inactive, as none of these files has been found: ['.sqlfluff']
+[Activation] SWIFT_SWIFTLINT has been set inactive, as none of these files has been found: ['.swiftlint.yml']
+[Activation] TSX_ESLINT has been set inactive, as none of these files has been found: ['.eslintrc.json', '.eslintrc.yml', '.eslintrc.yaml', '.eslintrc.js', '.eslintrc.cjs', 'package.json:eslintConfig']
+[Activation] TYPESCRIPT_ES has been set inactive, as none of these files has been found: ['.eslintrc.json', '.eslintrc.yml', '.eslintrc.yaml', '.eslintrc.js', '.eslintrc.cjs', 'package.json:eslintConfig']
+JSON_ESLINT_PLUGIN_JSONC has been disabled in MegaLinter for the following reason: Bug in eslint-plugin-jsonc: https://github.com/ota-meshi/eslint-plugin-jsonc/issues/328
+MAKEFILE_CHECKMAKE has been disabled in MegaLinter for the following reason: Security issues: https://github.com/mrtazz/checkmake/issues/99
+MARKDOWN_REMARK_LINT has been disabled in MegaLinter for the following reason: Bug in remark-lint: https://github.com/remarkjs/remark-lint/issues/322
+Skipped linters: ANSIBLE_ANSIBLE_LINT, EDITORCONFIG_EDITORCONFIG_CHECKER, JAVASCRIPT_ES, JAVASCRIPT_PRETTIER, JSON_ESLINT_PLUGIN_JSONC, JSON_NPM_PACKAGE_JSON_LINT, JSX_ESLINT, KUBERNETES_HELM, KUBERNETES_KUBECONFORM, KUBERNETES_KUBESCAPE, MAKEFILE_CHECKMAKE, MARKDOWN_REMARK_LINT, PYTHON_RUFF_FORMAT, REPOSITORY_LS_LINT, REPOSITORY_SEMGREP, SALESFORCE_LIGHTNING_FLOW_SCANNER, SALESFORCE_SFDX_SCANNER_APEX, SALESFORCE_SFDX_SCANNER_AURA, SALESFORCE_SFDX_SCANNER_LWC, SPELL_PROSELINT, SPELL_VALE, SQL_SQLFLUFF, SWIFT_SWIFTLINT, TSX_ESLINT, TYPESCRIPT_ES, TYPESCRIPT_PRETTIER
+[ApiReporter] Not enabled as API_REPORTER is not defined to true
+To receive reports as email, please set variable EMAIL_REPORTER_EMAIL
+
+MegaLinter now collects the files to analyse
+Listing all files in directory [/tmp/lint], then filter with:
+- File extensions: , .R, .RMD, .Rmd, .bash, .bicep, .c, .c++, .cc, .cdxml, .clj, .cljc, .cljs, .coffee, .config, .cpp, .cs, .csproj, .css, .cu, .cuh, .cxx, .dart, .dash, .edn, .env, .feature, .go, .gradle, .graphql, .groovy, .gvy, .h, .h++, .hcl, .hh, .hpp, .htm, .html, .hxx, .java, .js, .json, .json5, .jsonc, .ksh, .kt, .kts, .lua, .markdown, .md, .mdx, .nf, .p6, .php, .pl, .pl6, .pm, .pm6, .pp, .props, .proto, .ps1, .ps1xml, .psd1, .psm1, .psrc, .pssc, .py, .r, .raku, .rakumod, .rakutest, .rb, .rs, .rst, .saas, .scala, .scss, .sh, .smk, .sql, .t, .targets, .tex, .tf, .ts, .txt, .vb, .xml, .xsd, .yaml, .yml
+- File names (regex): Containerfile, Dockerfile, Jenkinsfile, Snakefile
+- Excluding .gitignored files [1]: megalinter-reports/megalinter.log
+Kept [102] files on [109] found files
+
++----MATCHING LINTERS-------------------+------------------------------------------------------------------------+----------------+------------+
+| Descriptor | Linter                   | Criteria                                                               | Matching files | Format/Fix |
++------------+--------------------------+------------------------------------------------------------------------+----------------+------------+
+| ACTION     | actionlint               | .yml|.yaml                                                             | 6              | yes        |
+| COPYPASTE  | jscpd                    |                                                                        | project        | yes        |
+| DOCKERFILE | hadolint                 | Containerfile|Dockerfile                                               | 1              | yes        |
+| GO         | golangci-lint            | .go                                                                    | project        | yes        |
+| GO         | revive                   | .go                                                                    | 76             | yes        |
+| JSON       | jsonlint                 | .json                                                                  | 5              | yes        |
+| JSON       | v8r                      | .json                                                                  | 5              | yes        |
+| JSON       | prettier                 | .json                                                                  | 5              | yes        |
+| MARKDOWN   | markdownlint             | .md                                                                    | 3              | yes        |
+| MARKDOWN   | markdown-link-check      | .md                                                                    | 3              | yes        |
+| MARKDOWN   | markdown-table-formatter | .md                                                                    | 3              | yes        |
+| REPOSITORY | checkov                  |                                                                        | project        | yes        |
+| REPOSITORY | git_diff                 |                                                                        | project        | yes        |
+| REPOSITORY | gitleaks                 |                                                                        | project        | yes        |
+| REPOSITORY | grype                    |                                                                        | project        | yes        |
+| REPOSITORY | secretlint               |                                                                        | project        | yes        |
+| REPOSITORY | syft                     |                                                                        | project        | yes        |
+| REPOSITORY | trivy                    |                                                                        | project        | yes        |
+| REPOSITORY | trivy-sbom               |                                                                        | project        | yes        |
+| REPOSITORY | trufflehog               |                                                                        | project        | yes        |
+| SPELL      | cspell                   |                                                                        | 102            | yes        |
+| SPELL      | lychee                   | .md|.mdx|.markdown|.html|.htm|.rst|.txt|.json|.jsonc|.json5|.yaml|.yml | 21             | yes        |
+| YAML       | prettier                 | .yml|.yaml                                                             | 12             | yes        |
+| YAML       | yamllint                 | .yml|.yaml                                                             | 12             | yes        |
+| YAML       | v8r                      | .yml|.yaml                                                             | 12             | yes        |
++------------+--------------------------+------------------------------------------------------------------------+----------------+------------+
+
+Processing linters on [4] parallel cores… (can be decreased with variable PARALLEL_PROCESS_NUMBER in case of performance issues)
+Could not fetch Gitleaks config from URL. Error: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Max retries exceeded with url: /gitleaks/gitleaks/refs/heads/master/config/gitleaks.toml (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7ff5d6a6e510>: Failed to establish a new connection: [Errno 101] Network unreachable'))
+Using local Gitleaks config file.
+[32m✅ Linted [ACTION] files with [actionlint] successfully - (538.06s)[0m
+- Using [actionlint v1.7.7] https://megalinter.io/8.8.0/descriptors/action_actionlint
+- MegaLinter key: [ACTION_ACTIONLINT]
+- Rules config: identified by [actionlint]
+- Number of files analyzed: [6]
+- Command: [actionlint .github/workflows/cd.yaml .github/workflows/ci.yaml .github/workflows/copilot-setup-steps.yml .github/workflows/release.yaml .github/workflows/sync-labels.yaml .github/workflows/todos.yaml]
+
+Could not fetch Gitleaks config from URL. Error: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Max retries exceeded with url: /gitleaks/gitleaks/refs/heads/master/config/gitleaks.toml (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7ff5d6a6e3c0>: Failed to establish a new connection: [Errno 101] Network unreachable'))
+Using local Gitleaks config file.
+Could not fetch Gitleaks config from URL. Error: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Max retries exceeded with url: /gitleaks/gitleaks/refs/heads/master/config/gitleaks.toml (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7ff5d6a6e510>: Failed to establish a new connection: [Errno 101] Network unreachable'))
+Using local Gitleaks config file.
+Could not fetch Gitleaks config from URL. Error: HTTPSConnectionPool(host='raw.githubusercontent.com', port=443): Max retries exceeded with url: /gitleaks/gitleaks/refs/heads/master/config/gitleaks.toml (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x7ff5d6a6e510>: Failed to establish a new connection: [Errno 101] Network unreachable'))
+Using local Gitleaks config file.
+[32m✅ Linted [DOCKERFILE] files with [hadolint] successfully - (542.21s)[0m
+- Using [hadolint v2.12.0] https://megalinter.io/8.8.0/descriptors/dockerfile_hadolint
+- MegaLinter key: [DOCKERFILE_HADOLINT]
+- Rules config: [.hadolint.yaml]
+- Number of files analyzed: [1]
+- Command: [hadolint --config /action/lib/.automation/.hadolint.yaml Dockerfile]
+
+[32m✅ Linted [JSON] files with [jsonlint] successfully - (0.14s)[0m
+- Using [jsonlint v16.0.0] https://megalinter.io/8.8.0/descriptors/json_jsonlint
+- MegaLinter key: [JSON_JSONLINT]
+- Rules config: identified by [jsonlint]
+- Number of files analyzed: [5]
+- Command: [jsonlint --quiet .cspell.json .jscpd.json .markdownlint.json .vscode/tasks.json renovate.json]
+
+[31m❌ Linted [COPYPASTE] files with [jscpd]: Found 11 error(s) and 0 warning(s) - (542.32s)[0m
+- Using [jscpd v4.0.5] https://megalinter.io/8.8.0/descriptors/copypaste_jscpd
+- MegaLinter key: [COPYPASTE_JSCPD]
+- Rules config: [/.jscpd.json]
+- Command: [jscpd --gitignore --reporters console,html --output /tmp/lint/megalinter-reports/copy-paste/ -c /tmp/lint/.jscpd.json .]
+--Error detail:
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [15:1 - 30:20] (15 lines, 115 tokens)
+   pkg/provisioner/cluster/kind/provisioner_test.go [14:1 - 29:2]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [69:2 - 76:23] (7 lines, 95 tokens)
+   pkg/provisioner/cluster/kind/provisioner_test.go [56:2 - 63:17]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [95:32 - 102:7] (7 lines, 84 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [41:32 - 48:7]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [145:17 - 163:5] (18 lines, 271 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [107:18 - 125:6]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [170:17 - 177:13] (7 lines, 83 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [132:32 - 138:14]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [189:30 - 196:9] (7 lines, 78 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [41:32 - 48:4]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [202:24 - 209:11] (7 lines, 97 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [132:32 - 178:11]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner_test.go [218:25 - 226:7] (8 lines, 125 tokens)
+   pkg/provisioner/cluster/eks/provisioner_test.go [132:32 - 140:4]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner.go [86:7 - 102:15] (16 lines, 140 tokens)
+   pkg/provisioner/cluster/eks/provisioner.go [61:7 - 77:4]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner.go [136:2 - 149:29] (13 lines, 117 tokens)
+   pkg/provisioner/cluster/eks/provisioner.go [64:2 - 77:4]
+
+Clone found (go):
+ - pkg/provisioner/cluster/eks/provisioner.go [171:5 - 199:30] (28 lines, 229 tokens)
+   pkg/provisioner/cluster/eks/provisioner.go [124:6 - 152:51]
+
+┌──────────┬────────────────┬─────────────┬──────────────┬──────────────┬──────────────────┬───────────────────┐
+│ Format   │ Files analyzed │ Total lines │ Total tokens │ Clones found │ Duplicated lines │ Duplicated tokens │
+├──────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤
+│ go       │ 68             │ 6200        │ 42649        │ 11           │ 133 (2.15%)      │ 1434 (3.36%)      │
+├──────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤
+│ markdown │ 1              │ 9           │ 35           │ 0            │ 0 (0%)           │ 0 (0%)            │
+├──────────┼────────────────┼─────────────┼──────────────┼──────────────┼──────────────────┼───────────────────┤
+│ Total:   │ 69             │ 6209        │ 42684        │ 11           │ 133 (2.14%)      │ 1434 (3.36%)      │
+└──────────┴────────────────┴─────────────┴──────────────┴──────────────┴──────────────────┴───────────────────┘
+Found 11 clones.
+HTML report saved to /tmp/lint/megalinter-reports/copy-paste/html/
+ERROR: jscpd found too many duplicates (2.14%) over threshold (0%)
+Error: ERROR: jscpd found too many duplicates (2.14%) over threshold (0%)
+    at ThresholdReporter.report (/node-deps/node_modules/@jscpd/finder/dist/index.js:612:13)
+    at /node-deps/node_modules/@jscpd/finder/dist/index.js:110:18
+    at Array.forEach (<anonymous>)
+    at /node-deps/node_modules/@jscpd/finder/dist/index.js:109:22
+    at async /node-deps/node_modules/jscpd/dist/jscpd.js:351:5
+
+
+[31m❌ Linted [SPELL] files with [cspell]: Found 72 error(s) and 0 warning(s) - (542.91s)[0m
+- Using [cspell v9.1.1] https://megalinter.io/8.8.0/descriptors/spell_cspell
+- MegaLinter key: [SPELL_CSPELL]
+- Rules config: [/.cspell.json]
+- Number of files analyzed: [103]
+- Command: [cspell --show-context --show-suggestions --no-must-find-files -c /tmp/lint/.cspell.json .cspell.json .github/copilot-instructions.md .github/workflows/cd.yaml .github/workflows/ci.yaml .github/workflows/copilot-setup-steps.yml .github/workflows/relea...(truncated)]
+--Error detail:
+  1/102 .cspell.json 847.28ms
+  2/102 .github/copilot-instructions.md 56.87ms
+  3/102 .github/workflows/cd.yaml 12.60ms
+  4/102 .github/workflows/ci.yaml 4.33ms
+  5/102 .github/workflows/copilot-setup-steps.yml 4.76ms
+  6/102 .github/workflows/release.yaml 1.82ms
+  7/102 .github/workflows/sync-labels.yaml 1.97ms
+  8/102 .github/workflows/todos.yaml 2.07ms
+  9/102 .gitignore 2.83ms
+ 10/102 .golangci.yml 115.87ms X
+.golangci.yml:20:26     - Unknown word (weaveworks) -- - github.com/weaveworks/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+.golangci.yml:20:37     - Unknown word (eksctl)     -- github.com/weaveworks/eksctl
+	 Suggestions: [sysctl, east, eccl, ecol, encl]
+ 11/102 .goreleaser.yaml 5.94ms
+ 12/102 .jscpd.json 1.52ms
+ 13/102 .markdownlint.json 0.87ms
+ 14/102 .mega-linter.yml 0.80ms
+ 15/102 .mockery.yml 1.24ms
+ 16/102 .releaserc 1.31ms
+ 17/102 .yamllint.yml 1.57ms
+ 18/102 667cdc81-91ee-4684-9fcb-f3cd6166e5a4-megalinter_file_names_cspell.txt 30.25ms X
+667cdc81-91ee-4684-9fcb-f3cd6166e5a4-megalinter_file_names_cspell.txt:99:17     - Unknown word (containerengine) -- pkg provisioner containerengine engine
+	 Suggestions: []
+667cdc81-91ee-4684-9fcb-f3cd6166e5a4-megalinter_file_names_cspell.txt:100:17    - Unknown word (containerengine) -- pkg provisioner containerengine engine test
+	 Suggestions: []
+ 19/102 cmd/down_test.go 50.48ms
+ 20/102 cmd/down.go 3.28ms
+ 21/102 cmd/init_test.go 8.55ms
+ 22/102 cmd/init.go 2.65ms
+ 23/102 cmd/list_test.go 3.79ms
+ 24/102 cmd/list.go 2.45ms
+ 25/102 cmd/reconcile_test.go 2.38ms
+ 26/102 cmd/reconcile.go 3.36ms
+ 27/102 cmd/root_test.go 3.02ms
+ 28/102 cmd/root.go 4.54ms
+ 29/102 cmd/start_test.go 1.97ms
+ 30/102 cmd/start.go 2.78ms
+ 31/102 cmd/status_test.go 2.67ms
+ 32/102 cmd/status.go 2.60ms
+ 33/102 cmd/stop_test.go 1.72ms
+ 34/102 cmd/stop.go 1.89ms
+ 35/102 cmd/ui/asciiart/ksail_logo_test.go 1.34ms
+ 36/102 cmd/ui/asciiart/ksail_logo.go 3.61ms
+ 37/102 cmd/ui/asciiart/ksail.txt 1.53ms
+ 38/102 cmd/ui/notify/notify_test.go 5.41ms
+ 39/102 cmd/ui/notify/notify.go 3.28ms
+ 40/102 cmd/ui/quiet/quiet.go 1.28ms
+ 41/102 cmd/up_test.go 1.99ms
+ 42/102 cmd/up.go 1.75ms
+ 43/102 codecov.yml 0.87ms
+ 44/102 CONTRIBUTING.md 3.82ms
+ 45/102 Dockerfile 5.39ms
+ 46/102 internal/testutils/errors.go 3.61ms
+ 47/102 internal/testutils/file.go 4.65ms
+ 48/102 internal/testutils/marshal.go 3.53ms
+ 49/102 internal/testutils/namecases.go 1.82ms
+ 50/102 internal/testutils/string.go 3.23ms
+ 51/102 internal/utils/path/path_utils_test.go 4.08ms
+ 52/102 internal/utils/path/path_utils.go 1.47ms
+ 53/102 main.go 2.32ms
+ 54/102 pkg/apis/cluster/v1alpha1/constructors_test.go 6.45ms
+ 55/102 pkg/apis/cluster/v1alpha1/constructors.go 8.34ms
+ 56/102 pkg/apis/cluster/v1alpha1/types.go 40.56ms X
+pkg/apis/cluster/v1alpha1/types.go:165:57    - Unknown word (eksctl)     -- that is not part of eksctl v1alpha5.ClusterConfig
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+ 57/102 pkg/installer/installer.go 1.43ms
+ 58/102 pkg/installer/mocks_test.go 7.56ms
+ 59/102 pkg/io/generator/eks/generator_test.go 142.81ms X
+pkg/io/generator/eks/generator_test.go:1:9       - Unknown word (eksgenerator) -- package eksgenerator_test
+	 Suggestions: []
+pkg/io/generator/eks/generator_test.go:13:14     - Unknown word (weaveworks)   -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/io/generator/eks/generator_test.go:13:25     - Unknown word (eksctl)       -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/io/generator/eks/generator_test.go:13:41     - Unknown word (eksctl)       -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/io/generator/eks/generator_test.go:32:8      - Unknown word (EKSYAML)      -- assertEKSYAML(t, result, "test-cluster
+	 Suggestions: [EYAML, KYAML, EYML, ENSNARL]
+pkg/io/generator/eks/generator_test.go:53:8      - Unknown word (EKSYAML)      -- assertEKSYAML(t, result, "file-cluster
+	 Suggestions: [EYAML, KYAML, EYML, ENSNARL]
+pkg/io/generator/eks/generator_test.go:72:9      - Unknown word (EKSYAML)      -- assertEKSYAML,
+	 Suggestions: [EYAML, KYAML, EYML, ENSNARL]
+pkg/io/generator/eks/generator_test.go:91:9      - Unknown word (EKSYAML)      -- assertEKSYAML,
+	 Suggestions: [EYAML, KYAML, EYML, ENSNARL]
+pkg/io/generator/eks/generator_test.go:147:8     - Unknown word (EKSYAML)      -- assertEKSYAML(t, result, "custom-cluster
+	 Suggestions: [EYAML, KYAML, EYML, ENSNARL]
+pkg/io/generator/eks/generator_test.go:234:42    - Unknown word (eksctl)       -- result, "apiVersion: eksctl.io/v1alpha5", "YAML
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+ 60/102 pkg/io/generator/eks/generator.go 98.74ms X
+pkg/io/generator/eks/generator.go:1:12      - Unknown word (eksgenerator) -- // Package eksgenerator provides utilities for
+	 Suggestions: []
+pkg/io/generator/eks/generator.go:2:9       - Unknown word (eksgenerator) -- package eksgenerator
+	 Suggestions: []
+pkg/io/generator/eks/generator.go:11:14     - Unknown word (weaveworks)   -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/io/generator/eks/generator.go:11:25     - Unknown word (eksctl)       -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/io/generator/eks/generator.go:11:41     - Unknown word (eksctl)       -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+ 61/102 pkg/io/generator/generator.go 1.30ms
+ 62/102 pkg/io/generator/k3d/.gitkeep 0.69ms
+ 63/102 pkg/io/generator/k3d/generator_test.go 6.20ms
+ 64/102 pkg/io/generator/k3d/generator.go 3.31ms
+ 65/102 pkg/io/generator/kind/generator_test.go 4.23ms
+ 66/102 pkg/io/generator/kind/generator.go 4.60ms
+ 67/102 pkg/io/generator/kustomization/.gitkeep 1.02ms
+ 68/102 pkg/io/generator/kustomization/generator_test.go 4.16ms
+ 69/102 pkg/io/generator/kustomization/generator.go 2.44ms
+ 70/102 pkg/io/generator/mocks_test.go 2.33ms
+ 71/102 pkg/io/generator/testutils/common_tests.go 2.97ms
+ 72/102 pkg/io/generator/testutils/generator.go 1.69ms
+ 73/102 pkg/io/generator/testutils/marshal_failer.go 1.69ms
+ 74/102 pkg/io/generator/yaml/generator_test.go 4.27ms
+ 75/102 pkg/io/generator/yaml/generator.go 1.83ms
+ 76/102 pkg/io/marshaller/marshaller.go 1.37ms
+ 77/102 pkg/io/marshaller/mocks_test.go 3.30ms
+ 78/102 pkg/io/marshaller/yaml/marshaller_test.go 3.31ms
+ 79/102 pkg/io/marshaller/yaml/marshaller.go 1.65ms
+ 80/102 pkg/io/reader_test.go 2.20ms
+ 81/102 pkg/io/reader.go 1.70ms
+ 82/102 pkg/io/writer_test.go 2.92ms
+ 83/102 pkg/io/writer.go 1.54ms
+ 84/102 pkg/provisioner/cluster/eks/mocks_test.go 106.60ms X
+pkg/provisioner/cluster/eks/mocks_test.go:5:9       - Unknown word (eksprovisioner) -- package eksprovisioner
+	 Suggestions: []
+pkg/provisioner/cluster/eks/mocks_test.go:12:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/mocks_test.go:12:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/mocks_test.go:13:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/mocks_test.go:13:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/mocks_test.go:13:41     - Unknown word (eksctl)         -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/mocks_test.go:14:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/mocks_test.go:14:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/mocks_test.go:46:160    - Unknown word (Nodegroup)      -- force bool, disableNodegroupEviction bool, parallel
+	 Suggestions: []
+pkg/provisioner/cluster/eks/mocks_test.go:47:84     - Unknown word (Nodegroup)      -- wait, force, disableNodegroupEviction, parallel)
+	 Suggestions: []
+pkg/provisioner/cluster/eks/mocks_test.go:55:81     - Unknown word (Nodegroup)      -- wait, force, disableNodegroupEviction, parallel)
+	 Suggestions: []
+pkg/provisioner/cluster/eks/mocks_test.go:73:15     - Unknown word (Nodegroup)      -- // - disableNodegroupEviction bool
+	 Suggestions: []
+pkg/provisioner/cluster/eks/mocks_test.go:75:172    - Unknown word (Nodegroup)      -- interface{}, disableNodegroupEviction interface{}
+	 Suggestions: []
+ 85/102 pkg/provisioner/cluster/eks/provider.go 134.21ms X
+pkg/provisioner/cluster/eks/provider.go:1:12      - Unknown word (eksprovisioner) -- // Package eksprovisioner provides implementations
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provider.go:3:9       - Unknown word (eksprovisioner) -- package eksprovisioner
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provider.go:9:14      - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provider.go:9:25      - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provider.go:10:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provider.go:10:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provider.go:10:41     - Unknown word (eksctl)         -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provider.go:11:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provider.go:11:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provider.go:15:59     - Unknown word (eksctl's)       -- subset of methods from eksctl's cluster actions used
+	 Suggestions: [est's, east's, easel's, edict's, edsel's]
+pkg/provisioner/cluster/eks/provider.go:21:23     - Unknown word (Nodegroup)      -- wait, force, disableNodegroupEviction bool,
+	 Suggestions: []
+ 86/102 pkg/provisioner/cluster/eks/provisioner_test.go 106.34ms X
+pkg/provisioner/cluster/eks/provisioner_test.go:1:9       - Unknown word (eksprovisioner) -- package eksprovisioner_test
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner_test.go:8:2       - Unknown word (eksprovisioner) -- eksprovisioner "github.com/devantler
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner_test.go:12:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provisioner_test.go:12:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/actions/cluster
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner_test.go:13:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provisioner_test.go:13:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner_test.go:13:41     - Unknown word (eksctl)         -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner_test.go:14:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provisioner_test.go:14:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/eks"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner_test.go:30:30     - Unknown word (eksprovisioner) -- providerConstructor *eksprovisioner.MockEKSProviderConstructor
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner_test.go:30:89     - Unknown word (eksprovisioner) -- rConstructor, clusterCreator *eksprovisioner.MockEKSClusterCreator
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner_test.go:34:15     - Unknown word (eksprovisioner) -- func(prov *eksprovisioner.EKSClusterProvisioner
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner_test.go:255:18    - Unknown word (nodegroup)      -- Name: "test-nodegroup",
+	 Suggestions: []
+ 87/102 pkg/provisioner/cluster/eks/provisioner.go 125.47ms X
+pkg/provisioner/cluster/eks/provisioner.go:1:12      - Unknown word (eksprovisioner) -- // Package eksprovisioner provides implementations
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner.go:3:9       - Unknown word (eksprovisioner) -- package eksprovisioner
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner.go:12:14     - Unknown word (weaveworks)     -- "github.com/weaveworks/eksctl/pkg/apis/eksctl
+	 Suggestions: [weavers, warworks, waxworks, weaver's, waveforms]
+pkg/provisioner/cluster/eks/provisioner.go:12:25     - Unknown word (eksctl)         -- github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner.go:12:41     - Unknown word (eksctl)         -- weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner.go:40:12     - Unknown word (eksctl)         -- // for the eksctl provider and cluster
+	 Suggestions: [sysctl, SYSCTL, east, eccl, ecol]
+pkg/provisioner/cluster/eks/provisioner.go:112:9     - Unknown word (Nodegroup)      -- disableNodegroupEviction := false
+	 Suggestions: []
+pkg/provisioner/cluster/eks/provisioner.go:115:92    - Unknown word (Nodegroup)      -- wait, force, disableNodegroupEviction, parallel)
+	 Suggestions: []
+ 88/102 pkg/provisioner/cluster/k3d/client_provider.go 2.31ms
+ 89/102 pkg/provisioner/cluster/k3d/config_provider.go 1.37ms
+ 90/102 pkg/provisioner/cluster/k3d/mocks_test.go 10.88ms
+ 91/102 pkg/provisioner/cluster/k3d/provisioner_test.go 7.85ms
+ 92/102 pkg/provisioner/cluster/k3d/provisioner.go 3.71ms
+ 93/102 pkg/provisioner/cluster/kind/mocks_test.go 3.70ms
+ 94/102 pkg/provisioner/cluster/kind/provisioner_test.go 7.10ms
+ 95/102 pkg/provisioner/cluster/kind/provisioner.go 6.66ms
+ 96/102 pkg/provisioner/cluster/mocks_test.go 3.62ms
+ 97/102 pkg/provisioner/cluster/provisioner.go 1.24ms
+ 98/102 pkg/provisioner/containerengine/engine_test.go 19.16ms X
+pkg/provisioner/containerengine/engine_test.go:1:9       - Unknown word (containerengine) -- package containerengine_test
+	 Suggestions: []
+pkg/provisioner/containerengine/engine_test.go:8:54      - Unknown word (containerengine) -- ksail-go/pkg/provisioner/containerengine"
+	 Suggestions: []
+pkg/provisioner/containerengine/engine_test.go:48:15     - Unknown word (containerengine) -- engine := &containerengine.ContainerEngine{
+	 Suggestions: []
+pkg/provisioner/containerengine/engine_test.go:68:13     - Unknown word (containerengine) -- engine := &containerengine.ContainerEngine{
+	 Suggestions: []
+pkg/provisioner/containerengine/engine_test.go:78:13     - Unknown word (containerengine) -- engine := &containerengine.ContainerEngine{
+	 Suggestions: []
+ 99/102 pkg/provisioner/containerengine/engine.go 18.71ms X
+pkg/provisioner/containerengine/engine.go:1:12      - Unknown word (containerengine) -- // Package containerengine provides unified container
+	 Suggestions: []
+pkg/provisioner/containerengine/engine.go:2:9       - Unknown word (containerengine) -- package containerengine
+	 Suggestions: []
+100/102 pkg/provisioner/mocks.go 75.41ms
+101/102 README.md 4.95ms
+102/102 renovate.json 1.99ms
+CSpell: Files checked: 102, Issues found: 72 in 11 files.
+
+
+[32m✅ Linted [MARKDOWN] files with [markdownlint] successfully - (0.73s)[0m
+- Using [markdownlint v0.45.0] https://megalinter.io/8.8.0/descriptors/markdown_markdownlint
+- MegaLinter key: [MARKDOWN_MARKDOWNLINT]
+- Rules config: [/.markdownlint.json]
+- Number of files analyzed: [3]
+- Command: [markdownlint --fix -c /tmp/lint/.markdownlint.json .github/copilot-instructions.md CONTRIBUTING.md README.md]
+
+[32m✅ Linted [JSON] files with [v8r] successfully - (32.79s)[0m
+- Using [v8r v5.0.0] https://megalinter.io/8.8.0/descriptors/json_v8r
+- MegaLinter key: [JSON_V8R]
+- Rules config: identified by [v8r]
+- Number of files analyzed: [5]
+- Command: [v8r --ignore-errors .cspell.json .jscpd.json .markdownlint.json .vscode/tasks.json renovate.json]
+
+[32m✅ Linted [JSON] files with [prettier] successfully - (0.37s)[0m
+- Using [prettier v3.5.3] https://megalinter.io/8.8.0/descriptors/json_prettier
+- MegaLinter key: [JSON_PRETTIER]
+- Rules config: identified by [prettier]
+- Number of files analyzed: [5]
+- Command: [prettier --write .cspell.json .jscpd.json .markdownlint.json .vscode/tasks.json renovate.json]
+
+[32m✅ Linted [YAML] files with [prettier] successfully - (0.63s)[0m
+- Using [prettier v3.5.3] https://megalinter.io/8.8.0/descriptors/yaml_prettier
+- MegaLinter key: [YAML_PRETTIER]
+- Rules config: identified by [prettier]
+- Number of files analyzed: [12]
+- Command: [prettier --write .github/workflows/cd.yaml .github/workflows/ci.yaml .github/workflows/copilot-setup-steps.yml .github/workflows/release.yaml .github/workflows/sync-labels.yaml .github/workflows/todos.yaml .golangci.yml .goreleaser.yaml .mega-linter....(truncated)]
+
+[32m✅ Linted [YAML] files with [yamllint] successfully - (0.44s)[0m
+- Using [yamllint v1.37.1] https://megalinter.io/8.8.0/descriptors/yaml_yamllint
+- MegaLinter key: [YAML_YAMLLINT]
+- Rules config: [/.yamllint.yml]
+- Number of files analyzed: [12]
+- Command: [yamllint --format standard -c /tmp/lint/.yamllint.yml .github/workflows/cd.yaml .github/workflows/ci.yaml .github/workflows/copilot-setup-steps.yml .github/workflows/release.yaml .github/workflows/sync-labels.yaml .github/workflows/todos.yaml .golang...(truncated)]
+
+Unable to get number of errors with regex_number and Errors\.+([0-9]+)
+[31m❌ Linted [SPELL] files with [lychee]: Found 1 error(s) and 0 warning(s) - (47.16s)[0m
+- Using [lychee v0.18.0] https://megalinter.io/8.8.0/descriptors/spell_lychee
+- MegaLinter key: [SPELL_LYCHEE]
+- Rules config: identified by [lychee]
+- Number of files analyzed: [21]
+- Command: [lychee --format detailed --no-progress .cspell.json .github/copilot-instructions.md .github/workflows/cd.yaml .github/workflows/ci.yaml .github/workflows/copilot-setup-steps.yml .github/workflows/release.yaml .github/workflows/sync-labels.yaml .githu...(truncated)]
+--Error detail:
+[TIMEOUT] https://docs.zizmor.sh/audits/#cache-poisoning | Timeout
+[TIMEOUT] https://vektra.github.io/mockery/v3.5/installation/ | Timeout
+[TIMEOUT] https://megalinter.io/latest/mega-linter-runner/#installation | Timeout
+[TIMEOUT] https://docs.renovatebot.com/renovate-schema.json | Timeout
+[TIMEOUT] https://golangci-lint.run/docs/welcome/install/ | Timeout
+[TIMEOUT] https://vektra.github.io/mockery/v3.5/installation/ | Timeout
+[TIMEOUT] https://github.com/devantler-tech/ksail-go/issues/new/choose | Timeout
+[TIMEOUT] https://megalinter.io/latest/mega-linter-runner/#installation | Timeout
+[TIMEOUT] https://www.docker.com/get-started/ | Timeout
+[TIMEOUT] https://devantler.tech/contact/ | Timeout
+[TIMEOUT] https://go.dev/doc/install | Timeout
+[TIMEOUT] https://codecov.io/gh/devantler-tech/ksail-go | Timeout
+[TIMEOUT] https://codecov.io/gh/devantler-tech/ksail-go/graph/badge.svg?token=HSUfhaiXwq | Timeout
+📝 Summary
+---------------------
+🔍 Total...........16
+✅ Successful.......3
+⏳ Timeouts........13
+🔀 Redirected.......0
+👻 Excluded.........0
+❓ Unknown..........0
+🚫 Errors...........0
+
+Errors in .github/workflows/cd.yaml
+[TIMEOUT] https://docs.zizmor.sh/audits/#cache-poisoning | Timeout
+
+Errors in .github/copilot-instructions.md
+[TIMEOUT] https://vektra.github.io/mockery/v3.5/installation/ | Timeout
+[TIMEOUT] https://megalinter.io/latest/mega-linter-runner/#installation | Timeout
+
+Errors in renovate.json
+[TIMEOUT] https://docs.renovatebot.com/renovate-schema.json | Timeout
+
+Errors in CONTRIBUTING.md
+[TIMEOUT] https://devantler.tech/contact/ | Timeout
+[TIMEOUT] https://github.com/devantler-tech/ksail-go/issues/new/choose | Timeout
+[TIMEOUT] https://vektra.github.io/mockery/v3.5/installation/ | Timeout
+[TIMEOUT] https://megalinter.io/latest/mega-linter-runner/#installation | Timeout
+[TIMEOUT] https://www.docker.com/get-started/ | Timeout
+[TIMEOUT] https://golangci-lint.run/docs/welcome/install/ | Timeout
+[TIMEOUT] https://go.dev/doc/install | Timeout
+
+Errors in README.md
+[TIMEOUT] https://codecov.io/gh/devantler-tech/ksail-go/graph/badge.svg?token=HSUfhaiXwq | Timeout
+[TIMEOUT] https://codecov.io/gh/devantler-tech/ksail-go | Timeout
+   [WARN ] There were issues with GitHub URLs. You could try setting a GitHub token and running lychee again.
+
+

@@ -12,6 +12,7 @@ import (
 
 func TestContainerEngine_CheckReady(t *testing.T) {
 	t.Parallel()
+
 	tests := []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
@@ -46,8 +47,8 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			tt.setupMock(mockClient)
 
 			engine := &containerengine.ContainerEngine{
-				Client: mockClient,
-				EngineName:   tt.engineName,
+				Client:     mockClient,
+				EngineName: tt.engineName,
 			}
 
 			ready, err := engine.CheckReady()
@@ -65,6 +66,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 
 func TestContainerEngine_Name(t *testing.T) {
 	t.Parallel()
+
 	engine := &containerengine.ContainerEngine{
 		EngineName: "Docker",
 	}
@@ -87,12 +89,12 @@ func TestNewContainerEngine_NoEnginesAvailable(t *testing.T) {
 	// This test would require mocking the client creation, which is complex
 	// For now, we'll test that the error is returned when no engines are available
 	// In a real environment with no Docker/Podman, this would return the error
-	
+
 	// We can't easily test this without major refactoring to inject dependencies
 	// The function directly calls client.NewClientWithOpts which we can't mock
 	// For coverage purposes, we acknowledge this limitation
 	engine, err := containerengine.NewContainerEngine()
-	
+
 	// Either we get an engine (if Docker/Podman is available) or an error
 	if err != nil {
 		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
