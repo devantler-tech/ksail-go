@@ -28,11 +28,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig         *v1alpha5.ClusterConfig
-	providerConstructor   EKSProviderConstructor
-	clusterActionsFactory EKSClusterActionsFactory
-	clusterLister         EKSClusterLister
-	clusterCreator        EKSClusterCreator
+	clusterConfig             *v1alpha5.ClusterConfig
+	providerConstructor       EKSProviderConstructor
+	clusterActionsFactory     EKSClusterActionsFactory
+	clusterLister             EKSClusterLister
+	clusterCreator            EKSClusterCreator
+	nodeGroupManagerFactory   EKSNodeGroupManagerFactory
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -44,13 +45,15 @@ func NewEKSClusterProvisioner(
 	clusterActionsFactory EKSClusterActionsFactory,
 	clusterLister EKSClusterLister,
 	clusterCreator EKSClusterCreator,
+	nodeGroupManagerFactory EKSNodeGroupManagerFactory,
 ) *EKSClusterProvisioner {
 	return &EKSClusterProvisioner{
-		clusterConfig:         clusterConfig,
-		providerConstructor:   providerConstructor,
-		clusterActionsFactory: clusterActionsFactory,
-		clusterLister:         clusterLister,
-		clusterCreator:        clusterCreator,
+		clusterConfig:           clusterConfig,
+		providerConstructor:     providerConstructor,
+		clusterActionsFactory:   clusterActionsFactory,
+		clusterLister:           clusterLister,
+		clusterCreator:          clusterCreator,
+		nodeGroupManagerFactory: nodeGroupManagerFactory,
 	}
 }
 
@@ -117,9 +120,10 @@ func (e *EKSClusterProvisioner) Delete(name string) error {
 	return nil
 }
 
-// Start starts an EKS cluster (no-op for EKS as clusters are always running).
+// Start starts an EKS cluster by scaling node groups from 0 to their desired capacity.
 func (e *EKSClusterProvisioner) Start(name string) error {
-	// EKS clusters are always running when they exist, so this is a no-op
+	ctx := context.Background()
+
 	exists, err := e.Exists(name)
 	if err != nil {
 		return fmt.Errorf("failed to check if cluster exists: %w", err)
@@ -127,14 +131,46 @@ func (e *EKSClusterProvisioner) Start(name string) error {
 
 	if !exists {
 		return ErrClusterNotFound
+	}
+
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	// Create provider with explicit config
+	providerConfig := &v1alpha5.ProviderConfig{
+		Region: e.clusterConfig.Metadata.Region,
+	}
+
+	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	// Create node group manager
+	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
+
+	// Scale all node groups to their desired capacity
+	for _, ng := range e.clusterConfig.NodeGroups {
+		if ng.ScalingConfig != nil && ng.ScalingConfig.DesiredCapacity != nil {
+			// Ensure min size allows for desired capacity
+			if ng.ScalingConfig.MinSize != nil && *ng.ScalingConfig.MinSize == 0 {
+				*ng.ScalingConfig.MinSize = *ng.ScalingConfig.DesiredCapacity
+			}
+
+			err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
+			if err != nil {
+				return fmt.Errorf("failed to scale node group %s: %w", ng.Name, err)
+			}
+		}
 	}
 
 	return nil
 }
 
-// Stop stops an EKS cluster (no-op for EKS as clusters cannot be stopped).
+// Stop stops an EKS cluster by scaling all node groups to 0.
 func (e *EKSClusterProvisioner) Stop(name string) error {
-	// EKS clusters cannot be stopped, only deleted, so this is a no-op
+	ctx := context.Background()
+
 	exists, err := e.Exists(name)
 	if err != nil {
 		return fmt.Errorf("failed to check if cluster exists: %w", err)
@@ -142,6 +178,38 @@ func (e *EKSClusterProvisioner) Stop(name string) error {
 
 	if !exists {
 		return ErrClusterNotFound
+	}
+
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	// Create provider with explicit config
+	providerConfig := &v1alpha5.ProviderConfig{
+		Region: e.clusterConfig.Metadata.Region,
+	}
+
+	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	// Create node group manager
+	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
+
+	// Scale all node groups to 0
+	for _, ng := range e.clusterConfig.NodeGroups {
+		// Set desired capacity to 0 and min size to 0
+		zeroSize := 0
+		if ng.ScalingConfig == nil {
+			ng.ScalingConfig = &v1alpha5.ScalingConfig{}
+		}
+		ng.ScalingConfig.DesiredCapacity = &zeroSize
+		ng.ScalingConfig.MinSize = &zeroSize
+
+		err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
+		if err != nil {
+			return fmt.Errorf("failed to scale down node group %s: %w", ng.Name, err)
+		}
 	}
 
 	return nil

@@ -3,7 +3,6 @@ module github.com/devantler-tech/ksail-go
 go 1.24.0
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.38.1
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/docker/docker v28.3.3+incompatible
@@ -37,6 +36,7 @@ require (
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aws/amazon-ec2-instance-selector/v3 v3.1.1-0.20250224180552-36eea73b44c2 // indirect
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.38.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
@@ -240,3 +240,5 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 )
+
+replace github.com/weaveworks/eksctl => github.com/eksctl-io/eksctl v0.214.0

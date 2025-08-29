@@ -22,3 +22,6 @@ megalinter-reports/
 
 # jscpd reports
 report/
+
+# megalinter temp files
+*-megalinter_file_names_cspell.txt

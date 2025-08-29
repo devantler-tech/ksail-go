@@ -4,8 +4,6 @@ package awsprovisioner
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -25,42 +23,14 @@ func NewAWSProvisioner(region, profile string) *AWSProvisioner {
 	}
 }
 
-// CheckReady checks if AWS CLI and credentials are available.
+// CheckReady checks if AWS credentials are available and valid.
 func (a *AWSProvisioner) CheckReady() (bool, error) {
-	// Check if AWS CLI is available
-	if err := a.checkAWSCLI(); err != nil {
-		return false, fmt.Errorf("AWS CLI not available: %w", err)
-	}
-
-	// Check if eksctl is available
-	if err := a.checkEksctl(); err != nil {
-		return false, fmt.Errorf("eksctl not available: %w", err)
-	}
-
-	// Check if AWS credentials are configured
+	// Check if AWS credentials are configured and valid
 	if err := a.checkCredentials(); err != nil {
-		return false, fmt.Errorf("AWS credentials not configured: %w", err)
+		return false, fmt.Errorf("AWS credentials not configured or invalid: %w", err)
 	}
 
 	return true, nil
-}
-
-// checkAWSCLI verifies that the AWS CLI is installed and available.
-func (a *AWSProvisioner) checkAWSCLI() error {
-	cmd := exec.Command("aws", "--version")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("aws command not found or failed: %w", err)
-	}
-	return nil
-}
-
-// checkEksctl verifies that eksctl is installed and available.
-func (a *AWSProvisioner) checkEksctl() error {
-	cmd := exec.Command("eksctl", "version")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("eksctl command not found or failed: %w", err)
-	}
-	return nil
 }
 
 // checkCredentials verifies that AWS credentials are configured and can be used.
@@ -74,8 +44,6 @@ func (a *AWSProvisioner) checkCredentials() error {
 	}
 	if a.profile != "" {
 		opts = append(opts, config.WithSharedConfigProfile(a.profile))
-		// Also set the AWS_PROFILE environment variable for CLI compatibility
-		os.Setenv("AWS_PROFILE", a.profile)
 	}
 
 	// Load AWS configuration

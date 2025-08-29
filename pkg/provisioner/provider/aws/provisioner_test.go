@@ -79,19 +79,11 @@ func TestAWSProvisioner_GetProfile_Custom(t *testing.T) {
 	assert.Equal(t, customProfile, profile)
 }
 
-func TestAWSProvisioner_CheckReady_AWSCLINotAvailable(t *testing.T) {
+func TestAWSProvisioner_CheckReady_InvalidCredentials(t *testing.T) {
 	t.Parallel()
 
-	// This test assumes AWS CLI is not available in the test environment
-	// If AWS CLI is available, this test might fail
-	
 	// Arrange
-	provisioner := awsprovisioner.NewAWSProvisioner("us-west-2", "")
-
-	// Temporarily modify PATH to ensure aws command is not found
-	originalPath := os.Getenv("PATH")
-	os.Setenv("PATH", "/tmp")
-	defer os.Setenv("PATH", originalPath)
+	provisioner := awsprovisioner.NewAWSProvisioner("us-west-2", "nonexistent-profile")
 
 	// Act
 	ready, err := provisioner.CheckReady()
@@ -99,74 +91,22 @@ func TestAWSProvisioner_CheckReady_AWSCLINotAvailable(t *testing.T) {
 	// Assert
 	assert.False(t, ready)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "AWS CLI not available")
+	assert.Contains(t, err.Error(), "AWS credentials not configured or invalid")
 }
 
-func TestAWSProvisioner_CheckReady_EksctlNotAvailable(t *testing.T) {
+func TestAWSProvisioner_CheckReady_InvalidRegion(t *testing.T) {
 	t.Parallel()
 
-	// Skip this test if AWS CLI is not available, as it would fail earlier
-	if !isAWSCLIAvailable() {
-		t.Skip("AWS CLI not available, skipping eksctl test")
-	}
+	// Arrange - use an invalid region format
+	provisioner := awsprovisioner.NewAWSProvisioner("invalid-region", "")
 
-	// Arrange
-	provisioner := awsprovisioner.NewAWSProvisioner("us-west-2", "")
+	// Act
+	ready, err := provisioner.CheckReady()
 
-	// Create a custom PATH that includes aws but not eksctl
-	// This is a simplified approach - in reality, you'd need to mock the exec calls
-	originalPath := os.Getenv("PATH")
-	
-	// Try to find aws binary and create a path with only that directory
-	awsPath := findAWSBinaryPath()
-	if awsPath != "" {
-		os.Setenv("PATH", awsPath)
-		defer os.Setenv("PATH", originalPath)
-
-		// Act
-		ready, err := provisioner.CheckReady()
-
-		// Assert
-		assert.False(t, ready)
-		if err != nil {
-			// Error could be about eksctl or credentials, both are acceptable for this test
-			assert.True(t, 
-				contains(err.Error(), "eksctl not available") || 
-				contains(err.Error(), "AWS credentials not configured"),
-				"Error should mention eksctl or credentials: %s", err.Error())
-		}
-	} else {
-		t.Skip("Could not isolate AWS CLI path for eksctl test")
-	}
-}
-
-// Helper functions for tests
-
-func isAWSCLIAvailable() bool {
-	provisioner := awsprovisioner.NewAWSProvisioner("", "")
-	_, err := provisioner.CheckReady()
-	return err == nil || contains(os.Getenv("PATH"), "aws")
-}
-
-func findAWSBinaryPath() string {
-	// This is a simplified helper - in a real test environment,
-	// you might want to implement more sophisticated path manipulation
-	return ""
-}
-
-func contains(str, substr string) bool {
-	return len(str) > 0 && len(substr) > 0 && str != substr && 
-		   (len(str) >= len(substr) && str[:len(substr)] == substr) ||
-		   (len(str) > len(substr) && findSubstring(str, substr))
-}
-
-func findSubstring(str, substr string) bool {
-	for i := 0; i <= len(str)-len(substr); i++ {
-		if str[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	// Assert
+	assert.False(t, ready)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "AWS credentials not configured or invalid")
 }
 
 // Integration test that requires actual AWS credentials
@@ -189,7 +129,7 @@ func TestAWSProvisioner_CheckReady_Integration(t *testing.T) {
 	ready, err := provisioner.CheckReady()
 
 	// Assert
-	// This test will only pass if AWS CLI, eksctl, and credentials are properly configured
+	// This test will only pass if AWS credentials are properly configured
 	if err != nil {
 		t.Logf("AWS integration test failed (expected in CI): %v", err)
 		// Don't fail the test in CI environments where AWS might not be configured

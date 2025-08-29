@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
@@ -20,14 +18,14 @@ func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("test-cluster")
+	cfg := createTestClusterConfig("test-cluster")
 	opts := yamlgenerator.Options{
 		Output: "",
 		Force:  false,
 	}
 
 	// Act
-	result, err := gen.Generate(cluster, opts)
+	result, err := gen.Generate(cfg, opts)
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
@@ -39,7 +37,7 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("file-cluster")
+	cfg := createTestClusterConfig("file-cluster")
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "eks-config.yaml")
 	opts := yamlgenerator.Options{
@@ -48,7 +46,7 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 	}
 
 	// Act
-	result, err := gen.Generate(cluster, opts)
+	result, err := gen.Generate(cfg, opts)
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
@@ -63,13 +61,13 @@ func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("existing-no-force")
+	cfg := createTestClusterConfig("existing-no-force")
 
 	// Act & Assert
 	generatortestutils.TestExistingFile(
 		t,
 		gen,
-		cluster,
+		cfg,
 		"eks-config.yaml",
 		assertEKSYAML,
 		"existing-no-force",
@@ -82,13 +80,13 @@ func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("existing-with-force")
+	cfg := createTestClusterConfig("existing-with-force")
 
 	// Act & Assert
 	generatortestutils.TestExistingFile(
 		t,
 		gen,
-		cluster,
+		cfg,
 		"eks-config.yaml",
 		assertEKSYAML,
 		"existing-with-force",
@@ -101,7 +99,7 @@ func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("error-cluster")
+	cfg := createTestClusterConfig("error-cluster")
 
 	// Use an invalid file path that will cause a write error
 	invalidPath := "/dev/null/invalid/path/eks-config.yaml"
@@ -111,7 +109,7 @@ func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 	}
 
 	// Act
-	result, err := gen.Generate(cluster, opts)
+	result, err := gen.Generate(cfg, opts)
 
 	// Assert
 	require.Error(t, err, "Generate should fail when file write fails")
@@ -125,7 +123,7 @@ func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
 	// Act & Assert
 	testEKSMarshalError(
 		t,
-		createTestCluster,
+		createTestClusterConfig,
 		"marshal EKS config",
 	)
 }
@@ -135,14 +133,14 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestClusterWithOptions("custom-cluster")
+	cfg := createTestClusterConfigWithOptions("custom-cluster")
 	opts := yamlgenerator.Options{
 		Output: "",
 		Force:  false,
 	}
 
 	// Act
-	result, err := gen.Generate(cluster, opts)
+	result, err := gen.Generate(cfg, opts)
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
@@ -159,55 +157,75 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewEKSGenerator()
-	cluster := createTestCluster("default-cluster")
+	cfg := createTestClusterConfig("default-cluster")
 	opts := yamlgenerator.Options{
 		Output: "",
 		Force:  false,
 	}
 
 	// Act
-	result, err := gen.Generate(cluster, opts)
+	result, err := gen.Generate(cfg, opts)
 
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "default-cluster")
-	
-	// Verify default values are applied
-	assert.Contains(t, result, "us-west-2", "YAML should contain default region")
-	assert.Contains(t, result, "m5.large", "YAML should contain default instance type")
 }
 
-// createTestCluster creates a minimal test cluster configuration.
-func createTestCluster(name string) *v1alpha1.Cluster {
-	return &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.APIVersion,
-			Kind:       v1alpha1.Kind,
+// createTestClusterConfig creates a minimal test EKS cluster configuration.
+func createTestClusterConfig(name string) *v1alpha5.ClusterConfig {
+	minNodes := 1
+	maxNodes := 3
+	desiredNodes := 2
+
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:   name,
+			Region: "us-west-2",
 		},
-		Metadata: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.Spec{
-			Distribution: v1alpha1.DistributionEKS,
+		NodeGroups: []*v1alpha5.NodeGroup{
+			{
+				NodeGroupBase: &v1alpha5.NodeGroupBase{
+					Name:         name + "-workers",
+					InstanceType: "m5.large",
+					ScalingConfig: &v1alpha5.ScalingConfig{
+						MinSize:         &minNodes,
+						MaxSize:         &maxNodes,
+						DesiredCapacity: &desiredNodes,
+					},
+				},
+			},
 		},
 	}
 }
 
-// createTestClusterWithOptions creates a test cluster with custom EKS options.
-func createTestClusterWithOptions(name string) *v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Options = v1alpha1.Options{
-		EKS: v1alpha1.OptionsEKS{
-			AWSRegion:         "us-east-1",
-			AWSProfile:        "test-profile",
-			NodeType:          "t3.medium",
-			MinNodes:          2,
-			MaxNodes:          5,
-			DesiredNodes:      3,
-			KubernetesVersion: "1.25",
+// createTestClusterConfigWithOptions creates a test cluster config with custom EKS options.
+func createTestClusterConfigWithOptions(name string) *v1alpha5.ClusterConfig {
+	minNodes := 2
+	maxNodes := 5
+	desiredNodes := 3
+
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:    name,
+			Region:  "us-east-1",
+			Version: "1.25",
+		},
+		NodeGroups: []*v1alpha5.NodeGroup{
+			{
+				NodeGroupBase: &v1alpha5.NodeGroupBase{
+					Name:         name + "-workers",
+					InstanceType: "t3.medium",
+					ScalingConfig: &v1alpha5.ScalingConfig{
+						MinSize:         &minNodes,
+						MaxSize:         &maxNodes,
+						DesiredCapacity: &desiredNodes,
+					},
+				},
+			},
 		},
 	}
-	return cluster
 }
 
 // assertEKSYAML ensures the generated YAML contains the expected boilerplate and cluster name.
@@ -223,7 +241,7 @@ func assertEKSYAML(t *testing.T, result string, clusterName string) {
 // testEKSMarshalError runs a test pattern for EKS generator marshal errors.
 func testEKSMarshalError(
 	t *testing.T,
-	createCluster func(string) *v1alpha1.Cluster,
+	createClusterConfig func(string) *v1alpha5.ClusterConfig,
 	expectedErrorContains string,
 ) {
 	t.Helper()
@@ -233,13 +251,13 @@ func testEKSMarshalError(
 	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha5.ClusterConfig]{
 		Marshaller: nil,
 	}
-	cluster := createCluster("marshal-error-cluster")
+	cfg := createClusterConfig("marshal-error-cluster")
 
 	// Act & Assert
-	generatortestutils.TestGeneratorMarshalError[*v1alpha1.Cluster, *v1alpha5.ClusterConfig](
+	generatortestutils.TestGeneratorMarshalError[*v1alpha5.ClusterConfig, *v1alpha5.ClusterConfig](
 		t,
 		gen,
-		cluster,
+		cfg,
 		expectedErrorContains,
 	)
 }
