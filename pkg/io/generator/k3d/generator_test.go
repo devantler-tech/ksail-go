@@ -2,13 +2,12 @@ package k3dgenerator_test
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +58,7 @@ func TestK3dGenerator_Generate_WithFile(t *testing.T) {
 	assertK3dYAML(t, result, "file-cluster")
 
 	// Verify file was written
-	assertFileEquals(t, tempDir, outputPath, result)
+	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
@@ -68,21 +67,16 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("existing-cluster")
-	tempDir, outputPath, existingContent := setupExistingFile(t)
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
 
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "existing-cluster")
-
-	// Verify file was NOT overwritten
-	assertFileEquals(t, tempDir, outputPath, existingContent)
+	// Act & Assert
+	testutils.TestExistingFileNoForce(
+		t,
+		gen,
+		cluster,
+		"k3d-config.yaml",
+		assertK3dYAML,
+		"existing-cluster",
+	)
 }
 
 func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
@@ -91,26 +85,16 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("force-cluster")
-	tempDir, outputPath, existingContent := setupExistingFile(t)
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  true,
-	}
 
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "force-cluster")
-
-	// Verify file was overwritten
-	assertFileEquals(t, tempDir, outputPath, result)
-
-	// Additional check: ensure old content was replaced
-	fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-	require.NoError(t, err, "File should exist")
-	assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
+	// Act & Assert
+	testutils.TestExistingFileWithForce(
+		t,
+		gen,
+		cluster,
+		"k3d-config.yaml",
+		assertK3dYAML,
+		"force-cluster",
+	)
 }
 
 func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
@@ -189,28 +173,4 @@ func assertK3dYAML(t *testing.T, result string, clusterName string) {
 	assert.Contains(t, result, "apiVersion: k3d.io/v1alpha5", "YAML should contain API version")
 	assert.Contains(t, result, "kind: Simple", "YAML should contain kind")
 	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
-}
-
-// assertFileEquals compares the file content with the expected string.
-func assertFileEquals(t *testing.T, dir, path, expected string) {
-	t.Helper()
-
-	fileContent, err := ioutils.ReadFileSafe(dir, path)
-
-	require.NoError(t, err, "File should exist")
-	assert.Equal(t, expected, string(fileContent))
-}
-
-// setupExistingFile creates a temporary directory and an existing k3d config file
-// with default placeholder content, returning the directory, file path, and content string.
-func setupExistingFile(t *testing.T) (string, string, string) {
-	t.Helper()
-
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "k3d-config.yaml")
-	existingContent := "# existing content"
-	err := os.WriteFile(outputPath, []byte(existingContent), 0o600)
-	require.NoError(t, err, "Setup: create existing file")
-
-	return tempDir, outputPath, existingContent
 }

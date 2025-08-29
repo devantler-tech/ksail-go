@@ -2,12 +2,11 @@ package kindgenerator_test
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
-	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +56,7 @@ func TestKindGenerator_Generate_WithFile(t *testing.T) {
 	assertKindYAML(t, result, "file-cluster")
 
 	// Verify file was written
-	assertFileEquals(t, tempDir, outputPath, result)
+	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
@@ -66,22 +65,16 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("existing-no-force")
-	tempDir, outputPath, existingContent := setupExistingFile(t)
 
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "existing-no-force")
-
-	// Verify existing file was NOT overwritten
-	assertFileEquals(t, tempDir, outputPath, existingContent)
+	// Act & Assert
+	testutils.TestExistingFileNoForce(
+		t,
+		gen,
+		cluster,
+		"kind-config.yaml",
+		assertKindYAML,
+		"existing-no-force",
+	)
 }
 
 func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
@@ -90,23 +83,16 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("existing-with-force")
-	tempDir, outputPath, existingContent := setupExistingFile(t)
 
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  true,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "existing-with-force")
-
-	// Verify existing file WAS overwritten
-	assertFileEquals(t, tempDir, outputPath, result)
-	assert.NotEqual(t, existingContent, result, "Old content should be replaced when Force=true")
+	// Act & Assert
+	testutils.TestExistingFileWithForce(
+		t,
+		gen,
+		cluster,
+		"kind-config.yaml",
+		assertKindYAML,
+		"existing-with-force",
+	)
 }
 
 func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
@@ -185,28 +171,4 @@ func assertKindYAML(t *testing.T, result string, clusterName string) {
 	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
 	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
 	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
-}
-
-// assertFileEquals compares the file content with the expected string.
-func assertFileEquals(t *testing.T, dir, path, expected string) {
-	t.Helper()
-
-	fileContent, err := ioutils.ReadFileSafe(dir, path)
-
-	require.NoError(t, err, "File should exist")
-	assert.Equal(t, expected, string(fileContent))
-}
-
-// setupExistingFile creates a temporary directory and an existing kind config file
-// with default placeholder content, returning the directory, file path, and content string.
-func setupExistingFile(t *testing.T) (string, string, string) {
-	t.Helper()
-
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "kind-config.yaml")
-	existingContent := "# existing content"
-	err := os.WriteFile(outputPath, []byte(existingContent), 0o600)
-	require.NoError(t, err, "Setup: create existing file")
-
-	return tempDir, outputPath, existingContent
 }
