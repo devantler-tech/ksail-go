@@ -3,24 +3,14 @@ package kustomizationgenerator
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
-
-// dirPermUserRWXGroupRX is the permission for directories created by the generator.
-const dirPermUserRWXGroupRX = 0o750
-
-// Options defines options for kustomization generators when emitting files.
-type Options struct {
-	Output string // Output directory path; kustomization.yaml will be written to this directory
-	Force  bool   // Force overwrite existing files
-}
 
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
@@ -41,8 +31,8 @@ func NewKustomizationGenerator(cfg *v1alpha1.Cluster) *KustomizationGenerator {
 	}
 }
 
-// Generate creates a kustomization.yaml file and writes it to the specified output directory.
-func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
+// Generate creates a kustomization.yaml file and writes it to the specified output file path.
+func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerator.Options) (string, error) {
 	//nolint:exhaustruct // Only basic fields needed for minimal kustomization
 	kustomization := ktypes.Kustomization{
 		TypeMeta: ktypes.TypeMeta{
@@ -52,19 +42,17 @@ func (g *KustomizationGenerator) Generate(opts Options) (string, error) {
 		Resources: []string{},
 	}
 	
-	outputFile := filepath.Join(opts.Output, "kustomization.yaml")
-
-	err := os.MkdirAll(filepath.Dir(outputFile), dirPermUserRWXGroupRX)
-	if err != nil {
-		return "", fmt.Errorf("create kustomization dir: %w", err)
-	}
-	
 	out, err := g.Marshaller.Marshal(&kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
 	}
 	
-	result, err := g.TryWrite(out, outputFile, opts.Force)
+	// If no output file specified, just return the YAML
+	if opts.Output == "" {
+		return out, nil
+	}
+	
+	result, err := g.TryWrite(out, opts.Output, opts.Force)
 	if err != nil {
 		return "", fmt.Errorf("write kustomization: %w", err)
 	}
