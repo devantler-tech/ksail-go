@@ -37,8 +37,8 @@ func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen := generator.NewKustomizationGenerator(createTestCluster("file-cluster"))
 	cluster := createTestCluster("file-cluster")
+	gen := generator.NewKustomizationGenerator(cluster)
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "kustomization.yaml")
 	opts := yamlgenerator.Options{
