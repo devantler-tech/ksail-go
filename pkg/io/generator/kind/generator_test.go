@@ -1,7 +1,7 @@
 package kindgenerator_test
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
+
+var errBoom = errors.New("boom")
 
 func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
@@ -157,8 +159,8 @@ type marshalFailer struct {
 	marshaller.Marshaller[*v1alpha4.Cluster]
 }
 
-func (m marshalFailer) Marshal(model *v1alpha4.Cluster) (string, error) {
-	return "", fmt.Errorf("boom: marshal failed")
+func (m marshalFailer) Marshal(_ *v1alpha4.Cluster) (string, error) {
+	return "", errBoom
 }
 
 func TestKindGenerator_Generate_MarshalError(t *testing.T) {
@@ -166,7 +168,9 @@ func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 
 	// Arrange
 	gen := generator.NewKindGenerator()
-	gen.Marshaller = marshalFailer{}
+	gen.Marshaller = marshalFailer{
+		Marshaller: nil,
+	}
 	cluster := createTestCluster("marshal-error-cluster")
 	opts := yamlgenerator.Options{
 		Output: "",
