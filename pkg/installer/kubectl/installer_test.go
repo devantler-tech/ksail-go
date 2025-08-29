@@ -1,12 +1,12 @@
 package kubectlinstaller_test
 
 import (
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	kubectlinstaller "github.com/devantler-tech/ksail-go/pkg/installer/kubectl"
+	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -197,32 +197,8 @@ func TestKubectlInstaller_BuildRESTConfig_Error_InvalidPath(t *testing.T) {
 func TestKubectlInstaller_BuildRESTConfig_ValidPath(t *testing.T) {
 	t.Parallel()
 
-	// Create a temporary kubeconfig file for testing
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://test-server:8443
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -230,7 +206,7 @@ users:
 	)
 
 	// Act - test indirectly through Install
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert - it should fail because test-server doesn't exist, but it should get past config building
 	require.Error(t, err)
@@ -273,33 +249,8 @@ func TestKubectlInstaller_ApplyApplySetCR_YAMLUnmarshalError(t *testing.T) {
 func TestKubectlInstaller_InstallWithValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig that points to a non-existent server
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://non-existent-server:8443
-    insecure-skip-tls-verify: true
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -307,7 +258,7 @@ users:
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)
@@ -320,33 +271,8 @@ users:
 func TestKubectlInstaller_UninstallWithValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig that points to a non-existent server
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://non-existent-server:8443
-    insecure-skip-tls-verify: true
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -354,7 +280,7 @@ users:
 	)
 
 	// Act
-	err = installer.Uninstall()
+	err := installer.Uninstall()
 
 	// Assert
 	// Uninstall ignores deletion errors, so it should succeed even if server is unreachable
@@ -364,17 +290,8 @@ users:
 func TestKubectlInstaller_BuildRESTConfig_MalformedKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	// Create a malformed kubeconfig file
-	malformedKubeconfig := `
-this is not valid yaml: [
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -382,7 +299,7 @@ this is not valid yaml: [
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)
@@ -392,32 +309,9 @@ this is not valid yaml: [
 func TestKubectlInstaller_EmptyContextName(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://test-server:8443
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
-	// Arrange - empty context should use current-context from kubeconfig
+	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
+	// Empty context should use current-context from kubeconfig
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"", // Empty context
@@ -425,7 +319,7 @@ users:
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)

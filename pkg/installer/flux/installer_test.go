@@ -1,12 +1,12 @@
 package fluxinstaller_test
 
 import (
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
+	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,17 +99,8 @@ func TestFluxInstaller_Uninstall_Error_EmptyKubeconfig(t *testing.T) {
 func TestFluxInstaller_Install_Error_MalformedKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	// Create a malformed kubeconfig file
-	malformedKubeconfig := `
-this is not valid yaml: [
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -117,7 +108,7 @@ this is not valid yaml: [
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)
@@ -127,17 +118,8 @@ this is not valid yaml: [
 func TestFluxInstaller_Uninstall_Error_MalformedKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	// Create a malformed kubeconfig file
-	malformedKubeconfig := `
-this is not valid yaml: [
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -145,7 +127,7 @@ this is not valid yaml: [
 	)
 
 	// Act
-	err = installer.Uninstall()
+	err := installer.Uninstall()
 
 	// Assert
 	require.Error(t, err)
@@ -155,33 +137,8 @@ this is not valid yaml: [
 func TestFluxInstaller_Install_ValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig that points to a non-existent server
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://non-existent-server:8443
-    insecure-skip-tls-verify: true
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -189,7 +146,7 @@ users:
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)
@@ -201,33 +158,8 @@ users:
 func TestFluxInstaller_Uninstall_ValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig that points to a non-existent server
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://non-existent-server:8443
-    insecure-skip-tls-verify: true
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
 	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		kubeconfigPath,
 		"test-context",
@@ -235,7 +167,7 @@ users:
 	)
 
 	// Act
-	err = installer.Uninstall()
+	err := installer.Uninstall()
 
 	// Assert
 	require.Error(t, err)
@@ -247,32 +179,9 @@ users:
 func TestFluxInstaller_EmptyContextName(t *testing.T) {
 	t.Parallel()
 
-	// Create a valid kubeconfig
-	tempKubeconfig := `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    server: https://test-server:8443
-  name: test-cluster
-contexts:
-- context:
-    cluster: test-cluster
-    user: test-user
-  name: test-context
-current-context: test-context
-users:
-- name: test-user
-  user:
-    token: test-token
-`
-
-	tmpDir := t.TempDir()
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(tempKubeconfig), 0600)
-	require.NoError(t, err)
-
-	// Arrange - empty context should use current-context from kubeconfig
+	// Arrange
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
+	// Empty context should use current-context from kubeconfig
 	installer := fluxinstaller.NewFluxInstaller(
 		kubeconfigPath,
 		"", // Empty context
@@ -280,7 +189,7 @@ users:
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.Error(t, err)
