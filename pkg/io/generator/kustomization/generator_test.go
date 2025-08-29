@@ -80,8 +80,8 @@ func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen := generator.NewKustomizationGenerator(createTestCluster("existing-with-force"))
 	cluster := createTestCluster("existing-with-force")
+	gen := generator.NewKustomizationGenerator(cluster)
 
 	// Act & Assert
 	generatortestutils.TestExistingFile(
