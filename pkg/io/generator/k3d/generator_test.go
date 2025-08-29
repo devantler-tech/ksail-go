@@ -104,20 +104,15 @@ func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("write-error-cluster")
-	// Use a path that will cause a write error (non-existent directory)
-	invalidPath := "/non/existent/directory/k3d-config.yaml"
-	opts := yamlgenerator.Options{
-		Output: invalidPath,
-		Force:  false,
-	}
 
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.Error(t, err, "Generate should fail when file write fails")
-	assert.Contains(t, err.Error(), "write k3d config", "Error should mention write failure")
-	assert.Empty(t, result, "Result should be empty on error")
+	// Act & Assert
+	generatortestutils.TestFileWriteError(
+		t,
+		gen,
+		cluster,
+		"k3d-config.yaml",
+		"write k3d config",
+	)
 }
 
 
