@@ -28,6 +28,9 @@ var applySetCRDYAML []byte
 //go:embed assets/apply-set-cr.yaml
 var applySetCRYAML []byte
 
+// ErrCRDNameNotAccepted is returned when CRD names are not accepted.
+var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
+
 // KubectlInstaller implements the installer.Installer interface for kubectl.
 type KubectlInstaller struct {
 	kubeconfig string
@@ -51,59 +54,15 @@ func (b *KubectlInstaller) Install() error {
 		return err
 	}
 
-	// --- CRD ---
-	apiExtClient, err := apiextensionsclient.NewForConfig(restConfigWrapper)
+	err = b.installCRD(restConfigWrapper)
 	if err != nil {
-		return fmt.Errorf("failed to create apiextensions client: %w", err)
-	}
-
-	context, cancel := context.WithTimeout(context.Background(), b.timeout)
-	defer cancel()
-
-	const crdName = "applysets.k8s.devantler.tech"
-
-	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(context, crdName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		fmt.Println("► applying applysets crd 'applysets.k8s.devantler.tech'")
-
-		err := b.applyCRD(context, apiExtClient)
-		if err != nil {
-			return err
-		}
-
-		err = b.waitForCRDEstablished(context, apiExtClient, crdName)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
 		return err
 	}
 
-	fmt.Println("✔ applysets crd 'applysets.k8s.devantler.tech' applied")
-
-	// --- CR (ApplySet parent) ---
-	dynClient, err := dynamic.NewForConfig(restConfigWrapper)
+	err = b.installApplySetCR(restConfigWrapper)
 	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
+		return err
 	}
-
-	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-
-	const applySetName = "ksail"
-
-	_, err = dynClient.Resource(gvr).Get(context, applySetName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		fmt.Println("► applying applysets cr 'ksail'")
-
-		err := b.applyApplySetCR(context, dynClient, gvr, applySetName)
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to get ApplySet CR: %w", err)
-	}
-
-	fmt.Println("✔ applysets cr 'ksail' applied")
 
 	return nil
 }
@@ -138,6 +97,63 @@ func (b *KubectlInstaller) Uninstall() error {
 
 // --- internals ---
 
+// installCRD installs the ApplySet CRD.
+func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
+	apiExtClient, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create apiextensions client: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+	defer cancel()
+
+	const crdName = "applysets.k8s.devantler.tech"
+
+	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		err = b.applyCRD(ctx, apiExtClient)
+		if err != nil {
+			return err
+		}
+
+		err = b.waitForCRDEstablished(ctx, apiExtClient, crdName)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to check CRD existence: %w", err)
+	}
+
+	return nil
+}
+
+// installApplySetCR installs the ApplySet custom resource.
+func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
+	dynClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+	defer cancel()
+
+	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
+
+	const applySetName = "ksail"
+
+	_, err = dynClient.Resource(gvr).Get(ctx, applySetName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		err = b.applyApplySetCR(ctx, dynClient, gvr, applySetName)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get ApplySet CR: %w", err)
+	}
+
+	return nil
+}
+
 func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
@@ -160,11 +176,13 @@ func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 // applyCRD creates the ApplySet CRD from embedded YAML.
 func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionsclient.Clientset) error {
 	var crd apiextensionsv1.CustomResourceDefinition
-	if err := yaml.Unmarshal(applySetCRDYAML, &crd); err != nil {
+
+	err := yaml.Unmarshal(applySetCRDYAML, &crd)
+	if err != nil {
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err := client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{})
+	_, err = client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
 		if getErr != nil {
@@ -172,52 +190,70 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 		}
 
 		crd.ResourceVersion = existing.ResourceVersion
-		if _, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{}); uerr != nil {
+
+		_, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{})
+		if uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
 
 		return nil
 	}
 
-	return err
+	return fmt.Errorf("failed to create CRD: %w", err)
 }
 
-func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, client *apiextensionsclient.Clientset, name string) error {
+func (b *KubectlInstaller) waitForCRDEstablished(
+	ctx context.Context,
+	client *apiextensionsclient.Clientset,
+	name string,
+) error {
 	// Poll every 500ms until Established=True or timeout
-	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, b.timeout, true, func(ctx context.Context) (bool, error) {
-		crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return false, nil
+	const pollInterval = 500 * time.Millisecond
+
+	return wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
+		func(ctx context.Context) (bool, error) {
+			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					return false, nil
+				}
+
+				return false, fmt.Errorf("failed to get CRD: %w", err)
 			}
 
-			return false, err
-		}
+			for _, cond := range crd.Status.Conditions {
+				if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
+					return true, nil
+				}
 
-		for _, cond := range crd.Status.Conditions {
-			if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
-				return true, nil
+				if cond.Type == apiextensionsv1.NamesAccepted &&
+					cond.Status == apiextensionsv1.ConditionFalse &&
+					cond.Reason == "MultipleNamesNotAllowed" {
+					return false, fmt.Errorf("%w: %s", ErrCRDNameNotAccepted, cond.Message)
+				}
 			}
 
-			if cond.Type == apiextensionsv1.NamesAccepted && cond.Status == apiextensionsv1.ConditionFalse && cond.Reason == "MultipleNamesNotAllowed" {
-				return false, errors.New(cond.Message)
-			}
-		}
-
-		return false, nil
-	})
+			return false, nil
+		})
 }
 
-func (b *KubectlInstaller) applyApplySetCR(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, name string) error {
+func (b *KubectlInstaller) applyApplySetCR(
+	ctx context.Context,
+	dyn dynamic.Interface,
+	gvr schema.GroupVersionResource,
+	name string,
+) error {
 	var applySetObj unstructured.Unstructured
-	if err := yaml.Unmarshal(applySetCRYAML, &applySetObj.Object); err != nil {
+
+	err := yaml.Unmarshal(applySetCRYAML, &applySetObj.Object)
+	if err != nil {
 		return fmt.Errorf("failed to unmarshal ApplySet CR yaml: %w", err)
 	}
 	// Ensure GVK since yaml->map won't set it.
 	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	applySetObj.SetName(name)
 
-	_, err := dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{})
+	_, err = dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
 		if getErr != nil {
@@ -226,12 +262,13 @@ func (b *KubectlInstaller) applyApplySetCR(ctx context.Context, dyn dynamic.Inte
 
 		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		if _, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{}); uerr != nil {
+		_, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{})
+		if uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}
 
 		return nil
 	}
 
-	return err
+	return fmt.Errorf("failed to create ApplySet CR: %w", err)
 }

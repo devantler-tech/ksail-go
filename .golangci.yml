@@ -15,6 +15,7 @@ linters:
             - github.com/docker/docker
             - github.com/fatih/color
             - github.com/k3d-io/k3d
+            - github.com/mittwald/go-helm-client
             - github.com/spf13/cobra
             - github.com/stretchr/testify
             - sigs.k8s.io

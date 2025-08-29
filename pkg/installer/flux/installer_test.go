@@ -6,6 +6,7 @@ import (
 
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewFluxInstaller(t *testing.T) {
@@ -37,7 +38,7 @@ func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 	err := installer.Install()
 
 	// Assert
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 }
 
@@ -55,6 +56,6 @@ func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 	err := installer.Uninstall()
 
 	// Assert
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no such file or directory")
 }
