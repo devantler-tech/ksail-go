@@ -8,7 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// CreateMalformedKubeconfigFile creates a temporary file with malformed YAML for testing
+const (
+	// DefaultFilePermissions defines the default permissions for temporary test files
+	DefaultFilePermissions = 0600
+)
+
+// CreateMalformedKubeconfigFile creates a temporary file with malformed YAML for testing.
 func CreateMalformedKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
@@ -18,25 +23,25 @@ this is not valid yaml: [
 
 	tmpDir := t.TempDir()
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), 0600)
+	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath
 }
 
-// CreateEmptyKubeconfigFile creates a temporary empty kubeconfig file for testing
+// CreateEmptyKubeconfigFile creates a temporary empty kubeconfig file for testing.
 func CreateEmptyKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
 	tmpDir := t.TempDir()
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(""), 0600)
+	err := os.WriteFile(kubeconfigPath, []byte(""), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath
 }
 
-// CreateValidKubeconfigFile creates a temporary valid kubeconfig file for testing
+// CreateValidKubeconfigFile creates a temporary valid kubeconfig file for testing.
 func CreateValidKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
@@ -61,7 +66,7 @@ users:
 
 	tmpDir := t.TempDir()
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), 0600)
+	err := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath
