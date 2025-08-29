@@ -9,10 +9,12 @@ import (
 	"github.com/docker/docker/client"
 )
 
+var ErrNoContainerEngine = errors.New("no container engine (Docker or Podman) available")
+
 // ContainerEngine implements container engine detection and management with auto-detection.
 type ContainerEngine struct {
-	client client.APIClient
-	name   string
+	Client client.APIClient
+	EngineName   string
 }
 
 // NewContainerEngine creates a new container engine with auto-detection.
@@ -22,8 +24,8 @@ func NewContainerEngine() (*ContainerEngine, error) {
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err == nil {
 		engine := &ContainerEngine{
-			client: dockerClient,
-			name:   "Docker",
+			Client: dockerClient,
+			EngineName:   "Docker",
 		}
 		if ready, _ := engine.CheckReady(); ready {
 			return engine, nil
@@ -37,8 +39,8 @@ func NewContainerEngine() (*ContainerEngine, error) {
 	)
 	if err == nil {
 		engine := &ContainerEngine{
-			client: podmanClient,
-			name:   "Podman",
+			Client: podmanClient,
+			EngineName:   "Podman",
 		}
 		if ready, _ := engine.CheckReady(); ready {
 			return engine, nil
@@ -52,35 +54,35 @@ func NewContainerEngine() (*ContainerEngine, error) {
 	)
 	if err == nil {
 		engine := &ContainerEngine{
-			client: podmanSystemClient,
-			name:   "Podman",
+			Client: podmanSystemClient,
+			EngineName:   "Podman",
 		}
 		if ready, _ := engine.CheckReady(); ready {
 			return engine, nil
 		}
 	}
 
-	return nil, errors.New("no container engine (Docker or Podman) available")
+	return nil, ErrNoContainerEngine
 }
 
 // CheckReady checks if the container engine is available using the API client.
 func (u *ContainerEngine) CheckReady() (bool, error) {
 	ctx := context.Background()
 
-	_, err := u.client.Ping(ctx)
+	_, err := u.Client.Ping(ctx)
 	if err != nil {
-		return false, fmt.Errorf("%s ping failed: %w", u.name, err)
+		return false, fmt.Errorf("%s ping failed: %w", u.EngineName, err)
 	}
 
 	return true, nil
 }
 
-// Name returns the name of the detected container engine.
-func (u *ContainerEngine) Name() string {
-	return u.name
+// GetName returns the name of the detected container engine.
+func (u *ContainerEngine) GetName() string {
+	return u.EngineName
 }
 
 // GetClient returns the underlying Docker API client.
 func (u *ContainerEngine) GetClient() client.APIClient {
-	return u.client
+	return u.Client
 }

@@ -1,0 +1,16 @@
+mode: set
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:22.53,25.16 2 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:25.16,30.45 2 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:30.45,32.4 1 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:36.2,40.16 2 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:40.16,45.45 2 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:45.45,47.4 1 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:51.2,55.16 2 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:55.16,60.45 2 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:60.45,62.4 1 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:65.2,65.34 1 0
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:69.54,73.16 3 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:73.16,75.3 1 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:77.2,77.18 1 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:81.44,83.2 1 1
+github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/engine.go:86.56,88.2 1 1

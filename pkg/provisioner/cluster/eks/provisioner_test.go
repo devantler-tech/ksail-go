@@ -111,11 +111,12 @@ func TestStart_Success(t *testing.T) {
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
 		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManagerFactory := newProvisionerForTest(t)
-		
+
 		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+
 		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
 		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-		
+
 		// Mock node group manager
 		mockNodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
 		nodeGroupManagerFactory.On("NewNodeGroupManager", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockNodeGroupManager)
@@ -148,11 +149,12 @@ func TestStop_Success(t *testing.T) {
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
 		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManagerFactory := newProvisionerForTest(t)
-		
+
 		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+
 		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
 		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-		
+
 		// Mock node group manager
 		mockNodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
 		nodeGroupManagerFactory.On("NewNodeGroupManager", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockNodeGroupManager)
