@@ -29,6 +29,7 @@ linters:
         - '.+/v1alpha5\.ClusterConfig$'
         - '.+/v1alpha5\.SimpleConfig$'
         - '.+\.ObjectMeta$'
+        - '.+\v1alpha4\.Node$'
 
   exclusions:
     rules:

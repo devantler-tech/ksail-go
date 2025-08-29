@@ -26,7 +26,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Go 1.23.9+**: Programming language runtime (required)
 - **Docker**: Container runtime - verify with `docker --version` (for future functionality)
   - **Current Environment**: Docker 28.0.4 available
-- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)  
+- **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)
   - **Current Environment**: Kind v0.29.0 available
 - **kubectl**: Kubernetes CLI - verify with `kubectl version --client` (for future functionality)
   - **Current Environment**: kubectl v1.33.4 available
@@ -56,6 +56,7 @@ Always reference these instructions first and fallback to search or bash command
 3. **Command Testing** (All commands work as stubs): Project initialization with `ksail init`, cluster lifecycle with `ksail up/down`, cluster listing with `ksail list`
 
 4. **MANDATORY Full Workflow Test**: After any changes, run this complete validation:
+
    ```bash
    # Complete development validation workflow
    go test -v ./...              # ~33 seconds - ALL tests must pass
@@ -63,7 +64,7 @@ Always reference these instructions first and fallback to search or bash command
    ./ksail --help               # Must show help without errors
    ./ksail --version            # Must show version info
    ~/go/bin/golangci-lint run   # ~15 seconds - must show 0 issues (ignore wsl warnings)
-   
+
    # Test core functionality
    ./ksail init --container-engine Docker --distribution Kind
    ./ksail up && ./ksail status && ./ksail list && ./ksail down
