@@ -47,3 +47,10 @@ jobs:
 
       - name: Install Go dependencies
         run: go mod download
+
+      - name: Install Mockery
+        run: |
+          go install github.com/vektra/mockery/v3@v3.5.4
+
+      - name: Add Go bin to PATH
+        run: echo "$HOME/go/bin" >> $GITHUB_PATH
