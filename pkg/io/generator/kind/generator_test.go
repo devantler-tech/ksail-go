@@ -125,7 +125,7 @@ func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert
-	generatortestutils.TestKindMarshalError(
+	testKindMarshalError(
 		t,
 		createTestCluster,
 		"marshal kind config",
@@ -153,4 +153,28 @@ func assertKindYAML(t *testing.T, result string, clusterName string) {
 	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
 	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
 	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
+}
+
+// testKindMarshalError runs a test pattern for Kind generator marshal errors.
+func testKindMarshalError(
+	t *testing.T,
+	createCluster func(string) *v1alpha4.Cluster,
+	expectedErrorContains string,
+) {
+	t.Helper()
+
+	// Arrange
+	gen := generator.NewKindGenerator()
+	gen.Marshaller = testutils.MarshalFailer[*v1alpha4.Cluster]{
+		Marshaller: nil,
+	}
+	cluster := createCluster("marshal-error-cluster")
+
+	// Act & Assert
+	testutils.TestGeneratorMarshalError[*v1alpha4.Cluster, *v1alpha4.Cluster](
+		t,
+		gen,
+		cluster,
+		expectedErrorContains,
+	)
 }

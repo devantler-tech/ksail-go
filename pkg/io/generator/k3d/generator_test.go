@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
 
@@ -125,7 +126,7 @@ func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert
-	generatortestutils.TestK3dMarshalError(
+	testK3dMarshalError(
 		t,
 		createTestCluster,
 		"marshal k3d config",
@@ -146,6 +147,30 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 			Distribution: v1alpha1.DistributionK3d,
 		},
 	}
+}
+
+// testK3dMarshalError runs a test pattern for K3d generator marshal errors.
+func testK3dMarshalError(
+	t *testing.T,
+	createCluster func(string) *v1alpha1.Cluster,
+	expectedErrorContains string,
+) {
+	t.Helper()
+
+	// Arrange
+	gen := generator.NewK3dGenerator()
+	gen.Marshaller = testutils.MarshalFailer[*v1alpha5.SimpleConfig]{
+		Marshaller: nil,
+	}
+	cluster := createCluster("marshal-error-cluster")
+
+	// Act & Assert
+	testutils.TestGeneratorMarshalError[*v1alpha1.Cluster, *v1alpha5.SimpleConfig](
+		t,
+		gen,
+		cluster,
+		expectedErrorContains,
+	)
 }
 
 // assertK3dYAML ensures the generated YAML contains the expected boilerplate and cluster name.
