@@ -26,7 +26,6 @@ func TestNewCluster(t *testing.T) {
 	cluster = v1alpha1.NewCluster(
 		v1alpha1.WithMetadataName("test"),
 		v1alpha1.WithSpecDistribution(v1alpha1.DistributionK3d),
-		v1alpha1.WithSpecContainerEngine(v1alpha1.ContainerEnginePodman),
 		v1alpha1.WithSpecConnectionKubeconfig("/test"),
 		v1alpha1.WithSpecConnectionContext("test-ctx"),
 		v1alpha1.WithSpecConnectionTimeout(testTimeout),
@@ -116,27 +115,6 @@ func TestReconciliationTool_Set(t *testing.T) {
 	testutils.AssertErrWrappedContains(t, err, v1alpha1.ErrInvalidReconciliationTool, "invalid", "Set(invalid)")
 }
 
-func TestContainerEngine_Set(t *testing.T) {
-	t.Parallel()
-
-	validCases := []struct{ input, expected string }{
-		{"docker", "Docker"},
-		{"PODMAN", "Podman"},
-	}
-	for _, validCase := range validCases {
-		var engine v1alpha1.ContainerEngine
-
-		require.NoError(t, engine.Set(validCase.input))
-	}
-
-	err := func() error {
-		var engine v1alpha1.ContainerEngine
-
-		return engine.Set("invalid")
-	}()
-	testutils.AssertErrWrappedContains(t, err, v1alpha1.ErrInvalidContainerEngine, "invalid", "Set(invalid)")
-}
-
 func TestStringAndTypeMethods(t *testing.T) {
 	t.Parallel()
 
@@ -148,8 +126,4 @@ func TestStringAndTypeMethods(t *testing.T) {
 	tool := v1alpha1.ReconciliationToolKubectl
 	assert.Equal(t, "Kubectl", tool.String())
 	assert.Equal(t, "ReconciliationTool", tool.Type())
-
-	engine := v1alpha1.ContainerEngineDocker
-	assert.Equal(t, "Docker", engine.String())
-	assert.Equal(t, "ContainerEngine", engine.Type())
 }

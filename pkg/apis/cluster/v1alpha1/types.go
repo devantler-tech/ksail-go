@@ -28,7 +28,6 @@ type Spec struct {
 	SourceDirectory    string             `json:"sourceDirectory,omitzero"`
 	Connection         Connection         `json:"connection,omitzero"`
 	Distribution       Distribution       `json:"distribution,omitzero"`
-	ContainerEngine    ContainerEngine    `json:"containerEngine,omitzero"`
 	CNI                CNI                `json:"cni,omitzero"`
 	CSI                CSI                `json:"csi,omitzero"`
 	IngressController  IngressController  `json:"ingressController,omitzero"`
@@ -130,21 +129,6 @@ func validReconciliationTools() []ReconciliationTool {
 	}
 }
 
-// ContainerEngine defines the container engine used for local cluster lifecycle.
-type ContainerEngine string
-
-const (
-	// ContainerEngineDocker is the Docker container engine.
-	ContainerEngineDocker ContainerEngine = "Docker"
-	// ContainerEnginePodman is the Podman container engine.
-	ContainerEnginePodman ContainerEngine = "Podman"
-)
-
-// validContainerEngines enumerates supported container engines.
-func validContainerEngines() []ContainerEngine {
-	return []ContainerEngine{ContainerEngineDocker, ContainerEnginePodman}
-}
-
 // Options holds optional settings for distributions, networking, and deployment tools.
 type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
@@ -178,27 +162,11 @@ type OptionsTind struct {
 }
 
 // OptionsEKS defines options specific to the EKS distribution.
+// This only includes configuration that is not part of eksctl v1alpha5.ClusterConfig.
 type OptionsEKS struct {
-	// AWSRegion specifies the AWS region for the EKS cluster
-	AWSRegion string `json:"awsRegion,omitzero"`
-
 	// AWSProfile specifies the AWS profile to use for authentication
+	// This is not part of ClusterConfig as it's a credential/authentication setting
 	AWSProfile string `json:"awsProfile,omitzero"`
-
-	// NodeType specifies the EC2 instance type for worker nodes
-	NodeType string `json:"nodeType,omitzero"`
-
-	// MinNodes specifies the minimum number of worker nodes
-	MinNodes int `json:"minNodes,omitzero"`
-
-	// MaxNodes specifies the maximum number of worker nodes
-	MaxNodes int `json:"maxNodes,omitzero"`
-
-	// DesiredNodes specifies the desired number of worker nodes
-	DesiredNodes int `json:"desiredNodes,omitzero"`
-
-	// KubernetesVersion specifies the Kubernetes version for the cluster
-	KubernetesVersion string `json:"kubernetesVersion,omitzero"`
 }
 
 // OptionsCilium defines options for the Cilium CNI.

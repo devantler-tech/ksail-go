@@ -54,13 +54,6 @@ func WithSpecDistribution(distribution Distribution) func(*Cluster) {
 	}
 }
 
-// WithSpecContainerEngine sets the container engine of the cluster.
-func WithSpecContainerEngine(engine ContainerEngine) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.ContainerEngine = engine
-	}
-}
-
 // WithSpecConnectionKubeconfig sets the kubeconfig for the cluster.
 func WithSpecConnectionKubeconfig(kubeconfig string) func(*Cluster) {
 	return func(c *Cluster) {
@@ -145,10 +138,6 @@ func (c *Cluster) setSpecDefaults() {
 		c.Spec.Distribution = DistributionKind
 	}
 
-	if c.Spec.ContainerEngine == "" {
-		c.Spec.ContainerEngine = ContainerEngineDocker
-	}
-
 	if c.Spec.ReconciliationTool == "" {
 		c.Spec.ReconciliationTool = ReconciliationToolKubectl
 	}
@@ -218,25 +207,6 @@ func (d *ReconciliationTool) Set(value string) error {
 		ErrInvalidReconciliationTool, value, ReconciliationToolKubectl, ReconciliationToolFlux, ReconciliationToolArgoCD)
 }
 
-// Set for ContainerEngine.
-func (e *ContainerEngine) Set(value string) error {
-	for _, engine := range validContainerEngines() {
-		if strings.EqualFold(value, string(engine)) {
-			*e = engine
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s)",
-		ErrInvalidContainerEngine,
-		value,
-		ContainerEngineDocker,
-		ContainerEnginePodman,
-	)
-}
-
 // -- pflags --
 
 // String returns the string representation of the Distribution.
@@ -258,9 +228,3 @@ func (d *ReconciliationTool) String() string {
 func (d *ReconciliationTool) Type() string {
 	return "ReconciliationTool"
 }
-
-// String returns the string representation of the ContainerEngine.
-func (e *ContainerEngine) String() string { return string(*e) }
-
-// Type returns the type of the ContainerEngine.
-func (e *ContainerEngine) Type() string { return "ContainerEngine" }
