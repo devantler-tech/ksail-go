@@ -3,6 +3,7 @@ package containerengine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/docker/docker/client"
@@ -59,7 +60,7 @@ func NewContainerEngine() (*ContainerEngine, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no container engine (Docker or Podman) available")
+	return nil, errors.New("no container engine (Docker or Podman) available")
 }
 
 // CheckReady checks if the container engine is available using the API client.

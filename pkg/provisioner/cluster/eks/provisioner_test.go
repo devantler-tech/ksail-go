@@ -80,7 +80,7 @@ func TestDelete_Success(t *testing.T) {
 			nameCase.ExpectedName,
 			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterActionsFactory *eksprovisioner.MockEKSClusterActionsFactory, _ string) {
 				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-				
+
 				mockClusterActions := eksprovisioner.NewMockEKSClusterActions(t)
 				clusterActionsFactory.On("NewClusterActions", mock.Anything, mock.Anything, mock.Anything).Return(mockClusterActions, nil)
 				mockClusterActions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -110,20 +110,21 @@ func TestStart_Success(t *testing.T) {
 	cases := testutils.DefaultNameCases("cfg-name")
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
-		runListActionSuccess(
-			t,
-			"Start()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterLister *eksprovisioner.MockEKSClusterLister, name string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-				descriptions := []cluster.Description{{Name: name}}
-				clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-			},
-			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Start(name)
-			},
-		)
+		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManagerFactory := newProvisionerForTest(t)
+		
+		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
+		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
+		
+		// Mock node group manager
+		mockNodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
+		nodeGroupManagerFactory.On("NewNodeGroupManager", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockNodeGroupManager)
+		mockNodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).Return(nil)
+
+		err := provisioner.Start(nameCase.InputName)
+		if err != nil {
+			t.Fatalf("Start() unexpected error: %v", err)
+		}
 	})
 }
 
@@ -146,20 +147,21 @@ func TestStop_Success(t *testing.T) {
 	cases := testutils.DefaultNameCases("cfg-name")
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
-		runListActionSuccess(
-			t,
-			"Stop()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterLister *eksprovisioner.MockEKSClusterLister, name string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-				descriptions := []cluster.Description{{Name: name}}
-				clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-			},
-			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Stop(name)
-			},
-		)
+		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManagerFactory := newProvisionerForTest(t)
+		
+		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
+		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
+		
+		// Mock node group manager
+		mockNodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
+		nodeGroupManagerFactory.On("NewNodeGroupManager", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(mockNodeGroupManager)
+		mockNodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).Return(nil)
+
+		err := provisioner.Stop(nameCase.InputName)
+		if err != nil {
+			t.Fatalf("Stop() unexpected error: %v", err)
+		}
 	})
 }
 
@@ -169,7 +171,7 @@ func TestList_Success(t *testing.T) {
 	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
 
 	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-	
+
 	descriptions := []cluster.Description{
 		{Name: "cluster1"},
 		{Name: "cluster2"},
@@ -201,6 +203,7 @@ func TestExists_Success_True(t *testing.T) {
 	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
 
 	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+
 	descriptions := []cluster.Description{{Name: "cfg-name"}}
 	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
 
@@ -238,10 +241,21 @@ func newProvisionerForTest(
 ) {
 	t.Helper()
 
+	desiredCapacity := 2
 	clusterConfig := &v1alpha5.ClusterConfig{
 		Metadata: &v1alpha5.ClusterMeta{
 			Name:   "cfg-name",
 			Region: "us-west-2",
+		},
+		NodeGroups: []*v1alpha5.NodeGroup{
+			{
+				NodeGroupBase: &v1alpha5.NodeGroupBase{
+					Name: "test-nodegroup",
+					ScalingConfig: &v1alpha5.ScalingConfig{
+						DesiredCapacity: &desiredCapacity,
+					},
+				},
+			},
 		},
 	}
 

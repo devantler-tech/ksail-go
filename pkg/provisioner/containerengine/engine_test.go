@@ -50,6 +50,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			ready, err := engine.CheckReady()
 
 			assert.Equal(t, tt.expectReady, ready)
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {

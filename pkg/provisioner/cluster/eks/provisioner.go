@@ -28,12 +28,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig             *v1alpha5.ClusterConfig
-	providerConstructor       EKSProviderConstructor
-	clusterActionsFactory     EKSClusterActionsFactory
-	clusterLister             EKSClusterLister
-	clusterCreator            EKSClusterCreator
-	nodeGroupManagerFactory   EKSNodeGroupManagerFactory
+	clusterConfig           *v1alpha5.ClusterConfig
+	providerConstructor     EKSProviderConstructor
+	clusterActionsFactory   EKSClusterActionsFactory
+	clusterLister           EKSClusterLister
+	clusterCreator          EKSClusterCreator
+	nodeGroupManagerFactory EKSNodeGroupManagerFactory
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -151,10 +151,10 @@ func (e *EKSClusterProvisioner) Start(name string) error {
 
 	// Scale all node groups to their desired capacity
 	for _, ng := range e.clusterConfig.NodeGroups {
-		if ng.ScalingConfig != nil && ng.ScalingConfig.DesiredCapacity != nil {
+		if ng.ScalingConfig != nil && ng.DesiredCapacity != nil {
 			// Ensure min size allows for desired capacity
-			if ng.ScalingConfig.MinSize != nil && *ng.ScalingConfig.MinSize == 0 {
-				*ng.ScalingConfig.MinSize = *ng.ScalingConfig.DesiredCapacity
+			if ng.MinSize != nil && *ng.MinSize == 0 {
+				*ng.MinSize = *ng.DesiredCapacity
 			}
 
 			err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
@@ -200,11 +200,13 @@ func (e *EKSClusterProvisioner) Stop(name string) error {
 	for _, ng := range e.clusterConfig.NodeGroups {
 		// Set desired capacity to 0 and min size to 0
 		zeroSize := 0
+
 		if ng.ScalingConfig == nil {
 			ng.ScalingConfig = &v1alpha5.ScalingConfig{}
 		}
-		ng.ScalingConfig.DesiredCapacity = &zeroSize
-		ng.ScalingConfig.MinSize = &zeroSize
+
+		ng.DesiredCapacity = &zeroSize
+		ng.MinSize = &zeroSize
 
 		err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
 		if err != nil {
