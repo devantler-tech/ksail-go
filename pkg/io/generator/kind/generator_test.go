@@ -125,7 +125,7 @@ func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 	// Arrange
 	gen := generator.NewKindGenerator()
 	gen.Marshaller = testutils.MarshalFailer[*v1alpha4.Cluster]{
-		MarshallerInterface: nil,
+		Marshaller: nil,
 	}
 	cluster := createTestCluster("marshal-error-cluster")
 	opts := yamlgenerator.Options{

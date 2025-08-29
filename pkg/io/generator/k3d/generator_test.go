@@ -126,7 +126,7 @@ func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 	// Arrange
 	gen := generator.NewK3dGenerator()
 	gen.Marshaller = testutils.MarshalFailer[*v1alpha5.SimpleConfig]{
-		MarshallerInterface: nil,
+		Marshaller: nil,
 	}
 	cluster := createTestCluster("marshal-error-cluster")
 	opts := yamlgenerator.Options{
