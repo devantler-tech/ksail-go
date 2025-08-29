@@ -37,7 +37,7 @@ func TestNewPodmanProvisioner_WithMockClient(t *testing.T) {
 }
 
 func TestCheckReady_Success(t *testing.T) {
-  t.Parallel()
+	t.Parallel()
 	testutils.TestCheckReadySuccess(
 		t,
 		func(
@@ -49,7 +49,7 @@ func TestCheckReady_Success(t *testing.T) {
 }
 
 func TestCheckReady_Error_PingFailed(t *testing.T) {
-  t.Parallel()
+	t.Parallel()
 	testutils.TestCheckReadyError(
 		t,
 		func(

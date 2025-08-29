@@ -141,6 +141,3 @@ func TestFileWriter_TryWrite_WriteError(t *testing.T) {
 	testutils.AssertErrContains(t, err, "failed to write file", "TryWrite() write failure")
 	assert.Empty(t, result, "TryWrite() result on error")
 }
-
-
-
