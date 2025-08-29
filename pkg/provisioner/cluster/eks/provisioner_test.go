@@ -27,7 +27,7 @@ func TestCreate_Success(t *testing.T) {
 			"Create()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterCreator *eksprovisioner.MockEKSClusterCreator, name string) {
+			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
 				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
@@ -78,7 +78,7 @@ func TestDelete_Success(t *testing.T) {
 			"Delete()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterActionsFactory *eksprovisioner.MockEKSClusterActionsFactory, name string) {
+			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor, clusterActionsFactory *eksprovisioner.MockEKSClusterActionsFactory, _ string) {
 				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
 				
 				mockClusterActions := eksprovisioner.NewMockEKSClusterActions(t)
@@ -169,6 +169,7 @@ func TestList_Success(t *testing.T) {
 	provisioner, providerConstructor, _, clusterLister, _ := newProvisionerForTest(t)
 
 	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
+	
 	descriptions := []cluster.Description{
 		{Name: "cluster1"},
 		{Name: "cluster2"},

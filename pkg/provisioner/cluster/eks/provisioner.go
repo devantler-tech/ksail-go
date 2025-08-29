@@ -4,6 +4,7 @@ package eksprovisioner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -12,7 +13,18 @@ import (
 )
 
 // ErrClusterNotFound is returned when a cluster is not found.
-var ErrClusterNotFound = fmt.Errorf("cluster not found")
+var ErrClusterNotFound = errors.New("cluster not found")
+
+const (
+	// DefaultWaitInterval is the default wait interval for cluster operations.
+	DefaultWaitInterval = 30 * time.Second
+	// DefaultPodEvictionWaitPeriod is the default wait period for pod eviction.
+	DefaultPodEvictionWaitPeriod = 10 * time.Minute
+	// DefaultChunkSize is the default chunk size for listing clusters.
+	DefaultChunkSize = 100
+	// DefaultParallelism is the default parallelism for cluster operations.
+	DefaultParallelism = 4
+)
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
@@ -90,12 +102,12 @@ func (e *EKSClusterProvisioner) Delete(name string) error {
 	}
 
 	// Use reasonable defaults for deletion parameters
-	waitInterval := 30 * time.Second
-	podEvictionWaitPeriod := 10 * time.Minute
+	waitInterval := DefaultWaitInterval
+	podEvictionWaitPeriod := DefaultPodEvictionWaitPeriod
 	wait := true
 	force := false
 	disableNodegroupEviction := false
-	parallel := 4
+	parallel := DefaultParallelism
 
 	err = clusterActions.Delete(ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel)
 	if err != nil {
@@ -149,7 +161,7 @@ func (e *EKSClusterProvisioner) List() ([]string, error) {
 		return nil, fmt.Errorf("failed to create EKS provider: %w", err)
 	}
 
-	descriptions, err := e.clusterLister.GetClusters(ctx, ctl, false, 100)
+	descriptions, err := e.clusterLister.GetClusters(ctx, ctl, false, DefaultChunkSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
 	}
@@ -170,6 +182,7 @@ func (e *EKSClusterProvisioner) Exists(name string) (bool, error) {
 	}
 
 	target := setName(name, e.clusterConfig.Metadata.Name)
+
 	return slices.Contains(clusters, target), nil
 }
 
@@ -178,5 +191,6 @@ func setName(name, defaultName string) string {
 	if name == "" {
 		return defaultName
 	}
+
 	return name
 }
