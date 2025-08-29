@@ -6,8 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
-	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
@@ -41,16 +41,17 @@ func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerato
 		},
 		Resources: []string{},
 	}
+
 	out, err := g.Marshaller.Marshal(&kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
 	}
-	
+
 	// If no output file specified, just return the YAML
 	if opts.Output == "" {
 		return out, nil
 	}
-	
+
 	result, err := g.TryWrite(out, opts.Output, opts.Force)
 	if err != nil {
 		return "", fmt.Errorf("write kustomization: %w", err)
