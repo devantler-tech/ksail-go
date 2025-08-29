@@ -103,20 +103,14 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("error-cluster")
 
-	// Use an invalid file path that will cause a write error
-	invalidPath := "/dev/null/invalid/path/kind-config.yaml"
-	opts := yamlgenerator.Options{
-		Output: invalidPath,
-		Force:  true,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.Error(t, err, "Generate should fail when file write fails")
-	assert.Contains(t, err.Error(), "write kind config", "Error should mention write failure")
-	assert.Empty(t, result, "Result should be empty on error")
+	// Act & Assert
+	generatortestutils.TestFileWriteError(
+		t,
+		gen,
+		cluster,
+		"kind-config.yaml",
+		"write kind config",
+	)
 }
 
 

@@ -102,20 +102,14 @@ func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
 	cluster := createTestCluster("error-cluster")
 	gen := generator.NewKustomizationGenerator(cluster)
 
-	// Use an invalid file path that will cause a write error
-	invalidPath := "/dev/null/invalid/path/kustomization.yaml"
-	opts := yamlgenerator.Options{
-		Output: invalidPath,
-		Force:  true,
-	}
-
-	// Act
-	result, err := gen.Generate(cluster, opts)
-
-	// Assert
-	require.Error(t, err, "Generate should fail when file write fails")
-	assert.Contains(t, err.Error(), "write kustomization", "Error should mention write failure")
-	assert.Empty(t, result, "Result should be empty on error")
+	// Act & Assert
+	generatortestutils.TestFileWriteError(
+		t,
+		gen,
+		cluster,
+		"kustomization.yaml",
+		"write kustomization",
+	)
 }
 
 func TestKustomizationGenerator_Generate_MarshalError(t *testing.T) {
