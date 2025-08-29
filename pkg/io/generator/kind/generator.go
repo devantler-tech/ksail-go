@@ -18,7 +18,7 @@ type KindGenerator struct {
 	Marshaller marshaller.Marshaller[*v1alpha4.Cluster]
 }
 
-// NewKindGenerator creates a new KindGenerator for the given cluster configuration.
+// NewKindGenerator creates and returns a new KindGenerator instance.
 func NewKindGenerator() *KindGenerator {
 	m := yamlmarshaller.NewMarshaller[*v1alpha4.Cluster]()
 
