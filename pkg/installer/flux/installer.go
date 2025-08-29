@@ -1,4 +1,5 @@
-package reconciliationtoolbootstrapper
+// Package fluxinstaller provides a Flux installer implementation.
+package fluxinstaller
 
 import (
 	"context"
@@ -9,14 +10,16 @@ import (
 	helmclient "github.com/mittwald/go-helm-client"
 )
 
-type FluxBootstrapper struct {
+// FluxInstaller implements the installer.Installer interface for Flux.
+type FluxInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
 }
 
-func NewFluxBootstrapper(kubeconfig, context string, timeout time.Duration) *FluxBootstrapper {
-	return &FluxBootstrapper{
+// NewFluxInstaller creates a new Flux installer instance.
+func NewFluxInstaller(kubeconfig, context string, timeout time.Duration) *FluxInstaller {
+	return &FluxInstaller{
 		kubeconfig: kubeconfig,
 		context:    context,
 		timeout:    timeout,
@@ -24,8 +27,8 @@ func NewFluxBootstrapper(kubeconfig, context string, timeout time.Duration) *Flu
 }
 
 // Install installs or upgrades the Flux Operator via its OCI Helm chart.
-func (b *FluxBootstrapper) Install() error {
-	err := helmInstallOrUpgradeFluxOperator(b)
+func (b *FluxInstaller) Install() error {
+	err := b.helmInstallOrUpgradeFluxOperator()
 	if err != nil {
 		return err
 	}
@@ -35,7 +38,7 @@ func (b *FluxBootstrapper) Install() error {
 }
 
 // Uninstall removes the Helm release for the Flux Operator.
-func (b *FluxBootstrapper) Uninstall() error {
+func (b *FluxInstaller) Uninstall() error {
 	client, err := b.newHelmClient()
 	if err != nil {
 		return err
@@ -46,7 +49,7 @@ func (b *FluxBootstrapper) Uninstall() error {
 
 // --- internals ---
 
-func helmInstallOrUpgradeFluxOperator(b *FluxBootstrapper) error {
+func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	client, err := b.newHelmClient()
 	if err != nil {
 		return err
@@ -70,8 +73,8 @@ func helmInstallOrUpgradeFluxOperator(b *FluxBootstrapper) error {
 	return err
 }
 
-func (b *FluxBootstrapper) newHelmClient() (helmclient.Client, error) {
-	kubeconfigPath, _ := pathutils.ExpandPath(b.kubeconfig)
+func (b *FluxInstaller) newHelmClient() (helmclient.Client, error) {
+	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 
 	data, err := os.ReadFile(kubeconfigPath)
 	if err != nil {

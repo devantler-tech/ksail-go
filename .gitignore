@@ -22,3 +22,6 @@ megalinter-reports/
 
 # jscpd reports
 report/
+*.zip
+__MACOSX/
+assets/

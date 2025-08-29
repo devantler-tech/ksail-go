@@ -1,4 +1,5 @@
-package reconciliationtoolbootstrapper
+// Package kubectlinstaller provides a kubectl installer implementation.
+package kubectlinstaller
 
 import (
 	"context"
@@ -21,20 +22,22 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-//go:embed assets/kubectl/apply-set-crd.yaml
+//go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
 
-//go:embed assets/kubectl/apply-set-cr.yaml
+//go:embed assets/apply-set-cr.yaml
 var applySetCRYAML []byte
 
-type KubectlBootstrapper struct {
+// KubectlInstaller implements the installer.Installer interface for kubectl.
+type KubectlInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
 }
 
-func NewKubectlBootstrapper(kubeconfig, context string, timeout time.Duration) *KubectlBootstrapper {
-	return &KubectlBootstrapper{
+// NewKubectlInstaller creates a new kubectl installer instance.
+func NewKubectlInstaller(kubeconfig, context string, timeout time.Duration) *KubectlInstaller {
+	return &KubectlInstaller{
 		kubeconfig: kubeconfig,
 		context:    context,
 		timeout:    timeout,
@@ -42,7 +45,7 @@ func NewKubectlBootstrapper(kubeconfig, context string, timeout time.Duration) *
 }
 
 // Install ensures the ApplySet CRD and its parent CR exist.
-func (b *KubectlBootstrapper) Install() error {
+func (b *KubectlInstaller) Install() error {
 	restConfigWrapper, err := b.buildRESTConfig()
 	if err != nil {
 		return err
@@ -106,7 +109,7 @@ func (b *KubectlBootstrapper) Install() error {
 }
 
 // Uninstall deletes the ApplySet CR then its CRD.
-func (b *KubectlBootstrapper) Uninstall() error {
+func (b *KubectlInstaller) Uninstall() error {
 	config, err := b.buildRESTConfig()
 	if err != nil {
 		return err
@@ -135,8 +138,8 @@ func (b *KubectlBootstrapper) Uninstall() error {
 
 // --- internals ---
 
-func (b *KubectlBootstrapper) buildRESTConfig() (*rest.Config, error) {
-	kubeconfigPath, _ := pathutils.ExpandPath(b.kubeconfig)
+func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
+	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 	rules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
 
 	overrides := &clientcmd.ConfigOverrides{}
@@ -155,7 +158,7 @@ func (b *KubectlBootstrapper) buildRESTConfig() (*rest.Config, error) {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlBootstrapper) applyCRD(ctx context.Context, c *apiextensionsclient.Clientset) error {
+func (b *KubectlInstaller) applyCRD(ctx context.Context, c *apiextensionsclient.Clientset) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 	if err := yaml.Unmarshal(applySetCRDYAML, &crd); err != nil {
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
@@ -179,7 +182,7 @@ func (b *KubectlBootstrapper) applyCRD(ctx context.Context, c *apiextensionsclie
 	return err
 }
 
-func (b *KubectlBootstrapper) waitForCRDEstablished(ctx context.Context, c *apiextensionsclient.Clientset, name string) error {
+func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, c *apiextensionsclient.Clientset, name string) error {
 	// Poll every 500ms until Established=True or timeout
 	pollCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
@@ -208,7 +211,7 @@ func (b *KubectlBootstrapper) waitForCRDEstablished(ctx context.Context, c *apie
 	})
 }
 
-func (b *KubectlBootstrapper) applyApplySetCR(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, name string) error {
+func (b *KubectlInstaller) applyApplySetCR(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, name string) error {
 	var u unstructured.Unstructured
 	if err := yaml.Unmarshal(applySetCRYAML, &u.Object); err != nil {
 		return fmt.Errorf("failed to unmarshal ApplySet CR yaml: %w", err)
