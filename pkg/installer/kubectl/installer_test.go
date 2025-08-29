@@ -106,6 +106,7 @@ spec:
 `
 
 	var crd apiextensionsv1.CustomResourceDefinition
+
 	err := yaml.Unmarshal([]byte(testCRDYAML), &crd)
 
 	assert.NoError(t, err)
@@ -128,12 +129,13 @@ metadata:
 spec: {}
 `
 
-	var u unstructured.Unstructured
-	err := yaml.Unmarshal([]byte(testCRYAML), &u.Object)
+	var applySetObj unstructured.Unstructured
+
+	err := yaml.Unmarshal([]byte(testCRYAML), &applySetObj.Object)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "test-applyset", u.GetName())
-	assert.Equal(t, "ApplySet", u.GetKind())
+	assert.Equal(t, "test-applyset", applySetObj.GetName())
+	assert.Equal(t, "ApplySet", applySetObj.GetKind())
 }
 
 func TestKubectlInstaller_Install_Error_EmptyKubeconfig(t *testing.T) {

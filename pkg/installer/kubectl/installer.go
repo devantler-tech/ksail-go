@@ -158,21 +158,21 @@ func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, c *apiextensionsclient.Clientset) error {
+func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionsclient.Clientset) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 	if err := yaml.Unmarshal(applySetCRDYAML, &crd); err != nil {
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err := c.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{})
+	_, err := client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := c.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+		existing, getErr := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing CRD for update: %w", getErr)
 		}
 
 		crd.ResourceVersion = existing.ResourceVersion
-		if _, uerr := c.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{}); uerr != nil {
+		if _, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{}); uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
 
@@ -182,10 +182,10 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, c *apiextensionsclient.
 	return err
 }
 
-func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, c *apiextensionsclient.Clientset, name string) error {
+func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, client *apiextensionsclient.Clientset, name string) error {
 	// Poll every 500ms until Established=True or timeout
 	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, b.timeout, true, func(ctx context.Context) (bool, error) {
-		crd, err := c.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+		crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
@@ -209,24 +209,24 @@ func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, c *apiexte
 }
 
 func (b *KubectlInstaller) applyApplySetCR(ctx context.Context, dyn dynamic.Interface, gvr schema.GroupVersionResource, name string) error {
-	var u unstructured.Unstructured
-	if err := yaml.Unmarshal(applySetCRYAML, &u.Object); err != nil {
+	var applySetObj unstructured.Unstructured
+	if err := yaml.Unmarshal(applySetCRYAML, &applySetObj.Object); err != nil {
 		return fmt.Errorf("failed to unmarshal ApplySet CR yaml: %w", err)
 	}
 	// Ensure GVK since yaml->map won't set it.
-	u.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
-	u.SetName(name)
+	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
+	applySetObj.SetName(name)
 
-	_, err := dyn.Resource(gvr).Create(ctx, &u, metav1.CreateOptions{})
+	_, err := dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{})
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing ApplySet: %w", getErr)
 		}
 
-		u.SetResourceVersion(existing.GetResourceVersion())
+		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		if _, uerr := dyn.Resource(gvr).Update(ctx, &u, metav1.UpdateOptions{}); uerr != nil {
+		if _, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{}); uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}
 

@@ -60,3 +60,16 @@ github.com/devantler-tech/ksail-go/pkg/installer/kubectl/installer.go:227.3,229.
 github.com/devantler-tech/ksail-go/pkg/installer/kubectl/installer.go:229.88,231.4 1 0
 github.com/devantler-tech/ksail-go/pkg/installer/kubectl/installer.go:233.3,233.13 1 0
 github.com/devantler-tech/ksail-go/pkg/installer/kubectl/installer.go:236.2,236.12 1 0
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:21.89,27.2 1 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:30.41,32.16 2 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:32.16,34.3 1 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:37.2,37.12 1 0
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:41.43,43.16 2 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:43.16,45.3 1 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:47.2,47.55 1 0
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:52.66,54.16 2 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:54.16,56.3 1 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:58.2,73.12 5 0
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:76.68,80.16 3 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:80.16,82.3 1 1
+github.com/devantler-tech/ksail-go/pkg/installer/flux/installer.go:84.2,92.47 2 0
