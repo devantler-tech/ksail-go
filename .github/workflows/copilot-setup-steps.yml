@@ -45,7 +45,7 @@ jobs:
           node-version: "20"
 
       - name: Install mega-linter-runner
-        run: npx mega-linter-runner --install
+        run: npm install mega-linter-runner -g
 
       - name: Install Go dependencies
         run: go mod download
