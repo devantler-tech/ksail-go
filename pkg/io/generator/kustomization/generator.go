@@ -36,7 +36,7 @@ func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerato
 	//nolint:exhaustruct // Only basic fields needed for minimal kustomization
 	kustomization := ktypes.Kustomization{
 		TypeMeta: ktypes.TypeMeta{
-			APIVersion: "kustomize.config.k8s.io/v1beta1", 
+			APIVersion: "kustomize.config.k8s.io/v1beta1",
 			Kind:       "Kustomization",
 		},
 		Resources: []string{},
