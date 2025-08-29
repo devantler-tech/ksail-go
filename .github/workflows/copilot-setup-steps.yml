@@ -53,3 +53,6 @@ jobs:
 
       - name: Add Go bin to PATH
         run: echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Run mega-linter
+        run: mega-linter-runner -f go -e GOTOOLCHAIN=auto -e DISABLE_ERRORS=true

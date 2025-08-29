@@ -43,6 +43,7 @@ Always reference these instructions first and fallback to search or bash command
   - **Primary linting tool**: This is the main linting tool used in CI and locally
   - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
   - **Auto-fix capability**: Automatically fixes formatting and style issues when run
+  - **Reports immediately available**: Mega-linter reports are immediately available on the host after the copilot setup steps run, without needing to manually execute mega-linter-runner
   - **Alternative**: `~/go/bin/golangci-lint run` if mega-linter-runner not available (takes ~31 seconds)
   - **Current State**: Clean codebase with 0 linting issues (mega-linter auto-fixes enabled)
   - Always check that new code doesn't introduce linting violations

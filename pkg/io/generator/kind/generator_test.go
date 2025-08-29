@@ -13,8 +13,6 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-
-
 func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
@@ -112,8 +110,6 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 		"write kind config",
 	)
 }
-
-
 
 func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 	t.Parallel()
