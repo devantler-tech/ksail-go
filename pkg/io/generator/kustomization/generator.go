@@ -41,7 +41,6 @@ func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerato
 		},
 		Resources: []string{},
 	}
-	
 	out, err := g.Marshaller.Marshal(&kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
