@@ -14,7 +14,7 @@ type PodmanProvisioner struct {
 }
 
 // NewPodmanProvisioner creates a new PodmanProvisioner with a provided client.
-func NewPodmanProvisioner(client client.APIClient) (*PodmanProvisioner) {
+func NewPodmanProvisioner(client client.APIClient) *PodmanProvisioner {
 	return &PodmanProvisioner{client: client}
 }
 

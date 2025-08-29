@@ -55,6 +55,7 @@ func Warnln(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.FgYellow)
 	notifyln(out, color, WarningSymbol, args...)
 }
+
 // Successf prints a green success message to the provided writer, prefixed with a symbol.
 func Successf(out io.Writer, format string, args ...any) {
 	color := fcolor.New(fcolor.FgGreen)

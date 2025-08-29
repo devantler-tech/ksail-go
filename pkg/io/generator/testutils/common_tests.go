@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -77,4 +77,3 @@ func TestFileWriteError[T any](
 	assert.Contains(t, err.Error(), expectedErrorContains, "Error should mention write failure")
 	assert.Empty(t, result, "Result should be empty on error")
 }
-

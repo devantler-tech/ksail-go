@@ -33,7 +33,7 @@ func (g *KindGenerator) Generate(cfg *v1alpha4.Cluster, opts yamlgenerator.Optio
 	// Ensure APIVersion and Kind are set before applying defaults
 	cfg.APIVersion = "kind.x-k8s.io/v1alpha4"
 	cfg.Kind = "Cluster"
-	
+
 	v1alpha4.SetDefaultsCluster(cfg)
 
 	out, err := g.Marshaller.Marshal(cfg)

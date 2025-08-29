@@ -75,5 +75,3 @@ func TestCheckReadyError(t *testing.T, factory ProvisionerFactory, expectedError
 	assert.Contains(t, err.Error(), "boom")
 	mockClient.AssertExpectations(t)
 }
-
-
