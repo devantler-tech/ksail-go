@@ -1,7 +1,15 @@
+# ==============================================================================
+# Operating System Files
+# ==============================================================================
+
 # MacOS
 .DS_Store
 
-# KSail
+# ==============================================================================
+# KSail Application Files
+# ==============================================================================
+
+# KSail binaries and configs
 ksail
 ksail-go
 k3d.yaml
@@ -9,18 +17,24 @@ kind.yaml
 ksail.yaml
 k8s/
 
-# Added by goreleaser init:
-dist/
+# ==============================================================================
+# Build and Release Artifacts
+# ==============================================================================
 
-# GoReleaser artifacts that shouldn't be committed
+# GoReleaser artifacts
+dist/
 completions/
 manpages/
 LICENSE.md
 
-# megalinter
+# ==============================================================================
+# Development and Analysis Tools
+# ==============================================================================
+
+# megalinter reports
 megalinter-reports/
 
-# jscpd reports
+# jscpd (copy-paste detector) reports
 report/
 *.zip
 __MACOSX/
