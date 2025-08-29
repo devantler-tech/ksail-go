@@ -55,6 +55,4 @@ jobs:
         run: echo "$HOME/go/bin" >> "$GITHUB_PATH"
 
       - name: Run mega-linter
-        env:
-          DISABLE_ERRORS: true
-        run: mega-linter-runner -f go -e GOTOOLCHAIN=auto
+        run: mega-linter-runner -f go -e GOTOOLCHAIN=auto -e DISABLE_ERRORS=true
