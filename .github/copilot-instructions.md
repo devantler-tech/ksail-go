@@ -2,7 +2,7 @@
 
 KSail is a Go-based CLI tool for managing local Kubernetes clusters and workloads declaratively. **Currently a work-in-progress migration from a previous implementation.** The core CLI structure exists but most functionality is planned/under development.
 
-**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
+**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go  -e GOTOOLCHAIN=auto`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -10,11 +10,11 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Bootstrap and Build
 
-- **Install Go 1.23.9+**: Verify with `go version` (project requires 1.23.9+ per go.mod, current runtime is 1.25.0)
+- **Install Go 1.24.0+**: Verify with `go version` (project requires 1.24.0+ per go.mod, current runtime is 1.25.0)
 - **Download dependencies**: `go mod download` (completes in ~15 seconds)
 - **Build the application**: `go build -o ksail .` -- takes ~0.2 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install mega-linter-runner**: For comprehensive linting (primary linting tool): Install per [mega-linter docs](https://megalinter.io/latest/mega-linter-runner/#installation)
-  - **CRITICAL**: Always use `mega-linter-runner -f go` for linting as specified in CONTRIBUTING.md
+  - **CRITICAL**: Always use `mega-linter-runner -f go -e GOTOOLCHAIN=auto` for linting as specified in CONTRIBUTING.md
   - This is the primary linting tool used in CI and should be used locally for consistency
 
 ### Additional Development Tools (Optional)
@@ -28,7 +28,7 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Required Dependencies
 
-- **Go 1.23.9+**: Programming language runtime (required)
+- **Go 1.24.0+**: Programming language runtime (required)
 - **Docker**: Container runtime - verify with `docker --version` (for future functionality)
   - **Current Environment**: Docker 28.0.4 available
 - **Kind**: Local Kubernetes clusters - verify with `kind version` (for future functionality)
@@ -39,7 +39,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Testing and Validation
 
 - **Run tests**: `go test -v ./...` -- takes ~31 seconds. Set timeout to 60+ seconds for safety.
-- **Run linter**: `mega-linter-runner -f go` -- comprehensive linting with Go flavor as specified in CONTRIBUTING.md
+- **Run linter**: `mega-linter-runner -f go -e GOTOOLCHAIN=auto` -- comprehensive linting with Go flavor as specified in CONTRIBUTING.md
   - **Primary linting tool**: This is the main linting tool used in CI and locally
   - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
   - **Auto-fix capability**: Automatically fixes formatting and style issues when run
@@ -60,7 +60,7 @@ Always reference these instructions first and fallback to search or bash command
 
 1. **Build Validation**: Run `go build -o ksail .`, verify `./ksail --help` shows usage, verify `./ksail --version` shows version info
 
-2. **Development Workflow**: Run tests: `go test -v ./...`, check build: `go build -o ksail .`, basic functionality: `./ksail --help`, linting: `mega-linter-runner -f go`
+2. **Development Workflow**: Run tests: `go test -v ./...`, check build: `go build -o ksail .`, basic functionality: `./ksail --help`, linting: `mega-linter-runner -f go -e GOTOOLCHAIN=auto`
 
 3. **Command Testing** (All commands work as stubs): Project initialization with `ksail init`, cluster lifecycle with `ksail up/down`, cluster listing with `ksail list`
 
@@ -72,7 +72,7 @@ Always reference these instructions first and fallback to search or bash command
    go build -o ksail .                 # ~0.2 seconds - must build successfully
    ./ksail --help                      # Must show help without errors
    ./ksail --version                   # Must show version info
-   mega-linter-runner -f go            # Primary linting tool - takes 3-5 minutes, auto-fixes issues
+   mega-linter-runner -f go  -e GOTOOLCHAIN=auto           # Primary linting tool - takes 3-5 minutes, auto-fixes issues
    # Alternative if mega-linter not available: ~/go/bin/golangci-lint run
 
    # Test core functionality
@@ -92,7 +92,7 @@ Always reference these instructions first and fallback to search or bash command
    ./ksail start --help
    ./ksail stop --help
    ./ksail reconcile --help
-   
+
    # Test different flag combinations
    ./ksail init --container-engine Podman --distribution K3d
    ./ksail list --all
@@ -104,7 +104,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **`go build -o ksail .`**: ~0.2 seconds when cached, ~1s first time -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go test -v ./...`**: ~31 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`mega-linter-runner -f go`**: Primary linting tool, takes 3-5 minutes (runs multiple linters and security scanners) -- SET TIMEOUT TO 300+ SECONDS for safety
+- **`mega-linter-runner -f go -e GOTOOLCHAIN=auto`**: Primary linting tool, takes 3-5 minutes (runs multiple linters and security scanners) -- SET TIMEOUT TO 300+ SECONDS for safety
 - **`~/go/bin/golangci-lint run`**: ~31 seconds (alternative linter) -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~15 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **NEVER CANCEL**: All commands may take longer on different systems. Always wait for completion.
@@ -112,9 +112,9 @@ Always reference these instructions first and fallback to search or bash command
 ### Linting Expectations
 
 - **Current State**: Clean codebase with 0 linting issues (mega-linter auto-fixes enabled)
-- **Primary Tool**: `mega-linter-runner -f go` with configuration in `.mega-linter.yml`
+- **Primary Tool**: `mega-linter-runner -f go -e GOTOOLCHAIN=auto` with configuration in `.mega-linter.yml`
 - **Alternative Tool**: `~/go/bin/golangci-lint run` with config in `.golangci.yml` (note: .yml extension, not .yaml)
-- **CONTRIBUTING.md Requirement**: Must use `mega-linter-runner -f go` for consistency with CI
+- **CONTRIBUTING.md Requirement**: Must use `mega-linter-runner -f go -e GOTOOLCHAIN=auto` for consistency with CI
 - **Focus**: Ensure new code doesn't introduce additional violations
 
 ## Codebase Navigation
@@ -156,7 +156,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **`.mega-linter.yml`**: Primary linting configuration with `APPLY_FIXES: all`
 - **`.golangci.yml`**: Alternative comprehensive linting rules with depguard for import restrictions
-- **`go.mod`**: Go 1.23.9+ with Cobra, color, testing, Docker, and Kind dependencies
+- **`go.mod`**: Go 1.24.0+ with Cobra, color, testing, Docker, and Kind dependencies
 - **`.github/workflows/`**: Complex CI/CD with matrix testing across container engines and distributions
 - **`.mockery.yml`**: Mockery configuration for generating test mocks
 
@@ -173,7 +173,7 @@ Always reference these instructions first and fallback to search or bash command
 1. **Always** validate current state first: `go test -v ./...`
 2. **Always** build after changes: `go build -o ksail .`
 3. **Always** test basic CLI: `./ksail --help`
-4. **Always** run linter: `mega-linter-runner -f go` (primary) or `~/go/bin/golangci-lint run` (fallback)
+4. **Always** run linter: `mega-linter-runner -f go -e GOTOOLCHAIN=auto` (primary) or `~/go/bin/golangci-lint run` (fallback)
 5. **Always** ensure tests pass before committing
 
 ### Adding New Features
@@ -196,7 +196,7 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Common Issues
 
-- **Build fails**: Check Go version (need 1.23.9+), run `go mod download`
+- **Build fails**: Check Go version (need 1.24.0+), run `go mod download`
 - **Linter fails**: Install mega-linter-runner per [docs](https://megalinter.io/latest/mega-linter-runner/#installation), or use golangci-lint as fallback
 - **Import violations**: Check `.mega-linter.yml` and `.golangci.yml` configuration for allowed packages
 - **Test failures**: Check snapshot files in `__snapshots__/` directories
