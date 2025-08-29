@@ -99,8 +99,8 @@ func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen := generator.NewKustomizationGenerator(createTestCluster("error-cluster"))
 	cluster := createTestCluster("error-cluster")
+	gen := generator.NewKustomizationGenerator(cluster)
 
 	// Use an invalid file path that will cause a write error
 	invalidPath := "/dev/null/invalid/path/kustomization.yaml"
