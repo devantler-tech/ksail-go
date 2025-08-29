@@ -85,7 +85,7 @@ Always reference these instructions first and fallback to search or bash command
 
 - **`go build -o ksail .`**: ~11 seconds when cached, ~12s first time -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go test -v ./...`**: ~33 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
-- **`mega-linter-runner -f go`**: Primary linting tool, timing varies -- SET TIMEOUT TO 180+ SECONDS for safety
+- **`mega-linter-runner -f go`**: Primary linting tool, timing varies (can take significantly longer than other tools as it runs multiple linters in sequence) -- SET TIMEOUT TO 180+ SECONDS for safety
 - **`~/go/bin/golangci-lint run`**: ~15 seconds (alternative linter) -- SET TIMEOUT TO 60+ SECONDS for safety
 - **`go mod download`**: ~15 seconds -- SET TIMEOUT TO 60+ SECONDS for safety
 - **NEVER CANCEL**: All commands may take longer on different systems. Always wait for completion.
