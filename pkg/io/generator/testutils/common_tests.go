@@ -5,21 +5,17 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// Generator is a generic interface for any YAML generator that can be tested with these utilities.
-type Generator[T any] interface {
-	Generate(cluster T, opts yamlgenerator.Options) (string, error)
-}
-
 // TestExistingFile runs a common test pattern for generators with existing files.
 func TestExistingFile[T any](
 	t *testing.T,
-	gen Generator[T],
+	gen generator.Generator[T, yamlgenerator.Options],
 	cluster T,
 	filename string,
 	assertContent func(*testing.T, string, string),
@@ -59,7 +55,7 @@ func TestExistingFile[T any](
 // TestExistingFileNoForce runs a common test pattern for generators with existing files and no force flag.
 func TestExistingFileNoForce[T any](
 	t *testing.T,
-	gen Generator[T],
+	gen generator.Generator[T, yamlgenerator.Options],
 	cluster T,
 	filename string,
 	assertContent func(*testing.T, string, string),
@@ -72,7 +68,7 @@ func TestExistingFileNoForce[T any](
 // TestExistingFileWithForce runs a common test pattern for generators with existing files and force flag.
 func TestExistingFileWithForce[T any](
 	t *testing.T,
-	gen Generator[T],
+	gen generator.Generator[T, yamlgenerator.Options],
 	cluster T,
 	filename string,
 	assertContent func(*testing.T, string, string),
