@@ -2,8 +2,6 @@ module github.com/devantler-tech/ksail-go
 
 go 1.24.0
 
-toolchain go1.24.6
-
 require (
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/fatih/color v1.18.0

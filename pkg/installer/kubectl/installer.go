@@ -184,10 +184,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, c *apiextensionsclient.
 
 func (b *KubectlInstaller) waitForCRDEstablished(ctx context.Context, c *apiextensionsclient.Clientset, name string) error {
 	// Poll every 500ms until Established=True or timeout
-	pollCtx, cancel := context.WithTimeout(ctx, b.timeout)
-	defer cancel()
-
-	return wait.PollUntilContextTimeout(pollCtx, 500*time.Millisecond, b.timeout, true, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, b.timeout, true, func(ctx context.Context) (bool, error) {
 		crd, err := c.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
