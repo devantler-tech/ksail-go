@@ -1,6 +1,6 @@
 module github.com/devantler-tech/ksail-go
 
-go 1.24.0
+go 1.23.9
 
 require (
 	github.com/docker/docker v28.3.3+incompatible
