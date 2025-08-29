@@ -160,7 +160,7 @@ func assertKustomizationYAML(t *testing.T, result string) {
 	assert.Contains(t, result, "kind: Kustomization", "YAML should contain kind")
 }
 
-// assertKustomizationYAMLWithName wraps assertKustomizationYAML for use with testutils
+// assertKustomizationYAMLWithName wraps assertKustomizationYAML for use with testutils.
 func assertKustomizationYAMLWithName(t *testing.T, result string, _ string) {
 	t.Helper()
 	assertKustomizationYAML(t, result)
