@@ -1,4 +1,4 @@
-// Package dockerprovisioner provides a Docker implementation of the ContainerEngineProvisioner interface.
+// Package dockerprovisioner provides a Docker implementation of the ProviderProvisioner interface.
 package dockerprovisioner
 
 import (
@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// DockerProvisioner implements ContainerEngineProvisioner for Docker.
+// DockerProvisioner implements ProviderProvisioner for Docker.
 type DockerProvisioner struct {
 	client client.APIClient
 }

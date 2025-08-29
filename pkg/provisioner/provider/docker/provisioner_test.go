@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
-	dockerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/docker"
-	"github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/testutils"
+	providerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/provider"
+	dockerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/provider/docker"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner/provider/testutils"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,7 @@ func TestCheckReady_Success(t *testing.T) {
 		t,
 		func(
 			mockClient *provisioner.MockAPIClient,
-		) containerengineprovisioner.ContainerEngineProvisioner {
+		) providerprovisioner.ProviderProvisioner {
 			return dockerprovisioner.NewDockerProvisioner(mockClient)
 		},
 	)
@@ -65,7 +65,7 @@ func TestCheckReady_Error_PingFailed(t *testing.T) {
 		t,
 		func(
 			mockClient *provisioner.MockAPIClient,
-		) containerengineprovisioner.ContainerEngineProvisioner {
+		) providerprovisioner.ProviderProvisioner {
 			return dockerprovisioner.NewDockerProvisioner(mockClient)
 		},
 		"docker ping failed",

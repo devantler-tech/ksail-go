@@ -1,4 +1,4 @@
-// Package podmanprovisioner provides a Podman implementation of the ContainerEngineProvisioner interface.
+// Package podmanprovisioner provides a Podman implementation of the ProviderProvisioner interface.
 package podmanprovisioner
 
 import (
@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// PodmanProvisioner implements ContainerEngineProvisioner for Podman.
+// PodmanProvisioner implements ProviderProvisioner for Podman.
 type PodmanProvisioner struct {
 	client client.APIClient
 }

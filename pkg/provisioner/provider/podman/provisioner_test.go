@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
-	podmanprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/podman"
-	"github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine/testutils"
+	providerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/provider"
+	podmanprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/provider/podman"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner/provider/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +42,7 @@ func TestCheckReady_Success(t *testing.T) {
 		t,
 		func(
 			mockClient *provisioner.MockAPIClient,
-		) containerengineprovisioner.ContainerEngineProvisioner {
+		) providerprovisioner.ProviderProvisioner {
 			return podmanprovisioner.NewPodmanProvisioner(mockClient)
 		},
 	)
@@ -54,7 +54,7 @@ func TestCheckReady_Error_PingFailed(t *testing.T) {
 		t,
 		func(
 			mockClient *provisioner.MockAPIClient,
-		) containerengineprovisioner.ContainerEngineProvisioner {
+		) providerprovisioner.ProviderProvisioner {
 			return podmanprovisioner.NewPodmanProvisioner(mockClient)
 		},
 		"podman ping failed",

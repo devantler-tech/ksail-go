@@ -1,4 +1,4 @@
-// Package testutils provides common test utilities for container engine provisioners.
+// Package testutils provides common test utilities for provider provisioners.
 package testutils
 
 import (
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	containerengineprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/container_engine"
+	providerprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/provider"
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,7 +17,7 @@ import (
 var errBoom = errors.New("boom")
 
 // ProvisionerFactory is a function type that creates a provisioner with a mock client.
-type ProvisionerFactory func(*provisioner.MockAPIClient) containerengineprovisioner.ContainerEngineProvisioner
+type ProvisionerFactory func(*provisioner.MockAPIClient) providerprovisioner.ProviderProvisioner
 
 // TestCheckReadySuccess runs a common test pattern for CheckReady success scenarios.
 func TestCheckReadySuccess(t *testing.T, factory ProvisionerFactory) {
