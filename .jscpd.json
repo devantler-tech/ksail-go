@@ -23,5 +23,5 @@
     "**/mocks*_test.go"
   ],
   "reporters": ["html", "markdown"],
-  "threshold": 3
+  "threshold": 0
 }
