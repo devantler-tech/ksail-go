@@ -1,6 +1,10 @@
 version: "2"
 linters:
   default: all
+  enable:
+    - wsl_v5
+  disable:
+    - wsl
   settings:
     depguard:
       rules:
@@ -38,6 +42,7 @@ linters:
         - '.+/clientcmd\.ClientConfigLoadingRules$'
         - '.+/clientcmd\.ConfigOverrides$'
         - '.+/helmclient\.ChartSpec$'
+        - 'github\.com/mittwald/go-helm-client\.ChartSpec$'
         - '.+/helmclient\.Options$'
         - 'github\.com/mittwald/go-helm-client\.Options$'
 
