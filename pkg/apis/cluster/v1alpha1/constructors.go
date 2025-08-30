@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/internal/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,23 +31,7 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name:                       "",
-			GenerateName:               "",
-			Namespace:                  "",
-			SelfLink:                   "",
-			UID:                        "",
-			ResourceVersion:            "",
-			Generation:                 0,
-			CreationTimestamp:          metav1.Time{Time: time.Time{}},
-			DeletionTimestamp:          nil,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     nil,
-			Annotations:                nil,
-			OwnerReferences:            nil,
-			Finalizers:                 nil,
-			ManagedFields:              nil,
-		},
+		Metadata: k8s.NewObjectMeta(""),
 		Spec: Spec{
 			Connection: Connection{
 				Kubeconfig: "",

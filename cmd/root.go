@@ -16,53 +16,13 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ksail",
-		Short: "SDK for operating and managing K8s clusters and workloads",
-		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
+	cmd := factory.NewRootCobraCommand(
+		"ksail",
+		"SDK for operating and managing K8s clusters and workloads",
+		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
 			`from one simple command line tool.`,
-
-		RunE:                       handleRootRunE,
-		Aliases:                    nil,
-		SuggestFor:                 nil,
-		GroupID:                    "",
-		Example:                    "",
-		ValidArgs:                  nil,
-		ValidArgsFunction:          nil,
-		Args:                       nil,
-		ArgAliases:                 nil,
-		BashCompletionFunction:     "",
-		Deprecated:                 "",
-		Annotations:                nil,
-		Version:                    "",
-		PersistentPreRun:           nil,
-		PersistentPreRunE:          nil,
-		PreRun:                     nil,
-		PreRunE:                    nil,
-		Run:                        nil,
-		PostRun:                    nil,
-		PostRunE:                   nil,
-		PersistentPostRun:          nil,
-		PersistentPostRunE:         nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:   false,
-			DisableNoDescFlag:   false,
-			DisableDescriptions: false,
-			HiddenDefaultCmd:    false,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              true,
-		SilenceUsage:               true,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: factory.SuggestionsMinimumDistance,
-	}
+		handleRootRunE,
+	)
 
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)

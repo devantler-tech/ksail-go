@@ -9,6 +9,7 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d/testutils"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
@@ -96,17 +97,7 @@ func (g *K3dGenerator) buildConfigOptions() v1alpha5.SimpleConfigOptions {
 }
 
 func (g *K3dGenerator) buildK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
-	return v1alpha5.SimpleConfigOptionsK3d{
-		Wait:                false,
-		Timeout:             0,
-		DisableLoadbalancer: false,
-		DisableImageVolume:  false,
-		NoRollback:          false,
-		NodeHookActions:     nil,
-		Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-			ConfigOverrides: nil,
-		},
-	}
+	return testutils.CreateDefaultK3dOptions()
 }
 
 func (g *K3dGenerator) buildK3sOptions() v1alpha5.SimpleConfigOptionsK3s {

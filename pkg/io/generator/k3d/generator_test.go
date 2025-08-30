@@ -3,10 +3,10 @@ package k3dgenerator_test
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -132,50 +132,8 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name:                       name,
-			GenerateName:               "",
-			Namespace:                  "",
-			SelfLink:                   "",
-			UID:                        "",
-			ResourceVersion:            "",
-			Generation:                 0,
-			CreationTimestamp:          metav1.Time{Time: time.Time{}},
-			DeletionTimestamp:          nil,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     nil,
-			Annotations:                nil,
-			OwnerReferences:            nil,
-			Finalizers:                 nil,
-			ManagedFields:              nil,
-		},
-		Spec: v1alpha1.Spec{
-			Distribution:       v1alpha1.DistributionK3d,
-			DistributionConfig: "",
-			SourceDirectory:    "",
-			Connection: v1alpha1.Connection{
-				Kubeconfig: "",
-				Context:    "",
-				Timeout:    metav1.Duration{Duration: time.Duration(0)},
-			},
-			ContainerEngine:    "",
-			CNI:                "",
-			CSI:                "",
-			IngressController:  "",
-			GatewayController:  "",
-			ReconciliationTool: "",
-			Options: v1alpha1.Options{
-				Kind:      v1alpha1.OptionsKind{},
-				K3d:       v1alpha1.OptionsK3d{},
-				Tind:      v1alpha1.OptionsTind{},
-				Cilium:    v1alpha1.OptionsCilium{},
-				Kubectl:   v1alpha1.OptionsKubectl{},
-				Flux:      v1alpha1.OptionsFlux{},
-				ArgoCD:    v1alpha1.OptionsArgoCD{},
-				Helm:      v1alpha1.OptionsHelm{},
-				Kustomize: v1alpha1.OptionsKustomize{},
-			},
-		},
+		Metadata: clustertestutils.CreateDefaultObjectMeta(name),
+		Spec:     clustertestutils.CreateDefaultK3dSpec(),
 	}
 }
 

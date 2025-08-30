@@ -13,6 +13,21 @@ const (
 	DefaultFilePermissions = 0600
 )
 
+// createKubeconfigFileWithContent creates a temporary kubeconfig file with the given content.
+func createKubeconfigFileWithContent(t *testing.T, content string) string {
+	t.Helper()
+
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tmpDir) })
+	
+	kubeconfigPath := tmpDir + "/kubeconfig"
+	err = os.WriteFile(kubeconfigPath, []byte(content), DefaultFilePermissions)
+	require.NoError(t, err)
+
+	return kubeconfigPath
+}
+
 // CreateMalformedKubeconfigFile creates a temporary file with malformed YAML for testing.
 func CreateMalformedKubeconfigFile(t *testing.T) string {
 	t.Helper()
@@ -21,30 +36,14 @@ func CreateMalformedKubeconfigFile(t *testing.T) string {
 this is not valid yaml: [
 `
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(tmpDir) })
-	
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err = os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), DefaultFilePermissions)
-	require.NoError(t, err)
-
-	return kubeconfigPath
+	return createKubeconfigFileWithContent(t, malformedKubeconfig)
 }
 
 // CreateEmptyKubeconfigFile creates a temporary empty kubeconfig file for testing.
 func CreateEmptyKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(tmpDir) })
-	
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err = os.WriteFile(kubeconfigPath, []byte(""), DefaultFilePermissions)
-	require.NoError(t, err)
-
-	return kubeconfigPath
+	return createKubeconfigFileWithContent(t, "")
 }
 
 // CreateValidKubeconfigFile creates a temporary valid kubeconfig file for testing.
@@ -70,13 +69,5 @@ users:
     token: test-token
 `
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(tmpDir) })
-	
-	kubeconfigPath := tmpDir + "/kubeconfig"
-	err = os.WriteFile(kubeconfigPath, []byte(validKubeconfig), DefaultFilePermissions)
-	require.NoError(t, err)
-
-	return kubeconfigPath
+	return createKubeconfigFileWithContent(t, validKubeconfig)
 }

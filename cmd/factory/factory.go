@@ -54,6 +54,14 @@ func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string
 	}
 }
 
+// NewRootCobraCommand creates a cobra.Command configured for use as a root command.
+func NewRootCobraCommand(use, short, long string, runE func(*cobra.Command, []string) error) *cobra.Command {
+	cmd := NewCobraCommand(use, short, long, runE)
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	return cmd
+}
+
 // NewCobraCommandWithFlags creates a new cobra.Command with complete field initialization and flag setup.
 func NewCobraCommandWithFlags(
 	use, short, long string,

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -62,51 +63,7 @@ func TestExecute_ShowsHelp(t *testing.T) {
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
-	return &cobra.Command{
-		Use:                        use,
-		RunE:                       runE,
-		Aliases:                    nil,
-		SuggestFor:                 nil,
-		Short:                      "",
-		GroupID:                    "",
-		Long:                       "",
-		Example:                    "",
-		ValidArgs:                  nil,
-		ValidArgsFunction:          nil,
-		Args:                       nil,
-		ArgAliases:                 nil,
-		BashCompletionFunction:     "",
-		Deprecated:                 "",
-		Annotations:                nil,
-		Version:                    "",
-		PersistentPreRun:           nil,
-		PersistentPreRunE:          nil,
-		PreRun:                     nil,
-		PreRunE:                    nil,
-		Run:                        nil,
-		PostRun:                    nil,
-		PostRunE:                   nil,
-		PersistentPostRun:          nil,
-		PersistentPostRunE:         nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:   false,
-			DisableNoDescFlag:   false,
-			DisableDescriptions: false,
-			HiddenDefaultCmd:    false,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: 0,
-	}
+	return factory.NewCobraCommand(use, "", "", runE)
 }
 
 func TestExecute_ReturnsError(t *testing.T) {
@@ -163,26 +120,5 @@ func TestExecuteSuccess(t *testing.T) {
 	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
-	}
-}
-
-func TestExecute_ReturnsNil(t *testing.T) {
-	// Arrange
-	t.Parallel()
-
-	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
-		return nil
-	})
-
-	// Act
-	actual := cmd.NewRootCmd("test", "test", "test")
-	actual.SetArgs([]string{"ok"})
-	actual.AddCommand(succeeding)
-
-	err := actual.Execute()
-
-	// Assert
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
 	}
 }

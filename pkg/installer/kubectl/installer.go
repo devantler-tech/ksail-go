@@ -29,6 +29,25 @@ var applySetCRDYAML []byte
 //go:embed assets/apply-set-cr.yaml
 var applySetCRYAML []byte
 
+// createDefaultDeleteOptions creates a metav1.DeleteOptions with all fields explicitly set.
+func createDefaultDeleteOptions() metav1.DeleteOptions {
+	return metav1.DeleteOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		GracePeriodSeconds:                    nil,
+		Preconditions:                         nil,
+		OrphanDependents:                      nil,
+		PropagationPolicy:                     nil,
+		DryRun:                                nil,
+		IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
+
+			return &b
+		}(),
+	}
+}
+
 // ErrCRDNameNotAccepted is returned when CRD names are not accepted.
 var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 
@@ -84,21 +103,7 @@ func (b *KubectlInstaller) Uninstall() error {
 	}
 
 	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", metav1.DeleteOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		GracePeriodSeconds:                    nil,
-		Preconditions:                         nil,
-		OrphanDependents:                      nil,
-		PropagationPolicy:                     nil,
-		DryRun:                                nil,
-		IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
-
-			return &b
-		}(),
-	}) // ignore errors (including NotFound)
+	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
 
 	apiExtClient, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
@@ -107,21 +112,7 @@ func (b *KubectlInstaller) Uninstall() error {
 
 	_ = apiExtClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			GracePeriodSeconds:                    nil,
-			Preconditions:                         nil,
-			OrphanDependents:                      nil,
-			PropagationPolicy:                     nil,
-			DryRun:                                nil,
-			IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
-
-				return &b
-			}(),
-		})
+		Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
 
 	return nil
 }

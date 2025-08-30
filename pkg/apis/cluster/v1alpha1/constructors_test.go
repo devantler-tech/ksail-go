@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,43 +78,11 @@ func createTestClusterWithCustomValues() *v1alpha1.Cluster {
 }
 
 func createDefaultObjectMeta(name string) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:                       name,
-		GenerateName:               "",
-		Namespace:                  "",
-		SelfLink:                   "",
-		UID:                        "",
-		ResourceVersion:            "",
-		Generation:                 0,
-		CreationTimestamp:          metav1.Time{Time: time.Time{}},
-		DeletionTimestamp:          nil,
-		DeletionGracePeriodSeconds: nil,
-		Labels:                     nil,
-		Annotations:                nil,
-		OwnerReferences:            nil,
-		Finalizers:                 nil,
-		ManagedFields:              nil,
-	}
+	return clustertestutils.CreateDefaultObjectMeta(name)
 }
 
 func createDefaultSpec() v1alpha1.Spec {
-	return v1alpha1.Spec{
-		Distribution:       "",
-		DistributionConfig: "",
-		SourceDirectory:    "",
-		Connection: v1alpha1.Connection{
-			Kubeconfig: "",
-			Context:    "",
-			Timeout:    metav1.Duration{Duration: time.Duration(0)},
-		},
-		ContainerEngine:     "",
-		CNI:                 "",
-		CSI:                 "",
-		IngressController:   "",
-		GatewayController:   "",
-		ReconciliationTool:  "",
-		Options:             createDefaultOptions(),
-	}
+	return clustertestutils.CreateDefaultSpec()
 }
 
 func createCustomSpec() v1alpha1.Spec {
@@ -137,17 +106,7 @@ func createCustomSpec() v1alpha1.Spec {
 }
 
 func createDefaultOptions() v1alpha1.Options {
-	return v1alpha1.Options{
-		Kind:      v1alpha1.OptionsKind{},
-		K3d:       v1alpha1.OptionsK3d{},
-		Tind:      v1alpha1.OptionsTind{},
-		Cilium:    v1alpha1.OptionsCilium{},
-		Kubectl:   v1alpha1.OptionsKubectl{},
-		Flux:      v1alpha1.OptionsFlux{},
-		ArgoCD:    v1alpha1.OptionsArgoCD{},
-		Helm:      v1alpha1.OptionsHelm{},
-		Kustomize: v1alpha1.OptionsKustomize{},
-	}
+	return clustertestutils.CreateDefaultOptions()
 }
 
 func assertDefaultValues(t *testing.T, cluster *v1alpha1.Cluster) {
