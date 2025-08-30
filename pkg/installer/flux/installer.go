@@ -3,6 +3,7 @@ package fluxinstaller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,6 +11,9 @@ import (
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	helmclient "github.com/mittwald/go-helm-client"
 )
+
+// ErrUnexpectedClientType is returned when the helm client constructor returns an unexpected type.
+var ErrUnexpectedClientType = errors.New("unexpected client type returned from helm client constructor")
 
 // FluxInstaller implements the installer.Installer interface for Flux.
 type FluxInstaller struct {
@@ -84,7 +88,7 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	return nil
 }
 
-func (b *FluxInstaller) newHelmClient() (helmclient.Client, error) {
+func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 
 	// #nosec G304 -- Kubeconfig path is controlled by application configuration
@@ -107,5 +111,11 @@ func (b *FluxInstaller) newHelmClient() (helmclient.Client, error) {
 		return nil, fmt.Errorf("failed to create Helm client from kubeconfig: %w", err)
 	}
 
-	return client, nil
+	// Type assert to concrete type since we know NewClientFromKubeConf returns *HelmClient
+	helmClient, ok := client.(*helmclient.HelmClient)
+	if !ok {
+		return nil, ErrUnexpectedClientType
+	}
+
+	return helmClient, nil
 }
