@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// DefaultFilePermissions defines the default permissions for temporary test files
+	// DefaultFilePermissions defines the default permissions for temporary test files.
 	DefaultFilePermissions = 0600
 )
 

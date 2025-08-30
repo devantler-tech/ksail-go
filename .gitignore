@@ -38,3 +38,6 @@ megalinter-reports/
 report/
 *.zip
 __MACOSX/
+
+# Go test coverage reports
+coverage.out

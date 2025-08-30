@@ -43,16 +43,16 @@ linters:
         - '.+/helmclient\.Options$'
         - '.+helmclient\.Options$'
         - 'github\.com/mittwald/go-helm-client\.Options$'
+    ireturn:
+      allow:
+        - anon
+        - error
+        - empty
+        - stdlib
+        - github.com/mittwald/go-helm-client.Client
 
   exclusions:
     rules:
       - path: "cmd/.+"
         linters:
           - forbidigo
-      - path: "pkg/installer/flux/.+"
-        linters:
-          - exhaustruct
-          - ireturn
-      - path: "megalinter-reports/.+"
-        linters:
-          - all
