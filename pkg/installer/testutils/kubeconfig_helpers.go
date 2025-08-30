@@ -21,9 +21,15 @@ func CreateMalformedKubeconfigFile(t *testing.T) string {
 this is not valid yaml: [
 `
 
-	tmpDir := t.TempDir()
+	homeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
+	
+	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tmpDir) })
+	
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), DefaultFilePermissions)
+	err = os.WriteFile(kubeconfigPath, []byte(malformedKubeconfig), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath
@@ -33,9 +39,15 @@ this is not valid yaml: [
 func CreateEmptyKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
-	tmpDir := t.TempDir()
+	homeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
+	
+	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tmpDir) })
+	
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(""), DefaultFilePermissions)
+	err = os.WriteFile(kubeconfigPath, []byte(""), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath
@@ -64,9 +76,15 @@ users:
     token: test-token
 `
 
-	tmpDir := t.TempDir()
+	homeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
+	
+	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.RemoveAll(tmpDir) })
+	
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), DefaultFilePermissions)
+	err = os.WriteFile(kubeconfigPath, []byte(validKubeconfig), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath

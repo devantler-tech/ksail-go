@@ -41,7 +41,7 @@ func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file or directory")
+	assert.Contains(t, err.Error(), "file is outside base directory")
 }
 
 func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
@@ -59,7 +59,7 @@ func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file or directory")
+	assert.Contains(t, err.Error(), "file is outside base directory")
 }
 
 func TestFluxInstaller_Install_Error_EmptyKubeconfig(t *testing.T) {
