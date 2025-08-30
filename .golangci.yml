@@ -45,6 +45,8 @@ linters:
         - '.+helmclient\.ChartSpec$'
         - 'github\.com/mittwald/go-helm-client\.ChartSpec$'
         - '.+/helmclient\.Options$'
+        - '.+helmclient\.Options$'
+        - 'github\.com/mittwald/go-helm-client\.Options$'
 
   exclusions:
     rules:
