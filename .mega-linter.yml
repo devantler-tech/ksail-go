@@ -1,1 +1,2 @@
 APPLY_FIXES: all
+FILTER_REGEX_EXCLUDE: megalinter-reports/.*

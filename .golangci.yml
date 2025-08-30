@@ -1,6 +1,10 @@
 version: "2"
 linters:
   default: all
+  enable:
+    - wsl_v5
+  disable:
+    - wsl
   settings:
     depguard:
       rules:
@@ -15,6 +19,7 @@ linters:
             - github.com/docker/docker
             - github.com/fatih/color
             - github.com/k3d-io/k3d
+            - github.com/mittwald/go-helm-client
             - github.com/spf13/cobra
             - github.com/stretchr/testify
             - sigs.k8s.io
@@ -30,6 +35,15 @@ linters:
         - '.+/v1alpha5\.SimpleConfig$'
         - '.+\.ObjectMeta$'
         - '.+\v1alpha4\.Node$'
+        - '.+/v1\.DeleteOptions$'
+        - '.+/v1\.GetOptions$'
+        - '.+/v1\.CreateOptions$'
+        - '.+/v1\.UpdateOptions$'
+        - '.+/clientcmd\.ClientConfigLoadingRules$'
+        - '.+/clientcmd\.ConfigOverrides$'
+        - '.+/helmclient\.ChartSpec$'
+        - '.+/helmclient\.Options$'
+        - 'github\.com/mittwald/go-helm-client\.Options$'
 
   exclusions:
     rules:
