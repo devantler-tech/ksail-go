@@ -98,7 +98,6 @@ func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
 	opts := &helmclient.KubeConfClientOptions{
 		Options: &helmclient.Options{
 			Namespace: "flux-system",
-			// Only set fields that have valid zero values for their types
 		},
 		KubeConfig:  data,
 		KubeContext: b.context,
