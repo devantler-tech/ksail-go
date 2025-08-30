@@ -8,14 +8,12 @@ import (
 
 // NewStatusCmd creates and returns the status command.
 func NewStatusCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "status",
-		Short: "Show status of the Kubernetes cluster",
-		Long:  `Show the current status of the Kubernetes cluster.`,
-		RunE:  handleStatusRunE,
-	}
-
-	return cmd
+	return NewCobraCommand(
+		"status",
+		"Show status of the Kubernetes cluster",
+		`Show the current status of the Kubernetes cluster.`,
+		handleStatusRunE,
+	)
 }
 
 // handleStatusRunE handles the status command.

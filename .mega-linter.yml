@@ -1,2 +1,4 @@
 APPLY_FIXES: all
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
+DISABLE_LINTERS: # TODO: Remove when mega-linter -f go is updated from v8
+  - GO_GOLANGCI_LINT

@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
 )
 
@@ -83,7 +84,21 @@ func (b *KubectlInstaller) Uninstall() error {
 	}
 
 	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", metav1.DeleteOptions{}) // ignore errors (including NotFound)
+	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", metav1.DeleteOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		GracePeriodSeconds:                    nil,
+		Preconditions:                         nil,
+		OrphanDependents:                      nil,
+		PropagationPolicy:                     nil,
+		DryRun:                                nil,
+		IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
+
+			return &b
+		}(),
+	}) // ignore errors (including NotFound)
 
 	apiExtClient, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
@@ -92,7 +107,21 @@ func (b *KubectlInstaller) Uninstall() error {
 
 	_ = apiExtClient.ApiextensionsV1().
 		CustomResourceDefinitions().
-		Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{})
+		Delete(ctx, "applysets.k8s.devantler.tech", metav1.DeleteOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			GracePeriodSeconds:                    nil,
+			Preconditions:                         nil,
+			OrphanDependents:                      nil,
+			PropagationPolicy:                     nil,
+			DryRun:                                nil,
+			IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
+
+				return &b
+			}(),
+		})
 
 	return nil
 }
@@ -111,7 +140,13 @@ func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{})
+	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		ResourceVersion: "",
+	})
 	if apierrors.IsNotFound(err) {
 		err = b.applyCRD(ctx, apiExtClient)
 		if err != nil {
@@ -143,7 +178,13 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 
 	const applySetName = "ksail"
 
-	_, err = dynClient.Resource(gvr).Get(ctx, applySetName, metav1.GetOptions{})
+	_, err = dynClient.Resource(gvr).Get(ctx, applySetName, metav1.GetOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		ResourceVersion: "",
+	})
 	if apierrors.IsNotFound(err) {
 		err = b.applyApplySetCR(ctx, dynClient, gvr, applySetName)
 		if err != nil {
@@ -158,14 +199,8 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 
 func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
-	rules := &clientcmd.ClientConfigLoadingRules{
-		ExplicitPath: kubeconfigPath,
-	}
-
-	overrides := &clientcmd.ConfigOverrides{}
-	if b.context != "" {
-		overrides.CurrentContext = b.context
-	}
+	rules := b.buildClientConfigLoadingRules(kubeconfigPath)
+	overrides := b.buildConfigOverrides()
 
 	clientCfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
 
@@ -177,6 +212,79 @@ func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 	return restConfig, nil
 }
 
+func (b *KubectlInstaller) buildClientConfigLoadingRules(kubeconfigPath string) *clientcmd.ClientConfigLoadingRules {
+	return &clientcmd.ClientConfigLoadingRules{
+		ExplicitPath:        kubeconfigPath,
+		Precedence:          nil,
+		MigrationRules:      nil,
+		DoNotResolvePaths:   false,
+		DefaultClientConfig: nil,
+		WarnIfAllMissing:    false,
+		Warner:              nil,
+	}
+}
+
+func (b *KubectlInstaller) buildConfigOverrides() *clientcmd.ConfigOverrides {
+	overrides := &clientcmd.ConfigOverrides{
+		AuthInfo:        b.buildAuthInfo(),
+		ClusterDefaults: b.buildCluster(),
+		ClusterInfo:     b.buildCluster(),
+		Context:         b.buildContext(),
+		CurrentContext:  "",
+		Timeout:         "",
+	}
+	if b.context != "" {
+		overrides.CurrentContext = b.context
+	}
+
+	return overrides
+}
+
+func (b *KubectlInstaller) buildAuthInfo() api.AuthInfo {
+	return api.AuthInfo{
+		LocationOfOrigin:         "",
+		ClientCertificate:        "",
+		ClientCertificateData:    nil,
+		ClientKey:                "",
+		ClientKeyData:            nil,
+		Token:                    "",
+		TokenFile:                "",
+		Impersonate:              "",
+		ImpersonateUID:           "",
+		ImpersonateGroups:        nil,
+		ImpersonateUserExtra:     nil,
+		Username:                 "",
+		Password:                 "",
+		AuthProvider:             nil,
+		Exec:                     nil,
+		Extensions:               nil,
+	}
+}
+
+func (b *KubectlInstaller) buildCluster() api.Cluster {
+	return api.Cluster{
+		LocationOfOrigin:         "",
+		Server:                   "",
+		TLSServerName:            "",
+		InsecureSkipTLSVerify:    false,
+		CertificateAuthority:     "",
+		CertificateAuthorityData: nil,
+		ProxyURL:                 "",
+		DisableCompression:       false,
+		Extensions:               nil,
+	}
+}
+
+func (b *KubectlInstaller) buildContext() api.Context {
+	return api.Context{
+		LocationOfOrigin: "",
+		Cluster:          "",
+		AuthInfo:         "",
+		Namespace:        "",
+		Extensions:       nil,
+	}
+}
+
 // applyCRD creates the ApplySet CRD from embedded YAML.
 func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionsclient.Clientset) error {
 	var crd apiextensionsv1.CustomResourceDefinition
@@ -186,16 +294,38 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err = client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{})
+	_, err = client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		DryRun:          nil,
+		FieldManager:    "",
+		FieldValidation: "",
+	})
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{})
+		existing, getErr := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			ResourceVersion: "",
+		})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing CRD for update: %w", getErr)
 		}
 
 		crd.ResourceVersion = existing.ResourceVersion
 
-		_, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{})
+		_, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			DryRun:          nil,
+			FieldManager:    "",
+			FieldValidation: "",
+		})
 		if uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
@@ -216,7 +346,13 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
-			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{})
+			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			ResourceVersion: "",
+		})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					return false, nil
@@ -262,16 +398,38 @@ func (b *KubectlInstaller) applyApplySetCR(
 	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	applySetObj.SetName(name)
 
-	_, err = dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{})
+	_, err = dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		DryRun:          nil,
+		FieldManager:    "",
+		FieldValidation: "",
+	})
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{})
+		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			ResourceVersion: "",
+		})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing ApplySet: %w", getErr)
 		}
 
 		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		_, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{})
+		_, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "",
+				APIVersion: "",
+			},
+			DryRun:          nil,
+			FieldManager:    "",
+			FieldValidation: "",
+		})
 		if uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}

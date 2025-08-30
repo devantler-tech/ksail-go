@@ -8,17 +8,15 @@ import (
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List Kubernetes clusters",
-		Long:  `List all Kubernetes clusters managed by KSail.`,
-		RunE:  handleListRunE,
-	}
-
-	// Add flags
-	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-
-	return cmd
+	return NewCobraCommandWithFlags(
+		"list",
+		"List Kubernetes clusters",
+		`List all Kubernetes clusters managed by KSail.`,
+		handleListRunE,
+		func(cmd *cobra.Command) {
+			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+		},
+	)
 }
 
 // handleListRunE handles the list command.

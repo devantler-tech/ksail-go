@@ -6,6 +6,10 @@ linters:
   disable:
     - wsl
   settings:
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
     depguard:
       rules:
         main:
@@ -24,27 +28,6 @@ linters:
             - github.com/stretchr/testify
             - sigs.k8s.io
             - k8s.io
-    exhaustruct:
-      exclude:
-        - '.+/cobra\.Command$'
-        - '.+/types\.Cluster$'
-        - '.+/v1alpha1\.Cluster$'
-        - '.+/v1alpha1\.Spec$'
-        - '.+/v1alpha4\.Cluster$'
-        - '.+/v1alpha5\.ClusterConfig$'
-        - '.+/v1alpha5\.SimpleConfig$'
-        - '.+\.ObjectMeta$'
-        - '.+\v1alpha4\.Node$'
-        - '.+/v1\.DeleteOptions$'
-        - '.+/v1\.GetOptions$'
-        - '.+/v1\.CreateOptions$'
-        - '.+/v1\.UpdateOptions$'
-        - '.+/clientcmd\.ClientConfigLoadingRules$'
-        - '.+/clientcmd\.ConfigOverrides$'
-        - '.+/helmclient\.ChartSpec$'
-        - '.+/helmclient\.Options$'
-        - 'github\.com/mittwald/go-helm-client\.Options$'
-
   exclusions:
     rules:
       - path: "cmd/.+"

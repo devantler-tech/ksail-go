@@ -8,14 +8,13 @@ import (
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "reconcile",
-		Short: "Reconcile workloads in the Kubernetes cluster",
-		Long:  `Reconcile workloads in the Kubernetes cluster to match the desired state defined in configuration files.`,
-		RunE:  handleReconcileRunE,
-	}
-
-	return cmd
+	return NewCobraCommand(
+		"reconcile",
+		"Reconcile workloads in the Kubernetes cluster",
+		`Reconcile workloads in the Kubernetes cluster to match the desired state
+defined in configuration files.`,
+		handleReconcileRunE,
+	)
 }
 
 // handleReconcileRunE handles the reconcile command.

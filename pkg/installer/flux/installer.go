@@ -9,7 +9,9 @@ import (
 	"time"
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
+	"github.com/devantler-tech/ksail-go/pkg/io"
 	helmclient "github.com/mittwald/go-helm-client"
+	"github.com/mittwald/go-helm-client/values"
 )
 
 // ErrUnexpectedClientType is returned when the helm client constructor returns an unexpected type.
@@ -38,7 +40,6 @@ func (b *FluxInstaller) Install() error {
 		return fmt.Errorf("failed to install Flux operator: %w", err)
 	}
 
-
 	return nil
 }
 
@@ -66,14 +67,45 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	}
 
 	spec := &helmclient.ChartSpec{
-		ReleaseName:        "flux-operator",
-		ChartName:          "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
-		Namespace:          "flux-system",
-		CreateNamespace:    true,
-		Atomic:             true,
-		UpgradeCRDs:        true,
-		Timeout:            b.timeout,
-		// Only set fields that have valid zero values for their types
+		ReleaseName:            "flux-operator",
+		ChartName:              "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+		Namespace:              "flux-system",
+		CreateNamespace:        true,
+		Atomic:                 true,
+		UpgradeCRDs:            true,
+		Timeout:                b.timeout,
+		ValuesYaml:             "",
+		ValuesOptions: values.Options{
+			ValueFiles:   nil,
+			StringValues: nil,
+			Values:       nil,
+			FileValues:   nil,
+			JSONValues:   nil,
+		},
+		Version:                "",
+		DisableHooks:           false,
+		Replace:                false,
+		Wait:                   false,
+		WaitForJobs:            false,
+		DependencyUpdate:       false,
+		GenerateName:           false,
+		NameTemplate:           "",
+		SkipCRDs:               false,
+		SubNotes:               false,
+		Force:                  false,
+		ResetValues:            false,
+		ReuseValues:            false,
+		ResetThenReuseValues:   false,
+		Recreate:               false,
+		MaxHistory:             0,
+		CleanupOnFail:          false,
+		DryRun:                 false,
+		DryRunOption:           "",
+		Description:            "",
+		KeepHistory:            false,
+		Labels:                 nil,
+		IgnoreNotFound:         false,
+		DeletionPropagation:    "",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
@@ -88,16 +120,31 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 }
 
 func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
-	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
 
-	data, err := os.ReadFile(kubeconfigPath)
+	kubeconfigPath, err := pathutils.ExpandHomePath(b.kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
+	}
+
+	data, err := io.ReadFileSafe(homeDir, kubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
 
 	opts := &helmclient.KubeConfClientOptions{
 		Options: &helmclient.Options{
-			Namespace: "flux-system",
+			Namespace:        "flux-system",
+			RepositoryConfig: "",
+			RepositoryCache:  "",
+			Debug:            false,
+			Linting:          false,
+			DebugLog:         nil,
+			RegistryConfig:   "",
+			Output:           nil,
 		},
 		KubeConfig:  data,
 		KubeContext: b.context,

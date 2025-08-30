@@ -8,14 +8,12 @@ import (
 
 // NewStopCmd creates and returns the stop command.
 func NewStopCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "stop",
-		Short: "Stop the Kubernetes cluster",
-		Long:  `Stop the Kubernetes cluster without removing it.`,
-		RunE:  handleStopRunE,
-	}
-
-	return cmd
+	return NewCobraCommand(
+		"stop",
+		"Stop the Kubernetes cluster",
+		`Stop the Kubernetes cluster without removing it.`,
+		handleStopRunE,
+	)
 }
 
 // handleStopRunE handles the stop command.

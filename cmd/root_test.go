@@ -60,23 +60,109 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
+// newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
+func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
+	return &cobra.Command{
+		Use:                        use,
+		RunE:                       runE,
+		Aliases:                    nil,
+		SuggestFor:                 nil,
+		Short:                      "",
+		GroupID:                    "",
+		Long:                       "",
+		Example:                    "",
+		ValidArgs:                  nil,
+		ValidArgsFunction:          nil,
+		Args:                       nil,
+		ArgAliases:                 nil,
+		BashCompletionFunction:     "",
+		Deprecated:                 "",
+		Annotations:                nil,
+		Version:                    "",
+		PersistentPreRun:           nil,
+		PersistentPreRunE:          nil,
+		PreRun:                     nil,
+		PreRunE:                    nil,
+		Run:                        nil,
+		PostRun:                    nil,
+		PostRunE:                   nil,
+		PersistentPostRun:          nil,
+		PersistentPostRunE:         nil,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: false,
+		},
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd:   false,
+			DisableNoDescFlag:   false,
+			DisableDescriptions: false,
+			HiddenDefaultCmd:    false,
+		},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: 0,
+	}
+}
+
 func TestExecute_ReturnsError(t *testing.T) {
 	// Arrange
 	t.Parallel()
 
-	failing := &cobra.Command{
-		Use: "fail",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return errRootTest
-		},
-	}
+	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
+		return errRootTest
+	})
+
+	actual := cmd.NewRootCmd("test", "test", "test")
+	actual.SetArgs([]string{"fail"})
+	actual.AddCommand(failing)
 
 	// Act
-	err := cmd.Execute(failing)
+	err := actual.Execute()
 
 	// Assert
-	if err == nil || err.Error() != "boom" {
-		t.Fatalf("expected error 'boom', got %v", err)
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+
+	if !errors.Is(err, errRootTest) {
+		t.Fatalf("Expected error to be %v, got %v", errRootTest, err)
+	}
+}
+
+func TestExecuteWithNonexistentCommand(t *testing.T) {
+	t.Parallel()
+
+	cmd := cmd.NewRootCmd("test", "test", "test")
+	cmd.SetArgs([]string{"nonexistent"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+}
+
+func TestExecuteSuccess(t *testing.T) {
+	t.Parallel()
+
+	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
+		return nil
+	})
+
+	// Act
+	actual := cmd.NewRootCmd("test", "test", "test")
+	actual.SetArgs([]string{"ok"})
+	actual.AddCommand(succeeding)
+
+	err := actual.Execute()
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
 	}
 }
 
@@ -84,15 +170,16 @@ func TestExecute_ReturnsNil(t *testing.T) {
 	// Arrange
 	t.Parallel()
 
-	succeeding := &cobra.Command{
-		Use: "ok",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return nil
-		},
-	}
+	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
+		return nil
+	})
 
 	// Act
-	err := cmd.Execute(succeeding)
+	actual := cmd.NewRootCmd("test", "test", "test")
+	actual.SetArgs([]string{"ok"})
+	actual.AddCommand(succeeding)
+
+	err := actual.Execute()
 
 	// Assert
 	if err != nil {

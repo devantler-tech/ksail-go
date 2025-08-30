@@ -8,14 +8,12 @@ import (
 
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "up",
-		Short: "Start the Kubernetes cluster",
-		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
-		RunE:  handleUpRunE,
-	}
-
-	return cmd
+	return NewCobraCommand(
+		"up",
+		"Start the Kubernetes cluster",
+		`Start the Kubernetes cluster defined in the project configuration.`,
+		handleUpRunE,
+	)
 }
 
 // handleUpRunE handles the up command.

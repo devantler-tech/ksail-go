@@ -8,14 +8,12 @@ import (
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start a stopped Kubernetes cluster",
-		Long:  `Start a previously stopped Kubernetes cluster.`,
-		RunE:  handleStartRunE,
-	}
-
-	return cmd
+	return NewCobraCommand(
+		"start",
+		"Start a stopped Kubernetes cluster",
+		`Start a previously stopped Kubernetes cluster.`,
+		handleStartRunE,
+	)
 }
 
 // handleStartRunE handles the start command.
