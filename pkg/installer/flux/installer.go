@@ -38,6 +38,7 @@ func (b *FluxInstaller) Install() error {
 		return fmt.Errorf("failed to install Flux operator: %w", err)
 	}
 
+	// FluxInstance sync configuration will be added in future iterations
 
 	return nil
 }
