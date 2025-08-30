@@ -11,8 +11,6 @@ import (
 )
 
 func TestSilenceStdout_Success(t *testing.T) {
-	t.Parallel()
-
 	// Test that output is indeed silenced
 	var executed bool
 
@@ -29,8 +27,6 @@ func TestSilenceStdout_Success(t *testing.T) {
 }
 
 func TestSilenceStdout_Error(t *testing.T) {
-	t.Parallel()
-
 	expectedErr := errors.New("test error")
 	err := quiet.SilenceStdout(func() error {
 		fmt.Println("This should not appear in test output")
@@ -43,8 +39,6 @@ func TestSilenceStdout_Error(t *testing.T) {
 }
 
 func TestSilenceStdout_StdoutRestored(t *testing.T) {
-	t.Parallel()
-
 	originalStdout := os.Stdout
 
 	err := quiet.SilenceStdout(func() error {
