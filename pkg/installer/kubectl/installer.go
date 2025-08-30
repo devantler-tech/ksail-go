@@ -29,6 +29,11 @@ var applySetCRDYAML []byte
 //go:embed assets/apply-set-cr.yaml
 var applySetCRYAML []byte
 
+// boolPtr returns a pointer to the given boolean value.
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 // createDefaultDeleteOptions creates a metav1.DeleteOptions with all fields explicitly set.
 func createDefaultDeleteOptions() metav1.DeleteOptions {
 	return metav1.DeleteOptions{
@@ -36,15 +41,12 @@ func createDefaultDeleteOptions() metav1.DeleteOptions {
 			Kind:       "",
 			APIVersion: "",
 		},
-		GracePeriodSeconds:                    nil,
-		Preconditions:                         nil,
-		OrphanDependents:                      nil,
-		PropagationPolicy:                     nil,
-		DryRun:                                nil,
-		IgnoreStoreReadErrorWithClusterBreakingPotential: func() *bool { b := false;
-
-			return &b
-		}(),
+		GracePeriodSeconds: nil,
+		Preconditions:      nil,
+		OrphanDependents:   nil,
+		PropagationPolicy:  nil,
+		DryRun:             nil,
+		IgnoreStoreReadErrorWithClusterBreakingPotential: boolPtr(false),
 	}
 }
 
@@ -233,22 +235,22 @@ func (b *KubectlInstaller) buildConfigOverrides() *clientcmd.ConfigOverrides {
 
 func (b *KubectlInstaller) buildAuthInfo() api.AuthInfo {
 	return api.AuthInfo{
-		LocationOfOrigin:         "",
-		ClientCertificate:        "",
-		ClientCertificateData:    nil,
-		ClientKey:                "",
-		ClientKeyData:            nil,
-		Token:                    "",
-		TokenFile:                "",
-		Impersonate:              "",
-		ImpersonateUID:           "",
-		ImpersonateGroups:        nil,
-		ImpersonateUserExtra:     nil,
-		Username:                 "",
-		Password:                 "",
-		AuthProvider:             nil,
-		Exec:                     nil,
-		Extensions:               nil,
+		LocationOfOrigin:      "",
+		ClientCertificate:     "",
+		ClientCertificateData: nil,
+		ClientKey:             "",
+		ClientKeyData:         nil,
+		Token:                 "",
+		TokenFile:             "",
+		Impersonate:           "",
+		ImpersonateUID:        "",
+		ImpersonateGroups:     nil,
+		ImpersonateUserExtra:  nil,
+		Username:              "",
+		Password:              "",
+		AuthProvider:          nil,
+		Exec:                  nil,
+		Extensions:            nil,
 	}
 }
 
@@ -338,12 +340,12 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
 			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			ResourceVersion: "",
-		})
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "",
+					APIVersion: "",
+				},
+				ResourceVersion: "",
+			})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					return false, nil
