@@ -23,7 +23,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 		{
 			name: "container engine ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(t.Context()).Return(types.Ping{}, nil)
+				m.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 			},
 			engineName:  "Docker",
 			expectReady: true,
@@ -32,7 +32,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 		{
 			name: "container engine not ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(t.Context()).Return(types.Ping{}, assert.AnError)
+				m.EXPECT().Ping(context.Background()).Return(types.Ping{}, assert.AnError)
 			},
 			engineName:  "Docker",
 			expectReady: false,
