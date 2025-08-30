@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	return NewCobraCommand(
+	return factory.NewCobraCommand(
 		"start",
 		"Start a stopped Kubernetes cluster",
 		`Start a previously stopped Kubernetes cluster.`,

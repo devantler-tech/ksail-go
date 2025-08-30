@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewStatusCmd creates and returns the status command.
 func NewStatusCmd() *cobra.Command {
-	return NewCobraCommand(
+	return factory.NewCobraCommand(
 		"status",
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,

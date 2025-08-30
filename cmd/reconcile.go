@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
-	return NewCobraCommand(
+	return factory.NewCobraCommand(
 		"reconcile",
 		"Reconcile workloads in the Kubernetes cluster",
 		`Reconcile workloads in the Kubernetes cluster to match the desired state

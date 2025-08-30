@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	return NewCobraCommandWithFlags(
+	return factory.NewCobraCommandWithFlags(
 		"init",
 		"Initialize a new KSail project",
 		`Initialize a new KSail project with the specified configuration options.`,

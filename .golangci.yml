@@ -28,8 +28,3 @@ linters:
             - github.com/stretchr/testify
             - sigs.k8s.io
             - k8s.io
-  exclusions:
-    rules:
-      - path: "cmd/.+"
-        linters:
-          - forbidigo

@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return NewCobraCommand(
+	return factory.NewCobraCommand(
 		"down",
 		"Stop and remove the Kubernetes cluster",
 		`Stop and remove the Kubernetes cluster defined in the project configuration.`,

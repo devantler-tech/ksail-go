@@ -2,13 +2,14 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	return NewCobraCommandWithFlags(
+	return factory.NewCobraCommandWithFlags(
 		"list",
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,

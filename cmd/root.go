@@ -4,6 +4,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +61,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		DisableAutoGenTag:          false,
 		DisableFlagsInUseLine:      false,
 		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: suggestionsMinimumDistance,
+		SuggestionsMinimumDistance: factory.SuggestionsMinimumDistance,
 	}
 
 	// Set version if available

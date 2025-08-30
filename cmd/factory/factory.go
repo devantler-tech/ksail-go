@@ -1,9 +1,9 @@
-// Package cmd provides the command-line interface for KSail.
-package cmd
+// Package factory provides factory functions for creating CLI commands.
+package factory
 
 import "github.com/spf13/cobra"
 
-const suggestionsMinimumDistance = 2
+const SuggestionsMinimumDistance = 2
 
 // NewCobraCommand creates a cobra.Command with all fields explicitly set to avoid exhaustruct linting issues.
 func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string) error) *cobra.Command {
@@ -50,7 +50,7 @@ func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string
 		DisableAutoGenTag:          false,
 		DisableFlagsInUseLine:      false,
 		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: suggestionsMinimumDistance,
+		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 }
 
