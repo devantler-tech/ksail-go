@@ -91,7 +91,6 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
 	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
 
-	// #nosec G304 -- Kubeconfig path is controlled by application configuration
 	data, err := os.ReadFile(kubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
