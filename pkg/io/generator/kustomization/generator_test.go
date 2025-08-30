@@ -143,7 +143,6 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 	return v1alpha1.NewCluster(
 		v1alpha1.WithMetadataName(name),
 		v1alpha1.WithSpecDistribution(v1alpha1.DistributionKind),
-		v1alpha1.WithSpecContainerEngine(v1alpha1.ContainerEngineDocker),
 	)
 }
 

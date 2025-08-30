@@ -17,6 +17,7 @@ linters:
             - github.com/k3d-io/k3d
             - github.com/spf13/cobra
             - github.com/stretchr/testify
+            - github.com/weaveworks/eksctl
             - sigs.k8s.io
             - k8s.io
     exhaustruct:
