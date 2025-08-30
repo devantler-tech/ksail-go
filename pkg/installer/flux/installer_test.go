@@ -131,7 +131,7 @@ func TestFluxInstaller_Uninstall_Error_MalformedKubeconfig(t *testing.T) {
 
 	// Assert
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
+	assert.Contains(t, err.Error(), "failed to create Helm client")
 }
 
 func TestFluxInstaller_Install_ValidKubeconfig_ConnectError(t *testing.T) {

@@ -21,10 +21,7 @@ func CreateMalformedKubeconfigFile(t *testing.T) string {
 this is not valid yaml: [
 `
 
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
-	
-	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 	
@@ -39,10 +36,7 @@ this is not valid yaml: [
 func CreateEmptyKubeconfigFile(t *testing.T) string {
 	t.Helper()
 
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
-	
-	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 	
@@ -76,10 +70,7 @@ users:
     token: test-token
 `
 
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err)
-	
-	tmpDir, err := os.MkdirTemp(homeDir, "ksail-test-*")
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 	
