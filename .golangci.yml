@@ -47,16 +47,6 @@ linters:
         - '.+/helmclient\.Options$'
         - '.+helmclient\.Options$'
         - 'github\.com/mittwald/go-helm-client\.Options$'
-    ireturn:
-      allow:
-        - anon
-        - error
-        - empty
-        - stdlib
-    wsl_v5:
-      allow-first-in-block: true
-      allow-whole-block: false
-      branch-max-lines: 2
 
   exclusions:
     rules:
