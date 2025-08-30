@@ -74,6 +74,7 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 		Atomic:             true,
 		UpgradeCRDs:        true,
 		Timeout:            b.timeout,
+		// Only set fields that have valid zero values for their types
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
