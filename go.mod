@@ -4,11 +4,13 @@ go 1.24.0
 
 require (
 	github.com/docker/docker v28.3.3+incompatible
+	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
 	github.com/gkampitakis/go-snaps v0.5.14
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/mittwald/go-helm-client v0.12.18
 	github.com/opencontainers/image-spec v1.1.1
+	github.com/rancher/wharfie v0.6.2
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apiextensions-apiserver v0.34.0
@@ -46,7 +48,6 @@ require (
 	github.com/docker/cli v28.3.3+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
-	github.com/docker/go-connections v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/evanphx/json-patch v5.9.11+incompatible // indirect
@@ -121,7 +122,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.23.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
-	github.com/rancher/wharfie v0.6.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/rubenv/sql-migrate v1.8.0 // indirect

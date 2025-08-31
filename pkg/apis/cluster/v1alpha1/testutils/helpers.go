@@ -4,14 +4,29 @@ package testutils
 import (
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/k8s"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateDefaultObjectMeta creates a default metav1.ObjectMeta for testing.
 func CreateDefaultObjectMeta(name string) metav1.ObjectMeta {
-	return k8s.NewObjectMeta(name)
+	return metav1.ObjectMeta{
+		Name:                       name,
+		GenerateName:               "",
+		Namespace:                  "",
+		SelfLink:                   "",
+		UID:                        "",
+		ResourceVersion:            "",
+		Generation:                 0,
+		CreationTimestamp:          metav1.Time{Time: time.Time{}},
+		DeletionTimestamp:          nil,
+		DeletionGracePeriodSeconds: nil,
+		Labels:                     map[string]string{},
+		Annotations:                map[string]string{},
+		OwnerReferences:            []metav1.OwnerReference{},
+		Finalizers:                 []string{},
+		ManagedFields:              []metav1.ManagedFieldsEntry{},
+	}
 }
 
 // CreateDefaultOptions creates a default v1alpha1.Options for testing.
@@ -54,5 +69,6 @@ func CreateDefaultSpec() v1alpha1.Spec {
 func CreateDefaultK3dSpec() v1alpha1.Spec {
 	spec := CreateDefaultSpec()
 	spec.Distribution = v1alpha1.DistributionK3d
+
 	return spec
 }
