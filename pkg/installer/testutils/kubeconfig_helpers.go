@@ -17,12 +17,10 @@ const (
 func createKubeconfigFileWithContent(t *testing.T, content string) string {
 	t.Helper()
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "ksail-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(tmpDir) })
-	
+	tmpDir := t.TempDir()
+
 	kubeconfigPath := tmpDir + "/kubeconfig"
-	err = os.WriteFile(kubeconfigPath, []byte(content), DefaultFilePermissions)
+	err := os.WriteFile(kubeconfigPath, []byte(content), DefaultFilePermissions)
 	require.NoError(t, err)
 
 	return kubeconfigPath

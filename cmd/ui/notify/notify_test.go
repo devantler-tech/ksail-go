@@ -2,6 +2,7 @@ package notify_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -215,11 +216,13 @@ func TestActivityln(t *testing.T) {
 	}
 }
 
-// errorWriter is a mock writer that always returns an error
+// errorWriter is a mock writer that always returns an error.
 type errorWriter struct{}
 
-func (ew errorWriter) Write(p []byte) (n int, err error) {
-	return 0, fmt.Errorf("mock write error")
+var errMockWrite = errors.New("mock write error")
+
+func (ew errorWriter) Write(_ []byte) (int, error) {
+	return 0, fmt.Errorf("%w", errMockWrite)
 }
 
 func TestHandleNotifyError_WithError(t *testing.T) {
@@ -228,8 +231,8 @@ func TestHandleNotifyError_WithError(t *testing.T) {
 	// Arrange
 	// We'll capture stderr to verify the error handling
 	oldStderr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
+	readPipe, writePipe, _ := os.Pipe()
+	os.Stderr = writePipe
 
 	// Use an errorWriter to trigger the error path in handleNotifyError
 	errWriter := errorWriter{}
@@ -238,12 +241,16 @@ func TestHandleNotifyError_WithError(t *testing.T) {
 	notify.Error(errWriter, "test message")
 
 	// Restore stderr
-	w.Close()
+	err := writePipe.Close()
+	if err != nil {
+		t.Fatalf("failed to close writePipe: %v", err)
+	}
+
 	os.Stderr = oldStderr
 
 	// Read what was written to stderr
 	buf := make([]byte, 1024)
-	n, _ := r.Read(buf)
+	n, _ := readPipe.Read(buf)
 	output := string(buf[:n])
 
 	// Assert

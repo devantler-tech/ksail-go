@@ -19,12 +19,13 @@ linters:
           list-mode: strict
           allow:
             - $gostd
-            - github.com/devantler-tech/ksail-go
-            - github.com/docker/docker
+            - github.com/devantler-tech
+            - github.com/docker
             - github.com/fatih/color
-            - github.com/k3d-io/k3d
+            - github.com/k3d-io
             - github.com/mittwald/go-helm-client
+            - github.com/rancher
             - github.com/spf13/cobra
             - github.com/stretchr/testify
-            - sigs.k8s.io
             - k8s.io
+            - sigs.k8s.io

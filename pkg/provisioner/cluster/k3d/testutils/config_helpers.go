@@ -5,9 +5,9 @@ import (
 	"net/netip"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/k3d-io/k3d/v5/pkg/types"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/k3d-io/k3d/v5/pkg/types"
 	wharfie "github.com/rancher/wharfie/pkg/registries"
 )
 
@@ -69,6 +69,7 @@ func CreateClusterWithKubeAPI(name string) *types.Cluster {
 		Node:   nil,
 		Config: nil,
 	}
+
 	return cluster
 }
 
@@ -81,20 +82,20 @@ func CreateDefaultClusterConfig() *v1alpha5.ClusterConfig {
 		},
 		Cluster: *CreateDefaultCluster(""),
 		ClusterCreateOpts: types.ClusterCreateOpts{
-			DisableImageVolume:   false,
-			WaitForServer:        false,
-			Timeout:              0,
-			DisableLoadBalancer:  false,
-			GPURequest:           "",
-			ServersMemory:        "",
-			AgentsMemory:         "",
-			NodeHooks:            nil,
-			GlobalLabels:         nil,
-			GlobalEnv:            nil,
-			HostAliases:          nil,
+			DisableImageVolume:  false,
+			WaitForServer:       false,
+			Timeout:             0,
+			DisableLoadBalancer: false,
+			GPURequest:          "",
+			ServersMemory:       "",
+			AgentsMemory:        "",
+			NodeHooks:           nil,
+			GlobalLabels:        nil,
+			GlobalEnv:           nil,
+			HostAliases:         nil,
 			Registries: struct {
-				Create *types.Registry                        `json:"create,omitempty"`
-				Use    []*types.Registry                      `json:"use,omitempty"`
+				Create *types.Registry   `json:"create,omitempty"`
+				Use    []*types.Registry `json:"use,omitempty"`
 				Config *wharfie.Registry `json:"config,omitempty"`
 			}{
 				Create: nil,
