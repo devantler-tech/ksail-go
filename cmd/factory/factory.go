@@ -3,6 +3,7 @@ package factory
 
 import "github.com/spf13/cobra"
 
+// SuggestionsMinimumDistance is the minimum edit distance to suggest a command.
 const SuggestionsMinimumDistance = 2
 
 // NewCobraCommand creates a cobra.Command with all fields explicitly set to avoid exhaustruct linting issues.
