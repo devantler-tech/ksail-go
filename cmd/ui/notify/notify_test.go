@@ -2,6 +2,8 @@ package notify_test
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 
 	notify "github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -210,5 +212,43 @@ func TestActivityln(t *testing.T) {
 	// Assert
 	if got != want {
 		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
+	}
+}
+
+// errorWriter is a mock writer that always returns an error
+type errorWriter struct{}
+
+func (ew errorWriter) Write(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("mock write error")
+}
+
+func TestHandleNotifyError_WithError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	// We'll capture stderr to verify the error handling
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	// Use an errorWriter to trigger the error path in handleNotifyError
+	errWriter := errorWriter{}
+
+	// Act
+	notify.Error(errWriter, "test message")
+
+	// Restore stderr
+	w.Close()
+	os.Stderr = oldStderr
+
+	// Read what was written to stderr
+	buf := make([]byte, 1024)
+	n, _ := r.Read(buf)
+	output := string(buf[:n])
+
+	// Assert
+	expectedErrorMsg := "notify: failed to print message: mock write error\n"
+	if output != expectedErrorMsg {
+		t.Fatalf("expected stderr output %q, got %q", expectedErrorMsg, output)
 	}
 }

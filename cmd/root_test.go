@@ -122,3 +122,49 @@ func TestExecuteSuccess(t *testing.T) {
 		t.Fatalf("Expected no error but got %v", err)
 	}
 }
+
+func TestExecute_WrapperSuccess(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
+		return nil
+	})
+
+	rootCmd := cmd.NewRootCmd("test", "test", "test")
+	rootCmd.SetArgs([]string{"ok"})
+	rootCmd.AddCommand(succeeding)
+
+	// Act
+	err := cmd.Execute(rootCmd)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+}
+
+func TestExecute_WrapperError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
+		return errRootTest
+	})
+
+	rootCmd := cmd.NewRootCmd("test", "test", "test")
+	rootCmd.SetArgs([]string{"fail"})
+	rootCmd.AddCommand(failing)
+
+	// Act
+	err := cmd.Execute(rootCmd)
+
+	// Assert
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+
+	if !errors.Is(err, errRootTest) {
+		t.Fatalf("Expected error to wrap %v, got %v", errRootTest, err)
+	}
+}
