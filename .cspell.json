@@ -16,6 +16,8 @@
     "Activityf",
     "Activityln",
     "APIV",
+    "k3dtestutils",
+    "clustertestutils",
     "Apiextensions",
     "apiextensions",
     "apiextensionsclient",
