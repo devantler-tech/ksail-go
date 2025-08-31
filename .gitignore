@@ -40,4 +40,4 @@ report/
 __MACOSX/
 
 # Go test coverage reports
-coverage.out
+coverage*.out
