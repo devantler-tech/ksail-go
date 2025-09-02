@@ -6,33 +6,6 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/spf13/cobra"
 )
-
-// assertBasicCommandProperties is a helper function to avoid code duplication in tests.
-func assertBasicCommandProperties(t *testing.T, cmd *cobra.Command, use, short, long string) {
-	t.Helper()
-
-	if cmd.Use != use {
-		t.Errorf("expected Use to be %q, got %q", use, cmd.Use)
-	}
-
-	if cmd.Short != short {
-		t.Errorf("expected Short to be %q, got %q", short, cmd.Short)
-	}
-
-	if cmd.Long != long {
-		t.Errorf("expected Long to be %q, got %q", long, cmd.Long)
-	}
-
-	if cmd.RunE == nil {
-		t.Error("expected RunE to be set")
-	}
-
-	if cmd.SuggestionsMinimumDistance != factory.SuggestionsMinimumDistance {
-		t.Errorf("expected SuggestionsMinimumDistance to be %d, got %d",
-			factory.SuggestionsMinimumDistance, cmd.SuggestionsMinimumDistance)
-	}
-}
-
 func TestNewCobraCommand(t *testing.T) {
 	t.Parallel()
 
@@ -84,5 +57,31 @@ func TestNewCobraCommandWithFlags(t *testing.T) {
 
 	if cmd.Flags().Lookup("test-flag") == nil {
 		t.Error("expected test-flag to be added by setupFlags")
+	}
+}
+
+// assertBasicCommandProperties is a helper function to avoid code duplication in tests.
+func assertBasicCommandProperties(t *testing.T, cmd *cobra.Command, use, short, long string) {
+	t.Helper()
+
+	if cmd.Use != use {
+		t.Errorf("expected Use to be %q, got %q", use, cmd.Use)
+	}
+
+	if cmd.Short != short {
+		t.Errorf("expected Short to be %q, got %q", short, cmd.Short)
+	}
+
+	if cmd.Long != long {
+		t.Errorf("expected Long to be %q, got %q", long, cmd.Long)
+	}
+
+	if cmd.RunE == nil {
+		t.Error("expected RunE to be set")
+	}
+
+	if cmd.SuggestionsMinimumDistance != factory.SuggestionsMinimumDistance {
+		t.Errorf("expected SuggestionsMinimumDistance to be %d, got %d",
+			factory.SuggestionsMinimumDistance, cmd.SuggestionsMinimumDistance)
 	}
 }
