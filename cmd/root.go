@@ -16,13 +16,12 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := factory.NewRootCobraCommand(
-		"ksail",
-		"SDK for operating and managing K8s clusters and workloads",
-		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
-			`from one simple command line tool.`,
-		handleRootRunE,
-	)
+	cmd := factory.NewCobraCommand("ksail", "SDK for operating and managing K8s clusters and workloads", `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
+			`from one simple command line tool.`, handleRootRunE)
+
+  // Silence errors and usage
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)

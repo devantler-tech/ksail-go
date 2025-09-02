@@ -6,7 +6,7 @@ import "github.com/spf13/cobra"
 // SuggestionsMinimumDistance is the minimum edit distance to suggest a command.
 const SuggestionsMinimumDistance = 2
 
-// NewCobraCommand creates a cobra.Command with all fields explicitly set to avoid exhaustruct linting issues.
+// NewCobraCommand creates a cobra.Command.
 func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string) error) *cobra.Command {
 	return &cobra.Command{
 		Use:                        use,
@@ -53,14 +53,6 @@ func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string
 		DisableSuggestions:         false,
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
-}
-
-// NewRootCobraCommand creates a cobra.Command configured for use as a root command.
-func NewRootCobraCommand(use, short, long string, runE func(*cobra.Command, []string) error) *cobra.Command {
-	cmd := NewCobraCommand(use, short, long, runE)
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
-	return cmd
 }
 
 // NewCobraCommandWithFlags creates a new cobra.Command with complete field initialization and flag setup.
