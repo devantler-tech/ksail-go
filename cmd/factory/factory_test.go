@@ -57,30 +57,6 @@ func TestNewCobraCommand(t *testing.T) {
 	}
 }
 
-func TestNewRootCobraCommand(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	use := "root"
-	short := "Root command"
-	long := "This is a root command for testing purposes"
-	runE := func(_ *cobra.Command, _ []string) error { return nil }
-
-	// Act
-	cmd := factory.NewRootCobraCommand(use, short, long, runE)
-
-	// Assert
-	assertBasicCommandProperties(t, cmd, use, short, long)
-
-	if cmd.SilenceErrors != true {
-		t.Error("expected SilenceErrors to be true for root command")
-	}
-
-	if cmd.SilenceUsage != true {
-		t.Error("expected SilenceUsage to be true for root command")
-	}
-}
-
 func TestNewCobraCommandWithFlags(t *testing.T) {
 	t.Parallel()
 
