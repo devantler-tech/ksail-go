@@ -9,7 +9,6 @@ import (
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
 	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,8 +21,8 @@ func TestNewFluxInstaller(t *testing.T) {
 	timeout := 5 * time.Minute
 
 	// Act
-  client :) fluxinstaller.Mock
-	installer := fluxinstaller.NewFluxInstaller(kubeconfig, context, timeout)
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client, kubeconfig, context, timeout)
 
 	// Assert
 	assert.NotNil(t, installer)
@@ -58,39 +57,27 @@ users:
 	writeErr := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), 0o600)
 	require.NoError(t, writeErr)
 
+	client := fluxinstaller.NewMockHelmClient(t)
 	installer := fluxinstaller.NewFluxInstaller(
+		client,
 		kubeconfigPath,
 		"test-context",
 		5*time.Second,
 	)
-
-	// Use mockery-generated mocks
-	mockOp := fluxinstaller.NewMockHelmOperator(t)
-	mockOp.
-		On("Install", mock.Anything, mock.AnythingOfType("*helmclient.ChartSpec")).
-		Return(nil)
-
-	mockFactory := fluxinstaller.NewMockHelmOperatorFactory(t)
-	mockFactory.
-		On("NewFromKubeConf", mock.AnythingOfType("*helmclient.KubeConfClientOptions")).
-		Return(mockOp, nil)
-
-	installer.SetFactory(mockFactory)
 
 	// Act
 	err = installer.Install()
 
 	// Assert
 	require.NoError(t, err)
-	mockOp.AssertExpectations(t)
-	mockFactory.AssertExpectations(t)
 }
 
 func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	installer := fluxinstaller.NewFluxInstaller(
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client,
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
@@ -108,7 +95,8 @@ func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	installer := fluxinstaller.NewFluxInstaller(
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client,
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
@@ -126,7 +114,8 @@ func TestFluxInstaller_Install_Error_EmptyKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	installer := fluxinstaller.NewFluxInstaller(
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client,
 		"", // empty kubeconfig path
 		"test-context",
 		5*time.Minute,
@@ -143,7 +132,8 @@ func TestFluxInstaller_Uninstall_Error_EmptyKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	installer := fluxinstaller.NewFluxInstaller(
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client,
 		"", // empty kubeconfig path
 		"test-context",
 		5*time.Minute,
@@ -160,8 +150,9 @@ func TestFluxInstaller_Install_Error_MalformedKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	client := fluxinstaller.NewMockHelmClient(t)
 	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(
+	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
@@ -179,8 +170,9 @@ func TestFluxInstaller_Uninstall_Error_MalformedKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	client := fluxinstaller.NewMockHelmClient(t)
 	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(
+	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
@@ -198,8 +190,9 @@ func TestFluxInstaller_Install_ValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	client := fluxinstaller.NewMockHelmClient(t)
 	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(
+	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"test-context",
 		1*time.Second, // Short timeout for faster test
@@ -219,8 +212,9 @@ func TestFluxInstaller_Uninstall_ValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+  client := fluxinstaller.NewMockHelmClient(t)
 	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(
+	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"test-context",
 		1*time.Second, // Short timeout for faster test
@@ -240,9 +234,9 @@ func TestFluxInstaller_EmptyContextName(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	// Empty context should use current-context from kubeconfig
-	installer := fluxinstaller.NewFluxInstaller(
+  client := fluxinstaller.NewMockHelmClient(t)
+  kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
+  installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"", // Empty context
 		1*time.Second,
