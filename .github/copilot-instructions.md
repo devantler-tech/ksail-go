@@ -45,7 +45,7 @@ Always reference these instructions first and fallback to search or bash command
   - **Primary linting tool**: This is the main linting tool used in CI and locally
   - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
   - **Auto-fix capability**: Automatically fixes formatting and style issues when run
-  - **IMPORTANT**: Takes 2-3 minutes to complete due to comprehensive security scanning and link checking
+  - **IMPORTANT**: Takes 5+ minutes to complete due to comprehensive security scanning and link checking (set timeout to 300+ seconds)
   - **Network dependencies**: May fail with timeouts if external links are unreachable (non-critical for code quality)
   - **Alternative**: `~/go/bin/golangci-lint run` if mega-linter-runner not available (takes ~34 seconds)
   - **Current State**: Clean codebase with 0 linting issues (mega-linter auto-fixes enabled)
