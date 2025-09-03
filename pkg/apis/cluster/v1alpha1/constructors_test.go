@@ -106,7 +106,7 @@ func createCustomSpec() v1alpha1.Spec {
 }
 
 func createDefaultOptions() v1alpha1.Options {
-	return clustertestutils.CreateDefaultOptions()
+	return clustertestutils.CreateDefaultSpecOptions()
 }
 
 func assertDefaultValues(t *testing.T, cluster *v1alpha1.Cluster) {

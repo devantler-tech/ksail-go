@@ -25,9 +25,10 @@ func TestNewKubectlInstaller(t *testing.T) {
 	kubeconfig := "~/.kube/config"
 	context := "test-context"
 	timeout := 5 * time.Minute
+	clientFactory := kubectlinstaller.NewMockClientFactoryInterface(t)
 
 	// Act
-	installer := kubectlinstaller.NewKubectlInstaller(kubeconfig, context, timeout)
+	installer := kubectlinstaller.NewKubectlInstaller(kubeconfig, context, timeout, clientFactory)
 
 	// Assert
 	assert.NotNil(t, installer)
@@ -285,6 +286,7 @@ func TestKubectlInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
+		kubectlinstaller.NewDefaultClientFactory(),
 	)
 
 	// Act
@@ -303,6 +305,7 @@ func TestKubectlInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
+		kubectlinstaller.NewDefaultClientFactory(),
 	)
 
 	// Act
@@ -322,6 +325,7 @@ func TestKubectlInstaller_BuildRESTConfig_ValidPath(t *testing.T) {
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
+		kubectlinstaller.NewDefaultClientFactory(),
 	)
 
 	// Act - test indirectly through Install
@@ -343,6 +347,7 @@ func TestKubectlInstaller_BuildRESTConfig_MalformedKubeconfig(t *testing.T) {
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
+		kubectlinstaller.NewDefaultClientFactory(),
 	)
 
 	// Act

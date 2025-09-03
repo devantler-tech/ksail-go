@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
+	k3dtestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d/testutils"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -133,7 +134,7 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 			Kind:       v1alpha1.Kind,
 		},
 		Metadata: clustertestutils.CreateDefaultObjectMeta(name),
-		Spec:     clustertestutils.CreateDefaultK3dSpec(),
+		Spec:     k3dtestutils.CreateDefaultK3dSpec(),
 	}
 }
 

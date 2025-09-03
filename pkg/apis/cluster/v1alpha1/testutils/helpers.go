@@ -29,8 +29,8 @@ func CreateDefaultObjectMeta(name string) metav1.ObjectMeta {
 	}
 }
 
-// CreateDefaultOptions creates a default v1alpha1.Options for testing.
-func CreateDefaultOptions() v1alpha1.Options {
+// CreateDefaultSpecOptions creates a default v1alpha1.Options for testing.
+func CreateDefaultSpecOptions() v1alpha1.Options {
 	return v1alpha1.Options{
 		Kind:      v1alpha1.OptionsKind{},
 		K3d:       v1alpha1.OptionsK3d{},
@@ -61,14 +61,6 @@ func CreateDefaultSpec() v1alpha1.Spec {
 		IngressController:  "",
 		GatewayController:  "",
 		ReconciliationTool: "",
-		Options:            CreateDefaultOptions(),
+		Options:            CreateDefaultSpecOptions(),
 	}
-}
-
-// CreateDefaultK3dSpec creates a default v1alpha1.Spec configured for K3d for testing.
-func CreateDefaultK3dSpec() v1alpha1.Spec {
-	spec := CreateDefaultSpec()
-	spec.Distribution = v1alpha1.DistributionK3d
-
-	return spec
 }

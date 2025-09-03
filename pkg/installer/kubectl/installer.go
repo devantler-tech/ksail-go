@@ -32,18 +32,9 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-// createDefaultDeleteOptions creates a metav1.DeleteOptions with all fields explicitly set.
+// createDefaultDeleteOptions creates a metav1.DeleteOptions with minimal necessary fields.
 func createDefaultDeleteOptions() metav1.DeleteOptions {
 	return metav1.DeleteOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		GracePeriodSeconds: nil,
-		Preconditions:      nil,
-		OrphanDependents:   nil,
-		PropagationPolicy:  nil,
-		DryRun:             nil,
 		IgnoreStoreReadErrorWithClusterBreakingPotential: boolPtr(false),
 	}
 }
@@ -60,23 +51,19 @@ type KubectlInstaller struct {
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(kubeconfig, context string, timeout time.Duration) *KubectlInstaller {
-	return &KubectlInstaller{
-		kubeconfig:    kubeconfig,
-		context:       context,
-		timeout:       timeout,
-		clientFactory: NewDefaultClientFactory(),
-	}
-}
-
-// NewKubectlInstallerWithFactory creates a new kubectl installer instance with a custom client factory.
-func NewKubectlInstallerWithFactory(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactoryInterface) *KubectlInstaller {
+func NewKubectlInstaller(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactoryInterface) *KubectlInstaller {
 	return &KubectlInstaller{
 		kubeconfig:    kubeconfig,
 		context:       context,
 		timeout:       timeout,
 		clientFactory: clientFactory,
 	}
+}
+
+// NewKubectlInstallerWithFactory creates a new kubectl installer instance with a custom client factory.
+// Deprecated: Use NewKubectlInstaller instead.
+func NewKubectlInstallerWithFactory(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactoryInterface) *KubectlInstaller {
+	return NewKubectlInstaller(kubeconfig, context, timeout, clientFactory)
 }
 
 // Install ensures the ApplySet CRD and its parent CR exist.
@@ -142,13 +129,7 @@ func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err = apiExtClient.Get(ctx, crdName, metav1.GetOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		ResourceVersion: "",
-	})
+	_, err = apiExtClient.Get(ctx, crdName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		err = b.applyCRD(ctx, apiExtClient)
 		if err != nil {
@@ -180,13 +161,7 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 
 	const applySetName = "ksail"
 
-	_, err = dynClient.Get(ctx, applySetName, metav1.GetOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		ResourceVersion: "",
-	})
+	_, err = dynClient.Get(ctx, applySetName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		err = b.applyApplySetCR(ctx, dynClient, applySetName)
 		if err != nil {
@@ -216,75 +191,21 @@ func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
 
 func (b *KubectlInstaller) buildClientConfigLoadingRules(kubeconfigPath string) *clientcmd.ClientConfigLoadingRules {
 	return &clientcmd.ClientConfigLoadingRules{
-		ExplicitPath:        kubeconfigPath,
-		Precedence:          nil,
-		MigrationRules:      nil,
-		DoNotResolvePaths:   false,
-		DefaultClientConfig: nil,
-		WarnIfAllMissing:    false,
-		Warner:              nil,
+		ExplicitPath: kubeconfigPath,
 	}
 }
 
 func (b *KubectlInstaller) buildConfigOverrides() *clientcmd.ConfigOverrides {
 	overrides := &clientcmd.ConfigOverrides{
-		AuthInfo:        b.buildAuthInfo(),
-		ClusterDefaults: b.buildCluster(),
-		ClusterInfo:     b.buildCluster(),
-		Context:         b.buildContext(),
-		CurrentContext:  "",
-		Timeout:         "",
+		AuthInfo:     api.AuthInfo{},
+		ClusterInfo:  api.Cluster{},
+		Context:      api.Context{},
 	}
 	if b.context != "" {
 		overrides.CurrentContext = b.context
 	}
 
 	return overrides
-}
-
-func (b *KubectlInstaller) buildAuthInfo() api.AuthInfo {
-	return api.AuthInfo{
-		LocationOfOrigin:      "",
-		ClientCertificate:     "",
-		ClientCertificateData: nil,
-		ClientKey:             "",
-		ClientKeyData:         nil,
-		Token:                 "",
-		TokenFile:             "",
-		Impersonate:           "",
-		ImpersonateUID:        "",
-		ImpersonateGroups:     nil,
-		ImpersonateUserExtra:  nil,
-		Username:              "",
-		Password:              "",
-		AuthProvider:          nil,
-		Exec:                  nil,
-		Extensions:            nil,
-	}
-}
-
-func (b *KubectlInstaller) buildCluster() api.Cluster {
-	return api.Cluster{
-		LocationOfOrigin:         "",
-		Server:                   "",
-		TLSServerName:            "",
-		InsecureSkipTLSVerify:    false,
-		CertificateAuthority:     "",
-		CertificateAuthorityData: nil,
-		ProxyURL:                 "",
-		DisableCompression:       false,
-		Extensions:               nil,
-	}
-}
-
-func (b *KubectlInstaller) buildContext() api.Context {
-	return api.Context{
-		LocationOfOrigin: "",
-		Cluster:          "",
-		AuthInfo:         "",
-		Namespace:        "",
-		Extensions:       nil,
-	}
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
@@ -296,41 +217,19 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsCli
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err = client.Create(ctx, &crd, metav1.CreateOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		DryRun:          nil,
-		FieldManager:    "",
-		FieldValidation: "",
-	})
+	_, err = client.Create(ctx, &crd, metav1.CreateOptions{})
 	if err == nil {
 		return nil
 	}
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := client.Get(ctx, crd.Name, metav1.GetOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			ResourceVersion: "",
-		})
+		existing, getErr := client.Get(ctx, crd.Name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing CRD for update: %w", getErr)
 		}
 
 		crd.ResourceVersion = existing.ResourceVersion
 
-		_, uerr := client.Update(ctx, &crd, metav1.UpdateOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			DryRun:          nil,
-			FieldManager:    "",
-			FieldValidation: "",
-		})
+		_, uerr := client.Update(ctx, &crd, metav1.UpdateOptions{})
 		if uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
@@ -351,13 +250,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
-			crd, err := client.Get(ctx, name, metav1.GetOptions{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "",
-					APIVersion: "",
-				},
-				ResourceVersion: "",
-			})
+			crd, err := client.Get(ctx, name, metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					return false, nil
@@ -402,41 +295,19 @@ func (b *KubectlInstaller) applyApplySetCR(
 	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	applySetObj.SetName(name)
 
-	_, err = dyn.Create(ctx, &applySetObj, metav1.CreateOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		DryRun:          nil,
-		FieldManager:    "",
-		FieldValidation: "",
-	})
+	_, err = dyn.Create(ctx, &applySetObj, metav1.CreateOptions{})
 	if err == nil {
 		return nil
 	}
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := dyn.Get(ctx, name, metav1.GetOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			ResourceVersion: "",
-		})
+		existing, getErr := dyn.Get(ctx, name, metav1.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing ApplySet: %w", getErr)
 		}
 
 		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		_, uerr := dyn.Update(ctx, &applySetObj, metav1.UpdateOptions{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "",
-				APIVersion: "",
-			},
-			DryRun:          nil,
-			FieldManager:    "",
-			FieldValidation: "",
-		})
+		_, uerr := dyn.Update(ctx, &applySetObj, metav1.UpdateOptions{})
 		if uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}
