@@ -4,6 +4,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/spf13/cobra"
 )
@@ -15,15 +16,12 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ksail",
-		Short: "SDK for operating and managing K8s clusters and workloads",
-		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
-			`from one simple command line tool.`,
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		RunE:          handleRootRunE,
-	}
+	cmd := factory.NewCobraCommand("ksail", "SDK for operating and managing K8s clusters and workloads", `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
+		`from one simple command line tool.`, handleRootRunE)
+
+	// Silence errors and usage
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)

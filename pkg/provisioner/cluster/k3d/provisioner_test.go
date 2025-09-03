@@ -2,12 +2,16 @@ package k3dprovisioner_test
 
 import (
 	"errors"
+	"net/netip"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
+	"github.com/docker/go-connections/nat"
+	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/types"
+	wharfie "github.com/rancher/wharfie/pkg/registries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -270,11 +274,101 @@ func newK3dProvisionerForTest(
 	clientProvider := k3dprovisioner.NewMockK3dClientProvider(t)
 	configProvider := k3dprovisioner.NewMockK3dConfigProvider(t)
 
-	cfg := &v1alpha5.SimpleConfig{}
-	cfg.Name = "cfg-name"
+	cfg := buildTestSimpleConfig()
 	provisioner := k3dprovisioner.NewK3dClusterProvisioner(cfg, clientProvider, configProvider)
 
 	return provisioner, clientProvider, configProvider
+}
+
+func buildTestSimpleConfig() *v1alpha5.SimpleConfig {
+	cfg := &v1alpha5.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "",
+		},
+		Servers:      0,
+		Agents:       0,
+		ExposeAPI:    buildTestExposureOpts(),
+		Image:        "",
+		Network:      "",
+		Subnet:       "",
+		ClusterToken: "",
+		Volumes:      nil,
+		Ports:        nil,
+		Options:      buildTestConfigOptions(),
+		Env:          nil,
+		Registries:   buildTestRegistries(),
+		HostAliases:  nil,
+		Files:        nil,
+	}
+	cfg.Name = "cfg-name"
+
+	return cfg
+}
+
+func buildTestExposureOpts() v1alpha5.SimpleExposureOpts {
+	return v1alpha5.SimpleExposureOpts{
+		Host:     "",
+		HostIP:   "",
+		HostPort: "",
+	}
+}
+
+func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
+	return v1alpha5.SimpleConfigOptions{
+		K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
+			Wait:                false,
+			Timeout:             0,
+			DisableLoadbalancer: false,
+			DisableImageVolume:  false,
+			NoRollback:          false,
+			NodeHookActions:     nil,
+			Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
+				ConfigOverrides: nil,
+			},
+		},
+		K3sOptions:        buildTestK3sOptions(),
+		KubeconfigOptions: buildTestKubeconfigOptions(),
+		Runtime:           buildTestRuntimeOptions(),
+	}
+}
+
+
+
+func buildTestK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
+	return v1alpha5.SimpleConfigOptionsK3s{
+		ExtraArgs:  nil,
+		NodeLabels: nil,
+	}
+}
+
+func buildTestKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
+	return v1alpha5.SimpleConfigOptionsKubeconfig{
+		UpdateDefaultKubeconfig: false,
+		SwitchCurrentContext:    false,
+	}
+}
+
+func buildTestRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
+	return v1alpha5.SimpleConfigOptionsRuntime{
+		GPURequest:    "",
+		ServersMemory: "",
+		AgentsMemory:  "",
+		HostPidMode:   false,
+		Labels:        nil,
+		Ulimits:       nil,
+	}
+}
+
+func buildTestRegistries() v1alpha5.SimpleConfigRegistries {
+	return v1alpha5.SimpleConfigRegistries{
+		Use:    nil,
+		Create: nil,
+		Config: "",
+	}
 }
 
 type expectK3dProviderFn func(*k3dprovisioner.MockK3dClientProvider, *k3dprovisioner.MockK3dConfigProvider, string)
@@ -340,7 +434,7 @@ func runK3dClusterOpErrorAfterGet(
 ) {
 	t.Helper()
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	cluster := &types.Cluster{Name: "my-cluster"}
+	cluster := createClusterWithKubeAPI("my-cluster")
 	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.Anything).Return(cluster, nil)
 	expectOp(clientProvider, cluster)
 
@@ -356,7 +450,7 @@ func expectTransformSimpleToClusterConfigOK(configProvider *k3dprovisioner.MockK
 		mock.Anything,
 		mock.Anything,
 		"k3d.yaml",
-	).Return(&v1alpha5.ClusterConfig{}, nil)
+	).Return(createDefaultClusterConfig(), nil)
 }
 
 // expectTransformSimpleToClusterConfigErr sets up a failing TransformSimpleToClusterConfig expectation.
@@ -372,10 +466,94 @@ func expectTransformSimpleToClusterConfigErr(configProvider *k3dprovisioner.Mock
 
 // expectClusterGetByName sets up ClusterGet to return a cluster with the given name and returns the cluster.
 func expectClusterGetByName(clientProvider *k3dprovisioner.MockK3dClientProvider, name string) *types.Cluster {
-	cluster := &types.Cluster{Name: name}
+	cluster := createDefaultCluster(name)
 	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.MatchedBy(func(c *types.Cluster) bool {
 		return c.Name == name
 	})).Return(cluster, nil)
 
 	return cluster
+}
+
+// createDefaultCluster creates a default types.Cluster for testing.
+func createDefaultCluster(name string) *types.Cluster {
+	return &types.Cluster{
+		Name: name,
+		Network: types.ClusterNetwork{
+			Name:     "",
+			ID:       "",
+			External: false,
+			IPAM: types.IPAM{
+				IPPrefix: netip.Prefix{},
+				IPsUsed:  nil,
+				Managed:  false,
+			},
+			Members: nil,
+		},
+		Token:              "",
+		Nodes:              nil,
+		InitNode:           nil,
+		ExternalDatastore:  nil,
+		KubeAPI:            nil,
+		ServerLoadBalancer: nil,
+		ImageVolume:        "",
+		Volumes:            nil,
+	}
+}
+
+// createClusterWithKubeAPI creates a cluster with KubeAPI configuration for testing.
+func createClusterWithKubeAPI(name string) *types.Cluster {
+	cluster := createDefaultCluster(name)
+	cluster.KubeAPI = &types.ExposureOpts{
+		PortMapping: nat.PortMapping{
+			Port: "",
+			Binding: nat.PortBinding{
+				HostIP:   "",
+				HostPort: "",
+			},
+		},
+		Host: "",
+	}
+	cluster.ServerLoadBalancer = &types.Loadbalancer{
+		Node:   nil,
+		Config: nil,
+	}
+
+	return cluster
+}
+
+// createDefaultClusterConfig creates a default v1alpha5.ClusterConfig for testing.
+func createDefaultClusterConfig() *v1alpha5.ClusterConfig {
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: configtypes.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		Cluster: *createDefaultCluster(""),
+		ClusterCreateOpts: types.ClusterCreateOpts{
+			DisableImageVolume:  false,
+			WaitForServer:       false,
+			Timeout:             0,
+			DisableLoadBalancer: false,
+			GPURequest:          "",
+			ServersMemory:       "",
+			AgentsMemory:        "",
+			NodeHooks:           nil,
+			GlobalLabels:        nil,
+			GlobalEnv:           nil,
+			HostAliases:         nil,
+			Registries: struct {
+				Create *types.Registry   `json:"create,omitempty"`
+				Use    []*types.Registry `json:"use,omitempty"`
+				Config *wharfie.Registry `json:"config,omitempty"`
+			}{
+				Create: nil,
+				Use:    nil,
+				Config: nil,
+			},
+		},
+		KubeconfigOpts: v1alpha5.SimpleConfigOptionsKubeconfig{
+			UpdateDefaultKubeconfig: false,
+			SwitchCurrentContext:    false,
+		},
+	}
 }

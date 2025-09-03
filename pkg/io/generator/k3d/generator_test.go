@@ -6,6 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -126,17 +127,16 @@ func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 
 // createTestCluster creates a minimal test cluster configuration.
 func createTestCluster(name string) *v1alpha1.Cluster {
+	spec := clustertestutils.CreateDefaultSpec()
+	spec.Distribution = v1alpha1.DistributionK3d
+
 	return &v1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: v1alpha1.Spec{
-			Distribution: v1alpha1.DistributionK3d,
-		},
+		Metadata: clustertestutils.CreateDefaultClusterMetadata(name),
+		Spec:     spec,
 	}
 }
 

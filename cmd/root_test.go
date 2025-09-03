@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -60,42 +61,110 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
+// newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
+func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
+	return factory.NewCobraCommand(use, "", "", runE)
+}
+
 func TestExecute_ReturnsError(t *testing.T) {
 	// Arrange
 	t.Parallel()
 
-	failing := &cobra.Command{
-		Use: "fail",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return errRootTest
-		},
-	}
+	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
+		return errRootTest
+	})
+
+	actual := cmd.NewRootCmd("test", "test", "test")
+	actual.SetArgs([]string{"fail"})
+	actual.AddCommand(failing)
 
 	// Act
-	err := cmd.Execute(failing)
+	err := actual.Execute()
 
 	// Assert
-	if err == nil || err.Error() != "boom" {
-		t.Fatalf("expected error 'boom', got %v", err)
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+
+	if !errors.Is(err, errRootTest) {
+		t.Fatalf("Expected error to be %v, got %v", errRootTest, err)
 	}
 }
 
-func TestExecute_ReturnsNil(t *testing.T) {
-	// Arrange
+func TestExecuteWithNonexistentCommand(t *testing.T) {
 	t.Parallel()
 
-	succeeding := &cobra.Command{
-		Use: "ok",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return nil
-		},
+	cmd := cmd.NewRootCmd("test", "test", "test")
+	cmd.SetArgs([]string{"nonexistent"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("Expected error but got none")
 	}
+}
+
+func TestExecuteSuccess(t *testing.T) {
+	t.Parallel()
+
+	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
+		return nil
+	})
 
 	// Act
-	err := cmd.Execute(succeeding)
+	actual := cmd.NewRootCmd("test", "test", "test")
+	actual.SetArgs([]string{"ok"})
+	actual.AddCommand(succeeding)
+
+	err := actual.Execute()
 
 	// Assert
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("Expected no error but got %v", err)
+	}
+}
+
+func TestExecute_WrapperSuccess(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
+		return nil
+	})
+
+	rootCmd := cmd.NewRootCmd("test", "test", "test")
+	rootCmd.SetArgs([]string{"ok"})
+	rootCmd.AddCommand(succeeding)
+
+	// Act
+	err := cmd.Execute(rootCmd)
+
+	// Assert
+	if err != nil {
+		t.Fatalf("Expected no error but got %v", err)
+	}
+}
+
+func TestExecute_WrapperError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
+		return errRootTest
+	})
+
+	rootCmd := cmd.NewRootCmd("test", "test", "test")
+	rootCmd.SetArgs([]string{"fail"})
+	rootCmd.AddCommand(failing)
+
+	// Act
+	err := cmd.Execute(rootCmd)
+
+	// Assert
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+
+	if !errors.Is(err, errRootTest) {
+		t.Fatalf("Expected error to wrap %v, got %v", errRootTest, err)
 	}
 }

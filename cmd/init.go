@@ -2,24 +2,23 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize a new KSail project",
-		Long:  `Initialize a new KSail project with the specified configuration options.`,
-		RunE:  handleInitRunE,
-	}
-
-	// Add flags for initialization options
-	cmd.Flags().String("container-engine", "Docker", "Container engine to use (Docker, Podman)")
-	cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d)")
-
-	return cmd
+	return factory.NewCobraCommandWithFlags(
+		"init",
+		"Initialize a new KSail project",
+		`Initialize a new KSail project with the specified configuration options.`,
+		handleInitRunE,
+		func(cmd *cobra.Command) {
+			cmd.Flags().String("container-engine", "Docker", "Container engine to use (Docker, Podman)")
+			cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d)")
+		},
+	)
 }
 
 // handleInitRunE handles the init command.

@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,8 +45,72 @@ func TestSetDefaults(t *testing.T) {
 	t.Parallel()
 
 	// Test all defaults applied
-	cluster := &v1alpha1.Cluster{}
+	cluster := createTestClusterWithDefaults()
 	cluster.SetDefaults()
+	assertDefaultValues(t, cluster)
+
+	// Test custom values preserved
+	cluster = createTestClusterWithCustomValues()
+	cluster.SetDefaults()
+	assertCustomValues(t, cluster)
+}
+
+func createTestClusterWithDefaults() *v1alpha1.Cluster {
+	return &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		Metadata: createDefaultObjectMeta(""),
+		Spec:     createDefaultSpec(),
+	}
+}
+
+func createTestClusterWithCustomValues() *v1alpha1.Cluster {
+	return &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		Metadata: createDefaultObjectMeta("custom"),
+		Spec:     createCustomSpec(),
+	}
+}
+
+func createDefaultObjectMeta(name string) metav1.ObjectMeta {
+	return clustertestutils.CreateDefaultClusterMetadata(name)
+}
+
+func createDefaultSpec() v1alpha1.Spec {
+	return clustertestutils.CreateDefaultSpec()
+}
+
+func createCustomSpec() v1alpha1.Spec {
+	return v1alpha1.Spec{
+		Distribution:       v1alpha1.DistributionK3d,
+		DistributionConfig: "",
+		SourceDirectory:    "",
+		Connection: v1alpha1.Connection{
+			Kubeconfig: "/custom",
+			Context:    "custom-ctx",
+			Timeout:    metav1.Duration{Duration: time.Duration(15) * time.Minute},
+		},
+		ContainerEngine:    "",
+		CNI:                "",
+		CSI:                "",
+		IngressController:  "",
+		GatewayController:  "",
+		ReconciliationTool: "",
+		Options:            createDefaultOptions(),
+	}
+}
+
+func createDefaultOptions() v1alpha1.Options {
+	return clustertestutils.CreateDefaultSpecOptions()
+}
+
+func assertDefaultValues(t *testing.T, cluster *v1alpha1.Cluster) {
+	t.Helper()
 	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
 	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
 	assert.Equal(t, "k8s", cluster.Spec.SourceDirectory)
@@ -53,20 +118,10 @@ func TestSetDefaults(t *testing.T) {
 	assert.Equal(t, "~/.kube/config", cluster.Spec.Connection.Kubeconfig)
 	assert.Equal(t, "kind-ksail-default", cluster.Spec.Connection.Context)
 	assert.Equal(t, time.Duration(5)*time.Minute, cluster.Spec.Connection.Timeout.Duration)
+}
 
-	// Test custom values preserved
-	cluster = &v1alpha1.Cluster{
-		Metadata: metav1.ObjectMeta{Name: "custom"},
-		Spec: v1alpha1.Spec{
-			Distribution: v1alpha1.DistributionK3d,
-			Connection: v1alpha1.Connection{
-				Kubeconfig: "/custom",
-				Context:    "custom-ctx",
-				Timeout:    metav1.Duration{Duration: time.Duration(15) * time.Minute},
-			},
-		},
-	}
-	cluster.SetDefaults()
+func assertCustomValues(t *testing.T, cluster *v1alpha1.Cluster) {
+	t.Helper()
 	assert.Equal(t, "custom", cluster.Metadata.Name)
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 	assert.Equal(t, "/custom", cluster.Spec.Connection.Kubeconfig)
