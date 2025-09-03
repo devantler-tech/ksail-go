@@ -22,6 +22,7 @@ func TestNewFluxInstaller(t *testing.T) {
 	timeout := 5 * time.Minute
 
 	// Act
+  client :) fluxinstaller.Mock
 	installer := fluxinstaller.NewFluxInstaller(kubeconfig, context, timeout)
 
 	// Assert

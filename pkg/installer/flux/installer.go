@@ -5,11 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
-	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
-	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/mittwald/go-helm-client/values"
 )
@@ -47,12 +44,7 @@ func (b *FluxInstaller) Install() error {
 
 // Uninstall removes the Helm release for the Flux Operator.
 func (b *FluxInstaller) Uninstall() error {
-	client, err := b.newHelmOperator()
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	err = client.Uninstall("flux-operator")
+	err := b.client.Uninstall("flux-operator")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
 	}
@@ -63,11 +55,6 @@ func (b *FluxInstaller) Uninstall() error {
 // --- internals ---
 
 func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
-	client, err := b.newHelmOperator()
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
 	spec := &helmclient.ChartSpec{
 		ReleaseName:            "flux-operator",
 		ChartName:              "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
@@ -113,47 +100,9 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	if err := client.Install(ctx, spec); err != nil {
+	if err := b.client.Install(ctx, spec); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (b *FluxInstaller) newHelmOperator() (HelmClient, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get home directory: %w", err)
-	}
-
-	kubeconfigPath, err := pathutils.ExpandHomePath(b.kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
-	}
-
-	data, err := ioutils.ReadFileSafe(homeDir, kubeconfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
-	}
-
-	opts := &helmclient.KubeConfClientOptions{
-		Options: &helmclient.Options{
-			Namespace:        "flux-system",
-			RepositoryConfig: "",
-			RepositoryCache:  "",
-			Debug:            false,
-			Linting:          false,
-			DebugLog:         nil,
-			RegistryConfig:   "",
-			Output:           nil,
-		},
-		KubeConfig:  data,
-		KubeContext: b.context,
-	}
-
-	client, err := b.NewHelmClient(opts)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
