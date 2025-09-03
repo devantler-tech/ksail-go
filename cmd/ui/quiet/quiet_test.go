@@ -15,6 +15,21 @@ var (
 	errTest       = errors.New("test error")
 )
 
+// simpleFileOpener implements FileOpener using os.Open.
+type simpleFileOpener struct{}
+
+// Open opens a file using os.Open. This is safe for tests as it only opens /dev/null.
+//
+//nolint:gosec // G304: This is test code that only opens /dev/null, which is safe
+func (s simpleFileOpener) Open(name string) (*os.File, error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+
+	return file, nil
+}
+
 // mockFileOpener is a test implementation of FileOpener that can simulate errors.
 type mockFileOpener struct {
 	shouldError bool
@@ -42,7 +57,7 @@ func TestSilenceStdout_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	opener := quiet.DefaultFileOpener{}
+	opener := simpleFileOpener{}
 	functionCalled := false
 	testFunction := func() error {
 		functionCalled = true
@@ -71,7 +86,7 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	opener := quiet.DefaultFileOpener{}
+	opener := simpleFileOpener{}
 	expectedErr := errTest
 	testFunction := func() error {
 		return expectedErr
@@ -86,7 +101,7 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	}
 }
 
-func TestSilenceStdoutWithOpener_OpenError(t *testing.T) {
+func TestSilenceStdout_OpenError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -99,7 +114,7 @@ func TestSilenceStdoutWithOpener_OpenError(t *testing.T) {
 	}
 
 	// Act
-	err := quiet.SilenceStdoutWithOpener(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, testFunction)
 
 	// Assert
 	if err == nil {
@@ -116,11 +131,11 @@ func TestSilenceStdoutWithOpener_OpenError(t *testing.T) {
 	}
 }
 
-func TestDefaultFileOpener_Open(t *testing.T) {
+func TestSimpleFileOpener_Open(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	opener := quiet.DefaultFileOpener{}
+	opener := simpleFileOpener{}
 
 	// Act
 	file, err := opener.Open(os.DevNull)
