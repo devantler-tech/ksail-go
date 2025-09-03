@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
+	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	"github.com/docker/go-connections/nat"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
@@ -319,49 +320,14 @@ func buildTestExposureOpts() v1alpha5.SimpleExposureOpts {
 
 func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
 	return v1alpha5.SimpleConfigOptions{
-		K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
-			Wait:                false,
-			Timeout:             0,
-			DisableLoadbalancer: false,
-			DisableImageVolume:  false,
-			NoRollback:          false,
-			NodeHookActions:     nil,
-			Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-				ConfigOverrides: nil,
-			},
-		},
-		K3sOptions:        buildTestK3sOptions(),
-		KubeconfigOptions: buildTestKubeconfigOptions(),
-		Runtime:           buildTestRuntimeOptions(),
+		K3dOptions:        k3dgenerator.BuildDefaultK3dOptions(),
+		K3sOptions:        k3dgenerator.BuildDefaultK3sOptions(),
+		KubeconfigOptions: k3dgenerator.BuildDefaultKubeconfigOptions(),
+		Runtime:           k3dgenerator.BuildDefaultRuntimeOptions(),
 	}
 }
 
 
-
-func buildTestK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
-	return v1alpha5.SimpleConfigOptionsK3s{
-		ExtraArgs:  nil,
-		NodeLabels: nil,
-	}
-}
-
-func buildTestKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
-	return v1alpha5.SimpleConfigOptionsKubeconfig{
-		UpdateDefaultKubeconfig: false,
-		SwitchCurrentContext:    false,
-	}
-}
-
-func buildTestRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
-	return v1alpha5.SimpleConfigOptionsRuntime{
-		GPURequest:    "",
-		ServersMemory: "",
-		AgentsMemory:  "",
-		HostPidMode:   false,
-		Labels:        nil,
-		Ulimits:       nil,
-	}
-}
 
 func buildTestRegistries() v1alpha5.SimpleConfigRegistries {
 	return v1alpha5.SimpleConfigRegistries{
