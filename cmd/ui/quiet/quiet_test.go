@@ -1,7 +1,6 @@
 package quiet_test
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -43,6 +42,7 @@ func TestSilenceStdout_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	opener := quiet.DefaultFileOpener{}
 	functionCalled := false
 	testFunction := func() error {
 		functionCalled = true
@@ -51,7 +51,7 @@ func TestSilenceStdout_Success(t *testing.T) {
 	}
 
 	// Act
-	err := quiet.SilenceStdout(testFunction)
+	err := quiet.SilenceStdout(opener, testFunction)
 
 	// Assert
 	if err != nil {
@@ -71,13 +71,14 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	opener := quiet.DefaultFileOpener{}
 	expectedErr := errTest
 	testFunction := func() error {
 		return expectedErr
 	}
 
 	// Act
-	err := quiet.SilenceStdout(testFunction)
+	err := quiet.SilenceStdout(opener, testFunction)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -140,55 +141,4 @@ func TestDefaultFileOpener_Open(t *testing.T) {
 			t.Errorf("failed to close file: %v", err)
 		}
 	}
-}
-
-func TestHandleCloseError_WithError(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	originalStderr := os.Stderr
-	readPipe, writePipe, _ := os.Pipe()
-	os.Stderr = writePipe
-
-	testError := errTest
-
-	// Act
-	quiet.HandleCloseError(testError)
-
-	// Clean up
-	err := writePipe.Close()
-	if err != nil {
-		t.Errorf("failed to close writePipe: %v", err)
-	}
-
-	os.Stderr = originalStderr
-
-	// Read what was written to stderr
-	var buf bytes.Buffer
-
-	_, err = buf.ReadFrom(readPipe)
-	if err != nil {
-		t.Errorf("failed to read from readPipe: %v", err)
-	}
-
-	err = readPipe.Close()
-	if err != nil {
-		t.Errorf("failed to close readPipe: %v", err)
-	}
-
-	// Assert
-	expected := "failed to close os.DevNull: test error\n"
-	if buf.String() != expected {
-		t.Errorf("expected stderr output %q, got %q", expected, buf.String())
-	}
-}
-
-func TestHandleCloseError_WithoutError(t *testing.T) {
-	t.Parallel()
-
-	// Arrange/Act
-	quiet.HandleCloseError(nil)
-
-	// Assert - This test doesn't modify global state, so nothing to assert
-	// The fact that it doesn't panic or error is the test
 }
