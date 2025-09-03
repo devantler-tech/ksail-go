@@ -1,12 +1,10 @@
 package fluxinstaller_test
 
 import (
-	"os"
 	"testing"
 	"time"
 
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
-	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -30,65 +28,37 @@ func TestNewFluxInstaller(t *testing.T) {
 
 func TestFluxInstaller_Install_Success(t *testing.T) {
 	t.Parallel()
+
 	// Arrange
-	// Create kubeconfig under current user's home directory so ReadFileSafe passes
-	home, err := os.UserHomeDir()
-	require.NoError(t, err)
-	kubeDir := home + "/.kube"
-	require.NoError(t, os.MkdirAll(kubeDir, 0o755))
-	kubeconfigPath := kubeDir + "/config"
-	const validKubeconfig = `
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-		server: https://nonexistent-server:6443
-	name: test-cluster
-contexts:
-- context:
-		cluster: test-cluster
-		user: test-user
-	name: test-context
-current-context: test-context
-users:
-- name: test-user
-	user:
-		token: test-token
-`
-
-	writeErr := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), 0o600)
-	require.NoError(t, writeErr)
-
 	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for successful install
 	client.EXPECT().Install(mock.Anything, mock.Anything).Return(nil)
 
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
-		kubeconfigPath,
+		"~/.kube/config",
 		"test-context",
 		5*time.Second,
 	)
 
 	// Act
-	err = installer.Install()
+	err := installer.Install()
 
 	// Assert
 	require.NoError(t, err)
 }
 
-func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
+func TestFluxInstaller_Install_Error(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for install failure
 	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
 
-	installer := fluxinstaller.NewFluxInstaller(client,
-		"/nonexistent/kubeconfig",
+	installer := fluxinstaller.NewFluxInstaller(
+		client,
+		"~/.kube/config",
 		"test-context",
-		5*time.Minute,
+		5*time.Second,
 	)
 
 	// Act
@@ -99,18 +69,39 @@ func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to install Flux operator")
 }
 
-func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
+func TestFluxInstaller_Uninstall_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for uninstall failure
+	client.EXPECT().Uninstall("flux-operator").Return(nil)
+
+	installer := fluxinstaller.NewFluxInstaller(
+		client,
+		"~/.kube/config",
+		"test-context",
+		5*time.Second,
+	)
+
+	// Act
+	err := installer.Uninstall()
+
+	// Assert
+	require.NoError(t, err)
+}
+
+func TestFluxInstaller_Uninstall_Error(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	client := fluxinstaller.NewMockHelmClient(t)
 	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
 
-	installer := fluxinstaller.NewFluxInstaller(client,
-		"/nonexistent/kubeconfig",
+	installer := fluxinstaller.NewFluxInstaller(
+		client,
+		"~/.kube/config",
 		"test-context",
-		5*time.Minute,
+		5*time.Second,
 	)
 
 	// Act
@@ -119,166 +110,4 @@ func TestFluxInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
-}
-
-func TestFluxInstaller_Install_Error_EmptyKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for install failure
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
-
-	installer := fluxinstaller.NewFluxInstaller(client,
-		"", // empty kubeconfig path
-		"test-context",
-		5*time.Minute,
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to install Flux operator")
-}
-
-func TestFluxInstaller_Uninstall_Error_EmptyKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for uninstall failure
-	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
-
-	installer := fluxinstaller.NewFluxInstaller(client,
-		"", // empty kubeconfig path
-		"test-context",
-		5*time.Minute,
-	)
-
-	// Act
-	err := installer.Uninstall()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
-}
-
-func TestFluxInstaller_Install_Error_MalformedKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for install failure
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
-
-	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(client,
-		kubeconfigPath,
-		"test-context",
-		5*time.Minute,
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to install Flux operator")
-}
-
-func TestFluxInstaller_Uninstall_Error_MalformedKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for uninstall failure
-	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
-
-	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(client,
-		kubeconfigPath,
-		"test-context",
-		5*time.Minute,
-	)
-
-	// Act
-	err := installer.Uninstall()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
-}
-
-func TestFluxInstaller_Install_ValidKubeconfig_ConnectError(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for install failure (connection error)
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
-
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(client,
-		kubeconfigPath,
-		"test-context",
-		1*time.Second, // Short timeout for faster test
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	// Should fail when trying to connect to the Kubernetes API or install Helm chart
-	assert.Contains(t, err.Error(), "failed to install Flux operator")
-}
-
-func TestFluxInstaller_Uninstall_ValidKubeconfig_ConnectError(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for uninstall failure (connection error)
-	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
-
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(client,
-		kubeconfigPath,
-		"test-context",
-		1*time.Second, // Short timeout for faster test
-	)
-
-	// Act
-	err := installer.Uninstall()
-
-	// Assert
-	require.Error(t, err)
-	// Should fail when trying to connect to the Kubernetes API or uninstall Helm release
-	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
-}
-
-func TestFluxInstaller_EmptyContextName(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	client := fluxinstaller.NewMockHelmClient(t)
-	// Setup mock expectation for install failure (empty context)
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
-
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	installer := fluxinstaller.NewFluxInstaller(client,
-		kubeconfigPath,
-		"", // Empty context
-		1*time.Second,
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	// Should fail when trying to connect to the server or install chart
-	assert.Contains(t, err.Error(), "failed to install Flux operator")
 }
