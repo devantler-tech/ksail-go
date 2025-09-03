@@ -88,48 +88,40 @@ func (g *K3dGenerator) buildExposureOpts() v1alpha5.SimpleExposureOpts {
 
 func (g *K3dGenerator) buildConfigOptions() v1alpha5.SimpleConfigOptions {
 	return v1alpha5.SimpleConfigOptions{
-		K3dOptions:        BuildDefaultK3dOptions(),
-		K3sOptions:        BuildDefaultK3sOptions(),
-		KubeconfigOptions: BuildDefaultKubeconfigOptions(),
-		Runtime:           BuildDefaultRuntimeOptions(),
-	}
-}
-
-// BuildDefaultK3dOptions creates default K3d options configuration.
-func BuildDefaultK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
-	return v1alpha5.SimpleConfigOptionsK3d{
-		Wait:                false,
-		Timeout:             0,
-		DisableLoadbalancer: false,
-		DisableImageVolume:  false,
-		NoRollback:          false,
-		NodeHookActions:     nil,
-		Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-			ConfigOverrides: nil,
+		K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
+			Wait:                false,
+			Timeout:             0,
+			DisableLoadbalancer: false,
+			DisableImageVolume:  false,
+			NoRollback:          false,
+			NodeHookActions:     nil,
+			Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
+				ConfigOverrides: nil,
+			},
 		},
+		K3sOptions:        g.buildK3sOptions(),
+		KubeconfigOptions: g.buildKubeconfigOptions(),
+		Runtime:           g.buildRuntimeOptions(),
 	}
 }
 
 
 
-// BuildDefaultK3sOptions creates default K3s options configuration.
-func BuildDefaultK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
+func (g *K3dGenerator) buildK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
 	return v1alpha5.SimpleConfigOptionsK3s{
 		ExtraArgs:  nil,
 		NodeLabels: nil,
 	}
 }
 
-// BuildDefaultKubeconfigOptions creates default kubeconfig options configuration.
-func BuildDefaultKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
+func (g *K3dGenerator) buildKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
 	return v1alpha5.SimpleConfigOptionsKubeconfig{
 		UpdateDefaultKubeconfig: false,
 		SwitchCurrentContext:    false,
 	}
 }
 
-// BuildDefaultRuntimeOptions creates default runtime options configuration.
-func BuildDefaultRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
+func (g *K3dGenerator) buildRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
 	return v1alpha5.SimpleConfigOptionsRuntime{
 		GPURequest:    "",
 		ServersMemory: "",
