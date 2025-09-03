@@ -171,13 +171,13 @@ func TestHandleCloseError_WithError(t *testing.T) {
 		t.Errorf("failed to read from readPipe: %v", err)
 	}
 
-  err = readPipe.Close()
+	err = readPipe.Close()
 	if err != nil {
 		t.Errorf("failed to close readPipe: %v", err)
 	}
 
 	// Assert
-	expected := "failed to close os.DevNull: test close error\n"
+	expected := "failed to close os.DevNull: test error\n"
 	if buf.String() != expected {
 		t.Errorf("expected stderr output %q, got %q", expected, buf.String())
 	}
