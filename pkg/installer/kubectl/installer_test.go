@@ -282,11 +282,12 @@ func TestKubectlInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	clientFactory := kubectlinstaller.NewMockClientFactoryInterface(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
-		kubectlinstaller.NewDefaultClientFactory(),
+		clientFactory,
 	)
 
 	// Act
@@ -301,11 +302,12 @@ func TestKubectlInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
+	clientFactory := kubectlinstaller.NewMockClientFactoryInterface(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		"/nonexistent/kubeconfig",
 		"test-context",
 		5*time.Minute,
-		kubectlinstaller.NewDefaultClientFactory(),
+		clientFactory,
 	)
 
 	// Act
@@ -321,11 +323,17 @@ func TestKubectlInstaller_BuildRESTConfig_ValidPath(t *testing.T) {
 
 	// Arrange
 	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
+	clientFactory := kubectlinstaller.NewMockClientFactoryInterface(t)
+	
+	// Mock the client factory to return an error when trying to create client
+	clientFactory.EXPECT().CreateAPIExtensionsClient(mock.Anything).
+		Return(nil, errors.New("failed to create client"))
+	
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
-		kubectlinstaller.NewDefaultClientFactory(),
+		clientFactory,
 	)
 
 	// Act - test indirectly through Install
@@ -343,11 +351,12 @@ func TestKubectlInstaller_BuildRESTConfig_MalformedKubeconfig(t *testing.T) {
 
 	// Arrange
 	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
+	clientFactory := kubectlinstaller.NewMockClientFactoryInterface(t)
 	installer := kubectlinstaller.NewKubectlInstaller(
 		kubeconfigPath,
 		"test-context",
 		5*time.Minute,
-		kubectlinstaller.NewDefaultClientFactory(),
+		clientFactory,
 	)
 
 	// Act
