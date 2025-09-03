@@ -9,7 +9,7 @@ import (
 	"time"
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
-	"github.com/devantler-tech/ksail-go/pkg/io"
+	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/mittwald/go-helm-client/values"
 )
@@ -22,11 +22,13 @@ type FluxInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
+	client HelmClient
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
-func NewFluxInstaller(kubeconfig, context string, timeout time.Duration) *FluxInstaller {
+func NewFluxInstaller(client HelmClient, kubeconfig, context string, timeout time.Duration) *FluxInstaller {
 	return &FluxInstaller{
+		client:     client,
 		kubeconfig: kubeconfig,
 		context:    context,
 		timeout:    timeout,
@@ -45,12 +47,12 @@ func (b *FluxInstaller) Install() error {
 
 // Uninstall removes the Helm release for the Flux Operator.
 func (b *FluxInstaller) Uninstall() error {
-	client, err := b.newHelmClient()
+	client, err := b.newHelmOperator()
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	err = client.UninstallReleaseByName("flux-operator")
+	err = client.Uninstall("flux-operator")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
 	}
@@ -61,7 +63,7 @@ func (b *FluxInstaller) Uninstall() error {
 // --- internals ---
 
 func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
-	client, err := b.newHelmClient()
+	client, err := b.newHelmOperator()
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
@@ -111,15 +113,14 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	_, err = client.InstallOrUpgradeChart(ctx, spec, nil)
-	if err != nil {
-		return fmt.Errorf("failed to install or upgrade chart: %w", err)
+	if err := client.Install(ctx, spec); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
+func (b *FluxInstaller) newHelmOperator() (HelmClient, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
@@ -130,7 +131,7 @@ func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
 		return nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	data, err := io.ReadFileSafe(homeDir, kubeconfigPath)
+	data, err := ioutils.ReadFileSafe(homeDir, kubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
@@ -150,16 +151,9 @@ func (b *FluxInstaller) newHelmClient() (*helmclient.HelmClient, error) {
 		KubeContext: b.context,
 	}
 
-	client, err := helmclient.NewClientFromKubeConf(opts)
+	client, err := b.NewHelmClient(opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Helm client from kubeconfig: %w", err)
+		return nil, err
 	}
-
-	// Type assert to concrete type since we know NewClientFromKubeConf returns *HelmClient
-	helmClient, ok := client.(*helmclient.HelmClient)
-	if !ok {
-		return nil, ErrUnexpectedClientType
-	}
-
-	return helmClient, nil
+	return client, nil
 }

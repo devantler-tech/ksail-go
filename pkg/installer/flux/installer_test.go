@@ -1,6 +1,7 @@
 package fluxinstaller_test
 
 import (
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -8,6 +9,7 @@ import (
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
 	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,6 +26,63 @@ func TestNewFluxInstaller(t *testing.T) {
 
 	// Assert
 	assert.NotNil(t, installer)
+}
+
+func TestFluxInstaller_Install_Success(t *testing.T) {
+	// Arrange
+	// Create kubeconfig under current user's home directory so ReadFileSafe passes
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+	kubeDir := home + "/.kube"
+	require.NoError(t, os.MkdirAll(kubeDir, 0o755))
+	kubeconfigPath := kubeDir + "/config"
+	const validKubeconfig = `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+		server: https://nonexistent-server:6443
+	name: test-cluster
+contexts:
+- context:
+		cluster: test-cluster
+		user: test-user
+	name: test-context
+current-context: test-context
+users:
+- name: test-user
+	user:
+		token: test-token
+`
+	writeErr := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), 0o600)
+	require.NoError(t, writeErr)
+
+	installer := fluxinstaller.NewFluxInstaller(
+		kubeconfigPath,
+		"test-context",
+		5*time.Second,
+	)
+
+	// Use mockery-generated mocks
+	mockOp := fluxinstaller.NewMockHelmOperator(t)
+	mockOp.
+		On("Install", mock.Anything, mock.AnythingOfType("*helmclient.ChartSpec")).
+		Return(nil)
+
+	mockFactory := fluxinstaller.NewMockHelmOperatorFactory(t)
+	mockFactory.
+		On("NewFromKubeConf", mock.AnythingOfType("*helmclient.KubeConfClientOptions")).
+		Return(mockOp, nil)
+
+	installer.SetFactory(mockFactory)
+
+	// Act
+	err = installer.Install()
+
+	// Assert
+	require.NoError(t, err)
+	mockOp.AssertExpectations(t)
+	mockFactory.AssertExpectations(t)
 }
 
 func TestFluxInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
