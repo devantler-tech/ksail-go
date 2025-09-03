@@ -29,7 +29,7 @@ func setupMockFileOpener(t *testing.T) (*quiet.MockFileOpener, *os.File) {
 }
 
 func TestSilenceStdout_Success(t *testing.T) {
-	// Remove t.Parallel() to avoid race conditions with os.Stdout
+	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
 
 	// Arrange
 	mockOpener, writeFile := setupMockFileOpener(t)
@@ -59,7 +59,7 @@ func TestSilenceStdout_Success(t *testing.T) {
 }
 
 func TestSilenceStdout_FunctionError(t *testing.T) {
-	// Remove t.Parallel() to avoid race conditions with os.Stdout
+	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
 
 	// Arrange
 	mockOpener, writeFile := setupMockFileOpener(t)
@@ -80,7 +80,7 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 }
 
 func TestSilenceStdout_OpenError(t *testing.T) {
-	// Remove t.Parallel() to avoid race conditions with os.Stdout
+	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
 
 	// Arrange
 	mockOpener := quiet.NewMockFileOpener(t)
