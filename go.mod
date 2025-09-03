@@ -8,7 +8,7 @@ require (
 	github.com/gkampitakis/go-snaps v0.5.14
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	k8s.io/apimachinery v0.30.2
 	sigs.k8s.io/kind v0.30.0
@@ -85,7 +85,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.7 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
