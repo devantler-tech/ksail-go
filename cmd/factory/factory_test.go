@@ -6,6 +6,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/spf13/cobra"
 )
+
 func TestNewCobraCommand(t *testing.T) {
 	t.Parallel()
 

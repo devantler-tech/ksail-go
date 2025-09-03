@@ -29,6 +29,7 @@ func TestNewFluxInstaller(t *testing.T) {
 }
 
 func TestFluxInstaller_Install_Success(t *testing.T) {
+	t.Parallel()
 	// Arrange
 	// Create kubeconfig under current user's home directory so ReadFileSafe passes
 	home, err := os.UserHomeDir()
@@ -54,6 +55,7 @@ users:
 	user:
 		token: test-token
 `
+
 	writeErr := os.WriteFile(kubeconfigPath, []byte(validKubeconfig), 0o600)
 	require.NoError(t, writeErr)
 
@@ -212,7 +214,7 @@ func TestFluxInstaller_Uninstall_ValidKubeconfig_ConnectError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-  client := fluxinstaller.NewMockHelmClient(t)
+	client := fluxinstaller.NewMockHelmClient(t)
 	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
 	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
@@ -234,9 +236,9 @@ func TestFluxInstaller_EmptyContextName(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-  client := fluxinstaller.NewMockHelmClient(t)
-  kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-  installer := fluxinstaller.NewFluxInstaller(client,
+	client := fluxinstaller.NewMockHelmClient(t)
+	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
+	installer := fluxinstaller.NewFluxInstaller(client,
 		kubeconfigPath,
 		"", // Empty context
 		1*time.Second,

@@ -141,12 +141,12 @@ func createTestCluster(name string) *v1alpha4.Cluster {
 			KubeProxyMode:     "",
 			DNSSearch:         nil,
 		},
-		FeatureGates:                     nil,
-		RuntimeConfig:                    nil,
-		KubeadmConfigPatches:             nil,
-		KubeadmConfigPatchesJSON6902:     nil,
-		ContainerdConfigPatches:          nil,
-		ContainerdConfigPatchesJSON6902:  nil,
+		FeatureGates:                    nil,
+		RuntimeConfig:                   nil,
+		KubeadmConfigPatches:            nil,
+		KubeadmConfigPatchesJSON6902:    nil,
+		ContainerdConfigPatches:         nil,
+		ContainerdConfigPatchesJSON6902: nil,
 	}
 
 	// Add a minimal control plane node to ensure kind processes the cluster correctly

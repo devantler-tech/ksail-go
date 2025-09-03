@@ -344,12 +344,12 @@ func buildTestKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
 
 func buildTestRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
 	return v1alpha5.SimpleConfigOptionsRuntime{
-		GPURequest:       "",
-		ServersMemory:    "",
-		AgentsMemory:     "",
-		HostPidMode:      false,
-		Labels:           nil,
-		Ulimits:          nil,
+		GPURequest:    "",
+		ServersMemory: "",
+		AgentsMemory:  "",
+		HostPidMode:   false,
+		Labels:        nil,
+		Ulimits:       nil,
 	}
 }
 

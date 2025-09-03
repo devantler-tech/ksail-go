@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	errMockOpen  = errors.New("mock open error")
+	errMockOpen   = errors.New("mock open error")
 	errNotDevNull = errors.New("mockFileOpener: only os.DevNull is allowed")
-	errTest      = errors.New("test error")
+	errTest       = errors.New("test error")
 )
 
 // mockFileOpener is a test implementation of FileOpener that can simulate errors.

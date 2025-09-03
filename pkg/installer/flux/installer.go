@@ -19,7 +19,7 @@ type FluxInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
-	client HelmClient
+	client     HelmClient
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
@@ -56,14 +56,14 @@ func (b *FluxInstaller) Uninstall() error {
 
 func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 	spec := &helmclient.ChartSpec{
-		ReleaseName:            "flux-operator",
-		ChartName:              "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
-		Namespace:              "flux-system",
-		CreateNamespace:        true,
-		Atomic:                 true,
-		UpgradeCRDs:            true,
-		Timeout:                b.timeout,
-		ValuesYaml:             "",
+		ReleaseName:     "flux-operator",
+		ChartName:       "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+		Namespace:       "flux-system",
+		CreateNamespace: true,
+		Atomic:          true,
+		UpgradeCRDs:     true,
+		Timeout:         b.timeout,
+		ValuesYaml:      "",
 		ValuesOptions: values.Options{
 			ValueFiles:   nil,
 			StringValues: nil,
@@ -71,30 +71,30 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 			FileValues:   nil,
 			JSONValues:   nil,
 		},
-		Version:                "",
-		DisableHooks:           false,
-		Replace:                false,
-		Wait:                   false,
-		WaitForJobs:            false,
-		DependencyUpdate:       false,
-		GenerateName:           false,
-		NameTemplate:           "",
-		SkipCRDs:               false,
-		SubNotes:               false,
-		Force:                  false,
-		ResetValues:            false,
-		ReuseValues:            false,
-		ResetThenReuseValues:   false,
-		Recreate:               false,
-		MaxHistory:             0,
-		CleanupOnFail:          false,
-		DryRun:                 false,
-		DryRunOption:           "",
-		Description:            "",
-		KeepHistory:            false,
-		Labels:                 nil,
-		IgnoreNotFound:         false,
-		DeletionPropagation:    "",
+		Version:              "",
+		DisableHooks:         false,
+		Replace:              false,
+		Wait:                 false,
+		WaitForJobs:          false,
+		DependencyUpdate:     false,
+		GenerateName:         false,
+		NameTemplate:         "",
+		SkipCRDs:             false,
+		SubNotes:             false,
+		Force:                false,
+		ResetValues:          false,
+		ReuseValues:          false,
+		ResetThenReuseValues: false,
+		Recreate:             false,
+		MaxHistory:           0,
+		CleanupOnFail:        false,
+		DryRun:               false,
+		DryRunOption:         "",
+		Description:          "",
+		KeepHistory:          false,
+		Labels:               nil,
+		IgnoreNotFound:       false,
+		DeletionPropagation:  "",
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
