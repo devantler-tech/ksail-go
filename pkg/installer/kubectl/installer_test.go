@@ -2,12 +2,10 @@ package kubectlinstaller_test
 
 import (
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
 	kubectlinstaller "github.com/devantler-tech/ksail-go/pkg/installer/kubectl"
-	"github.com/devantler-tech/ksail-go/pkg/installer/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -19,50 +17,32 @@ import (
 )
 
 // testSetup provides common setup for kubectl installer tests.
-func testSetup(t *testing.T) (string, *kubectlinstaller.MockClientFactory) {
+func testSetup(t *testing.T) (*kubectlinstaller.MockAPIExtensionsClient, *kubectlinstaller.MockDynamicClient) {
 	t.Helper()
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	return kubeconfigPath, clientFactory
+	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
+	dynClient := kubectlinstaller.NewMockDynamicClient(t)
+	return apiExtClient, dynClient
 }
 
 // createTestInstaller creates a kubectl installer with common test configuration.
-func createTestInstaller(kubeconfigPath string, clientFactory kubectlinstaller.ClientFactory) *kubectlinstaller.KubectlInstaller {
-	return kubectlinstaller.NewKubectlInstallerWithFactory(
-		kubeconfigPath,
-		"test-context",
+func createTestInstaller(apiExtClient kubectlinstaller.APIExtensionsClient, dynClient kubectlinstaller.DynamicClient) *kubectlinstaller.KubectlInstaller {
+	return kubectlinstaller.NewKubectlInstaller(
 		5*time.Second,
-		clientFactory,
+		apiExtClient,
+		dynClient,
 	)
-}
-
-// setupMockAPIExtensionsClient creates and configures a mock API extensions client.
-func setupMockAPIExtensionsClient(t *testing.T, clientFactory *kubectlinstaller.MockClientFactory) *kubectlinstaller.MockAPIExtensionsClient {
-	t.Helper()
-	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
-	clientFactory.EXPECT().CreateAPIExtensionsClient(mock.Anything).Return(apiExtClient, nil)
-	return apiExtClient
-}
-
-// setupMockDynamicClient creates and configures a mock dynamic client.
-func setupMockDynamicClient(t *testing.T, clientFactory *kubectlinstaller.MockClientFactory) *kubectlinstaller.MockDynamicClient {
-	t.Helper()
-	dynClient := kubectlinstaller.NewMockDynamicClient(t)
-	clientFactory.EXPECT().CreateDynamicClient(mock.Anything, mock.Anything).Return(dynClient, nil)
-	return dynClient
 }
 
 func TestNewKubectlInstaller(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
+	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
+	dynClient := kubectlinstaller.NewMockDynamicClient(t)
 
 	// Act
-	installer := kubectlinstaller.NewKubectlInstaller(kubeconfig, context, timeout, clientFactory)
+	installer := kubectlinstaller.NewKubectlInstaller(timeout, apiExtClient, dynClient)
 
 	// Assert
 	assert.NotNil(t, installer)
@@ -72,13 +52,12 @@ func TestNewKubectlInstallerWithFactory(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
+	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
+	dynClient := kubectlinstaller.NewMockDynamicClient(t)
 
 	// Act
-	installer := kubectlinstaller.NewKubectlInstallerWithFactory(kubeconfig, context, timeout, clientFactory)
+	installer := kubectlinstaller.NewKubectlInstallerWithFactory(timeout, apiExtClient, dynClient)
 
 	// Assert
 	assert.NotNil(t, installer)
@@ -88,14 +67,7 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClientInterface(t)
-	dynClient := kubectlinstaller.NewMockDynamicClientInterface(t)
-
-	// Setup client factory mocks
-	clientFactory.EXPECT().CreateAPIExtensionsClient(mock.Anything).Return(apiExtClient, nil)
-	clientFactory.EXPECT().CreateDynamicClient(mock.Anything, mock.Anything).Return(dynClient, nil)
+	apiExtClient, dynClient := testSetup(t)
 
 	// CRD already exists (skip creation and establishment)
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -107,12 +79,7 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(&unstructured.Unstructured{}, nil)
 
-	installer := kubectlinstaller.NewKubectlInstallerWithFactory(
-		kubeconfigPath,
-		"test-context",
-		5*time.Second,
-		clientFactory,
-	)
+	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
 	err := installer.Install()
@@ -121,36 +88,18 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestKubectlInstaller_Install_Error_APIExtensionsClientCreation(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	clientFactory.EXPECT().CreateAPIExtensionsClient(mock.Anything).
-		Return(nil, errors.New("failed to create client"))
-	installer := createTestInstaller(kubeconfigPath, clientFactory)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create apiextensions client")
-}
-
 func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	apiExtClient := setupMockAPIExtensionsClient(t, clientFactory)
+	apiExtClient, dynClient := testSetup(t)
 	
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "applysets.k8s.devantler.tech"))
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to create CRD"))
 
-	installer := createTestInstaller(kubeconfigPath, clientFactory)
+	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
 	err := installer.Install()
@@ -164,8 +113,7 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	apiExtClient := setupMockAPIExtensionsClient(t, clientFactory)
+	apiExtClient, dynClient := testSetup(t)
 
 	// CRD not found and successful creation
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -187,11 +135,10 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(crdNotEstablished, nil).Maybe()
 
-	installer := kubectlinstaller.NewKubectlInstallerWithFactory(
-		kubeconfigPath,
-		"test-context",
+	installer := kubectlinstaller.NewKubectlInstaller(
 		1*time.Millisecond, // Very short timeout to fail quickly
-		clientFactory,
+		apiExtClient,
+		dynClient,
 	)
 
 	// Act
@@ -206,9 +153,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	apiExtClient := setupMockAPIExtensionsClient(t, clientFactory)
-	dynClient := setupMockDynamicClient(t, clientFactory)
+	apiExtClient, dynClient := testSetup(t)
 
 	// CRD already exists
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -220,7 +165,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errors.New("failed to create ApplySet"))
 
-	installer := createTestInstaller(kubeconfigPath, clientFactory)
+	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
 	err := installer.Install()
@@ -234,15 +179,13 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	apiExtClient := setupMockAPIExtensionsClient(t, clientFactory)
-	dynClient := setupMockDynamicClient(t, clientFactory)
+	apiExtClient, dynClient := testSetup(t)
 
 	// Both deletions succeed
 	dynClient.EXPECT().Delete(mock.Anything, "ksail", mock.Anything).Return(nil)
 	apiExtClient.EXPECT().Delete(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).Return(nil)
 
-	installer := createTestInstaller(kubeconfigPath, clientFactory)
+	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
 	err := installer.Uninstall()
@@ -251,112 +194,6 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestKubectlInstaller_Uninstall_DynamicClientCreationError(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	kubeconfigPath, clientFactory := testSetup(t)
-	clientFactory.EXPECT().CreateDynamicClient(mock.Anything, mock.Anything).
-		Return(nil, errors.New("failed to create dynamic client"))
-
-	installer := createTestInstaller(kubeconfigPath, clientFactory)
-
-	// Act
-	err := installer.Uninstall()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create dynamic client")
-}
-
-func TestKubectlInstaller_Install_Error_InvalidKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	installer := kubectlinstaller.NewKubectlInstaller(
-		"/nonexistent/kubeconfig",
-		"test-context",
-		5*time.Minute,
-		clientFactory,
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file or directory")
-}
-
-func TestKubectlInstaller_Uninstall_Error_InvalidKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	installer := kubectlinstaller.NewKubectlInstaller(
-		"/nonexistent/kubeconfig",
-		"test-context",
-		5*time.Minute,
-		clientFactory,
-	)
-
-	// Act
-	err := installer.Uninstall()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no such file or directory")
-}
-
-func TestKubectlInstaller_BuildRESTConfig_ValidPath(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	kubeconfigPath := testutils.CreateValidKubeconfigFile(t)
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	
-	// Mock the client factory to return an error when trying to create client
-	clientFactory.EXPECT().CreateAPIExtensionsClient(mock.Anything).
-		Return(nil, errors.New("failed to create client"))
-	
-	installer := kubectlinstaller.NewKubectlInstaller(
-		kubeconfigPath,
-		"test-context",
-		5*time.Minute,
-		clientFactory,
-	)
-
-	// Act - test indirectly through Install
-	err := installer.Install()
-
-	// Assert - it should fail because test-server doesn't exist, but it should get past config building
-	require.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "failed to check CRD existence") ||
-		strings.Contains(err.Error(), "failed to create"),
-		"Expected error about CRD check or client creation, got: %s", err.Error())
-}
-
-func TestKubectlInstaller_BuildRESTConfig_MalformedKubeconfig(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	kubeconfigPath := testutils.CreateMalformedKubeconfigFile(t)
-	clientFactory := kubectlinstaller.NewMockClientFactory(t)
-	installer := kubectlinstaller.NewKubectlInstaller(
-		kubeconfigPath,
-		"test-context",
-		5*time.Minute,
-		clientFactory,
-	)
-
-	// Act
-	err := installer.Install()
-
-	// Assert
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to build rest config")
-}
 
 func TestKubectlInstaller_EmbeddedCRDAsset(t *testing.T) {
 	t.Parallel()

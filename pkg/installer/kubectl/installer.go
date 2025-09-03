@@ -8,16 +8,12 @@ import (
 	"fmt"
 	"time"
 
-	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
 )
 
@@ -44,41 +40,34 @@ var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 
 // KubectlInstaller implements the installer.Installer interface for kubectl.
 type KubectlInstaller struct {
-	kubeconfig    string
-	context       string
-	timeout       time.Duration
-	clientFactory ClientFactory
+	timeout             time.Duration
+	apiExtensionsClient APIExtensionsClient
+	dynamicClient       DynamicClient
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactory) *KubectlInstaller {
+func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient APIExtensionsClient, dynamicClient DynamicClient) *KubectlInstaller {
 	return &KubectlInstaller{
-		kubeconfig:    kubeconfig,
-		context:       context,
-		timeout:       timeout,
-		clientFactory: clientFactory,
+		timeout:             timeout,
+		apiExtensionsClient: apiExtensionsClient,
+		dynamicClient:       dynamicClient,
 	}
 }
 
 // NewKubectlInstallerWithFactory creates a new kubectl installer instance with a custom client factory.
 // Deprecated: Use NewKubectlInstaller instead.
-func NewKubectlInstallerWithFactory(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactory) *KubectlInstaller {
-	return NewKubectlInstaller(kubeconfig, context, timeout, clientFactory)
+func NewKubectlInstallerWithFactory(timeout time.Duration, apiExtensionsClient APIExtensionsClient, dynamicClient DynamicClient) *KubectlInstaller {
+	return NewKubectlInstaller(timeout, apiExtensionsClient, dynamicClient)
 }
 
 // Install ensures the ApplySet CRD and its parent CR exist.
 func (b *KubectlInstaller) Install() error {
-	restConfigWrapper, err := b.buildRESTConfig()
+	err := b.installCRD()
 	if err != nil {
 		return err
 	}
 
-	err = b.installCRD(restConfigWrapper)
-	if err != nil {
-		return err
-	}
-
-	err = b.installApplySetCR(restConfigWrapper)
+	err = b.installApplySetCR()
 	if err != nil {
 		return err
 	}
@@ -88,29 +77,12 @@ func (b *KubectlInstaller) Install() error {
 
 // Uninstall deletes the ApplySet CR then its CRD.
 func (b *KubectlInstaller) Uninstall() error {
-	config, err := b.buildRESTConfig()
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-	
-	dynClient, err := b.clientFactory.CreateDynamicClient(config, gvr)
-	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
-	}
+	_ = b.dynamicClient.Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
 
-	_ = dynClient.Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
-
-	apiExtClient, err := b.clientFactory.CreateAPIExtensionsClient(config)
-	if err != nil {
-		return fmt.Errorf("failed to create apiextensions client: %w", err)
-	}
-
-	_ = apiExtClient.Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
+	_ = b.apiExtensionsClient.Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
 
 	return nil
 }
@@ -118,25 +90,20 @@ func (b *KubectlInstaller) Uninstall() error {
 // --- internals ---
 
 // installCRD installs the ApplySet CRD.
-func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
-	apiExtClient, err := b.clientFactory.CreateAPIExtensionsClient(restConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create apiextensions client: %w", err)
-	}
-
+func (b *KubectlInstaller) installCRD() error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err = apiExtClient.Get(ctx, crdName, metav1.GetOptions{})
+	_, err := b.apiExtensionsClient.Get(ctx, crdName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		err = b.applyCRD(ctx, apiExtClient)
+		err = b.applyCRD(ctx, b.apiExtensionsClient)
 		if err != nil {
 			return err
 		}
 
-		err = b.waitForCRDEstablished(ctx, apiExtClient, crdName)
+		err = b.waitForCRDEstablished(ctx, b.apiExtensionsClient, crdName)
 		if err != nil {
 			return err
 		}
@@ -148,22 +115,15 @@ func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
 }
 
 // installApplySetCR installs the ApplySet custom resource.
-func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
-	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-	
-	dynClient, err := b.clientFactory.CreateDynamicClient(restConfig, gvr)
-	if err != nil {
-		return fmt.Errorf("failed to create dynamic client: %w", err)
-	}
-
+func (b *KubectlInstaller) installApplySetCR() error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
 	const applySetName = "ksail"
 
-	_, err = dynClient.Get(ctx, applySetName, metav1.GetOptions{})
+	_, err := b.dynamicClient.Get(ctx, applySetName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		err = b.applyApplySetCR(ctx, dynClient, applySetName)
+		err = b.applyApplySetCR(ctx, b.dynamicClient, applySetName)
 		if err != nil {
 			return err
 		}
@@ -172,40 +132,6 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 	}
 
 	return nil
-}
-
-func (b *KubectlInstaller) buildRESTConfig() (*rest.Config, error) {
-	kubeconfigPath, _ := pathutils.ExpandHomePath(b.kubeconfig)
-	rules := b.buildClientConfigLoadingRules(kubeconfigPath)
-	overrides := b.buildConfigOverrides()
-
-	clientCfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
-
-	restConfig, err := clientCfg.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build rest config: %w", err)
-	}
-
-	return restConfig, nil
-}
-
-func (b *KubectlInstaller) buildClientConfigLoadingRules(kubeconfigPath string) *clientcmd.ClientConfigLoadingRules {
-	return &clientcmd.ClientConfigLoadingRules{
-		ExplicitPath: kubeconfigPath,
-	}
-}
-
-func (b *KubectlInstaller) buildConfigOverrides() *clientcmd.ConfigOverrides {
-	overrides := &clientcmd.ConfigOverrides{
-		AuthInfo:     api.AuthInfo{},
-		ClusterInfo:  api.Cluster{},
-		Context:      api.Context{},
-	}
-	if b.context != "" {
-		overrides.CurrentContext = b.context
-	}
-
-	return overrides
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
