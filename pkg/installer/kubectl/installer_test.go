@@ -48,20 +48,6 @@ func TestNewKubectlInstaller(t *testing.T) {
 	assert.NotNil(t, installer)
 }
 
-func TestNewKubectlInstallerWithFactory(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
-	timeout := 5 * time.Minute
-	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
-	dynClient := kubectlinstaller.NewMockDynamicClient(t)
-
-	// Act
-	installer := kubectlinstaller.NewKubectlInstallerWithFactory(timeout, apiExtClient, dynClient)
-
-	// Assert
-	assert.NotNil(t, installer)
-}
 
 func TestKubectlInstaller_Install_Success(t *testing.T) {
 	t.Parallel()

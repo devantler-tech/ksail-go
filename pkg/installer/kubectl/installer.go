@@ -17,6 +17,22 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// APIExtensionsClient defines the interface for API extensions client operations.
+type APIExtensionsClient interface {
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiextensionsv1.CustomResourceDefinition, error)
+	Create(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.CreateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
+	Update(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.UpdateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+}
+
+// DynamicClient defines the interface for dynamic client operations.
+type DynamicClient interface {
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*unstructured.Unstructured, error)
+	Create(ctx context.Context, obj *unstructured.Unstructured, opts metav1.CreateOptions) (*unstructured.Unstructured, error)
+	Update(ctx context.Context, obj *unstructured.Unstructured, opts metav1.UpdateOptions) (*unstructured.Unstructured, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+}
+
 //go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
 
@@ -54,11 +70,7 @@ func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient APIExtension
 	}
 }
 
-// NewKubectlInstallerWithFactory creates a new kubectl installer instance with a custom client factory.
-// Deprecated: Use NewKubectlInstaller instead.
-func NewKubectlInstallerWithFactory(timeout time.Duration, apiExtensionsClient APIExtensionsClient, dynamicClient DynamicClient) *KubectlInstaller {
-	return NewKubectlInstaller(timeout, apiExtensionsClient, dynamicClient)
-}
+
 
 // Install ensures the ApplySet CRD and its parent CR exist.
 func (b *KubectlInstaller) Install() error {
