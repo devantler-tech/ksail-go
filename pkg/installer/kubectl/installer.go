@@ -10,13 +10,11 @@ import (
 
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -55,17 +53,29 @@ var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 
 // KubectlInstaller implements the installer.Installer interface for kubectl.
 type KubectlInstaller struct {
-	kubeconfig string
-	context    string
-	timeout    time.Duration
+	kubeconfig    string
+	context       string
+	timeout       time.Duration
+	clientFactory ClientFactoryInterface
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
 func NewKubectlInstaller(kubeconfig, context string, timeout time.Duration) *KubectlInstaller {
 	return &KubectlInstaller{
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
+		kubeconfig:    kubeconfig,
+		context:       context,
+		timeout:       timeout,
+		clientFactory: NewDefaultClientFactory(),
+	}
+}
+
+// NewKubectlInstallerWithFactory creates a new kubectl installer instance with a custom client factory.
+func NewKubectlInstallerWithFactory(kubeconfig, context string, timeout time.Duration, clientFactory ClientFactoryInterface) *KubectlInstaller {
+	return &KubectlInstaller{
+		kubeconfig:    kubeconfig,
+		context:       context,
+		timeout:       timeout,
+		clientFactory: clientFactory,
 	}
 }
 
@@ -99,22 +109,21 @@ func (b *KubectlInstaller) Uninstall() error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	dynClient, err := dynamic.NewForConfig(config)
+	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
+	
+	dynClient, err := b.clientFactory.CreateDynamicClient(config, gvr)
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-	_ = dynClient.Resource(gvr).Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
+	_ = dynClient.Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
 
-	apiExtClient, err := apiextensionsclient.NewForConfig(config)
+	apiExtClient, err := b.clientFactory.CreateAPIExtensionsClient(config)
 	if err != nil {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
 
-	_ = apiExtClient.ApiextensionsV1().
-		CustomResourceDefinitions().
-		Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
+	_ = apiExtClient.Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
 
 	return nil
 }
@@ -123,7 +132,7 @@ func (b *KubectlInstaller) Uninstall() error {
 
 // installCRD installs the ApplySet CRD.
 func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
-	apiExtClient, err := apiextensionsclient.NewForConfig(restConfig)
+	apiExtClient, err := b.clientFactory.CreateAPIExtensionsClient(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create apiextensions client: %w", err)
 	}
@@ -133,7 +142,7 @@ func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err = apiExtClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crdName, metav1.GetOptions{
+	_, err = apiExtClient.Get(ctx, crdName, metav1.GetOptions{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "",
 			APIVersion: "",
@@ -159,7 +168,9 @@ func (b *KubectlInstaller) installCRD(restConfig *rest.Config) error {
 
 // installApplySetCR installs the ApplySet custom resource.
 func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
-	dynClient, err := dynamic.NewForConfig(restConfig)
+	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
+	
+	dynClient, err := b.clientFactory.CreateDynamicClient(restConfig, gvr)
 	if err != nil {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
@@ -167,11 +178,9 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
 	defer cancel()
 
-	gvr := schema.GroupVersionResource{Group: "k8s.devantler.tech", Version: "v1", Resource: "applysets"}
-
 	const applySetName = "ksail"
 
-	_, err = dynClient.Resource(gvr).Get(ctx, applySetName, metav1.GetOptions{
+	_, err = dynClient.Get(ctx, applySetName, metav1.GetOptions{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "",
 			APIVersion: "",
@@ -179,7 +188,7 @@ func (b *KubectlInstaller) installApplySetCR(restConfig *rest.Config) error {
 		ResourceVersion: "",
 	})
 	if apierrors.IsNotFound(err) {
-		err = b.applyApplySetCR(ctx, dynClient, gvr, applySetName)
+		err = b.applyApplySetCR(ctx, dynClient, applySetName)
 		if err != nil {
 			return err
 		}
@@ -279,7 +288,7 @@ func (b *KubectlInstaller) buildContext() api.Context {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionsclient.Clientset) error {
+func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsClientInterface) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 
 	err := yaml.Unmarshal(applySetCRDYAML, &crd)
@@ -287,7 +296,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err = client.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, &crd, metav1.CreateOptions{
+	_, err = client.Create(ctx, &crd, metav1.CreateOptions{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "",
 			APIVersion: "",
@@ -297,7 +306,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 		FieldValidation: "",
 	})
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, crd.Name, metav1.GetOptions{
+		existing, getErr := client.Get(ctx, crd.Name, metav1.GetOptions{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "",
 				APIVersion: "",
@@ -310,7 +319,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 
 		crd.ResourceVersion = existing.ResourceVersion
 
-		_, uerr := client.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, &crd, metav1.UpdateOptions{
+		_, uerr := client.Update(ctx, &crd, metav1.UpdateOptions{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "",
 				APIVersion: "",
@@ -331,7 +340,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client *apiextensionscl
 
 func (b *KubectlInstaller) waitForCRDEstablished(
 	ctx context.Context,
-	client *apiextensionsclient.Clientset,
+	client APIExtensionsClientInterface,
 	name string,
 ) error {
 	// Poll every 500ms until Established=True or timeout
@@ -339,7 +348,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
-			crd, err := client.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, name, metav1.GetOptions{
+			crd, err := client.Get(ctx, name, metav1.GetOptions{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "",
 					APIVersion: "",
@@ -377,8 +386,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 func (b *KubectlInstaller) applyApplySetCR(
 	ctx context.Context,
-	dyn dynamic.Interface,
-	gvr schema.GroupVersionResource,
+	dyn DynamicClientInterface,
 	name string,
 ) error {
 	var applySetObj unstructured.Unstructured
@@ -391,7 +399,7 @@ func (b *KubectlInstaller) applyApplySetCR(
 	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	applySetObj.SetName(name)
 
-	_, err = dyn.Resource(gvr).Create(ctx, &applySetObj, metav1.CreateOptions{
+	_, err = dyn.Create(ctx, &applySetObj, metav1.CreateOptions{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "",
 			APIVersion: "",
@@ -401,7 +409,7 @@ func (b *KubectlInstaller) applyApplySetCR(
 		FieldValidation: "",
 	})
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := dyn.Resource(gvr).Get(ctx, name, metav1.GetOptions{
+		existing, getErr := dyn.Get(ctx, name, metav1.GetOptions{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "",
 				APIVersion: "",
@@ -414,7 +422,7 @@ func (b *KubectlInstaller) applyApplySetCR(
 
 		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		_, uerr := dyn.Resource(gvr).Update(ctx, &applySetObj, metav1.UpdateOptions{
+		_, uerr := dyn.Update(ctx, &applySetObj, metav1.UpdateOptions{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "",
 				APIVersion: "",
