@@ -305,6 +305,9 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsCli
 		FieldManager:    "",
 		FieldValidation: "",
 	})
+	if err == nil {
+		return nil
+	}
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := client.Get(ctx, crd.Name, metav1.GetOptions{
 			TypeMeta: metav1.TypeMeta{
@@ -408,6 +411,9 @@ func (b *KubectlInstaller) applyApplySetCR(
 		FieldManager:    "",
 		FieldValidation: "",
 	})
+	if err == nil {
+		return nil
+	}
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := dyn.Get(ctx, name, metav1.GetOptions{
 			TypeMeta: metav1.TypeMeta{
