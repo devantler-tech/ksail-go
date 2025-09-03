@@ -1,7 +1,15 @@
 version: "2"
 linters:
   default: all
+  enable:
+    - wsl_v5
+  disable:
+    - wsl
   settings:
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
     depguard:
       rules:
         main:
@@ -11,29 +19,14 @@ linters:
           list-mode: strict
           allow:
             - $gostd
-            - github.com/devantler-tech/ksail-go
-            - github.com/docker/docker
+            - github.com/devantler-tech
+            - github.com/docker
             - github.com/fatih/color
-            - github.com/k3d-io/k3d
+            - github.com/k3d-io
+            - github.com/mittwald/go-helm-client
+            - github.com/rancher
             - github.com/spf13/cobra
             - github.com/stretchr/testify
             - github.com/weaveworks/eksctl
-            - sigs.k8s.io
             - k8s.io
-    exhaustruct:
-      exclude:
-        - '.+/cobra\.Command$'
-        - '.+/types\.Cluster$'
-        - '.+/v1alpha1\.Cluster$'
-        - '.+/v1alpha1\.Spec$'
-        - '.+/v1alpha4\.Cluster$'
-        - '.+/v1alpha5\.ClusterConfig$'
-        - '.+/v1alpha5\.SimpleConfig$'
-        - '.+\.ObjectMeta$'
-        - '.+\v1alpha4\.Node$'
-
-  exclusions:
-    rules:
-      - path: "cmd/.+"
-        linters:
-          - forbidigo
+            - sigs.k8s.io

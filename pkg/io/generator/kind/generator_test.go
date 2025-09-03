@@ -125,7 +125,28 @@ func TestKindGenerator_Generate_MarshalError(t *testing.T) {
 // createTestCluster creates a minimal test cluster configuration.
 func createTestCluster(name string) *v1alpha4.Cluster {
 	cluster := &v1alpha4.Cluster{
-		Name: name,
+		TypeMeta: v1alpha4.TypeMeta{
+			APIVersion: "",
+			Kind:       "",
+		},
+		Name:  name,
+		Nodes: nil,
+		Networking: v1alpha4.Networking{
+			IPFamily:          "",
+			APIServerPort:     0,
+			APIServerAddress:  "",
+			PodSubnet:         "",
+			ServiceSubnet:     "",
+			DisableDefaultCNI: false,
+			KubeProxyMode:     "",
+			DNSSearch:         nil,
+		},
+		FeatureGates:                    nil,
+		RuntimeConfig:                   nil,
+		KubeadmConfigPatches:            nil,
+		KubeadmConfigPatchesJSON6902:    nil,
+		ContainerdConfigPatches:         nil,
+		ContainerdConfigPatchesJSON6902: nil,
 	}
 
 	// Add a minimal control plane node to ensure kind processes the cluster correctly

@@ -294,7 +294,30 @@ func newProvisionerForTest(
 	provider := kindprovisioner.NewMockKindProvider(t)
 	client := provisioner.NewMockContainerAPIClient(t)
 
-	cfg := &v1alpha4.Cluster{Name: "cfg-name"}
+	cfg := &v1alpha4.Cluster{
+		Name: "cfg-name",
+		TypeMeta: v1alpha4.TypeMeta{
+			Kind:       "Cluster",
+			APIVersion: "kind.x-k8s.io/v1alpha4",
+		},
+		Nodes: []v1alpha4.Node{},
+		Networking: v1alpha4.Networking{
+			IPFamily:          "",
+			APIServerPort:     0,
+			APIServerAddress:  "",
+			PodSubnet:         "",
+			ServiceSubnet:     "",
+			DisableDefaultCNI: false,
+			KubeProxyMode:     "",
+			DNSSearch:         nil,
+		},
+		FeatureGates:                    map[string]bool{},
+		RuntimeConfig:                   map[string]string{},
+		KubeadmConfigPatches:            []string{},
+		KubeadmConfigPatchesJSON6902:    []v1alpha4.PatchJSON6902{},
+		ContainerdConfigPatches:         []string{},
+		ContainerdConfigPatchesJSON6902: []string{},
+	}
 	provisioner := kindprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
 
 	return provisioner, provider, client

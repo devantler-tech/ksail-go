@@ -2,6 +2,9 @@ package notify_test
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
+	"os"
 	"testing"
 
 	notify "github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -210,5 +213,49 @@ func TestActivityln(t *testing.T) {
 	// Assert
 	if got != want {
 		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
+	}
+}
+
+// errorWriter is a mock writer that always returns an error.
+type errorWriter struct{}
+
+var errMockWrite = errors.New("mock write error")
+
+func (ew errorWriter) Write(_ []byte) (int, error) {
+	return 0, fmt.Errorf("%w", errMockWrite)
+}
+
+func TestHandleNotifyError_WithError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	// We'll capture stderr to verify the error handling
+	oldStderr := os.Stderr
+	readPipe, writePipe, _ := os.Pipe()
+	os.Stderr = writePipe
+
+	// Use an errorWriter to trigger the error path in handleNotifyError
+	errWriter := errorWriter{}
+
+	// Act
+	notify.Error(errWriter, "test message")
+
+	// Restore stderr
+	err := writePipe.Close()
+	if err != nil {
+		t.Fatalf("failed to close writePipe: %v", err)
+	}
+
+	os.Stderr = oldStderr
+
+	// Read what was written to stderr
+	buf := make([]byte, 1024)
+	n, _ := readPipe.Read(buf)
+	output := string(buf[:n])
+
+	// Assert
+	expectedErrorMsg := "notify: failed to print message: mock write error\n"
+	if output != expectedErrorMsg {
+		t.Fatalf("expected stderr output %q, got %q", expectedErrorMsg, output)
 	}
 }

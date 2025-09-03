@@ -2,20 +2,19 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/spf13/cobra"
 )
 
 // NewStopCmd creates and returns the stop command.
 func NewStopCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "stop",
-		Short: "Stop the Kubernetes cluster",
-		Long:  `Stop the Kubernetes cluster without removing it.`,
-		RunE:  handleStopRunE,
-	}
-
-	return cmd
+	return factory.NewCobraCommand(
+		"stop",
+		"Stop the Kubernetes cluster",
+		`Stop the Kubernetes cluster without removing it.`,
+		handleStopRunE,
+	)
 }
 
 // handleStopRunE handles the stop command.
