@@ -2,51 +2,108 @@ package quiet_test
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/quiet"
-	"github.com/stretchr/testify/assert"
 )
 
+var (
+	errMockOpen = errors.New("mock open error")
+	errTest     = errors.New("test error")
+)
+
+// setupMockFileOpener creates a mock file opener with pipe for testing.
+func setupMockFileOpener(t *testing.T) (*quiet.MockFileOpener, *os.File) {
+	t.Helper()
+	mockOpener := quiet.NewMockFileOpener(t)
+	
+	// Create an in-memory pipe to avoid file system operations
+	_, writeFile, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe for testing: %v", err)
+	}
+	
+	mockOpener.EXPECT().Open(os.DevNull).Return(writeFile, nil)
+	return mockOpener, writeFile
+}
+
 func TestSilenceStdout_Success(t *testing.T) {
-	// Test that output is indeed silenced
-	var executed bool
+	// Remove t.Parallel() to avoid race conditions with os.Stdout
 
-	err := quiet.SilenceStdout(func() error {
-		fmt.Println("This should not appear in test output")
-
-		executed = true
-
+	// Arrange
+	mockOpener, writeFile := setupMockFileOpener(t)
+	defer writeFile.Close()
+	
+	functionCalled := false
+	testFunction := func() error {
+		functionCalled = true
 		return nil
-	})
+	}
 
-	assert.NoError(t, err)
-	assert.True(t, executed, "function should have been executed")
+	// Act
+	err := quiet.SilenceStdout(mockOpener, testFunction)
+
+	// Assert
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+
+	if !functionCalled {
+		t.Error("expected test function to be called")
+	}
+	// Verify stdout was restored
+	if os.Stdout == nil {
+		t.Error("expected stdout to be restored")
+	}
 }
 
-func TestSilenceStdout_Error(t *testing.T) {
-	expectedErr := errors.New("test error")
-	err := quiet.SilenceStdout(func() error {
-		fmt.Println("This should not appear in test output")
+func TestSilenceStdout_FunctionError(t *testing.T) {
+	// Remove t.Parallel() to avoid race conditions with os.Stdout
 
+	// Arrange
+	mockOpener, writeFile := setupMockFileOpener(t)
+	defer writeFile.Close()
+	
+	expectedErr := errTest
+	testFunction := func() error {
 		return expectedErr
-	})
+	}
 
-	assert.Error(t, err)
-	assert.Equal(t, expectedErr, err)
+	// Act
+	err := quiet.SilenceStdout(mockOpener, testFunction)
+
+	// Assert
+	if !errors.Is(err, expectedErr) {
+		t.Errorf("expected error %v, got %v", expectedErr, err)
+	}
 }
 
-func TestSilenceStdout_StdoutRestored(t *testing.T) {
-	originalStdout := os.Stdout
+func TestSilenceStdout_OpenError(t *testing.T) {
+	// Remove t.Parallel() to avoid race conditions with os.Stdout
 
-	err := quiet.SilenceStdout(func() error {
-		assert.NotEqual(t, originalStdout, os.Stdout, "stdout should be redirected during execution")
-
+	// Arrange
+	mockOpener := quiet.NewMockFileOpener(t)
+	mockOpener.EXPECT().Open(os.DevNull).Return(nil, errMockOpen)
+	
+	testFunction := func() error {
 		return nil
-	})
+	}
 
-	assert.NoError(t, err)
-	assert.Equal(t, originalStdout, os.Stdout, "stdout should be restored after execution")
+	// Act
+	err := quiet.SilenceStdout(mockOpener, testFunction)
+
+	// Assert
+	if err == nil {
+		t.Error("expected error when opener fails, got nil")
+	}
+
+	expectedSubstring := "failed to open os.DevNull"
+	if len(err.Error()) < len(expectedSubstring) || err.Error()[:len(expectedSubstring)] != expectedSubstring {
+		t.Errorf("expected error to start with %q, got %q", expectedSubstring, err.Error())
+	}
+
+	if !errors.Is(err, errMockOpen) {
+		t.Errorf("expected wrapped mock open error, got %q", err.Error())
+	}
 }

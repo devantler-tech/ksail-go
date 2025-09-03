@@ -56,7 +56,6 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 			DistributionConfig: "",
 			SourceDirectory:    "",
 			Distribution:       "",
-			ContainerEngine:    "",
 			CNI:                "",
 			CSI:                "",
 			IngressController:  "",
