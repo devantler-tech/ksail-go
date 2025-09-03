@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateDefaultObjectMeta creates a default metav1.ObjectMeta for testing.
-func CreateDefaultObjectMeta(name string) metav1.ObjectMeta {
+// CreateDefaultClusterMetadata creates a default metav1.ObjectMeta for testing cluster configurations.
+func CreateDefaultClusterMetadata(name string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:                       name,
 		GenerateName:               "",

@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator/k3d/defaults"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
@@ -88,26 +89,14 @@ func (g *K3dGenerator) buildExposureOpts() v1alpha5.SimpleExposureOpts {
 
 func (g *K3dGenerator) buildConfigOptions() v1alpha5.SimpleConfigOptions {
 	return v1alpha5.SimpleConfigOptions{
-		K3dOptions:        g.buildK3dOptions(),
+		K3dOptions:        defaults.K3dOptions(),
 		K3sOptions:        g.buildK3sOptions(),
 		KubeconfigOptions: g.buildKubeconfigOptions(),
 		Runtime:           g.buildRuntimeOptions(),
 	}
 }
 
-func (g *K3dGenerator) buildK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
-	return v1alpha5.SimpleConfigOptionsK3d{
-		Wait:                false,
-		Timeout:             0,
-		DisableLoadbalancer: false,
-		DisableImageVolume:  false,
-		NoRollback:          false,
-		NodeHookActions:     nil,
-		Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-			ConfigOverrides: nil,
-		},
-	}
-}
+
 
 func (g *K3dGenerator) buildK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
 	return v1alpha5.SimpleConfigOptionsK3s{

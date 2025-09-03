@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator/k3d/defaults"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	"github.com/docker/go-connections/nat"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
@@ -319,26 +320,14 @@ func buildTestExposureOpts() v1alpha5.SimpleExposureOpts {
 
 func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
 	return v1alpha5.SimpleConfigOptions{
-		K3dOptions:        buildTestK3dOptions(),
+		K3dOptions:        defaults.K3dOptions(),
 		K3sOptions:        buildTestK3sOptions(),
 		KubeconfigOptions: buildTestKubeconfigOptions(),
 		Runtime:           buildTestRuntimeOptions(),
 	}
 }
 
-func buildTestK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
-	return v1alpha5.SimpleConfigOptionsK3d{
-		Wait:                false,
-		Timeout:             0,
-		DisableLoadbalancer: false,
-		DisableImageVolume:  false,
-		NoRollback:          false,
-		NodeHookActions:     nil,
-		Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-			ConfigOverrides: nil,
-		},
-	}
-}
+
 
 func buildTestK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
 	return v1alpha5.SimpleConfigOptionsK3s{

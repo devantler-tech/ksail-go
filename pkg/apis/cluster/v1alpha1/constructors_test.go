@@ -78,7 +78,7 @@ func createTestClusterWithCustomValues() *v1alpha1.Cluster {
 }
 
 func createDefaultObjectMeta(name string) metav1.ObjectMeta {
-	return clustertestutils.CreateDefaultObjectMeta(name)
+	return clustertestutils.CreateDefaultClusterMetadata(name)
 }
 
 func createDefaultSpec() v1alpha1.Spec {

@@ -13,10 +13,9 @@ var (
 	errTest     = errors.New("test error")
 )
 
-func TestSilenceStdout_Success(t *testing.T) {
-	t.Parallel()
-
-	// Arrange
+// setupMockFileOpener creates a mock file opener with pipe for testing.
+func setupMockFileOpener(t *testing.T) (*quiet.MockFileOpener, *os.File) {
+	t.Helper()
 	mockOpener := quiet.NewMockFileOpener(t)
 	
 	// Create an in-memory pipe to avoid file system operations
@@ -24,9 +23,17 @@ func TestSilenceStdout_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create pipe for testing: %v", err)
 	}
-	defer writeFile.Close()
 	
 	mockOpener.EXPECT().Open(os.DevNull).Return(writeFile, nil)
+	return mockOpener, writeFile
+}
+
+func TestSilenceStdout_Success(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	mockOpener, writeFile := setupMockFileOpener(t)
+	defer writeFile.Close()
 	
 	functionCalled := false
 	testFunction := func() error {
@@ -35,7 +42,7 @@ func TestSilenceStdout_Success(t *testing.T) {
 	}
 
 	// Act
-	err = quiet.SilenceStdout(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, testFunction)
 
 	// Assert
 	if err != nil {
@@ -55,16 +62,8 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	mockOpener := quiet.NewMockFileOpener(t)
-	
-	// Create an in-memory pipe to avoid file system operations
-	_, writeFile, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("failed to create pipe for testing: %v", err)
-	}
+	mockOpener, writeFile := setupMockFileOpener(t)
 	defer writeFile.Close()
-	
-	mockOpener.EXPECT().Open(os.DevNull).Return(writeFile, nil)
 	
 	expectedErr := errTest
 	testFunction := func() error {
@@ -72,7 +71,7 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	}
 
 	// Act
-	err = quiet.SilenceStdout(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, testFunction)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {

@@ -135,7 +135,7 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: clustertestutils.CreateDefaultObjectMeta(name),
+		Metadata: clustertestutils.CreateDefaultClusterMetadata(name),
 		Spec:     spec,
 	}
 }
