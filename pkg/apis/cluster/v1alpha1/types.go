@@ -59,7 +59,7 @@ const (
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionKind, DistributionK3d, DistributionTind, DistributionEKS}
+	return []Distribution{DistributionEKS, DistributionK3d, DistributionKind, DistributionTind}
 }
 
 // CNI defines the CNI options for a KSail cluster.
