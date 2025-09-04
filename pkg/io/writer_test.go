@@ -199,7 +199,7 @@ func TestFileWriter_TryWriteFile_WriteError(t *testing.T) {
 	result, err := writer.TryWriteFile(content, invalidPath, false)
 
 	// Assert - expect error containing specific message
-	testutils.AssertErrContains(t, err, "failed to write file", "TryWriteFile() write failure")
+	testutils.AssertErrContains(t, err, "failed to open file", "TryWriteFile() open failure")
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 

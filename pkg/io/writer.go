@@ -25,7 +25,8 @@ func (FileWriter) TryWrite(content string, writer io.Writer) (string, error) {
 }
 
 // TryWriteFile writes content to a file path, handling force/overwrite logic.
-func (FileWriter) TryWriteFile(content string, output string, force bool) (string, error) {
+// It uses the standard io.Writer interface and calls TryWrite internally.
+func (fw FileWriter) TryWriteFile(content string, output string, force bool) (string, error) {
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)
@@ -36,12 +37,15 @@ func (FileWriter) TryWriteFile(content string, output string, force bool) (strin
 		}
 	}
 
-	err := os.WriteFile(output, []byte(content), filePermUserRW)
+	// Use os.OpenFile to get an io.Writer and call TryWrite
+	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermUserRW)
 	if err != nil {
-		return "", fmt.Errorf("failed to write file %s: %w", output, err)
+		return "", fmt.Errorf("failed to open file %s: %w", output, err)
 	}
+	defer file.Close()
 
-	return content, nil
+	// Call TryWrite with the file writer
+	return fw.TryWrite(content, file)
 }
 
 // GetWriter returns an appropriate writer based on the quiet flag.
