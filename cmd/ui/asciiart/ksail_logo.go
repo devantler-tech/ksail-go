@@ -9,7 +9,7 @@ import (
 	"github.com/fatih/color"
 )
 
-//go:embed ksail.txt
+//go:embed ksail_logo.txt
 var ksailLogo string
 
 const (
