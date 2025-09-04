@@ -42,7 +42,7 @@ func (g *YAMLGenerator[T]) Generate(model T, opts Options) (string, error) {
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(modelYAML, opts.Output, opts.Force)
+		result, err := g.TryWriteFile(modelYAML, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("failed to write YAML to file: %w", err)
 		}

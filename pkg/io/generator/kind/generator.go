@@ -43,7 +43,7 @@ func (g *KindGenerator) Generate(cfg *v1alpha4.Cluster, opts yamlgenerator.Optio
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(out, opts.Output, opts.Force)
+		result, err := g.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write kind config: %w", err)
 		}

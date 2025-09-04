@@ -11,11 +11,21 @@ import (
 // user read/write permission.
 const filePermUserRW = 0600
 
-// FileWriter provides a reusable TryWrite helper for generators.
+// FileWriter provides reusable writing helpers for generators.
 type FileWriter struct{}
 
-// TryWrite writes content to opts.Output, handling force/overwrite messaging.
-func (FileWriter) TryWrite(content string, output string, force bool) (string, error) {
+// TryWrite writes content to the provided writer.
+func (FileWriter) TryWrite(content string, writer io.Writer) (string, error) {
+	_, err := writer.Write([]byte(content))
+	if err != nil {
+		return "", fmt.Errorf("failed to write content: %w", err)
+	}
+
+	return content, nil
+}
+
+// TryWriteFile writes content to a file path, handling force/overwrite logic.
+func (FileWriter) TryWriteFile(content string, output string, force bool) (string, error) {
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)

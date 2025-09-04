@@ -40,7 +40,7 @@ func (g *EKSGenerator) Generate(cfg *v1alpha5.ClusterConfig, opts yamlgenerator.
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(out, opts.Output, opts.Force)
+		result, err := g.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write EKS config: %w", err)
 		}

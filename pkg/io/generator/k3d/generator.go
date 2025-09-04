@@ -41,7 +41,7 @@ func (g *K3dGenerator) Generate(cluster *v1alpha1.Cluster, opts yamlgenerator.Op
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(out, opts.Output, opts.Force)
+		result, err := g.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write k3d config: %w", err)
 		}

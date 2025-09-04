@@ -52,7 +52,7 @@ func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerato
 		return out, nil
 	}
 
-	result, err := g.TryWrite(out, opts.Output, opts.Force)
+	result, err := g.TryWriteFile(out, opts.Output, opts.Force)
 	if err != nil {
 		return "", fmt.Errorf("write kustomization: %w", err)
 	}
