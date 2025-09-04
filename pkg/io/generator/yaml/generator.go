@@ -17,8 +17,6 @@ type Options struct {
 
 // YAMLGenerator emits YAML for an arbitrary model using a provided marshaller.
 type YAMLGenerator[T any] struct {
-	io.FileWriter
-
 	Marshaller marshaller.Marshaller[T]
 }
 
@@ -27,7 +25,6 @@ func NewYAMLGenerator[T any]() *YAMLGenerator[T] {
 	m := yamlmarshaller.NewMarshaller[T]()
 
 	return &YAMLGenerator[T]{
-		FileWriter: io.FileWriter{},
 		Marshaller: m,
 	}
 }
@@ -42,7 +39,7 @@ func (g *YAMLGenerator[T]) Generate(model T, opts Options) (string, error) {
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWriteFile(modelYAML, opts.Output, opts.Force)
+		result, err := io.TryWriteFile(modelYAML, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("failed to write YAML to file: %w", err)
 		}

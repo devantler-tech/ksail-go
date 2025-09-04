@@ -11,11 +11,8 @@ import (
 // user read/write permission.
 const filePermUserRW = 0600
 
-// FileWriter provides reusable writing helpers for generators.
-type FileWriter struct{}
-
 // TryWrite writes content to the provided writer.
-func (FileWriter) TryWrite(content string, writer io.Writer) (string, error) {
+func TryWrite(content string, writer io.Writer) (string, error) {
 	_, err := writer.Write([]byte(content))
 	if err != nil {
 		return "", fmt.Errorf("failed to write content: %w", err)
@@ -26,7 +23,7 @@ func (FileWriter) TryWrite(content string, writer io.Writer) (string, error) {
 
 // TryWriteFile writes content to a file path, handling force/overwrite logic.
 // It uses the standard io.Writer interface and calls TryWrite internally.
-func (fw FileWriter) TryWriteFile(content string, output string, force bool) (string, error) {
+func TryWriteFile(content string, output string, force bool) (string, error) {
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)
@@ -45,7 +42,7 @@ func (fw FileWriter) TryWriteFile(content string, output string, force bool) (st
 	defer file.Close()
 
 	// Call TryWrite with the file writer
-	return fw.TryWrite(content, file)
+	return TryWrite(content, file)
 }
 
 // GetWriter returns an appropriate writer based on the quiet flag.

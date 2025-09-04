@@ -13,8 +13,6 @@ import (
 
 // EKSGenerator generates an EKS ClusterConfig YAML.
 type EKSGenerator struct {
-	io.FileWriter
-
 	Marshaller marshaller.Marshaller[*v1alpha5.ClusterConfig]
 }
 
@@ -23,7 +21,6 @@ func NewEKSGenerator() *EKSGenerator {
 	m := yamlmarshaller.NewMarshaller[*v1alpha5.ClusterConfig]()
 
 	return &EKSGenerator{
-		FileWriter: io.FileWriter{},
 		Marshaller: m,
 	}
 }
@@ -40,7 +37,7 @@ func (g *EKSGenerator) Generate(cfg *v1alpha5.ClusterConfig, opts yamlgenerator.
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWriteFile(out, opts.Output, opts.Force)
+		result, err := io.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write EKS config: %w", err)
 		}
