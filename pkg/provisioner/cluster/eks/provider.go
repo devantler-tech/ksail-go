@@ -14,7 +14,16 @@ import (
 
 // EKSClusterActions describes the subset of methods from eksctl's cluster actions used here.
 type EKSClusterActions interface {
-	// Delete deletes an EKS cluster
+	// Delete deletes an EKS cluster.
+	//
+	// Parameters:
+	//   ctx - context for cancellation and deadlines.
+	//   waitInterval - duration to wait between status checks.
+	//   podEvictionWaitPeriod - duration to wait for pod eviction from nodegroups.
+	//   wait - if true, waits for the cluster deletion to complete before returning.
+	//   force - if true, forces deletion even if there are issues (e.g., stuck resources).
+	//   disableNodegroupEviction - if true, skips eviction of pods from nodegroups before deletion.
+	//   parallel - number of parallel operations to use during deletion.
 	Delete(
 		ctx context.Context,
 		waitInterval, podEvictionWaitPeriod time.Duration,
