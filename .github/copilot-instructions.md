@@ -2,7 +2,7 @@
 
 KSail is a Go-based CLI tool for managing local Kubernetes clusters and workloads declaratively. **Currently a work-in-progress migration from a previous implementation.** The core CLI structure exists but most functionality is planned/under development.
 
-**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go  -e GOTOOLCHAIN=auto`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
+**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
