@@ -27,7 +27,7 @@ func TestCreate_Success(t *testing.T) {
 			"Create()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(clusterProvider *eks.ClusterProvider,
+			func(_ *eks.ClusterProvider,
 				clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
 				// No longer need to mock provider construction since it's injected directly
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -66,7 +66,7 @@ func TestDelete_Success(t *testing.T) {
 			"Delete()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(clusterProvider *eks.ClusterProvider,
+			func(_ *eks.ClusterProvider,
 				clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
 				// No longer need to mock provider construction since it's injected directly
 

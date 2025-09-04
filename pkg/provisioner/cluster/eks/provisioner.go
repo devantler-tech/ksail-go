@@ -59,7 +59,7 @@ func NewEKSClusterProvisioner(
 }
 
 // setupClusterOperation sets up common cluster operation prerequisites.
-func (e *EKSClusterProvisioner) setupClusterOperation(ctx context.Context, name string) (*eks.ClusterProvider, error) {
+func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name string) (*eks.ClusterProvider, error) {
 	target := setName(name, e.clusterConfig.Metadata.Name)
 	e.clusterConfig.Metadata.Name = target
 
