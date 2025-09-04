@@ -14,8 +14,6 @@ import (
 
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
-	io.FileWriter
-
 	KSailConfig *v1alpha1.Cluster
 	Marshaller  marshaller.Marshaller[*ktypes.Kustomization]
 }
@@ -25,7 +23,6 @@ func NewKustomizationGenerator(cfg *v1alpha1.Cluster) *KustomizationGenerator {
 	m := yamlmarshaller.NewMarshaller[*ktypes.Kustomization]()
 
 	return &KustomizationGenerator{
-		FileWriter:  io.FileWriter{},
 		KSailConfig: cfg,
 		Marshaller:  m,
 	}
@@ -52,7 +49,7 @@ func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerato
 		return out, nil
 	}
 
-	result, err := g.TryWrite(out, opts.Output, opts.Force)
+	result, err := io.TryWriteFile(out, opts.Output, opts.Force)
 	if err != nil {
 		return "", fmt.Errorf("write kustomization: %w", err)
 	}

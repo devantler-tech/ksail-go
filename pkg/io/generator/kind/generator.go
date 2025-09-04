@@ -13,8 +13,6 @@ import (
 
 // KindGenerator generates a kind Cluster YAML.
 type KindGenerator struct {
-	io.FileWriter
-
 	Marshaller marshaller.Marshaller[*v1alpha4.Cluster]
 }
 
@@ -23,7 +21,6 @@ func NewKindGenerator() *KindGenerator {
 	m := yamlmarshaller.NewMarshaller[*v1alpha4.Cluster]()
 
 	return &KindGenerator{
-		FileWriter: io.FileWriter{},
 		Marshaller: m,
 	}
 }
@@ -43,7 +40,7 @@ func (g *KindGenerator) Generate(cfg *v1alpha4.Cluster, opts yamlgenerator.Optio
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(out, opts.Output, opts.Force)
+		result, err := io.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write kind config: %w", err)
 		}

@@ -118,6 +118,16 @@
     "Warnln",
     "wharfie",
     "yamlgenerator",
-    "yamlmarshaller"
+    "yamlmarshaller",
+    "EKSYAML",
+    "Nodegroup",
+    "containerengine",
+    "eksctl",
+    "eksctl's",
+    "eksgenerator",
+    "eksprovisioner",
+    "nodegroup",
+    "nodegroups",
+    "weaveworks"
   ]
 }

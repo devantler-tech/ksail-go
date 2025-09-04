@@ -55,7 +55,6 @@ func CreateDefaultSpec() v1alpha1.Spec {
 			Context:    "",
 			Timeout:    metav1.Duration{Duration: time.Duration(0)},
 		},
-		ContainerEngine:    "",
 		CNI:                "",
 		CSI:                "",
 		IngressController:  "",

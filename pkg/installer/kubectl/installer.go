@@ -9,29 +9,17 @@ import (
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 )
 
-// APIExtensionsClient defines the interface for API extensions client operations.
-type APIExtensionsClient interface {
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Create(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.CreateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Update(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.UpdateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
-}
 
-// DynamicClient defines the interface for dynamic client operations.
-type DynamicClient interface {
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*unstructured.Unstructured, error)
-	Create(ctx context.Context, obj *unstructured.Unstructured, opts metav1.CreateOptions) (*unstructured.Unstructured, error)
-	Update(ctx context.Context, obj *unstructured.Unstructured, opts metav1.UpdateOptions) (*unstructured.Unstructured, error)
-	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
-}
 
 //go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
@@ -57,12 +45,12 @@ var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 // KubectlInstaller implements the installer.Installer interface for kubectl.
 type KubectlInstaller struct {
 	timeout             time.Duration
-	apiExtensionsClient APIExtensionsClient
-	dynamicClient       DynamicClient
+	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface
+	dynamicClient       dynamic.ResourceInterface
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient APIExtensionsClient, dynamicClient DynamicClient) *KubectlInstaller {
+func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface, dynamicClient dynamic.ResourceInterface) *KubectlInstaller {
 	return &KubectlInstaller{
 		timeout:             timeout,
 		apiExtensionsClient: apiExtensionsClient,
@@ -147,7 +135,7 @@ func (b *KubectlInstaller) installApplySetCR() error {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsClient) error {
+func (b *KubectlInstaller) applyCRD(ctx context.Context, client apiextensionsv1client.CustomResourceDefinitionInterface) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 
 	err := yaml.Unmarshal(applySetCRDYAML, &crd)
@@ -180,7 +168,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsCli
 
 func (b *KubectlInstaller) waitForCRDEstablished(
 	ctx context.Context,
-	client APIExtensionsClient,
+	client apiextensionsv1client.CustomResourceDefinitionInterface,
 	name string,
 ) error {
 	// Poll every 500ms until Established=True or timeout
@@ -220,7 +208,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 func (b *KubectlInstaller) applyApplySetCR(
 	ctx context.Context,
-	dyn DynamicClient,
+	dyn dynamic.ResourceInterface,
 	name string,
 ) error {
 	var applySetObj unstructured.Unstructured

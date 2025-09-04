@@ -28,7 +28,6 @@ type Spec struct {
 	SourceDirectory    string             `json:"sourceDirectory,omitzero"`
 	Connection         Connection         `json:"connection,omitzero"`
 	Distribution       Distribution       `json:"distribution,omitzero"`
-	ContainerEngine    ContainerEngine    `json:"containerEngine,omitzero"`
 	CNI                CNI                `json:"cni,omitzero"`
 	CSI                CSI                `json:"csi,omitzero"`
 	IngressController  IngressController  `json:"ingressController,omitzero"`
@@ -54,11 +53,13 @@ const (
 	DistributionK3d Distribution = "K3d"
 	// DistributionTind is the Talos in Docker distribution.
 	DistributionTind Distribution = "Tind"
+	// DistributionEKS is the EKS distribution.
+	DistributionEKS Distribution = "EKS"
 )
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionKind, DistributionK3d, DistributionTind}
+	return []Distribution{DistributionEKS, DistributionK3d, DistributionKind, DistributionTind}
 }
 
 // CNI defines the CNI options for a KSail cluster.
@@ -128,26 +129,12 @@ func validReconciliationTools() []ReconciliationTool {
 	}
 }
 
-// ContainerEngine defines the container engine used for local cluster lifecycle.
-type ContainerEngine string
-
-const (
-	// ContainerEngineDocker is the Docker container engine.
-	ContainerEngineDocker ContainerEngine = "Docker"
-	// ContainerEnginePodman is the Podman container engine.
-	ContainerEnginePodman ContainerEngine = "Podman"
-)
-
-// validContainerEngines enumerates supported container engines.
-func validContainerEngines() []ContainerEngine {
-	return []ContainerEngine{ContainerEngineDocker, ContainerEnginePodman}
-}
-
 // Options holds optional settings for distributions, networking, and deployment tools.
 type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
 	Tind OptionsTind `json:"talosInDocker,omitzero"`
+	EKS  OptionsEKS  `json:"eks,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
@@ -172,6 +159,14 @@ type OptionsK3d struct {
 // OptionsTind defines options specific to the Tind distribution.
 type OptionsTind struct {
 	// Add any specific fields for the Tind distribution here.
+}
+
+// OptionsEKS defines options specific to the EKS distribution.
+// This only includes configuration that is not part of eksctl v1alpha5.ClusterConfig.
+type OptionsEKS struct {
+	// AWSProfile specifies the AWS profile to use for authentication
+	// This is not part of ClusterConfig as it's a credential/authentication setting
+	AWSProfile string `json:"awsProfile,omitzero"`
 }
 
 // OptionsCilium defines options for the Cilium CNI.

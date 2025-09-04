@@ -1,8 +1,11 @@
 package io_test
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
@@ -11,36 +14,89 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileWriter_TryWrite_EmptyOutput(t *testing.T) {
+func TestTryWrite_WithBuffer(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
-	content := "test content"
+	content := "test content for buffer"
+	buffer := &bytes.Buffer{}
 
 	// Act
-	result, err := writer.TryWrite(content, "", false)
+	result, err := ioutils.TryWrite(content, buffer)
+
+	// Assert
+	require.NoError(t, err, "TryWrite()")
+	assert.Equal(t, content, result, "TryWrite() result")
+	assert.Equal(t, content, buffer.String(), "buffer content")
+}
+
+func TestTryWrite_WithStringWriter(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	content := "test content for string writer"
+	stringBuilder := &strings.Builder{}
+
+	// Act
+	result, err := ioutils.TryWrite(content, stringBuilder)
+
+	// Assert
+	require.NoError(t, err, "TryWrite()")
+	assert.Equal(t, content, result, "TryWrite() result")
+	assert.Equal(t, content, stringBuilder.String(), "string builder content")
+}
+
+func TestTryWrite_WithFailingWriter(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	content := "test content"
+	failingWriter := &failingWriter{}
+
+	// Act
+	result, err := ioutils.TryWrite(content, failingWriter)
 
 	// Assert
 	require.Error(t, err, "TryWrite()")
+	assert.Contains(t, err.Error(), "failed to write content", "error message")
 	assert.Empty(t, result, "TryWrite() result on error")
 }
 
-func TestFileWriter_TryWrite_NewFile(t *testing.T) {
+// failingWriter always returns an error on Write
+type failingWriter struct{}
+
+func (f *failingWriter) Write([]byte) (int, error) {
+	return 0, io.ErrUnexpectedEOF
+}
+
+func TestTryWriteFile_EmptyOutput(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
+	content := "test content"
+
+	// Act
+	result, err := ioutils.TryWriteFile(content, "", false)
+
+	// Assert
+	require.Error(t, err, "TryWriteFile()")
+	assert.Empty(t, result, "TryWriteFile() result on error")
+}
+
+func TestTryWriteFile_NewFile(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
 	content := "new file content"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "test.txt")
 
 	// Act
-	result, err := writer.TryWrite(content, outputPath, false)
+	result, err := ioutils.TryWriteFile(content, outputPath, false)
 
 	// Assert
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, content, result, "TryWrite()")
+	require.NoError(t, err, "TryWriteFile()")
+	assert.Equal(t, content, result, "TryWriteFile()")
 
 	// Verify file was written
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
@@ -48,11 +104,10 @@ func TestFileWriter_TryWrite_NewFile(t *testing.T) {
 	assert.Equal(t, content, string(writtenContent), "written file content")
 }
 
-func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
+func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
 	originalContent := "original content"
 	newContent := "new content"
 	tempDir := t.TempDir()
@@ -63,11 +118,11 @@ func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
 	require.NoError(t, err, "WriteFile() setup")
 
 	// Act
-	result, err := writer.TryWrite(newContent, outputPath, false)
+	result, err := ioutils.TryWriteFile(newContent, outputPath, false)
 
 	// Assert
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, newContent, result, "TryWrite()")
+	require.NoError(t, err, "TryWriteFile()")
+	assert.Equal(t, newContent, result, "TryWriteFile()")
 
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
@@ -75,11 +130,10 @@ func TestFileWriter_TryWrite_ExistingFile_NoForce(t *testing.T) {
 	assert.Equal(t, originalContent, string(writtenContent), "file content (should not be overwritten)")
 }
 
-func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
+func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
 	originalContent := "original content"
 	newContent := "new content forced"
 	tempDir := t.TempDir()
@@ -90,11 +144,11 @@ func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
 	require.NoError(t, err, "WriteFile() setup")
 
 	// Act
-	result, err := writer.TryWrite(newContent, outputPath, true)
+	result, err := ioutils.TryWriteFile(newContent, outputPath, true)
 
 	// Assert
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, newContent, result, "TryWrite()")
+	require.NoError(t, err, "TryWriteFile()")
+	assert.Equal(t, newContent, result, "TryWriteFile()")
 
 	// Verify file was overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
@@ -102,11 +156,10 @@ func TestFileWriter_TryWrite_ExistingFile_Force(t *testing.T) {
 	assert.Equal(t, newContent, string(writtenContent), "file content (should be overwritten)")
 }
 
-func TestFileWriter_TryWrite_StatError(t *testing.T) {
+func TestTryWriteFile_StatError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
 	content := "content for stat error test"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "restricted", "file.txt")
@@ -117,27 +170,50 @@ func TestFileWriter_TryWrite_StatError(t *testing.T) {
 	require.NoError(t, err, "Mkdir() setup")
 
 	// Act
-	result, err := writer.TryWrite(content, outputPath, false)
+	result, err := ioutils.TryWriteFile(content, outputPath, false)
 
 	// Assert - expect error containing specific message
-	testutils.AssertErrContains(t, err, "failed to check file", "TryWrite() stat failure")
-	assert.Empty(t, result, "TryWrite() result on error")
+	testutils.AssertErrContains(t, err, "failed to check file", "TryWriteFile() stat failure")
+	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
-func TestFileWriter_TryWrite_WriteError(t *testing.T) {
+func TestTryWriteFile_WriteError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	writer := ioutils.FileWriter{}
 	content := "content for write error test"
 
 	// Use a path that cannot be written to (directory that doesn't exist)
 	invalidPath := "/invalid/nonexistent/deeply/nested/path/file.txt"
 
 	// Act
-	result, err := writer.TryWrite(content, invalidPath, false)
+	result, err := ioutils.TryWriteFile(content, invalidPath, false)
 
 	// Assert - expect error containing specific message
-	testutils.AssertErrContains(t, err, "failed to write file", "TryWrite() write failure")
-	assert.Empty(t, result, "TryWrite() result on error")
+	testutils.AssertErrContains(t, err, "failed to open file", "TryWriteFile() open failure")
+	assert.Empty(t, result, "TryWriteFile() result on error")
+}
+
+func TestGetWriter_Quiet(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	writer := ioutils.GetWriter(true)
+
+	// Assert
+	if writer != io.Discard {
+		t.Errorf("expected io.Discard for quiet=true, got %T", writer)
+	}
+}
+
+func TestGetWriter_NotQuiet(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	writer := ioutils.GetWriter(false)
+
+	// Assert
+	if writer != os.Stdout {
+		t.Errorf("expected os.Stdout for quiet=false, got %T", writer)
+	}
 }

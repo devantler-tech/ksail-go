@@ -27,5 +27,6 @@ linters:
             - github.com/rancher
             - github.com/spf13/cobra
             - github.com/stretchr/testify
+            - github.com/weaveworks/eksctl
             - k8s.io
             - sigs.k8s.io

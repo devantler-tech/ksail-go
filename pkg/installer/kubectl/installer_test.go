@@ -10,22 +10,24 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 )
 
 // testSetup provides common setup for kubectl installer tests.
-func testSetup(t *testing.T) (*kubectlinstaller.MockAPIExtensionsClient, *kubectlinstaller.MockDynamicClient) {
+func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
 	t.Helper()
-	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
-	dynClient := kubectlinstaller.NewMockDynamicClient(t)
+	apiExtClient := kubectlinstaller.NewMockCustomResourceDefinitionInterface(t)
+	dynClient := kubectlinstaller.NewMockResourceInterface(t)
 	return apiExtClient, dynClient
 }
 
 // createTestInstaller creates a kubectl installer with common test configuration.
-func createTestInstaller(apiExtClient kubectlinstaller.APIExtensionsClient, dynClient kubectlinstaller.DynamicClient) *kubectlinstaller.KubectlInstaller {
+func createTestInstaller(apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface, dynClient dynamic.ResourceInterface) *kubectlinstaller.KubectlInstaller {
 	return kubectlinstaller.NewKubectlInstaller(
 		5*time.Second,
 		apiExtClient,
@@ -38,8 +40,8 @@ func TestNewKubectlInstaller(t *testing.T) {
 
 	// Arrange
 	timeout := 5 * time.Minute
-	apiExtClient := kubectlinstaller.NewMockAPIExtensionsClient(t)
-	dynClient := kubectlinstaller.NewMockDynamicClient(t)
+	apiExtClient := kubectlinstaller.NewMockCustomResourceDefinitionInterface(t)
+	dynClient := kubectlinstaller.NewMockResourceInterface(t)
 
 	// Act
 	installer := kubectlinstaller.NewKubectlInstaller(timeout, apiExtClient, dynClient)

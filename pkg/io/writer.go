@@ -4,17 +4,26 @@ package io
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 )
 
 // user read/write permission.
 const filePermUserRW = 0600
 
-// FileWriter provides a reusable TryWrite helper for generators.
-type FileWriter struct{}
+// TryWrite writes content to the provided writer.
+func TryWrite(content string, writer io.Writer) (string, error) {
+	_, err := writer.Write([]byte(content))
+	if err != nil {
+		return "", fmt.Errorf("failed to write content: %w", err)
+	}
 
-// TryWrite writes content to opts.Output, handling force/overwrite messaging.
-func (FileWriter) TryWrite(content string, output string, force bool) (string, error) {
+	return content, nil
+}
+
+// TryWriteFile writes content to a file path, handling force/overwrite logic.
+// It uses the standard io.Writer interface and calls TryWrite internally.
+func TryWriteFile(content string, output string, force bool) (string, error) {
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)
@@ -25,10 +34,23 @@ func (FileWriter) TryWrite(content string, output string, force bool) (string, e
 		}
 	}
 
-	err := os.WriteFile(output, []byte(content), filePermUserRW)
+	// Use os.OpenFile to get an io.Writer and call TryWrite
+	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermUserRW)
 	if err != nil {
-		return "", fmt.Errorf("failed to write file %s: %w", output, err)
+		return "", fmt.Errorf("failed to open file %s: %w", output, err)
 	}
+	defer file.Close()
 
-	return content, nil
+	// Call TryWrite with the file writer
+	return TryWrite(content, file)
+}
+
+// GetWriter returns an appropriate writer based on the quiet flag.
+// If quiet is true, returns io.Discard to silence output.
+// If quiet is false, returns os.Stdout for normal output.
+func GetWriter(quiet bool) io.Writer {
+	if quiet {
+		return io.Discard
+	}
+	return os.Stdout
 }

@@ -2,7 +2,7 @@
 
 KSail is a Go-based CLI tool for managing local Kubernetes clusters and workloads declaratively. **Currently a work-in-progress migration from a previous implementation.** The core CLI structure exists but most functionality is planned/under development.
 
-**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
+**This file configures the GitHub Copilot agent environment** to use the correct tools for linting (`mega-linter-runner -f go  -e GOTOOLCHAIN=auto`), building (`go build`), and testing (`go test`) as specified in CONTRIBUTING.md.
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
@@ -14,7 +14,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Download dependencies**: `go mod download` (completes in ~0.03 seconds when cached, up to 30 seconds on first run)
 - **Build the application**: `go build -o ksail .` -- takes ~0.77 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install mega-linter-runner**: For comprehensive linting (primary linting tool): Install per [mega-linter docs](https://megalinter.io/latest/mega-linter-runner/#installation)
-  - **CRITICAL**: Always use `mega-linter-runner -f go` for linting as specified in CONTRIBUTING.md
+  - **CRITICAL**: Always use `mega-linter-runner -f go -e GOTOOLCHAIN=auto` for linting as specified in CONTRIBUTING.md
   - This is the primary linting tool used in CI and should be used locally for consistency
 
 ### Additional Development Tools (Optional)
@@ -96,7 +96,7 @@ Always reference these instructions first and fallback to search or bash command
    ./ksail start --help
    ./ksail stop --help
    ./ksail reconcile --help
-   
+
    # Test different flag combinations
    ./ksail init --container-engine Podman --distribution K3d
    ./ksail list --all

@@ -15,8 +15,6 @@ import (
 
 // K3dGenerator generates a k3d SimpleConfig YAML.
 type K3dGenerator struct {
-	io.FileWriter
-
 	Marshaller marshaller.Marshaller[*v1alpha5.SimpleConfig]
 }
 
@@ -25,7 +23,6 @@ func NewK3dGenerator() *K3dGenerator {
 	m := yamlmarshaller.NewMarshaller[*v1alpha5.SimpleConfig]()
 
 	return &K3dGenerator{
-		FileWriter: io.FileWriter{},
 		Marshaller: m,
 	}
 }
@@ -41,7 +38,7 @@ func (g *K3dGenerator) Generate(cluster *v1alpha1.Cluster, opts yamlgenerator.Op
 
 	// write to file if output path is specified
 	if opts.Output != "" {
-		result, err := g.TryWrite(out, opts.Output, opts.Force)
+		result, err := io.TryWriteFile(out, opts.Output, opts.Force)
 		if err != nil {
 			return "", fmt.Errorf("write k3d config: %w", err)
 		}

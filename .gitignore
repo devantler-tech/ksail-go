@@ -39,6 +39,12 @@ report/
 *.zip
 __MACOSX/
 
+# megalinter temp files
+*-megalinter_file_names_cspell.txt
+
 # Go test coverage reports
 coverage*.out
 coverage.html
+
+# megalinter output
+megalinter_output.log
