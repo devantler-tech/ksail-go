@@ -9,29 +9,21 @@ import (
 	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 )
 
-// APIExtensionsClient defines the interface for API extensions client operations.
-type APIExtensionsClient interface {
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Create(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.CreateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Update(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, opts metav1.UpdateOptions) (*apiextensionsv1.CustomResourceDefinition, error)
-	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
-}
+// APIExtensionsClient uses the official Kubernetes client interface.
+type APIExtensionsClient = apiextensionsv1client.CustomResourceDefinitionInterface
 
-// DynamicClient defines the interface for dynamic client operations.
-type DynamicClient interface {
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*unstructured.Unstructured, error)
-	Create(ctx context.Context, obj *unstructured.Unstructured, opts metav1.CreateOptions) (*unstructured.Unstructured, error)
-	Update(ctx context.Context, obj *unstructured.Unstructured, opts metav1.UpdateOptions) (*unstructured.Unstructured, error)
-	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
-}
+// DynamicClient uses the official Kubernetes dynamic client interface.
+type DynamicClient = dynamic.ResourceInterface
 
 //go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
