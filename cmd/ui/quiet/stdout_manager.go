@@ -9,15 +9,15 @@ type StdoutManager interface {
 	SetStdout(file *os.File)
 }
 
-// RealStdoutManager implements StdoutManager using the actual os.Stdout.
-type RealStdoutManager struct{}
+// OSStdoutManager implements StdoutManager using the actual os.Stdout.
+type OSStdoutManager struct{}
 
 // GetStdout returns the current os.Stdout.
-func (r *RealStdoutManager) GetStdout() *os.File {
+func (r *OSStdoutManager) GetStdout() *os.File {
 	return os.Stdout
 }
 
 // SetStdout sets os.Stdout to the provided file.
-func (r *RealStdoutManager) SetStdout(file *os.File) {
+func (r *OSStdoutManager) SetStdout(file *os.File) {
 	os.Stdout = file
 }

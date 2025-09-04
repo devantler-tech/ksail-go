@@ -31,15 +31,6 @@ type EKSClusterActions interface {
 	) error
 }
 
-// EKSProviderConstructor describes the constructor for creating ClusterProvider instances.
-type EKSProviderConstructor interface {
-	// NewClusterProvider creates a new EKS ClusterProvider
-	NewClusterProvider(
-		ctx context.Context,
-		spec *v1alpha5.ProviderConfig,
-		clusterSpec *v1alpha5.ClusterConfig,
-	) (*eks.ClusterProvider, error)
-}
 
 // EKSClusterLister describes the interface for listing clusters.
 type EKSClusterLister interface {

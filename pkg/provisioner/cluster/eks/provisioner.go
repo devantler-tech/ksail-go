@@ -29,12 +29,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig       *v1alpha5.ClusterConfig
-	providerConstructor EKSProviderConstructor
-	clusterActions      EKSClusterActions
-	clusterLister       EKSClusterLister
-	clusterCreator      EKSClusterCreator
-	nodeGroupManager    EKSNodeGroupManager
+	clusterConfig     *v1alpha5.ClusterConfig
+	clusterProvider   *eks.ClusterProvider
+	clusterActions    EKSClusterActions
+	clusterLister     EKSClusterLister
+	clusterCreator    EKSClusterCreator
+	nodeGroupManager  EKSNodeGroupManager
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -42,35 +42,28 @@ type EKSClusterProvisioner struct {
 // and unit testing via mocks.
 func NewEKSClusterProvisioner(
 	clusterConfig *v1alpha5.ClusterConfig,
-	providerConstructor EKSProviderConstructor,
+	clusterProvider *eks.ClusterProvider,
 	clusterActions EKSClusterActions,
 	clusterLister EKSClusterLister,
 	clusterCreator EKSClusterCreator,
 	nodeGroupManager EKSNodeGroupManager,
 ) *EKSClusterProvisioner {
 	return &EKSClusterProvisioner{
-		clusterConfig:       clusterConfig,
-		providerConstructor: providerConstructor,
-		clusterActions:      clusterActions,
-		clusterLister:       clusterLister,
-		clusterCreator:      clusterCreator,
-		nodeGroupManager:    nodeGroupManager,
+		clusterConfig:    clusterConfig,
+		clusterProvider:  clusterProvider,
+		clusterActions:   clusterActions,
+		clusterLister:    clusterLister,
+		clusterCreator:   clusterCreator,
+		nodeGroupManager: nodeGroupManager,
 	}
 }
 
-// createProvider creates a provider with explicit config for the given cluster.
-func (e *EKSClusterProvisioner) createProvider(ctx context.Context) (*eks.ClusterProvider, error) {
-	// Create provider with explicit config
-	providerConfig := &v1alpha5.ProviderConfig{
-		Region: e.clusterConfig.Metadata.Region,
-	}
+// setupClusterOperation sets up common cluster operation prerequisites.
+func (e *EKSClusterProvisioner) setupClusterOperation(ctx context.Context, name string) (*eks.ClusterProvider, error) {
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
 
-	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create EKS provider: %w", err)
-	}
-
-	return ctl, nil
+	return e.clusterProvider, nil
 }
 
 // ensureClusterExists checks if a cluster exists and returns ErrClusterNotFound if not.
@@ -85,14 +78,6 @@ func (e *EKSClusterProvisioner) ensureClusterExists(name string) error {
 	}
 
 	return nil
-}
-
-// setupClusterOperation sets up common cluster operation prerequisites.
-func (e *EKSClusterProvisioner) setupClusterOperation(ctx context.Context, name string) (*eks.ClusterProvider, error) {
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
-	return e.createProvider(ctx)
 }
 
 // setupNodeGroupManager sets up common node group management prerequisites.
@@ -212,12 +197,7 @@ func (e *EKSClusterProvisioner) Stop(name string) error {
 func (e *EKSClusterProvisioner) List() ([]string, error) {
 	ctx := context.Background()
 
-	ctl, err := e.createProvider(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	descriptions, err := e.clusterLister.GetClusters(ctx, ctl, false, DefaultChunkSize)
+	descriptions, err := e.clusterLister.GetClusters(ctx, e.clusterProvider, false, DefaultChunkSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
 	}

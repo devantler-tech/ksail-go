@@ -27,10 +27,9 @@ func TestCreate_Success(t *testing.T) {
 			"Create()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor,
+			func(clusterProvider *eks.ClusterProvider,
 				clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).
-					Return(&eks.ClusterProvider{}, nil)
+				// No longer need to mock provider construction since it's injected directly
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
@@ -40,24 +39,11 @@ func TestCreate_Success(t *testing.T) {
 	})
 }
 
-func TestCreate_Error_ProviderFailed(t *testing.T) {
-	t.Parallel()
-
-	provisioner, providerConstructor, _, _, _, _ := newProvisionerForTest(t)
-
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(nil, errBoom)
-
-	err := provisioner.Create("test-cluster")
-
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to create EKS provider", "Create()")
-}
-
 func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, _, clusterCreator, _ := newProvisionerForTest(t)
+	provisioner, _, _, _, clusterCreator, _ := newProvisionerForTest(t)
 
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
 	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errBoom)
 
 	err := provisioner.Create("test-cluster")
@@ -80,10 +66,9 @@ func TestDelete_Success(t *testing.T) {
 			"Delete()",
 			nameCase.InputName,
 			nameCase.ExpectedName,
-			func(providerConstructor *eksprovisioner.MockEKSProviderConstructor,
+			func(clusterProvider *eks.ClusterProvider,
 				clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
-				providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).
-					Return(&eks.ClusterProvider{}, nil)
+				// No longer need to mock provider construction since it's injected directly
 
 				// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
 				//   wait, force, disableNodegroupEviction bool, parallel int)
@@ -105,16 +90,25 @@ func TestDelete_Success(t *testing.T) {
 	})
 }
 
-func TestDelete_Error_ProviderFailed(t *testing.T) {
+func TestDelete_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, _, _, _ := newProvisionerForTest(t)
+	provisioner, _, clusterActions, _, _, _ := newProvisionerForTest(t)
 
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(nil, errBoom)
+	clusterActions.On(
+		"Delete",
+		mock.Anything,                         // ctx context.Context
+		mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
+		mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
+		mock.AnythingOfType("bool"),           // wait bool
+		mock.AnythingOfType("bool"),           // force bool
+		mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
+		mock.AnythingOfType("int"),            // parallel int
+	).Return(errBoom)
 
 	err := provisioner.Delete("test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to create EKS provider", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to delete EKS cluster", "Delete()")
 }
 
 func TestStart_Success(t *testing.T) {
@@ -123,10 +117,7 @@ func TestStart_Success(t *testing.T) {
 	cases := testutils.DefaultNameCases("cfg-name")
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
-		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
-
-		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-
+		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
 		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
 		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
 
@@ -143,9 +134,8 @@ func TestStart_Success(t *testing.T) {
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
 	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]cluster.Description{}, nil)
 
 	err := provisioner.Start("test-cluster")
@@ -159,10 +149,7 @@ func TestStop_Success(t *testing.T) {
 	cases := testutils.DefaultNameCases("cfg-name")
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
-		provisioner, providerConstructor, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
-
-		providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-
+		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
 		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
 		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
 
@@ -179,10 +166,7 @@ func TestStop_Success(t *testing.T) {
 func TestList_Success(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
-
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-
+	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 	descriptions := []cluster.Description{
 		{Name: "cluster1"},
 		{Name: "cluster2"},
@@ -195,26 +179,23 @@ func TestList_Success(t *testing.T) {
 	assert.Equal(t, []string{"cluster1", "cluster2"}, clusters)
 }
 
-func TestList_Error_ProviderFailed(t *testing.T) {
+func TestList_Error_GetClustersFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, _, _, _ := newProvisionerForTest(t)
-
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(nil, errBoom)
-
+	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	
+	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errBoom)
+	
 	clusters, err := provisioner.List()
 
 	assert.Nil(t, clusters)
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to create EKS provider", "List()")
+	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list EKS clusters", "List()")
 }
 
 func TestExists_Success_True(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
-
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
-
+	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 	descriptions := []cluster.Description{{Name: "cfg-name"}}
 	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
 
@@ -227,9 +208,8 @@ func TestExists_Success_True(t *testing.T) {
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 
-	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 
-	providerConstructor.On("NewClusterProvider", mock.Anything, mock.Anything, mock.Anything).Return(&eks.ClusterProvider{}, nil)
 	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]cluster.Description{}, nil)
 
 	exists, err := provisioner.Exists("nonexistent")
@@ -244,7 +224,7 @@ func newProvisionerForTest(
 	t *testing.T,
 ) (
 	*eksprovisioner.EKSClusterProvisioner,
-	*eksprovisioner.MockEKSProviderConstructor,
+	*eks.ClusterProvider,
 	*eksprovisioner.MockEKSClusterActions,
 	*eksprovisioner.MockEKSClusterLister,
 	*eksprovisioner.MockEKSClusterCreator,
@@ -270,7 +250,8 @@ func newProvisionerForTest(
 		},
 	}
 
-	providerConstructor := eksprovisioner.NewMockEKSProviderConstructor(t)
+	// For tests, we can use a nil ClusterProvider since the actual provider methods are mocked
+	clusterProvider := (*eks.ClusterProvider)(nil)
 	clusterActions := eksprovisioner.NewMockEKSClusterActions(t)
 	clusterLister := eksprovisioner.NewMockEKSClusterLister(t)
 	clusterCreator := eksprovisioner.NewMockEKSClusterCreator(t)
@@ -278,17 +259,17 @@ func newProvisionerForTest(
 
 	provisioner := eksprovisioner.NewEKSClusterProvisioner(
 		clusterConfig,
-		providerConstructor,
+		clusterProvider,
 		clusterActions,
 		clusterLister,
 		clusterCreator,
 		nodeGroupManager,
 	)
 
-	return provisioner, providerConstructor, clusterActions, clusterLister, clusterCreator, nodeGroupManager
+	return provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
 }
 
-type expectProviderFn func(*eksprovisioner.MockEKSProviderConstructor, *eksprovisioner.MockEKSClusterCreator, string)
+type expectProviderFn func(*eks.ClusterProvider, *eksprovisioner.MockEKSClusterCreator, string)
 type actionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
 
 func runActionSuccess(
@@ -299,8 +280,8 @@ func runActionSuccess(
 	action actionFn,
 ) {
 	t.Helper()
-	provisioner, providerConstructor, _, _, clusterCreator, _ := newProvisionerForTest(t)
-	expect(providerConstructor, clusterCreator, expectedName)
+	provisioner, clusterProvider, _, _, clusterCreator, _ := newProvisionerForTest(t)
+	expect(clusterProvider, clusterCreator, expectedName)
 
 	err := action(provisioner, inputName)
 	if err != nil {
@@ -308,7 +289,7 @@ func runActionSuccess(
 	}
 }
 
-type expectDeleteProviderFn func(*eksprovisioner.MockEKSProviderConstructor, *eksprovisioner.MockEKSClusterActions, string)
+type expectDeleteProviderFn func(*eks.ClusterProvider, *eksprovisioner.MockEKSClusterActions, string)
 type deleteActionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
 
 func runDeleteActionSuccess(
@@ -319,8 +300,8 @@ func runDeleteActionSuccess(
 	action deleteActionFn,
 ) {
 	t.Helper()
-	provisioner, providerConstructor, clusterActions, _, _, _ := newProvisionerForTest(t)
-	expect(providerConstructor, clusterActions, expectedName)
+	provisioner, clusterProvider, clusterActions, _, _, _ := newProvisionerForTest(t)
+	expect(clusterProvider, clusterActions, expectedName)
 
 	err := action(provisioner, inputName)
 	if err != nil {
@@ -328,7 +309,7 @@ func runDeleteActionSuccess(
 	}
 }
 
-type expectListProviderFn func(*eksprovisioner.MockEKSProviderConstructor, *eksprovisioner.MockEKSClusterLister, string)
+type expectListProviderFn func(*eks.ClusterProvider, *eksprovisioner.MockEKSClusterLister, string)
 type listActionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
 
 func runListActionSuccess(
@@ -339,8 +320,8 @@ func runListActionSuccess(
 	action listActionFn,
 ) {
 	t.Helper()
-	provisioner, providerConstructor, _, clusterLister, _, _ := newProvisionerForTest(t)
-	expect(providerConstructor, clusterLister, expectedName)
+	provisioner, clusterProvider, _, clusterLister, _, _ := newProvisionerForTest(t)
+	expect(clusterProvider, clusterLister, expectedName)
 
 	err := action(provisioner, inputName)
 	if err != nil {
