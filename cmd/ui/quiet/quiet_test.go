@@ -13,10 +13,11 @@ var (
 	errTest     = errors.New("test error")
 )
 
-// setupMockFileOpener creates a mock file opener with pipe for testing.
-func setupMockFileOpener(t *testing.T) (*quiet.MockFileOpener, *os.File) {
+// setupMocks creates mock file opener and stdout manager with pipe for testing.
+func setupMocks(t *testing.T) (*quiet.MockFileOpener, *quiet.MockStdoutManager, *os.File, *os.File) {
 	t.Helper()
 	mockOpener := quiet.NewMockFileOpener(t)
+	mockStdoutManager := quiet.NewMockStdoutManager(t)
 	
 	// Create an in-memory pipe to avoid file system operations
 	_, writeFile, err := os.Pipe()
@@ -24,25 +25,43 @@ func setupMockFileOpener(t *testing.T) (*quiet.MockFileOpener, *os.File) {
 		t.Fatalf("failed to create pipe for testing: %v", err)
 	}
 	
+	// Create a fake stdout for testing
+	_, fakeStdout, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create fake stdout for testing: %v", err)
+	}
+	
 	mockOpener.EXPECT().Open(os.DevNull).Return(writeFile, nil)
-	return mockOpener, writeFile
+	mockStdoutManager.EXPECT().GetStdout().Return(fakeStdout)
+	mockStdoutManager.EXPECT().SetStdout(writeFile).Once()
+	mockStdoutManager.EXPECT().SetStdout(fakeStdout).Once()
+	
+	return mockOpener, mockStdoutManager, writeFile, fakeStdout
 }
 
 func TestSilenceStdout_Success(t *testing.T) {
-	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
+	t.Parallel() // Now safe to run in parallel with mocked stdout
 
 	// Arrange
-	mockOpener, writeFile := setupMockFileOpener(t)
-	defer writeFile.Close()
+	mockOpener, mockStdoutManager, writeFile, fakeStdout := setupMocks(t)
+	_ = writeFile // writeFile will be closed by SilenceStdout function
+
+	defer func() {
+		err := fakeStdout.Close()
+		if err != nil {
+			t.Errorf("failed to close fakeStdout: %v", err)
+		}
+	}()
 	
 	functionCalled := false
 	testFunction := func() error {
 		functionCalled = true
+
 		return nil
 	}
 
 	// Act
-	err := quiet.SilenceStdout(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, mockStdoutManager, testFunction)
 
 	// Assert
 	if err != nil {
@@ -52,18 +71,21 @@ func TestSilenceStdout_Success(t *testing.T) {
 	if !functionCalled {
 		t.Error("expected test function to be called")
 	}
-	// Verify stdout was restored
-	if os.Stdout == nil {
-		t.Error("expected stdout to be restored")
-	}
 }
 
 func TestSilenceStdout_FunctionError(t *testing.T) {
-	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
+	t.Parallel() // Now safe to run in parallel with mocked stdout
 
 	// Arrange
-	mockOpener, writeFile := setupMockFileOpener(t)
-	defer writeFile.Close()
+	mockOpener, mockStdoutManager, writeFile, fakeStdout := setupMocks(t)
+	_ = writeFile // writeFile will be closed by SilenceStdout function
+
+	defer func() {
+		err := fakeStdout.Close()
+		if err != nil {
+			t.Errorf("failed to close fakeStdout: %v", err)
+		}
+	}()
 	
 	expectedErr := errTest
 	testFunction := func() error {
@@ -71,7 +93,7 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 	}
 
 	// Act
-	err := quiet.SilenceStdout(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, mockStdoutManager, testFunction)
 
 	// Assert
 	if !errors.Is(err, expectedErr) {
@@ -80,10 +102,12 @@ func TestSilenceStdout_FunctionError(t *testing.T) {
 }
 
 func TestSilenceStdout_OpenError(t *testing.T) {
-	// Cannot use t.Parallel() due to race conditions with global os.Stdout modification
+	t.Parallel() // Now safe to run in parallel with mocked stdout
 
 	// Arrange
 	mockOpener := quiet.NewMockFileOpener(t)
+	mockStdoutManager := quiet.NewMockStdoutManager(t)
+
 	mockOpener.EXPECT().Open(os.DevNull).Return(nil, errMockOpen)
 	
 	testFunction := func() error {
@@ -91,7 +115,7 @@ func TestSilenceStdout_OpenError(t *testing.T) {
 	}
 
 	// Act
-	err := quiet.SilenceStdout(mockOpener, testFunction)
+	err := quiet.SilenceStdout(mockOpener, mockStdoutManager, testFunction)
 
 	// Assert
 	if err == nil {

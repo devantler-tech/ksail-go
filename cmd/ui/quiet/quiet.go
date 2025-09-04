@@ -13,8 +13,8 @@ func handleCloseError(err error) {
 	}
 }
 
-// SilenceStdout runs function with os.Stdout redirected to /dev/null using the provided opener.
-func SilenceStdout(opener FileOpener, function func() error) error {
+// SilenceStdout runs function with stdout redirected to /dev/null using the provided opener and stdout manager.
+func SilenceStdout(opener FileOpener, stdoutManager StdoutManager, function func() error) error {
 	devNull, err := opener.Open(os.DevNull)
 	if err != nil {
 		return fmt.Errorf("failed to open os.DevNull: %w", err)
@@ -24,10 +24,10 @@ func SilenceStdout(opener FileOpener, function func() error) error {
 		handleCloseError(devNull.Close())
 	}()
 
-	old := os.Stdout
-	os.Stdout = devNull
+	old := stdoutManager.GetStdout()
+	stdoutManager.SetStdout(devNull)
 
-	defer func() { os.Stdout = old }()
+	defer func() { stdoutManager.SetStdout(old) }()
 
 	return function()
 }
