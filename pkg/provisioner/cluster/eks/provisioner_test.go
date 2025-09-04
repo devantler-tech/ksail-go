@@ -88,8 +88,19 @@ func TestDelete_Success(t *testing.T) {
 				mockClusterActions := eksprovisioner.NewMockEKSClusterActions(t)
 				clusterActionsFactory.On("NewClusterActions", mock.Anything, mock.Anything, mock.Anything).
 					Return(mockClusterActions, nil)
-				mockClusterActions.On("Delete", mock.Anything, mock.Anything, mock.Anything, 
-					mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				// Delete(ctx context.Context, clusterName string, wait bool, 
+				//   approveDelete bool, waitTimeout time.Duration, 
+				//   deleteOIDCProvider bool, deleteVPCEndpoints bool)
+				mockClusterActions.On(
+					"Delete",
+					mock.Anything, // ctx context.Context
+					mock.AnythingOfType("string"), // clusterName string
+					mock.AnythingOfType("bool"),   // wait bool
+					mock.AnythingOfType("bool"),   // approveDelete bool
+					mock.Anything,                 // waitTimeout time.Duration
+					mock.AnythingOfType("bool"),   // deleteOIDCProvider bool
+					mock.AnythingOfType("bool"),   // deleteVPCEndpoints bool
+				).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
 				return prov.Delete(name)
