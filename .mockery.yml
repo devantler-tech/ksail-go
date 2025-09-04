@@ -13,3 +13,19 @@ packages:
     interfaces:
       ContainerAPIClient:
       APIClient:
+  k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1:
+    config:
+      recursive: false
+      dir: pkg/installer/kubectl
+      filename: apiextensions_mocks_test.go
+      pkgname: kubectlinstaller
+    interfaces:
+      CustomResourceDefinitionInterface:
+  k8s.io/client-go/dynamic:
+    config:
+      recursive: false
+      dir: pkg/installer/kubectl
+      filename: dynamic_mocks_test.go
+      pkgname: kubectlinstaller
+    interfaces:
+      ResourceInterface:

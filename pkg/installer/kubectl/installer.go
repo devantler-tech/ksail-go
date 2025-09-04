@@ -19,11 +19,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// APIExtensionsClient uses the official Kubernetes client interface.
-type APIExtensionsClient = apiextensionsv1client.CustomResourceDefinitionInterface
 
-// DynamicClient uses the official Kubernetes dynamic client interface.
-type DynamicClient = dynamic.ResourceInterface
 
 //go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
@@ -49,12 +45,12 @@ var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 // KubectlInstaller implements the installer.Installer interface for kubectl.
 type KubectlInstaller struct {
 	timeout             time.Duration
-	apiExtensionsClient APIExtensionsClient
-	dynamicClient       DynamicClient
+	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface
+	dynamicClient       dynamic.ResourceInterface
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient APIExtensionsClient, dynamicClient DynamicClient) *KubectlInstaller {
+func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface, dynamicClient dynamic.ResourceInterface) *KubectlInstaller {
 	return &KubectlInstaller{
 		timeout:             timeout,
 		apiExtensionsClient: apiExtensionsClient,
@@ -139,7 +135,7 @@ func (b *KubectlInstaller) installApplySetCR() error {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsClient) error {
+func (b *KubectlInstaller) applyCRD(ctx context.Context, client apiextensionsv1client.CustomResourceDefinitionInterface) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 
 	err := yaml.Unmarshal(applySetCRDYAML, &crd)
@@ -172,7 +168,7 @@ func (b *KubectlInstaller) applyCRD(ctx context.Context, client APIExtensionsCli
 
 func (b *KubectlInstaller) waitForCRDEstablished(
 	ctx context.Context,
-	client APIExtensionsClient,
+	client apiextensionsv1client.CustomResourceDefinitionInterface,
 	name string,
 ) error {
 	// Poll every 500ms until Established=True or timeout
@@ -212,7 +208,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 func (b *KubectlInstaller) applyApplySetCR(
 	ctx context.Context,
-	dyn DynamicClient,
+	dyn dynamic.ResourceInterface,
 	name string,
 ) error {
 	var applySetObj unstructured.Unstructured
