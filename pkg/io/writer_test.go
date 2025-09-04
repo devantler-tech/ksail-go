@@ -1,6 +1,7 @@
 package io_test
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -140,4 +141,28 @@ func TestFileWriter_TryWrite_WriteError(t *testing.T) {
 	// Assert - expect error containing specific message
 	testutils.AssertErrContains(t, err, "failed to write file", "TryWrite() write failure")
 	assert.Empty(t, result, "TryWrite() result on error")
+}
+
+func TestGetWriter_Quiet(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	writer := ioutils.GetWriter(true)
+
+	// Assert
+	if writer != io.Discard {
+		t.Errorf("expected io.Discard for quiet=true, got %T", writer)
+	}
+}
+
+func TestGetWriter_NotQuiet(t *testing.T) {
+	t.Parallel()
+
+	// Act
+	writer := ioutils.GetWriter(false)
+
+	// Assert
+	if writer != os.Stdout {
+		t.Errorf("expected os.Stdout for quiet=false, got %T", writer)
+	}
 }
