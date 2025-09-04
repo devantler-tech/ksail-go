@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
+// ErrNoContainerEngine is returned when no container engine (Docker or Podman) is available.
 var ErrNoContainerEngine = errors.New("no container engine (Docker or Podman) available")
 
 // ContainerEngine implements container engine detection and management with auto-detection.

@@ -127,6 +127,7 @@
     "eksgenerator",
     "eksprovisioner",
     "nodegroup",
+    "nodegroups",
     "weaveworks"
   ]
 }

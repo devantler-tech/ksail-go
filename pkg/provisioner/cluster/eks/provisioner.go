@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	"github.com/weaveworks/eksctl/pkg/eks"
 )
 
 // ErrClusterNotFound is returned when a cluster is not found.
@@ -57,13 +58,8 @@ func NewEKSClusterProvisioner(
 	}
 }
 
-// Create creates an EKS cluster.
-func (e *EKSClusterProvisioner) Create(name string) error {
-	ctx := context.Background()
-
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
+// createProvider creates a provider with explicit config for the given cluster.
+func (e *EKSClusterProvisioner) createProvider(ctx context.Context) (*eks.ClusterProvider, error) {
 	// Create provider with explicit config
 	providerConfig := &v1alpha5.ProviderConfig{
 		Region: e.clusterConfig.Metadata.Region,
@@ -71,7 +67,57 @@ func (e *EKSClusterProvisioner) Create(name string) error {
 
 	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create EKS provider: %w", err)
+		return nil, fmt.Errorf("failed to create EKS provider: %w", err)
+	}
+
+	return ctl, nil
+}
+
+// ensureClusterExists checks if a cluster exists and returns ErrClusterNotFound if not.
+func (e *EKSClusterProvisioner) ensureClusterExists(name string) error {
+	exists, err := e.Exists(name)
+	if err != nil {
+		return fmt.Errorf("failed to check if cluster exists: %w", err)
+	}
+
+	if !exists {
+		return ErrClusterNotFound
+	}
+
+	return nil
+}
+
+// setupClusterOperation sets up common cluster operation prerequisites.
+func (e *EKSClusterProvisioner) setupClusterOperation(ctx context.Context, name string) (*eks.ClusterProvider, error) {
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	return e.createProvider(ctx)
+}
+
+// setupNodeGroupManager sets up common node group management prerequisites.
+func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
+	if err := e.ensureClusterExists(name); err != nil {
+		return nil, err
+	}
+
+	ctl, err := e.setupClusterOperation(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create node group manager
+	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
+	return ngManager, nil
+}
+
+// Create creates an EKS cluster.
+func (e *EKSClusterProvisioner) Create(name string) error {
+	ctx := context.Background()
+
+	ctl, err := e.setupClusterOperation(ctx, name)
+	if err != nil {
+		return err
 	}
 
 	err = e.clusterCreator.CreateCluster(ctx, e.clusterConfig, ctl)
@@ -86,17 +132,9 @@ func (e *EKSClusterProvisioner) Create(name string) error {
 func (e *EKSClusterProvisioner) Delete(name string) error {
 	ctx := context.Background()
 
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
-	// Create provider with explicit config
-	providerConfig := &v1alpha5.ProviderConfig{
-		Region: e.clusterConfig.Metadata.Region,
-	}
-
-	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	ctl, err := e.setupClusterOperation(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to create EKS provider: %w", err)
+		return err
 	}
 
 	clusterActions, err := e.clusterActionsFactory.NewClusterActions(ctx, e.clusterConfig, ctl)
@@ -124,30 +162,10 @@ func (e *EKSClusterProvisioner) Delete(name string) error {
 func (e *EKSClusterProvisioner) Start(name string) error {
 	ctx := context.Background()
 
-	exists, err := e.Exists(name)
+	ngManager, err := e.setupNodeGroupManager(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to check if cluster exists: %w", err)
+		return err
 	}
-
-	if !exists {
-		return ErrClusterNotFound
-	}
-
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
-	// Create provider with explicit config
-	providerConfig := &v1alpha5.ProviderConfig{
-		Region: e.clusterConfig.Metadata.Region,
-	}
-
-	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create EKS provider: %w", err)
-	}
-
-	// Create node group manager
-	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
 
 	// Scale all node groups to their desired capacity
 	for _, ng := range e.clusterConfig.NodeGroups {
@@ -171,30 +189,10 @@ func (e *EKSClusterProvisioner) Start(name string) error {
 func (e *EKSClusterProvisioner) Stop(name string) error {
 	ctx := context.Background()
 
-	exists, err := e.Exists(name)
+	ngManager, err := e.setupNodeGroupManager(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to check if cluster exists: %w", err)
+		return err
 	}
-
-	if !exists {
-		return ErrClusterNotFound
-	}
-
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
-	// Create provider with explicit config
-	providerConfig := &v1alpha5.ProviderConfig{
-		Region: e.clusterConfig.Metadata.Region,
-	}
-
-	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create EKS provider: %w", err)
-	}
-
-	// Create node group manager
-	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
 
 	// Scale all node groups to 0
 	for _, ng := range e.clusterConfig.NodeGroups {
@@ -221,14 +219,9 @@ func (e *EKSClusterProvisioner) Stop(name string) error {
 func (e *EKSClusterProvisioner) List() ([]string, error) {
 	ctx := context.Background()
 
-	// Create provider with explicit config
-	providerConfig := &v1alpha5.ProviderConfig{
-		Region: e.clusterConfig.Metadata.Region,
-	}
-
-	ctl, err := e.providerConstructor.NewClusterProvider(ctx, providerConfig, e.clusterConfig)
+	ctl, err := e.createProvider(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create EKS provider: %w", err)
+		return nil, err
 	}
 
 	descriptions, err := e.clusterLister.GetClusters(ctx, ctl, false, DefaultChunkSize)
