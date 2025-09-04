@@ -27,7 +27,7 @@ KSail uses mega-linter with the go flavor, and uses a strict configuration to en
 
 ```sh
 # working-directory: ./
-mega-linter-runner -f go -e GOTOOLCHAIN=auto
+mega-linter-runner -f go
 ```
 
 The same configuration is used in CI, so you can expect the same linting behavior in your local environment as in the CI pipeline.
