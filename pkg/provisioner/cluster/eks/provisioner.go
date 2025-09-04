@@ -29,12 +29,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig           *v1alpha5.ClusterConfig
-	providerConstructor     EKSProviderConstructor
-	clusterActionsFactory   EKSClusterActionsFactory
-	clusterLister           EKSClusterLister
-	clusterCreator          EKSClusterCreator
-	nodeGroupManagerFactory EKSNodeGroupManagerFactory
+	clusterConfig       *v1alpha5.ClusterConfig
+	providerConstructor EKSProviderConstructor
+	clusterActions      EKSClusterActions
+	clusterLister       EKSClusterLister
+	clusterCreator      EKSClusterCreator
+	nodeGroupManager    EKSNodeGroupManager
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -43,18 +43,18 @@ type EKSClusterProvisioner struct {
 func NewEKSClusterProvisioner(
 	clusterConfig *v1alpha5.ClusterConfig,
 	providerConstructor EKSProviderConstructor,
-	clusterActionsFactory EKSClusterActionsFactory,
+	clusterActions EKSClusterActions,
 	clusterLister EKSClusterLister,
 	clusterCreator EKSClusterCreator,
-	nodeGroupManagerFactory EKSNodeGroupManagerFactory,
+	nodeGroupManager EKSNodeGroupManager,
 ) *EKSClusterProvisioner {
 	return &EKSClusterProvisioner{
-		clusterConfig:           clusterConfig,
-		providerConstructor:     providerConstructor,
-		clusterActionsFactory:   clusterActionsFactory,
-		clusterLister:           clusterLister,
-		clusterCreator:          clusterCreator,
-		nodeGroupManagerFactory: nodeGroupManagerFactory,
+		clusterConfig:       clusterConfig,
+		providerConstructor: providerConstructor,
+		clusterActions:      clusterActions,
+		clusterLister:       clusterLister,
+		clusterCreator:      clusterCreator,
+		nodeGroupManager:    nodeGroupManager,
 	}
 }
 
@@ -101,14 +101,12 @@ func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name 
 		return nil, err
 	}
 
-	ctl, err := e.setupClusterOperation(ctx, name)
+	_, err := e.setupClusterOperation(ctx, name)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create node group manager
-	ngManager := e.nodeGroupManagerFactory.NewNodeGroupManager(e.clusterConfig, ctl, nil, nil)
-	return ngManager, nil
+	return e.nodeGroupManager, nil
 }
 
 // Create creates an EKS cluster.
@@ -132,14 +130,9 @@ func (e *EKSClusterProvisioner) Create(name string) error {
 func (e *EKSClusterProvisioner) Delete(name string) error {
 	ctx := context.Background()
 
-	ctl, err := e.setupClusterOperation(ctx, name)
+	_, err := e.setupClusterOperation(ctx, name)
 	if err != nil {
 		return err
-	}
-
-	clusterActions, err := e.clusterActionsFactory.NewClusterActions(ctx, e.clusterConfig, ctl)
-	if err != nil {
-		return fmt.Errorf("failed to create cluster actions: %w", err)
 	}
 
 	// Use reasonable defaults for deletion parameters
@@ -150,7 +143,7 @@ func (e *EKSClusterProvisioner) Delete(name string) error {
 	disableNodegroupEviction := false
 	parallel := DefaultParallelism
 
-	err = clusterActions.Delete(ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel)
+	err = e.clusterActions.Delete(ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel)
 	if err != nil {
 		return fmt.Errorf("failed to delete EKS cluster: %w", err)
 	}

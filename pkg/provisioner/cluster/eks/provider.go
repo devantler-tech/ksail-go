@@ -9,7 +9,6 @@ import (
 	"github.com/weaveworks/eksctl/pkg/actions/cluster"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	"github.com/weaveworks/eksctl/pkg/eks"
-	"k8s.io/client-go/kubernetes"
 )
 
 // EKSClusterActions describes the subset of methods from eksctl's cluster actions used here.
@@ -30,16 +29,6 @@ type EKSClusterActions interface {
 		wait, force, disableNodegroupEviction bool,
 		parallel int,
 	) error
-}
-
-// EKSClusterActionsFactory describes the factory for creating cluster action instances.
-type EKSClusterActionsFactory interface {
-	// NewClusterActions creates cluster actions instance
-	NewClusterActions(
-		ctx context.Context,
-		cfg *v1alpha5.ClusterConfig,
-		ctl *eks.ClusterProvider,
-	) (EKSClusterActions, error)
 }
 
 // EKSProviderConstructor describes the constructor for creating ClusterProvider instances.
@@ -77,15 +66,4 @@ type EKSClusterCreator interface {
 type EKSNodeGroupManager interface {
 	// Scale scales a node group to the specified size
 	Scale(ctx context.Context, ng *v1alpha5.NodeGroupBase, wait bool) error
-}
-
-// EKSNodeGroupManagerFactory describes the factory for creating node group manager instances.
-type EKSNodeGroupManagerFactory interface {
-	// NewNodeGroupManager creates a node group manager instance
-	NewNodeGroupManager(
-		cfg *v1alpha5.ClusterConfig,
-		ctl *eks.ClusterProvider,
-		clientSet kubernetes.Interface,
-		instanceSelector eks.InstanceSelector,
-	) EKSNodeGroupManager
 }
