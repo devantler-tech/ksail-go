@@ -94,7 +94,6 @@ func createCustomSpec() v1alpha1.Spec {
 			Context:    "custom-ctx",
 			Timeout:    metav1.Duration{Duration: time.Duration(15) * time.Minute},
 		},
-		ContainerEngine:    "",
 		CNI:                "",
 		CSI:                "",
 		IngressController:  "",

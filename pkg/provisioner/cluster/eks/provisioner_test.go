@@ -88,18 +88,17 @@ func TestDelete_Success(t *testing.T) {
 				mockClusterActions := eksprovisioner.NewMockEKSClusterActions(t)
 				clusterActionsFactory.On("NewClusterActions", mock.Anything, mock.Anything, mock.Anything).
 					Return(mockClusterActions, nil)
-				// Delete(ctx context.Context, clusterName string, wait bool, 
-				//   approveDelete bool, waitTimeout time.Duration, 
-				//   deleteOIDCProvider bool, deleteVPCEndpoints bool)
+				// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
+				//   wait, force, disableNodegroupEviction bool, parallel int)
 				mockClusterActions.On(
 					"Delete",
-					mock.Anything, // ctx context.Context
-					mock.AnythingOfType("string"), // clusterName string
-					mock.AnythingOfType("bool"),   // wait bool
-					mock.AnythingOfType("bool"),   // approveDelete bool
-					mock.Anything,                 // waitTimeout time.Duration
-					mock.AnythingOfType("bool"),   // deleteOIDCProvider bool
-					mock.AnythingOfType("bool"),   // deleteVPCEndpoints bool
+					mock.Anything,                         // ctx context.Context
+					mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
+					mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
+					mock.AnythingOfType("bool"),           // wait bool
+					mock.AnythingOfType("bool"),           // force bool
+					mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
+					mock.AnythingOfType("int"),            // parallel int
 				).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
