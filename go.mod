@@ -3,7 +3,7 @@ module github.com/devantler-tech/ksail-go
 go 1.24.0
 
 require (
-	github.com/docker/docker v28.3.3+incompatible
+	github.com/docker/docker v28.4.0+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
 	github.com/gkampitakis/go-snaps v0.5.14
