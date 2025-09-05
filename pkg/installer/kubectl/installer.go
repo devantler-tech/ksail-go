@@ -35,7 +35,53 @@ func boolPtr(b bool) *bool {
 // createDefaultDeleteOptions creates a metav1.DeleteOptions with minimal necessary fields.
 func createDefaultDeleteOptions() metav1.DeleteOptions {
 	return metav1.DeleteOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		GracePeriodSeconds:                               nil,
+		Preconditions:                                    nil,
+		OrphanDependents:                                 nil,
+		PropagationPolicy:                                nil,
+		DryRun:                                           nil,
 		IgnoreStoreReadErrorWithClusterBreakingPotential: boolPtr(false),
+	}
+}
+
+// createDefaultGetOptions creates a metav1.GetOptions with all necessary fields.
+func createDefaultGetOptions() metav1.GetOptions {
+	return metav1.GetOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		ResourceVersion: "",
+	}
+}
+
+// createDefaultCreateOptions creates a metav1.CreateOptions with all necessary fields.
+func createDefaultCreateOptions() metav1.CreateOptions {
+	return metav1.CreateOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		DryRun:          nil,
+		FieldManager:    "",
+		FieldValidation: "",
+	}
+}
+
+// createDefaultUpdateOptions creates a metav1.UpdateOptions with all necessary fields.
+func createDefaultUpdateOptions() metav1.UpdateOptions {
+	return metav1.UpdateOptions{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		DryRun:          nil,
+		FieldManager:    "",
+		FieldValidation: "",
 	}
 }
 
@@ -150,19 +196,19 @@ func (b *KubectlInstaller) applyCRD(
 		return fmt.Errorf("failed to unmarshal CRD yaml: %w", err)
 	}
 	// Attempt create; if already exists attempt update (could race).
-	_, err = client.Create(ctx, &crd, metav1.CreateOptions{})
+	_, err = client.Create(ctx, &crd, createDefaultCreateOptions())
 	if err == nil {
 		return nil
 	}
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := client.Get(ctx, crd.Name, metav1.GetOptions{})
+		existing, getErr := client.Get(ctx, crd.Name, createDefaultGetOptions())
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing CRD for update: %w", getErr)
 		}
 
 		crd.ResourceVersion = existing.ResourceVersion
 
-		_, uerr := client.Update(ctx, &crd, metav1.UpdateOptions{})
+		_, uerr := client.Update(ctx, &crd, createDefaultUpdateOptions())
 		if uerr != nil {
 			return fmt.Errorf("failed to update CRD: %w", uerr)
 		}
@@ -183,7 +229,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 
 	err := wait.PollUntilContextTimeout(ctx, pollInterval, b.timeout, true,
 		func(ctx context.Context) (bool, error) {
-			crd, err := client.Get(ctx, name, metav1.GetOptions{})
+			crd, err := client.Get(ctx, name, createDefaultGetOptions())
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					return false, nil
@@ -228,19 +274,19 @@ func (b *KubectlInstaller) applyApplySetCR(
 	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
 	applySetObj.SetName(name)
 
-	_, err = dyn.Create(ctx, &applySetObj, metav1.CreateOptions{})
+	_, err = dyn.Create(ctx, &applySetObj, createDefaultCreateOptions())
 	if err == nil {
 		return nil
 	}
 	if apierrors.IsAlreadyExists(err) {
-		existing, getErr := dyn.Get(ctx, name, metav1.GetOptions{})
+		existing, getErr := dyn.Get(ctx, name, createDefaultGetOptions())
 		if getErr != nil {
 			return fmt.Errorf("failed to get existing ApplySet: %w", getErr)
 		}
 
 		applySetObj.SetResourceVersion(existing.GetResourceVersion())
 
-		_, uerr := dyn.Update(ctx, &applySetObj, metav1.UpdateOptions{})
+		_, uerr := dyn.Update(ctx, &applySetObj, createDefaultUpdateOptions())
 		if uerr != nil {
 			return fmt.Errorf("failed to update ApplySet: %w", uerr)
 		}

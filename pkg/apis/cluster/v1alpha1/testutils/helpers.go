@@ -35,6 +35,7 @@ func CreateDefaultSpecOptions() v1alpha1.Options {
 		Kind:      v1alpha1.OptionsKind{},
 		K3d:       v1alpha1.OptionsK3d{},
 		Tind:      v1alpha1.OptionsTind{},
+		EKS:       v1alpha1.OptionsEKS{AWSProfile: ""},
 		Cilium:    v1alpha1.OptionsCilium{},
 		Kubectl:   v1alpha1.OptionsKubectl{},
 		Flux:      v1alpha1.OptionsFlux{},

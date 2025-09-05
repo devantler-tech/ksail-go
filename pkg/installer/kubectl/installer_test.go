@@ -13,6 +13,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -72,13 +73,15 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 
 	// CRD already exists (skip creation and establishment)
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(&apiextensionsv1.CustomResourceDefinition{}, nil)
+		Return(createDefaultCRD(), nil)
 
 	// Setup ApplySet CR not found and successful creation
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
-		Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "ksail"))
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail"))
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(&unstructured.Unstructured{}, nil)
+		Return(&unstructured.Unstructured{
+			Object: map[string]interface{}{},
+		}, nil)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
 
@@ -96,7 +99,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	apiExtClient, dynClient := testSetup(t)
 	
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "applysets.k8s.devantler.tech"))
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech"))
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errCRDCreationFailed)
 
@@ -118,20 +121,24 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 
 	// CRD not found and successful creation
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "applysets.k8s.devantler.tech"))
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech"))
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(&apiextensionsv1.CustomResourceDefinition{}, nil)
+		Return(createDefaultCRD(), nil)
 	
 	// CRD establishment polling returns not established (times out)
-	crdNotEstablished := &apiextensionsv1.CustomResourceDefinition{
-		Status: apiextensionsv1.CustomResourceDefinitionStatus{
-			Conditions: []apiextensionsv1.CustomResourceDefinitionCondition{
-				{
-					Type:   apiextensionsv1.Established,
-					Status: apiextensionsv1.ConditionFalse,
-				},
+	crdNotEstablished := createDefaultCRD()
+	crdNotEstablished.Status = apiextensionsv1.CustomResourceDefinitionStatus{
+		Conditions: []apiextensionsv1.CustomResourceDefinitionCondition{
+			{
+				Type:               apiextensionsv1.Established,
+				Status:             apiextensionsv1.ConditionFalse,
+				LastTransitionTime: metav1.Time{Time: time.Time{}},
+				Reason:             "",
+				Message:            "",
 			},
 		},
+		AcceptedNames:  createDefaultCRDNames(),
+		StoredVersions: []string{},
 	}
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(crdNotEstablished, nil).Maybe()
@@ -158,11 +165,11 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 
 	// CRD already exists
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(&apiextensionsv1.CustomResourceDefinition{}, nil)
+		Return(createDefaultCRD(), nil)
 
 	// ApplySet CR not found and creation fails
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
-		Return(nil, apierrors.NewNotFound(schema.GroupResource{}, "ksail"))
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail"))
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errApplySetCreationFailed)
 
@@ -251,4 +258,69 @@ spec: {}
 	require.NoError(t, err)
 	assert.Equal(t, "test-applyset", applySetObj.GetName())
 	assert.Equal(t, "ApplySet", applySetObj.GetKind())
+}
+
+// createDefaultCRD creates a default CustomResourceDefinition for testing.
+func createDefaultCRD() *apiextensionsv1.CustomResourceDefinition {
+	return &apiextensionsv1.CustomResourceDefinition{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "",
+			APIVersion: "",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:                       "",
+			GenerateName:               "",
+			Namespace:                  "",
+			SelfLink:                   "",
+			UID:                        "",
+			ResourceVersion:            "",
+			Generation:                 0,
+			CreationTimestamp:          metav1.Time{Time: time.Time{}},
+			DeletionTimestamp:          nil,
+			DeletionGracePeriodSeconds: nil,
+			Labels:                     nil,
+			Annotations:                nil,
+			OwnerReferences:            nil,
+			Finalizers:                 nil,
+			ManagedFields:              nil,
+		},
+		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+			Group:                 "",
+			Names:                 createDefaultCRDNames(),
+			Scope:                 "",
+			Versions:              nil,
+			Conversion:            nil,
+			PreserveUnknownFields: false,
+		},
+		Status: apiextensionsv1.CustomResourceDefinitionStatus{
+			Conditions:     nil,
+			AcceptedNames:  createDefaultCRDNames(),
+			StoredVersions: nil,
+		},
+	}
+}
+
+// createDefaultCRDNames creates a default CustomResourceDefinitionNames for testing.
+func createDefaultCRDNames() apiextensionsv1.CustomResourceDefinitionNames {
+	return apiextensionsv1.CustomResourceDefinitionNames{
+		Plural:     "",
+		Singular:   "",
+		ShortNames: nil,
+		Kind:       "",
+		ListKind:   "",
+		Categories: nil,
+	}
+}
+
+// createDefaultGroupResource creates a default GroupResource for testing.
+func createDefaultGroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    "",
+		Resource: "",
+	}
+}
+
+// boolPtr returns a pointer to the given boolean value.
+func boolPtr(b bool) *bool {
+	return &b
 }
