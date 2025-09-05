@@ -7,17 +7,9 @@ linters:
     - wsl
 issues:
   exclude-files:
-    # Exclude auto-generated mock files from line length checking
+    # Exclude auto-generated mock files from all linting rules
     - ".*mocks.*\\.go$"
     - ".*_mocks_.*\\.go$"
-  exclude-rules:
-    # Exclude line length issues in auto-generated mock files
-    - path: ".*mocks.*\\.go$"
-      linters:
-        - lll
-    - path: ".*_mocks_.*\\.go$"
-      linters:
-        - lll
 settings:
   wsl_v5:
     allow-first-in-block: true
