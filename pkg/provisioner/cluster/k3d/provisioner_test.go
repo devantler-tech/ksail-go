@@ -1,6 +1,7 @@
 package k3dprovisioner_test
 
 import (
+	"context"
 	"errors"
 	"net/netip"
 	"testing"
@@ -34,7 +35,7 @@ func TestK3dCreate_Success(t *testing.T) {
 			clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 		},
 		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Create(name)
+			return prov.Create(context.Background(), name)
 		},
 	)
 }
@@ -46,7 +47,7 @@ func TestK3dCreate_Error_TransformFailed(t *testing.T) {
 	expectTransformSimpleToClusterConfigErr(configProvider, errK3dBoom)
 
 	// Act
-	err := provisioner.Create("my-cluster")
+	err := provisioner.Create(context.Background(), "my-cluster")
 
 	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "transform simple to cluster config", "Create()")
@@ -61,7 +62,7 @@ func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
 	clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(errK3dBoom)
 
 	// Act
-	err := provisioner.Create("my-cluster")
+	err := provisioner.Create(context.Background(), "my-cluster")
 
 	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
@@ -78,7 +79,7 @@ func TestK3dDelete_Success(t *testing.T) {
 			}), mock.Anything).Return(nil)
 		},
 		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Delete(name)
+			return prov.Delete(context.Background(), name)
 		},
 	)
 }
@@ -90,7 +91,7 @@ func TestK3dDelete_Error_DeleteFailed(t *testing.T) {
 	clientProvider.On("ClusterDelete", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errK3dBoom)
 
 	// Act
-	err := provisioner.Delete("bad")
+	err := provisioner.Delete(context.Background(), "bad")
 
 	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
@@ -106,7 +107,7 @@ func TestK3dStart_Success(t *testing.T) {
 			clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).Return(nil)
 		},
 		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Start(name)
+			return prov.Start(context.Background(), name)
 		},
 	)
 }
@@ -114,7 +115,7 @@ func TestK3dStart_Success(t *testing.T) {
 func TestK3dStart_Error_GetFailed(t *testing.T) {
 	t.Parallel()
 	runK3dClusterGetError(t, "Start()", func(p *k3dprovisioner.K3dClusterProvisioner) error {
-		return p.Start("my-cluster")
+		return p.Start(context.Background(), "my-cluster")
 	})
 }
 
@@ -126,7 +127,7 @@ func TestK3dStart_Error_StartFailed(t *testing.T) {
 		func(clientProvider *k3dprovisioner.MockK3dClientProvider, cluster *types.Cluster) {
 			clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).Return(errK3dBoom)
 		},
-		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Start("my-cluster") },
+		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Start(context.Background(), "my-cluster") },
 		"cluster start",
 	)
 }
@@ -141,7 +142,7 @@ func TestK3dStop_Success(t *testing.T) {
 			clientProvider.On("ClusterStop", mock.Anything, mock.Anything, cluster).Return(nil)
 		},
 		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Stop(name)
+			return prov.Stop(context.Background(), name)
 		},
 	)
 }
@@ -149,7 +150,7 @@ func TestK3dStop_Success(t *testing.T) {
 func TestK3dStop_Error_GetFailed(t *testing.T) {
 	t.Parallel()
 	runK3dClusterGetError(t, "Stop()", func(p *k3dprovisioner.K3dClusterProvisioner) error {
-		return p.Stop("my-cluster")
+		return p.Stop(context.Background(), "my-cluster")
 	})
 }
 
@@ -161,7 +162,7 @@ func TestK3dStop_Error_StopFailed(t *testing.T) {
 		func(clientProvider *k3dprovisioner.MockK3dClientProvider, cluster *types.Cluster) {
 			clientProvider.On("ClusterStop", mock.Anything, mock.Anything, cluster).Return(errK3dBoom)
 		},
-		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Stop("my-cluster") },
+		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Stop(context.Background(), "my-cluster") },
 		"cluster stop",
 	)
 }
@@ -177,7 +178,7 @@ func TestK3dList_Success(t *testing.T) {
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
 	// Act
-	got, err := provisioner.List()
+	got, err := provisioner.List(context.Background())
 
 	// Assert
 	require.NoError(t, err, "List()")
@@ -191,7 +192,7 @@ func TestK3dList_Error_ListFailed(t *testing.T) {
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
 
 	// Act
-	_, err := provisioner.List()
+	_, err := provisioner.List(context.Background())
 
 	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
@@ -208,7 +209,7 @@ func TestK3dExists_Success_False(t *testing.T) {
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
 	// Act
-	exists, err := provisioner.Exists("not-here")
+	exists, err := provisioner.Exists(context.Background(), "not-here")
 
 	// Assert
 	if err != nil {
@@ -231,7 +232,7 @@ func TestK3dExists_Success_True(t *testing.T) {
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
 	// Act
-	exists, err := provisioner.Exists("")
+	exists, err := provisioner.Exists(context.Background(), "")
 
 	// Assert
 	if err != nil {
@@ -250,7 +251,7 @@ func TestK3dExists_Error_ListFailed(t *testing.T) {
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
 
 	// Act
-	exists, err := provisioner.Exists("any")
+	exists, err := provisioner.Exists(context.Background(), "any")
 
 	// Assert
 	if exists {
