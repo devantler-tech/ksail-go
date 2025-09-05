@@ -67,8 +67,8 @@ func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name st
 }
 
 // ensureClusterExists checks if a cluster exists and returns ErrClusterNotFound if not.
-func (e *EKSClusterProvisioner) ensureClusterExists(name string) error {
-	exists, err := e.Exists(name)
+func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name string) error {
+	exists, err := e.Exists(ctx, name)
 	if err != nil {
 		return fmt.Errorf("failed to check if cluster exists: %w", err)
 	}
@@ -82,7 +82,7 @@ func (e *EKSClusterProvisioner) ensureClusterExists(name string) error {
 
 // setupNodeGroupManager sets up common node group management prerequisites.
 func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
-	if err := e.ensureClusterExists(name); err != nil {
+	if err := e.ensureClusterExists(ctx, name); err != nil {
 		return nil, err
 	}
 
@@ -95,9 +95,7 @@ func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name 
 }
 
 // Create creates an EKS cluster.
-func (e *EKSClusterProvisioner) Create(name string) error {
-	ctx := context.Background()
-
+func (e *EKSClusterProvisioner) Create(ctx context.Context, name string) error {
 	ctl, err := e.setupClusterOperation(ctx, name)
 	if err != nil {
 		return err
@@ -112,9 +110,7 @@ func (e *EKSClusterProvisioner) Create(name string) error {
 }
 
 // Delete deletes an EKS cluster.
-func (e *EKSClusterProvisioner) Delete(name string) error {
-	ctx := context.Background()
-
+func (e *EKSClusterProvisioner) Delete(ctx context.Context, name string) error {
 	_, err := e.setupClusterOperation(ctx, name)
 	if err != nil {
 		return err
@@ -137,9 +133,7 @@ func (e *EKSClusterProvisioner) Delete(name string) error {
 }
 
 // Start starts an EKS cluster by scaling node groups from 0 to their desired capacity.
-func (e *EKSClusterProvisioner) Start(name string) error {
-	ctx := context.Background()
-
+func (e *EKSClusterProvisioner) Start(ctx context.Context, name string) error {
 	ngManager, err := e.setupNodeGroupManager(ctx, name)
 	if err != nil {
 		return err
@@ -164,9 +158,7 @@ func (e *EKSClusterProvisioner) Start(name string) error {
 }
 
 // Stop stops an EKS cluster by scaling all node groups to 0.
-func (e *EKSClusterProvisioner) Stop(name string) error {
-	ctx := context.Background()
-
+func (e *EKSClusterProvisioner) Stop(ctx context.Context, name string) error {
 	ngManager, err := e.setupNodeGroupManager(ctx, name)
 	if err != nil {
 		return err
@@ -194,9 +186,7 @@ func (e *EKSClusterProvisioner) Stop(name string) error {
 }
 
 // List lists all EKS clusters.
-func (e *EKSClusterProvisioner) List() ([]string, error) {
-	ctx := context.Background()
-
+func (e *EKSClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	descriptions, err := e.clusterLister.GetClusters(ctx, e.clusterProvider, false, DefaultChunkSize)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
@@ -211,8 +201,8 @@ func (e *EKSClusterProvisioner) List() ([]string, error) {
 }
 
 // Exists checks if an EKS cluster exists.
-func (e *EKSClusterProvisioner) Exists(name string) (bool, error) {
-	clusters, err := e.List()
+func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
+	clusters, err := e.List(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to list clusters: %w", err)
 	}
