@@ -52,5 +52,6 @@ func GetWriter(quiet bool) io.Writer {
 	if quiet {
 		return io.Discard
 	}
+
 	return os.Stdout
 }
