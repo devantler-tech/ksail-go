@@ -1,11 +1,11 @@
 package eksprovisioner_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	eksprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/eks"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -13,8 +13,6 @@ import (
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	"github.com/weaveworks/eksctl/pkg/eks"
 )
-
-var errBoom = errors.New("boom")
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
@@ -44,20 +42,17 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 
 	provisioner, _, _, _, clusterCreator, _ := newProvisionerForTest(t)
 
-	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errBoom)
+	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrBoom)
 
 	err := provisioner.Create("test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to create EKS cluster", "Create()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to create EKS cluster", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
 	t.Parallel()
 
-	cases := []testutils.NameCase{
-		{Name: "without name uses cfg", InputName: "", ExpectedName: "cfg-name"},
-		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
-	}
+	cases := clustertestutils.DefaultDeleteCases()
 
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
@@ -72,16 +67,7 @@ func TestDelete_Success(t *testing.T) {
 
 				// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
 				//   wait, force, disableNodegroupEviction bool, parallel int)
-				clusterActions.On(
-					"Delete",
-					mock.Anything,                         // ctx context.Context
-					mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
-					mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
-					mock.AnythingOfType("bool"),           // wait bool
-					mock.AnythingOfType("bool"),           // force bool
-					mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
-					mock.AnythingOfType("int"),            // parallel int
-				).Return(nil)
+				mockClusterDeleteAction(clusterActions, nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
 				return prov.Delete(name)
@@ -95,39 +81,16 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 
 	provisioner, _, clusterActions, _, _, _ := newProvisionerForTest(t)
 
-	clusterActions.On(
-		"Delete",
-		mock.Anything,                         // ctx context.Context
-		mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
-		mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
-		mock.AnythingOfType("bool"),           // wait bool
-		mock.AnythingOfType("bool"),           // force bool
-		mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
-		mock.AnythingOfType("int"),            // parallel int
-	).Return(errBoom)
+	mockClusterDeleteAction(clusterActions, clustertestutils.ErrBoom)
 
 	err := provisioner.Delete("test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to delete EKS cluster", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to delete EKS cluster", "Delete()")
 }
 
 func TestStart_Success(t *testing.T) {
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
-		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
-		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
-		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-
-		// Mock node group manager
-		nodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).Return(nil)
-
-		err := provisioner.Start(nameCase.InputName)
-		if err != nil {
-			t.Fatalf("Start() unexpected error: %v", err)
-		}
+	runNodeScalingTest(t, "Start()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
+		return prov.Start(name)
 	})
 }
 
@@ -136,7 +99,7 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 
 	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]cluster.Description{}, nil)
+	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
 	err := provisioner.Start("test-cluster")
 
@@ -144,22 +107,8 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 }
 
 func TestStop_Success(t *testing.T) {
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
-		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
-		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
-		clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
-
-		// Mock node group manager
-		nodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).Return(nil)
-
-		err := provisioner.Stop(nameCase.InputName)
-		if err != nil {
-			t.Fatalf("Stop() unexpected error: %v", err)
-		}
+	runNodeScalingTest(t, "Stop()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
+		return prov.Stop(name)
 	})
 }
 
@@ -171,7 +120,7 @@ func TestList_Success(t *testing.T) {
 		{Name: "cluster1"},
 		{Name: "cluster2"},
 	}
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
+	mockGetClusters(clusterLister, descriptions, nil)
 
 	clusters, err := provisioner.List()
 
@@ -184,12 +133,12 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 
 	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 	
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, errBoom)
+	mockGetClusters(clusterLister, nil, clustertestutils.ErrBoom)
 	
 	clusters, err := provisioner.List()
 
 	assert.Nil(t, clusters)
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list EKS clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to list EKS clusters", "List()")
 }
 
 func TestExists_Success_True(t *testing.T) {
@@ -197,7 +146,7 @@ func TestExists_Success_True(t *testing.T) {
 
 	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 	descriptions := []cluster.Description{{Name: "cfg-name"}}
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, nil)
+	mockGetClusters(clusterLister, descriptions, nil)
 
 	exists, err := provisioner.Exists("cfg-name")
 
@@ -210,7 +159,7 @@ func TestExists_Success_False(t *testing.T) {
 
 	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]cluster.Description{}, nil)
+	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
 	exists, err := provisioner.Exists("nonexistent")
 
@@ -267,6 +216,57 @@ func newProvisionerForTest(
 	)
 
 	return provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
+}
+
+// mockClusterDeleteAction sets up the standard mock for Delete action on clusterActions.
+func mockClusterDeleteAction(clusterActions *eksprovisioner.MockEKSClusterActions, returnErr error) {
+	clusterActions.On(
+		"Delete",
+		mock.Anything,                         // ctx context.Context
+		mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
+		mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
+		mock.AnythingOfType("bool"),           // wait bool
+		mock.AnythingOfType("bool"),           // force bool
+		mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
+		mock.AnythingOfType("int"),            // parallel int
+	).Return(returnErr)
+}
+
+// mockGetClusters sets up the standard mock for GetClusters action on clusterLister.
+func mockGetClusters(clusterLister *eksprovisioner.MockEKSClusterLister, descriptions []cluster.Description, returnErr error) {
+	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, returnErr)
+}
+
+// setupNodeGroupScalingMock sets up the standard mock for node group scaling operations.
+func setupNodeGroupScalingMock(nodeGroupManager *eksprovisioner.MockEKSNodeGroupManager, scaleUp bool) {
+	nodeGroupManager.On("Scale", mock.Anything, mock.Anything, scaleUp).Return(nil)
+}
+
+// runNodeScalingTest runs a standard test pattern for node scaling operations (Start/Stop).
+func runNodeScalingTest(
+	t *testing.T,
+	testName string,
+	scaleUp bool,
+	action func(*eksprovisioner.EKSClusterProvisioner, string) error,
+) {
+	t.Helper()
+	t.Parallel()
+
+	cases := testutils.DefaultNameCases("cfg-name")
+	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
+		t.Helper()
+		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
+		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
+		mockGetClusters(clusterLister, descriptions, nil)
+
+		// Mock node group manager
+		setupNodeGroupScalingMock(nodeGroupManager, scaleUp)
+
+		err := action(provisioner, nameCase.InputName)
+		if err != nil {
+			t.Fatalf("%s unexpected error: %v", testName, err)
+		}
+	})
 }
 
 type expectProviderFn func(*eks.ClusterProvider, *eksprovisioner.MockEKSClusterCreator, string)

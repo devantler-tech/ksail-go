@@ -7,13 +7,14 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var errBoom = errors.New("boom")
+var errBoom = clustertestutils.ErrBoom
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
@@ -53,10 +54,7 @@ func TestDelete_Success(t *testing.T) {
 	t.Parallel()
 
 	// order doesn't matter for copy detection; reusing the same helper
-	cases := []testutils.NameCase{
-		{Name: "without name uses cfg", InputName: "", ExpectedName: "cfg-name"},
-		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
-	}
+	cases := clustertestutils.DefaultDeleteCases()
 
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
