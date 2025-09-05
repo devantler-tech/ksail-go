@@ -108,7 +108,7 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
-	// We only need provisioner and clusterLister for this test  
+	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
 	_ = clusterCreator
