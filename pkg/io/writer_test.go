@@ -62,7 +62,7 @@ func TestTryWrite_WithFailingWriter(t *testing.T) {
 	assert.Empty(t, result, "TryWrite() result on error")
 }
 
-// failingWriter always returns an error on Write
+// failingWriter always returns an error on Write.
 type failingWriter struct{}
 
 func (f *failingWriter) Write([]byte) (int, error) {
