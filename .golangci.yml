@@ -6,10 +6,10 @@ linters:
   disable:
     - wsl
   exclusions:
-    rules:
+    paths:
       # Exclude auto-generated mock files from all linting rules
-      - path: ".*mocks.*\\.go$"
-      - path: ".*_mocks_.*\\.go$"
+      - ".*mocks.*\\.go$"
+      - ".*_mocks_.*\\.go$"     
   settings:
     wsl_v5:
       allow-first-in-block: true
