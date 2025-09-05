@@ -1,6 +1,7 @@
 package kubectlinstaller_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -71,7 +72,7 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.NoError(t, err)
@@ -91,7 +92,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -131,7 +132,7 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -157,7 +158,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -177,7 +178,7 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Uninstall()
+	err := installer.Uninstall(context.Background())
 
 	// Assert
 	require.NoError(t, err)
