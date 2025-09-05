@@ -142,8 +142,8 @@ func TestList_Success(t *testing.T) {
 	_ = clusterCreator
 	_ = nodeGroupManager
 	descriptions := []cluster.Description{
-		{Name: "cluster1"},
-		{Name: "cluster2"},
+		{Name: "cluster1", Region: "", Owned: ""},
+		{Name: "cluster2", Region: "", Owned: ""},
 	}
 	mockGetClusters(clusterLister, descriptions, nil)
 
@@ -182,7 +182,7 @@ func TestExists_Success_True(t *testing.T) {
 	_ = clusterActions
 	_ = clusterCreator
 	_ = nodeGroupManager
-	descriptions := []cluster.Description{{Name: "cfg-name"}}
+	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
 	mockGetClusters(clusterLister, descriptions, nil)
 
 	exists, err := provisioner.Exists(context.Background(), "cfg-name")
@@ -226,20 +226,91 @@ func newProvisionerForTest(
 
 	desiredCapacity := 2
 	clusterConfig := &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
 		Metadata: &v1alpha5.ClusterMeta{
-			Name:   "cfg-name",
-			Region: "us-west-2",
+			Name:                "cfg-name",
+			Region:              "us-west-2",
+			Version:             "",
+			ForceUpdateVersion:  nil,
+			Tags:                nil,
+			Annotations:         nil,
+			AccountID:           "",
 		},
+		KubernetesNetworkConfig: nil,
+		AutoModeConfig:          nil,
+		RemoteNetworkConfig:     nil,
+		IAM:                     nil,
+		IAMIdentityMappings:     nil,
+		IdentityProviders:       nil,
+		AccessConfig:            nil,
+		VPC:                     nil,
+		Addons:                  nil,
+		AddonsConfig: v1alpha5.AddonsConfig{
+			AutoApplyPodIdentityAssociations: false,
+			DisableDefaultAddons:             false,
+		},
+		PrivateCluster: nil,
 		NodeGroups: []*v1alpha5.NodeGroup{
 			{
 				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name: "test-nodegroup",
+					Name:                        "test-nodegroup",
+					AMIFamily:                   "",
+					InstanceType:                "",
+					AvailabilityZones:           nil,
+					Subnets:                     nil,
+					InstancePrefix:              "",
+					InstanceName:                "",
+					VolumeSize:                  nil,
+					SSH:                         nil,
+					Labels:                      nil,
+					PrivateNetworking:           false,
+					Tags:                        nil,
+					IAM:                         nil,
+					AMI:                         "",
+					SecurityGroups:              nil,
+					MaxPodsPerNode:              0,
+					ASGSuspendProcesses:         nil,
+					EBSOptimized:                nil,
+					VolumeType:                  nil,
+					VolumeName:                  nil,
+					VolumeEncrypted:             nil,
+					VolumeKmsKeyID:              nil,
+					VolumeIOPS:                  nil,
+					VolumeThroughput:            nil,
+					AdditionalVolumes:           nil,
+					PreBootstrapCommands:        nil,
+					OverrideBootstrapCommand:    nil,
+					PropagateASGTags:            nil,
+					DisableIMDSv1:               nil,
+					DisablePodIMDS:              nil,
+					Placement:                   nil,
+					EFAEnabled:                  nil,
+					InstanceSelector:            nil,
+					AdditionalEncryptedVolume:   "",
+					Bottlerocket:                nil,
+					EnableDetailedMonitoring:    nil,
+					CapacityReservation:         nil,
+					InstanceMarketOptions:       nil,
+					OutpostARN:                  "",
 					ScalingConfig: &v1alpha5.ScalingConfig{
 						DesiredCapacity: &desiredCapacity,
+						MinSize:         nil,
+						MaxSize:         nil,
 					},
 				},
 			},
 		},
+		ManagedNodeGroups: nil,
+		FargateProfiles:   nil,
+		AvailabilityZones: nil,
+		LocalZones:        nil,
+		CloudWatch:        nil,
+		SecretsEncryption: nil,
+		Status:            nil,
+		GitOps:            nil,
+		Karpenter:         nil,
+		Outpost:           nil,
+		ZonalShiftConfig:  nil,
 	}
 
 	// For tests, we can use a nil ClusterProvider since the actual provider methods are mocked
@@ -306,7 +377,7 @@ func runNodeScalingTest(
 		_ = clusterProvider
 		_ = clusterActions
 		_ = clusterCreator
-		descriptions := []cluster.Description{{Name: expectedName}}
+		descriptions := []cluster.Description{{Name: expectedName, Region: "", Owned: ""}}
 		mockGetClusters(clusterLister, descriptions, nil)
 
 		// Mock node group manager

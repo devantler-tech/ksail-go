@@ -172,7 +172,11 @@ func (e *EKSClusterProvisioner) Stop(ctx context.Context, name string) error {
 		zeroSize := 0
 
 		if ng.ScalingConfig == nil {
-			ng.ScalingConfig = &v1alpha5.ScalingConfig{}
+			ng.ScalingConfig = &v1alpha5.ScalingConfig{
+				DesiredCapacity: nil,
+				MinSize:         nil,
+				MaxSize:         nil,
+			}
 		}
 
 		ng.DesiredCapacity = &zeroSize
