@@ -1,6 +1,7 @@
 package fluxinstaller_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ func TestFluxInstaller_Install_Success(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.NoError(t, err)
@@ -62,7 +63,7 @@ func TestFluxInstaller_Install_Error(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -84,7 +85,7 @@ func TestFluxInstaller_Uninstall_Success(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Uninstall()
+	err := installer.Uninstall(context.Background())
 
 	// Assert
 	require.NoError(t, err)
@@ -105,7 +106,7 @@ func TestFluxInstaller_Uninstall_Error(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Uninstall()
+	err := installer.Uninstall(context.Background())
 
 	// Assert
 	require.Error(t, err)

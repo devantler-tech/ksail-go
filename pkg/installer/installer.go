@@ -1,11 +1,13 @@
 // Package installer provides functionality for installing and uninstalling components.
 package installer
 
+import "context"
+
 // Installer defines methods for installing and uninstalling components.
 type Installer interface {
 	// Install installs the component.
-	Install() error
+	Install(ctx context.Context) error
 
 	// Uninstall uninstalls the component.
-	Uninstall() error
+	Uninstall(ctx context.Context) error
 }

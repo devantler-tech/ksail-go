@@ -21,6 +21,8 @@ type ContainerEngine struct {
 // NewContainerEngine creates a new container engine with auto-detection.
 // It tries to connect to a container engine and returns the first available one.
 func NewContainerEngine() (*ContainerEngine, error) {
+	ctx := context.Background()
+	
 	// Try Docker first (most common)
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err == nil {
@@ -28,7 +30,7 @@ func NewContainerEngine() (*ContainerEngine, error) {
 			Client: dockerClient,
 			EngineName:   "Docker",
 		}
-		if ready, _ := engine.CheckReady(); ready {
+		if ready, _ := engine.CheckReady(ctx); ready {
 			return engine, nil
 		}
 	}
@@ -43,7 +45,7 @@ func NewContainerEngine() (*ContainerEngine, error) {
 			Client: podmanClient,
 			EngineName:   "Podman",
 		}
-		if ready, _ := engine.CheckReady(); ready {
+		if ready, _ := engine.CheckReady(ctx); ready {
 			return engine, nil
 		}
 	}
@@ -58,7 +60,7 @@ func NewContainerEngine() (*ContainerEngine, error) {
 			Client: podmanSystemClient,
 			EngineName:   "Podman",
 		}
-		if ready, _ := engine.CheckReady(); ready {
+		if ready, _ := engine.CheckReady(ctx); ready {
 			return engine, nil
 		}
 	}
@@ -67,9 +69,7 @@ func NewContainerEngine() (*ContainerEngine, error) {
 }
 
 // CheckReady checks if the container engine is available using the API client.
-func (u *ContainerEngine) CheckReady() (bool, error) {
-	ctx := context.Background()
-
+func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {
 	_, err := u.Client.Ping(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%s ping failed: %w", u.EngineName, err)

@@ -33,8 +33,8 @@ func NewFluxInstaller(client HelmClient, kubeconfig, context string, timeout tim
 }
 
 // Install installs or upgrades the Flux Operator via its OCI Helm chart.
-func (b *FluxInstaller) Install() error {
-	err := b.helmInstallOrUpgradeFluxOperator()
+func (b *FluxInstaller) Install(ctx context.Context) error {
+	err := b.helmInstallOrUpgradeFluxOperator(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to install Flux operator: %w", err)
 	}
@@ -43,7 +43,7 @@ func (b *FluxInstaller) Install() error {
 }
 
 // Uninstall removes the Helm release for the Flux Operator.
-func (b *FluxInstaller) Uninstall() error {
+func (b *FluxInstaller) Uninstall(ctx context.Context) error {
 	err := b.client.Uninstall("flux-operator")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
@@ -54,7 +54,7 @@ func (b *FluxInstaller) Uninstall() error {
 
 // --- internals ---
 
-func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
+func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) error {
 	spec := &helmclient.ChartSpec{
 		ReleaseName:     "flux-operator",
 		ChartName:       "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
@@ -97,10 +97,10 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator() error {
 		DeletionPropagation:  "",
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
-	if err := b.client.Install(ctx, spec); err != nil {
+	if err := b.client.Install(timeoutCtx, spec); err != nil {
 		return err
 	}
 
