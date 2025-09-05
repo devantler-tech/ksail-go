@@ -1,14 +1,10 @@
 package clustertestutils
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 )
-
-// ErrBoom is a common test error used across cluster provisioner tests.
-var ErrBoom = errors.New("boom")
 
 // DefaultDeleteCases returns standard test cases for testing delete operations with name handling.
 func DefaultDeleteCases() []testutils.NameCase {

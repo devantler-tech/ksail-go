@@ -1,6 +1,7 @@
 package eksprovisioner_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
@@ -12,6 +13,12 @@ import (
 	"github.com/weaveworks/eksctl/pkg/actions/cluster"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	"github.com/weaveworks/eksctl/pkg/eks"
+)
+
+var (
+	errCreateClusterFailed = errors.New("create cluster failed")
+	errDeleteClusterFailed = errors.New("delete cluster failed")
+	errListClustersFailed  = errors.New("list clusters failed")
 )
 
 func TestCreate_Success(t *testing.T) {
@@ -39,11 +46,11 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 
 	provisioner, _, _, _, clusterCreator, _ := newProvisionerForTest(t)
 
-	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrBoom)
+	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
 
 	err := provisioner.Create("test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to create EKS cluster", "Create()")
+	testutils.AssertErrWrappedContains(t, err, errCreateClusterFailed, "failed to create EKS cluster", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -74,11 +81,11 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 
 	provisioner, _, clusterActions, _, _, _ := newProvisionerForTest(t)
 
-	mockClusterDeleteAction(clusterActions, clustertestutils.ErrBoom)
+	mockClusterDeleteAction(clusterActions, errDeleteClusterFailed)
 
 	err := provisioner.Delete("test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to delete EKS cluster", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, errDeleteClusterFailed, "failed to delete EKS cluster", "Delete()")
 }
 
 func TestStart_Success(t *testing.T) {
@@ -126,12 +133,12 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 
 	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
 	
-	mockGetClusters(clusterLister, nil, clustertestutils.ErrBoom)
+	mockGetClusters(clusterLister, nil, errListClustersFailed)
 	
 	clusters, err := provisioner.List()
 
 	assert.Nil(t, clusters)
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrBoom, "failed to list EKS clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list EKS clusters", "List()")
 }
 
 func TestExists_Success_True(t *testing.T) {
