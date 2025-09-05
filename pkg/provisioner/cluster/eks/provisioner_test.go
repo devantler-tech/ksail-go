@@ -44,7 +44,12 @@ func TestCreate_Success(t *testing.T) {
 func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, _, clusterCreator, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterCreator for this test
+	_ = clusterProvider
+	_ = clusterActions  
+	_ = clusterLister
+	_ = nodeGroupManager
 
 	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
 
@@ -79,7 +84,12 @@ func TestDelete_Success(t *testing.T) {
 func TestDelete_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, clusterActions, _, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterActions for this test
+	_ = clusterProvider
+	_ = clusterLister
+	_ = clusterCreator
+	_ = nodeGroupManager
 
 	mockClusterDeleteAction(clusterActions, errDeleteClusterFailed)
 
@@ -97,7 +107,12 @@ func TestStart_Success(t *testing.T) {
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for this test  
+	_ = clusterProvider
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 
 	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
@@ -115,7 +130,12 @@ func TestStop_Success(t *testing.T) {
 func TestList_Success(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for this test
+	_ = clusterProvider
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 	descriptions := []cluster.Description{
 		{Name: "cluster1"},
 		{Name: "cluster2"},
@@ -131,7 +151,12 @@ func TestList_Success(t *testing.T) {
 func TestList_Error_GetClustersFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for this test
+	_ = clusterProvider
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 	
 	mockGetClusters(clusterLister, nil, errListClustersFailed)
 	
@@ -144,7 +169,12 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 func TestExists_Success_True(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for this test
+	_ = clusterProvider
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 	descriptions := []cluster.Description{{Name: "cfg-name"}}
 	mockGetClusters(clusterLister, descriptions, nil)
 
@@ -157,7 +187,12 @@ func TestExists_Success_True(t *testing.T) {
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for this test
+	_ = clusterProvider
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 
 	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
@@ -252,7 +287,11 @@ func runNodeScalingTest(
 	t.Helper()
 	cases := clustertestutils.DefaultNameCases("cfg-name")
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
-		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
+		provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+		// We only need provisioner, clusterLister, and nodeGroupManager for this test
+		_ = clusterProvider
+		_ = clusterActions
+		_ = clusterCreator
 		descriptions := []cluster.Description{{Name: expectedName}}
 		mockGetClusters(clusterLister, descriptions, nil)
 
@@ -277,7 +316,11 @@ func runActionSuccess(
 	action actionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, _, _, clusterCreator, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need clusterProvider and clusterCreator for this function
+	_ = clusterActions
+	_ = clusterLister
+	_ = nodeGroupManager
 	expect(clusterProvider, clusterCreator, expectedName)
 
 	err := action(provisioner, inputName)
@@ -297,7 +340,11 @@ func runDeleteActionSuccess(
 	action deleteActionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, _, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need clusterProvider and clusterActions for this function
+	_ = clusterLister
+	_ = clusterCreator
+	_ = nodeGroupManager
 	expect(clusterProvider, clusterActions, expectedName)
 
 	err := action(provisioner, inputName)
@@ -317,7 +364,11 @@ func runListActionSuccess(
 	action listActionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, _, clusterLister, _, _ := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	// We only need clusterProvider and clusterLister for this function
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
 	expect(clusterProvider, clusterLister, expectedName)
 
 	err := action(provisioner, inputName)
