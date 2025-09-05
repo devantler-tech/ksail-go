@@ -51,7 +51,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 				EngineName: tt.engineName,
 			}
 
-			ready, err := engine.CheckReady()
+			ready, err := engine.CheckReady(context.Background())
 
 			assert.Equal(t, tt.expectReady, ready)
 
