@@ -43,13 +43,13 @@ Always reference these instructions first and fallback to search or bash command
 - **Generate mocks**: `mockery` -- regenerates test mocks in ~1.7 seconds. Required when interface definitions change.
 - **Run linter**: `mega-linter-runner -f go` -- comprehensive linting with Go flavor as specified in CONTRIBUTING.md
   - **Primary linting tool**: This is the main linting tool used in CI and locally
-  - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
+  - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all` and `DISABLE_LINTERS: - GO_GOLANGCI_LINT`
   - **Auto-fix capability**: Automatically fixes formatting and style issues when run
   - **IMPORTANT**: Takes 10-15 minutes to complete due to comprehensive security scanning and link checking (set timeout to 1200+ seconds)
   - **Network dependencies**: May fail with timeouts if external links are unreachable (non-critical for code quality)
-  - **Alternative**: `~/go/bin/golangci-lint run` if mega-linter-runner not available (takes ~1m13s)
-  - **Current State**: Codebase has some linting issues that may need attention (89 issues found with golangci-lint)
-  - Always check that new code doesn't introduce additional linting violations
+  - **Go-specific linting**: Run `~/go/bin/golangci-lint run` separately for Go-specific checks (takes ~1m13s, finds 89 issues not CI-blocking)
+  - **Current CI State**: Mega-linter passes (golangci-lint disabled), separate golangci-lint run shows issues
+  - Always check that new code doesn't introduce additional linting violations in enabled linters
 
 ### Application Usage (Current State)
 
@@ -76,8 +76,8 @@ Always reference these instructions first and fallback to search or bash command
    go build -o ksail .                 # ~0.77 seconds - must build successfully
    ./ksail --help                      # Must show help without errors
    ./ksail --version                   # Must show version info
-   mega-linter-runner -f go            # Primary linting tool - takes 10-15 minutes, auto-fixes issues
-   # Alternative if mega-linter not available: ~/go/bin/golangci-lint run (takes ~1m13s)
+   mega-linter-runner -f go            # Primary linting tool - takes 10-15 minutes, auto-fixes issues, CI-consistent
+   # Optional Go-specific linting: ~/go/bin/golangci-lint run (takes ~1m13s, shows 89 non-CI-blocking issues)
 
    # Test core functionality
    ./ksail init --container-engine Docker --distribution Kind
@@ -116,11 +116,13 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Linting Expectations
 
-- **Current State**: Codebase has some linting issues that may need attention (89 issues found with golangci-lint)
-- **Primary Tool**: `mega-linter-runner -f go` with configuration in `.mega-linter.yml`
-- **Alternative Tool**: `~/go/bin/golangci-lint run` with config in `.golangci.yml` (note: .yml extension, not .yaml)
+- **CI Status**: CI passes because golangci-lint is disabled in mega-linter configuration (`.mega-linter.yml` has `DISABLE_LINTERS: - GO_GOLANGCI_LINT`)
+- **Direct golangci-lint**: When run separately, `~/go/bin/golangci-lint run` finds 89 issues that are not blocking CI
+- **Primary Tool**: `mega-linter-runner -f go` with configuration in `.mega-linter.yml` (excludes golangci-lint)
+- **Go-specific Linting**: Use `~/go/bin/golangci-lint run` separately for Go-specific linting with config in `.golangci.yml`
 - **CONTRIBUTING.md Requirement**: Must use `mega-linter-runner -f go` for consistency with CI
-- **Focus**: Ensure new code doesn't introduce additional violations
+- **Current State**: CI-passing codebase with separate golangci-lint issues that are not CI-blocking
+- **Focus**: Ensure new code doesn't introduce additional violations in enabled linters
 - **Network Issues**: Mega-linter includes link checking which may timeout on external URLs (not a code quality issue)
 - **Performance**: For faster iteration during development, use `~/go/bin/golangci-lint run` for Go-specific linting (~1m13s)
 
@@ -180,7 +182,7 @@ Always reference these instructions first and fallback to search or bash command
 1. **Always** validate current state first: `go test -v ./...`
 2. **Always** build after changes: `go build -o ksail .`
 3. **Always** test basic CLI: `./ksail --help`
-4. **Always** run linter: `mega-linter-runner -f go` (primary) or `~/go/bin/golangci-lint run` (fallback)
+4. **Always** run linter: `mega-linter-runner -f go` (primary, CI-consistent) and optionally `~/go/bin/golangci-lint run` (Go-specific)
 5. **Always** ensure tests pass before committing
 
 ### Adding New Features
@@ -204,7 +206,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Common Issues
 
 - **Build fails**: Check Go version (need 1.24.0+), run `go mod download`
-- **Linter fails**: Install mega-linter-runner per [docs](https://megalinter.io/latest/mega-linter-runner/#installation), or use golangci-lint as fallback
+- **Linter fails**: Install mega-linter-runner per [docs](https://megalinter.io/latest/mega-linter-runner/#installation). Note: golangci-lint is disabled in mega-linter config but can be run separately
 - **Import violations**: Check `.mega-linter.yml` and `.golangci.yml` configuration for allowed packages
 - **Test failures**: Check snapshot files in `__snapshots__/` directories
 - **Mock generation**: Run `mockery` to regenerate mocks if tests fail due to interface changes
@@ -230,7 +232,7 @@ Always reference these instructions first and fallback to search or bash command
 ### Development Approach
 
 - **Work in Progress**: Core infrastructure exists, functionality being added incrementally
-- **Clean Slate**: Current state has 0 linting issues, maintain this standard
+- **Clean Slate**: Current state has CI-passing configuration with mega-linter, separate golangci-lint shows 89 non-blocking issues
 - **Cobra Framework**: All CLI development should follow established Cobra patterns
 
 ---
