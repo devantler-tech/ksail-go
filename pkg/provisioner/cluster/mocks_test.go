@@ -5,6 +5,8 @@
 package clusterprovisioner
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,16 +38,16 @@ func (_m *MockClusterProvisioner) EXPECT() *MockClusterProvisioner_Expecter {
 }
 
 // Create provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) Create(name string) error {
-	ret := _mock.Called(name)
+func (_mock *MockClusterProvisioner) Create(ctx context.Context, name string) error {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -58,19 +60,25 @@ type MockClusterProvisioner_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockClusterProvisioner_Expecter) Create(name interface{}) *MockClusterProvisioner_Create_Call {
-	return &MockClusterProvisioner_Create_Call{Call: _e.mock.On("Create", name)}
+func (_e *MockClusterProvisioner_Expecter) Create(ctx interface{}, name interface{}) *MockClusterProvisioner_Create_Call {
+	return &MockClusterProvisioner_Create_Call{Call: _e.mock.On("Create", ctx, name)}
 }
 
-func (_c *MockClusterProvisioner_Create_Call) Run(run func(name string)) *MockClusterProvisioner_Create_Call {
+func (_c *MockClusterProvisioner_Create_Call) Run(run func(ctx context.Context, name string)) *MockClusterProvisioner_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -81,22 +89,22 @@ func (_c *MockClusterProvisioner_Create_Call) Return(err error) *MockClusterProv
 	return _c
 }
 
-func (_c *MockClusterProvisioner_Create_Call) RunAndReturn(run func(name string) error) *MockClusterProvisioner_Create_Call {
+func (_c *MockClusterProvisioner_Create_Call) RunAndReturn(run func(ctx context.Context, name string) error) *MockClusterProvisioner_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Delete provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) Delete(name string) error {
-	ret := _mock.Called(name)
+func (_mock *MockClusterProvisioner) Delete(ctx context.Context, name string) error {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -109,19 +117,25 @@ type MockClusterProvisioner_Delete_Call struct {
 }
 
 // Delete is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockClusterProvisioner_Expecter) Delete(name interface{}) *MockClusterProvisioner_Delete_Call {
-	return &MockClusterProvisioner_Delete_Call{Call: _e.mock.On("Delete", name)}
+func (_e *MockClusterProvisioner_Expecter) Delete(ctx interface{}, name interface{}) *MockClusterProvisioner_Delete_Call {
+	return &MockClusterProvisioner_Delete_Call{Call: _e.mock.On("Delete", ctx, name)}
 }
 
-func (_c *MockClusterProvisioner_Delete_Call) Run(run func(name string)) *MockClusterProvisioner_Delete_Call {
+func (_c *MockClusterProvisioner_Delete_Call) Run(run func(ctx context.Context, name string)) *MockClusterProvisioner_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -132,14 +146,14 @@ func (_c *MockClusterProvisioner_Delete_Call) Return(err error) *MockClusterProv
 	return _c
 }
 
-func (_c *MockClusterProvisioner_Delete_Call) RunAndReturn(run func(name string) error) *MockClusterProvisioner_Delete_Call {
+func (_c *MockClusterProvisioner_Delete_Call) RunAndReturn(run func(ctx context.Context, name string) error) *MockClusterProvisioner_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Exists provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) Exists(name string) (bool, error) {
-	ret := _mock.Called(name)
+func (_mock *MockClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Exists")
@@ -147,16 +161,16 @@ func (_mock *MockClusterProvisioner) Exists(name string) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, error)); ok {
-		return returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, error)); ok {
+		return returnFunc(ctx, name)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -169,19 +183,25 @@ type MockClusterProvisioner_Exists_Call struct {
 }
 
 // Exists is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockClusterProvisioner_Expecter) Exists(name interface{}) *MockClusterProvisioner_Exists_Call {
-	return &MockClusterProvisioner_Exists_Call{Call: _e.mock.On("Exists", name)}
+func (_e *MockClusterProvisioner_Expecter) Exists(ctx interface{}, name interface{}) *MockClusterProvisioner_Exists_Call {
+	return &MockClusterProvisioner_Exists_Call{Call: _e.mock.On("Exists", ctx, name)}
 }
 
-func (_c *MockClusterProvisioner_Exists_Call) Run(run func(name string)) *MockClusterProvisioner_Exists_Call {
+func (_c *MockClusterProvisioner_Exists_Call) Run(run func(ctx context.Context, name string)) *MockClusterProvisioner_Exists_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -192,14 +212,14 @@ func (_c *MockClusterProvisioner_Exists_Call) Return(b bool, err error) *MockClu
 	return _c
 }
 
-func (_c *MockClusterProvisioner_Exists_Call) RunAndReturn(run func(name string) (bool, error)) *MockClusterProvisioner_Exists_Call {
+func (_c *MockClusterProvisioner_Exists_Call) RunAndReturn(run func(ctx context.Context, name string) (bool, error)) *MockClusterProvisioner_Exists_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // List provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) List() ([]string, error) {
-	ret := _mock.Called()
+func (_mock *MockClusterProvisioner) List(ctx context.Context) ([]string, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for List")
@@ -207,18 +227,18 @@ func (_mock *MockClusterProvisioner) List() ([]string, error) {
 
 	var r0 []string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() ([]string, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]string, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func() []string); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []string); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -231,13 +251,20 @@ type MockClusterProvisioner_List_Call struct {
 }
 
 // List is a helper method to define mock.On call
-func (_e *MockClusterProvisioner_Expecter) List() *MockClusterProvisioner_List_Call {
-	return &MockClusterProvisioner_List_Call{Call: _e.mock.On("List")}
+//   - ctx context.Context
+func (_e *MockClusterProvisioner_Expecter) List(ctx interface{}) *MockClusterProvisioner_List_Call {
+	return &MockClusterProvisioner_List_Call{Call: _e.mock.On("List", ctx)}
 }
 
-func (_c *MockClusterProvisioner_List_Call) Run(run func()) *MockClusterProvisioner_List_Call {
+func (_c *MockClusterProvisioner_List_Call) Run(run func(ctx context.Context)) *MockClusterProvisioner_List_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -247,22 +274,22 @@ func (_c *MockClusterProvisioner_List_Call) Return(strings []string, err error) 
 	return _c
 }
 
-func (_c *MockClusterProvisioner_List_Call) RunAndReturn(run func() ([]string, error)) *MockClusterProvisioner_List_Call {
+func (_c *MockClusterProvisioner_List_Call) RunAndReturn(run func(ctx context.Context) ([]string, error)) *MockClusterProvisioner_List_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Start provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) Start(name string) error {
-	ret := _mock.Called(name)
+func (_mock *MockClusterProvisioner) Start(ctx context.Context, name string) error {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Start")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -275,19 +302,25 @@ type MockClusterProvisioner_Start_Call struct {
 }
 
 // Start is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockClusterProvisioner_Expecter) Start(name interface{}) *MockClusterProvisioner_Start_Call {
-	return &MockClusterProvisioner_Start_Call{Call: _e.mock.On("Start", name)}
+func (_e *MockClusterProvisioner_Expecter) Start(ctx interface{}, name interface{}) *MockClusterProvisioner_Start_Call {
+	return &MockClusterProvisioner_Start_Call{Call: _e.mock.On("Start", ctx, name)}
 }
 
-func (_c *MockClusterProvisioner_Start_Call) Run(run func(name string)) *MockClusterProvisioner_Start_Call {
+func (_c *MockClusterProvisioner_Start_Call) Run(run func(ctx context.Context, name string)) *MockClusterProvisioner_Start_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -298,22 +331,22 @@ func (_c *MockClusterProvisioner_Start_Call) Return(err error) *MockClusterProvi
 	return _c
 }
 
-func (_c *MockClusterProvisioner_Start_Call) RunAndReturn(run func(name string) error) *MockClusterProvisioner_Start_Call {
+func (_c *MockClusterProvisioner_Start_Call) RunAndReturn(run func(ctx context.Context, name string) error) *MockClusterProvisioner_Start_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Stop provides a mock function for the type MockClusterProvisioner
-func (_mock *MockClusterProvisioner) Stop(name string) error {
-	ret := _mock.Called(name)
+func (_mock *MockClusterProvisioner) Stop(ctx context.Context, name string) error {
+	ret := _mock.Called(ctx, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Stop")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -326,19 +359,25 @@ type MockClusterProvisioner_Stop_Call struct {
 }
 
 // Stop is a helper method to define mock.On call
+//   - ctx context.Context
 //   - name string
-func (_e *MockClusterProvisioner_Expecter) Stop(name interface{}) *MockClusterProvisioner_Stop_Call {
-	return &MockClusterProvisioner_Stop_Call{Call: _e.mock.On("Stop", name)}
+func (_e *MockClusterProvisioner_Expecter) Stop(ctx interface{}, name interface{}) *MockClusterProvisioner_Stop_Call {
+	return &MockClusterProvisioner_Stop_Call{Call: _e.mock.On("Stop", ctx, name)}
 }
 
-func (_c *MockClusterProvisioner_Stop_Call) Run(run func(name string)) *MockClusterProvisioner_Stop_Call {
+func (_c *MockClusterProvisioner_Stop_Call) Run(run func(ctx context.Context, name string)) *MockClusterProvisioner_Stop_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -349,7 +388,7 @@ func (_c *MockClusterProvisioner_Stop_Call) Return(err error) *MockClusterProvis
 	return _c
 }
 
-func (_c *MockClusterProvisioner_Stop_Call) RunAndReturn(run func(name string) error) *MockClusterProvisioner_Stop_Call {
+func (_c *MockClusterProvisioner_Stop_Call) RunAndReturn(run func(ctx context.Context, name string) error) *MockClusterProvisioner_Stop_Call {
 	_c.Call.Return(run)
 	return _c
 }

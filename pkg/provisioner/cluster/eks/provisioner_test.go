@@ -1,6 +1,7 @@
 package eksprovisioner_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -35,7 +36,7 @@ func TestCreate_Success(t *testing.T) {
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Create(name)
+				return prov.Create(context.Background(), name)
 			},
 		)
 	})
@@ -53,7 +54,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 
 	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
 
-	err := provisioner.Create("test-cluster")
+	err := provisioner.Create(context.Background(), "test-cluster")
 
 	testutils.AssertErrWrappedContains(t, err, errCreateClusterFailed, "failed to create EKS cluster", "Create()")
 }
@@ -75,7 +76,7 @@ func TestDelete_Success(t *testing.T) {
 				mockClusterDeleteAction(clusterActions, nil)
 			},
 			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Delete(name)
+				return prov.Delete(context.Background(), name)
 			},
 		)
 	})
@@ -93,14 +94,14 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 
 	mockClusterDeleteAction(clusterActions, errDeleteClusterFailed)
 
-	err := provisioner.Delete("test-cluster")
+	err := provisioner.Delete(context.Background(), "test-cluster")
 
 	testutils.AssertErrWrappedContains(t, err, errDeleteClusterFailed, "failed to delete EKS cluster", "Delete()")
 }
 
 func TestStart_Success(t *testing.T) {
 	runNodeScalingTest(t, "Start()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-		return prov.Start(name)
+		return prov.Start(context.Background(), name)
 	})
 }
 
@@ -116,14 +117,14 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 
 	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
-	err := provisioner.Start("test-cluster")
+	err := provisioner.Start(context.Background(), "test-cluster")
 
 	assert.ErrorIs(t, err, eksprovisioner.ErrClusterNotFound)
 }
 
 func TestStop_Success(t *testing.T) {
 	runNodeScalingTest(t, "Stop()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-		return prov.Stop(name)
+		return prov.Stop(context.Background(), name)
 	})
 }
 
@@ -142,7 +143,7 @@ func TestList_Success(t *testing.T) {
 	}
 	mockGetClusters(clusterLister, descriptions, nil)
 
-	clusters, err := provisioner.List()
+	clusters, err := provisioner.List(context.Background())
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{"cluster1", "cluster2"}, clusters)
@@ -160,7 +161,7 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 	
 	mockGetClusters(clusterLister, nil, errListClustersFailed)
 	
-	clusters, err := provisioner.List()
+	clusters, err := provisioner.List(context.Background())
 
 	assert.Nil(t, clusters)
 	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list EKS clusters", "List()")
@@ -178,7 +179,7 @@ func TestExists_Success_True(t *testing.T) {
 	descriptions := []cluster.Description{{Name: "cfg-name"}}
 	mockGetClusters(clusterLister, descriptions, nil)
 
-	exists, err := provisioner.Exists("cfg-name")
+	exists, err := provisioner.Exists(context.Background(), "cfg-name")
 
 	require.NoError(t, err)
 	assert.True(t, exists)
@@ -196,7 +197,7 @@ func TestExists_Success_False(t *testing.T) {
 
 	mockGetClusters(clusterLister, []cluster.Description{}, nil)
 
-	exists, err := provisioner.Exists("nonexistent")
+	exists, err := provisioner.Exists(context.Background(), "nonexistent")
 
 	require.NoError(t, err)
 	assert.False(t, exists)
