@@ -5,28 +5,41 @@ linters:
     - wsl_v5
   disable:
     - wsl
-  settings:
-    wsl_v5:
-      allow-first-in-block: true
-      allow-whole-block: false
-      branch-max-lines: 2
-    depguard:
-      rules:
-        main:
-          files:
-            - "$all"
-            - "!$test"
-          list-mode: strict
-          allow:
-            - $gostd
-            - github.com/devantler-tech
-            - github.com/docker
-            - github.com/fatih/color
-            - github.com/k3d-io
-            - github.com/mittwald/go-helm-client
-            - github.com/rancher
-            - github.com/spf13/cobra
-            - github.com/stretchr/testify
-            - github.com/weaveworks/eksctl
-            - k8s.io
-            - sigs.k8s.io
+issues:
+  exclude-files:
+    # Exclude auto-generated mock files from line length checking
+    - ".*mocks.*\\.go$"
+    - ".*_mocks_.*\\.go$"
+  exclude-rules:
+    # Exclude line length issues in auto-generated mock files
+    - path: ".*mocks.*\\.go$"
+      linters:
+        - lll
+    - path: ".*_mocks_.*\\.go$"
+      linters:
+        - lll
+settings:
+  wsl_v5:
+    allow-first-in-block: true
+    allow-whole-block: false
+    branch-max-lines: 2
+  depguard:
+    rules:
+      main:
+        files:
+          - "$all"
+          - "!$test"
+        list-mode: strict
+        allow:
+          - $gostd
+          - github.com/devantler-tech
+          - github.com/docker
+          - github.com/fatih/color
+          - github.com/k3d-io
+          - github.com/mittwald/go-helm-client
+          - github.com/rancher
+          - github.com/spf13/cobra
+          - github.com/stretchr/testify
+          - github.com/weaveworks/eksctl
+          - k8s.io
+          - sigs.k8s.io
