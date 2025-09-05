@@ -19,6 +19,12 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// Static errors for testing to satisfy err113 linter.
+var (
+	errCRDCreationFailed    = errors.New("failed to create CRD")
+	errApplySetCreationFailed = errors.New("failed to create ApplySet")
+)
+
 // testSetup provides common setup for kubectl installer tests.
 func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
 	t.Helper()
@@ -89,7 +95,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech"))
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("failed to create CRD"))
+		Return(nil, errCRDCreationFailed)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
 
@@ -159,7 +165,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
 		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail"))
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("failed to create ApplySet"))
+		Return(nil, errApplySetCreationFailed)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
 
