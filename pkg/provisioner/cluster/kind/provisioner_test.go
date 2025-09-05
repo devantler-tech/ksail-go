@@ -23,8 +23,8 @@ var (
 )
 
 func TestCreate_Success(t *testing.T) {
-	cases := clustertestutils.DefaultNameCases("cfg-name")
-	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
+	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
 		runActionSuccess(
 			t,
 			"Create()",

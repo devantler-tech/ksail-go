@@ -1,3 +1,5 @@
+// Package clustertestutils provides common test utilities for cluster provisioner testing,
+// including shared test cases and helper functions for standardizing test patterns.
 package clustertestutils
 
 import (
@@ -26,7 +28,7 @@ func DefaultNameCases(cfgName string) []testutils.NameCase {
 // This centralizes the common pattern of:
 // - t.Parallel()
 // - Getting test cases
-// - Running testutils.RunNameCases with t.Helper()
+// - Running testutils.RunNameCases with t.Helper().
 func RunStandardSuccessTest(
 	t *testing.T,
 	cases []testutils.NameCase,
@@ -38,5 +40,22 @@ func RunStandardSuccessTest(
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
 		testRunner(t, nameCase.InputName, nameCase.ExpectedName)
+	})
+}
+
+// RunCreateTest runs a standard Create success test pattern with the common cfg-name cases.
+// This centralizes the Create test pattern of:
+// - Getting DefaultNameCases("cfg-name")
+// - Running RunStandardSuccessTest with "Create()" action.
+func RunCreateTest(
+	t *testing.T,
+	runActionSuccessFunc func(t *testing.T, inputName, expectedName string),
+) {
+	t.Helper()
+
+	cases := DefaultNameCases("cfg-name")
+	RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
+		runActionSuccessFunc(t, inputName, expectedName)
 	})
 }
