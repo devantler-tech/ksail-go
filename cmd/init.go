@@ -15,8 +15,7 @@ func NewInitCmd() *cobra.Command {
 		`Initialize a new KSail project with the specified configuration options.`,
 		handleInitRunE,
 		func(cmd *cobra.Command) {
-			cmd.Flags().String("container-engine", "Docker", "Container engine to use (Docker, Podman)")
-			cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d)")
+			cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d, EKS)")
 		},
 	)
 }

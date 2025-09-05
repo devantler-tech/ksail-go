@@ -62,12 +62,8 @@ func TestInitCmd_Flags(t *testing.T) {
 
 	// Act & Assert
 	containerEngineFlag := cmd.Flags().Lookup("container-engine")
-	if containerEngineFlag == nil {
-		t.Fatal("expected container-engine flag to exist")
-	}
-
-	if containerEngineFlag.DefValue != "Docker" {
-		t.Fatalf("expected container-engine default to be 'Docker', got %q", containerEngineFlag.DefValue)
+	if containerEngineFlag != nil {
+		t.Fatal("expected container-engine flag to not exist")
 	}
 
 	distributionFlag := cmd.Flags().Lookup("distribution")
