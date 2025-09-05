@@ -15,16 +15,13 @@ import (
 )
 
 func TestCreate_Success(t *testing.T) {
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	cases := clustertestutils.DefaultNameCases("cfg-name")
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runActionSuccess(
 			t,
 			"Create()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(_ *eks.ClusterProvider,
 				clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
 				// No longer need to mock provider construction since it's injected directly
@@ -50,17 +47,13 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 }
 
 func TestDelete_Success(t *testing.T) {
-	t.Parallel()
-
 	cases := clustertestutils.DefaultDeleteCases()
-
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runDeleteActionSuccess(
 			t,
 			"Delete()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(_ *eks.ClusterProvider,
 				clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
 				// No longer need to mock provider construction since it's injected directly
@@ -250,19 +243,16 @@ func runNodeScalingTest(
 	action func(*eksprovisioner.EKSClusterProvisioner, string) error,
 ) {
 	t.Helper()
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	cases := clustertestutils.DefaultNameCases("cfg-name")
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		provisioner, _, _, clusterLister, _, nodeGroupManager := newProvisionerForTest(t)
-		descriptions := []cluster.Description{{Name: nameCase.ExpectedName}}
+		descriptions := []cluster.Description{{Name: expectedName}}
 		mockGetClusters(clusterLister, descriptions, nil)
 
 		// Mock node group manager
 		setupNodeGroupScalingMock(nodeGroupManager, scaleUp)
 
-		err := action(provisioner, nameCase.InputName)
+		err := action(provisioner, inputName)
 		if err != nil {
 			t.Fatalf("%s unexpected error: %v", testName, err)
 		}

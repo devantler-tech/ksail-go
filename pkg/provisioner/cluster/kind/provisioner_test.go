@@ -17,16 +17,13 @@ import (
 var errBoom = clustertestutils.ErrBoom
 
 func TestCreate_Success(t *testing.T) {
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	cases := clustertestutils.DefaultNameCases("cfg-name")
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runActionSuccess(
 			t,
 			"Create()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
@@ -51,18 +48,14 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 }
 
 func TestDelete_Success(t *testing.T) {
-	t.Parallel()
-
 	// order doesn't matter for copy detection; reusing the same helper
 	cases := clustertestutils.DefaultDeleteCases()
-
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runActionSuccess(
 			t,
 			"Delete()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},
