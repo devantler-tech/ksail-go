@@ -23,6 +23,7 @@ func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInte
 	t.Helper()
 	apiExtClient := kubectlinstaller.NewMockCustomResourceDefinitionInterface(t)
 	dynClient := kubectlinstaller.NewMockResourceInterface(t)
+
 	return apiExtClient, dynClient
 }
 
