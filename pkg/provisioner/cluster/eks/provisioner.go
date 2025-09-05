@@ -124,7 +124,9 @@ func (e *EKSClusterProvisioner) Delete(ctx context.Context, name string) error {
 	disableNodegroupEviction := false
 	parallel := DefaultParallelism
 
-	err = e.clusterActions.Delete(ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel)
+	err = e.clusterActions.Delete(
+		ctx, waitInterval, podEvictionWaitPeriod, wait, force, disableNodegroupEviction, parallel,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to delete EKS cluster: %w", err)
 	}

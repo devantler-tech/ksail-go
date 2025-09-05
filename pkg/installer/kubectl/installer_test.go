@@ -1,6 +1,7 @@
 package kubectlinstaller_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -26,7 +27,9 @@ var (
 )
 
 // testSetup provides common setup for kubectl installer tests.
-func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
+func testSetup(
+	t *testing.T,
+) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
 	t.Helper()
 	apiExtClient := kubectlinstaller.NewMockCustomResourceDefinitionInterface(t)
 	dynClient := kubectlinstaller.NewMockResourceInterface(t)
@@ -35,7 +38,10 @@ func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInte
 }
 
 // createTestInstaller creates a kubectl installer with common test configuration.
-func createTestInstaller(apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface, dynClient dynamic.ResourceInterface) *kubectlinstaller.KubectlInstaller {
+func createTestInstaller(
+	apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface,
+	dynClient dynamic.ResourceInterface,
+) *kubectlinstaller.KubectlInstaller {
 	return kubectlinstaller.NewKubectlInstaller(
 		5*time.Second,
 		apiExtClient,
@@ -80,7 +86,7 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.NoError(t, err)
@@ -100,7 +106,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -144,7 +150,7 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 	)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -170,7 +176,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Install()
+	err := installer.Install(context.Background())
 
 	// Assert
 	require.Error(t, err)
@@ -190,7 +196,7 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	installer := createTestInstaller(apiExtClient, dynClient)
 
 	// Act
-	err := installer.Uninstall()
+	err := installer.Uninstall(context.Background())
 
 	// Assert
 	require.NoError(t, err)

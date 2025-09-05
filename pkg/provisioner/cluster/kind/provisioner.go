@@ -84,7 +84,7 @@ func (k *KindClusterProvisioner) Delete(_ context.Context, name string) error {
 }
 
 // Start starts a kind cluster.
-func (k *KindClusterProvisioner) Start(_ context.Context, name string) error {
+func (k *KindClusterProvisioner) Start(ctx context.Context, name string) error {
 	const dockerStartTimeout = 30 * time.Second
 
 	target := setName(name, k.kindConfig.Name)
@@ -98,12 +98,12 @@ func (k *KindClusterProvisioner) Start(_ context.Context, name string) error {
 		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), dockerStartTimeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, dockerStartTimeout)
 	defer cancel()
 
 	for _, name := range nodes {
 		// Start each node container by name using Docker SDK
-		err := k.client.ContainerStart(ctx, name, container.StartOptions{
+		err := k.client.ContainerStart(timeoutCtx, name, container.StartOptions{
 			CheckpointID:  "",
 			CheckpointDir: "",
 		})
@@ -116,7 +116,7 @@ func (k *KindClusterProvisioner) Start(_ context.Context, name string) error {
 }
 
 // Stop stops a kind cluster.
-func (k *KindClusterProvisioner) Stop(_ context.Context, name string) error {
+func (k *KindClusterProvisioner) Stop(ctx context.Context, name string) error {
 	const dockerStopTimeout = 60 * time.Second
 
 	target := setName(name, k.kindConfig.Name)
@@ -130,13 +130,13 @@ func (k *KindClusterProvisioner) Stop(_ context.Context, name string) error {
 		return fmt.Errorf("%w", ErrClusterNotFound)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), dockerStopTimeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, dockerStopTimeout)
 	defer cancel()
 
 	for _, name := range nodes {
 		// Stop each node container by name using Docker SDK
 		// Graceful stop with default timeout
-		err := k.client.ContainerStop(ctx, name, container.StopOptions{
+		err := k.client.ContainerStop(timeoutCtx, name, container.StopOptions{
 			Signal:  "",
 			Timeout: nil,
 		})

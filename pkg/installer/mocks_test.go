@@ -5,6 +5,8 @@
 package installer
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,16 +38,16 @@ func (_m *MockInstaller) EXPECT() *MockInstaller_Expecter {
 }
 
 // Install provides a mock function for the type MockInstaller
-func (_mock *MockInstaller) Install() error {
-	ret := _mock.Called()
+func (_mock *MockInstaller) Install(ctx context.Context) error {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Install")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -58,13 +60,20 @@ type MockInstaller_Install_Call struct {
 }
 
 // Install is a helper method to define mock.On call
-func (_e *MockInstaller_Expecter) Install() *MockInstaller_Install_Call {
-	return &MockInstaller_Install_Call{Call: _e.mock.On("Install")}
+//   - ctx context.Context
+func (_e *MockInstaller_Expecter) Install(ctx interface{}) *MockInstaller_Install_Call {
+	return &MockInstaller_Install_Call{Call: _e.mock.On("Install", ctx)}
 }
 
-func (_c *MockInstaller_Install_Call) Run(run func()) *MockInstaller_Install_Call {
+func (_c *MockInstaller_Install_Call) Run(run func(ctx context.Context)) *MockInstaller_Install_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -74,22 +83,22 @@ func (_c *MockInstaller_Install_Call) Return(err error) *MockInstaller_Install_C
 	return _c
 }
 
-func (_c *MockInstaller_Install_Call) RunAndReturn(run func() error) *MockInstaller_Install_Call {
+func (_c *MockInstaller_Install_Call) RunAndReturn(run func(ctx context.Context) error) *MockInstaller_Install_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Uninstall provides a mock function for the type MockInstaller
-func (_mock *MockInstaller) Uninstall() error {
-	ret := _mock.Called()
+func (_mock *MockInstaller) Uninstall(ctx context.Context) error {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Uninstall")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func() error); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(context.Context) error); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -102,13 +111,20 @@ type MockInstaller_Uninstall_Call struct {
 }
 
 // Uninstall is a helper method to define mock.On call
-func (_e *MockInstaller_Expecter) Uninstall() *MockInstaller_Uninstall_Call {
-	return &MockInstaller_Uninstall_Call{Call: _e.mock.On("Uninstall")}
+//   - ctx context.Context
+func (_e *MockInstaller_Expecter) Uninstall(ctx interface{}) *MockInstaller_Uninstall_Call {
+	return &MockInstaller_Uninstall_Call{Call: _e.mock.On("Uninstall", ctx)}
 }
 
-func (_c *MockInstaller_Uninstall_Call) Run(run func()) *MockInstaller_Uninstall_Call {
+func (_c *MockInstaller_Uninstall_Call) Run(run func(ctx context.Context)) *MockInstaller_Uninstall_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -118,7 +134,7 @@ func (_c *MockInstaller_Uninstall_Call) Return(err error) *MockInstaller_Uninsta
 	return _c
 }
 
-func (_c *MockInstaller_Uninstall_Call) RunAndReturn(run func() error) *MockInstaller_Uninstall_Call {
+func (_c *MockInstaller_Uninstall_Call) RunAndReturn(run func(ctx context.Context) error) *MockInstaller_Uninstall_Call {
 	_c.Call.Return(run)
 	return _c
 }

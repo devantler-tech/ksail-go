@@ -96,7 +96,11 @@ type KubectlInstaller struct {
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface, dynamicClient dynamic.ResourceInterface) *KubectlInstaller {
+func NewKubectlInstaller(
+	timeout time.Duration,
+	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface,
+	dynamicClient dynamic.ResourceInterface,
+) *KubectlInstaller {
 	return &KubectlInstaller{
 		timeout:             timeout,
 		apiExtensionsClient: apiExtensionsClient,
@@ -107,13 +111,13 @@ func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient apiextension
 
 
 // Install ensures the ApplySet CRD and its parent CR exist.
-func (b *KubectlInstaller) Install() error {
-	err := b.installCRD()
+func (b *KubectlInstaller) Install(ctx context.Context) error {
+	err := b.installCRD(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = b.installApplySetCR()
+	err = b.installApplySetCR(ctx)
 	if err != nil {
 		return err
 	}
@@ -122,13 +126,13 @@ func (b *KubectlInstaller) Install() error {
 }
 
 // Uninstall deletes the ApplySet CR then its CRD.
-func (b *KubectlInstaller) Uninstall() error {
-	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+func (b *KubectlInstaller) Uninstall(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
-	_ = b.dynamicClient.Delete(ctx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
+	_ = b.dynamicClient.Delete(timeoutCtx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
 
-	_ = b.apiExtensionsClient.Delete(ctx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
+	_ = b.apiExtensionsClient.Delete(timeoutCtx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
 
 	return nil
 }
@@ -136,20 +140,20 @@ func (b *KubectlInstaller) Uninstall() error {
 // --- internals ---
 
 // installCRD installs the ApplySet CRD.
-func (b *KubectlInstaller) installCRD() error {
-	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+func (b *KubectlInstaller) installCRD(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err := b.apiExtensionsClient.Get(ctx, crdName, createDefaultGetOptions())
+	_, err := b.apiExtensionsClient.Get(timeoutCtx, crdName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		err = b.applyCRD(ctx, b.apiExtensionsClient)
+		err = b.applyCRD(timeoutCtx, b.apiExtensionsClient)
 		if err != nil {
 			return err
 		}
 
-		err = b.waitForCRDEstablished(ctx, b.apiExtensionsClient, crdName)
+		err = b.waitForCRDEstablished(timeoutCtx, b.apiExtensionsClient, crdName)
 		if err != nil {
 			return err
 		}
@@ -161,15 +165,15 @@ func (b *KubectlInstaller) installCRD() error {
 }
 
 // installApplySetCR installs the ApplySet custom resource.
-func (b *KubectlInstaller) installApplySetCR() error {
-	ctx, cancel := context.WithTimeout(context.Background(), b.timeout)
+func (b *KubectlInstaller) installApplySetCR(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
 	const applySetName = "ksail"
 
-	_, err := b.dynamicClient.Get(ctx, applySetName, createDefaultGetOptions())
+	_, err := b.dynamicClient.Get(timeoutCtx, applySetName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		err = b.applyApplySetCR(ctx, b.dynamicClient, applySetName)
+		err = b.applyApplySetCR(timeoutCtx, b.dynamicClient, applySetName)
 		if err != nil {
 			return err
 		}
@@ -181,7 +185,10 @@ func (b *KubectlInstaller) installApplySetCR() error {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, client apiextensionsv1client.CustomResourceDefinitionInterface) error {
+func (b *KubectlInstaller) applyCRD(
+	ctx context.Context,
+	client apiextensionsv1client.CustomResourceDefinitionInterface,
+) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 
 	err := yaml.Unmarshal(applySetCRDYAML, &crd)
