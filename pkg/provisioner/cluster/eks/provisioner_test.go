@@ -47,7 +47,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
 	// We only need provisioner and clusterCreator for this test
 	_ = clusterProvider
-	_ = clusterActions  
+	_ = clusterActions
 	_ = clusterLister
 	_ = nodeGroupManager
 
