@@ -210,14 +210,10 @@ func TestStart_Success(t *testing.T) {
 
 func TestStart_Error_DockerStartFailed(t *testing.T) {
 	t.Parallel()
-	runDockerOperationFailureTest(
+	runDockerStartFailureTest(
 		t,
-		"Start",
 		func(client *provisioner.MockContainerAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errStartClusterFailed)
-		},
-		func(p *kindprovisioner.KindClusterProvisioner) error {
-			return p.Start("")
 		},
 		"docker start failed for kind-control-plane",
 	)
@@ -247,14 +243,10 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 
 func TestStop_Error_DockerStopFailed(t *testing.T) {
 	t.Parallel()
-	runDockerOperationFailureTest(
+	runDockerStopFailureTest(
 		t,
-		"Stop",
 		func(client *provisioner.MockContainerAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errStopClusterFailed)
-		},
-		func(p *kindprovisioner.KindClusterProvisioner) error {
-			return p.Stop("")
 		},
 		"docker stop failed for kind-control-plane",
 	)
@@ -361,12 +353,10 @@ func runActionSuccess(
 	}
 }
 
-// runDockerOperationFailureTest is a helper to DRY up the repeated Docker operation failure scenarios.
-func runDockerOperationFailureTest(
+// runDockerStartFailureTest is a helper for testing Docker start operation failures.
+func runDockerStartFailureTest(
 	t *testing.T,
-	actionName string,
 	expectDockerCall func(*provisioner.MockContainerAPIClient),
-	action func(*kindprovisioner.KindClusterProvisioner) error,
 	expectedErrorMsg string,
 ) {
 	t.Helper()
@@ -378,16 +368,39 @@ func runDockerOperationFailureTest(
 	expectDockerCall(client)
 
 	// Act
-	err := action(provisioner)
+	err := provisioner.Start("")
 
 	// Assert
-	// The specific error depends on the action (Start uses errStartClusterFailed, Stop uses errStopClusterFailed)
-	// but we can't easily determine which one without changing the function signature significantly
-	// Since the error checking verifies the wrapped error message, we'll verify the operation succeeded in reporting an error
 	if err == nil {
-		t.Fatalf("%s expected error, got nil", actionName+"()")
+		t.Fatalf("Start() expected error, got nil")
 	}
 	if expectedErrorMsg != "" && !assert.Contains(t, err.Error(), expectedErrorMsg) {
-		t.Fatalf("%s error should contain %q, got: %v", actionName+"()", expectedErrorMsg, err)
+		t.Fatalf("Start() error should contain %q, got: %v", expectedErrorMsg, err)
+	}
+}
+
+// runDockerStopFailureTest is a helper for testing Docker stop operation failures.
+func runDockerStopFailureTest(
+	t *testing.T,
+	expectDockerCall func(*provisioner.MockContainerAPIClient),
+	expectedErrorMsg string,
+) {
+	t.Helper()
+	// Arrange
+	provisioner, provider, client := newProvisionerForTest(t)
+
+	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane"}, nil)
+
+	expectDockerCall(client)
+
+	// Act
+	err := provisioner.Stop("")
+
+	// Assert
+	if err == nil {
+		t.Fatalf("Stop() expected error, got nil")
+	}
+	if expectedErrorMsg != "" && !assert.Contains(t, err.Error(), expectedErrorMsg) {
+		t.Fatalf("Stop() error should contain %q, got: %v", expectedErrorMsg, err)
 	}
 }
