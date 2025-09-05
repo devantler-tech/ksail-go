@@ -45,7 +45,8 @@ func TestCreate_Success(t *testing.T) {
 func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterCreator for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -85,7 +86,8 @@ func TestDelete_Success(t *testing.T) {
 func TestDelete_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterActions for this test
 	_ = clusterProvider
 	_ = clusterLister
@@ -108,7 +110,8 @@ func TestStart_Success(t *testing.T) {
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -131,7 +134,8 @@ func TestStop_Success(t *testing.T) {
 func TestList_Success(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -152,7 +156,8 @@ func TestList_Success(t *testing.T) {
 func TestList_Error_GetClustersFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -170,7 +175,8 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 func TestExists_Success_True(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -188,7 +194,8 @@ func TestExists_Success_True(t *testing.T) {
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need provisioner and clusterLister for this test
 	_ = clusterProvider
 	_ = clusterActions
@@ -269,8 +276,13 @@ func mockClusterDeleteAction(clusterActions *eksprovisioner.MockEKSClusterAction
 }
 
 // mockGetClusters sets up the standard mock for GetClusters action on clusterLister.
-func mockGetClusters(clusterLister *eksprovisioner.MockEKSClusterLister, descriptions []cluster.Description, returnErr error) {
-	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(descriptions, returnErr)
+func mockGetClusters(
+	clusterLister *eksprovisioner.MockEKSClusterLister,
+	descriptions []cluster.Description,
+	returnErr error,
+) {
+	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(descriptions, returnErr)
 }
 
 // setupNodeGroupScalingMock sets up the standard mock for node group scaling operations.
@@ -288,7 +300,8 @@ func runNodeScalingTest(
 	t.Helper()
 	cases := clustertestutils.DefaultNameCases("cfg-name")
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
-		provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+		provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+			newProvisionerForTest(t)
 		// We only need provisioner, clusterLister, and nodeGroupManager for this test
 		_ = clusterProvider
 		_ = clusterActions
@@ -317,7 +330,8 @@ func runActionSuccess(
 	action actionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need clusterProvider and clusterCreator for this function
 	_ = clusterActions
 	_ = clusterLister
@@ -341,7 +355,8 @@ func runDeleteActionSuccess(
 	action deleteActionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need clusterProvider and clusterActions for this function
 	_ = clusterLister
 	_ = clusterCreator
@@ -365,7 +380,8 @@ func runListActionSuccess(
 	action listActionFn,
 ) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(t)
+	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
 	// We only need clusterProvider and clusterLister for this function
 	_ = clusterActions
 	_ = clusterCreator

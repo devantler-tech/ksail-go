@@ -26,7 +26,9 @@ var (
 )
 
 // testSetup provides common setup for kubectl installer tests.
-func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
+func testSetup(
+	t *testing.T,
+) (*kubectlinstaller.MockCustomResourceDefinitionInterface, *kubectlinstaller.MockResourceInterface) {
 	t.Helper()
 	apiExtClient := kubectlinstaller.NewMockCustomResourceDefinitionInterface(t)
 	dynClient := kubectlinstaller.NewMockResourceInterface(t)
@@ -35,7 +37,10 @@ func testSetup(t *testing.T) (*kubectlinstaller.MockCustomResourceDefinitionInte
 }
 
 // createTestInstaller creates a kubectl installer with common test configuration.
-func createTestInstaller(apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface, dynClient dynamic.ResourceInterface) *kubectlinstaller.KubectlInstaller {
+func createTestInstaller(
+	apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface,
+	dynClient dynamic.ResourceInterface,
+) *kubectlinstaller.KubectlInstaller {
 	return kubectlinstaller.NewKubectlInstaller(
 		5*time.Second,
 		apiExtClient,

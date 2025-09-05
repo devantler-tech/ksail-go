@@ -50,7 +50,11 @@ type KubectlInstaller struct {
 }
 
 // NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(timeout time.Duration, apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface, dynamicClient dynamic.ResourceInterface) *KubectlInstaller {
+func NewKubectlInstaller(
+	timeout time.Duration,
+	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface,
+	dynamicClient dynamic.ResourceInterface,
+) *KubectlInstaller {
 	return &KubectlInstaller{
 		timeout:             timeout,
 		apiExtensionsClient: apiExtensionsClient,
@@ -135,7 +139,10 @@ func (b *KubectlInstaller) installApplySetCR(ctx context.Context) error {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(ctx context.Context, client apiextensionsv1client.CustomResourceDefinitionInterface) error {
+func (b *KubectlInstaller) applyCRD(
+	ctx context.Context,
+	client apiextensionsv1client.CustomResourceDefinitionInterface,
+) error {
 	var crd apiextensionsv1.CustomResourceDefinition
 
 	err := yaml.Unmarshal(applySetCRDYAML, &crd)
