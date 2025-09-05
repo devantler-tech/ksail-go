@@ -32,8 +32,7 @@ func NewK3dClusterProvisioner(
 }
 
 // Create provisions a k3d cluster using the loaded SimpleConfig.
-func (k *K3dClusterProvisioner) Create(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	// Ensure name in SimpleConfig; default to ksail name
@@ -64,8 +63,7 @@ func (k *K3dClusterProvisioner) Create(name string) error {
 }
 
 // Delete tears down a k3d cluster.
-func (k *K3dClusterProvisioner) Delete(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Delete(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := name
@@ -88,8 +86,7 @@ func (k *K3dClusterProvisioner) Delete(name string) error {
 }
 
 // Start starts an existing k3d cluster.
-func (k *K3dClusterProvisioner) Start(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Start(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := name
@@ -117,8 +114,7 @@ func (k *K3dClusterProvisioner) Start(name string) error {
 }
 
 // Stop stops a running k3d cluster.
-func (k *K3dClusterProvisioner) Stop(name string) error {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) Stop(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
 	target := name
@@ -144,8 +140,7 @@ func (k *K3dClusterProvisioner) Stop(name string) error {
 }
 
 // List returns cluster names managed by k3d.
-func (k *K3dClusterProvisioner) List() ([]string, error) {
-	ctx := context.Background()
+func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	runtime := runtimes.SelectedRuntime
 
 	clusters, err := k.clientProvider.ClusterList(ctx, runtime)
@@ -162,8 +157,8 @@ func (k *K3dClusterProvisioner) List() ([]string, error) {
 }
 
 // Exists returns whether the ksail cluster name exists in k3d.
-func (k *K3dClusterProvisioner) Exists(name string) (bool, error) {
-	clusters, err := k.List()
+func (k *K3dClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
+	clusters, err := k.List(ctx)
 	if err != nil {
 		return false, fmt.Errorf("list: %w", err)
 	}
