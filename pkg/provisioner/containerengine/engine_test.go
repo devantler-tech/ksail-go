@@ -23,7 +23,13 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 		{
 			name: "container engine ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+				m.EXPECT().Ping(context.Background()).Return(types.Ping{
+					APIVersion:     "",
+					OSType:         "",
+					Experimental:   false,
+					BuilderVersion: "",
+					SwarmStatus:    nil,
+				}, nil)
 			},
 			engineName:  "Docker",
 			expectReady: true,
@@ -32,7 +38,13 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 		{
 			name: "container engine not ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(types.Ping{}, assert.AnError)
+				m.EXPECT().Ping(context.Background()).Return(types.Ping{
+					APIVersion:     "",
+					OSType:         "",
+					Experimental:   false,
+					BuilderVersion: "",
+					SwarmStatus:    nil,
+				}, assert.AnError)
 			},
 			engineName:  "Docker",
 			expectReady: false,
@@ -68,6 +80,7 @@ func TestContainerEngine_Name(t *testing.T) {
 	t.Parallel()
 
 	engine := &containerengine.ContainerEngine{
+		Client:     nil,
 		EngineName: "Docker",
 	}
 
@@ -78,7 +91,8 @@ func TestContainerEngine_GetClient(t *testing.T) {
 	t.Parallel()
 	mockClient := provisioner.NewMockAPIClient(t)
 	engine := &containerengine.ContainerEngine{
-		Client: mockClient,
+		Client:     mockClient,
+		EngineName: "",
 	}
 
 	assert.Equal(t, mockClient, engine.GetClient())
