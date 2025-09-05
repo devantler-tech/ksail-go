@@ -7,25 +7,29 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var errBoom = errors.New("boom")
+var (
+	errCreateClusterFailed = errors.New("create cluster failed")
+	errDeleteClusterFailed = errors.New("delete cluster failed")
+	errListClustersFailed  = errors.New("list clusters failed")
+	errStartClusterFailed  = errors.New("start cluster failed")
+	errStopClusterFailed   = errors.New("stop cluster failed")
+)
 
 func TestCreate_Success(t *testing.T) {
-	t.Parallel()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
+	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
 		runActionSuccess(
 			t,
 			"Create()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
@@ -40,31 +44,24 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(errBoom)
+	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
 
 	// Act
 	err := provisioner.Create("my-cluster")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errBoom, "", "Create()")
+	testutils.AssertErrWrappedContains(t, err, errCreateClusterFailed, "", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
-	t.Parallel()
-
 	// order doesn't matter for copy detection; reusing the same helper
-	cases := []testutils.NameCase{
-		{Name: "without name uses cfg", InputName: "", ExpectedName: "cfg-name"},
-		{Name: "with name", InputName: "custom", ExpectedName: "custom"},
-	}
-
-	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
-		t.Helper()
+	cases := clustertestutils.DefaultDeleteCases()
+	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runActionSuccess(
 			t,
 			"Delete()",
-			nameCase.InputName,
-			nameCase.ExpectedName,
+			inputName,
+			expectedName,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},
@@ -79,13 +76,13 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Delete", "bad", mock.Anything).Return(errBoom)
+	provider.On("Delete", "bad", mock.Anything).Return(errDeleteClusterFailed)
 
 	// Act
 	err := provisioner.Delete("bad")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errBoom, "", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, errDeleteClusterFailed, "", "Delete()")
 }
 
 func TestExists_Success_False(t *testing.T) {
@@ -130,7 +127,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errBoom)
+	provider.On("List").Return(nil, errListClustersFailed)
 
 	// Act
 	exists, err := provisioner.Exists("any")
@@ -140,7 +137,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "Exists()")
+	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "Exists()")
 }
 
 func TestList_Success(t *testing.T) {
@@ -161,13 +158,13 @@ func TestList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errBoom)
+	provider.On("List").Return(nil, errListClustersFailed)
 
 	// Act
 	_, err := provisioner.List()
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errBoom, "failed to list kind clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
@@ -181,7 +178,7 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("ListNodes", "cfg-name").Return(nil, errBoom)
+	provider.On("ListNodes", "cfg-name").Return(nil, errStartClusterFailed)
 
 	// Act
 	err := provisioner.Start("")
@@ -215,12 +212,10 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 	t.Parallel()
 	runDockerOperationFailureTest(
 		t,
+		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start("") },
 		"Start",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
-		},
-		func(p *kindprovisioner.KindClusterProvisioner) error {
-			return p.Start("")
+			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errStartClusterFailed)
 		},
 		"docker start failed for kind-control-plane",
 	)
@@ -237,7 +232,7 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("ListNodes", "cfg-name").Return(nil, errBoom)
+	provider.On("ListNodes", "cfg-name").Return(nil, errStopClusterFailed)
 
 	// Act
 	err := provisioner.Stop("")
@@ -252,12 +247,10 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 	t.Parallel()
 	runDockerOperationFailureTest(
 		t,
+		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop("") },
 		"Stop",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errBoom)
-		},
-		func(p *kindprovisioner.KindClusterProvisioner) error {
-			return p.Stop("")
+			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errStopClusterFailed)
 		},
 		"docker stop failed for kind-control-plane",
 	)
@@ -364,12 +357,12 @@ func runActionSuccess(
 	}
 }
 
-// runDockerOperationFailureTest is a helper to DRY up the repeated Docker operation failure scenarios.
+// runDockerOperationFailureTest is a helper for testing Docker operation failures.
 func runDockerOperationFailureTest(
 	t *testing.T,
-	actionName string,
+	operation func(*kindprovisioner.KindClusterProvisioner) error,
+	operationName string,
 	expectDockerCall func(*provisioner.MockContainerAPIClient),
-	action func(*kindprovisioner.KindClusterProvisioner) error,
 	expectedErrorMsg string,
 ) {
 	t.Helper()
@@ -381,8 +374,13 @@ func runDockerOperationFailureTest(
 	expectDockerCall(client)
 
 	// Act
-	err := action(provisioner)
+	err := operation(provisioner)
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errBoom, expectedErrorMsg, actionName+"()")
+	if err == nil {
+		t.Fatalf("%s() expected error, got nil", operationName)
+	}
+	if expectedErrorMsg != "" && !assert.Contains(t, err.Error(), expectedErrorMsg) {
+		t.Fatalf("%s() error should contain %q, got: %v", operationName, expectedErrorMsg, err)
+	}
 }

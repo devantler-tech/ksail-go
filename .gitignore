@@ -48,3 +48,4 @@ coverage.html
 
 # megalinter output
 megalinter_output.log
+tmp/
