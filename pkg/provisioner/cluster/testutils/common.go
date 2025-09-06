@@ -9,9 +9,11 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 )
 
-// Common test error variables used by multiple cluster provisioner test packages.
+// Common error variables used across cluster provisioner tests to avoid duplication.
 var (
 	ErrCreateClusterFailed = errors.New("create cluster failed")
+	ErrStartClusterFailed  = errors.New("start cluster failed")
+	ErrStopClusterFailed   = errors.New("stop cluster failed")
 	ErrDeleteClusterFailed = errors.New("delete cluster failed")
 	ErrListClustersFailed  = errors.New("list clusters failed")
 )
