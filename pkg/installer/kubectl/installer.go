@@ -200,6 +200,7 @@ func (b *KubectlInstaller) applyCRD(
 	if err == nil {
 		return nil
 	}
+
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := client.Get(ctx, crd.Name, createDefaultGetOptions())
 		if getErr != nil {
@@ -278,6 +279,7 @@ func (b *KubectlInstaller) applyApplySetCR(
 	if err == nil {
 		return nil
 	}
+
 	if apierrors.IsAlreadyExists(err) {
 		existing, getErr := dyn.Get(ctx, name, createDefaultGetOptions())
 		if getErr != nil {
