@@ -135,6 +135,8 @@
     "Karpenter",
     "IMDS",
     "Bottlerocket",
-    "ireturn"
+    "ireturn",
+    "objectmeta",
+    "k8sutils"
   ]
 }
