@@ -101,7 +101,7 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) er
 	defer cancel()
 
 	if err := b.client.Install(timeoutCtx, spec); err != nil {
-		return err
+		return fmt.Errorf("failed to install flux operator chart: %w", err)
 	}
 
 	return nil
