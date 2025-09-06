@@ -385,19 +385,18 @@ func runActionSuccess(
 	action actionFn,
 ) {
 	t.Helper()
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need clusterCreator for this function
-	_ = clusterActions
-	_ = clusterLister
-	_ = nodeGroupManager
-
-	expect(clusterCreator, expectedName)
-
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
-	}
+	clustertestutils.RunActionSuccess(
+		t,
+		label,
+		inputName,
+		expectedName,
+		func(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+			provisioner, _, _, clusterCreator, _ := newProvisionerForTest(t)
+			return provisioner, clusterCreator
+		},
+		expect,
+		action,
+	)
 }
 
 type expectDeleteProviderFn func(*eksprovisioner.MockEKSClusterActions, string)

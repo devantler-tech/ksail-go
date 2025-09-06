@@ -351,13 +351,18 @@ func runActionSuccess(
 	action actionFn,
 ) {
 	t.Helper()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	expect(provider, expectedName)
-
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
-	}
+	clustertestutils.RunActionSuccess(
+		t,
+		label,
+		inputName,
+		expectedName,
+		func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+			provisioner, provider, _ := newProvisionerForTest(t)
+			return provisioner, provider
+		},
+		expect,
+		action,
+	)
 }
 
 // runDockerOperationFailureTest is a helper for testing Docker operation failures.

@@ -135,3 +135,24 @@ func CreateTestEKSNodeGroupBase(opts EKSNodeGroupBaseOptions) *v1alpha5.NodeGrou
 		ScalingConfig:               scalingConfig,
 	}
 }
+
+// RunActionSuccess provides a generic helper for testing successful provisioner actions.
+// It eliminates code duplication between EKS and Kind test files by abstracting the common pattern:
+// setup -> expect -> action -> assert.
+func RunActionSuccess[MockT, ProvisionerT any](
+	t *testing.T,
+	label string,
+	inputName, expectedName string,
+	setupFn func(*testing.T) (ProvisionerT, MockT),
+	expectFn func(MockT, string),
+	actionFn func(ProvisionerT, string) error,
+) {
+	t.Helper()
+	provisioner, mock := setupFn(t)
+	expectFn(mock, expectedName)
+
+	err := actionFn(provisioner, inputName)
+	if err != nil {
+		t.Fatalf("%s unexpected error: %v", label, err)
+	}
+}
