@@ -47,11 +47,13 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	_ = clusterLister
 	_ = nodeGroupManager
 
-	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrCreateClusterFailed)
+	clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).
+		Return(clustertestutils.ErrCreateClusterFailed)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrCreateClusterFailed, "failed to create EKS cluster", "Create()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrCreateClusterFailed,
+		"failed to create EKS cluster", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -93,7 +95,8 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 
 	err := provisioner.Delete(context.Background(), "test-cluster")
 
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrDeleteClusterFailed, "failed to delete EKS cluster", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrDeleteClusterFailed,
+		"failed to delete EKS cluster", "Delete()")
 }
 
 func TestStart_Success(t *testing.T) {
@@ -163,7 +166,8 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 	clusters, err := provisioner.List(context.Background())
 
 	assert.Nil(t, clusters)
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list EKS clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed,
+		"failed to list EKS clusters", "List()")
 }
 
 func TestExists_Success_True(t *testing.T) {

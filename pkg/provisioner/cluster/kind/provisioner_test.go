@@ -40,7 +40,8 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrCreateClusterFailed)
+	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).
+		Return(clustertestutils.ErrCreateClusterFailed)
 
 	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
@@ -135,7 +136,8 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "Exists()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed,
+		"failed to list kind clusters", "Exists()")
 }
 
 func TestList_Success(t *testing.T) {
@@ -162,7 +164,8 @@ func TestList_Error_ListFailed(t *testing.T) {
 	_, err := provisioner.List(context.Background())
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed,
+		"failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
@@ -213,7 +216,8 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start(context.Background(), "") },
 		"Start",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(clustertestutils.ErrStartClusterFailed)
+			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).
+				Return(clustertestutils.ErrStartClusterFailed)
 		},
 		"docker start failed for kind-control-plane",
 	)
@@ -248,7 +252,8 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop(context.Background(), "") },
 		"Stop",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(clustertestutils.ErrStopClusterFailed)
+			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).
+				Return(clustertestutils.ErrStopClusterFailed)
 		},
 		"docker stop failed for kind-control-plane",
 	)
