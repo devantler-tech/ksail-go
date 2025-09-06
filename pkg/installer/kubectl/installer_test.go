@@ -319,8 +319,3 @@ func createDefaultGroupResource() schema.GroupResource {
 		Resource: "",
 	}
 }
-
-// boolPtr returns a pointer to the given boolean value.
-func boolPtr(b bool) *bool {
-	return &b
-}

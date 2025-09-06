@@ -381,6 +381,7 @@ func runDockerOperationFailureTest(
 	if err == nil {
 		t.Fatalf("%s() expected error, got nil", operationName)
 	}
+
 	if expectedErrorMsg != "" && !assert.Contains(t, err.Error(), expectedErrorMsg) {
 		t.Fatalf("%s() error should contain %q, got: %v", operationName, expectedErrorMsg, err)
 	}

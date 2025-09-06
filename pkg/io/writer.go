@@ -42,6 +42,7 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 
 	// Use defer with closure to ensure file is always closed and check for close errors
 	var closeErr error
+
 	defer func() {
 		closeErr = file.Close()
 	}()

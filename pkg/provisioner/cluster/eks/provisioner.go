@@ -106,16 +106,16 @@ func (e *EKSClusterProvisioner) Start(ctx context.Context, name string) error {
 	}
 
 	// Scale all node groups to their desired capacity
-	for _, ng := range e.clusterConfig.NodeGroups {
-		if ng.ScalingConfig != nil && ng.DesiredCapacity != nil {
+	for _, nodeGroup := range e.clusterConfig.NodeGroups {
+		if nodeGroup.ScalingConfig != nil && nodeGroup.DesiredCapacity != nil {
 			// Ensure min size allows for desired capacity
-			if ng.MinSize != nil && *ng.MinSize == 0 {
-				*ng.MinSize = *ng.DesiredCapacity
+			if nodeGroup.MinSize != nil && *nodeGroup.MinSize == 0 {
+				*nodeGroup.MinSize = *nodeGroup.DesiredCapacity
 			}
 
-			err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
+			err = ngManager.Scale(ctx, nodeGroup.NodeGroupBase, true)
 			if err != nil {
-				return fmt.Errorf("failed to scale node group %s: %w", ng.Name, err)
+				return fmt.Errorf("failed to scale node group %s: %w", nodeGroup.Name, err)
 			}
 		}
 	}
@@ -131,24 +131,24 @@ func (e *EKSClusterProvisioner) Stop(ctx context.Context, name string) error {
 	}
 
 	// Scale all node groups to 0
-	for _, ng := range e.clusterConfig.NodeGroups {
+	for _, nodeGroup := range e.clusterConfig.NodeGroups {
 		// Set desired capacity to 0 and min size to 0
 		zeroSize := 0
 
-		if ng.ScalingConfig == nil {
-			ng.ScalingConfig = &v1alpha5.ScalingConfig{
+		if nodeGroup.ScalingConfig == nil {
+			nodeGroup.ScalingConfig = &v1alpha5.ScalingConfig{
 				DesiredCapacity: nil,
 				MinSize:         nil,
 				MaxSize:         nil,
 			}
 		}
 
-		ng.DesiredCapacity = &zeroSize
-		ng.MinSize = &zeroSize
+		nodeGroup.DesiredCapacity = &zeroSize
+		nodeGroup.MinSize = &zeroSize
 
-		err = ngManager.Scale(ctx, ng.NodeGroupBase, true)
+		err = ngManager.Scale(ctx, nodeGroup.NodeGroupBase, true)
 		if err != nil {
-			return fmt.Errorf("failed to scale down node group %s: %w", ng.Name, err)
+			return fmt.Errorf("failed to scale down node group %s: %w", nodeGroup.Name, err)
 		}
 	}
 
