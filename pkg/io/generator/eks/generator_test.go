@@ -171,18 +171,14 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 	assertEKSYAML(t, result, "default-cluster")
 }
 
-// createTestClusterConfig creates a minimal test EKS cluster configuration.
-func createTestClusterConfig(name string) *v1alpha5.ClusterConfig {
-	minNodes := 1
-	maxNodes := 3
-	desiredNodes := 2
-
+// createTestClusterConfigBase creates a test EKS cluster configuration with customizable parameters.
+func createTestClusterConfigBase(name, region, version, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.ClusterConfig {
 	return &v1alpha5.ClusterConfig{
 		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
 		Metadata: &v1alpha5.ClusterMeta{
 			Name:                name,
-			Region:              "us-west-2",
-			Version:             "",
+			Region:              region,
+			Version:             version,
 			ForceUpdateVersion:  nil,
 			Tags:                nil,
 			Annotations:         nil,
@@ -207,7 +203,7 @@ func createTestClusterConfig(name string) *v1alpha5.ClusterConfig {
 				NodeGroupBase: &v1alpha5.NodeGroupBase{
 					Name:                        name + "-workers",
 					AMIFamily:                   "",
-					InstanceType:                "m5.large",
+					InstanceType:                instanceType,
 					AvailabilityZones:           nil,
 					Subnets:                     nil,
 					InstancePrefix:              "",
@@ -266,99 +262,14 @@ func createTestClusterConfig(name string) *v1alpha5.ClusterConfig {
 	}
 }
 
+// createTestClusterConfig creates a minimal test EKS cluster configuration.
+func createTestClusterConfig(name string) *v1alpha5.ClusterConfig {
+	return createTestClusterConfigBase(name, "us-west-2", "", "m5.large", 1, 3, 2)
+}
+
 // createTestClusterConfigWithOptions creates a test cluster config with custom EKS options.
 func createTestClusterConfigWithOptions(name string) *v1alpha5.ClusterConfig {
-	minNodes := 2
-	maxNodes := 5
-	desiredNodes := 3
-
-	return &v1alpha5.ClusterConfig{
-		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
-		Metadata: &v1alpha5.ClusterMeta{
-			Name:                name,
-			Region:              "us-east-1",
-			Version:             "1.25",
-			ForceUpdateVersion:  nil,
-			Tags:                nil,
-			Annotations:         nil,
-			AccountID:           "",
-		},
-		KubernetesNetworkConfig: nil,
-		AutoModeConfig:          nil,
-		RemoteNetworkConfig:     nil,
-		IAM:                     nil,
-		IAMIdentityMappings:     nil,
-		IdentityProviders:       nil,
-		AccessConfig:            nil,
-		VPC:                     nil,
-		Addons:                  nil,
-		AddonsConfig:            v1alpha5.AddonsConfig{
-			AutoApplyPodIdentityAssociations: false,
-			DisableDefaultAddons:             false,
-		},
-		PrivateCluster:          nil,
-		NodeGroups: []*v1alpha5.NodeGroup{
-			{
-				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name:                        name + "-workers",
-					AMIFamily:                   "",
-					InstanceType:                "t3.medium",
-					AvailabilityZones:           nil,
-					Subnets:                     nil,
-					InstancePrefix:              "",
-					InstanceName:                "",
-					VolumeSize:                  nil,
-					SSH:                         nil,
-					Labels:                      nil,
-					PrivateNetworking:           false,
-					Tags:                        nil,
-					IAM:                         nil,
-					AMI:                         "",
-					SecurityGroups:              nil,
-					MaxPodsPerNode:              0,
-					ASGSuspendProcesses:         nil,
-					EBSOptimized:                nil,
-					VolumeType:                  nil,
-					VolumeName:                  nil,
-					VolumeEncrypted:             nil,
-					VolumeKmsKeyID:              nil,
-					VolumeIOPS:                  nil,
-					VolumeThroughput:            nil,
-					AdditionalVolumes:           nil,
-					PreBootstrapCommands:        nil,
-					OverrideBootstrapCommand:    nil,
-					PropagateASGTags:            nil,
-					DisableIMDSv1:               nil,
-					DisablePodIMDS:              nil,
-					Placement:                   nil,
-					EFAEnabled:                  nil,
-					InstanceSelector:            nil,
-					AdditionalEncryptedVolume:   "",
-					Bottlerocket:                nil,
-					EnableDetailedMonitoring:    nil,
-					CapacityReservation:         nil,
-					InstanceMarketOptions:       nil,
-					OutpostARN:                  "",
-					ScalingConfig: &v1alpha5.ScalingConfig{
-						MinSize:         &minNodes,
-						MaxSize:         &maxNodes,
-						DesiredCapacity: &desiredNodes,
-					},
-				},
-			},
-		},
-		ManagedNodeGroups:   nil,
-		FargateProfiles:     nil,
-		AvailabilityZones:   nil,
-		LocalZones:          nil,
-		CloudWatch:          nil,
-		SecretsEncryption:   nil,
-		Status:              nil,
-		GitOps:              nil,
-		Karpenter:           nil,
-		Outpost:             nil,
-		ZonalShiftConfig:    nil,
-	}
+	return createTestClusterConfigBase(name, "us-east-1", "1.25", "t3.medium", 2, 5, 3)
 }
 
 // assertEKSYAML ensures the generated YAML contains the expected boilerplate and cluster name.
