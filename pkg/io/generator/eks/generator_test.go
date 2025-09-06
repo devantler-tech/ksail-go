@@ -8,6 +8,7 @@ import (
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
@@ -233,52 +234,13 @@ func createTestNodeGroups(name, instanceType string, minNodes, maxNodes, desired
 }
 
 func createTestNodeGroupBase(name, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.NodeGroupBase {
-	return &v1alpha5.NodeGroupBase{
-		Name:                        name + "-workers",
-		AMIFamily:                   "",
-		InstanceType:                instanceType,
-		AvailabilityZones:           nil,
-		Subnets:                     nil,
-		InstancePrefix:              "",
-		InstanceName:                "",
-		VolumeSize:                  nil,
-		SSH:                         nil,
-		Labels:                      nil,
-		PrivateNetworking:           false,
-		Tags:                        nil,
-		IAM:                         nil,
-		AMI:                         "",
-		SecurityGroups:              nil,
-		MaxPodsPerNode:              0,
-		ASGSuspendProcesses:         nil,
-		EBSOptimized:                nil,
-		VolumeType:                  nil,
-		VolumeName:                  nil,
-		VolumeEncrypted:             nil,
-		VolumeKmsKeyID:              nil,
-		VolumeIOPS:                  nil,
-		VolumeThroughput:            nil,
-		AdditionalVolumes:           nil,
-		PreBootstrapCommands:        nil,
-		OverrideBootstrapCommand:    nil,
-		PropagateASGTags:            nil,
-		DisableIMDSv1:               nil,
-		DisablePodIMDS:              nil,
-		Placement:                   nil,
-		EFAEnabled:                  nil,
-		InstanceSelector:            nil,
-		AdditionalEncryptedVolume:   "",
-		Bottlerocket:                nil,
-		EnableDetailedMonitoring:    nil,
-		CapacityReservation:         nil,
-		InstanceMarketOptions:       nil,
-		OutpostARN:                  "",
-		ScalingConfig: &v1alpha5.ScalingConfig{
-			MinSize:         &minNodes,
-			MaxSize:         &maxNodes,
-			DesiredCapacity: &desiredNodes,
-		},
-	}
+	return clustertestutils.CreateTestEKSNodeGroupBase(clustertestutils.EKSNodeGroupBaseOptions{
+		Name:            name + "-workers",
+		InstanceType:    instanceType,
+		MinSize:         &minNodes,
+		MaxSize:         &maxNodes,
+		DesiredCapacity: &desiredNodes,
+	})
 }
 
 // createTestClusterConfig creates a minimal test EKS cluster configuration.
