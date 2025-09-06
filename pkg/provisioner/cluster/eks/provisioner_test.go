@@ -21,11 +21,17 @@ func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
-		runActionSuccess(
+		clustertestutils.RunActionSuccess(
 			t,
 			"Create()",
 			inputName,
 			expectedName,
+			func(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+				t.Helper()
+				provisioner, _, _, clusterCreator, _ := newProvisionerForTest(t)
+
+				return provisioner, clusterCreator
+			},
 			func(clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
 				// No longer need to mock provider construction since it's injected directly
 				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -372,33 +378,6 @@ func runNodeScalingTest(
 			t.Fatalf("%s unexpected error: %v", testName, err)
 		}
 	})
-}
-
-type expectProviderFn func(*eksprovisioner.MockEKSClusterCreator, string)
-type actionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
-
-func runActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectProviderFn,
-	action actionFn,
-) {
-	t.Helper()
-	clustertestutils.RunActionSuccess(
-		t,
-		label,
-		inputName,
-		expectedName,
-		func(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
-			t.Helper()
-			provisioner, _, _, clusterCreator, _ := newProvisionerForTest(t)
-
-			return provisioner, clusterCreator
-		},
-		expect,
-		action,
-	)
 }
 
 type expectDeleteProviderFn func(*eksprovisioner.MockEKSClusterActions, string)

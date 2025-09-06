@@ -21,11 +21,17 @@ func TestCreate_Success(t *testing.T) {
 	t.Parallel()
 	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
-		runActionSuccess(
+		clustertestutils.RunActionSuccess(
 			t,
 			"Create()",
 			inputName,
 			expectedName,
+			func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+				t.Helper()
+				provisioner, provider, _ := newProvisionerForTest(t)
+
+				return provisioner, provider
+			},
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
@@ -56,11 +62,17 @@ func TestDelete_Success(t *testing.T) {
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
-		runActionSuccess(
+		clustertestutils.RunActionSuccess(
 			t,
 			"Delete()",
 			inputName,
 			expectedName,
+			func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+				t.Helper()
+				provisioner, provider, _ := newProvisionerForTest(t)
+
+				return provisioner, provider
+			},
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},
@@ -337,34 +349,6 @@ func runClusterNotFoundTest(
 	if !errors.Is(err, kindprovisioner.ErrClusterNotFound) {
 		t.Fatalf("%s() error = %v, want ErrClusterNotFound", actionName, err)
 	}
-}
-
-// helper to run a successful action (Create/Delete) flow with expectation and assertion.
-type expectProviderFn func(*kindprovisioner.MockKindProvider, string)
-type actionFn func(*kindprovisioner.KindClusterProvisioner, string) error
-
-func runActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectProviderFn,
-	action actionFn,
-) {
-	t.Helper()
-	clustertestutils.RunActionSuccess(
-		t,
-		label,
-		inputName,
-		expectedName,
-		func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
-			t.Helper()
-			provisioner, provider, _ := newProvisionerForTest(t)
-
-			return provisioner, provider
-		},
-		expect,
-		action,
-	)
 }
 
 // runDockerOperationFailureTest is a helper for testing Docker operation failures.
