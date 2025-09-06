@@ -391,7 +391,9 @@ func runActionSuccess(
 		inputName,
 		expectedName,
 		func(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+			t.Helper()
 			provisioner, _, _, clusterCreator, _ := newProvisionerForTest(t)
+
 			return provisioner, clusterCreator
 		},
 		expect,

@@ -357,7 +357,9 @@ func runActionSuccess(
 		inputName,
 		expectedName,
 		func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+			t.Helper()
 			provisioner, provider, _ := newProvisionerForTest(t)
+
 			return provisioner, provider
 		},
 		expect,

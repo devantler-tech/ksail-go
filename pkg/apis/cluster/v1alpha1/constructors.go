@@ -31,6 +31,7 @@ func CreateDefaultMetadata(name string) metav1.ObjectMeta {
 	metadata.OwnerReferences = []metav1.OwnerReference{}
 	metadata.Finalizers = []string{}
 	metadata.ManagedFields = []metav1.ManagedFieldsEntry{}
+
 	return metadata
 }
 
