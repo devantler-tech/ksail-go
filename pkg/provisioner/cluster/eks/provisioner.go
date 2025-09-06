@@ -206,11 +206,12 @@ func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name st
 
 // setupNodeGroupManager sets up common node group management prerequisites.
 func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
-	if err := e.ensureClusterExists(ctx, name); err != nil {
+	err := e.ensureClusterExists(ctx, name)
+	if err != nil {
 		return nil, err
 	}
 
-	_, err := e.setupClusterOperation(ctx, name)
+	_, err = e.setupClusterOperation(ctx, name)
 	if err != nil {
 		return nil, err
 	}
