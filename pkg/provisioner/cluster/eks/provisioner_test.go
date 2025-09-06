@@ -109,14 +109,7 @@ func TestStart_Success(t *testing.T) {
 func TestStart_Error_ClusterNotFound(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need provisioner and clusterLister for this test
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
-
-	mockGetClusters(clusterLister, []cluster.Description{}, nil)
+	provisioner, _ := setupProvisionerWithEmptyClusterList(t)
 
 	err := provisioner.Start(context.Background(), "test-cluster")
 
@@ -191,14 +184,7 @@ func TestExists_Success_True(t *testing.T) {
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need provisioner and clusterLister for this test
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
-
-	mockGetClusters(clusterLister, []cluster.Description{}, nil)
+	provisioner, _ := setupProvisionerWithEmptyClusterList(t)
 
 	exists, err := provisioner.Exists(context.Background(), "nonexistent")
 
@@ -370,6 +356,26 @@ func mockGetClusters(
 ) {
 	clusterLister.On("GetClusters", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(descriptions, returnErr)
+}
+
+// setupProvisionerWithEmptyClusterList creates a test provisioner and mocks an empty cluster list.
+// This helper eliminates duplication for tests that need to verify behavior when no clusters exist.
+func setupProvisionerWithEmptyClusterList(t *testing.T) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSClusterLister,
+) {
+	t.Helper()
+
+	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
+	// We only need provisioner and clusterLister for empty cluster list scenarios
+	_ = clusterActions
+	_ = clusterCreator
+	_ = nodeGroupManager
+
+	mockGetClusters(clusterLister, []cluster.Description{}, nil)
+
+	return provisioner, clusterLister
 }
 
 // setupNodeGroupScalingMock sets up the standard mock for node group scaling operations.

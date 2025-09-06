@@ -130,6 +130,11 @@
     "eksprovisioner",
     "nodegroup",
     "nodegroups",
-    "weaveworks"
+    "weaveworks",
+    "Fargate",
+    "Karpenter",
+    "IMDS",
+    "Bottlerocket",
+    "ireturn"
   ]
 }
