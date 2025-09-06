@@ -59,7 +59,7 @@ func WriteFileSafe(content, basePath, filePath string, force bool) error {
 
 	// Check if the resolved file path is within the base directory
 	relPath, err := filepath.Rel(absBasePath, absFilePath)
-	if err != nil || relPath == ".." || filepath.HasPrefix(relPath, ".."+string(filepath.Separator)) {
+	if err != nil || relPath == ".." || strings.HasPrefix(relPath, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("%w: %q is outside %q", ErrPathOutsideBase, filePath, basePath)
 	}
 
@@ -73,13 +73,15 @@ func WriteFileSafe(content, basePath, filePath string, force bool) error {
 		}
 	}
 
-	// Create directory if it doesn't exist
+	// Create directory if it doesn't exist (0750 permissions for security)
 	dir := filepath.Dir(absFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
-	// Write the file safely
+	// Write the file safely with additional validation
+	// The absFilePath has been validated against path traversal and is within allowed boundaries
+	// #nosec G304 -- absFilePath is sanitized through comprehensive path validation above
 	file, err := os.OpenFile(absFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermUserRW)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", absFilePath, err)
@@ -125,9 +127,9 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 		}
 	}
 
-	// Create directory if it doesn't exist
+	// Create directory if it doesn't exist (0750 permissions for security)
 	dir := filepath.Dir(cleanOutput)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
@@ -159,7 +161,7 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 	return result, nil
 }
 
-// containsPathTraversal checks if a path contains obvious traversal patterns
+// containsPathTraversal checks if a path contains obvious traversal patterns.
 func containsPathTraversal(path string) bool {
 	// Check for ".." segments in the path
 	parts := strings.Split(path, string(filepath.Separator))
@@ -168,6 +170,7 @@ func containsPathTraversal(path string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
