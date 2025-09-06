@@ -63,6 +63,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 func TestDelete_Success(t *testing.T) {
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
 		runDeleteActionSuccess(
 			t,
 			"Delete()",
@@ -372,6 +373,7 @@ func runNodeScalingTest(
 
 	cases := clustertestutils.DefaultNameCases("cfg-name")
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
 		provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
 			newProvisionerForTest(t)
 		// We only need provisioner, clusterLister, and nodeGroupManager for this test

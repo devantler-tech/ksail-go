@@ -58,6 +58,7 @@ func TestDelete_Success(t *testing.T) {
 	// order doesn't matter for copy detection; reusing the same helper
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
 		runActionSuccess(
 			t,
 			"Delete()",
