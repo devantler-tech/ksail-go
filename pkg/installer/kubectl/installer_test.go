@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	kubectlinstaller "github.com/devantler-tech/ksail-go/pkg/installer/kubectl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -267,23 +268,7 @@ func createDefaultCRD() *apiextensionsv1.CustomResourceDefinition {
 			Kind:       "",
 			APIVersion: "",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:                       "",
-			GenerateName:               "",
-			Namespace:                  "",
-			SelfLink:                   "",
-			UID:                        "",
-			ResourceVersion:            "",
-			Generation:                 0,
-			CreationTimestamp:          metav1.Time{Time: time.Time{}},
-			DeletionTimestamp:          nil,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     nil,
-			Annotations:                nil,
-			OwnerReferences:            nil,
-			Finalizers:                 nil,
-			ManagedFields:              nil,
-		},
+		ObjectMeta: k8sutils.NewEmptyObjectMeta(),
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group:                 "",
 			Names:                 createDefaultCRDNames(),
