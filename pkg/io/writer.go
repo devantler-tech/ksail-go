@@ -40,11 +40,14 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 		return "", fmt.Errorf("failed to open file %s: %w", output, err)
 	}
 
+	// Use defer with closure to ensure file is always closed and check for close errors
+	var closeErr error
+	defer func() {
+		closeErr = file.Close()
+	}()
+
 	// Call TryWrite with the file writer
 	result, writeErr := TryWrite(content, file)
-	
-	// Always close the file and capture any close error
-	closeErr := file.Close()
 	
 	// Return write error if it occurred, otherwise return close error
 	if writeErr != nil {
