@@ -286,52 +286,13 @@ func createTestProvisionerNodeGroups(desiredCapacity int) []*v1alpha5.NodeGroup 
 }
 
 func createTestProvisionerNodeGroupBase(desiredCapacity int) *v1alpha5.NodeGroupBase {
-	return &v1alpha5.NodeGroupBase{
-		Name:                        "test-nodegroup",
-		AMIFamily:                   "",
-		InstanceType:                "",
-		AvailabilityZones:           nil,
-		Subnets:                     nil,
-		InstancePrefix:              "",
-		InstanceName:                "",
-		VolumeSize:                  nil,
-		SSH:                         nil,
-		Labels:                      nil,
-		PrivateNetworking:           false,
-		Tags:                        nil,
-		IAM:                         nil,
-		AMI:                         "",
-		SecurityGroups:              nil,
-		MaxPodsPerNode:              0,
-		ASGSuspendProcesses:         nil,
-		EBSOptimized:                nil,
-		VolumeType:                  nil,
-		VolumeName:                  nil,
-		VolumeEncrypted:             nil,
-		VolumeKmsKeyID:              nil,
-		VolumeIOPS:                  nil,
-		VolumeThroughput:            nil,
-		AdditionalVolumes:           nil,
-		PreBootstrapCommands:        nil,
-		OverrideBootstrapCommand:    nil,
-		PropagateASGTags:            nil,
-		DisableIMDSv1:               nil,
-		DisablePodIMDS:              nil,
-		Placement:                   nil,
-		EFAEnabled:                  nil,
-		InstanceSelector:            nil,
-		AdditionalEncryptedVolume:   "",
-		Bottlerocket:                nil,
-		EnableDetailedMonitoring:    nil,
-		CapacityReservation:         nil,
-		InstanceMarketOptions:       nil,
-		OutpostARN:                  "",
-		ScalingConfig: &v1alpha5.ScalingConfig{
-			DesiredCapacity: &desiredCapacity,
-			MinSize:         nil,
-			MaxSize:         nil,
-		},
-	}
+	return clustertestutils.CreateTestEKSNodeGroupBase(clustertestutils.EKSNodeGroupBaseOptions{
+		Name:            "test-nodegroup",
+		InstanceType:    "",
+		MinSize:         nil,
+		MaxSize:         nil,
+		DesiredCapacity: &desiredCapacity,
+	})
 }
 
 // mockClusterDeleteAction sets up the standard mock for Delete action on clusterActions.
