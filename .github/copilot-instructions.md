@@ -222,7 +222,7 @@ Always reference these instructions first and fallback to search or bash command
 ### GitHub Actions
 
 - **CI**: Uses external reusable workflow (`devantler-tech/reusable-workflows`) for Go CI/CD
-- **System Tests**: Matrix testing across container engines (Docker/Podman) and distributions (Kind/K3d)
+- **System Tests**: Matrix testing across different configurations
   - Tests all CLI commands: `init`, `up`, `status`, `list`, `start`, `reconcile`, `down`
   - Runs with different configurations: `--distribution Kind/K3d/EKS`
   - Cannot be run locally, only in CI environment
