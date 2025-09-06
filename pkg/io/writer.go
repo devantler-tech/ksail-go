@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 )
 
+// ErrEmptyOutputPath is returned when the output path is empty.
+var ErrEmptyOutputPath = errors.New("output path cannot be empty")
+
 // user read/write permission.
 const filePermUserRW = 0600
 
@@ -27,7 +30,7 @@ func TryWrite(content string, writer io.Writer) (string, error) {
 func TryWriteFile(content string, output string, force bool) (string, error) {
 	// Validate the output path cannot be empty
 	if output == "" {
-		return "", fmt.Errorf("output path cannot be empty")
+		return "", ErrEmptyOutputPath
 	}
 
 	// Clean the output path to prevent path traversal

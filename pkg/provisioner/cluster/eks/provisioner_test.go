@@ -243,6 +243,7 @@ func newProvisionerForTest(
 
 func createTestProvisionerClusterConfig() *v1alpha5.ClusterConfig {
 	desiredCapacity := 2
+
 	return &v1alpha5.ClusterConfig{
 		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
 		Metadata: createTestProvisionerMetadata(),

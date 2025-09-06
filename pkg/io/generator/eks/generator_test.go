@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
@@ -172,7 +173,10 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 }
 
 // createTestClusterConfigBase creates a test EKS cluster configuration with customizable parameters.
-func createTestClusterConfigBase(name, region, version, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.ClusterConfig {
+func createTestClusterConfigBase(
+	name, region, version, instanceType string,
+	minNodes, maxNodes, desiredNodes int,
+) *v1alpha5.ClusterConfig {
 	return &v1alpha5.ClusterConfig{
 		TypeMeta:                createTestTypeMeta(),
 		Metadata:                createTestMetadata(name, region, version),
@@ -202,7 +206,7 @@ func createTestClusterConfigBase(name, region, version, instanceType string, min
 	}
 }
 
-func createTestTypeMeta() v1alpha5.TypeMeta {
+func createTestTypeMeta() metav1.TypeMeta {
 	return v1alpha5.ClusterConfigTypeMeta()
 }
 
