@@ -15,13 +15,7 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var (
-	errCreateClusterFailed = errors.New("create cluster failed")
-	errDeleteClusterFailed = errors.New("delete cluster failed")
-	errListClustersFailed  = errors.New("list clusters failed")
-	errStartClusterFailed  = errors.New("start cluster failed")
-	errStopClusterFailed   = errors.New("stop cluster failed")
-)
+
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
@@ -46,13 +40,13 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
+	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrCreateClusterFailed)
 
 	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errCreateClusterFailed, "", "Create()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrCreateClusterFailed, "", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -80,13 +74,13 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Delete", "bad", mock.Anything).Return(errDeleteClusterFailed)
+	provider.On("Delete", "bad", mock.Anything).Return(clustertestutils.ErrDeleteClusterFailed)
 
 	// Act
 	err := provisioner.Delete(context.Background(), "bad")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errDeleteClusterFailed, "", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrDeleteClusterFailed, "", "Delete()")
 }
 
 func TestExists_Success_False(t *testing.T) {
@@ -131,7 +125,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errListClustersFailed)
+	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
 	// Act
 	exists, err := provisioner.Exists(context.Background(), "any")
@@ -141,7 +135,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "Exists()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "Exists()")
 }
 
 func TestList_Success(t *testing.T) {
@@ -162,13 +156,13 @@ func TestList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errListClustersFailed)
+	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
 	// Act
 	_, err := provisioner.List(context.Background())
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
@@ -182,7 +176,7 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("ListNodes", "cfg-name").Return(nil, errStartClusterFailed)
+	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStartClusterFailed)
 
 	// Act
 	err := provisioner.Start(context.Background(), "")
@@ -219,7 +213,7 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start(context.Background(), "") },
 		"Start",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(errStartClusterFailed)
+			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).Return(clustertestutils.ErrStartClusterFailed)
 		},
 		"docker start failed for kind-control-plane",
 	)
@@ -236,7 +230,7 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("ListNodes", "cfg-name").Return(nil, errStopClusterFailed)
+	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStopClusterFailed)
 
 	// Act
 	err := provisioner.Stop(context.Background(), "")
@@ -254,7 +248,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop(context.Background(), "") },
 		"Stop",
 		func(client *provisioner.MockContainerAPIClient) {
-			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(errStopClusterFailed)
+			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).Return(clustertestutils.ErrStopClusterFailed)
 		},
 		"docker stop failed for kind-control-plane",
 	)
