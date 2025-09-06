@@ -171,7 +171,7 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 	assertEKSYAML(t, result, "default-cluster")
 }
 
-// createTestClusterConfigBase creates a base EKS cluster configuration with specified parameters.
+// createTestClusterConfigBase creates a test EKS cluster configuration with customizable parameters.
 func createTestClusterConfigBase(name, region, version, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.ClusterConfig {
 	return &v1alpha5.ClusterConfig{
 		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
