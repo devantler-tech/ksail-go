@@ -52,22 +52,22 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			mockClient := provisioner.NewMockAPIClient(t)
-			tt.setupMock(mockClient)
+			testCase.setupMock(mockClient)
 
 			engine := &containerengine.ContainerEngine{
 				Client:     mockClient,
-				EngineName: tt.engineName,
+				EngineName: testCase.engineName,
 			}
 
 			ready, err := engine.CheckReady(context.Background())
 
-			assert.Equal(t, tt.expectReady, ready)
+			assert.Equal(t, testCase.expectReady, ready)
 
-			if tt.expectError {
+			if testCase.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
