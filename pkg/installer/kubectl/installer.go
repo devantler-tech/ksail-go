@@ -146,7 +146,7 @@ func (b *KubectlInstaller) installCRD(ctx context.Context) error {
 
 	const crdName = "applysets.k8s.devantler.tech"
 
-	_, err := b.apiExtensionsClient.Get(timeoutCtx, crdName, metav1.GetOptions{})
+	_, err := b.apiExtensionsClient.Get(timeoutCtx, crdName, createDefaultGetOptions())
 	if apierrors.IsNotFound(err) {
 		err = b.applyCRD(timeoutCtx, b.apiExtensionsClient)
 		if err != nil {
@@ -171,7 +171,7 @@ func (b *KubectlInstaller) installApplySetCR(ctx context.Context) error {
 
 	const applySetName = "ksail"
 
-	_, err := b.dynamicClient.Get(timeoutCtx, applySetName, metav1.GetOptions{})
+	_, err := b.dynamicClient.Get(timeoutCtx, applySetName, createDefaultGetOptions())
 	if apierrors.IsNotFound(err) {
 		err = b.applyApplySetCR(timeoutCtx, b.dynamicClient, applySetName)
 		if err != nil {
