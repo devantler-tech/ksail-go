@@ -23,6 +23,7 @@ var (
 )
 
 func TestCreate_Success(t *testing.T) {
+	t.Parallel()
 	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
 		runActionSuccess(
@@ -61,6 +62,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 }
 
 func TestDelete_Success(t *testing.T) {
+	t.Parallel()
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		runDeleteActionSuccess(
@@ -102,6 +104,7 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 }
 
 func TestStart_Success(t *testing.T) {
+	t.Parallel()
 	runNodeScalingTest(t, "Start()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
 		return prov.Start(context.Background(), name)
 	})
@@ -126,6 +129,7 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 }
 
 func TestStop_Success(t *testing.T) {
+	t.Parallel()
 	runNodeScalingTest(t, "Stop()", true, func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
 		return prov.Stop(context.Background(), name)
 	})
