@@ -290,6 +290,8 @@ func createTestProvisionerNodeGroupBase(desiredCapacity int) *v1alpha5.NodeGroup
 	return clustertestutils.CreateTestEKSNodeGroupBase(clustertestutils.EKSNodeGroupBaseOptions{
 		Name:            "test-nodegroup",
 		InstanceType:    "",
+		MinSize:         nil,
+		MaxSize:         nil,
 		DesiredCapacity: &desiredCapacity,
 	})
 }
