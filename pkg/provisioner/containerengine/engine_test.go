@@ -105,7 +105,7 @@ func TestContainerEngine_GetClient(t *testing.T) {
 		EngineName: "",
 	}
 
-	assert.Equal(t, mockClient, engine.GetClient())
+	assert.Equal(t, mockClient, engine.Client)
 }
 
 func TestNewContainerEngine_NoEnginesAvailable(t *testing.T) {

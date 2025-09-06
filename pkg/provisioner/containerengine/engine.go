@@ -83,8 +83,4 @@ func (u *ContainerEngine) GetName() string {
 	return u.EngineName
 }
 
-// GetClient returns the underlying Docker API client.
-//nolint:ireturn // Returning interface is intended design for API client abstraction
-func (u *ContainerEngine) GetClient() client.APIClient {
-	return u.Client
-}
+
