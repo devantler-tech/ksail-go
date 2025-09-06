@@ -369,6 +369,7 @@ func runNodeScalingTest(
 	action func(*eksprovisioner.EKSClusterProvisioner, string) error,
 ) {
 	t.Helper()
+
 	cases := clustertestutils.DefaultNameCases("cfg-name")
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
@@ -407,6 +408,7 @@ func runActionSuccess(
 	_ = clusterActions
 	_ = clusterLister
 	_ = nodeGroupManager
+
 	expect(clusterProvider, clusterCreator, expectedName)
 
 	err := action(provisioner, inputName)
@@ -432,6 +434,7 @@ func runDeleteActionSuccess(
 	_ = clusterLister
 	_ = clusterCreator
 	_ = nodeGroupManager
+
 	expect(clusterProvider, clusterActions, expectedName)
 
 	err := action(provisioner, inputName)
