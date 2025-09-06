@@ -39,10 +39,26 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %s: %w", output, err)
 	}
-	defer file.Close()
+
+	// Use defer with closure to ensure file is always closed and check for close errors
+	var closeErr error
+	defer func() {
+		closeErr = file.Close()
+	}()
 
 	// Call TryWrite with the file writer
-	return TryWrite(content, file)
+	result, writeErr := TryWrite(content, file)
+	
+	// Return write error if it occurred, otherwise return close error
+	if writeErr != nil {
+		return "", writeErr
+	}
+
+	if closeErr != nil {
+		return "", fmt.Errorf("failed to close file %s: %w", output, closeErr)
+	}
+	
+	return result, nil
 }
 
 // GetWriter returns an appropriate writer based on the quiet flag.
