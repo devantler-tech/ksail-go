@@ -61,6 +61,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 
 func TestDelete_Success(t *testing.T) {
 	t.Parallel()
+
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
@@ -219,94 +220,7 @@ func newProvisionerForTest(
 ) {
 	t.Helper()
 
-	desiredCapacity := 2
-	clusterConfig := &v1alpha5.ClusterConfig{
-		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
-		Metadata: &v1alpha5.ClusterMeta{
-			Name:                "cfg-name",
-			Region:              "us-west-2",
-			Version:             "",
-			ForceUpdateVersion:  nil,
-			Tags:                nil,
-			Annotations:         nil,
-			AccountID:           "",
-		},
-		KubernetesNetworkConfig: nil,
-		AutoModeConfig:          nil,
-		RemoteNetworkConfig:     nil,
-		IAM:                     nil,
-		IAMIdentityMappings:     nil,
-		IdentityProviders:       nil,
-		AccessConfig:            nil,
-		VPC:                     nil,
-		Addons:                  nil,
-		AddonsConfig: v1alpha5.AddonsConfig{
-			AutoApplyPodIdentityAssociations: false,
-			DisableDefaultAddons:             false,
-		},
-		PrivateCluster: nil,
-		NodeGroups: []*v1alpha5.NodeGroup{
-			{
-				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name:                        "test-nodegroup",
-					AMIFamily:                   "",
-					InstanceType:                "",
-					AvailabilityZones:           nil,
-					Subnets:                     nil,
-					InstancePrefix:              "",
-					InstanceName:                "",
-					VolumeSize:                  nil,
-					SSH:                         nil,
-					Labels:                      nil,
-					PrivateNetworking:           false,
-					Tags:                        nil,
-					IAM:                         nil,
-					AMI:                         "",
-					SecurityGroups:              nil,
-					MaxPodsPerNode:              0,
-					ASGSuspendProcesses:         nil,
-					EBSOptimized:                nil,
-					VolumeType:                  nil,
-					VolumeName:                  nil,
-					VolumeEncrypted:             nil,
-					VolumeKmsKeyID:              nil,
-					VolumeIOPS:                  nil,
-					VolumeThroughput:            nil,
-					AdditionalVolumes:           nil,
-					PreBootstrapCommands:        nil,
-					OverrideBootstrapCommand:    nil,
-					PropagateASGTags:            nil,
-					DisableIMDSv1:               nil,
-					DisablePodIMDS:              nil,
-					Placement:                   nil,
-					EFAEnabled:                  nil,
-					InstanceSelector:            nil,
-					AdditionalEncryptedVolume:   "",
-					Bottlerocket:                nil,
-					EnableDetailedMonitoring:    nil,
-					CapacityReservation:         nil,
-					InstanceMarketOptions:       nil,
-					OutpostARN:                  "",
-					ScalingConfig: &v1alpha5.ScalingConfig{
-						DesiredCapacity: &desiredCapacity,
-						MinSize:         nil,
-						MaxSize:         nil,
-					},
-				},
-			},
-		},
-		ManagedNodeGroups: nil,
-		FargateProfiles:   nil,
-		AvailabilityZones: nil,
-		LocalZones:        nil,
-		CloudWatch:        nil,
-		SecretsEncryption: nil,
-		Status:            nil,
-		GitOps:            nil,
-		Karpenter:         nil,
-		Outpost:           nil,
-		ZonalShiftConfig:  nil,
-	}
+	clusterConfig := createTestProvisionerClusterConfig()
 
 	// For tests, we can use a nil ClusterProvider since the actual provider methods are mocked
 	clusterProvider := (*eks.ClusterProvider)(nil)
@@ -325,6 +239,113 @@ func newProvisionerForTest(
 	)
 
 	return provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager
+}
+
+func createTestProvisionerClusterConfig() *v1alpha5.ClusterConfig {
+	desiredCapacity := 2
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: createTestProvisionerMetadata(),
+		KubernetesNetworkConfig: nil,
+		AutoModeConfig:          nil,
+		RemoteNetworkConfig:     nil,
+		IAM:                     nil,
+		IAMIdentityMappings:     nil,
+		IdentityProviders:       nil,
+		AccessConfig:            nil,
+		VPC:                     nil,
+		Addons:                  nil,
+		AddonsConfig:            createTestProvisionerAddonsConfig(),
+		PrivateCluster:          nil,
+		NodeGroups:              createTestProvisionerNodeGroups(desiredCapacity),
+		ManagedNodeGroups:       nil,
+		FargateProfiles:         nil,
+		AvailabilityZones:       nil,
+		LocalZones:              nil,
+		CloudWatch:              nil,
+		SecretsEncryption:       nil,
+		Status:                  nil,
+		GitOps:                  nil,
+		Karpenter:               nil,
+		Outpost:                 nil,
+		ZonalShiftConfig:        nil,
+	}
+}
+
+func createTestProvisionerMetadata() *v1alpha5.ClusterMeta {
+	return &v1alpha5.ClusterMeta{
+		Name:                "cfg-name",
+		Region:              "us-west-2",
+		Version:             "",
+		ForceUpdateVersion:  nil,
+		Tags:                nil,
+		Annotations:         nil,
+		AccountID:           "",
+	}
+}
+
+func createTestProvisionerAddonsConfig() v1alpha5.AddonsConfig {
+	return v1alpha5.AddonsConfig{
+		AutoApplyPodIdentityAssociations: false,
+		DisableDefaultAddons:             false,
+	}
+}
+
+func createTestProvisionerNodeGroups(desiredCapacity int) []*v1alpha5.NodeGroup {
+	return []*v1alpha5.NodeGroup{
+		{
+			NodeGroupBase: createTestProvisionerNodeGroupBase(desiredCapacity),
+		},
+	}
+}
+
+func createTestProvisionerNodeGroupBase(desiredCapacity int) *v1alpha5.NodeGroupBase {
+	return &v1alpha5.NodeGroupBase{
+		Name:                        "test-nodegroup",
+		AMIFamily:                   "",
+		InstanceType:                "",
+		AvailabilityZones:           nil,
+		Subnets:                     nil,
+		InstancePrefix:              "",
+		InstanceName:                "",
+		VolumeSize:                  nil,
+		SSH:                         nil,
+		Labels:                      nil,
+		PrivateNetworking:           false,
+		Tags:                        nil,
+		IAM:                         nil,
+		AMI:                         "",
+		SecurityGroups:              nil,
+		MaxPodsPerNode:              0,
+		ASGSuspendProcesses:         nil,
+		EBSOptimized:                nil,
+		VolumeType:                  nil,
+		VolumeName:                  nil,
+		VolumeEncrypted:             nil,
+		VolumeKmsKeyID:              nil,
+		VolumeIOPS:                  nil,
+		VolumeThroughput:            nil,
+		AdditionalVolumes:           nil,
+		PreBootstrapCommands:        nil,
+		OverrideBootstrapCommand:    nil,
+		PropagateASGTags:            nil,
+		DisableIMDSv1:               nil,
+		DisablePodIMDS:              nil,
+		Placement:                   nil,
+		EFAEnabled:                  nil,
+		InstanceSelector:            nil,
+		AdditionalEncryptedVolume:   "",
+		Bottlerocket:                nil,
+		EnableDetailedMonitoring:    nil,
+		CapacityReservation:         nil,
+		InstanceMarketOptions:       nil,
+		OutpostARN:                  "",
+		ScalingConfig: &v1alpha5.ScalingConfig{
+			DesiredCapacity: &desiredCapacity,
+			MinSize:         nil,
+			MaxSize:         nil,
+		},
+	}
 }
 
 // mockClusterDeleteAction sets up the standard mock for Delete action on clusterActions.

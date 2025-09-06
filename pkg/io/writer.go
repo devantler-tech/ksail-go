@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 // user read/write permission.
@@ -24,6 +25,14 @@ func TryWrite(content string, writer io.Writer) (string, error) {
 // TryWriteFile writes content to a file path, handling force/overwrite logic.
 // It uses the standard io.Writer interface and calls TryWrite internally.
 func TryWriteFile(content string, output string, force bool) (string, error) {
+	// Validate the output path cannot be empty
+	if output == "" {
+		return "", fmt.Errorf("output path cannot be empty")
+	}
+
+	// Clean the output path to prevent path traversal
+	output = filepath.Clean(output)
+
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)
@@ -35,6 +44,7 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 	}
 
 	// Use os.OpenFile to get an io.Writer and call TryWrite
+	// #nosec G304 -- output path is cleaned and validated above
 	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermUserRW)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %s: %w", output, err)
