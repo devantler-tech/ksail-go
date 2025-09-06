@@ -3,10 +3,20 @@
 package clustertestutils
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+)
+
+// Common error variables used across cluster provisioner tests to avoid duplication.
+var (
+	ErrCreateClusterFailed = errors.New("create cluster failed")
+	ErrDeleteClusterFailed = errors.New("delete cluster failed")
+	ErrListClustersFailed  = errors.New("list clusters failed")
+	ErrStartClusterFailed  = errors.New("start cluster failed")
+	ErrStopClusterFailed   = errors.New("stop cluster failed")
 )
 
 // DefaultDeleteCases returns standard test cases for testing delete operations with name handling.
