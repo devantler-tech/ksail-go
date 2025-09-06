@@ -43,7 +43,7 @@ jobs:
           node-version: "22"
 
       - name: Install golangci-lin
-        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/go/bin latest
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$HOME/go/bin" latest
 
       - name: Install mega-linter-runner
         run: npm install mega-linter-runner -g
