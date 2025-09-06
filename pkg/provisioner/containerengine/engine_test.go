@@ -46,6 +46,15 @@ func createContainerEngineTestCases() []struct {
 	expectReady bool
 	expectError bool
 } {
+	// Common ping response structure to avoid duplication
+	pingResponse := types.Ping{
+		APIVersion:     "",
+		OSType:         "",
+		Experimental:   false,
+		BuilderVersion: "",
+		SwarmStatus:    nil,
+	}
+
 	return []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
@@ -56,13 +65,7 @@ func createContainerEngineTestCases() []struct {
 		{
 			name: "container engine ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(types.Ping{
-					APIVersion:     "",
-					OSType:         "",
-					Experimental:   false,
-					BuilderVersion: "",
-					SwarmStatus:    nil,
-				}, nil)
+				m.EXPECT().Ping(context.Background()).Return(pingResponse, nil)
 			},
 			engineName:  "Docker",
 			expectReady: true,
@@ -71,13 +74,7 @@ func createContainerEngineTestCases() []struct {
 		{
 			name: "container engine not ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(types.Ping{
-					APIVersion:     "",
-					OSType:         "",
-					Experimental:   false,
-					BuilderVersion: "",
-					SwarmStatus:    nil,
-				}, assert.AnError)
+				m.EXPECT().Ping(context.Background()).Return(pingResponse, assert.AnError)
 			},
 			engineName:  "Docker",
 			expectReady: false,
