@@ -58,42 +58,6 @@ func NewEKSClusterProvisioner(
 	}
 }
 
-// setupClusterOperation sets up common cluster operation prerequisites.
-func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name string) (*eks.ClusterProvider, error) {
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	e.clusterConfig.Metadata.Name = target
-
-	return e.clusterProvider, nil
-}
-
-// ensureClusterExists checks if a cluster exists and returns ErrClusterNotFound if not.
-func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name string) error {
-	exists, err := e.Exists(ctx, name)
-	if err != nil {
-		return fmt.Errorf("failed to check if cluster exists: %w", err)
-	}
-
-	if !exists {
-		return ErrClusterNotFound
-	}
-
-	return nil
-}
-
-// setupNodeGroupManager sets up common node group management prerequisites.
-func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
-	if err := e.ensureClusterExists(ctx, name); err != nil {
-		return nil, err
-	}
-
-	_, err := e.setupClusterOperation(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-
-	return e.nodeGroupManager, nil
-}
-
 // Create creates an EKS cluster.
 func (e *EKSClusterProvisioner) Create(ctx context.Context, name string) error {
 	ctl, err := e.setupClusterOperation(ctx, name)
@@ -216,6 +180,42 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 	target := setName(name, e.clusterConfig.Metadata.Name)
 
 	return slices.Contains(clusters, target), nil
+}
+
+// setupClusterOperation sets up common cluster operation prerequisites.
+func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name string) (*eks.ClusterProvider, error) {
+	target := setName(name, e.clusterConfig.Metadata.Name)
+	e.clusterConfig.Metadata.Name = target
+
+	return e.clusterProvider, nil
+}
+
+// ensureClusterExists checks if a cluster exists and returns ErrClusterNotFound if not.
+func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name string) error {
+	exists, err := e.Exists(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to check if cluster exists: %w", err)
+	}
+
+	if !exists {
+		return ErrClusterNotFound
+	}
+
+	return nil
+}
+
+// setupNodeGroupManager sets up common node group management prerequisites.
+func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
+	if err := e.ensureClusterExists(ctx, name); err != nil {
+		return nil, err
+	}
+
+	_, err := e.setupClusterOperation(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return e.nodeGroupManager, nil
 }
 
 // setName returns name if non-empty, otherwise returns defaultName.
