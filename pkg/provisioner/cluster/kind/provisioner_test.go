@@ -15,25 +15,27 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+// setupKindProvisioner is a helper function that creates a Kind provisioner and mock provider for testing.
+// This eliminates code duplication between Create and Delete tests.
+func setupKindProvisioner(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+	t.Helper()
+	provisioner, provider, _ := newProvisionerForTest(t)
 
+	return provisioner, provider
+}
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
-	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
-		t.Helper()
-		runActionSuccess(
-			t,
-			"Create()",
-			inputName,
-			expectedName,
-			func(p *kindprovisioner.MockKindProvider, name string) {
-				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-			func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-				return prov.Create(context.Background(), name)
-			},
-		)
-	})
+	clustertestutils.RunCreateSuccessTest(
+		t,
+		setupKindProvisioner,
+		func(p *kindprovisioner.MockKindProvider, name string) {
+			p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		},
+		func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
+			return prov.Create(context.Background(), name)
+		},
+	)
 }
 
 func TestCreate_Error_CreateFailed(t *testing.T) {
@@ -56,11 +58,12 @@ func TestDelete_Success(t *testing.T) {
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
-		runActionSuccess(
+		clustertestutils.RunActionSuccess(
 			t,
 			"Delete()",
 			inputName,
 			expectedName,
+			setupKindProvisioner,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},
@@ -336,27 +339,6 @@ func runClusterNotFoundTest(
 
 	if !errors.Is(err, kindprovisioner.ErrClusterNotFound) {
 		t.Fatalf("%s() error = %v, want ErrClusterNotFound", actionName, err)
-	}
-}
-
-// helper to run a successful action (Create/Delete) flow with expectation and assertion.
-type expectProviderFn func(*kindprovisioner.MockKindProvider, string)
-type actionFn func(*kindprovisioner.KindClusterProvisioner, string) error
-
-func runActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectProviderFn,
-	action actionFn,
-) {
-	t.Helper()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	expect(provider, expectedName)
-
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
 	}
 }
 

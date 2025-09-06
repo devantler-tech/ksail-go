@@ -135,3 +135,49 @@ func CreateTestEKSNodeGroupBase(opts EKSNodeGroupBaseOptions) *v1alpha5.NodeGrou
 		ScalingConfig:               scalingConfig,
 	}
 }
+
+// RunActionSuccess provides a generic helper for testing successful provisioner actions.
+// It eliminates code duplication between EKS and Kind test files by abstracting the common pattern:
+// setup -> expect -> action -> assert.
+func RunActionSuccess[MockT, ProvisionerT any](
+	t *testing.T,
+	label string,
+	inputName, expectedName string,
+	setupFn func(*testing.T) (ProvisionerT, MockT),
+	expectFn func(MockT, string),
+	actionFn func(ProvisionerT, string) error,
+) {
+	t.Helper()
+	provisioner, mock := setupFn(t)
+	expectFn(mock, expectedName)
+
+	err := actionFn(provisioner, inputName)
+	if err != nil {
+		t.Fatalf("%s unexpected error: %v", label, err)
+	}
+}
+
+// RunCreateSuccessTest provides a standard test pattern for Create operations.
+// This eliminates duplication between EKS and Kind test files by providing the common
+// TestCreate_Success structure that both can use.
+// Note: The caller should call t.Parallel() for parallel execution.
+func RunCreateSuccessTest[MockT, ProvisionerT any](
+	t *testing.T,
+	setupFn func(*testing.T) (ProvisionerT, MockT),
+	expectFn func(MockT, string),
+	actionFn func(ProvisionerT, string) error,
+) {
+	t.Helper()
+	RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
+		RunActionSuccess(
+			t,
+			"Create()",
+			inputName,
+			expectedName,
+			setupFn,
+			expectFn,
+			actionFn,
+		)
+	})
+}

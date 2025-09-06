@@ -15,26 +15,29 @@ import (
 	"github.com/weaveworks/eksctl/pkg/eks"
 )
 
+// setupEKSProvisioner is a helper function that creates an EKS provisioner and mock cluster creator for testing.
+// This supports the shared test pattern for EKS tests.
+func setupEKSProvisioner(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+	t.Helper()
+	provisioner, _, nodeGroupManager, clusterCreator, _ := newProvisionerForTest(t)
+	_ = nodeGroupManager // Explicitly ignore to satisfy dogsled
 
+	return provisioner, clusterCreator
+}
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
-	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
-		t.Helper()
-		runActionSuccess(
-			t,
-			"Create()",
-			inputName,
-			expectedName,
-			func(clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
-				// No longer need to mock provider construction since it's injected directly
-				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Create(context.Background(), name)
-			},
-		)
-	})
+	clustertestutils.RunCreateSuccessTest(
+		t,
+		setupEKSProvisioner,
+		func(clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
+			// No longer need to mock provider construction since it's injected directly
+			clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		},
+		func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
+			return prov.Create(context.Background(), name)
+		},
+	)
 }
 
 func TestCreate_Error_CreateFailed(t *testing.T) {
@@ -372,32 +375,6 @@ func runNodeScalingTest(
 			t.Fatalf("%s unexpected error: %v", testName, err)
 		}
 	})
-}
-
-type expectProviderFn func(*eksprovisioner.MockEKSClusterCreator, string)
-type actionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
-
-func runActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectProviderFn,
-	action actionFn,
-) {
-	t.Helper()
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need clusterCreator for this function
-	_ = clusterActions
-	_ = clusterLister
-	_ = nodeGroupManager
-
-	expect(clusterCreator, expectedName)
-
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
-	}
 }
 
 type expectDeleteProviderFn func(*eksprovisioner.MockEKSClusterActions, string)

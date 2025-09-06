@@ -24,6 +24,17 @@ var ErrInvalidContainerEngine = errors.New("invalid container engine")
 
 // --- Constructors ---
 
+// CreateDefaultMetadata creates a default metav1.ObjectMeta with the given name.
+func CreateDefaultMetadata(name string) metav1.ObjectMeta {
+	metadata := k8sutils.NewEmptyObjectMeta()
+	metadata.Name = name
+	metadata.OwnerReferences = []metav1.OwnerReference{}
+	metadata.Finalizers = []string{}
+	metadata.ManagedFields = []metav1.ManagedFieldsEntry{}
+
+	return metadata
+}
+
 // NewCluster creates a new KSail cluster with the given options.
 func NewCluster(options ...func(*Cluster)) *Cluster {
 	cluster := &Cluster{
