@@ -16,6 +16,12 @@ import (
 // ErrClusterNotFound is returned when a cluster is not found.
 var ErrClusterNotFound = errors.New("cluster not found")
 
+// ErrInvalidClusterConfig is returned when cluster configuration is invalid.
+var ErrInvalidClusterConfig = errors.New("cluster configuration or metadata is nil")
+
+// ErrEmptyClusterName is returned when cluster name is empty.
+var ErrEmptyClusterName = errors.New("cluster name cannot be empty")
+
 const (
 	// DefaultWaitInterval is the default wait interval for cluster operations.
 	DefaultWaitInterval = 30 * time.Second
@@ -184,7 +190,15 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 
 // setupClusterOperation sets up common cluster operation prerequisites.
 func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name string) (*eks.ClusterProvider, error) {
+	if e.clusterConfig == nil || e.clusterConfig.Metadata == nil {
+		return nil, ErrInvalidClusterConfig
+	}
+
 	target := setName(name, e.clusterConfig.Metadata.Name)
+	if target == "" {
+		return nil, ErrEmptyClusterName
+	}
+
 	e.clusterConfig.Metadata.Name = target
 
 	return e.clusterProvider, nil
