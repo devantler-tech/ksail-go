@@ -442,29 +442,3 @@ func runDeleteActionSuccess(
 		t.Fatalf("%s unexpected error: %v", label, err)
 	}
 }
-
-type expectListProviderFn func(*eks.ClusterProvider, *eksprovisioner.MockEKSClusterLister, string)
-type listActionFn func(*eksprovisioner.EKSClusterProvisioner, string) error
-
-func runListActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectListProviderFn,
-	action listActionFn,
-) {
-	t.Helper()
-	provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need clusterProvider and clusterLister for this function
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
-
-	expect(clusterProvider, clusterLister, expectedName)
-
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
-	}
-}
