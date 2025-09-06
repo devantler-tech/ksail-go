@@ -19,6 +19,9 @@ var ErrBasePath = errors.New("base path cannot be empty")
 // user read/write permission.
 const filePermUserRW = 0600
 
+// directory permissions: user read/write/execute, group read/execute.
+const dirPermUserGroupRX = 0750
+
 // TryWrite writes content to the provided writer.
 func TryWrite(content string, writer io.Writer) (string, error) {
 	_, err := writer.Write([]byte(content))
@@ -50,7 +53,8 @@ func WriteFileSafe(content, basePath, filePath string, force bool) error {
 
 	// Check if file exists and we're not forcing
 	if !force {
-		if _, err := os.Stat(filePath); err == nil {
+		_, err := os.Stat(filePath)
+		if err == nil {
 			return nil // File exists and force is false, skip writing
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to check file %s: %w", filePath, err)
@@ -59,12 +63,14 @@ func WriteFileSafe(content, basePath, filePath string, force bool) error {
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0750); err != nil {
+
+	err := os.MkdirAll(dir, dirPermUserGroupRX)
+	if err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Write the file using os.WriteFile which doesn't trigger G304 like os.OpenFile does
-	err := os.WriteFile(filePath, []byte(content), filePermUserRW)
+	err = os.WriteFile(filePath, []byte(content), filePermUserRW)
 	if err != nil {
 		return fmt.Errorf("failed to write file %s: %w", filePath, err)
 	}
@@ -84,7 +90,8 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 
 	// Check if file exists and we're not forcing
 	if !force {
-		if _, err := os.Stat(output); err == nil {
+		_, err := os.Stat(output)
+		if err == nil {
 			return content, nil // File exists and force is false, skip writing
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", fmt.Errorf("failed to check file %s: %w", output, err)
@@ -93,12 +100,14 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(output)
-	if err := os.MkdirAll(dir, 0750); err != nil {
+
+	err := os.MkdirAll(dir, dirPermUserGroupRX)
+	if err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	// Write the file using os.WriteFile
-	err := os.WriteFile(output, []byte(content), filePermUserRW)
+	err = os.WriteFile(output, []byte(content), filePermUserRW)
 	if err != nil {
 		return "", fmt.Errorf("failed to write file %s: %w", output, err)
 	}
