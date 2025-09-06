@@ -16,11 +16,8 @@ import (
 )
 
 var (
-	errCreateClusterFailed = errors.New("create cluster failed")
-	errDeleteClusterFailed = errors.New("delete cluster failed")
-	errListClustersFailed  = errors.New("list clusters failed")
-	errStartClusterFailed  = errors.New("start cluster failed")
-	errStopClusterFailed   = errors.New("stop cluster failed")
+	errStartClusterFailed = errors.New("start cluster failed")
+	errStopClusterFailed  = errors.New("stop cluster failed")
 )
 
 func TestCreate_Success(t *testing.T) {
@@ -46,13 +43,13 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateClusterFailed)
+	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).Return(clustertestutils.ErrCreateClusterFailed)
 
 	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errCreateClusterFailed, "", "Create()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrCreateClusterFailed, "", "Create()")
 }
 
 func TestDelete_Success(t *testing.T) {
@@ -80,13 +77,13 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Delete", "bad", mock.Anything).Return(errDeleteClusterFailed)
+	provider.On("Delete", "bad", mock.Anything).Return(clustertestutils.ErrDeleteClusterFailed)
 
 	// Act
 	err := provisioner.Delete(context.Background(), "bad")
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errDeleteClusterFailed, "", "Delete()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrDeleteClusterFailed, "", "Delete()")
 }
 
 func TestExists_Success_False(t *testing.T) {
@@ -131,7 +128,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errListClustersFailed)
+	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
 	// Act
 	exists, err := provisioner.Exists(context.Background(), "any")
@@ -141,7 +138,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
 
-	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "Exists()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "Exists()")
 }
 
 func TestList_Success(t *testing.T) {
@@ -162,13 +159,13 @@ func TestList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, errListClustersFailed)
+	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
 	// Act
 	_, err := provisioner.List(context.Background())
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, errListClustersFailed, "failed to list kind clusters", "List()")
+	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed, "failed to list kind clusters", "List()")
 }
 
 func TestStart_Error_ClusterNotFound(t *testing.T) {
