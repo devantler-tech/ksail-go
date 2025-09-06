@@ -15,32 +15,29 @@ import (
 	"github.com/weaveworks/eksctl/pkg/eks"
 )
 
+// setupEKSProvisioner is a helper function that creates an EKS provisioner and mock cluster creator for testing.
+// This supports the shared test pattern for EKS tests.
+func setupEKSProvisioner(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+	t.Helper()
+	provisioner, _, nodeGroupManager, clusterCreator, _ := newProvisionerForTest(t)
+	_ = nodeGroupManager // Explicitly ignore to satisfy dogsled
 
+	return provisioner, clusterCreator
+}
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
-	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
-		t.Helper()
-		clustertestutils.RunActionSuccess(
-			t,
-			"Create()",
-			inputName,
-			expectedName,
-			func(t *testing.T) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
-				t.Helper()
-				provisioner, _, _, clusterCreator, _ := newProvisionerForTest(t)
-
-				return provisioner, clusterCreator
-			},
-			func(clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
-				// No longer need to mock provider construction since it's injected directly
-				clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Create(context.Background(), name)
-			},
-		)
-	})
+	clustertestutils.RunCreateSuccessTest(
+		t,
+		setupEKSProvisioner,
+		func(clusterCreator *eksprovisioner.MockEKSClusterCreator, _ string) {
+			// No longer need to mock provider construction since it's injected directly
+			clusterCreator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		},
+		func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
+			return prov.Create(context.Background(), name)
+		},
+	)
 }
 
 func TestCreate_Error_CreateFailed(t *testing.T) {

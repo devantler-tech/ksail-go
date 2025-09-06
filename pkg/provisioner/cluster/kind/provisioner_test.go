@@ -15,31 +15,27 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+// setupKindProvisioner is a helper function that creates a Kind provisioner and mock provider for testing.
+// This eliminates code duplication between Create and Delete tests.
+func setupKindProvisioner(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
+	t.Helper()
+	provisioner, provider, _ := newProvisionerForTest(t)
 
+	return provisioner, provider
+}
 
 func TestCreate_Success(t *testing.T) {
 	t.Parallel()
-	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
-		t.Helper()
-		clustertestutils.RunActionSuccess(
-			t,
-			"Create()",
-			inputName,
-			expectedName,
-			func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
-				t.Helper()
-				provisioner, provider, _ := newProvisionerForTest(t)
-
-				return provisioner, provider
-			},
-			func(p *kindprovisioner.MockKindProvider, name string) {
-				p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-			},
-			func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-				return prov.Create(context.Background(), name)
-			},
-		)
-	})
+	clustertestutils.RunCreateSuccessTest(
+		t,
+		setupKindProvisioner,
+		func(p *kindprovisioner.MockKindProvider, name string) {
+			p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+		},
+		func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
+			return prov.Create(context.Background(), name)
+		},
+	)
 }
 
 func TestCreate_Error_CreateFailed(t *testing.T) {
@@ -67,12 +63,7 @@ func TestDelete_Success(t *testing.T) {
 			"Delete()",
 			inputName,
 			expectedName,
-			func(t *testing.T) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
-				t.Helper()
-				provisioner, provider, _ := newProvisionerForTest(t)
-
-				return provisioner, provider
-			},
+			setupKindProvisioner,
 			func(p *kindprovisioner.MockKindProvider, name string) {
 				p.On("Delete", name, mock.Anything).Return(nil)
 			},

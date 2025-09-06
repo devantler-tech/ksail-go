@@ -156,3 +156,28 @@ func RunActionSuccess[MockT, ProvisionerT any](
 		t.Fatalf("%s unexpected error: %v", label, err)
 	}
 }
+
+// RunCreateSuccessTest provides a standard test pattern for Create operations.
+// This eliminates duplication between EKS and Kind test files by providing the common
+// TestCreate_Success structure that both can use.
+// Note: The caller should call t.Parallel() for parallel execution.
+func RunCreateSuccessTest[MockT, ProvisionerT any](
+	t *testing.T,
+	setupFn func(*testing.T) (ProvisionerT, MockT),
+	expectFn func(MockT, string),
+	actionFn func(ProvisionerT, string) error,
+) {
+	t.Helper()
+	RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
+		t.Helper()
+		RunActionSuccess(
+			t,
+			"Create()",
+			inputName,
+			expectedName,
+			setupFn,
+			expectFn,
+			actionFn,
+		)
+	})
+}
