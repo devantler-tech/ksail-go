@@ -23,6 +23,27 @@ var ErrInvalidContainerEngine = errors.New("invalid container engine")
 
 // --- Constructors ---
 
+// CreateDefaultMetadata creates a default metav1.ObjectMeta with the given name.
+func CreateDefaultMetadata(name string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:                       name,
+		GenerateName:               "",
+		Namespace:                  "",
+		SelfLink:                   "",
+		UID:                        "",
+		ResourceVersion:            "",
+		Generation:                 0,
+		CreationTimestamp:          metav1.Time{Time: time.Time{}},
+		DeletionTimestamp:          nil,
+		DeletionGracePeriodSeconds: nil,
+		Labels:                     map[string]string{},
+		Annotations:                map[string]string{},
+		OwnerReferences:            []metav1.OwnerReference{},
+		Finalizers:                 []string{},
+		ManagedFields:              []metav1.ManagedFieldsEntry{},
+	}
+}
+
 // NewCluster creates a new KSail cluster with the given options.
 func NewCluster(options ...func(*Cluster)) *Cluster {
 	cluster := &Cluster{
@@ -30,23 +51,7 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name:                       "",
-			GenerateName:               "",
-			Namespace:                  "",
-			SelfLink:                   "",
-			UID:                        "",
-			ResourceVersion:            "",
-			Generation:                 0,
-			CreationTimestamp:          metav1.Time{Time: time.Time{}},
-			DeletionTimestamp:          nil,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     nil,
-			Annotations:                nil,
-			OwnerReferences:            nil,
-			Finalizers:                 nil,
-			ManagedFields:              nil,
-		},
+		Metadata: CreateDefaultMetadata(""),
 		Spec: Spec{
 			Connection: Connection{
 				Kubeconfig: "",

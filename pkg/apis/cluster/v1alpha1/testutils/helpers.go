@@ -10,23 +10,7 @@ import (
 
 // CreateDefaultClusterMetadata creates a default metav1.ObjectMeta for testing cluster configurations.
 func CreateDefaultClusterMetadata(name string) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:                       name,
-		GenerateName:               "",
-		Namespace:                  "",
-		SelfLink:                   "",
-		UID:                        "",
-		ResourceVersion:            "",
-		Generation:                 0,
-		CreationTimestamp:          metav1.Time{Time: time.Time{}},
-		DeletionTimestamp:          nil,
-		DeletionGracePeriodSeconds: nil,
-		Labels:                     map[string]string{},
-		Annotations:                map[string]string{},
-		OwnerReferences:            []metav1.OwnerReference{},
-		Finalizers:                 []string{},
-		ManagedFields:              []metav1.ManagedFieldsEntry{},
-	}
+	return v1alpha1.CreateDefaultMetadata(name)
 }
 
 // CreateDefaultSpecOptions creates a default v1alpha1.Options for testing.
