@@ -24,6 +24,7 @@ var (
 )
 
 func TestCreate_Success(t *testing.T) {
+	t.Parallel()
 	clustertestutils.RunCreateTest(t, func(t *testing.T, inputName, expectedName string) {
 		t.Helper()
 		runActionSuccess(
@@ -55,6 +56,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 }
 
 func TestDelete_Success(t *testing.T) {
+	t.Parallel()
 	// order doesn't matter for copy detection; reusing the same helper
 	cases := clustertestutils.DefaultDeleteCases()
 	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {

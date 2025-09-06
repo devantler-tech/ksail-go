@@ -26,16 +26,15 @@ func DefaultNameCases(cfgName string) []testutils.NameCase {
 
 // RunStandardSuccessTest runs a standard success test pattern with parallel execution and name cases.
 // This centralizes the common pattern of:
-// - t.Parallel()
 // - Getting test cases
 // - Running testutils.RunNameCases with t.Helper().
+// Note: Caller should call t.Parallel() for parallel execution.
 func RunStandardSuccessTest(
 	t *testing.T,
 	cases []testutils.NameCase,
 	testRunner func(t *testing.T, inputName, expectedName string),
 ) {
 	t.Helper()
-	t.Parallel()
 
 	testutils.RunNameCases(t, cases, func(t *testing.T, nameCase testutils.NameCase) {
 		t.Helper()
