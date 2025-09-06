@@ -189,8 +189,8 @@ func TestTryWriteFile_WriteError(t *testing.T) {
 	// Act
 	result, err := ioutils.TryWriteFile(content, invalidPath, false)
 
-	// Assert - expect error containing specific message
-	testutils.AssertErrContains(t, err, "failed to open file", "TryWriteFile() open failure")
+	// Assert - expect error containing specific message about directory creation failure
+	testutils.AssertErrContains(t, err, "failed to create directory", "TryWriteFile() directory creation failure")
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
