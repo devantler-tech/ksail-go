@@ -80,7 +80,7 @@ Always reference these instructions first and fallback to search or bash command
    # Optional Go-specific linting: ~/go/bin/golangci-lint run (takes ~1m13s, shows 89 non-CI-blocking issues)
 
    # Test core functionality
-   ./ksail init --container-engine Docker --distribution Kind
+   ./ksail init --distribution Kind
    ./ksail up && ./ksail status && ./ksail list && ./ksail down
    ```
 
@@ -98,7 +98,7 @@ Always reference these instructions first and fallback to search or bash command
    ./ksail reconcile --help
 
    # Test different flag combinations
-   ./ksail init --container-engine Podman --distribution K3d
+   ./ksail init --distribution K3d
    ./ksail list --all
    ```
 
@@ -222,9 +222,9 @@ Always reference these instructions first and fallback to search or bash command
 ### GitHub Actions
 
 - **CI**: Uses external reusable workflow (`devantler-tech/reusable-workflows`) for Go CI/CD
-- **System Tests**: Matrix testing across container engines (Docker/Podman) and distributions (Kind/K3d)
+- **System Tests**: Matrix testing across different configurations
   - Tests all CLI commands: `init`, `up`, `status`, `list`, `start`, `reconcile`, `down`
-  - Runs with different configurations: `--container-engine Docker/Podman --distribution Kind/K3d`
+  - Runs with different configurations: `--distribution Kind/K3d/EKS`
   - Cannot be run locally, only in CI environment
 - **Coverage**: Codecov integration for test coverage reporting
 - **Validation**: Tests all CLI commands in realistic scenarios
