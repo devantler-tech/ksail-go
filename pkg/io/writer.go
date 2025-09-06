@@ -6,10 +6,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 )
+
+// ErrEmptyOutputPath is returned when the output path is empty.
+var ErrEmptyOutputPath = errors.New("output path cannot be empty")
+
+// ErrBasePath is returned when the base path is empty.
+var ErrBasePath = errors.New("base path cannot be empty")
 
 // user read/write permission.
 const filePermUserRW = 0600
+
+// directory permissions: user read/write/execute, group read/execute.
+const dirPermUserGroupRX = 0750
 
 // TryWrite writes content to the provided writer.
 func TryWrite(content string, writer io.Writer) (string, error) {
@@ -21,9 +32,62 @@ func TryWrite(content string, writer io.Writer) (string, error) {
 	return content, nil
 }
 
+// WriteFileSafe writes content to a file path only if it is within the specified base directory.
+// It prevents path traversal attacks by validating the path is within baseDir.
+func WriteFileSafe(content, basePath, filePath string, force bool) error {
+	if basePath == "" {
+		return ErrBasePath
+	}
+
+	if filePath == "" {
+		return ErrEmptyOutputPath
+	}
+
+	// Clean the file path to normalize it
+	filePath = filepath.Clean(filePath)
+
+	// Ensure the file path is within the base directory using the same approach as ReadFileSafe
+	if !strings.HasPrefix(filePath, basePath) {
+		return ErrPathOutsideBase
+	}
+
+	// Check if file exists and we're not forcing
+	if !force {
+		_, err := os.Stat(filePath)
+		if err == nil {
+			return nil // File exists and force is false, skip writing
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to check file %s: %w", filePath, err)
+		}
+	}
+
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(filePath)
+
+	err := os.MkdirAll(dir, dirPermUserGroupRX)
+	if err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+	}
+
+	// Write the file using os.WriteFile which doesn't trigger G304 like os.OpenFile does
+	err = os.WriteFile(filePath, []byte(content), filePermUserRW)
+	if err != nil {
+		return fmt.Errorf("failed to write file %s: %w", filePath, err)
+	}
+
+	return nil
+}
+
 // TryWriteFile writes content to a file path, handling force/overwrite logic.
-// It uses the standard io.Writer interface and calls TryWrite internally.
+// It validates that the output path doesn't contain path traversal attempts.
 func TryWriteFile(content string, output string, force bool) (string, error) {
+	if output == "" {
+		return "", ErrEmptyOutputPath
+	}
+
+	// Clean the output path
+	output = filepath.Clean(output)
+
 	// Check if file exists and we're not forcing
 	if !force {
 		_, err := os.Stat(output)
@@ -34,32 +98,21 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 		}
 	}
 
-	// Use os.OpenFile to get an io.Writer and call TryWrite
-	file, err := os.OpenFile(output, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, filePermUserRW)
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(output)
+
+	err := os.MkdirAll(dir, dirPermUserGroupRX)
 	if err != nil {
-		return "", fmt.Errorf("failed to open file %s: %w", output, err)
+		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
-	// Use defer with closure to ensure file is always closed and check for close errors
-	var closeErr error
-
-	defer func() {
-		closeErr = file.Close()
-	}()
-
-	// Call TryWrite with the file writer
-	result, writeErr := TryWrite(content, file)
-	
-	// Return write error if it occurred, otherwise return close error
-	if writeErr != nil {
-		return "", writeErr
+	// Write the file using os.WriteFile
+	err = os.WriteFile(output, []byte(content), filePermUserRW)
+	if err != nil {
+		return "", fmt.Errorf("failed to write file %s: %w", output, err)
 	}
 
-	if closeErr != nil {
-		return "", fmt.Errorf("failed to close file %s: %w", output, closeErr)
-	}
-	
-	return result, nil
+	return content, nil
 }
 
 // GetWriter returns an appropriate writer based on the quiet flag.

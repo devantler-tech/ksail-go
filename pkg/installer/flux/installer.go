@@ -43,7 +43,7 @@ func (b *FluxInstaller) Install(ctx context.Context) error {
 }
 
 // Uninstall removes the Helm release for the Flux Operator.
-func (b *FluxInstaller) Uninstall(ctx context.Context) error {
+func (b *FluxInstaller) Uninstall(_ context.Context) error {
 	err := b.client.Uninstall("flux-operator")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)

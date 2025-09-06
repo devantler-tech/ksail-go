@@ -172,18 +172,13 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 }
 
 // createTestClusterConfigBase creates a test EKS cluster configuration with customizable parameters.
-func createTestClusterConfigBase(name, region, version, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.ClusterConfig {
+func createTestClusterConfigBase(
+	name, region, version, instanceType string,
+	minNodes, maxNodes, desiredNodes int,
+) *v1alpha5.ClusterConfig {
 	return &v1alpha5.ClusterConfig{
-		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
-		Metadata: &v1alpha5.ClusterMeta{
-			Name:                name,
-			Region:              region,
-			Version:             version,
-			ForceUpdateVersion:  nil,
-			Tags:                nil,
-			Annotations:         nil,
-			AccountID:           "",
-		},
+		TypeMeta:                v1alpha5.ClusterConfigTypeMeta(),
+		Metadata:                createTestMetadata(name, region, version),
 		KubernetesNetworkConfig: nil,
 		AutoModeConfig:          nil,
 		RemoteNetworkConfig:     nil,
@@ -193,72 +188,96 @@ func createTestClusterConfigBase(name, region, version, instanceType string, min
 		AccessConfig:            nil,
 		VPC:                     nil,
 		Addons:                  nil,
-		AddonsConfig:            v1alpha5.AddonsConfig{
-			AutoApplyPodIdentityAssociations: false,
-			DisableDefaultAddons:             false,
-		},
+		AddonsConfig:            createTestAddonsConfig(),
 		PrivateCluster:          nil,
-		NodeGroups: []*v1alpha5.NodeGroup{
-			{
-				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name:                        name + "-workers",
-					AMIFamily:                   "",
-					InstanceType:                instanceType,
-					AvailabilityZones:           nil,
-					Subnets:                     nil,
-					InstancePrefix:              "",
-					InstanceName:                "",
-					VolumeSize:                  nil,
-					SSH:                         nil,
-					Labels:                      nil,
-					PrivateNetworking:           false,
-					Tags:                        nil,
-					IAM:                         nil,
-					AMI:                         "",
-					SecurityGroups:              nil,
-					MaxPodsPerNode:              0,
-					ASGSuspendProcesses:         nil,
-					EBSOptimized:                nil,
-					VolumeType:                  nil,
-					VolumeName:                  nil,
-					VolumeEncrypted:             nil,
-					VolumeKmsKeyID:              nil,
-					VolumeIOPS:                  nil,
-					VolumeThroughput:            nil,
-					AdditionalVolumes:           nil,
-					PreBootstrapCommands:        nil,
-					OverrideBootstrapCommand:    nil,
-					PropagateASGTags:            nil,
-					DisableIMDSv1:               nil,
-					DisablePodIMDS:              nil,
-					Placement:                   nil,
-					EFAEnabled:                  nil,
-					InstanceSelector:            nil,
-					AdditionalEncryptedVolume:   "",
-					Bottlerocket:                nil,
-					EnableDetailedMonitoring:    nil,
-					CapacityReservation:         nil,
-					InstanceMarketOptions:       nil,
-					OutpostARN:                  "",
-					ScalingConfig: &v1alpha5.ScalingConfig{
-						MinSize:         &minNodes,
-						MaxSize:         &maxNodes,
-						DesiredCapacity: &desiredNodes,
-					},
-				},
-			},
+		NodeGroups:              createTestNodeGroups(name, instanceType, minNodes, maxNodes, desiredNodes),
+		ManagedNodeGroups:       nil,
+		FargateProfiles:         nil,
+		AvailabilityZones:       nil,
+		LocalZones:              nil,
+		CloudWatch:              nil,
+		SecretsEncryption:       nil,
+		Status:                  nil,
+		GitOps:                  nil,
+		Karpenter:               nil,
+		Outpost:                 nil,
+		ZonalShiftConfig:        nil,
+	}
+}
+
+func createTestMetadata(name, region, version string) *v1alpha5.ClusterMeta {
+	return &v1alpha5.ClusterMeta{
+		Name:                name,
+		Region:              region,
+		Version:             version,
+		ForceUpdateVersion:  nil,
+		Tags:                nil,
+		Annotations:         nil,
+		AccountID:           "",
+	}
+}
+
+func createTestAddonsConfig() v1alpha5.AddonsConfig {
+	return v1alpha5.AddonsConfig{
+		AutoApplyPodIdentityAssociations: false,
+		DisableDefaultAddons:             false,
+	}
+}
+
+func createTestNodeGroups(name, instanceType string, minNodes, maxNodes, desiredNodes int) []*v1alpha5.NodeGroup {
+	return []*v1alpha5.NodeGroup{
+		{
+			NodeGroupBase: createTestNodeGroupBase(name, instanceType, minNodes, maxNodes, desiredNodes),
 		},
-		ManagedNodeGroups:   nil,
-		FargateProfiles:     nil,
-		AvailabilityZones:   nil,
-		LocalZones:          nil,
-		CloudWatch:          nil,
-		SecretsEncryption:   nil,
-		Status:              nil,
-		GitOps:              nil,
-		Karpenter:           nil,
-		Outpost:             nil,
-		ZonalShiftConfig:    nil,
+	}
+}
+
+func createTestNodeGroupBase(name, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.NodeGroupBase {
+	return &v1alpha5.NodeGroupBase{
+		Name:                        name + "-workers",
+		AMIFamily:                   "",
+		InstanceType:                instanceType,
+		AvailabilityZones:           nil,
+		Subnets:                     nil,
+		InstancePrefix:              "",
+		InstanceName:                "",
+		VolumeSize:                  nil,
+		SSH:                         nil,
+		Labels:                      nil,
+		PrivateNetworking:           false,
+		Tags:                        nil,
+		IAM:                         nil,
+		AMI:                         "",
+		SecurityGroups:              nil,
+		MaxPodsPerNode:              0,
+		ASGSuspendProcesses:         nil,
+		EBSOptimized:                nil,
+		VolumeType:                  nil,
+		VolumeName:                  nil,
+		VolumeEncrypted:             nil,
+		VolumeKmsKeyID:              nil,
+		VolumeIOPS:                  nil,
+		VolumeThroughput:            nil,
+		AdditionalVolumes:           nil,
+		PreBootstrapCommands:        nil,
+		OverrideBootstrapCommand:    nil,
+		PropagateASGTags:            nil,
+		DisableIMDSv1:               nil,
+		DisablePodIMDS:              nil,
+		Placement:                   nil,
+		EFAEnabled:                  nil,
+		InstanceSelector:            nil,
+		AdditionalEncryptedVolume:   "",
+		Bottlerocket:                nil,
+		EnableDetailedMonitoring:    nil,
+		CapacityReservation:         nil,
+		InstanceMarketOptions:       nil,
+		OutpostARN:                  "",
+		ScalingConfig: &v1alpha5.ScalingConfig{
+			MinSize:         &minNodes,
+			MaxSize:         &maxNodes,
+			DesiredCapacity: &desiredNodes,
+		},
 	}
 }
 

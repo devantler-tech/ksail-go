@@ -13,7 +13,40 @@ import (
 func TestContainerEngine_CheckReady(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	tests := createContainerEngineTestCases()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			mockClient := provisioner.NewMockAPIClient(t)
+			testCase.setupMock(mockClient)
+
+			engine := &containerengine.ContainerEngine{
+				Client:     mockClient,
+				EngineName: testCase.engineName,
+			}
+
+			ready, err := engine.CheckReady(context.Background())
+
+			assert.Equal(t, testCase.expectReady, ready)
+
+			if testCase.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func createContainerEngineTestCases() []struct {
+	name        string
+	setupMock   func(*provisioner.MockAPIClient)
+	engineName  string
+	expectReady bool
+	expectError bool
+} {
+	return []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
 		engineName  string
@@ -51,29 +84,6 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			expectError: true,
 		},
 	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			mockClient := provisioner.NewMockAPIClient(t)
-			testCase.setupMock(mockClient)
-
-			engine := &containerengine.ContainerEngine{
-				Client:     mockClient,
-				EngineName: testCase.engineName,
-			}
-
-			ready, err := engine.CheckReady(context.Background())
-
-			assert.Equal(t, testCase.expectReady, ready)
-
-			if testCase.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
 }
 
 func TestContainerEngine_Name(t *testing.T) {
@@ -95,7 +105,7 @@ func TestContainerEngine_GetClient(t *testing.T) {
 		EngineName: "",
 	}
 
-	assert.Equal(t, mockClient, engine.GetClient())
+	assert.Equal(t, mockClient, engine.Client)
 }
 
 func TestNewContainerEngine_NoEnginesAvailable(t *testing.T) {

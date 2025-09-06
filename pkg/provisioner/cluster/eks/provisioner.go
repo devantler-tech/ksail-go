@@ -219,6 +219,7 @@ func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name st
 }
 
 // setupNodeGroupManager sets up common node group management prerequisites.
+//nolint:ireturn // Returning interface is intended design for dependency injection
 func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
 	err := e.ensureClusterExists(ctx, name)
 	if err != nil {
