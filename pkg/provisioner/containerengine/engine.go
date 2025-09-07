@@ -77,73 +77,45 @@ func (u *ContainerEngine) detectEngineType(ctx context.Context) (string, error) 
 
 // contains is a helper function for case-insensitive string matching.
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(s == substr || 
-		 len(s) > len(substr) && 
-		 (strings.Contains(strings.ToLower(s), strings.ToLower(substr))))
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
+// GetAutoDetectedClient attempts to automatically detect and create a container engine client.
 // It tries Docker first, then Podman with different socket configurations.
 // For testing, you can override specific creators using a map with keys:
 // "docker", "podman-user", "podman-system".
 func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEngine, error) {
-	creators := getClientCreators(overrides...)
-	
+	// Default client creators
+	creators := map[string]ClientCreator{
+		"docker":        GetDockerClient,
+		"podman-user":   GetPodmanUserClient,
+		"podman-system": GetPodmanSystemClient,
+	}
+
+	// Apply overrides for testing
+	if len(overrides) > 0 && overrides[0] != nil {
+		for key, creator := range overrides[0] {
+			creators[key] = creator
+		}
+	}
+
 	ctx := context.Background()
-	
+
 	// Try Docker first (most common)
-	engine, err := tryCreateEngine(ctx, creators.docker)
-	if err == nil {
+	if engine, err := tryCreateEngine(ctx, creators["docker"]); err == nil {
 		return engine, nil
 	}
 
 	// Try Podman with Docker-compatible socket
-	engine, err = tryCreateEngine(ctx, creators.podmanUser)
-	if err == nil {
+	if engine, err := tryCreateEngine(ctx, creators["podman-user"]); err == nil {
 		return engine, nil
 	}
 
 	// Try system-wide Podman socket
-	engine, err = tryCreateEngine(ctx, creators.podmanSystem)
-	if err == nil {
+	if engine, err := tryCreateEngine(ctx, creators["podman-system"]); err == nil {
 		return engine, nil
 	}
 
 	return nil, ErrNoContainerEngine
-}
-
-// clientCreators holds the client creation functions.
-type clientCreators struct {
-	docker        ClientCreator
-	podmanUser    ClientCreator
-	podmanSystem  ClientCreator
-}
-
-// getClientCreators returns the client creators with optional overrides.
-func getClientCreators(overrides ...map[string]ClientCreator) clientCreators {
-	creators := clientCreators{
-		docker:        GetDockerClient,
-		podmanUser:    GetPodmanUserClient,
-		podmanSystem:  GetPodmanSystemClient,
-	}
-
-	// Override with provided creators for testing
-	if len(overrides) > 0 && overrides[0] != nil {
-		overrideMap := overrides[0]
-
-		if creator, exists := overrideMap["docker"]; exists {
-			creators.docker = creator
-		}
-
-		if creator, exists := overrideMap["podman-user"]; exists {
-			creators.podmanUser = creator
-		}
-
-		if creator, exists := overrideMap["podman-system"]; exists {
-			creators.podmanSystem = creator
-		}
-	}
-
-	return creators
 }
 
 // tryCreateEngine attempts to create and validate a container engine.
@@ -167,15 +139,17 @@ func tryCreateEngine(ctx context.Context, creator ClientCreator) (*ContainerEngi
 
 
 // ClientCreatorFunc defines a function type for creating container engine clients.
+//
+// Deprecated: Use ClientCreator instead.
 type ClientCreatorFunc func() (client.APIClient, error)
 
 // DefaultDockerClientCreator is the default implementation for creating Docker clients.
-var DefaultDockerClientCreator ClientCreatorFunc = func() (client.APIClient, error) {
+var DefaultDockerClientCreator ClientCreator = func() (client.APIClient, error) {
 	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
 
 // DefaultPodmanUserClientCreator is the default implementation for creating Podman user clients.
-var DefaultPodmanUserClientCreator ClientCreatorFunc = func() (client.APIClient, error) {
+var DefaultPodmanUserClientCreator ClientCreator = func() (client.APIClient, error) {
 	return client.NewClientWithOpts(
 		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
 		client.WithAPIVersionNegotiation(),
@@ -183,7 +157,7 @@ var DefaultPodmanUserClientCreator ClientCreatorFunc = func() (client.APIClient,
 }
 
 // DefaultPodmanSystemClientCreator is the default implementation for creating Podman system clients.
-var DefaultPodmanSystemClientCreator ClientCreatorFunc = func() (client.APIClient, error) {
+var DefaultPodmanSystemClientCreator ClientCreator = func() (client.APIClient, error) {
 	return client.NewClientWithOpts(
 		client.WithHost("unix:///run/podman/podman.sock"),
 		client.WithAPIVersionNegotiation(),
@@ -233,11 +207,13 @@ func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {
 // GetName returns the name of the detected container engine.
 func (u *ContainerEngine) GetName() string {
 	ctx := context.Background()
+
 	engineType, err := u.detectEngineType(ctx)
 	if err != nil {
 		// Fallback to "Unknown" if detection fails
 		return "Unknown"
 	}
+
 	return engineType
 }
 
