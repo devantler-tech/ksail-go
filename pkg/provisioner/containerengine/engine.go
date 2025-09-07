@@ -35,27 +35,29 @@ func NewContainerEngine(apiClient client.APIClient, engineName string) (*Contain
 	}, nil
 }
 
+// ClientCreator is a function type for creating container engine clients.
+type ClientCreator func() (client.APIClient, error)
+
 // GetAutoDetectedClient attempts to auto-detect and create a container engine client.
 // It tries Docker first, then Podman with different socket configurations.
-// Optional client creators can be provided for dependency injection and testing
-// using the ClientCreators struct with named fields.
-// If no creators are provided, the default static functions are used.
-func GetAutoDetectedClient(creators ...*ClientCreators) (*ContainerEngine, error) {
+// For testing, you can override specific creators using a map with keys:
+// "docker", "podman-user", "podman-system"
+func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEngine, error) {
 	dockerCreator := GetDockerClient
 	podmanUserCreator := GetPodmanUserClient  
 	podmanSystemCreator := GetPodmanSystemClient
 
-	// Override with provided creators for testing (use first non-nil creators struct)
-	if len(creators) > 0 && creators[0] != nil {
-		clientCreators := creators[0]
-		if clientCreators.Docker != nil {
-			dockerCreator = clientCreators.Docker
+	// Override with provided creators for testing
+	if len(overrides) > 0 && overrides[0] != nil {
+		creators := overrides[0]
+		if creator, exists := creators["docker"]; exists {
+			dockerCreator = creator
 		}
-		if clientCreators.PodmanUser != nil {
-			podmanUserCreator = clientCreators.PodmanUser
+		if creator, exists := creators["podman-user"]; exists {
+			podmanUserCreator = creator
 		}
-		if clientCreators.PodmanSystem != nil {
-			podmanSystemCreator = clientCreators.PodmanSystem
+		if creator, exists := creators["podman-system"]; exists {
+			podmanSystemCreator = creator
 		}
 	}
 
