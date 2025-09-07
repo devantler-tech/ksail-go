@@ -12,34 +12,6 @@ import (
 // ErrNoContainerEngine is returned when no container engine (Docker or Podman) is available.
 var ErrNoContainerEngine = errors.New("no container engine (Docker or Podman) available")
 
-// ClientFactory defines how to create container engine clients
-type ClientFactory interface {
-	NewDockerClient() (client.APIClient, error)
-	NewPodmanUserClient() (client.APIClient, error)
-	NewPodmanSystemClient() (client.APIClient, error)
-}
-
-// DefaultClientFactory implements ClientFactory using the actual Docker client
-type DefaultClientFactory struct{}
-
-func (f *DefaultClientFactory) NewDockerClient() (client.APIClient, error) {
-	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-}
-
-func (f *DefaultClientFactory) NewPodmanUserClient() (client.APIClient, error) {
-	return client.NewClientWithOpts(
-		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
-		client.WithAPIVersionNegotiation(),
-	)
-}
-
-func (f *DefaultClientFactory) NewPodmanSystemClient() (client.APIClient, error) {
-	return client.NewClientWithOpts(
-		client.WithHost("unix:///run/podman/podman.sock"),
-		client.WithAPIVersionNegotiation(),
-	)
-}
-
 // ContainerEngine implements container engine detection and management with auto-detection.
 type ContainerEngine struct {
 	Client client.APIClient
@@ -49,21 +21,10 @@ type ContainerEngine struct {
 // NewContainerEngine creates a new container engine with auto-detection.
 // It tries to connect to a container engine and returns the first available one.
 func NewContainerEngine() (*ContainerEngine, error) {
-	return newContainerEngineWithFactory(&DefaultClientFactory{})
-}
-
-// NewContainerEngineWithFactory creates a container engine using the provided factory.
-// This is used internally and for testing.
-func NewContainerEngineWithFactory(factory ClientFactory) (*ContainerEngine, error) {
-	return newContainerEngineWithFactory(factory)
-}
-
-// newContainerEngineWithFactory is the internal implementation
-func newContainerEngineWithFactory(factory ClientFactory) (*ContainerEngine, error) {
 	ctx := context.Background()
 	
 	// Try Docker first (most common)
-	dockerClient, err := factory.NewDockerClient()
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err == nil {
 		engine := &ContainerEngine{
 			Client: dockerClient,
@@ -75,7 +36,10 @@ func newContainerEngineWithFactory(factory ClientFactory) (*ContainerEngine, err
 	}
 
 	// Try Podman with Docker-compatible socket
-	podmanClient, err := factory.NewPodmanUserClient()
+	podmanClient, err := client.NewClientWithOpts(
+		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
 	if err == nil {
 		engine := &ContainerEngine{
 			Client: podmanClient,
@@ -87,7 +51,10 @@ func newContainerEngineWithFactory(factory ClientFactory) (*ContainerEngine, err
 	}
 
 	// Try system-wide Podman socket
-	podmanSystemClient, err := factory.NewPodmanSystemClient()
+	podmanSystemClient, err := client.NewClientWithOpts(
+		client.WithHost("unix:///run/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
 	if err == nil {
 		engine := &ContainerEngine{
 			Client: podmanSystemClient,
@@ -99,6 +66,15 @@ func newContainerEngineWithFactory(factory ClientFactory) (*ContainerEngine, err
 	}
 
 	return nil, ErrNoContainerEngine
+}
+
+// NewContainerEngineWithClient creates a new container engine with the provided client.
+// This allows users to inject their own client implementation for testing or custom configurations.
+func NewContainerEngineWithClient(client client.APIClient, engineName string) *ContainerEngine {
+	return &ContainerEngine{
+		Client:     client,
+		EngineName: engineName,
+	}
 }
 
 // CheckReady checks if the container engine is available using the API client.
