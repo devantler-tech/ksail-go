@@ -68,17 +68,20 @@ func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEng
 	ctx := context.Background()
 
 	// Try Docker first (most common)
-	if engine, err := tryCreateEngine(ctx, creators["docker"]); err == nil {
+	engine, err := tryCreateEngine(ctx, creators["docker"])
+	if err == nil {
 		return engine, nil
 	}
 
 	// Try Podman with Docker-compatible socket
-	if engine, err := tryCreateEngine(ctx, creators["podman-user"]); err == nil {
+	engine, err = tryCreateEngine(ctx, creators["podman-user"])
+	if err == nil {
 		return engine, nil
 	}
 
 	// Try system-wide Podman socket
-	if engine, err := tryCreateEngine(ctx, creators["podman-system"]); err == nil {
+	engine, err = tryCreateEngine(ctx, creators["podman-system"])
+	if err == nil {
 		return engine, nil
 	}
 
