@@ -42,39 +42,6 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 // ClientCreator is a function type for creating container engine clients.
 type ClientCreator func() (client.APIClient, error)
 
-// detectEngineType detects the container engine type from the client.
-func (u *ContainerEngine) detectEngineType(ctx context.Context) (string, error) {
-	version, err := u.Client.ServerVersion(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get server version: %w", err)
-	}
-
-	// Check platform name to determine engine type
-	platformName := version.Platform.Name
-	if platformName != "" {
-		// Docker typically returns "Docker Engine - Community" or similar
-		if contains(platformName, "Docker") {
-			return "Docker", nil
-		}
-		// Podman typically returns something with "Podman" in the name
-		if contains(platformName, "Podman") {
-			return "Podman", nil
-		}
-	}
-
-	// Fallback: check version string
-	versionStr := version.Version
-	if versionStr != "" {
-		if contains(versionStr, "podman") {
-			return "Podman", nil
-		}
-		// If it doesn't contain "podman", assume Docker as it's more common
-		return "Docker", nil
-	}
-
-	return "", ErrEngineDetection
-}
-
 // contains is a helper function for case-insensitive string matching.
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
@@ -136,12 +103,6 @@ func tryCreateEngine(ctx context.Context, creator ClientCreator) (*ContainerEngi
 
 	return nil, fmt.Errorf("%w: client not ready", ErrClientNotReady)
 }
-
-
-// ClientCreatorFunc defines a function type for creating container engine clients.
-//
-// Deprecated: Use ClientCreator instead.
-type ClientCreatorFunc func() (client.APIClient, error)
 
 // DefaultDockerClientCreator is the default implementation for creating Docker clients.
 var DefaultDockerClientCreator ClientCreator = func() (client.APIClient, error) {
@@ -217,4 +178,35 @@ func (u *ContainerEngine) GetName() string {
 	return engineType
 }
 
+// detectEngineType detects the container engine type from the client.
+func (u *ContainerEngine) detectEngineType(ctx context.Context) (string, error) {
+	version, err := u.Client.ServerVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get server version: %w", err)
+	}
 
+	// Check platform name to determine engine type
+	platformName := version.Platform.Name
+	if platformName != "" {
+		// Docker typically returns "Docker Engine - Community" or similar
+		if contains(platformName, "Docker") {
+			return "Docker", nil
+		}
+		// Podman typically returns something with "Podman" in the name
+		if contains(platformName, "Podman") {
+			return "Podman", nil
+		}
+	}
+
+	// Fallback: check version string
+	versionStr := version.Version
+	if versionStr != "" {
+		if contains(versionStr, "podman") {
+			return "Podman", nil
+		}
+		// If it doesn't contain "podman", assume Docker as it's more common
+		return "Docker", nil
+	}
+
+	return "", ErrEngineDetection
+}
