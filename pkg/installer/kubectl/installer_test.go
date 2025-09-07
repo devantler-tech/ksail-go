@@ -203,40 +203,50 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-
-func TestKubectlInstaller_EmbeddedCRDAsset(t *testing.T) {
+func TestKubectlInstaller_Install_CRDGetError(t *testing.T) {
 	t.Parallel()
 
-	// Test that the embedded CRD YAML can be unmarshaled properly
-	testCRDYAML := `
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: applysets.k8s.devantler.tech
-spec:
-  group: k8s.devantler.tech
-  versions:
-  - name: v1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-  scope: Cluster
-  names:
-    plural: applysets
-    singular: applyset
-    kind: ApplySet
-`
+	// Arrange
+	apiExtClient, dynClient := testSetup(t)
 
-	var crd apiextensionsv1.CustomResourceDefinition
+	// CRD Get operation fails with non-NotFound error
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, errors.New("api server error"))
 
-	err := yaml.Unmarshal([]byte(testCRDYAML), &crd)
+	installer := createTestInstaller(apiExtClient, dynClient)
 
-	require.NoError(t, err)
-	assert.Equal(t, "applysets.k8s.devantler.tech", crd.Name)
-	assert.Equal(t, "k8s.devantler.tech", crd.Spec.Group)
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to check CRD existence")
 }
+
+func TestKubectlInstaller_Install_ApplySetGetError(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil)
+
+	// ApplySet Get operation fails with non-NotFound error
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, errors.New("api server error"))
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get ApplySet CR")
+}
+
 
 func TestKubectlInstaller_EmbeddedCRAsset(t *testing.T) {
 	t.Parallel()
