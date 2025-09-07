@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine"
 	"github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestContainerEngine_CheckReady(t *testing.T) {
@@ -21,7 +22,8 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			mockClient := provisioner.NewMockAPIClient(t)
 			testCase.setupMock(mockClient)
 
-			engine := containerengine.NewContainerEngineWithClient(mockClient, testCase.engineName)
+			engine, err := containerengine.NewContainerEngine(mockClient, testCase.engineName)
+			require.NoError(t, err)
 
 			ready, err := engine.CheckReady(context.Background())
 
@@ -84,7 +86,8 @@ func TestContainerEngine_Name(t *testing.T) {
 	t.Parallel()
 
 	mockClient := provisioner.NewMockAPIClient(t)
-	engine := containerengine.NewContainerEngineWithClient(mockClient, "Docker")
+	engine, err := containerengine.NewContainerEngine(mockClient, "Docker")
+	require.NoError(t, err)
 
 	assert.Equal(t, "Docker", engine.GetName())
 }
@@ -92,12 +95,13 @@ func TestContainerEngine_Name(t *testing.T) {
 func TestContainerEngine_GetClient(t *testing.T) {
 	t.Parallel()
 	mockClient := provisioner.NewMockAPIClient(t)
-	engine := containerengine.NewContainerEngineWithClient(mockClient, "Docker")
+	engine, err := containerengine.NewContainerEngine(mockClient, "Docker")
+	require.NoError(t, err)
 
 	assert.Equal(t, mockClient, engine.Client)
 }
 
-func TestNewContainerEngineWithClient(t *testing.T) {
+func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -105,9 +109,10 @@ func TestNewContainerEngineWithClient(t *testing.T) {
 	engineName := "TestEngine"
 	
 	// Act
-	engine := containerengine.NewContainerEngineWithClient(mockClient, engineName)
+	engine, err := containerengine.NewContainerEngine(mockClient, engineName)
 	
 	// Assert
+	require.NoError(t, err)
 	assert.NotNil(t, engine)
 	assert.Equal(t, engineName, engine.GetName())
 	assert.Equal(t, mockClient, engine.Client)
@@ -117,8 +122,7 @@ func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
 	t.Parallel()
 	// Test with actual environment - this tests the real functionality
 	// Either we get an engine (if Docker/Podman is available) or an error
-	engine, err := containerengine.NewContainerEngine()
-
+	engine, err := containerengine.NewContainerEngine(nil, "")
 	if err != nil {
 		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
 		assert.Nil(t, engine)
@@ -132,4 +136,36 @@ func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
 			assert.True(t, ready)
 		}
 	}
+}
+
+func TestNewContainerEngine_APISignature(t *testing.T) {
+	t.Parallel()
+	
+	t.Run("dependency injection mode", func(t *testing.T) {
+		t.Parallel()
+		mockClient := provisioner.NewMockAPIClient(t)
+		
+		// Test that we can inject a client and engine name
+		engine, err := containerengine.NewContainerEngine(mockClient, "TestEngine")
+		
+		require.NoError(t, err)
+		assert.NotNil(t, engine)
+		assert.Equal(t, "TestEngine", engine.GetName())
+		assert.Equal(t, mockClient, engine.Client)
+	})
+	
+	t.Run("auto-detection mode", func(t *testing.T) {
+		t.Parallel()
+		// Test that nil client triggers auto-detection
+		engine, err := containerengine.NewContainerEngine(nil, "")
+		
+		// Either we get an engine or an error, both are valid
+		if err != nil {
+			assert.Equal(t, containerengine.ErrNoContainerEngine, err)
+			assert.Nil(t, engine)
+		} else {
+			assert.NotNil(t, engine)
+			assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
+		}
+	})
 }
