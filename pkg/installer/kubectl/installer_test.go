@@ -124,6 +124,7 @@ func createEstablishedCRD() *apiextensionsv1.CustomResourceDefinition {
 			Message:            "CRD is established",
 		},
 	}
+
 	return crd
 }
 
@@ -158,6 +159,7 @@ func createCRDWithNamesNotAccepted() *apiextensionsv1.CustomResourceDefinition {
 			Message:            "names conflict with existing CRD",
 		},
 	}
+
 	return crd
 }
 
@@ -182,17 +184,23 @@ func createShortTimeoutInstaller(
 }
 
 // expectCRDGetForUpdate sets up expectation for getting existing CRD for update.
-func expectCRDGetForUpdate(apiExtClient *kubectlinstaller.MockCustomResourceDefinitionInterface) *apiextensionsv1.CustomResourceDefinition {
+func expectCRDGetForUpdate(
+	apiExtClient *kubectlinstaller.MockCustomResourceDefinitionInterface,
+) *apiextensionsv1.CustomResourceDefinition {
 	existingCRD := createDefaultCRD()
 	existingCRD.Name = "applysets.k8s.devantler.tech"
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(existingCRD, nil).
 		Times(1)
+
 	return existingCRD
 }
 
 // expectCRDUpdateSuccess sets up expectation for successful CRD update.
-func expectCRDUpdateSuccess(apiExtClient *kubectlinstaller.MockCustomResourceDefinitionInterface, crd *apiextensionsv1.CustomResourceDefinition) {
+func expectCRDUpdateSuccess(
+	apiExtClient *kubectlinstaller.MockCustomResourceDefinitionInterface,
+	crd *apiextensionsv1.CustomResourceDefinition,
+) {
 	apiExtClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
 		Return(crd, nil).
 		Times(1)
@@ -204,17 +212,22 @@ func expectApplySetGetForUpdate(dynClient *kubectlinstaller.MockResourceInterfac
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
 		Return(existingCR, nil).
 		Times(1)
+
 	return existingCR
 }
 
 // expectApplySetUpdateSuccess sets up expectation for successful ApplySet update.
-func expectApplySetUpdateSuccess(dynClient *kubectlinstaller.MockResourceInterface, applyset *unstructured.Unstructured) {
+func expectApplySetUpdateSuccess(
+	dynClient *kubectlinstaller.MockResourceInterface,
+	applyset *unstructured.Unstructured,
+) {
 	dynClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
 		Return(applyset, nil).
 		Times(1)
 }
 
-// expectCRDEstablishmentWithPolling sets up expectations for CRD establishment that requires polling (NotFound -> Established).
+// expectCRDEstablishmentWithPolling sets up expectations for CRD establishment
+// that requires polling (NotFound -> Established).
 func expectCRDEstablishmentWithPolling(apiExtClient *kubectlinstaller.MockCustomResourceDefinitionInterface) {
 	// During establishment waiting - first call returns NotFound (should continue polling)
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
