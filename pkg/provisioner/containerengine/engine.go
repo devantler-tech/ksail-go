@@ -6,50 +6,62 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/factory"
 	"github.com/docker/docker/client"
 )
 
 // ErrNoContainerEngine is returned when no container engine (Docker or Podman) is available.
 var ErrNoContainerEngine = errors.New("no container engine (Docker or Podman) available")
 
-// ContainerEngine implements container engine detection and management with auto-detection.
+// ContainerEngine implements container engine detection and management.
 type ContainerEngine struct {
-	Client client.APIClient
-	EngineName   string
+	Client     client.APIClient
+	EngineName string
 }
 
-// NewContainerEngine creates a new container engine with optional dependency injection.
-// If apiClient is nil, auto-detection is performed to find an available container engine.
-// If apiClient is provided, it creates an engine with the injected client and engineName.
+// NewContainerEngine creates a new container engine with dependency injection.
+// The apiClient and engineName must be provided - this function no longer performs auto-detection.
+// For auto-detection, use GetAutoDetectedClient() separately.
 func NewContainerEngine(apiClient client.APIClient, engineName string) (*ContainerEngine, error) {
-	// If client is provided, use dependency injection
-	if apiClient != nil {
-		return &ContainerEngine{
-			Client:     apiClient,
-			EngineName: engineName,
-		}, nil
+	if apiClient == nil {
+		return nil, errors.New("apiClient cannot be nil - use GetAutoDetectedClient() for auto-detection")
+	}
+	if engineName == "" {
+		return nil, errors.New("engineName cannot be empty")
 	}
 
-	// Auto-detection mode when client is nil
-	return GetAutoDetectedClient()
+	return &ContainerEngine{
+		Client:     apiClient,
+		EngineName: engineName,
+	}, nil
 }
+
+// ClientCreator is a function type for creating container engine clients.
+type ClientCreator func() (client.APIClient, error)
 
 // GetAutoDetectedClient attempts to auto-detect and create a container engine client.
 // It tries Docker first, then Podman with different socket configurations.
-// An optional factory can be provided for dependency injection and testing.
-func GetAutoDetectedClient(factories ...factory.ClientFactory) (*ContainerEngine, error) {
-	var clientFactory factory.ClientFactory
-	if len(factories) > 0 {
-		clientFactory = factories[0]
-	} else {
-		clientFactory = &factory.DefaultClientFactory{}
+// Optional client creators can be provided for dependency injection and testing.
+// If no creators are provided, the default static functions are used.
+func GetAutoDetectedClient(creators ...ClientCreator) (*ContainerEngine, error) {
+	dockerCreator := GetDockerClient
+	podmanUserCreator := GetPodmanUserClient  
+	podmanSystemCreator := GetPodmanSystemClient
+
+	// Override with provided creators for testing
+	if len(creators) >= 1 && creators[0] != nil {
+		dockerCreator = creators[0]
+	}
+	if len(creators) >= 2 && creators[1] != nil {
+		podmanUserCreator = creators[1]
+	}
+	if len(creators) >= 3 && creators[2] != nil {
+		podmanSystemCreator = creators[2]
 	}
 
 	ctx := context.Background()
 	
 	// Try Docker first (most common)
-	dockerClient, err := clientFactory.GetDockerClient()
+	dockerClient, err := dockerCreator()
 	if err == nil {
 		engine := &ContainerEngine{
 			Client:     dockerClient,
@@ -61,7 +73,7 @@ func GetAutoDetectedClient(factories ...factory.ClientFactory) (*ContainerEngine
 	}
 
 	// Try Podman with Docker-compatible socket
-	podmanClient, err := clientFactory.GetPodmanUserClient()
+	podmanClient, err := podmanUserCreator()
 	if err == nil {
 		engine := &ContainerEngine{
 			Client:     podmanClient,
@@ -73,7 +85,7 @@ func GetAutoDetectedClient(factories ...factory.ClientFactory) (*ContainerEngine
 	}
 
 	// Try system-wide Podman socket
-	podmanSystemClient, err := clientFactory.GetPodmanSystemClient()
+	podmanSystemClient, err := podmanSystemCreator()
 	if err == nil {
 		engine := &ContainerEngine{
 			Client:     podmanSystemClient,
@@ -90,20 +102,23 @@ func GetAutoDetectedClient(factories ...factory.ClientFactory) (*ContainerEngine
 
 // GetDockerClient creates a Docker client using environment configuration.
 func GetDockerClient() (client.APIClient, error) {
-	clientFactory := &factory.DefaultClientFactory{}
-	return clientFactory.GetDockerClient()
+	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
 
 // GetPodmanUserClient creates a Podman client using the user-specific socket.
 func GetPodmanUserClient() (client.APIClient, error) {
-	clientFactory := &factory.DefaultClientFactory{}
-	return clientFactory.GetPodmanUserClient()
+	return client.NewClientWithOpts(
+		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
 }
 
 // GetPodmanSystemClient creates a Podman client using the system-wide socket.
 func GetPodmanSystemClient() (client.APIClient, error) {
-	clientFactory := &factory.DefaultClientFactory{}
-	return clientFactory.GetPodmanSystemClient()
+	return client.NewClientWithOpts(
+		client.WithHost("unix:///run/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
 }
 
 // CheckReady checks if the container engine is available using the API client.
