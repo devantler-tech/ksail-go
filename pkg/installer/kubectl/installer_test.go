@@ -314,3 +314,528 @@ func createDefaultGroupResource() schema.GroupResource {
 		Resource: "",
 	}
 }
+
+// Test to cover the waitForCRDEstablished error path when Get fails
+func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
+	t.Parallel()
+
+	// Create a simple test that only targets the CRD establishment error path
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD creation succeeds
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// During establishment waiting, Get always returns a server error
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, errors.New("server error")).
+		Maybe() // Allow multiple calls during polling
+
+	// Use a very short timeout to make the test fast
+	installer := kubectlinstaller.NewKubectlInstaller(
+		10*time.Millisecond, // Even shorter
+		apiExtClient,
+		dynClient,
+	)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert 
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get CRD")
+}
+
+// Test to cover the NamesAccepted false condition in waitForCRDEstablished  
+func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD creation succeeds
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// During establishment waiting, return CRD with NamesAccepted = false
+	crdWithNamesNotAccepted := createDefaultCRD()
+	crdWithNamesNotAccepted.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		{
+			Type:    apiextensionsv1.NamesAccepted,
+			Status:  apiextensionsv1.ConditionFalse,
+			Reason:  "MultipleNamesNotAllowed",
+			Message: "names conflict with existing CRD",
+		},
+	}
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(crdWithNamesNotAccepted, nil).
+		Maybe()
+
+	installer := kubectlinstaller.NewKubectlInstaller(
+		10*time.Millisecond,
+		apiExtClient,
+		dynClient,
+	)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert 
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "crd names not accepted")
+	assert.Contains(t, err.Error(), "names conflict with existing CRD")
+}
+
+// Test to cover the CRD update path (AlreadyExists -> Update) which triggers createDefaultUpdateOptions
+func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD Create returns AlreadyExists (race condition)
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// Get existing CRD for update
+	existingCRD := createDefaultCRD()
+	existingCRD.ResourceVersion = "test-version-123"
+	existingCRD.Name = "applysets.k8s.devantler.tech"
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(existingCRD, nil).
+		Times(1)
+	
+	// Update succeeds (this triggers createDefaultUpdateOptions)
+	apiExtClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
+		Return(existingCRD, nil).
+		Times(1)
+	
+	// Establishment check - CRD is already established
+	establishedCRD := createDefaultCRD()
+	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		{
+			Type:   apiextensionsv1.Established,
+			Status: apiextensionsv1.ConditionTrue,
+		},
+	}
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(establishedCRD, nil).
+		Maybe()
+	
+	// ApplySet CR creation
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.NoError(t, err)
+}
+
+// Test to cover the ApplySet CR update path 
+func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists (skip CRD logic)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// ApplySet CR not found initially
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// ApplySet Create returns AlreadyExists (race condition)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// Get existing ApplySet for update
+	existingCR := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name":            "ksail",
+				"resourceVersion": "applyset-version-456",
+			},
+		},
+	}
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(existingCR, nil).
+		Times(1)
+	
+	// Update succeeds (this also triggers createDefaultUpdateOptions)
+	dynClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
+		Return(existingCR, nil).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.NoError(t, err)
+}
+
+// Test to cover Get error in CRD update path
+func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD Create returns AlreadyExists (race condition)
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// Get existing CRD fails
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, errors.New("get error")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get existing CRD for update")
+}
+
+// Test to cover Update error in CRD update path
+func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD Create returns AlreadyExists (race condition)
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// Get existing CRD succeeds
+	existingCRD := createDefaultCRD()
+	existingCRD.ResourceVersion = "test-version-123"
+	existingCRD.Name = "applysets.k8s.devantler.tech"
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(existingCRD, nil).
+		Times(1)
+	
+	// Update fails
+	apiExtClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("update error")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update CRD")
+}
+
+// Test to cover Get error in ApplySet CR update path
+func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists (skip CRD logic)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// ApplySet CR not found initially
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// ApplySet Create returns AlreadyExists (race condition)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// Get existing ApplySet fails
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, errors.New("get error")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get existing ApplySet")
+}
+
+// Test to cover Update error in ApplySet CR update path
+func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists (skip CRD logic)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// ApplySet CR not found initially
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// ApplySet Create returns AlreadyExists (race condition)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, apierrors.NewAlreadyExists(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// Get existing ApplySet succeeds
+	existingCR := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name":            "ksail",
+				"resourceVersion": "applyset-version-456",
+			},
+		},
+	}
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(existingCR, nil).
+		Times(1)
+	
+	// Update fails
+	dynClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("update error")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to update ApplySet")
+}
+
+// Test to cover the Create failure path that's not AlreadyExists 
+func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD Create fails with some other error (not AlreadyExists)
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("create failed")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create CRD")
+}
+
+// Test to cover the Create failure path in ApplySet CR that's not AlreadyExists 
+func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists (skip CRD logic)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// ApplySet CR not found initially
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// ApplySet Create fails with some other error (not AlreadyExists)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, errors.New("create failed")).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create ApplySet CR")
+}
+
+// Test to cover NotFound during CRD establishment polling
+func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD creation succeeds
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// During establishment waiting - first call returns NotFound (should continue polling)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// Second call returns established CRD 
+	establishedCRD := createDefaultCRD()
+	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		{
+			Type:   apiextensionsv1.Established,
+			Status: apiextensionsv1.ConditionTrue,
+		},
+	}
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(establishedCRD, nil).
+		Maybe()
+	
+	// ApplySet CR creation
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.NoError(t, err)
+}
+
+// Test to cover the successful Create path in applyCRD (no AlreadyExists)
+func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD not found initially 
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
+		Times(1)
+	
+	// CRD Create succeeds immediately (no race condition)
+	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// Establishment check - CRD is already established
+	establishedCRD := createDefaultCRD()
+	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
+		{
+			Type:   apiextensionsv1.Established,
+			Status: apiextensionsv1.ConditionTrue,
+		},
+	}
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(establishedCRD, nil).
+		Maybe()
+	
+	// ApplySet CR creation
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.NoError(t, err)
+}
+
+// Test to cover the successful Create path in applyApplySetCR (no AlreadyExists)
+func TestKubectlInstaller_ApplyApplySetCR_CreateSuccess_Direct(t *testing.T) {
+	t.Parallel()
+
+	apiExtClient, dynClient := testSetup(t)
+
+	// CRD already exists (skip CRD logic)
+	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
+		Return(createDefaultCRD(), nil).
+		Times(1)
+	
+	// ApplySet CR not found initially
+	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
+		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "ksail")).
+		Times(1)
+	
+	// ApplySet Create succeeds immediately (no race condition)
+	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
+		Return(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil).
+		Times(1)
+
+	installer := createTestInstaller(apiExtClient, dynClient)
+
+	// Act
+	err := installer.Install(context.Background())
+
+	// Assert
+	require.NoError(t, err)
+}
