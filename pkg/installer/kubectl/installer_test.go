@@ -464,7 +464,7 @@ func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// Test to cover the ApplySet CR update path 
+// Test to cover the ApplySet CR update path.
 func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
 	t.Parallel()
 
@@ -512,7 +512,7 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// Test to cover Get error in CRD update path
+// Test to cover Get error in CRD update path.
 func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -543,7 +543,7 @@ func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get existing CRD for update")
 }
 
-// Test to cover Update error in CRD update path
+// Test to cover Update error in CRD update path.
 func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
 	t.Parallel()
 
@@ -582,7 +582,7 @@ func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to update CRD")
 }
 
-// Test to cover Get error in ApplySet CR update path
+// Test to cover Get error in ApplySet CR update path.
 func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
 	t.Parallel()
 
@@ -618,7 +618,7 @@ func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get existing ApplySet")
 }
 
-// Test to cover Update error in ApplySet CR update path
+// Test to cover Update error in ApplySet CR update path.
 func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
 	t.Parallel()
 
@@ -667,7 +667,7 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to update ApplySet")
 }
 
-// Test to cover the Create failure path that's not AlreadyExists 
+// Test to cover the Create failure path that's not AlreadyExists.
 func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
 	t.Parallel()
 
@@ -693,7 +693,7 @@ func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create CRD")
 }
 
-// Test to cover the Create failure path in ApplySet CR that's not AlreadyExists 
+// Test to cover the Create failure path in ApplySet CR that's not AlreadyExists.
 func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
 	t.Parallel()
 
@@ -724,7 +724,7 @@ func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create ApplySet CR")
 }
 
-// Test to cover NotFound during CRD establishment polling
+// Test to cover NotFound during CRD establishment polling.
 func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing.T) {
 	t.Parallel()
 
@@ -777,7 +777,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing
 	require.NoError(t, err)
 }
 
-// Test to cover the successful Create path in applyCRD (no AlreadyExists)
+// Test to cover the successful Create path in applyCRD (no AlreadyExists).
 func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
 	t.Parallel()
 
@@ -825,7 +825,7 @@ func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// Test to cover the successful Create path in applyApplySetCR (no AlreadyExists)
+// Test to cover the successful Create path in applyApplySetCR (no AlreadyExists).
 func TestKubectlInstaller_ApplyApplySetCR_CreateSuccess_Direct(t *testing.T) {
 	t.Parallel()
 
