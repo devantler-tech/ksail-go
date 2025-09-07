@@ -11,6 +11,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// assertAutoDetectionResult is a helper function to avoid code duplication
+// when testing auto-detection behavior of NewContainerEngine
+func assertAutoDetectionResult(t *testing.T, engine *containerengine.ContainerEngine, err error) {
+	t.Helper()
+	if err != nil {
+		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
+		assert.Nil(t, engine)
+	} else {
+		assert.NotNil(t, engine)
+		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
+	}
+}
+
 func TestContainerEngine_CheckReady(t *testing.T) {
 	t.Parallel()
 
@@ -123,14 +136,10 @@ func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
 	// Test with actual environment - this tests the real functionality
 	// Either we get an engine (if Docker/Podman is available) or an error
 	engine, err := containerengine.NewContainerEngine(nil, "")
-	if err != nil {
-		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
-		assert.Nil(t, engine)
-	} else {
-		assert.NotNil(t, engine)
-		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
-		
-		// Test that the engine actually works
+	assertAutoDetectionResult(t, engine, err)
+	
+	// Additional test: if we got a valid engine, test that it actually works
+	if err == nil && engine != nil {
 		ready, checkErr := engine.CheckReady(context.Background())
 		if checkErr == nil {
 			assert.True(t, ready)
@@ -160,12 +169,6 @@ func TestNewContainerEngine_APISignature(t *testing.T) {
 		engine, err := containerengine.NewContainerEngine(nil, "")
 		
 		// Either we get an engine or an error, both are valid
-		if err != nil {
-			assert.Equal(t, containerengine.ErrNoContainerEngine, err)
-			assert.Nil(t, engine)
-		} else {
-			assert.NotNil(t, engine)
-			assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
-		}
+		assertAutoDetectionResult(t, engine, err)
 	})
 }
