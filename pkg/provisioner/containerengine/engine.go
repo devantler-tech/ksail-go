@@ -18,9 +18,19 @@ type ContainerEngine struct {
 	EngineName   string
 }
 
-// NewContainerEngine creates a new container engine with auto-detection.
-// It tries to connect to a container engine and returns the first available one.
-func NewContainerEngine() (*ContainerEngine, error) {
+// NewContainerEngine creates a new container engine with optional dependency injection.
+// If apiClient is nil, auto-detection is performed to find an available container engine.
+// If apiClient is provided, it creates an engine with the injected client and engineName.
+func NewContainerEngine(apiClient client.APIClient, engineName string) (*ContainerEngine, error) {
+	// If client is provided, use dependency injection
+	if apiClient != nil {
+		return &ContainerEngine{
+			Client:     apiClient,
+			EngineName: engineName,
+		}, nil
+	}
+
+	// Auto-detection mode when client is nil
 	ctx := context.Background()
 	
 	// Try Docker first (most common)
