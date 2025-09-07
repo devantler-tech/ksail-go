@@ -35,27 +35,28 @@ func NewContainerEngine(apiClient client.APIClient, engineName string) (*Contain
 	}, nil
 }
 
-// ClientCreator is a function type for creating container engine clients.
-type ClientCreator func() (client.APIClient, error)
-
 // GetAutoDetectedClient attempts to auto-detect and create a container engine client.
 // It tries Docker first, then Podman with different socket configurations.
-// Optional client creators can be provided for dependency injection and testing.
+// Optional client creators can be provided for dependency injection and testing
+// using the ClientCreators struct with named fields.
 // If no creators are provided, the default static functions are used.
-func GetAutoDetectedClient(creators ...ClientCreator) (*ContainerEngine, error) {
+func GetAutoDetectedClient(creators ...*ClientCreators) (*ContainerEngine, error) {
 	dockerCreator := GetDockerClient
 	podmanUserCreator := GetPodmanUserClient  
 	podmanSystemCreator := GetPodmanSystemClient
 
-	// Override with provided creators for testing
-	if len(creators) >= 1 && creators[0] != nil {
-		dockerCreator = creators[0]
-	}
-	if len(creators) >= 2 && creators[1] != nil {
-		podmanUserCreator = creators[1]
-	}
-	if len(creators) >= 3 && creators[2] != nil {
-		podmanSystemCreator = creators[2]
+	// Override with provided creators for testing (use first non-nil creators struct)
+	if len(creators) > 0 && creators[0] != nil {
+		clientCreators := creators[0]
+		if clientCreators.Docker != nil {
+			dockerCreator = clientCreators.Docker
+		}
+		if clientCreators.PodmanUser != nil {
+			podmanUserCreator = clientCreators.PodmanUser
+		}
+		if clientCreators.PodmanSystem != nil {
+			podmanSystemCreator = clientCreators.PodmanSystem
+		}
 	}
 
 	ctx := context.Background()

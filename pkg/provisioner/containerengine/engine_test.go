@@ -296,22 +296,24 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
 	
-	// Create mock client creators
-	dockerCreator := func() (client.APIClient, error) {
-		return mockClient, nil
-	}
-	podmanUserCreator := func() (client.APIClient, error) {
-		return nil, errors.New("podman user unavailable")
-	}
-	podmanSystemCreator := func() (client.APIClient, error) {
-		return nil, errors.New("podman system unavailable")
+	// Create client creators using named struct fields
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return mockClient, nil
+		},
+		PodmanUser: func() (client.APIClient, error) {
+			return nil, errors.New("podman user unavailable")
+		},
+		PodmanSystem: func() (client.APIClient, error) {
+			return nil, errors.New("podman system unavailable")
+		},
 	}
 	
 	// Docker client succeeds and is ready
 	mockClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClient(dockerCreator, podmanUserCreator, podmanSystemCreator)
+	engine, err := containerengine.GetAutoDetectedClient(creators)
 	
 	// Assert
 	require.NoError(t, err)
@@ -327,15 +329,17 @@ func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 	mockDockerClient := provisioner.NewMockAPIClient(t)
 	mockPodmanClient := provisioner.NewMockAPIClient(t)
 	
-	// Create mock client creators
-	dockerCreator := func() (client.APIClient, error) {
-		return mockDockerClient, nil
-	}
-	podmanUserCreator := func() (client.APIClient, error) {
-		return mockPodmanClient, nil
-	}
-	podmanSystemCreator := func() (client.APIClient, error) {
-		return nil, errors.New("podman system unavailable")
+	// Create client creators using named struct fields
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return mockDockerClient, nil
+		},
+		PodmanUser: func() (client.APIClient, error) {
+			return mockPodmanClient, nil
+		},
+		PodmanSystem: func() (client.APIClient, error) {
+			return nil, errors.New("podman system unavailable")
+		},
 	}
 	
 	// Docker client succeeds but is not ready
@@ -345,7 +349,7 @@ func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 	mockPodmanClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClient(dockerCreator, podmanUserCreator, podmanSystemCreator)
+	engine, err := containerengine.GetAutoDetectedClient(creators)
 	
 	// Assert
 	require.NoError(t, err)
@@ -361,15 +365,17 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
 	
-	// Create mock client creators
-	dockerCreator := func() (client.APIClient, error) {
-		return nil, errors.New("docker unavailable")
-	}
-	podmanUserCreator := func() (client.APIClient, error) {
-		return mockPodmanUserClient, nil
-	}
-	podmanSystemCreator := func() (client.APIClient, error) {
-		return mockPodmanSystemClient, nil
+	// Create client creators using named struct fields
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return nil, errors.New("docker unavailable")
+		},
+		PodmanUser: func() (client.APIClient, error) {
+			return mockPodmanUserClient, nil
+		},
+		PodmanSystem: func() (client.APIClient, error) {
+			return mockPodmanSystemClient, nil
+		},
 	}
 	
 	// Podman user client succeeds but is not ready
@@ -379,7 +385,7 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClient(dockerCreator, podmanUserCreator, podmanSystemCreator)
+	engine, err := containerengine.GetAutoDetectedClient(creators)
 	
 	// Assert
 	require.NoError(t, err)
@@ -391,19 +397,21 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	t.Parallel()
 	
-	// Create mock client creators that all fail
-	dockerCreator := func() (client.APIClient, error) {
-		return nil, errors.New("docker unavailable")
-	}
-	podmanUserCreator := func() (client.APIClient, error) {
-		return nil, errors.New("podman user unavailable")
-	}
-	podmanSystemCreator := func() (client.APIClient, error) {
-		return nil, errors.New("podman system unavailable")
+	// Create client creators that all fail using named struct fields
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return nil, errors.New("docker unavailable")
+		},
+		PodmanUser: func() (client.APIClient, error) {
+			return nil, errors.New("podman user unavailable")
+		},
+		PodmanSystem: func() (client.APIClient, error) {
+			return nil, errors.New("podman system unavailable")
+		},
 	}
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClient(dockerCreator, podmanUserCreator, podmanSystemCreator)
+	engine, err := containerengine.GetAutoDetectedClient(creators)
 	
 	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
@@ -418,15 +426,17 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
 	
-	// Create mock client creators
-	dockerCreator := func() (client.APIClient, error) {
-		return mockDockerClient, nil
-	}
-	podmanUserCreator := func() (client.APIClient, error) {
-		return mockPodmanUserClient, nil
-	}
-	podmanSystemCreator := func() (client.APIClient, error) {
-		return mockPodmanSystemClient, nil
+	// Create client creators using named struct fields
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return mockDockerClient, nil
+		},
+		PodmanUser: func() (client.APIClient, error) {
+			return mockPodmanUserClient, nil
+		},
+		PodmanSystem: func() (client.APIClient, error) {
+			return mockPodmanSystemClient, nil
+		},
 	}
 	
 	// All clients create successfully but none are ready
@@ -435,10 +445,37 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("podman system not ready"))
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClient(dockerCreator, podmanUserCreator, podmanSystemCreator)
+	engine, err := containerengine.GetAutoDetectedClient(creators)
 	
 	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
 	assert.Nil(t, engine)
+}
+
+func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
+	t.Parallel()
+	
+	// Arrange
+	mockClient := provisioner.NewMockAPIClient(t)
+	
+	// Test with only Docker creator - other clients will use defaults
+	creators := &containerengine.ClientCreators{
+		Docker: func() (client.APIClient, error) {
+			return mockClient, nil
+		},
+		// PodmanUser and PodmanSystem will use default functions
+	}
+	
+	// Docker client succeeds and is ready
+	mockClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+	
+	// Act
+	engine, err := containerengine.GetAutoDetectedClient(creators)
+	
+	// Assert
+	require.NoError(t, err)
+	assert.NotNil(t, engine)
+	assert.Equal(t, "Docker", engine.GetName())
+	assert.Equal(t, mockClient, engine.Client)
 }
 
