@@ -13,6 +13,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test error variables to avoid dynamic error creation.
+var (
+	errDockerUnavailable       = errors.New("docker unavailable")
+	errDockerNotReady         = errors.New("docker not ready")
+	errPodmanUserUnavailable  = errors.New("podman user unavailable")
+	errPodmanUserNotReady     = errors.New("podman user not ready")
+	errPodmanSystemUnavailable = errors.New("podman system unavailable")
+	errPodmanSystemNotReady   = errors.New("podman system not ready")
+)
+
+// completePing returns a complete types.Ping struct to satisfy exhaustruct linter.
+func completePing() types.Ping {
+	return types.Ping{
+		APIVersion:     "1.41",
+		OSType:         "linux",
+		Experimental:   false,
+		BuilderVersion: "1",
+		SwarmStatus:    nil,
+	}
+}
+
 
 
 
@@ -50,7 +71,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			assert.Equal(t, testCase.expectReady, ready)
 
 			if testCase.expectError {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -145,7 +166,7 @@ func TestNewContainerEngine_WithNilClient(t *testing.T) {
 	engine, err := containerengine.NewContainerEngine(nil, "TestEngine")
 	
 	// Assert
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, engine)
 	assert.Contains(t, err.Error(), "apiClient cannot be nil")
 }
@@ -160,7 +181,7 @@ func TestNewContainerEngine_WithEmptyEngineName(t *testing.T) {
 	engine, err := containerengine.NewContainerEngine(mockClient, "")
 	
 	// Assert
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, engine)
 	assert.Contains(t, err.Error(), "engineName cannot be empty")
 }
@@ -260,7 +281,7 @@ func TestGetAutoDetectedClient(t *testing.T) {
 	assertAutoDetectionResult(t, engine, err)
 }
 
-// Test scenarios that might not be easily testable with real clients
+// Test scenarios that might not be easily testable with real clients.
 func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 	t.Parallel()
 	
@@ -302,15 +323,15 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 			return mockClient, nil
 		},
 		"podman-user": func() (client.APIClient, error) {
-			return nil, errors.New("podman user unavailable")
+			return nil, errPodmanUserUnavailable
 		},
 		"podman-system": func() (client.APIClient, error) {
-			return nil, errors.New("podman system unavailable")
+			return nil, errPodmanSystemUnavailable
 		},
 	}
 	
 	// Docker client succeeds and is ready
-	mockClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -338,15 +359,15 @@ func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 			return mockPodmanClient, nil
 		},
 		"podman-system": func() (client.APIClient, error) {
-			return nil, errors.New("podman system unavailable")
+			return nil, errPodmanSystemUnavailable
 		},
 	}
 	
 	// Docker client succeeds but is not ready
-	mockDockerClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("docker not ready"))
+	mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
 	
 	// Podman user client succeeds and is ready  
-	mockPodmanClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+	mockPodmanClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -368,7 +389,7 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	// Create client creators using simple map
 	overrides := map[string]containerengine.ClientCreator{
 		"docker": func() (client.APIClient, error) {
-			return nil, errors.New("docker unavailable")
+			return nil, errDockerUnavailable
 		},
 		"podman-user": func() (client.APIClient, error) {
 			return mockPodmanUserClient, nil
@@ -379,10 +400,10 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	}
 	
 	// Podman user client succeeds but is not ready
-	mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("podman user not ready"))
+	mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanUserNotReady)
 	
 	// Podman system client succeeds and is ready
-	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -400,13 +421,13 @@ func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	// Create client creators that all fail using simple map
 	overrides := map[string]containerengine.ClientCreator{
 		"docker": func() (client.APIClient, error) {
-			return nil, errors.New("docker unavailable")
+			return nil, errDockerUnavailable
 		},
 		"podman-user": func() (client.APIClient, error) {
-			return nil, errors.New("podman user unavailable")
+			return nil, errPodmanUserUnavailable
 		},
 		"podman-system": func() (client.APIClient, error) {
-			return nil, errors.New("podman system unavailable")
+			return nil, errPodmanSystemUnavailable
 		},
 	}
 	
@@ -440,9 +461,9 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	}
 	
 	// All clients create successfully but none are ready
-	mockDockerClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("docker not ready"))
-	mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("podman user not ready"))
-	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("podman system not ready"))
+	mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
+	mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanUserNotReady)
+	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanSystemNotReady)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -467,7 +488,7 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	}
 	
 	// Docker client succeeds and is ready
-	mockClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
+	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
