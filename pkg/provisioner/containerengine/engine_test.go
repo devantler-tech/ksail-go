@@ -34,6 +34,22 @@ func completePing() types.Ping {
 	}
 }
 
+// dockerVersion returns a complete types.Version struct for Docker to satisfy exhaustruct linter.
+func dockerVersion() types.Version {
+	return types.Version{
+		Platform: struct{ Name string }{Name: "Docker Engine - Community"},
+		Version:  "24.0.0",
+	}
+}
+
+// podmanVersion returns a complete types.Version struct for Podman to satisfy exhaustruct linter.
+func podmanVersion() types.Version {
+	return types.Version{
+		Platform: struct{ Name string }{Name: "Podman Engine"},
+		Version:  "4.5.0",
+	}
+}
+
 
 
 
@@ -63,7 +79,7 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 			mockClient := provisioner.NewMockAPIClient(t)
 			testCase.setupMock(mockClient)
 
-			engine, err := containerengine.NewContainerEngine(mockClient, testCase.engineName)
+			engine, err := containerengine.NewContainerEngine(mockClient)
 			require.NoError(t, err)
 
 			ready, err := engine.CheckReady(context.Background())
@@ -82,7 +98,6 @@ func TestContainerEngine_CheckReady(t *testing.T) {
 func createContainerEngineTestCases() []struct {
 	name        string
 	setupMock   func(*provisioner.MockAPIClient)
-	engineName  string
 	expectReady bool
 	expectError bool
 } {
@@ -98,7 +113,6 @@ func createContainerEngineTestCases() []struct {
 	return []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
-		engineName  string
 		expectReady bool
 		expectError bool
 	}{
@@ -107,7 +121,6 @@ func createContainerEngineTestCases() []struct {
 			setupMock: func(m *provisioner.MockAPIClient) {
 				m.EXPECT().Ping(context.Background()).Return(pingResponse, nil)
 			},
-			engineName:  "Docker",
 			expectReady: true,
 			expectError: false,
 		},
@@ -116,7 +129,6 @@ func createContainerEngineTestCases() []struct {
 			setupMock: func(m *provisioner.MockAPIClient) {
 				m.EXPECT().Ping(context.Background()).Return(pingResponse, assert.AnError)
 			},
-			engineName:  "Docker",
 			expectReady: false,
 			expectError: true,
 		},
@@ -127,7 +139,9 @@ func TestContainerEngine_Name(t *testing.T) {
 	t.Parallel()
 
 	mockClient := provisioner.NewMockAPIClient(t)
-	engine, err := containerengine.NewContainerEngine(mockClient, "Docker")
+	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
+	
+	engine, err := containerengine.NewContainerEngine(mockClient)
 	require.NoError(t, err)
 
 	assert.Equal(t, "Docker", engine.GetName())
@@ -136,7 +150,7 @@ func TestContainerEngine_Name(t *testing.T) {
 func TestContainerEngine_GetClient(t *testing.T) {
 	t.Parallel()
 	mockClient := provisioner.NewMockAPIClient(t)
-	engine, err := containerengine.NewContainerEngine(mockClient, "Docker")
+	engine, err := containerengine.NewContainerEngine(mockClient)
 	require.NoError(t, err)
 
 	assert.Equal(t, mockClient, engine.Client)
@@ -147,15 +161,15 @@ func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
 	
 	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
-	engineName := "TestEngine"
+	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 	
 	// Act
-	engine, err := containerengine.NewContainerEngine(mockClient, engineName)
+	engine, err := containerengine.NewContainerEngine(mockClient)
 	
 	// Assert
 	require.NoError(t, err)
 	assert.NotNil(t, engine)
-	assert.Equal(t, engineName, engine.GetName())
+	assert.Equal(t, "Docker", engine.GetName())
 	assert.Equal(t, mockClient, engine.Client)
 }
 
@@ -163,27 +177,12 @@ func TestNewContainerEngine_WithNilClient(t *testing.T) {
 	t.Parallel()
 	
 	// Act
-	engine, err := containerengine.NewContainerEngine(nil, "TestEngine")
+	engine, err := containerengine.NewContainerEngine(nil)
 	
 	// Assert
 	require.Error(t, err)
 	assert.Nil(t, engine)
 	assert.Contains(t, err.Error(), "apiClient cannot be nil")
-}
-
-func TestNewContainerEngine_WithEmptyEngineName(t *testing.T) {
-	t.Parallel()
-	
-	// Arrange
-	mockClient := provisioner.NewMockAPIClient(t)
-	
-	// Act
-	engine, err := containerengine.NewContainerEngine(mockClient, "")
-	
-	// Assert
-	require.Error(t, err)
-	assert.Nil(t, engine)
-	assert.Contains(t, err.Error(), "engineName cannot be empty")
 }
 
 func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
@@ -208,13 +207,14 @@ func TestNewContainerEngine_APISignature(t *testing.T) {
 	t.Run("dependency injection mode", func(t *testing.T) {
 		t.Parallel()
 		mockClient := provisioner.NewMockAPIClient(t)
+		mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 		
-		// Test that we can inject a client and engine name
-		engine, err := containerengine.NewContainerEngine(mockClient, "TestEngine")
+		// Test that we can inject a client and detect engine type
+		engine, err := containerengine.NewContainerEngine(mockClient)
 		
 		require.NoError(t, err)
 		assert.NotNil(t, engine)
-		assert.Equal(t, "TestEngine", engine.GetName())
+		assert.Equal(t, "Docker", engine.GetName())
 		assert.Equal(t, mockClient, engine.Client)
 	})
 	
@@ -332,6 +332,7 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	
 	// Docker client succeeds and is ready
 	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
+	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -368,6 +369,7 @@ func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 	
 	// Podman user client succeeds and is ready  
 	mockPodmanClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
+	mockPodmanClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -404,6 +406,7 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	
 	// Podman system client succeeds and is ready
 	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
+	mockPodmanSystemClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -489,6 +492,7 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	
 	// Docker client succeeds and is ready
 	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
+	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)

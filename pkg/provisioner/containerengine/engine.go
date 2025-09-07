@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/docker/docker/client"
 )
@@ -14,41 +15,73 @@ var (
 	// ErrNoContainerEngine is returned when no container engine (Docker or Podman) is available.
 	ErrNoContainerEngine = errors.New("no container engine (Docker or Podman) available")
 	// ErrAPIClientNil is returned when apiClient is nil.
-	ErrAPIClientNil = errors.New("apiClient cannot be nil - use GetAutoDetectedClient() for auto-detection")
-	// ErrEngineNameEmpty is returned when engineName is empty.
-	ErrEngineNameEmpty = errors.New("engineName cannot be empty")
+	ErrAPIClientNil = errors.New("apiClient cannot be nil")
 	// ErrClientNotReady is returned when a client is not ready.
 	ErrClientNotReady = errors.New("client not ready")
+	// ErrEngineDetection is returned when engine type cannot be detected.
+	ErrEngineDetection = errors.New("unable to detect engine type from client")
 )
 
 // ContainerEngine implements container engine detection and management.
 type ContainerEngine struct {
-	Client     client.APIClient
-	EngineName string
+	Client client.APIClient
 }
 
 // NewContainerEngine creates a new container engine with dependency injection.
-// The apiClient and engineName must be provided - this function no longer performs auto-detection.
-// For auto-detection, use GetAutoDetectedClient() separately.
-func NewContainerEngine(apiClient client.APIClient, engineName string) (*ContainerEngine, error) {
+// The apiClient must be provided - this function detects the engine type from the client.
+func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 	if apiClient == nil {
 		return nil, ErrAPIClientNil
 	}
 
-	if engineName == "" {
-		return nil, ErrEngineNameEmpty
-	}
-
 	return &ContainerEngine{
-		Client:     apiClient,
-		EngineName: engineName,
+		Client: apiClient,
 	}, nil
 }
 
 // ClientCreator is a function type for creating container engine clients.
 type ClientCreator func() (client.APIClient, error)
 
-// GetAutoDetectedClient attempts to auto-detect and create a container engine client.
+// detectEngineType detects the container engine type from the client.
+func (u *ContainerEngine) detectEngineType(ctx context.Context) (string, error) {
+	version, err := u.Client.ServerVersion(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get server version: %w", err)
+	}
+
+	// Check platform name to determine engine type
+	platformName := version.Platform.Name
+	if platformName != "" {
+		// Docker typically returns "Docker Engine - Community" or similar
+		if contains(platformName, "Docker") {
+			return "Docker", nil
+		}
+		// Podman typically returns something with "Podman" in the name
+		if contains(platformName, "Podman") {
+			return "Podman", nil
+		}
+	}
+
+	// Fallback: check version string
+	versionStr := version.Version
+	if versionStr != "" {
+		if contains(versionStr, "podman") {
+			return "Podman", nil
+		}
+		// If it doesn't contain "podman", assume Docker as it's more common
+		return "Docker", nil
+	}
+
+	return "", ErrEngineDetection
+}
+
+// contains is a helper function for case-insensitive string matching.
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && 
+		(s == substr || 
+		 len(s) > len(substr) && 
+		 (strings.Contains(strings.ToLower(s), strings.ToLower(substr))))
+}
 // It tries Docker first, then Podman with different socket configurations.
 // For testing, you can override specific creators using a map with keys:
 // "docker", "podman-user", "podman-system".
@@ -58,19 +91,19 @@ func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEng
 	ctx := context.Background()
 	
 	// Try Docker first (most common)
-	engine, err := tryCreateEngine(ctx, creators.docker, "Docker")
+	engine, err := tryCreateEngine(ctx, creators.docker)
 	if err == nil {
 		return engine, nil
 	}
 
 	// Try Podman with Docker-compatible socket
-	engine, err = tryCreateEngine(ctx, creators.podmanUser, "Podman")
+	engine, err = tryCreateEngine(ctx, creators.podmanUser)
 	if err == nil {
 		return engine, nil
 	}
 
 	// Try system-wide Podman socket
-	engine, err = tryCreateEngine(ctx, creators.podmanSystem, "Podman")
+	engine, err = tryCreateEngine(ctx, creators.podmanSystem)
 	if err == nil {
 		return engine, nil
 	}
@@ -114,22 +147,22 @@ func getClientCreators(overrides ...map[string]ClientCreator) clientCreators {
 }
 
 // tryCreateEngine attempts to create and validate a container engine.
-func tryCreateEngine(ctx context.Context, creator ClientCreator, engineName string) (*ContainerEngine, error) {
+func tryCreateEngine(ctx context.Context, creator ClientCreator) (*ContainerEngine, error) {
 	apiClient, err := creator()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create %s client: %w", engineName, err)
+		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	engine := &ContainerEngine{
-		Client:     apiClient,
-		EngineName: engineName,
+	engine, err := NewContainerEngine(apiClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create container engine: %w", err)
 	}
 
 	if ready, _ := engine.CheckReady(ctx); ready {
 		return engine, nil
 	}
 
-	return nil, fmt.Errorf("%w: %s", ErrClientNotReady, engineName)
+	return nil, fmt.Errorf("%w: client not ready", ErrClientNotReady)
 }
 
 
@@ -173,7 +206,7 @@ func GetPodmanSystemClient() (client.APIClient, error) {
 func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {
 	_, err := u.Client.Ping(ctx)
 	if err != nil {
-		return false, fmt.Errorf("%s ping failed: %w", u.EngineName, err)
+		return false, fmt.Errorf("container engine ping failed: %w", err)
 	}
 
 	return true, nil
@@ -181,7 +214,13 @@ func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {
 
 // GetName returns the name of the detected container engine.
 func (u *ContainerEngine) GetName() string {
-	return u.EngineName
+	ctx := context.Background()
+	engineType, err := u.detectEngineType(ctx)
+	if err != nil {
+		// Fallback to "Unknown" if detection fails
+		return "Unknown"
+	}
+	return engineType
 }
 
 
