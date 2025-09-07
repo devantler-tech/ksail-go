@@ -12,9 +12,10 @@ import (
 )
 
 // assertAutoDetectionResult is a helper function to avoid code duplication
-// when testing auto-detection behavior of NewContainerEngine
+// when testing auto-detection behavior of NewContainerEngine.
 func assertAutoDetectionResult(t *testing.T, engine *containerengine.ContainerEngine, err error) {
 	t.Helper()
+
 	if err != nil {
 		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
 		assert.Nil(t, engine)
