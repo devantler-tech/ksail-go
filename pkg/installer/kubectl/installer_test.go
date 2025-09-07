@@ -23,8 +23,13 @@ import (
 
 // Static errors for testing to satisfy err113 linter.
 var (
-	errCRDCreationFailed    = errors.New("failed to create CRD")
+	errCRDCreationFailed      = errors.New("failed to create CRD")
 	errApplySetCreationFailed = errors.New("failed to create ApplySet")
+	errAPIServerError         = errors.New("api server error")
+	errServerError            = errors.New("server error")
+	errGetError               = errors.New("get error")
+	errUpdateError            = errors.New("update error")
+	errCreateFailed           = errors.New("create failed")
 )
 
 // testSetup provides common setup for kubectl installer tests.
@@ -211,7 +216,7 @@ func TestKubectlInstaller_Install_CRDGetError(t *testing.T) {
 
 	// CRD Get operation fails with non-NotFound error
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(nil, errors.New("api server error"))
+		Return(nil, errAPIServerError)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
 
@@ -235,7 +240,7 @@ func TestKubectlInstaller_Install_ApplySetGetError(t *testing.T) {
 
 	// ApplySet Get operation fails with non-NotFound error
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
-		Return(nil, errors.New("api server error"))
+		Return(nil, errAPIServerError)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
 
@@ -315,7 +320,7 @@ func createDefaultGroupResource() schema.GroupResource {
 	}
 }
 
-// Test to cover the waitForCRDEstablished error path when Get fails
+// Test to cover the waitForCRDEstablished error path when Get fails.
 func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 	t.Parallel()
 
@@ -334,7 +339,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 	
 	// During establishment waiting, Get always returns a server error
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(nil, errors.New("server error")).
+		Return(nil, errServerError).
 		Maybe() // Allow multiple calls during polling
 
 	// Use a very short timeout to make the test fast
@@ -352,7 +357,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to get CRD")
 }
 
-// Test to cover the NamesAccepted false condition in waitForCRDEstablished  
+// Test to cover the NamesAccepted false condition in waitForCRDEstablished.
 func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testing.T) {
 	t.Parallel()
 
@@ -372,10 +377,11 @@ func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testi
 	crdWithNamesNotAccepted := createDefaultCRD()
 	crdWithNamesNotAccepted.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
 		{
-			Type:    apiextensionsv1.NamesAccepted,
-			Status:  apiextensionsv1.ConditionFalse,
-			Reason:  "MultipleNamesNotAllowed",
-			Message: "names conflict with existing CRD",
+			Type:               apiextensionsv1.NamesAccepted,
+			Status:             apiextensionsv1.ConditionFalse,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Reason:             "MultipleNamesNotAllowed",
+			Message:            "names conflict with existing CRD",
 		},
 	}
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -397,7 +403,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testi
 	assert.Contains(t, err.Error(), "names conflict with existing CRD")
 }
 
-// Test to cover the CRD update path (AlreadyExists -> Update) which triggers createDefaultUpdateOptions
+// Test to cover the CRD update path (AlreadyExists -> Update) which triggers createDefaultUpdateOptions.
 func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
 	t.Parallel()
 
@@ -430,8 +436,11 @@ func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
 	establishedCRD := createDefaultCRD()
 	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
 		{
-			Type:   apiextensionsv1.Established,
-			Status: apiextensionsv1.ConditionTrue,
+			Type:               apiextensionsv1.Established,
+			Status:             apiextensionsv1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Reason:             "EstablishedSuccessfully", 
+			Message:            "CRD is established",
 		},
 	}
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -521,7 +530,7 @@ func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
 	
 	// Get existing CRD fails
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
-		Return(nil, errors.New("get error")).
+		Return(nil, errGetError).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -560,7 +569,7 @@ func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
 	
 	// Update fails
 	apiExtClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("update error")).
+		Return(nil, errUpdateError).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -596,7 +605,7 @@ func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
 	
 	// Get existing ApplySet fails
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
-		Return(nil, errors.New("get error")).
+		Return(nil, errGetError).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -645,7 +654,7 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
 	
 	// Update fails
 	dynClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("update error")).
+		Return(nil, errUpdateError).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -671,7 +680,7 @@ func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
 	
 	// CRD Create fails with some other error (not AlreadyExists)
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("create failed")).
+		Return(nil, errCreateFailed).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -702,7 +711,7 @@ func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
 	
 	// ApplySet Create fails with some other error (not AlreadyExists)
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errors.New("create failed")).
+		Return(nil, errCreateFailed).
 		Times(1)
 
 	installer := createTestInstaller(apiExtClient, dynClient)
@@ -740,8 +749,11 @@ func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing
 	establishedCRD := createDefaultCRD()
 	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
 		{
-			Type:   apiextensionsv1.Established,
-			Status: apiextensionsv1.ConditionTrue,
+			Type:               apiextensionsv1.Established,
+			Status:             apiextensionsv1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Reason:             "EstablishedSuccessfully",
+			Message:            "CRD is established",
 		},
 	}
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
@@ -785,8 +797,11 @@ func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
 	establishedCRD := createDefaultCRD()
 	establishedCRD.Status.Conditions = []apiextensionsv1.CustomResourceDefinitionCondition{
 		{
-			Type:   apiextensionsv1.Established,
-			Status: apiextensionsv1.ConditionTrue,
+			Type:               apiextensionsv1.Established,
+			Status:             apiextensionsv1.ConditionTrue,
+			LastTransitionTime: metav1.NewTime(time.Now()),
+			Reason:             "EstablishedSuccessfully",
+			Message:            "CRD is established",
 		},
 	}
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
