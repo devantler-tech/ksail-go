@@ -9,40 +9,11 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/factory"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// MockClientFactory is a mock implementation of factory.ClientFactory for testing
-type MockClientFactory struct {
-	mock.Mock
-}
 
-func (m *MockClientFactory) GetDockerClient() (client.APIClient, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(client.APIClient), args.Error(1)
-}
-
-func (m *MockClientFactory) GetPodmanUserClient() (client.APIClient, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(client.APIClient), args.Error(1)
-}
-
-func (m *MockClientFactory) GetPodmanSystemClient() (client.APIClient, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(client.APIClient), args.Error(1)
-}
 
 
 
@@ -296,7 +267,7 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
-	mockFactory := &MockClientFactory{}
+	mockFactory := factory.NewMockClientFactory(t)
 	mockClient := provisioner.NewMockAPIClient(t)
 	
 	// Docker client succeeds and is ready
@@ -319,7 +290,7 @@ func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
-	mockFactory := &MockClientFactory{}
+	mockFactory := factory.NewMockClientFactory(t)
 	mockDockerClient := provisioner.NewMockAPIClient(t)
 	mockPodmanClient := provisioner.NewMockAPIClient(t)
 	
@@ -347,7 +318,7 @@ func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSucces
 	t.Parallel()
 	
 	// Arrange
-	mockFactory := &MockClientFactory{}
+	mockFactory := factory.NewMockClientFactory(t)
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
 	
@@ -378,7 +349,7 @@ func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
-	mockFactory := &MockClientFactory{}
+	mockFactory := factory.NewMockClientFactory(t)
 	
 	// All client creations fail
 	mockFactory.On("GetDockerClient").Return(nil, errors.New("docker unavailable"))
@@ -399,7 +370,7 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
-	mockFactory := &MockClientFactory{}
+	mockFactory := factory.NewMockClientFactory(t)
 	mockDockerClient := provisioner.NewMockAPIClient(t)
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
