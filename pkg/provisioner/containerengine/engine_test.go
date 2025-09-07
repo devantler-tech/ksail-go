@@ -159,7 +159,7 @@ func createContainerEngineTestCases() []struct {
 	}
 }
 
-// nameTestCase represents a test case for engine name detection
+// nameTestCase represents a test case for engine name detection.
 type nameTestCase struct {
 	name             string
 	serverVersion    types.Version
@@ -167,7 +167,7 @@ type nameTestCase struct {
 	expectedName     string
 }
 
-// createNameTestCases returns test cases for engine name detection
+// createNameTestCases returns test cases for engine name detection.
 func createNameTestCases() []nameTestCase {
 	return []nameTestCase{
 		{
@@ -240,15 +240,28 @@ func createNameTestCases() []nameTestCase {
 			expectedName: "Unknown",
 		},
 		{
-			name:             "ServerVersion error returns Unknown",
-			serverVersion:    types.Version{},
+			name: "ServerVersion error returns Unknown",
+			serverVersion: types.Version{
+				Platform: struct{ Name string }{Name: ""},
+				Components: nil,
+				Version: "",
+				APIVersion: "",
+				MinAPIVersion: "",
+				GitCommit: "",
+				GoVersion: "",
+				Os: "",
+				Arch: "",
+				KernelVersion: "",
+				Experimental: false,
+				BuildTime: "",
+			},
 			serverVersionErr: errServerVersionFailed,
 			expectedName:     "Unknown",
 		},
 	}
 }
 
-// runNameTestCase executes a single name test case
+// runNameTestCase executes a single name test case.
 func runNameTestCase(t *testing.T, testCase nameTestCase) {
 	t.Helper()
 	
@@ -488,7 +501,7 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	assert.Equal(t, mockClient, engine.Client)
 }
 
-// createTestOverrides creates client creator overrides for testing
+// createTestOverrides creates client creator overrides for testing.
 type clientSetup struct {
 	dockerClient        client.APIClient
 	dockerErr           error
@@ -767,8 +780,21 @@ func TestDetectEngineType_EdgeCases(t *testing.T) {
 			expectError:      true,
 		},
 		{
-			name:             "ServerVersion API call fails",
-			serverVersion:    types.Version{},
+			name: "ServerVersion API call fails",
+			serverVersion: types.Version{
+				Platform: struct{ Name string }{Name: ""},
+				Components: nil,
+				Version: "",
+				APIVersion: "",
+				MinAPIVersion: "",
+				GitCommit: "",
+				GoVersion: "",
+				Os: "",
+				Arch: "",
+				KernelVersion: "",
+				Experimental: false,
+				BuildTime: "",
+			},
 			serverVersionErr: errServerVersionFailed,
 			expectedType:     "",
 			expectError:      true,
@@ -945,6 +971,7 @@ func TestTryCreateEngine_NewContainerEngineFailure(t *testing.T) {
 	creator := func() (client.APIClient, error) {
 		// Return nil client to trigger ErrAPIClientNil in NewContainerEngine
 		var nilClient client.APIClient
+
 		return nilClient, nil
 	}
 
@@ -1021,6 +1048,7 @@ func TestClientCreation_SuccessPaths(t *testing.T) {
 		containerengine.DefaultDockerClientCreator = func() (client.APIClient, error) {
 			return mockClient, nil
 		}
+
 		defer func() {
 			containerengine.DefaultDockerClientCreator = originalCreator
 		}()
@@ -1044,6 +1072,7 @@ func TestClientCreation_SuccessPaths(t *testing.T) {
 		containerengine.DefaultPodmanUserClientCreator = func() (client.APIClient, error) {
 			return mockClient, nil
 		}
+
 		defer func() {
 			containerengine.DefaultPodmanUserClientCreator = originalCreator
 		}()
@@ -1067,6 +1096,7 @@ func TestClientCreation_SuccessPaths(t *testing.T) {
 		containerengine.DefaultPodmanSystemClientCreator = func() (client.APIClient, error) {
 			return mockClient, nil
 		}
+
 		defer func() {
 			containerengine.DefaultPodmanSystemClientCreator = originalCreator
 		}()
