@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/provisioner"
 	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine"
+	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine/factory"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockClientFactory is a mock implementation of ClientFactory for testing
+// MockClientFactory is a mock implementation of factory.ClientFactory for testing
 type MockClientFactory struct {
 	mock.Mock
 }
@@ -42,6 +43,8 @@ func (m *MockClientFactory) GetPodmanSystemClient() (client.APIClient, error) {
 	}
 	return args.Get(0).(client.APIClient), args.Error(1)
 }
+
+
 
 // assertAutoDetectionResult is a helper function to avoid code duplication
 // when testing auto-detection behavior of NewContainerEngine.
@@ -289,7 +292,7 @@ func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 	}
 }
 
-func TestGetAutoDetectedClientWithFactory_DockerSuccess(t *testing.T) {
+func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -301,7 +304,7 @@ func TestGetAutoDetectedClientWithFactory_DockerSuccess(t *testing.T) {
 	mockClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClientWithFactory(mockFactory)
+	engine, err := containerengine.GetAutoDetectedClient(mockFactory)
 	
 	// Assert
 	require.NoError(t, err)
@@ -312,7 +315,7 @@ func TestGetAutoDetectedClientWithFactory_DockerSuccess(t *testing.T) {
 	mockFactory.AssertExpectations(t)
 }
 
-func TestGetAutoDetectedClientWithFactory_DockerNotReady_PodmanUserSuccess(t *testing.T) {
+func TestGetAutoDetectedClient_DockerNotReady_PodmanUserSuccess(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -329,7 +332,7 @@ func TestGetAutoDetectedClientWithFactory_DockerNotReady_PodmanUserSuccess(t *te
 	mockPodmanClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClientWithFactory(mockFactory)
+	engine, err := containerengine.GetAutoDetectedClient(mockFactory)
 	
 	// Assert
 	require.NoError(t, err)
@@ -340,7 +343,7 @@ func TestGetAutoDetectedClientWithFactory_DockerNotReady_PodmanUserSuccess(t *te
 	mockFactory.AssertExpectations(t)
 }
 
-func TestGetAutoDetectedClientWithFactory_DockerFails_PodmanUserNotReady_PodmanSystemSuccess(t *testing.T) {
+func TestGetAutoDetectedClient_DockerFails_PodmanUserNotReady_PodmanSystemSuccess(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -360,7 +363,7 @@ func TestGetAutoDetectedClientWithFactory_DockerFails_PodmanUserNotReady_PodmanS
 	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, nil)
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClientWithFactory(mockFactory)
+	engine, err := containerengine.GetAutoDetectedClient(mockFactory)
 	
 	// Assert
 	require.NoError(t, err)
@@ -371,7 +374,7 @@ func TestGetAutoDetectedClientWithFactory_DockerFails_PodmanUserNotReady_PodmanS
 	mockFactory.AssertExpectations(t)
 }
 
-func TestGetAutoDetectedClientWithFactory_AllClientsFail(t *testing.T) {
+func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -383,7 +386,7 @@ func TestGetAutoDetectedClientWithFactory_AllClientsFail(t *testing.T) {
 	mockFactory.On("GetPodmanSystemClient").Return(nil, errors.New("podman system unavailable"))
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClientWithFactory(mockFactory)
+	engine, err := containerengine.GetAutoDetectedClient(mockFactory)
 	
 	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
@@ -392,7 +395,7 @@ func TestGetAutoDetectedClientWithFactory_AllClientsFail(t *testing.T) {
 	mockFactory.AssertExpectations(t)
 }
 
-func TestGetAutoDetectedClientWithFactory_AllClientsCreateButNotReady(t *testing.T) {
+func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	t.Parallel()
 	
 	// Arrange
@@ -412,7 +415,7 @@ func TestGetAutoDetectedClientWithFactory_AllClientsCreateButNotReady(t *testing
 	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(types.Ping{}, errors.New("podman system not ready"))
 	
 	// Act
-	engine, err := containerengine.GetAutoDetectedClientWithFactory(mockFactory)
+	engine, err := containerengine.GetAutoDetectedClient(mockFactory)
 	
 	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
@@ -424,10 +427,10 @@ func TestGetAutoDetectedClientWithFactory_AllClientsCreateButNotReady(t *testing
 func TestDefaultClientFactory(t *testing.T) {
 	t.Parallel()
 	
-	factory := &containerengine.DefaultClientFactory{}
+	factoryInstance := &factory.DefaultClientFactory{}
 	
 	// Test GetDockerClient
-	dockerClient, err := factory.GetDockerClient()
+	dockerClient, err := factoryInstance.GetDockerClient()
 	if err != nil {
 		assert.Nil(t, dockerClient)
 	} else {
@@ -435,7 +438,7 @@ func TestDefaultClientFactory(t *testing.T) {
 	}
 	
 	// Test GetPodmanUserClient  
-	podmanUserClient, err := factory.GetPodmanUserClient()
+	podmanUserClient, err := factoryInstance.GetPodmanUserClient()
 	if err != nil {
 		assert.Nil(t, podmanUserClient)
 	} else {
@@ -443,7 +446,7 @@ func TestDefaultClientFactory(t *testing.T) {
 	}
 	
 	// Test GetPodmanSystemClient
-	podmanSystemClient, err := factory.GetPodmanSystemClient()
+	podmanSystemClient, err := factoryInstance.GetPodmanSystemClient()
 	if err != nil {
 		assert.Nil(t, podmanSystemClient)
 	} else {

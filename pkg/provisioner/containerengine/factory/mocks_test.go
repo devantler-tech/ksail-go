@@ -2,7 +2,7 @@
 // github.com/vektra/mockery
 // template: testify
 
-package containerengine
+package factory
 
 import (
 	"github.com/docker/docker/client"
