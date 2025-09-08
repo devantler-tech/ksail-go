@@ -388,6 +388,7 @@ func TestDelete_Error_InvalidClusterConfig(t *testing.T) {
 func createProvisionerWithInvalidConfig(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
 	t.Helper()
 	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+
 	return eksprovisioner.NewEKSClusterProvisioner(
 		nil, // nil clusterConfig
 		clusterProvider,
@@ -401,10 +402,12 @@ func createProvisionerWithInvalidConfig(t *testing.T) *eksprovisioner.EKSCluster
 // createProvisionerWithNilMetadata creates a provisioner with nil metadata for error testing.
 func createProvisionerWithNilMetadata(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
 	t.Helper()
+
 	clusterConfig := &v1alpha5.ClusterConfig{
 		Metadata: nil, // nil metadata
 	}
 	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+
 	return eksprovisioner.NewEKSClusterProvisioner(
 		clusterConfig,
 		clusterProvider,
@@ -418,12 +421,14 @@ func createProvisionerWithNilMetadata(t *testing.T) *eksprovisioner.EKSClusterPr
 // createProvisionerWithEmptyName creates a provisioner with empty name in metadata for error testing.
 func createProvisionerWithEmptyName(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
 	t.Helper()
+
 	clusterConfig := &v1alpha5.ClusterConfig{
 		Metadata: &v1alpha5.ClusterMeta{
 			Name: "", // empty name
 		},
 	}
 	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+
 	return eksprovisioner.NewEKSClusterProvisioner(
 		clusterConfig,
 		clusterProvider,
@@ -456,6 +461,8 @@ func setupCustomConfigWithScaling(
 }
 
 // createMocksForTest creates all the mock dependencies for an EKS provisioner.
+//
+//nolint:unparam // clusterProvider is intentionally nil for testing since actual provider methods are mocked
 func createMocksForTest(t *testing.T) (
 	*eks.ClusterProvider,
 	*eksprovisioner.MockEKSClusterActions,
