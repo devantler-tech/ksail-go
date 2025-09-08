@@ -62,7 +62,7 @@ func podmanVersion() types.Version {
 		Version:  "4.5.0",
 		APIVersion: "1.41",
 		MinAPIVersion: "1.12", 
-		GitCommit: "efgh456",
+		GitCommit: "abcd456",
 		GoVersion: "go1.19",
 		Os: "linux",
 		Arch: "amd64",
@@ -87,6 +87,22 @@ func assertAutoDetectionResult(t *testing.T, engine *containerengine.ContainerEn
 	} else {
 		assert.NotNil(t, engine)
 		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
+	}
+}
+
+// assertAutoDetectionWithReadyCheck is a helper that combines auto-detection result checking
+// with readiness verification.
+func assertAutoDetectionWithReadyCheck(t *testing.T, engine *containerengine.ContainerEngine, err error) {
+	t.Helper()
+	
+	assertAutoDetectionResult(t, engine, err)
+	
+	// Additional ready check if we got an engine
+	if err == nil && engine != nil {
+		ready, readyErr := engine.CheckReady(context.Background())
+		if readyErr == nil {
+			assert.True(t, ready)
+		}
 	}
 }
 
@@ -248,39 +264,13 @@ func createErrorDetectionCases() []nameTestCase {
 	return []nameTestCase{
 		{
 			name: "Empty platform and version returns Unknown",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			serverVersion: emptyVersion(),
 			serverVersionErr: nil,
 			expectedName:     "Unknown",
 		},
 		{
 			name: "ServerVersion error returns Unknown",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version: "",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			serverVersion: emptyVersion(),
 			serverVersionErr: errServerVersionFailed,
 			expectedName:     "Unknown",
 		},
@@ -293,20 +283,7 @@ func runNameTestCase(t *testing.T, testCase nameTestCase) {
 	
 	mockClient := provisioner.NewMockAPIClient(t)
 	if testCase.serverVersionErr != nil {
-		mockClient.EXPECT().ServerVersion(context.Background()).Return(types.Version{
-			Platform: struct{ Name string }{Name: ""},
-			Components: nil,
-			Version: "",
-			APIVersion: "",
-			MinAPIVersion: "",
-			GitCommit: "",
-			GoVersion: "",
-			Os: "",
-			Arch: "",
-			KernelVersion: "",
-			Experimental: false,
-			BuildTime: "",
-		}, testCase.serverVersionErr)
+		mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
 	} else {
 		mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
 	}
@@ -479,19 +456,7 @@ func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 	engine, err := containerengine.GetAutoDetectedClient()
 	
 	// This assertion covers both success and failure cases
-	if err != nil {
-		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
-		assert.Nil(t, engine)
-	} else {
-		assert.NotNil(t, engine)
-		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
-		
-		// If we got an engine, it should be ready
-		ready, readyErr := engine.CheckReady(context.Background())
-		if readyErr == nil {
-			assert.True(t, ready)
-		}
-	}
+	assertAutoDetectionWithReadyCheck(t, engine, err)
 }
 
 func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
@@ -825,13 +790,7 @@ func TestGetAutoDetectedClient_WithEmptyOverrides(t *testing.T) {
 	engine, err := containerengine.GetAutoDetectedClient(emptyOverrides)
 	
 	// Assert - either success or expected error
-	if err != nil {
-		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
-		assert.Nil(t, engine)
-	} else {
-		assert.NotNil(t, engine)
-		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
-	}
+	assertAutoDetectionResult(t, engine, err)
 }
 
 func TestGetAutoDetectedClient_WithNilOverrides(t *testing.T) {
@@ -844,13 +803,7 @@ func TestGetAutoDetectedClient_WithNilOverrides(t *testing.T) {
 	engine, err := containerengine.GetAutoDetectedClient(nilOverrides)
 	
 	// Assert - either success or expected error
-	if err != nil {
-		assert.Equal(t, containerengine.ErrNoContainerEngine, err)
-		assert.Nil(t, engine)
-	} else {
-		assert.NotNil(t, engine)
-		assert.Contains(t, []string{"Docker", "Podman"}, engine.GetName())
-	}
+	assertAutoDetectionResult(t, engine, err)
 }
 
 func TestContainsHelper(t *testing.T) {
