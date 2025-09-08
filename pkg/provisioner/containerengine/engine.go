@@ -42,6 +42,42 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 // ClientCreator is a function type for creating container engine clients.
 type ClientCreator func() (client.APIClient, error)
 
+// GetDockerClient creates a Docker client using environment configuration.
+func GetDockerClient() (client.APIClient, error) {
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+	}
+
+	return dockerClient, nil
+}
+
+// GetPodmanUserClient creates a Podman client using the user-specific socket.
+func GetPodmanUserClient() (client.APIClient, error) {
+	podmanClient, err := client.NewClientWithOpts(
+		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Podman user client: %w", err)
+	}
+
+	return podmanClient, nil
+}
+
+// GetPodmanSystemClient creates a Podman client using the system-wide socket.
+func GetPodmanSystemClient() (client.APIClient, error) {
+	podmanClient, err := client.NewClientWithOpts(
+		client.WithHost("unix:///run/podman/podman.sock"),
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Podman system client: %w", err)
+	}
+
+	return podmanClient, nil
+}
+
 // contains is a helper function for case-insensitive string matching.
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
@@ -107,56 +143,6 @@ func tryCreateEngine(ctx context.Context, creator ClientCreator) (*ContainerEngi
 	return nil, fmt.Errorf("%w: client not ready", ErrClientNotReady)
 }
 
-// DefaultDockerClientCreator is the default implementation for creating Docker clients.
-var DefaultDockerClientCreator ClientCreator = func() (client.APIClient, error) {
-	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-}
-
-// DefaultPodmanUserClientCreator is the default implementation for creating Podman user clients.
-var DefaultPodmanUserClientCreator ClientCreator = func() (client.APIClient, error) {
-	return client.NewClientWithOpts(
-		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
-		client.WithAPIVersionNegotiation(),
-	)
-}
-
-// DefaultPodmanSystemClientCreator is the default implementation for creating Podman system clients.
-var DefaultPodmanSystemClientCreator ClientCreator = func() (client.APIClient, error) {
-	return client.NewClientWithOpts(
-		client.WithHost("unix:///run/podman/podman.sock"),
-		client.WithAPIVersionNegotiation(),
-	)
-}
-
-// GetDockerClient creates a Docker client using environment configuration.
-func GetDockerClient() (client.APIClient, error) {
-	dockerClient, err := DefaultDockerClientCreator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Docker client: %w", err)
-	}
-
-	return dockerClient, nil
-}
-
-// GetPodmanUserClient creates a Podman client using the user-specific socket.
-func GetPodmanUserClient() (client.APIClient, error) {
-	podmanClient, err := DefaultPodmanUserClientCreator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Podman user client: %w", err)
-	}
-
-	return podmanClient, nil
-}
-
-// GetPodmanSystemClient creates a Podman client using the system-wide socket.
-func GetPodmanSystemClient() (client.APIClient, error) {
-	podmanClient, err := DefaultPodmanSystemClientCreator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Podman system client: %w", err)
-	}
-
-	return podmanClient, nil
-}
 
 // CheckReady checks if the container engine is available using the API client.
 func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {
