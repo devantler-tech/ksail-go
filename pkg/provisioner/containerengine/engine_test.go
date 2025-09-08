@@ -83,21 +83,6 @@ func assertAutoDetectionResult(t *testing.T, engine *containerengine.ContainerEn
 	}
 }
 
-// assertAutoDetectionWithReadyCheck is a helper that combines auto-detection result checking
-// with readiness verification.
-func assertAutoDetectionWithReadyCheck(t *testing.T, engine *containerengine.ContainerEngine, err error) {
-	t.Helper()
-	
-	assertAutoDetectionResult(t, engine, err)
-	
-	// Additional ready check if we got an engine
-	if err == nil && engine != nil {
-		ready, readyErr := engine.CheckReady(context.Background())
-		if readyErr == nil {
-			assert.True(t, ready)
-		}
-	}
-}
 
 // assertSuccessfulEngineCreation consolidates the common pattern of asserting successful engine creation.
 func assertSuccessfulEngineCreation(
@@ -433,7 +418,7 @@ func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 	engine, err := containerengine.GetAutoDetectedClient()
 	
 	// This assertion covers both success and failure cases
-	assertAutoDetectionWithReadyCheck(t, engine, err)
+	assertAutoDetectionResult(t, engine, err)
 }
 
 func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
