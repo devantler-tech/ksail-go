@@ -36,13 +36,13 @@ func completePing() types.Ping {
 	}
 }
 
-// dockerVersion returns a complete types.Version struct for Docker to satisfy exhaustruct linter.
-func dockerVersion() types.Version {
+// createVersion creates a types.Version struct with specified platform name and version.
+func createVersion(platformName, version string) types.Version {
 	return types.Version{
-		Platform: struct{ Name string }{Name: "Docker Engine - Community"},
+		Platform: struct{ Name string }{Name: platformName},
 		Components: nil,
-		Version:  "24.0.0",
-		APIVersion: "1.41", 
+		Version:  version,
+		APIVersion: "1.41",
 		MinAPIVersion: "1.12",
 		GitCommit: "abcd123",
 		GoVersion: "go1.19",
@@ -54,27 +54,20 @@ func dockerVersion() types.Version {
 	}
 }
 
-// podmanVersion returns a complete types.Version struct for Podman to satisfy exhaustruct linter.
-func podmanVersion() types.Version {
-	return types.Version{
-		Platform: struct{ Name string }{Name: "Podman Engine"},
-		Components: nil,
-		Version:  "4.5.0",
-		APIVersion: "1.41",
-		MinAPIVersion: "1.12", 
-		GitCommit: "abcd456",
-		GoVersion: "go1.19",
-		Os: "linux",
-		Arch: "amd64",
-		KernelVersion: "5.4.0",
-		Experimental: false,
-		BuildTime: "2023-01-01T00:00:00.000000000Z",
-	}
+// dockerVersion returns a complete types.Version struct for Docker.
+func dockerVersion() types.Version {
+	return createVersion("Docker Engine - Community", "24.0.0")
 }
 
+// podmanVersion returns a complete types.Version struct for Podman.
+func podmanVersion() types.Version {
+	return createVersion("Podman Engine", "4.5.0")
+}
 
-
-
+// emptyVersion returns an empty types.Version for error testing.
+func emptyVersion() types.Version {
+	return createVersion("", "")
+}
 
 // assertAutoDetectionResult is a helper function to avoid code duplication
 // when testing auto-detection behavior of NewContainerEngine.
@@ -188,15 +181,6 @@ func createContainerEngineTestCases() []struct {
 	expectReady bool
 	expectError bool
 } {
-	// Common ping response structure to avoid duplication
-	pingResponse := types.Ping{
-		APIVersion:     "",
-		OSType:         "",
-		Experimental:   false,
-		BuilderVersion: "",
-		SwarmStatus:    nil,
-	}
-
 	return []struct {
 		name        string
 		setupMock   func(*provisioner.MockAPIClient)
@@ -206,7 +190,7 @@ func createContainerEngineTestCases() []struct {
 		{
 			name: "container engine ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(pingResponse, nil)
+				m.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 			},
 			expectReady: true,
 			expectError: false,
@@ -214,7 +198,7 @@ func createContainerEngineTestCases() []struct {
 		{
 			name: "container engine not ready",
 			setupMock: func(m *provisioner.MockAPIClient) {
-				m.EXPECT().Ping(context.Background()).Return(pingResponse, assert.AnError)
+				m.EXPECT().Ping(context.Background()).Return(completePing(), assert.AnError)
 			},
 			expectReady: false,
 			expectError: true,
@@ -232,23 +216,8 @@ type nameTestCase struct {
 
 // createNameTestCases returns test cases for engine name detection.
 func createNameTestCases() []nameTestCase {
-	cases := []nameTestCase{}
-	
-	// Add basic detection cases
-	cases = append(cases, createBasicDetectionCases()...)
-	
-	// Add edge cases  
-	cases = append(cases, createEdgeDetectionCases()...)
-	
-	// Add error cases
-	cases = append(cases, createErrorDetectionCases()...)
-	
-	return cases
-}
-
-// createBasicDetectionCases returns basic engine detection test cases.
-func createBasicDetectionCases() []nameTestCase {
 	return []nameTestCase{
+		// Basic detection cases
 		{
 			name:             "Docker engine detected",
 			serverVersion:    dockerVersion(),
@@ -261,65 +230,29 @@ func createBasicDetectionCases() []nameTestCase {
 			serverVersionErr: nil,
 			expectedName:     "Podman",
 		},
-	}
-}
-
-// createEdgeDetectionCases returns edge case test scenarios.
-func createEdgeDetectionCases() []nameTestCase {
-	return []nameTestCase{
+		// Edge cases
 		{
-			name: "Version string contains podman",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "4.5.0-podman",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Version string contains podman",
+			serverVersion:    createVersion("", "4.5.0-podman"),
 			serverVersionErr: nil,
 			expectedName:     "Podman",
 		},
 		{
-			name: "Version string without podman defaults to Docker",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "24.0.0",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Version string without podman defaults to Docker",
+			serverVersion:    createVersion("", "24.0.0"),
 			serverVersionErr: nil,
 			expectedName:     "Docker",
 		},
-	}
-}
-
-// createErrorDetectionCases returns error case test scenarios.
-func createErrorDetectionCases() []nameTestCase {
-	return []nameTestCase{
+		// Error cases
 		{
-			name: "Empty platform and version returns Unknown",
-			serverVersion: emptyVersion(),
+			name:             "Empty platform and version returns Unknown",
+			serverVersion:    emptyVersion(),
 			serverVersionErr: nil,
 			expectedName:     "Unknown",
 		},
 		{
-			name: "ServerVersion error returns Unknown",
-			serverVersion: emptyVersion(),
+			name:             "ServerVersion error returns Unknown",
+			serverVersion:    emptyVersion(),
 			serverVersionErr: errServerVersionFailed,
 			expectedName:     "Unknown",
 		},
@@ -526,25 +459,18 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 }
 
 // createTestOverrides creates client creator overrides for testing.
-type clientSetup struct {
-	dockerClient        client.APIClient
-	dockerErr           error
-	podmanUserClient    client.APIClient
-	podmanUserErr       error
-	podmanSystemClient  client.APIClient
-	podmanSystemErr     error
-}
-
-func createTestOverrides(setup clientSetup) map[string]containerengine.ClientCreator {
+func createTestOverrides(dockerClient client.APIClient, dockerErr error,
+	podmanUserClient client.APIClient, podmanUserErr error,
+	podmanSystemClient client.APIClient, podmanSystemErr error) map[string]containerengine.ClientCreator {
 	return map[string]containerengine.ClientCreator{
 		"docker": func() (client.APIClient, error) {
-			return setup.dockerClient, setup.dockerErr
+			return dockerClient, dockerErr
 		},
 		"podman-user": func() (client.APIClient, error) {
-			return setup.podmanUserClient, setup.podmanUserErr
+			return podmanUserClient, podmanUserErr
 		},
 		"podman-system": func() (client.APIClient, error) {
-			return setup.podmanSystemClient, setup.podmanSystemErr
+			return podmanSystemClient, podmanSystemErr
 		},
 	}
 }
@@ -559,14 +485,11 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 		mockDockerClient := provisioner.NewMockAPIClient(t)
 		mockPodmanClient := provisioner.NewMockAPIClient(t)
 		
-		overrides := createTestOverrides(clientSetup{
-			dockerClient:        mockDockerClient,
-			dockerErr:           nil,
-			podmanUserClient:    mockPodmanClient,
-			podmanUserErr:       nil,
-			podmanSystemClient:  nil,
-			podmanSystemErr:     errPodmanSystemUnavailable,
-		})
+		overrides := createTestOverrides(
+			mockDockerClient, nil,
+			mockPodmanClient, nil,
+			nil, errPodmanSystemUnavailable,
+		)
 		
 		mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
 		mockPodmanClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
@@ -611,14 +534,11 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	t.Parallel()
 	
-	overrides := createTestOverrides(clientSetup{
-		dockerClient:        nil,
-		dockerErr:           errDockerUnavailable,
-		podmanUserClient:    nil,
-		podmanUserErr:       errPodmanUserUnavailable,
-		podmanSystemClient:  nil,
-		podmanSystemErr:     errPodmanSystemUnavailable,
-	})
+	overrides := createTestOverrides(
+		nil, errDockerUnavailable,
+		nil, errPodmanUserUnavailable,
+		nil, errPodmanSystemUnavailable,
+	)
 	
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -636,14 +556,11 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
 	
-	overrides := createTestOverrides(clientSetup{
-		dockerClient:        mockDockerClient,
-		dockerErr:           nil,
-		podmanUserClient:    mockPodmanUserClient,
-		podmanUserErr:       nil,
-		podmanSystemClient:  mockPodmanSystemClient,
-		podmanSystemErr:     nil,
-	})
+	overrides := createTestOverrides(
+		mockDockerClient, nil,
+		mockPodmanUserClient, nil,
+		mockPodmanSystemClient, nil,
+	)
 	
 	// All clients create successfully but none are ready
 	mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
@@ -675,118 +592,40 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	assertDockerEngineSuccess(t, mockClient, overrides)
 }
 
-// createVersionForTesting creates a types.Version with all required fields for testing.
-func createVersionForTesting(platformName, version string) types.Version {
-	return types.Version{
-		Platform: struct{ Name string }{Name: platformName},
-		Components: nil,
-		Version:  version,
-		APIVersion: "",
-		MinAPIVersion: "",
-		GitCommit: "",
-		GoVersion: "",
-		Os: "",
-		Arch: "",
-		KernelVersion: "",
-		Experimental: false,
-		BuildTime: "",
-	}
-}
 
-// emptyVersion returns an empty types.Version for error testing.
-func emptyVersion() types.Version {
-	return createVersionForTesting("", "")
-}
+
 
 func TestDetectEngineType_EdgeCases(t *testing.T) {
 	t.Parallel()
 
-	testDetectEngineTypeScenarios(t)
-}
-
-func testDetectEngineTypeScenarios(t *testing.T) {
-	t.Helper()
-	
-	tests := []struct {
+	testCases := []struct {
 		name             string
 		serverVersion    types.Version
 		serverVersionErr error
 		expectedType     string
 		expectError      bool
 	}{
-		{
-			name:             "Platform name contains Docker",
-			serverVersion:    createVersionForTesting("Docker Engine - Community", "24.0.0"),
-			serverVersionErr: nil,
-			expectedType:     "Docker",
-			expectError:      false,
-		},
-		{
-			name:             "Platform name contains Podman",
-			serverVersion:    createVersionForTesting("Podman Engine", "4.5.0"),
-			serverVersionErr: nil,
-			expectedType:     "Podman",
-			expectError:      false,
-		},
-		{
-			name:             "Platform name empty, version contains podman",
-			serverVersion:    createVersionForTesting("", "4.5.0-podman"),
-			serverVersionErr: nil,
-			expectedType:     "Podman",
-			expectError:      false,
-		},
-		{
-			name:             "Platform name empty, version without podman defaults to Docker",
-			serverVersion:    createVersionForTesting("", "24.0.0"),
-			serverVersionErr: nil,
-			expectedType:     "Docker",
-			expectError:      false,
-		},
-		{
-			name:             "Both platform name and version empty",
-			serverVersion:    emptyVersion(),
-			serverVersionErr: nil,
-			expectedType:     "",
-			expectError:      true,
-		},
-		{
-			name:             "ServerVersion API call fails",
-			serverVersion:    emptyVersion(),
-			serverVersionErr: errServerVersionFailed,
-			expectedType:     "",
-			expectError:      true,
-		},
+		{"Platform name contains Docker", createVersion("Docker Engine - Community", "24.0.0"), nil, "Docker", false},
+		{"Platform name contains Podman", createVersion("Podman Engine", "4.5.0"), nil, "Podman", false},
+		{"Platform name empty, version contains podman", createVersion("", "4.5.0-podman"), nil, "Podman", false},
+		{"Platform name empty, version without podman defaults to Docker", createVersion("", "24.0.0"), nil, "Docker", false},
+		{"Both platform name and version empty", emptyVersion(), nil, "", true},
+		{"ServerVersion API call fails", emptyVersion(), errServerVersionFailed, "", true},
 	}
 
-	runDetectEngineTypeTests(t, tests)
-}
-
-func runDetectEngineTypeTests(t *testing.T, tests []struct {
-	name             string
-	serverVersion    types.Version
-	serverVersionErr error
-	expectedType     string
-	expectError      bool
-}) {
-	t.Helper()
-	
-	for _, testCase := range tests {
+	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			
 			mockClient := setupMockClientForEngineTest(t, nameTestCase{
-				name:             testCase.name,
-				serverVersion:    testCase.serverVersion,
-				serverVersionErr: testCase.serverVersionErr,
-				expectedName:     testCase.expectedType,
+				name: testCase.name, serverVersion: testCase.serverVersion, 
+				serverVersionErr: testCase.serverVersionErr, expectedName: testCase.expectedType,
 			})
 			
 			engine, err := containerengine.NewContainerEngine(mockClient)
 			require.NoError(t, err)
 
-			// Test through GetName which uses detectEngineType internally
 			name := engine.GetName()
-			
 			if testCase.expectError {
 				assert.Equal(t, "Unknown", name)
 			} else {
@@ -825,79 +664,24 @@ func TestGetAutoDetectedClient_WithNilOverrides(t *testing.T) {
 func TestContainsHelper(t *testing.T) {
 	t.Parallel()
 
-	testContainsHelperScenarios(t)
-}
-
-func testContainsHelperScenarios(t *testing.T) {
-	t.Helper()
-	
-	tests := []struct {
-		name          string
-		platformName  string
-		version       string
-		expectedName  string
+	testCases := []struct {
+		name, platformName, version, expectedName string
 	}{
-		{
-			name:         "Docker exact match in platform",
-			platformName: "Docker",
-			version:      "1.0.0",
-			expectedName: "Docker",
-		},
-		{
-			name:         "Docker case insensitive in platform",
-			platformName: "DOCKER ENGINE",
-			version:      "1.0.0",
-			expectedName: "Docker",
-		},
-		{
-			name:         "Docker substring in platform",
-			platformName: "Docker Engine - Community",
-			version:      "1.0.0",
-			expectedName: "Docker",
-		},
-		{
-			name:         "Podman in platform",
-			platformName: "Podman Engine",
-			version:      "4.5.0",
-			expectedName: "Podman",
-		},
-		{
-			name:         "Empty platform, podman in version",
-			platformName: "",
-			version:      "4.5.0-podman",
-			expectedName: "Podman",
-		},
-		{
-			name:         "Empty platform, no podman in version defaults to Docker",
-			platformName: "",
-			version:      "24.0.0",
-			expectedName: "Docker",
-		},
-		{
-			name:         "No match anywhere",
-			platformName: "Something else",
-			version:      "1.0.0",
-			expectedName: "Docker", // Defaults to Docker
-		},
+		{"Docker exact match in platform", "Docker", "1.0.0", "Docker"},
+		{"Docker case insensitive in platform", "DOCKER ENGINE", "1.0.0", "Docker"},
+		{"Docker substring in platform", "Docker Engine - Community", "1.0.0", "Docker"},
+		{"Podman in platform", "Podman Engine", "4.5.0", "Podman"},
+		{"Empty platform, podman in version", "", "4.5.0-podman", "Podman"},
+		{"Empty platform, no podman in version defaults to Docker", "", "24.0.0", "Docker"},
+		{"No match anywhere", "Something else", "1.0.0", "Docker"},
 	}
 
-	runContainsHelperTests(t, tests)
-}
-
-func runContainsHelperTests(t *testing.T, tests []struct {
-	name          string
-	platformName  string
-	version       string
-	expectedName  string
-}) {
-	t.Helper()
-	
-	for _, testCase := range tests {
+	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			
 			mockClient := provisioner.NewMockAPIClient(t)
-			version := createVersionForTesting(testCase.platformName, testCase.version)
+			version := createVersion(testCase.platformName, testCase.version)
 			mockClient.EXPECT().ServerVersion(context.Background()).Return(version, nil)
 			
 			engine, err := containerengine.NewContainerEngine(mockClient)
@@ -933,36 +717,29 @@ func TestTryCreateEngine_NewContainerEngineFailure(t *testing.T) {
 func TestClientCreation_AllScenarios(t *testing.T) {
 	t.Parallel()
 
-	// Define a simple test function to check both error and success paths
-	testClientFunction := func(t *testing.T, clientFunc func() (client.APIClient, error), clientName string) {
-		t.Helper()
-		
-		// This tests that the function doesn't panic and returns either a client or error
-		client, err := clientFunc()
-		
-		// Both success and failure are valid outcomes depending on environment
-		if err != nil {
-			assert.Nil(t, client)
-			assert.Contains(t, err.Error(), fmt.Sprintf("failed to create %s client", clientName))
-		} else {
-			assert.NotNil(t, client)
-		}
+	// Test all client creation functions
+	clientFunctions := map[string]func() (client.APIClient, error){
+		"Docker":       containerengine.GetDockerClient,
+		"Podman user":  containerengine.GetPodmanUserClient,
+		"Podman system": containerengine.GetPodmanSystemClient,
 	}
 
-	t.Run("GetDockerClient handles creation properly", func(t *testing.T) {
-		t.Parallel()
-		testClientFunction(t, containerengine.GetDockerClient, "Docker")
-	})
-
-	t.Run("GetPodmanUserClient handles creation properly", func(t *testing.T) {
-		t.Parallel()
-		testClientFunction(t, containerengine.GetPodmanUserClient, "Podman user")
-	})
-
-	t.Run("GetPodmanSystemClient handles creation properly", func(t *testing.T) {
-		t.Parallel()
-		testClientFunction(t, containerengine.GetPodmanSystemClient, "Podman system")
-	})
+	for clientName, clientFunc := range clientFunctions {
+		t.Run(fmt.Sprintf("Get%sClient handles creation properly", clientName), func(t *testing.T) {
+			t.Parallel()
+			
+			// This tests that the function doesn't panic and returns either a client or error
+			client, err := clientFunc()
+			
+			// Both success and failure are valid outcomes depending on environment
+			if err != nil {
+				assert.Nil(t, client)
+				assert.Contains(t, err.Error(), fmt.Sprintf("failed to create %s client", clientName))
+			} else {
+				assert.NotNil(t, client)
+			}
+		})
+	}
 }
 
 
