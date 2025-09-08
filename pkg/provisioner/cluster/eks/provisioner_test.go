@@ -129,27 +129,7 @@ func TestStart_Success_WithMinSizeZero(t *testing.T) {
 	clusterConfig.NodeGroups[0].MinSize = &minSize
 	clusterConfig.NodeGroups[0].DesiredCapacity = &desiredCapacity
 
-	clusterProvider := (*eks.ClusterProvider)(nil)
-	clusterActions := eksprovisioner.NewMockEKSClusterActions(t)
-	clusterLister := eksprovisioner.NewMockEKSClusterLister(t)
-	clusterCreator := eksprovisioner.NewMockEKSClusterCreator(t)
-	nodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
-
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		clusterProvider,
-		clusterActions,
-		clusterLister,
-		clusterCreator,
-		nodeGroupManager,
-	)
-
-	// Mock cluster exists
-	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
-	mockGetClusters(clusterLister, descriptions, nil)
-
-	// Mock node group scaling
-	setupNodeGroupScalingMock(nodeGroupManager, true)
+	provisioner, _ := setupCustomConfigWithScaling(t, clusterConfig)
 
 	err := provisioner.Start(context.Background(), "cfg-name")
 
@@ -161,19 +141,7 @@ func TestStart_Success_WithMinSizeZero(t *testing.T) {
 func TestStart_Error_ScaleFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need provisioner, clusterLister, and nodeGroupManager for this test
-	_ = clusterActions
-	_ = clusterCreator
-
-	// Mock cluster exists
-	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
-	mockGetClusters(clusterLister, descriptions, nil)
-
-	// Mock node group scaling failure
-	nodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).
-		Return(clustertestutils.ErrScaleNodeGroupFailed)
+	provisioner, _ := setupScalingErrorTest(t, true)
 
 	err := provisioner.Start(context.Background(), "cfg-name")
 
@@ -205,27 +173,7 @@ func TestStop_Success_WithNilScalingConfig(t *testing.T) {
 	clusterConfig := createTestProvisionerClusterConfig()
 	clusterConfig.NodeGroups[0].ScalingConfig = nil // This should trigger the nil check
 
-	clusterProvider := (*eks.ClusterProvider)(nil)
-	clusterActions := eksprovisioner.NewMockEKSClusterActions(t)
-	clusterLister := eksprovisioner.NewMockEKSClusterLister(t)
-	clusterCreator := eksprovisioner.NewMockEKSClusterCreator(t)
-	nodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
-
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		clusterProvider,
-		clusterActions,
-		clusterLister,
-		clusterCreator,
-		nodeGroupManager,
-	)
-
-	// Mock cluster exists
-	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
-	mockGetClusters(clusterLister, descriptions, nil)
-
-	// Mock node group scaling
-	setupNodeGroupScalingMock(nodeGroupManager, true)
+	provisioner, _ := setupCustomConfigWithScaling(t, clusterConfig)
 
 	err := provisioner.Stop(context.Background(), "cfg-name")
 
@@ -239,19 +187,7 @@ func TestStop_Success_WithNilScalingConfig(t *testing.T) {
 func TestStop_Error_ScaleFailed(t *testing.T) {
 	t.Parallel()
 
-	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
-		newProvisionerForTest(t)
-	// We only need provisioner, clusterLister, and nodeGroupManager for this test
-	_ = clusterActions
-	_ = clusterCreator
-
-	// Mock cluster exists
-	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
-	mockGetClusters(clusterLister, descriptions, nil)
-
-	// Mock node group scaling failure
-	nodeGroupManager.On("Scale", mock.Anything, mock.Anything, true).
-		Return(clustertestutils.ErrScaleNodeGroupFailed)
+	provisioner, _ := setupScalingErrorTest(t, true)
 
 	err := provisioner.Stop(context.Background(), "cfg-name")
 
@@ -409,15 +345,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 func TestCreate_Error_InvalidClusterConfig(t *testing.T) {
 	t.Parallel()
 
-	// Create provisioner with nil cluster config
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		nil, // nil clusterConfig
-		nil,
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithInvalidConfig(t)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
@@ -427,19 +355,7 @@ func TestCreate_Error_InvalidClusterConfig(t *testing.T) {
 func TestCreate_Error_NilMetadata(t *testing.T) {
 	t.Parallel()
 
-	// Create cluster config with nil metadata
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: nil, // nil metadata
-	}
-
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		nil,
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithNilMetadata(t)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
@@ -449,21 +365,7 @@ func TestCreate_Error_NilMetadata(t *testing.T) {
 func TestCreate_Error_EmptyClusterName(t *testing.T) {
 	t.Parallel()
 
-	// Create cluster config with empty name in metadata
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: &v1alpha5.ClusterMeta{
-			Name: "", // empty name
-		},
-	}
-
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		nil,
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithEmptyName(t)
 
 	err := provisioner.Create(context.Background(), "") // empty input name too
 
@@ -473,15 +375,7 @@ func TestCreate_Error_EmptyClusterName(t *testing.T) {
 func TestDelete_Error_InvalidClusterConfig(t *testing.T) {
 	t.Parallel()
 
-	// Create provisioner with nil cluster config
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		nil, // nil clusterConfig
-		nil,
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithInvalidConfig(t)
 
 	err := provisioner.Delete(context.Background(), "test-cluster")
 
@@ -489,6 +383,146 @@ func TestDelete_Error_InvalidClusterConfig(t *testing.T) {
 }
 
 // --- test helpers ---
+
+// createProvisionerWithInvalidConfig creates a provisioner with nil cluster config for error testing.
+func createProvisionerWithInvalidConfig(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
+	t.Helper()
+	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+	return eksprovisioner.NewEKSClusterProvisioner(
+		nil, // nil clusterConfig
+		clusterProvider,
+		clusterActions,
+		clusterLister,
+		clusterCreator,
+		nodeGroupManager,
+	)
+}
+
+// createProvisionerWithNilMetadata creates a provisioner with nil metadata for error testing.
+func createProvisionerWithNilMetadata(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
+	t.Helper()
+	clusterConfig := &v1alpha5.ClusterConfig{
+		Metadata: nil, // nil metadata
+	}
+	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+	return eksprovisioner.NewEKSClusterProvisioner(
+		clusterConfig,
+		clusterProvider,
+		clusterActions,
+		clusterLister,
+		clusterCreator,
+		nodeGroupManager,
+	)
+}
+
+// createProvisionerWithEmptyName creates a provisioner with empty name in metadata for error testing.
+func createProvisionerWithEmptyName(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
+	t.Helper()
+	clusterConfig := &v1alpha5.ClusterConfig{
+		Metadata: &v1alpha5.ClusterMeta{
+			Name: "", // empty name
+		},
+	}
+	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+	return eksprovisioner.NewEKSClusterProvisioner(
+		clusterConfig,
+		clusterProvider,
+		clusterActions,
+		clusterLister,
+		clusterCreator,
+		nodeGroupManager,
+	)
+}
+
+// setupCustomConfigWithScaling sets up a provisioner with custom config and mocks cluster exists and scaling.
+func setupCustomConfigWithScaling(
+	t *testing.T,
+	clusterConfig *v1alpha5.ClusterConfig,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+	provisioner, clusterLister, nodeGroupManager := setupProvisionerWithCustomConfig(t, clusterConfig)
+
+	// Mock cluster exists
+	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
+	mockGetClusters(clusterLister, descriptions, nil)
+
+	// Mock node group scaling
+	setupNodeGroupScalingMock(nodeGroupManager, true)
+
+	return provisioner, nodeGroupManager
+}
+
+// createMocksForTest creates all the mock dependencies for an EKS provisioner.
+func createMocksForTest(t *testing.T) (
+	*eks.ClusterProvider,
+	*eksprovisioner.MockEKSClusterActions,
+	*eksprovisioner.MockEKSClusterLister,
+	*eksprovisioner.MockEKSClusterCreator,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+	// For tests, we can use a nil ClusterProvider since the actual provider methods are mocked
+	clusterProvider := (*eks.ClusterProvider)(nil)
+	clusterActions := eksprovisioner.NewMockEKSClusterActions(t)
+	clusterLister := eksprovisioner.NewMockEKSClusterLister(t)
+	clusterCreator := eksprovisioner.NewMockEKSClusterCreator(t)
+	nodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
+
+	return clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
+}
+
+// setupProvisionerWithCustomConfig creates a provisioner with a custom cluster config and returns it with mocks.
+func setupProvisionerWithCustomConfig(
+	t *testing.T,
+	clusterConfig *v1alpha5.ClusterConfig,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSClusterLister,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
+
+	provisioner := eksprovisioner.NewEKSClusterProvisioner(
+		clusterConfig,
+		clusterProvider,
+		clusterActions,
+		clusterLister,
+		clusterCreator,
+		nodeGroupManager,
+	)
+
+	return provisioner, clusterLister, nodeGroupManager
+}
+
+// setupScalingErrorTest sets up a test for node group scaling errors.
+func setupScalingErrorTest(
+	t *testing.T,
+	scaleUp bool,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager :=
+		newProvisionerForTest(t)
+	// We only need provisioner, clusterLister, and nodeGroupManager for scaling error tests
+	_ = clusterActions
+	_ = clusterCreator
+
+	// Mock cluster exists
+	descriptions := []cluster.Description{{Name: "cfg-name", Region: "", Owned: ""}}
+	mockGetClusters(clusterLister, descriptions, nil)
+
+	// Mock node group scaling failure
+	nodeGroupManager.On("Scale", mock.Anything, mock.Anything, scaleUp).
+		Return(clustertestutils.ErrScaleNodeGroupFailed)
+
+	return provisioner, nodeGroupManager
+}
 
 func newProvisionerForTest(
 	t *testing.T,
@@ -502,13 +536,7 @@ func newProvisionerForTest(
 	t.Helper()
 
 	clusterConfig := createTestProvisionerClusterConfig()
-
-	// For tests, we can use a nil ClusterProvider since the actual provider methods are mocked
-	clusterProvider := (*eks.ClusterProvider)(nil)
-	clusterActions := eksprovisioner.NewMockEKSClusterActions(t)
-	clusterLister := eksprovisioner.NewMockEKSClusterLister(t)
-	clusterCreator := eksprovisioner.NewMockEKSClusterCreator(t)
-	nodeGroupManager := eksprovisioner.NewMockEKSNodeGroupManager(t)
+	clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := createMocksForTest(t)
 
 	provisioner := eksprovisioner.NewEKSClusterProvisioner(
 		clusterConfig,
