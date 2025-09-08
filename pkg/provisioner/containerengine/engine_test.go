@@ -557,7 +557,7 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 	t.Run("DockerNotReady_PodmanUserSuccess", func(t *testing.T) {
 		t.Parallel()
 		
-		// Arrange
+		// Test: Docker client creates but fails ping, Podman user works
 		mockDockerClient := provisioner.NewMockAPIClient(t)
 		mockPodmanClient := provisioner.NewMockAPIClient(t)
 		
@@ -570,17 +570,12 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 			podmanSystemErr:     errPodmanSystemUnavailable,
 		})
 		
-		// Docker client succeeds but is not ready
 		mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
-		
-		// Podman user client succeeds and is ready  
 		mockPodmanClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 		mockPodmanClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
 		
-		// Act
 		engine, err := containerengine.GetAutoDetectedClient(overrides)
 		
-		// Assert
 		require.NoError(t, err)
 		assert.NotNil(t, engine)
 		assert.Equal(t, "Podman", engine.GetName())
@@ -590,30 +585,30 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 	t.Run("DockerFails_PodmanUserNotReady_PodmanSystemSuccess", func(t *testing.T) {
 		t.Parallel()
 		
-		// Arrange
+		// Test: Docker creation fails entirely, then user Podman succeeds creation but fails ping, 
+		// finally system Podman succeeds both creation and ping
 		mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 		mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
 		
-		overrides := createTestOverrides(clientSetup{
-			dockerClient:        nil,
-			dockerErr:           errDockerUnavailable,
-			podmanUserClient:    mockPodmanUserClient,
-			podmanUserErr:       nil,
-			podmanSystemClient:  mockPodmanSystemClient,
-			podmanSystemErr:     nil,
-		})
+		// Different client setup pattern than above test
+		overrides := map[string]containerengine.ClientCreator{
+			"docker": func() (client.APIClient, error) {
+				return nil, errDockerUnavailable
+			},
+			"podman-user": func() (client.APIClient, error) {
+				return mockPodmanUserClient, nil
+			},
+			"podman-system": func() (client.APIClient, error) {
+				return mockPodmanSystemClient, nil
+			},
+		}
 		
-		// Podman user client succeeds but is not ready
 		mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanUserNotReady)
-		
-		// Podman system client succeeds and is ready
 		mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 		mockPodmanSystemClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
 		
-		// Act
 		engine, err := containerengine.GetAutoDetectedClient(overrides)
 		
-		// Assert
 		require.NoError(t, err)
 		assert.NotNil(t, engine)
 		assert.Equal(t, "Podman", engine.GetName())
@@ -699,9 +694,38 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	assert.Equal(t, mockClient, engine.Client)
 }
 
+// createVersionForTesting creates a types.Version with all required fields for testing.
+func createVersionForTesting(platformName, version string) types.Version {
+	return types.Version{
+		Platform: struct{ Name string }{Name: platformName},
+		Components: nil,
+		Version:  version,
+		APIVersion: "",
+		MinAPIVersion: "",
+		GitCommit: "",
+		GoVersion: "",
+		Os: "",
+		Arch: "",
+		KernelVersion: "",
+		Experimental: false,
+		BuildTime: "",
+	}
+}
+
+// emptyVersion returns an empty types.Version for error testing.
+func emptyVersion() types.Version {
+	return createVersionForTesting("", "")
+}
+
 func TestDetectEngineType_EdgeCases(t *testing.T) {
 	t.Parallel()
 
+	testDetectEngineTypeScenarios(t)
+}
+
+func testDetectEngineTypeScenarios(t *testing.T) {
+	t.Helper()
+	
 	tests := []struct {
 		name             string
 		serverVersion    types.Version
@@ -711,146 +735,67 @@ func TestDetectEngineType_EdgeCases(t *testing.T) {
 	}{
 		{
 			name:             "Platform name contains Docker",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: "Docker Engine - Community"},
-				Components: nil,
-				Version:  "24.0.0",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			serverVersion:    createVersionForTesting("Docker Engine - Community", "24.0.0"),
 			serverVersionErr: nil,
-			expectedType: "Docker",
-			expectError:  false,
+			expectedType:     "Docker",
+			expectError:      false,
 		},
 		{
-			name: "Platform name contains Podman",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: "Podman Engine"},
-				Components: nil,
-				Version:  "4.5.0",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Platform name contains Podman",
+			serverVersion:    createVersionForTesting("Podman Engine", "4.5.0"),
 			serverVersionErr: nil,
-			expectedType: "Podman",
-			expectError:  false,
+			expectedType:     "Podman",
+			expectError:      false,
 		},
 		{
-			name: "Platform name empty, version contains podman",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "4.5.0-podman",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Platform name empty, version contains podman",
+			serverVersion:    createVersionForTesting("", "4.5.0-podman"),
 			serverVersionErr: nil,
-			expectedType: "Podman",
-			expectError:  false,
+			expectedType:     "Podman",
+			expectError:      false,
 		},
 		{
-			name: "Platform name empty, version without podman defaults to Docker",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "24.0.0",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Platform name empty, version without podman defaults to Docker",
+			serverVersion:    createVersionForTesting("", "24.0.0"),
 			serverVersionErr: nil,
-			expectedType: "Docker",
-			expectError:  false,
+			expectedType:     "Docker",
+			expectError:      false,
 		},
 		{
-			name: "Both platform name and version empty",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version:  "",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "Both platform name and version empty",
+			serverVersion:    emptyVersion(),
 			serverVersionErr: nil,
 			expectedType:     "",
 			expectError:      true,
 		},
 		{
-			name: "ServerVersion API call fails",
-			serverVersion: types.Version{
-				Platform: struct{ Name string }{Name: ""},
-				Components: nil,
-				Version: "",
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			},
+			name:             "ServerVersion API call fails",
+			serverVersion:    emptyVersion(),
 			serverVersionErr: errServerVersionFailed,
 			expectedType:     "",
 			expectError:      true,
 		},
 	}
 
+	runDetectEngineTypeTests(t, tests)
+}
+
+func runDetectEngineTypeTests(t *testing.T, tests []struct {
+	name             string
+	serverVersion    types.Version
+	serverVersionErr error
+	expectedType     string
+	expectError      bool
+}) {
+	t.Helper()
+	
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			
 			mockClient := provisioner.NewMockAPIClient(t)
 			if testCase.serverVersionErr != nil {
-				mockClient.EXPECT().ServerVersion(context.Background()).Return(types.Version{
-					Platform: struct{ Name string }{Name: ""},
-					Components: nil,
-					Version: "",
-					APIVersion: "",
-					MinAPIVersion: "",
-					GitCommit: "",
-					GoVersion: "",
-					Os: "",
-					Arch: "",
-					KernelVersion: "",
-					Experimental: false,
-					BuildTime: "",
-				}, testCase.serverVersionErr)
+				mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
 			} else {
 				mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
 			}
@@ -858,8 +803,7 @@ func TestDetectEngineType_EdgeCases(t *testing.T) {
 			engine, err := containerengine.NewContainerEngine(mockClient)
 			require.NoError(t, err)
 
-			// Use reflection to call the private detectEngineType method
-			// Since we can't call it directly, test through GetName which uses it
+			// Test through GetName which uses detectEngineType internally
 			name := engine.GetName()
 			
 			if testCase.expectError {
@@ -912,6 +856,12 @@ func TestGetAutoDetectedClient_WithNilOverrides(t *testing.T) {
 func TestContainsHelper(t *testing.T) {
 	t.Parallel()
 
+	testContainsHelperScenarios(t)
+}
+
+func testContainsHelperScenarios(t *testing.T) {
+	t.Helper()
+	
 	tests := []struct {
 		name          string
 		platformName  string
@@ -962,27 +912,23 @@ func TestContainsHelper(t *testing.T) {
 		},
 	}
 
+	runContainsHelperTests(t, tests)
+}
+
+func runContainsHelperTests(t *testing.T, tests []struct {
+	name          string
+	platformName  string
+	version       string
+	expectedName  string
+}) {
+	t.Helper()
+	
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			
 			mockClient := provisioner.NewMockAPIClient(t)
-			
-			version := types.Version{
-				Platform: struct{ Name string }{Name: testCase.platformName},
-				Components: nil,
-				Version:  testCase.version,
-				APIVersion: "",
-				MinAPIVersion: "",
-				GitCommit: "",
-				GoVersion: "",
-				Os: "",
-				Arch: "",
-				KernelVersion: "",
-				Experimental: false,
-				BuildTime: "",
-			}
-			
+			version := createVersionForTesting(testCase.platformName, testCase.version)
 			mockClient.EXPECT().ServerVersion(context.Background()).Return(version, nil)
 			
 			engine, err := containerengine.NewContainerEngine(mockClient)
