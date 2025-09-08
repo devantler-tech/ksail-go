@@ -283,14 +283,18 @@ func TestSetupNodeGroupManager_Error_SetupClusterOperationFailed(t *testing.T) {
 
 	// Test the setupClusterOperation failure in setupNodeGroupManager by 
 	// creating a provisioner with empty metadata name and empty input name
+	//nolint:exhaustruct // Only relevant fields needed for error condition test
 	clusterConfig := &v1alpha5.ClusterConfig{
+		//nolint:exhaustruct // Only relevant fields needed for error condition test
 		Metadata: &v1alpha5.ClusterMeta{
 			Name: "", // empty name in metadata
 		},
 		NodeGroups: []*v1alpha5.NodeGroup{
 			{
+				//nolint:exhaustruct // Only relevant fields needed for error condition test
 				NodeGroupBase: &v1alpha5.NodeGroupBase{
 					Name: "test",
+					//nolint:exhaustruct // Only relevant fields needed for error condition test
 					ScalingConfig: &v1alpha5.ScalingConfig{
 						DesiredCapacity: new(int), // non-nil to trigger scaling
 					},
@@ -428,6 +432,7 @@ func TestCreate_Error_NilMetadata(t *testing.T) {
 	t.Parallel()
 
 	// Create cluster config with nil metadata
+	//nolint:exhaustruct // Only relevant fields needed for error condition test
 	clusterConfig := &v1alpha5.ClusterConfig{
 		Metadata: nil, // nil metadata
 	}
@@ -450,7 +455,9 @@ func TestCreate_Error_EmptyClusterName(t *testing.T) {
 	t.Parallel()
 
 	// Create cluster config with empty name in metadata
+	//nolint:exhaustruct // Only relevant fields needed for error condition test
 	clusterConfig := &v1alpha5.ClusterConfig{
+		//nolint:exhaustruct // Only relevant fields needed for error condition test
 		Metadata: &v1alpha5.ClusterMeta{
 			Name: "", // empty name
 		},
