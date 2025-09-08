@@ -14,6 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testContent      = "test content"
+	originalContent  = "original content"
+)
+
 func TestTryWrite_WithBuffer(t *testing.T) {
 	t.Parallel()
 
@@ -50,7 +55,7 @@ func TestTryWrite_WithFailingWriter(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	content := "test content"
+	content := testContent
 	failingWriter := &failingWriter{}
 
 	// Act
@@ -73,7 +78,7 @@ func TestTryWriteFile_EmptyOutput(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	content := "test content"
+	content := testContent
 
 	// Act
 	result, err := ioutils.TryWriteFile(content, "", false)
@@ -108,7 +113,6 @@ func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	originalContent := "original content"
 	newContent := "new content"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "existing.txt")
@@ -134,7 +138,6 @@ func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	originalContent := "original content"
 	newContent := "new content forced"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "existing-force.txt")
@@ -230,7 +233,7 @@ func TestWriteFileSafe_EmptyBasePath(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	content := "test content"
+	content := testContent
 	filePath := "/some/path/file.txt"
 
 	// Act
@@ -244,7 +247,7 @@ func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	content := "test content"
+	content := testContent
 	basePath := t.TempDir()
 
 	// Act
@@ -258,7 +261,7 @@ func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	content := "test content"
+	content := testContent
 	basePath := t.TempDir()
 	outsidePath := "/tmp/outside.txt" // Path clearly outside basePath
 
@@ -293,7 +296,6 @@ func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	originalContent := "original content"
 	newContent := "new content"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "existing.txt")
@@ -318,7 +320,6 @@ func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	originalContent := "original content"
 	newContent := "new content forced"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "existing-force.txt")
