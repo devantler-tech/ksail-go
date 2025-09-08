@@ -106,6 +106,55 @@ func assertAutoDetectionWithReadyCheck(t *testing.T, engine *containerengine.Con
 	}
 }
 
+// assertSuccessfulEngineCreation consolidates the common pattern of asserting successful engine creation.
+func assertSuccessfulEngineCreation(
+	t *testing.T,
+	engine *containerengine.ContainerEngine,
+	err error,
+	expectedName string,
+	expectedClient client.APIClient,
+) {
+	t.Helper()
+	
+	require.NoError(t, err)
+	assert.NotNil(t, engine)
+	assert.Equal(t, expectedName, engine.GetName())
+	assert.Equal(t, expectedClient, engine.Client)
+}
+
+// setupMockClientForEngineTest sets up a mock client for engine testing with server version expectations.
+func setupMockClientForEngineTest(t *testing.T, testCase nameTestCase) *provisioner.MockAPIClient {
+	t.Helper()
+	
+	mockClient := provisioner.NewMockAPIClient(t)
+	if testCase.serverVersionErr != nil {
+		mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
+	} else {
+		mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
+	}
+	
+	return mockClient
+}
+
+// assertDockerEngineSuccess sets up Docker client expectations and asserts successful creation.
+func assertDockerEngineSuccess(
+	t *testing.T,
+	mockClient *provisioner.MockAPIClient,
+	overrides map[string]containerengine.ClientCreator,
+) {
+	t.Helper()
+	
+	// Docker client succeeds and is ready
+	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
+	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
+	
+	// Act
+	engine, err := containerengine.GetAutoDetectedClient(overrides)
+	
+	// Assert
+	assertSuccessfulEngineCreation(t, engine, err, "Docker", mockClient)
+}
+
 func TestContainerEngine_CheckReady(t *testing.T) {
 	t.Parallel()
 
@@ -281,12 +330,7 @@ func createErrorDetectionCases() []nameTestCase {
 func runNameTestCase(t *testing.T, testCase nameTestCase) {
 	t.Helper()
 	
-	mockClient := provisioner.NewMockAPIClient(t)
-	if testCase.serverVersionErr != nil {
-		mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
-	} else {
-		mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
-	}
+	mockClient := setupMockClientForEngineTest(t, testCase)
 	
 	engine, err := containerengine.NewContainerEngine(mockClient)
 	require.NoError(t, err)
@@ -478,18 +522,7 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 		},
 	}
 	
-	// Docker client succeeds and is ready
-	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
-	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
-	
-	// Act
-	engine, err := containerengine.GetAutoDetectedClient(overrides)
-	
-	// Assert
-	require.NoError(t, err)
-	assert.NotNil(t, engine)
-	assert.Equal(t, "Docker", engine.GetName())
-	assert.Equal(t, mockClient, engine.Client)
+	assertDockerEngineSuccess(t, mockClient, overrides)
 }
 
 // createTestOverrides creates client creator overrides for testing.
@@ -541,10 +574,7 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 		
 		engine, err := containerengine.GetAutoDetectedClient(overrides)
 		
-		require.NoError(t, err)
-		assert.NotNil(t, engine)
-		assert.Equal(t, "Podman", engine.GetName())
-		assert.Equal(t, mockPodmanClient, engine.Client)
+		assertSuccessfulEngineCreation(t, engine, err, "Podman", mockPodmanClient)
 	})
 
 	t.Run("DockerFails_PodmanUserNotReady_PodmanSystemSuccess", func(t *testing.T) {
@@ -574,10 +604,7 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 		
 		engine, err := containerengine.GetAutoDetectedClient(overrides)
 		
-		require.NoError(t, err)
-		assert.NotNil(t, engine)
-		assert.Equal(t, "Podman", engine.GetName())
-		assert.Equal(t, mockPodmanSystemClient, engine.Client)
+		assertSuccessfulEngineCreation(t, engine, err, "Podman", mockPodmanSystemClient)
 	})
 }
 
@@ -645,18 +672,7 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 		// podman-user and podman-system will use default functions
 	}
 	
-	// Docker client succeeds and is ready
-	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
-	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
-	
-	// Act
-	engine, err := containerengine.GetAutoDetectedClient(overrides)
-	
-	// Assert
-	require.NoError(t, err)
-	assert.NotNil(t, engine)
-	assert.Equal(t, "Docker", engine.GetName())
-	assert.Equal(t, mockClient, engine.Client)
+	assertDockerEngineSuccess(t, mockClient, overrides)
 }
 
 // createVersionForTesting creates a types.Version with all required fields for testing.
@@ -758,12 +774,12 @@ func runDetectEngineTypeTests(t *testing.T, tests []struct {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			
-			mockClient := provisioner.NewMockAPIClient(t)
-			if testCase.serverVersionErr != nil {
-				mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
-			} else {
-				mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
-			}
+			mockClient := setupMockClientForEngineTest(t, nameTestCase{
+				name:             testCase.name,
+				serverVersion:    testCase.serverVersion,
+				serverVersionErr: testCase.serverVersionErr,
+				expectedName:     testCase.expectedType,
+			})
 			
 			engine, err := containerengine.NewContainerEngine(mockClient)
 			require.NoError(t, err)
