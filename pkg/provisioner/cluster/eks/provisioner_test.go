@@ -526,51 +526,22 @@ func createTestProvisionerClusterConfig() *v1alpha5.ClusterConfig {
 	desiredCapacity := 2
 
 	return &v1alpha5.ClusterConfig{
-		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
-		Metadata: createTestProvisionerMetadata(),
-		KubernetesNetworkConfig: nil,
-		AutoModeConfig:          nil,
-		RemoteNetworkConfig:     nil,
-		IAM:                     nil,
-		IAMIdentityMappings:     nil,
-		IdentityProviders:       nil,
-		AccessConfig:            nil,
-		VPC:                     nil,
-		Addons:                  nil,
-		AddonsConfig:            createTestProvisionerAddonsConfig(),
-		PrivateCluster:          nil,
-		NodeGroups:              createTestProvisionerNodeGroups(desiredCapacity),
-		ManagedNodeGroups:       nil,
-		FargateProfiles:         nil,
-		AvailabilityZones:       nil,
-		LocalZones:              nil,
-		CloudWatch:              nil,
-		SecretsEncryption:       nil,
-		Status:                  nil,
-		GitOps:                  nil,
-		Karpenter:               nil,
-		Outpost:                 nil,
-		ZonalShiftConfig:        nil,
+		TypeMeta:     v1alpha5.ClusterConfigTypeMeta(),
+		Metadata:     createTestProvisionerMetadata(),
+		AddonsConfig: createTestProvisionerAddonsConfig(),
+		NodeGroups:   createTestProvisionerNodeGroups(desiredCapacity),
 	}
 }
 
 func createTestProvisionerMetadata() *v1alpha5.ClusterMeta {
 	return &v1alpha5.ClusterMeta{
-		Name:                "cfg-name",
-		Region:              "us-west-2",
-		Version:             "",
-		ForceUpdateVersion:  nil,
-		Tags:                nil,
-		Annotations:         nil,
-		AccountID:           "",
+		Name:   "cfg-name",
+		Region: "us-west-2",
 	}
 }
 
 func createTestProvisionerAddonsConfig() v1alpha5.AddonsConfig {
-	return v1alpha5.AddonsConfig{
-		AutoApplyPodIdentityAssociations: false,
-		DisableDefaultAddons:             false,
-	}
+	return v1alpha5.AddonsConfig{}
 }
 
 func createTestProvisionerNodeGroups(desiredCapacity int) []*v1alpha5.NodeGroup {

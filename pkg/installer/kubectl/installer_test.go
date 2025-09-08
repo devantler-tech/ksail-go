@@ -464,37 +464,19 @@ spec: {}
 // createDefaultCRD creates a default CustomResourceDefinition for testing.
 func createDefaultCRD() *apiextensionsv1.CustomResourceDefinition {
 	return &apiextensionsv1.CustomResourceDefinition{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
 		ObjectMeta: k8sutils.NewEmptyObjectMeta(),
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group:                 "",
-			Names:                 createDefaultCRDNames(),
-			Scope:                 "",
-			Versions:              nil,
-			Conversion:            nil,
-			PreserveUnknownFields: false,
+			Names: createDefaultCRDNames(),
 		},
 		Status: apiextensionsv1.CustomResourceDefinitionStatus{
-			Conditions:     nil,
-			AcceptedNames:  createDefaultCRDNames(),
-			StoredVersions: nil,
+			AcceptedNames: createDefaultCRDNames(),
 		},
 	}
 }
 
 // createDefaultCRDNames creates a default CustomResourceDefinitionNames for testing.
 func createDefaultCRDNames() apiextensionsv1.CustomResourceDefinitionNames {
-	return apiextensionsv1.CustomResourceDefinitionNames{
-		Plural:     "",
-		Singular:   "",
-		ShortNames: nil,
-		Kind:       "",
-		ListKind:   "",
-		Categories: nil,
-	}
+	return apiextensionsv1.CustomResourceDefinitionNames{}
 }
 
 // createDefaultGroupResource creates a default GroupResource for testing.

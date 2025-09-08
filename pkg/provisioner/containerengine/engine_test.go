@@ -25,32 +25,20 @@ var (
 	errServerVersionFailed    = errors.New("server version failed")
 )
 
-// completePing returns a complete types.Ping struct to satisfy exhaustruct linter.
+// completePing returns a types.Ping struct for testing.
 func completePing() types.Ping {
 	return types.Ping{
-		APIVersion:     "1.41",
-		OSType:         "linux",
-		Experimental:   false,
-		BuilderVersion: "1",
-		SwarmStatus:    nil,
+		APIVersion: "1.41",
+		OSType:     "linux",
 	}
 }
 
 // createVersion creates a types.Version struct with specified platform name and version.
 func createVersion(platformName, version string) types.Version {
 	return types.Version{
-		Platform: struct{ Name string }{Name: platformName},
-		Components: nil,
-		Version:  version,
+		Platform:   struct{ Name string }{Name: platformName},
+		Version:    version,
 		APIVersion: "1.41",
-		MinAPIVersion: "1.12",
-		GitCommit: "abcd123",
-		GoVersion: "go1.19",
-		Os: "linux",
-		Arch: "amd64",
-		KernelVersion: "5.4.0",
-		Experimental: false,
-		BuildTime: "2023-01-01T00:00:00.000000000Z",
 	}
 }
 

@@ -299,23 +299,6 @@ func newProvisionerForTest(
 			Kind:       "Cluster",
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 		},
-		Nodes: []v1alpha4.Node{},
-		Networking: v1alpha4.Networking{
-			IPFamily:          "",
-			APIServerPort:     0,
-			APIServerAddress:  "",
-			PodSubnet:         "",
-			ServiceSubnet:     "",
-			DisableDefaultCNI: false,
-			KubeProxyMode:     "",
-			DNSSearch:         nil,
-		},
-		FeatureGates:                    map[string]bool{},
-		RuntimeConfig:                   map[string]string{},
-		KubeadmConfigPatches:            []string{},
-		KubeadmConfigPatchesJSON6902:    []v1alpha4.PatchJSON6902{},
-		ContainerdConfigPatches:         []string{},
-		ContainerdConfigPatchesJSON6902: []string{},
 	}
 	provisioner := kindprovisioner.NewKindClusterProvisioner(cfg, "~/.kube/config", provider, client)
 
