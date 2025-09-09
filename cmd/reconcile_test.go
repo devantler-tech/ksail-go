@@ -21,7 +21,7 @@ func TestNewReconcileCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'reconcile', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Reconcile workloads in the Kubernetes cluster" {
+	if cmd.Short != "Reconcile workloads in the cluster" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }

@@ -21,7 +21,7 @@ func TestNewStartCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'start', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Start a stopped Kubernetes cluster" {
+	if cmd.Short != "Start a stopped cluster" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }

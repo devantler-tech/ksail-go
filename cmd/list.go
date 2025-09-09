@@ -11,7 +11,7 @@ import (
 func NewListCmd() *cobra.Command {
 	cmd := config.NewCobraCommand(
 		"list",
-		"List Kubernetes clusters",
+		"List clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		handleListRunE,
 	)

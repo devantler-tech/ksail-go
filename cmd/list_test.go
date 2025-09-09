@@ -21,7 +21,7 @@ func TestNewListCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'list', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "List Kubernetes clusters" {
+	if cmd.Short != "List clusters" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }

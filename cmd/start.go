@@ -11,8 +11,8 @@ import (
 func NewStartCmd() *cobra.Command {
 	return config.NewCobraCommand(
 		"start",
-		"Start a stopped Kubernetes cluster",
-		`Start a previously stopped Kubernetes cluster.`,
+		"Start a stopped cluster",
+		`Start a previously stopped cluster.`,
 		handleStartRunE,
 	)
 }

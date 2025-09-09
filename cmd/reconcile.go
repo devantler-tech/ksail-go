@@ -11,8 +11,8 @@ import (
 func NewReconcileCmd() *cobra.Command {
 	return config.NewCobraCommand(
 		"reconcile",
-		"Reconcile workloads in the Kubernetes cluster",
-		`Reconcile workloads in the Kubernetes cluster to match the desired state
+		"Reconcile workloads in the cluster",
+		`Reconcile workloads in the cluster to match the desired state
 defined in configuration files.`,
 		handleReconcileRunE,
 	)
