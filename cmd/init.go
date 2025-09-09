@@ -10,24 +10,16 @@ import (
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	configManager := config.NewManager()
-
-	return factory.NewCobraCommandWithFlags(
+	return factory.NewCobraCommandWithAutoBinding(
 		"init",
 		"Initialize a new KSail project",
 		`Initialize a new KSail project with the specified configuration options.`,
-		func(cmd *cobra.Command, _ []string) error {
-			return handleInitRunE(cmd, configManager)
-		},
-		func(cmd *cobra.Command) {
-			cmd.Flags().String("distribution", "", "Kubernetes distribution to use (Kind, K3d, EKS)")
-			_ = configManager.GetViper().BindPFlag("distribution", cmd.Flags().Lookup("distribution"))
-		},
+		handleInitRunE,
 	)
 }
 
 // handleInitRunE handles the init command.
-func handleInitRunE(cmd *cobra.Command, configManager *config.Manager) error {
+func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
 	// Load the full cluster configuration (Viper handles all precedence automatically)
 	cluster, err := configManager.LoadCluster()
 	if err != nil {

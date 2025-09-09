@@ -10,24 +10,17 @@ import (
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	configManager := config.NewManager()
-
-	return factory.NewCobraCommandWithFlags(
+	return factory.NewCobraCommandWithSelectiveBinding(
 		"list",
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,
-		func(cmd *cobra.Command, _ []string) error {
-			return handleListRunE(cmd, configManager)
-		},
-		func(cmd *cobra.Command) {
-			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-			_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
-		},
+		handleListRunE,
+		[]string{"all"}, // Only include the 'all' flag for list command
 	)
 }
 
 // handleListRunE handles the list command.
-func handleListRunE(cmd *cobra.Command, configManager *config.Manager) error {
+func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
 	all := configManager.GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")

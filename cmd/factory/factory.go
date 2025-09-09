@@ -1,7 +1,10 @@
 // Package factory provides factory functions for creating CLI commands.
 package factory
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/spf13/cobra"
+)
 
 // SuggestionsMinimumDistance is the minimum edit distance to suggest a command.
 const SuggestionsMinimumDistance = 2
@@ -66,4 +69,58 @@ func NewCobraCommandWithFlags(
 	setupFlags(cmd)
 
 	return cmd
+}
+
+// NewCobraCommandWithAutoBinding creates a new cobra.Command with automatic flag binding.
+// This eliminates the need for manual flag setup and binding.
+func NewCobraCommandWithAutoBinding(
+	use, short, long string,
+	runE func(*cobra.Command, *config.Manager, []string) error,
+) *cobra.Command {
+	configManager := config.NewManager()
+	
+	cmd := NewCobraCommand(use, short, long, func(cmd *cobra.Command, args []string) error {
+		return runE(cmd, configManager, args)
+	})
+	
+	// Automatically bind all available flags based on the v1alpha1.Cluster structure
+	configManager.AutoBindFlags(cmd)
+	
+	return cmd
+}
+
+// NewCobraCommandWithSelectiveBinding creates a new cobra.Command with selective automatic flag binding.
+// Only binds the specified flags instead of all available flags.
+func NewCobraCommandWithSelectiveBinding(
+	use, short, long string,
+	runE func(*cobra.Command, *config.Manager, []string) error,
+	flagNames []string,
+) *cobra.Command {
+	configManager := config.NewManager()
+	
+	cmd := NewCobraCommand(use, short, long, func(cmd *cobra.Command, args []string) error {
+		return runE(cmd, configManager, args)
+	})
+	
+	// Only bind specific flags instead of all flags
+	if len(flagNames) > 0 {
+		bindSelectiveFlags(cmd, configManager, flagNames)
+	} else {
+		// If no specific flags requested, bind all
+		configManager.AutoBindFlags(cmd)
+	}
+	
+	return cmd
+}
+
+// bindSelectiveFlags binds only the specified flags.
+func bindSelectiveFlags(cmd *cobra.Command, configManager *config.Manager, flagNames []string) {
+	// Create a map for quick lookup
+	flagsToInclude := make(map[string]bool)
+	for _, name := range flagNames {
+		flagsToInclude[name] = true
+	}
+	
+	// Bind specific flags through the config manager
+	configManager.BindSelectiveFlags(cmd, flagsToInclude)
 }

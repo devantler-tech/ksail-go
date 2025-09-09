@@ -2,10 +2,12 @@
 package config
 
 import (
+	"reflect"
 	"strings"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -67,6 +69,206 @@ func (m *Manager) GetCluster() *v1alpha1.Cluster {
 // GetViper returns the underlying Viper instance for flag binding.
 func (m *Manager) GetViper() *viper.Viper {
 	return m.viper
+}
+
+// AutoBindFlags automatically binds CLI flags to Viper based on the v1alpha1.Cluster structure.
+// This eliminates the need for manual BindPFlag calls for each flag.
+func (m *Manager) AutoBindFlags(cmd *cobra.Command) {
+	m.bindStructFlags(cmd, reflect.TypeOf(v1alpha1.Cluster{}), "")
+	
+	// Add common CLI-only flags that are not part of the cluster structure
+	m.bindCLIOnlyFlags(cmd)
+}
+
+// BindSelectiveFlags binds only the specified flags.
+func (m *Manager) BindSelectiveFlags(cmd *cobra.Command, flagsToInclude map[string]bool) {
+	// Bind cluster structure flags selectively
+	m.bindStructFlagsSelectively(cmd, reflect.TypeOf(v1alpha1.Cluster{}), "", flagsToInclude)
+	
+	// Bind CLI-only flags selectively
+	m.bindCLIOnlyFlagsSelectively(cmd, flagsToInclude)
+}
+
+// bindCLIOnlyFlags adds CLI-specific flags that are not part of the cluster configuration.
+func (m *Manager) bindCLIOnlyFlags(cmd *cobra.Command) {
+	// Add 'all' flag for commands that need it
+	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+	_ = m.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
+}
+
+// bindStructFlagsSelectively recursively binds only specified struct fields as CLI flags.
+func (m *Manager) bindStructFlagsSelectively(cmd *cobra.Command, t reflect.Type, prefix string, flagsToInclude map[string]bool) {
+	// Handle pointers and nested types
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		
+		// Skip unexported fields and embedded metadata fields
+		if !field.IsExported() || 
+		   field.Name == "TypeMeta" || 
+		   field.Name == "Metadata" ||
+		   field.Type == reflect.TypeOf(metav1.ObjectMeta{}) {
+			continue
+		}
+
+		// Get field name for the flag
+		flagName := m.getFieldFlagName(field, prefix)
+		if flagName == "" {
+			continue
+		}
+
+		// Only bind if this flag is requested
+		if !flagsToInclude[flagName] {
+			// For nested structs, check if any nested flags are requested
+			if field.Type.Kind() == reflect.Struct && field.Type != reflect.TypeOf(metav1.Duration{}) {
+				nestedPrefix := flagName
+				if prefix != "" {
+					nestedPrefix = prefix + "." + flagName
+				}
+				m.bindStructFlagsSelectively(cmd, field.Type, nestedPrefix, flagsToInclude)
+			}
+			continue
+		}
+
+		// Handle different field types (same logic as bindStructFlags)
+		switch field.Type.Kind() {
+		case reflect.String:
+			cmd.Flags().String(flagName, "", m.getFieldDescription(field))
+			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			
+		case reflect.Bool:
+			cmd.Flags().Bool(flagName, false, m.getFieldDescription(field))
+			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			
+		case reflect.Struct:
+			if field.Type == reflect.TypeOf(metav1.Duration{}) {
+				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
+				_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			} else {
+				nestedPrefix := flagName
+				if prefix != "" {
+					nestedPrefix = prefix + "." + flagName
+				}
+				m.bindStructFlagsSelectively(cmd, field.Type, nestedPrefix, flagsToInclude)
+			}
+		}
+	}
+}
+
+// bindCLIOnlyFlagsSelectively adds only requested CLI-specific flags.
+func (m *Manager) bindCLIOnlyFlagsSelectively(cmd *cobra.Command, flagsToInclude map[string]bool) {
+	if flagsToInclude["all"] {
+		cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+		_ = m.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
+	}
+}
+
+// bindStructFlags recursively binds struct fields as CLI flags.
+func (m *Manager) bindStructFlags(cmd *cobra.Command, t reflect.Type, prefix string) {
+	// Handle pointers and nested types
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		
+		// Skip unexported fields and embedded metadata fields
+		if !field.IsExported() || 
+		   field.Name == "TypeMeta" || 
+		   field.Name == "Metadata" ||
+		   field.Type == reflect.TypeOf(metav1.ObjectMeta{}) {
+			continue
+		}
+
+		// Special handling for the Spec field - don't add it to the prefix, just recurse into it
+		if field.Name == "Spec" && field.Type.Kind() == reflect.Struct {
+			m.bindStructFlags(cmd, field.Type, prefix)
+			continue
+		}
+
+		// Get field name for the flag
+		flagName := m.getFieldFlagName(field, prefix)
+		if flagName == "" {
+			continue
+		}
+
+		// Handle different field types
+		switch field.Type.Kind() {
+		case reflect.String:
+			// Handle string enums and regular strings
+			if m.isEnumType(field.Type) {
+				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
+			} else {
+				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
+			}
+			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			
+		case reflect.Bool:
+			cmd.Flags().Bool(flagName, false, m.getFieldDescription(field))
+			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			
+		case reflect.Struct:
+			// Skip metav1.Duration and other special types, handle as strings
+			if field.Type == reflect.TypeOf(metav1.Duration{}) {
+				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
+				_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+			} else {
+				// Recursively handle nested structs
+				nestedPrefix := flagName
+				if prefix != "" {
+					nestedPrefix = prefix + "-" + flagName
+				}
+				m.bindStructFlags(cmd, field.Type, nestedPrefix)
+			}
+		}
+	}
+}
+
+// getFieldFlagName converts a struct field to a CLI flag name.
+func (m *Manager) getFieldFlagName(field reflect.StructField, prefix string) string {
+	// Convert camelCase to kebab-case
+	flagName := m.camelToKebab(field.Name)
+	
+	// Add prefix for nested fields
+	if prefix != "" {
+		flagName = prefix + "-" + flagName
+	}
+	
+	return flagName
+}
+
+// getFieldDescription generates a description for the CLI flag.
+func (m *Manager) getFieldDescription(field reflect.StructField) string {
+	// You could add struct tags for descriptions, for now use field name
+	return "Configure " + strings.ToLower(field.Name)
+}
+
+// isEnumType checks if a type is a custom enum type (like Distribution).
+func (m *Manager) isEnumType(t reflect.Type) bool {
+	// Check if it's a custom string type (enum)
+	return t.Kind() == reflect.String && t.PkgPath() != ""
+}
+
+// camelToKebab converts camelCase to kebab-case.
+func (m *Manager) camelToKebab(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			result.WriteByte('-')
+		}
+		result.WriteRune(r)
+	}
+	return strings.ToLower(result.String())
 }
 
 // GetString gets a configuration value as string.
