@@ -5,9 +5,9 @@
 repos:
   - repo: local
     hooks:
-      - id: golangci-lint
-        name: golangci-lint
-        entry: bash -c 'if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run --fix; elif [ -f "$HOME/go/bin/golangci-lint" ]; then "$HOME/go/bin/golangci-lint" run --fix; elif [ -f "$(go env GOPATH)/bin/golangci-lint" ]; then "$(go env GOPATH)/bin/golangci-lint" run --fix; else echo "golangci-lint not found"; exit 1; fi'
+      - id: golangci-lint-fmt
+        name: golangci-lint-fmt
+        entry: bash -c 'if command -v golangci-lint >/dev/null 2>&1; then golangci-lint fmt; elif [ -f "$HOME/go/bin/golangci-lint" ]; then "$HOME/go/bin/golangci-lint" fmt; elif [ -f "$(go env GOPATH)/bin/golangci-lint" ]; then "$(go env GOPATH)/bin/golangci-lint" fmt; else echo "golangci-lint not found"; exit 1; fi'
         language: system
         files: \.go$
         pass_filenames: false

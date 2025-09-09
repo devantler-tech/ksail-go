@@ -67,24 +67,28 @@ func TestDelete_Success(t *testing.T) {
 	t.Parallel()
 
 	cases := clustertestutils.DefaultDeleteCases()
-	clustertestutils.RunStandardSuccessTest(t, cases, func(t *testing.T, inputName, expectedName string) {
-		t.Helper()
-		runDeleteActionSuccess(
-			t,
-			"Delete()",
-			inputName,
-			expectedName,
-			func(clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
-				// No longer need to mock provider construction since it's injected directly
-				// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
-				//   wait, force, disableNodegroupEviction bool, parallel int)
-				mockClusterDeleteAction(clusterActions, nil)
-			},
-			func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
-				return prov.Delete(context.Background(), name)
-			},
-		)
-	})
+	clustertestutils.RunStandardSuccessTest(
+		t,
+		cases,
+		func(t *testing.T, inputName, expectedName string) {
+			t.Helper()
+			runDeleteActionSuccess(
+				t,
+				"Delete()",
+				inputName,
+				expectedName,
+				func(clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
+					// No longer need to mock provider construction since it's injected directly
+					// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
+					//   wait, force, disableNodegroupEviction bool, parallel int)
+					mockClusterDeleteAction(clusterActions, nil)
+				},
+				func(prov *eksprovisioner.EKSClusterProvisioner, name string) error {
+					return prov.Delete(context.Background(), name)
+				},
+			)
+		},
+	)
 }
 
 func TestDelete_Error_CreateFailed(t *testing.T) {
