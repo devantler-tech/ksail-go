@@ -15,10 +15,8 @@ func NewInitCmd() *cobra.Command {
 		"Initialize a new KSail project",
 		`Initialize a new KSail project with the specified configuration options.`,
 		handleInitRunE,
-		[]config.FieldSelector[v1alpha1.Cluster]{
-			config.SpecDistributionField,
-			config.SpecSourceDirectoryField,
-		},
+		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
+		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
 	)
 }
 

@@ -3,24 +3,30 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	cmd := config.NewCobraCommand(
 		"list",
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		handleListRunE,
-		[]config.FieldSelector[v1alpha1.Cluster]{config.AllField}, // Only include the 'all' flag for list command
 	)
+	
+	// Add the special --all flag manually since it's CLI-only
+	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+	
+	return cmd
 }
 
 // handleListRunE handles the list command.
 func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+	// Bind the --all flag manually since it's added after command creation
+	_ = configManager.BindPFlag("all", cmd.Flags().Lookup("all"))
+	
 	all := configManager.GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")

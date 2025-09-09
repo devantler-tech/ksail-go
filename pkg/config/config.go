@@ -10,6 +10,7 @@ import (
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,40 +28,25 @@ const (
 // It provides compile-time safety by referencing actual struct fields.
 type FieldSelector[T any] func(*T) any
 
-// Predefined field selectors for common configuration fields.
-// These provide compile-time safety - if the struct changes, these will cause compilation errors.
-var (
-	// Metadata fields
-	MetadataNameField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }
-	
-	// Spec fields
-	SpecDistributionField       FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }
-	SpecDistributionConfigField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig }
-	SpecSourceDirectoryField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }
-	SpecCNIField                FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.CNI }
-	SpecCSIField                FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.CSI }
-	SpecIngressControllerField  FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController }
-	SpecGatewayControllerField  FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController }
-	SpecReconciliationToolField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool }
-	
-	// Connection fields
-	SpecConnectionKubeconfigField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }
-	SpecConnectionContextField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }
-	SpecConnectionTimeoutField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout }
-	
-	// Special CLI-only fields (not part of the cluster structure)
-	AllField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return nil } // Special marker for CLI-only flags
-)
+// Field returns a type-safe field selector for the given field path.
+// This provides compile-time safety - if the struct changes, this will cause compilation errors.
+func Field[T any](selector func(*T) any) FieldSelector[T] {
+	return selector
+}
 
 
 // NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding.
-// This is the only constructor provided for initializing CobraCommands with field selectors.
+// This is the only constructor provided for initializing CobraCommands.
 // The binding automatically handles CLI flags (priority 1), environment variables (priority 2), 
 // and configuration defaults (priority 3).
+//
+// If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
+// If fieldSelectors is empty, all available fields from v1alpha1.Cluster will be auto-discovered and bound.
+// Special flags like --all can be added using Field(func(c *v1alpha1.Cluster) any { return nil }) with a custom handler.
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,
-	fieldSelectors []FieldSelector[v1alpha1.Cluster],
+	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := NewManager()
 	
@@ -75,12 +61,108 @@ func NewCobraCommand(
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 	
-	// Auto-bind flags based on field selectors
+	// Auto-bind flags based on field selectors or auto-discovery
 	if len(fieldSelectors) > 0 {
+		// Bind only the specified field selectors
 		bindFieldSelectors(cmd, manager, fieldSelectors)
+	} else {
+		// Auto-discover and bind all fields from v1alpha1.Cluster
+		bindAllFields(cmd, manager)
 	}
 	
 	return cmd
+}
+
+// bindAllFields automatically discovers and binds all fields from v1alpha1.Cluster as CLI flags.
+func bindAllFields(cmd *cobra.Command, manager *Manager) {
+	// Create a dummy cluster to introspect all available fields
+	dummy := &v1alpha1.Cluster{}
+	
+	// Use reflection to discover all bindable fields
+	allFields := discoverAllFields(dummy, reflect.ValueOf(dummy).Elem(), reflect.TypeOf(*dummy), "")
+	
+	for _, fieldInfo := range allFields {
+		// Convert hierarchical path to kebab-case CLI flag
+		flagName := pathToFlagName(fieldInfo.Path)
+		
+		// Generate description
+		description := generateFieldDescription(fieldInfo.Path)
+		
+		// Add string flag (all config values are treated as strings initially)
+		cmd.Flags().String(flagName, "", description)
+		
+		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
+		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+		_ = manager.viper.BindPFlag(fieldInfo.Path, cmd.Flags().Lookup(flagName))
+	}
+}
+
+// fieldInfo represents information about a discoverable field.
+type fieldInfo struct {
+	Path string
+	Type reflect.Type
+}
+
+// discoverAllFields recursively discovers all bindable fields in a struct.
+func discoverAllFields(rootStruct any, structVal reflect.Value, structType reflect.Type, prefix string) []fieldInfo {
+	var fields []fieldInfo
+	
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Field(i)
+		fieldType := structType.Field(i)
+		
+		// Skip unexported fields
+		if !fieldType.IsExported() {
+			continue
+		}
+		
+		// Skip embedded types (like TypeMeta) that we don't want as CLI flags
+		if fieldType.Anonymous {
+			continue
+		}
+		
+		// Build the current field path
+		var currentPath string
+		if prefix == "" {
+			currentPath = strings.ToLower(fieldType.Name)
+		} else {
+			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
+		}
+		
+		// If this is a struct (but not a special type like time.Duration), recurse into it
+		if field.Kind() == reflect.Struct && !isSpecialType(field.Type()) {
+			nestedFields := discoverAllFields(rootStruct, field, field.Type(), currentPath)
+			fields = append(fields, nestedFields...)
+		} else {
+			// This is a bindable field
+			fields = append(fields, fieldInfo{
+				Path: currentPath,
+				Type: field.Type(),
+			})
+		}
+	}
+	
+	return fields
+}
+
+// isSpecialType checks if a type should be treated as a primitive rather than recursed into.
+func isSpecialType(t reflect.Type) bool {
+	// Special types that should not be recursed into
+	specialTypes := []string{
+		"time.Duration",
+		"metav1.Duration",
+		"metav1.Time",
+		"metav1.ObjectMeta",
+	}
+	
+	fullTypeName := t.PkgPath() + "." + t.Name()
+	for _, special := range specialTypes {
+		if strings.Contains(fullTypeName, special) || t.Name() == special {
+			return true
+		}
+	}
+	
+	return false
 }
 
 // bindFieldSelectors automatically discovers and binds CLI flags for the specified field selectors.
@@ -92,13 +174,10 @@ func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []F
 		// Get the field reference from the selector
 		fieldPtr := selector(dummy)
 		
-		// Handle special CLI-only fields
+		// Handle special CLI-only flags that return nil
 		if fieldPtr == nil {
-			// This is a special CLI-only field (like AllField)
-			if isAllField(selector) {
-				cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-				_ = manager.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
-			}
+			// For now, we'll skip special fields - commands can add them manually if needed
+			// This eliminates the need for hardcoded special field detection
 			continue
 		}
 		
@@ -123,12 +202,6 @@ func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []F
 	}
 }
 
-// isAllField checks if a field selector is the special AllField.
-func isAllField(selector FieldSelector[v1alpha1.Cluster]) bool {
-	// Compare function pointers - this is a Go-specific way to identify the specific function
-	dummy := &v1alpha1.Cluster{}
-	return selector(dummy) == nil && reflect.ValueOf(selector).Pointer() == reflect.ValueOf(AllField).Pointer()
-}
 
 // getFieldPath uses reflection to determine the path of a field within the cluster structure.
 func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
@@ -471,6 +544,11 @@ func (m *Manager) GetString(key string) string {
 // GetBool gets a configuration value as bool.
 func (m *Manager) GetBool(key string) bool {
 	return m.viper.GetBool(key)
+}
+
+// BindPFlag binds a CLI flag to a configuration key.
+func (m *Manager) BindPFlag(key string, flag *pflag.Flag) error {
+	return m.viper.BindPFlag(key, flag)
 }
 
 // initializeViper initializes a Viper instance with KSail configuration settings.

@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +15,6 @@ func NewReconcileCmd() *cobra.Command {
 		`Reconcile workloads in the Kubernetes cluster to match the desired state
 defined in configuration files.`,
 		handleReconcileRunE,
-		[]config.FieldSelector[v1alpha1.Cluster]{}, // No specific configuration flags needed
 	)
 }
 
