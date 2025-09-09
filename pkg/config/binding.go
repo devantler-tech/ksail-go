@@ -26,8 +26,14 @@ func bindAllFields(cmd *cobra.Command, manager *Manager) {
 		// Generate description
 		description := generateFieldDescription(fieldInfo.Path)
 		
-		// Add string flag (all config values are treated as strings initially)
-		cmd.Flags().String(flagName, "", description)
+		// Add shortname flag if appropriate
+		shortName := generateShortName(flagName)
+		if shortName != "" {
+			cmd.Flags().StringP(flagName, shortName, "", description)
+		} else {
+			// Add string flag without shortname
+			cmd.Flags().String(flagName, "", description)
+		}
 		
 		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
 		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
@@ -131,8 +137,14 @@ func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []F
 		// Generate description
 		description := generateFieldDescription(fieldPath)
 		
-		// Add string flag (all config values are treated as strings initially)
-		cmd.Flags().String(flagName, "", description)
+		// Add shortname flag if appropriate
+		shortName := generateShortName(flagName)
+		if shortName != "" {
+			cmd.Flags().StringP(flagName, shortName, "", description)
+		} else {
+			// Add string flag without shortname
+			cmd.Flags().String(flagName, "", description)
+		}
 		
 		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
 		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
@@ -197,10 +209,75 @@ func isTimeType(t reflect.Type) bool {
 	return t == reflect.TypeOf(time.Time{}) || t == reflect.TypeOf(metav1.Duration{})
 }
 
-// pathToFlagName converts a hierarchical field path to a kebab-case CLI flag name.
-// E.g., "metadata.name" -> "metadata-name", "spec.connection.kubeconfig" -> "spec-connection-kubeconfig"
+// pathToFlagName converts a hierarchical field path to a CLI flag name using the last field only.
+// E.g., "metadata.name" -> "name", "spec.connection.kubeconfig" -> "kubeconfig", "spec.csi" -> "csi"
+// Uppercase fields are converted to lowercase with proper kebab-case conversion.
+// E.g., "spec.CSI" -> "csi", "spec.connection.IPConfig" -> "ip-config"
 func pathToFlagName(path string) string {
-	return strings.ReplaceAll(path, ".", "-")
+	// Get the last part of the path
+	parts := strings.Split(path, ".")
+	lastPart := parts[len(parts)-1]
+	
+	// Convert camelCase and PascalCase to kebab-case
+	return camelToKebab(lastPart)
+}
+
+// camelToKebab converts camelCase/PascalCase strings to kebab-case.
+// E.g., "IPConfig" -> "ip-config", "CSI" -> "csi", "sourceDirectory" -> "source-directory"
+func camelToKebab(s string) string {
+	var result strings.Builder
+	
+	for i, r := range s {
+		if i > 0 && isUpper(r) && (i == len(s)-1 || !isUpper(rune(s[i+1])) || (i > 0 && !isUpper(rune(s[i-1])))) {
+			result.WriteByte('-')
+		}
+		result.WriteRune(toLower(r))
+	}
+	
+	return result.String()
+}
+
+// generateShortName generates a short flag name based on the naming rules.
+// Only creates shortnames for flags longer than 3 characters.
+// Uses first letter for simple names, or first letters of each word for kebab-case names.
+// E.g., "csi" -> no shortname, "csi-controller" -> "cc", "some-snake-cased-longname" -> "sscl"
+func generateShortName(longName string) string {
+	// Don't create shortnames for flags 3 chars or shorter
+	if len(longName) <= 3 {
+		return ""
+	}
+	
+	// If it contains hyphens, use first letter of each part
+	if strings.Contains(longName, "-") {
+		parts := strings.Split(longName, "-")
+		var shortName strings.Builder
+		for _, part := range parts {
+			if len(part) > 0 {
+				shortName.WriteByte(part[0])
+			}
+		}
+		return shortName.String()
+	}
+	
+	// For simple names, use just the first letter
+	if len(longName) > 0 {
+		return string(longName[0])
+	}
+	
+	return ""
+}
+
+// isUpper checks if a rune is uppercase
+func isUpper(r rune) bool {
+	return r >= 'A' && r <= 'Z'
+}
+
+// toLower converts a rune to lowercase
+func toLower(r rune) rune {
+	if r >= 'A' && r <= 'Z' {
+		return r + ('a' - 'A')
+	}
+	return r
 }
 
 // generateFieldDescription generates a human-readable description for a configuration field.

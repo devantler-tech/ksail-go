@@ -20,9 +20,16 @@ const (
 
 // PrintKSailLogo displays the KSail ASCII art with colored formatting.
 func PrintKSailLogo(writer io.Writer) {
+	PrintLogoFromString(writer, ksailLogo)
+}
+
+// PrintLogoFromString processes logo content and applies color formatting.
+// This function is exposed for testing purposes to enable coverage of edge cases.
+// In normal usage, use PrintKSailLogo instead.
+func PrintLogoFromString(writer io.Writer, logoContent string) {
 	const yellowLines = 4
 
-	lines := strings.Split(ksailLogo, "\n")
+	lines := strings.Split(logoContent, "\n")
 
 	for index, line := range lines {
 		switch {
@@ -53,21 +60,53 @@ func colorGreen() *color.Color  { return color.New(color.Bold, color.FgGreen) }
 func colorCyan() *color.Color   { return color.New(color.FgCyan) }
 
 func printGreenBlueCyanPart(out io.Writer, line string) {
-	if len(line) >= cyanStartIndex {
-		printc(out, colorGreen(), line[:greenCyanSplitIndex])
-		printc(out, colorCyan(), line[greenCyanSplitIndex:blueStartIndex])
-		printc(out, colorBlue(), line[blueStartIndex:cyanStartIndex])
-		printlnc(out, colorCyan(), line[cyanStartIndex:])
-	} else {
+	lineLen := len(line)
+
+	// Ensure we have enough characters for all segments
+	if lineLen < greenCyanSplitIndex {
 		printlnc(out, colorGreen(), line)
+
+		return
 	}
+
+	// Print green segment
+	printc(out, colorGreen(), line[:greenCyanSplitIndex])
+
+	// Print cyan segment if we have enough characters
+	if lineLen < blueStartIndex {
+		printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
+
+		return
+	}
+
+	printc(out, colorCyan(), line[greenCyanSplitIndex:blueStartIndex])
+
+	// Print blue segment if we have enough characters
+	if lineLen < cyanStartIndex {
+		printlnc(out, colorBlue(), line[blueStartIndex:])
+
+		return
+	}
+
+	printc(out, colorBlue(), line[blueStartIndex:cyanStartIndex])
+
+	// Print final cyan segment
+	printlnc(out, colorCyan(), line[cyanStartIndex:])
 }
 
 func printGreenCyanPart(out io.Writer, line string) {
-	if len(line) >= greenCyanSplitIndex {
-		printc(out, colorGreen(), line[:greenCyanSplitIndex])
-		printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
-	} else {
+	lineLen := len(line)
+
+	// Ensure we have enough characters for the split
+	if lineLen < greenCyanSplitIndex {
 		printlnc(out, colorGreen(), line)
+
+		return
 	}
+
+	// Print green segment
+	printc(out, colorGreen(), line[:greenCyanSplitIndex])
+
+	// Print cyan segment (remainder of the line)
+	printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
 }

@@ -22,14 +22,11 @@ const (
 func TestTryWrite_WithBuffer(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "test content for buffer"
 	buffer := &bytes.Buffer{}
 
-	// Act
 	result, err := ioutils.TryWrite(content, buffer)
 
-	// Assert
 	require.NoError(t, err, "TryWrite()")
 	assert.Equal(t, content, result, "TryWrite() result")
 	assert.Equal(t, content, buffer.String(), "buffer content")
@@ -38,14 +35,11 @@ func TestTryWrite_WithBuffer(t *testing.T) {
 func TestTryWrite_WithStringWriter(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "test content for string writer"
 	stringBuilder := &strings.Builder{}
 
-	// Act
 	result, err := ioutils.TryWrite(content, stringBuilder)
 
-	// Assert
 	require.NoError(t, err, "TryWrite()")
 	assert.Equal(t, content, result, "TryWrite() result")
 	assert.Equal(t, content, stringBuilder.String(), "string builder content")
@@ -54,14 +48,11 @@ func TestTryWrite_WithStringWriter(t *testing.T) {
 func TestTryWrite_WithFailingWriter(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := testContent
 	failingWriter := &failingWriter{}
 
-	// Act
 	result, err := ioutils.TryWrite(content, failingWriter)
 
-	// Assert
 	require.Error(t, err, "TryWrite()")
 	assert.Contains(t, err.Error(), "failed to write content", "error message")
 	assert.Empty(t, result, "TryWrite() result on error")
@@ -77,13 +68,10 @@ func (f *failingWriter) Write([]byte) (int, error) {
 func TestTryWriteFile_EmptyOutput(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := testContent
 
-	// Act
 	result, err := ioutils.TryWriteFile(content, "", false)
 
-	// Assert
 	require.Error(t, err, "TryWriteFile()")
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
@@ -91,15 +79,12 @@ func TestTryWriteFile_EmptyOutput(t *testing.T) {
 func TestTryWriteFile_NewFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "new file content"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "test.txt")
 
-	// Act
 	result, err := ioutils.TryWriteFile(content, outputPath, false)
 
-	// Assert
 	require.NoError(t, err, "TryWriteFile()")
 	assert.Equal(t, content, result, "TryWriteFile()")
 
@@ -112,44 +97,43 @@ func TestTryWriteFile_NewFile(t *testing.T) {
 func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	newContent := "new content"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "existing.txt")
 
 	// Create existing file
-	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
+	err := os.WriteFile(outputPath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile() setup")
 
-	// Act
 	result, err := ioutils.TryWriteFile(newContent, outputPath, false)
 
-	// Assert
 	require.NoError(t, err, "TryWriteFile()")
 	assert.Equal(t, newContent, result, "TryWriteFile()")
 
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	require.NoError(t, err, "ReadFile()")
-	assert.Equal(t, originalContent, string(writtenContent), "file content (should not be overwritten)")
+	assert.Equal(
+		t,
+		originalContent,
+		string(writtenContent),
+		"file content (should not be overwritten)",
+	)
 }
 
 func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	newContent := "new content forced"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "existing-force.txt")
 
 	// Create existing file
-	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
+	err := os.WriteFile(outputPath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile() setup")
 
-	// Act
 	result, err := ioutils.TryWriteFile(newContent, outputPath, true)
 
-	// Assert
 	require.NoError(t, err, "TryWriteFile()")
 	assert.Equal(t, newContent, result, "TryWriteFile()")
 
@@ -162,17 +146,15 @@ func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 func TestTryWriteFile_StatError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for stat error test"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "restricted", "file.txt")
 
 	// Create a directory with no permissions to simulate stat error
 	restrictedDir := filepath.Join(tempDir, "restricted")
-	err := os.Mkdir(restrictedDir, 0000)
+	err := os.Mkdir(restrictedDir, 0o000)
 	require.NoError(t, err, "Mkdir() setup")
 
-	// Act
 	result, err := ioutils.TryWriteFile(content, outputPath, false)
 
 	// Assert - expect error containing specific message
@@ -183,27 +165,28 @@ func TestTryWriteFile_StatError(t *testing.T) {
 func TestTryWriteFile_WriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for write error test"
 
 	// Use a path that cannot be written to (directory that doesn't exist)
 	invalidPath := "/invalid/nonexistent/deeply/nested/path/file.txt"
 
-	// Act
 	result, err := ioutils.TryWriteFile(content, invalidPath, false)
 
 	// Assert - expect error containing specific message about directory creation failure
-	testutils.AssertErrContains(t, err, "failed to create directory", "TryWriteFile() directory creation failure")
+	testutils.AssertErrContains(
+		t,
+		err,
+		"failed to create directory",
+		"TryWriteFile() directory creation failure",
+	)
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
 func TestGetWriter_Quiet(t *testing.T) {
 	t.Parallel()
 
-	// Act
 	writer := ioutils.GetWriter(true)
 
-	// Assert
 	if writer != io.Discard {
 		t.Errorf("expected io.Discard for quiet=true, got %T", writer)
 	}
@@ -212,16 +195,14 @@ func TestGetWriter_Quiet(t *testing.T) {
 func TestTryWriteFile_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for file write error test"
 	tempDir := t.TempDir()
 	outputPath := filepath.Join(tempDir, "readonly.txt")
 
 	// Create a directory that exists but make it read-only to cause file write failure
-	err := os.WriteFile(outputPath, []byte("existing"), 0000) // No write permissions
+	err := os.WriteFile(outputPath, []byte("existing"), 0o000) // No write permissions
 	require.NoError(t, err, "WriteFile() setup")
 
-	// Act
 	result, err := ioutils.TryWriteFile(content, outputPath, true) // force=true to skip stat check
 
 	// Assert - expect error containing specific message about file write failure
@@ -232,58 +213,64 @@ func TestTryWriteFile_FileWriteError(t *testing.T) {
 func TestWriteFileSafe_EmptyBasePath(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := testContent
 	filePath := "/some/path/file.txt"
 
-	// Act
 	err := ioutils.WriteFileSafe(content, "", filePath, false)
 
-	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrBasePath, "", "WriteFileSafe empty base path")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrBasePath,
+		"",
+		"WriteFileSafe empty base path",
+	)
 }
 
 func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := testContent
 	basePath := t.TempDir()
 
-	// Act
 	err := ioutils.WriteFileSafe(content, basePath, "", false)
 
-	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrEmptyOutputPath, "", "WriteFileSafe empty file path")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrEmptyOutputPath,
+		"",
+		"WriteFileSafe empty file path",
+	)
 }
 
 func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := testContent
 	basePath := t.TempDir()
 	outsidePath := "/tmp/outside.txt" // Path clearly outside basePath
 
-	// Act
 	err := ioutils.WriteFileSafe(content, basePath, outsidePath, false)
 
-	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrPathOutsideBase, "", "WriteFileSafe path outside base")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrPathOutsideBase,
+		"",
+		"WriteFileSafe path outside base",
+	)
 }
 
 func TestWriteFileSafe_NewFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "new file content via WriteFileSafe"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "newfile.txt")
 
-	// Act
 	err := ioutils.WriteFileSafe(content, basePath, filePath, false)
 
-	// Assert
 	require.NoError(t, err, "WriteFileSafe")
 
 	// Verify file was written
@@ -295,43 +282,42 @@ func TestWriteFileSafe_NewFile(t *testing.T) {
 func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	newContent := "new content"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "existing.txt")
 
 	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0600)
+	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile setup")
 
-	// Act
 	err = ioutils.WriteFileSafe(newContent, basePath, filePath, false)
 
-	// Assert
 	require.NoError(t, err, "WriteFileSafe")
 
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
 	require.NoError(t, err, "ReadFile")
-	assert.Equal(t, originalContent, string(writtenContent), "file content should not be overwritten")
+	assert.Equal(
+		t,
+		originalContent,
+		string(writtenContent),
+		"file content should not be overwritten",
+	)
 }
 
 func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	newContent := "new content forced"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "existing-force.txt")
 
 	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0600)
+	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile setup")
 
-	// Act
 	err = ioutils.WriteFileSafe(newContent, basePath, filePath, true)
 
-	// Assert
 	require.NoError(t, err, "WriteFileSafe")
 
 	// Verify file was overwritten
@@ -343,17 +329,15 @@ func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
 func TestWriteFileSafe_StatError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for stat error test"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "restricted", "file.txt")
 
 	// Create a directory with no permissions to simulate stat error
 	restrictedDir := filepath.Join(basePath, "restricted")
-	err := os.Mkdir(restrictedDir, 0000)
+	err := os.Mkdir(restrictedDir, 0o000)
 	require.NoError(t, err, "Mkdir setup")
 
-	// Act
 	err = ioutils.WriteFileSafe(content, basePath, filePath, false)
 
 	// Assert - expect error containing specific message
@@ -363,36 +347,42 @@ func TestWriteFileSafe_StatError(t *testing.T) {
 func TestWriteFileSafe_DirectoryCreationError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for directory creation error test"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "subdir", "file.txt")
 
 	// Create a file with the same name as the directory we want to create
 	subdirPath := filepath.Join(basePath, "subdir")
-	err := os.WriteFile(subdirPath, []byte("blocking file"), 0600)
+	err := os.WriteFile(subdirPath, []byte("blocking file"), 0o600)
 	require.NoError(t, err, "WriteFile setup to block directory creation")
 
-	// Act
-	err = ioutils.WriteFileSafe(content, basePath, filePath, true) // Use force=true to skip stat check
+	err = ioutils.WriteFileSafe(
+		content,
+		basePath,
+		filePath,
+		true,
+	) // Use force=true to skip stat check
 
 	// Assert - expect error containing specific message about directory creation failure
-	testutils.AssertErrContains(t, err, "failed to create directory", "WriteFileSafe directory creation failure")
+	testutils.AssertErrContains(
+		t,
+		err,
+		"failed to create directory",
+		"WriteFileSafe directory creation failure",
+	)
 }
 
 func TestWriteFileSafe_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	content := "content for file write error test"
 	basePath := t.TempDir()
 	filePath := filepath.Join(basePath, "readonly.txt")
 
 	// Create a file with no write permissions to cause write failure
-	err := os.WriteFile(filePath, []byte("existing"), 0000) // No write permissions
+	err := os.WriteFile(filePath, []byte("existing"), 0o000) // No write permissions
 	require.NoError(t, err, "WriteFile setup")
 
-	// Act
 	err = ioutils.WriteFileSafe(content, basePath, filePath, true) // force=true to skip stat check
 
 	// Assert - expect error containing specific message about file write failure
@@ -402,10 +392,8 @@ func TestWriteFileSafe_FileWriteError(t *testing.T) {
 func TestGetWriter_NotQuiet(t *testing.T) {
 	t.Parallel()
 
-	// Act
 	writer := ioutils.GetWriter(false)
 
-	// Assert
 	if writer != os.Stdout {
 		t.Errorf("expected os.Stdout for quiet=false, got %T", writer)
 	}

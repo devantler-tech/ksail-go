@@ -12,7 +12,6 @@ import (
 func TestNewEmptyObjectMeta(t *testing.T) {
 	t.Parallel()
 
-	// Act
 	meta := k8sutils.NewEmptyObjectMeta()
 
 	// Assert - all string fields should be empty

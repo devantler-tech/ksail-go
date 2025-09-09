@@ -26,7 +26,10 @@ func NewKindGenerator() *KindGenerator {
 }
 
 // Generate creates a kind cluster YAML configuration and writes it to the specified output.
-func (g *KindGenerator) Generate(cfg *v1alpha4.Cluster, opts yamlgenerator.Options) (string, error) {
+func (g *KindGenerator) Generate(
+	cfg *v1alpha4.Cluster,
+	opts yamlgenerator.Options,
+) (string, error) {
 	// Ensure APIVersion and Kind are set before applying defaults
 	cfg.APIVersion = "kind.x-k8s.io/v1alpha4"
 	cfg.Kind = "Cluster"

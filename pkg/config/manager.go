@@ -5,7 +5,6 @@ import (
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -239,19 +238,4 @@ func (m *Manager) GetCluster() *v1alpha1.Cluster {
 // GetViper returns the underlying Viper instance for flag binding.
 func (m *Manager) GetViper() *viper.Viper {
 	return m.viper
-}
-
-// GetString gets a configuration value as string.
-func (m *Manager) GetString(key string) string {
-	return m.viper.GetString(key)
-}
-
-// GetBool gets a configuration value as bool.
-func (m *Manager) GetBool(key string) bool {
-	return m.viper.GetBool(key)
-}
-
-// BindPFlag binds a CLI flag to a configuration key.
-func (m *Manager) BindPFlag(key string, flag *pflag.Flag) error {
-	return m.viper.BindPFlag(key, flag)
 }

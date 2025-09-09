@@ -18,7 +18,6 @@ import (
 func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cluster := createTestCluster("test-cluster")
 	gen := generator.NewKustomizationGenerator(cluster)
 	opts := yamlgenerator.Options{
@@ -26,10 +25,8 @@ func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertKustomizationYAML(t, result)
 }
@@ -37,7 +34,6 @@ func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
 func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cluster := createTestCluster("file-cluster")
 	gen := generator.NewKustomizationGenerator(cluster)
 	tempDir := t.TempDir()
@@ -47,10 +43,8 @@ func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertKustomizationYAML(t, result)
 
@@ -61,7 +55,6 @@ func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
 func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cluster := createTestCluster("existing-no-force")
 	gen := generator.NewKustomizationGenerator(cluster)
 
@@ -80,7 +73,6 @@ func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cluster := createTestCluster("existing-with-force")
 	gen := generator.NewKustomizationGenerator(cluster)
 
@@ -99,7 +91,6 @@ func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cluster := createTestCluster("error-cluster")
 	gen := generator.NewKustomizationGenerator(cluster)
 
@@ -127,13 +118,10 @@ func TestKustomizationGenerator_Generate_MarshalError(t *testing.T) {
 func TestNewKustomizationGenerator(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cfg := createTestCluster("new-generator-cluster")
 
-	// Act
 	gen := generator.NewKustomizationGenerator(cfg)
 
-	// Assert
 	require.NotNil(t, gen)
 	assert.Equal(t, cfg, gen.KSailConfig)
 	assert.NotNil(t, gen.Marshaller)
@@ -158,7 +146,12 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 // assertKustomizationYAML ensures the generated YAML contains the expected boilerplate.
 func assertKustomizationYAML(t *testing.T, result string) {
 	t.Helper()
-	assert.Contains(t, result, "apiVersion: kustomize.config.k8s.io/v1beta1", "YAML should contain API version")
+	assert.Contains(
+		t,
+		result,
+		"apiVersion: kustomize.config.k8s.io/v1beta1",
+		"YAML should contain API version",
+	)
 	assert.Contains(t, result, "kind: Kustomization", "YAML should contain kind")
 }
 
@@ -176,7 +169,6 @@ func testKustomizationMarshalError(
 ) {
 	t.Helper()
 
-	// Arrange
 	gen := generator.NewKustomizationGenerator(createTestCluster("marshal-error-cluster"))
 	gen.Marshaller = generatortestutils.MarshalFailer[*ktypes.Kustomization]{
 		Marshaller: nil,

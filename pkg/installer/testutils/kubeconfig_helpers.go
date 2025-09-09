@@ -10,7 +10,7 @@ import (
 
 const (
 	// DefaultFilePermissions defines the default permissions for temporary test files.
-	DefaultFilePermissions = 0600
+	DefaultFilePermissions = 0o600
 )
 
 // createKubeconfigFileWithContent creates a temporary kubeconfig file with the given content.

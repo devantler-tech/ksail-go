@@ -93,7 +93,9 @@ func setupMockClientForEngineTest(t *testing.T, testCase nameTestCase) *provisio
 
 	mockClient := provisioner.NewMockAPIClient(t)
 	if testCase.serverVersionErr != nil {
-		mockClient.EXPECT().ServerVersion(context.Background()).Return(emptyVersion(), testCase.serverVersionErr)
+		mockClient.EXPECT().
+			ServerVersion(context.Background()).
+			Return(emptyVersion(), testCase.serverVersionErr)
 	} else {
 		mockClient.EXPECT().ServerVersion(context.Background()).Return(testCase.serverVersion, nil)
 	}
@@ -433,7 +435,8 @@ func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 // createTestOverrides creates client creator overrides for testing.
 func createTestOverrides(dockerClient client.APIClient, dockerErr error,
 	podmanUserClient client.APIClient, podmanUserErr error,
-	podmanSystemClient client.APIClient, podmanSystemErr error) map[string]containerengine.ClientCreator {
+	podmanSystemClient client.APIClient, podmanSystemErr error,
+) map[string]containerengine.ClientCreator {
 	return map[string]containerengine.ClientCreator{
 		"docker": func() (client.APIClient, error) {
 			return dockerClient, dockerErr
@@ -463,7 +466,9 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 			nil, errPodmanSystemUnavailable,
 		)
 
-		mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
+		mockDockerClient.EXPECT().
+			Ping(context.Background()).
+			Return(completePing(), errDockerNotReady)
 		mockPodmanClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 		mockPodmanClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
 
@@ -493,9 +498,13 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 			},
 		}
 
-		mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanUserNotReady)
+		mockPodmanUserClient.EXPECT().
+			Ping(context.Background()).
+			Return(completePing(), errPodmanUserNotReady)
 		mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
-		mockPodmanSystemClient.EXPECT().ServerVersion(context.Background()).Return(podmanVersion(), nil)
+		mockPodmanSystemClient.EXPECT().
+			ServerVersion(context.Background()).
+			Return(podmanVersion(), nil)
 
 		engine, err := containerengine.GetAutoDetectedClient(overrides)
 
@@ -536,8 +545,12 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 
 	// All clients create successfully but none are ready
 	mockDockerClient.EXPECT().Ping(context.Background()).Return(completePing(), errDockerNotReady)
-	mockPodmanUserClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanUserNotReady)
-	mockPodmanSystemClient.EXPECT().Ping(context.Background()).Return(completePing(), errPodmanSystemNotReady)
+	mockPodmanUserClient.EXPECT().
+		Ping(context.Background()).
+		Return(completePing(), errPodmanUserNotReady)
+	mockPodmanSystemClient.EXPECT().
+		Ping(context.Background()).
+		Return(completePing(), errPodmanSystemNotReady)
 
 	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
@@ -564,42 +577,77 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	assertDockerEngineSuccess(t, mockClient, overrides)
 }
 
-func TestDetectEngineType_EdgeCases(t *testing.T) {
-	t.Parallel()
+type edgeCaseTest struct {
+	name             string
+	serverVersion    types.Version
+	serverVersionErr error
+	expectedType     string
+	expectError      bool
+}
 
-	testCases := []struct {
-		name             string
-		serverVersion    types.Version
-		serverVersionErr error
-		expectedType     string
-		expectError      bool
-	}{
-		{"Platform name contains Docker", createVersion("Docker Engine - Community", "24.0.0"), nil, "Docker", false},
-		{"Platform name contains Podman", createVersion("Podman Engine", "4.5.0"), nil, "Podman", false},
-		{"Platform name empty, version contains podman", createVersion("", "4.5.0-podman"), nil, "Podman", false},
-		{"Platform name empty, version without podman defaults to Docker", createVersion("", "24.0.0"), nil, "Docker", false},
+func getEdgeCasesTestData() []edgeCaseTest {
+	return []edgeCaseTest{
+		{
+			"Platform name contains Docker",
+			createVersion("Docker Engine - Community", "24.0.0"),
+			nil,
+			"Docker",
+			false,
+		},
+		{
+			"Platform name contains Podman",
+			createVersion("Podman Engine", "4.5.0"),
+			nil,
+			"Podman",
+			false,
+		},
+		{
+			"Platform name empty, version contains podman",
+			createVersion("", "4.5.0-podman"),
+			nil,
+			"Podman",
+			false,
+		},
+		{
+			"Platform name empty, version without podman defaults to Docker",
+			createVersion("", "24.0.0"),
+			nil,
+			"Docker",
+			false,
+		},
 		{"Both platform name and version empty", emptyVersion(), nil, "", true},
 		{"ServerVersion API call fails", emptyVersion(), errServerVersionFailed, "", true},
 	}
+}
+
+func runEdgeCaseTest(t *testing.T, testCase edgeCaseTest) {
+	t.Helper()
+
+	mockClient := setupMockClientForEngineTest(t, nameTestCase{
+		name: testCase.name, serverVersion: testCase.serverVersion,
+		serverVersionErr: testCase.serverVersionErr, expectedName: testCase.expectedType,
+	})
+
+	engine, err := containerengine.NewContainerEngine(mockClient)
+	require.NoError(t, err)
+
+	name := engine.GetName()
+	if testCase.expectError {
+		assert.Equal(t, "Unknown", name)
+	} else {
+		assert.Equal(t, testCase.expectedType, name)
+	}
+}
+
+func TestDetectEngineType_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	testCases := getEdgeCasesTestData()
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
-			mockClient := setupMockClientForEngineTest(t, nameTestCase{
-				name: testCase.name, serverVersion: testCase.serverVersion,
-				serverVersionErr: testCase.serverVersionErr, expectedName: testCase.expectedType,
-			})
-
-			engine, err := containerengine.NewContainerEngine(mockClient)
-			require.NoError(t, err)
-
-			name := engine.GetName()
-			if testCase.expectError {
-				assert.Equal(t, "Unknown", name)
-			} else {
-				assert.Equal(t, testCase.expectedType, name)
-			}
+			runEdgeCaseTest(t, testCase)
 		})
 	}
 }
@@ -703,7 +751,11 @@ func TestClientCreation_AllScenarios(t *testing.T) {
 			// Both success and failure are valid outcomes depending on environment
 			if err != nil {
 				assert.Nil(t, client)
-				assert.Contains(t, err.Error(), fmt.Sprintf("failed to create %s client", clientName))
+				assert.Contains(
+					t,
+					err.Error(),
+					fmt.Sprintf("failed to create %s client", clientName),
+				)
 			} else {
 				assert.NotNil(t, client)
 			}

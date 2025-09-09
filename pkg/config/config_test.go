@@ -4,16 +4,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoadConfig_Defaults(t *testing.T) {
+func TestManager_LoadCluster_Defaults(t *testing.T) {
 	// Clear any existing environment variables that might affect the test
 	envVarsToClean := []string{
-		"KSAIL_DISTRIBUTION",
-		"KSAIL_ALL", 
+		"KSAIL_SPEC_DISTRIBUTION",
 		"KSAIL_METADATA_NAME",
 		"KSAIL_SPEC_CONNECTION_KUBECONFIG",
 	}
@@ -26,76 +26,55 @@ func TestLoadConfig_Defaults(t *testing.T) {
 		}
 	}
 
-	// Load config without any files or env vars
-	cfg, err := config.LoadConfig()
+	// Setup a temporary directory for testing
+	tempDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer func() { _ = os.Chdir(oldDir) }()
+	_ = os.Chdir(tempDir)
+
+	// Load cluster without any files or env vars
+	manager := config.NewManager()
+	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
-	// Test defaults - distribution should be empty from CLI/env, but cluster should have defaults
-	assert.Equal(t, "", cfg.Distribution) // No CLI default anymore
-	assert.False(t, cfg.All)
-	assert.Equal(t, "ksail-default", cfg.Cluster.Name)
-	assert.Equal(t, "kind.yaml", cfg.Cluster.DistributionConfig)
-	assert.Equal(t, "k8s", cfg.Cluster.SourceDirectory)
-	assert.Equal(t, "~/.kube/config", cfg.Cluster.Connection.Kubeconfig)
-	assert.Equal(t, "kind-ksail-default", cfg.Cluster.Connection.Context)
-	assert.Equal(t, "5m", cfg.Cluster.Connection.Timeout)
+	// Test defaults
+	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
+	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
+	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
+	assert.Equal(t, "k8s", cluster.Spec.SourceDirectory)
+	assert.Equal(t, "~/.kube/config", cluster.Spec.Connection.Kubeconfig)
+	assert.Equal(t, "kind-ksail-default", cluster.Spec.Connection.Context)
 }
 
-func TestLoadConfig_EnvironmentVariables(t *testing.T) {
+func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	// Set environment variables - using the correct hierarchical structure
-	envVars := map[string]string{
-		"KSAIL_DISTRIBUTION":                        "K3d",
-		"KSAIL_ALL":                                "true",
-		"KSAIL_METADATA_NAME":                      "test-cluster",
-		"KSAIL_SPEC_CONNECTION_KUBECONFIG":         "/custom/kubeconfig",
-	}
+	_ = os.Setenv("KSAIL_METADATA_NAME", "test-cluster")
+	_ = os.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
+	_ = os.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/custom/path/kubeconfig")
+	defer func() {
+		_ = os.Unsetenv("KSAIL_METADATA_NAME")
+		_ = os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
+		_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
+	}()
 
-	// Set env vars and defer cleanup
-	for key, value := range envVars {
-		_ = os.Setenv(key, value)
-		defer func(key string) {
-			_ = os.Unsetenv(key)
-		}(key)
-	}
+	// Setup a temporary directory for testing
+	tempDir := t.TempDir()
+	oldDir, _ := os.Getwd()
+	defer func() { _ = os.Chdir(oldDir) }()
+	_ = os.Chdir(tempDir)
 
-	// Load config
-	cfg, err := config.LoadConfig()
+	manager := config.NewManager()
+	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
-	// Test environment variable overrides
-	assert.Equal(t, "K3d", cfg.Distribution)
-	assert.True(t, cfg.All)
-	assert.Equal(t, "test-cluster", cfg.Cluster.Name)
-	assert.Equal(t, "/custom/kubeconfig", cfg.Cluster.Connection.Kubeconfig)
+	// Environment variables should override defaults
+	assert.Equal(t, "test-cluster", cluster.Metadata.Name)
+	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
+	assert.Equal(t, "/custom/path/kubeconfig", cluster.Spec.Connection.Kubeconfig)
 }
 
-func TestInitializeViper(t *testing.T) {
-	// Clear any existing environment variables that might affect the test
-	envVarsToClean := []string{
-		"KSAIL_DISTRIBUTION",
-		"KSAIL_ALL", 
-		"KSAIL_METADATA_NAME",
-		"KSAIL_SPEC_CONNECTION_KUBECONFIG",
-	}
-	for _, envVar := range envVarsToClean {
-		if originalValue := os.Getenv(envVar); originalValue != "" {
-			_ = os.Unsetenv(envVar)
-			defer func(envVar, originalValue string) {
-				_ = os.Setenv(envVar, originalValue)
-			}(envVar, originalValue)
-		}
-	}
-
-	v := config.InitializeViper()
-	assert.NotNil(t, v)
-
-	// Test that no CLI defaults are set (following Viper best practices)
-	assert.Equal(t, "", v.GetString("distribution"))
-	assert.False(t, v.GetBool("all"))
-	assert.Equal(t, "", v.GetString("metadata.name")) // No defaults in Viper anymore
-}
-
-func TestGetConfigFilePath(t *testing.T) {
-	path := config.GetConfigFilePath()
-	assert.Equal(t, "ksail.yaml", path)
+func TestNewManager(t *testing.T) {
+	manager := config.NewManager()
+	require.NotNil(t, manager)
+	require.NotNil(t, manager.GetViper())
 }

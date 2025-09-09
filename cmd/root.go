@@ -22,7 +22,6 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
 			`from one simple command line tool.`,
 		handleRootRunE,
-		config.NoAutoDiscovery, // Disable auto-discovery for root command
 	)
 
 	// Silence errors and usage

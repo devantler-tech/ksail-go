@@ -105,14 +105,3 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 	return nil
 }
 
-// NoAutoDiscoveryMarker is used to identify when auto-discovery should be disabled.
-type NoAutoDiscoveryMarker struct{}
-
-// noAutoDiscoveryInstance is the singleton instance of NoAutoDiscoveryMarker.
-var noAutoDiscoveryInstance = &NoAutoDiscoveryMarker{}
-
-// NoAutoDiscovery is a special field selector that disables auto-discovery.
-// Use this when you want a command with no configuration flags.
-func NoAutoDiscovery(*v1alpha1.Cluster) any {
-	return noAutoDiscoveryInstance
-}

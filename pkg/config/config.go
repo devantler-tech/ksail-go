@@ -12,15 +12,11 @@ import (
 // and configuration defaults (priority 3).
 //
 // If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
-// If fieldSelectors is empty, all available fields from v1alpha1.Cluster will be auto-discovered and bound.
-// To disable auto-discovery entirely, use the NoAutoDiscovery selector.
+// If fieldSelectors is empty, no configuration flags will be added (no auto-discovery by default).
 //
 // Usage examples:
-//   // Auto-discovery (all fields automatically available as CLI flags):
+//   // No configuration flags (default behavior):
 //   config.NewCobraCommand("status", "Show status", "...", handleStatusRunE)
-//
-//   // No configuration flags:
-//   config.NewCobraCommand("root", "Root command", "...", handleRootRunE, config.NoAutoDiscovery)
 //
 //   // Type-safe selective binding with direct field pointers (zero maintenance):
 //   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
@@ -48,22 +44,12 @@ func NewCobraCommand(
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 	
-	// Check for NoAutoDiscovery
-	if len(fieldSelectors) == 1 {
-		if marker := fieldSelectors[0](&v1alpha1.Cluster{}); marker == noAutoDiscoveryInstance {
-			// No configuration flags - skip all binding
-			return cmd
-		}
-	}
-	
-	// Auto-bind flags based on field selectors or auto-discovery
+	// Auto-bind flags based on field selectors
 	if len(fieldSelectors) > 0 {
 		// Bind only the specified field selectors
 		bindFieldSelectors(cmd, manager, fieldSelectors)
-	} else {
-		// Auto-discover and bind all fields from v1alpha1.Cluster
-		bindAllFields(cmd, manager)
 	}
+	// No else clause - when no field selectors provided, no configuration flags are added
 	
 	return cmd
 }

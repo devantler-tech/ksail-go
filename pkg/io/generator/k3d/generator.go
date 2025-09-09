@@ -28,7 +28,10 @@ func NewK3dGenerator() *K3dGenerator {
 }
 
 // Generate creates a k3d cluster YAML configuration and writes it to the specified output.
-func (g *K3dGenerator) Generate(cluster *v1alpha1.Cluster, opts yamlgenerator.Options) (string, error) {
+func (g *K3dGenerator) Generate(
+	cluster *v1alpha1.Cluster,
+	opts yamlgenerator.Options,
+) (string, error) {
 	cfg := g.buildSimpleConfig(cluster)
 
 	out, err := g.Marshaller.Marshal(cfg)
