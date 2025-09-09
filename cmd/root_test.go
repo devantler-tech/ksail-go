@@ -71,9 +71,14 @@ func TestExecute_ShowsVersion(t *testing.T) {
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
-	return config.NewCobraCommand(use, "", "", func(cmd *cobra.Command, _ *config.Manager, args []string) error {
-		return runE(cmd, args)
-	})
+	return config.NewCobraCommand(
+		use,
+		"",
+		"",
+		func(cmd *cobra.Command, _ *config.Manager, args []string) error {
+			return runE(cmd, args)
+		},
+	)
 }
 
 func TestExecute_ReturnsError(t *testing.T) {

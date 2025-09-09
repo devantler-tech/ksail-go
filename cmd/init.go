@@ -26,15 +26,15 @@ func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []strin
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
 		return err
 	}
-	
+
 	// Use the final resolved values from the cluster configuration
 	distribution := string(cluster.Spec.Distribution)
-	
-	notify.Successln(cmd.OutOrStdout(), 
+
+	notify.Successln(cmd.OutOrStdout(),
 		"Project initialized successfully with "+distribution+" distribution (stub implementation)")
-	notify.Activityln(cmd.OutOrStdout(), 
+	notify.Activityln(cmd.OutOrStdout(),
 		"Cluster name: "+cluster.Metadata.Name)
-	notify.Activityln(cmd.OutOrStdout(), 
+	notify.Activityln(cmd.OutOrStdout(),
 		"Source directory: "+cluster.Spec.SourceDirectory)
 
 	return nil

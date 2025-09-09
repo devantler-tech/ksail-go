@@ -21,17 +21,19 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 // This eliminates boilerplate while maintaining compile-time safety.
 //
 // Usage:
-//   config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
+//
+//	config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
 var Ref = &v1alpha1.Cluster{}
 
 // Fields creates field selectors from direct field pointers.
 // This provides compile-time safety with zero maintenance overhead.
 //
 // Usage:
-//   config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
+//
+//	config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
 func Fields(fieldPtrs ...any) []FieldSelector[v1alpha1.Cluster] {
 	var selectors []FieldSelector[v1alpha1.Cluster]
-	
+
 	for _, fieldPtr := range fieldPtrs {
 		selector := createFieldSelectorFromPointer(fieldPtr)
 		selectors = append(selectors, selector)
@@ -59,11 +61,11 @@ func getFieldPathFromPointer(fieldPtr any) string {
 		return ""
 	}
 	fieldAddr := fieldVal.Pointer()
-	
+
 	// Get the address of Ref and find the field path
 	refVal := reflect.ValueOf(Ref).Elem()
 	refType := refVal.Type()
-	
+
 	return findFieldPath(refVal, refType, fieldAddr, "")
 }
 
@@ -71,10 +73,10 @@ func getFieldPathFromPointer(fieldPtr any) string {
 func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 	// Split the path into components
 	parts := strings.Split(path, ".")
-	
+
 	// Start with the cluster value
 	current := reflect.ValueOf(cluster).Elem()
-	
+
 	// Navigate to the target field
 	for _, part := range parts {
 		// Find the field by name (case-insensitive)
@@ -86,22 +88,21 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 				break
 			}
 		}
-		
+
 		if fieldName == "" {
 			return nil
 		}
-		
+
 		current = current.FieldByName(fieldName)
 		if !current.IsValid() {
 			return nil
 		}
 	}
-	
+
 	// Return a pointer to the field
 	if current.CanAddr() {
 		return current.Addr().Interface()
 	}
-	
+
 	return nil
 }
-

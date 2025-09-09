@@ -72,7 +72,10 @@ func TestInitCmd_Flags(t *testing.T) {
 
 	// Following Viper best practices: CLI flags should not have defaults
 	if distributionFlag.DefValue != "" {
-		t.Fatalf("expected distribution default to be empty (no CLI defaults), got %q", distributionFlag.DefValue)
+		t.Fatalf(
+			"expected distribution default to be empty (no CLI defaults), got %q",
+			distributionFlag.DefValue,
+		)
 	}
 
 	sourceDirectoryFlag := cmd.Flags().Lookup("sourcedirectory")
@@ -81,6 +84,9 @@ func TestInitCmd_Flags(t *testing.T) {
 	}
 
 	if sourceDirectoryFlag.DefValue != "" {
-		t.Fatalf("expected sourcedirectory default to be empty (no CLI defaults), got %q", sourceDirectoryFlag.DefValue)
+		t.Fatalf(
+			"expected sourcedirectory default to be empty (no CLI defaults), got %q",
+			sourceDirectoryFlag.DefValue,
+		)
 	}
 }

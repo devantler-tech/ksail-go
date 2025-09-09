@@ -3,8 +3,8 @@ package config
 import (
 	"time"
 
-	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -48,10 +48,10 @@ func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
 func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 	// Set metadata defaults
 	m.setMetadataFromConfig(cluster)
-	
+
 	// Set spec defaults
 	m.setSpecFromConfig(cluster)
-	
+
 	// Set connection defaults
 	m.setConnectionFromConfig(cluster)
 }

@@ -38,7 +38,7 @@ func TestClusterDirectCreation(t *testing.T) {
 			ReconciliationTool: v1alpha1.ReconciliationToolFlux,
 		},
 	}
-	
+
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
 	assert.Equal(t, "test", cluster.Metadata.Name)

@@ -15,10 +15,10 @@ func NewListCmd() *cobra.Command {
 		`List all Kubernetes clusters managed by KSail.`,
 		handleListRunE,
 	)
-	
+
 	// Add the special --all flag manually since it's CLI-only
 	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-	
+
 	return cmd
 }
 
@@ -26,7 +26,7 @@ func NewListCmd() *cobra.Command {
 func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
-	
+
 	all := configManager.GetViper().GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")

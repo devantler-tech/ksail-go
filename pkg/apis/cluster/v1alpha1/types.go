@@ -237,8 +237,14 @@ func (d *ReconciliationTool) Set(value string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidReconciliationTool, value, ReconciliationToolKubectl, ReconciliationToolFlux, ReconciliationToolArgoCD)
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidReconciliationTool,
+		value,
+		ReconciliationToolKubectl,
+		ReconciliationToolFlux,
+		ReconciliationToolArgoCD,
+	)
 }
 
 // String returns the string representation of the Distribution.
