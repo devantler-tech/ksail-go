@@ -7,7 +7,7 @@ package fluxinstaller
 import (
 	"context"
 
-	helmclient "github.com/mittwald/go-helm-client"
+	"github.com/mittwald/go-helm-client"
 	mock "github.com/stretchr/testify/mock"
 )
 
