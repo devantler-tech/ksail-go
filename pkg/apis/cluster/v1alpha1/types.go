@@ -221,9 +221,11 @@ func (d *Distribution) Set(value string) error {
 	for _, dist := range validDistributions() {
 		if strings.EqualFold(value, string(dist)) {
 			*d = dist
+
 			return nil
 		}
 	}
+
 	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
 		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionTind)
 }
@@ -234,9 +236,11 @@ func (d *ReconciliationTool) Set(value string) error {
 	for _, tool := range validReconciliationTools() {
 		if strings.EqualFold(value, string(tool)) {
 			*d = tool
+
 			return nil
 		}
 	}
+
 	return fmt.Errorf(
 		"%w: %s (valid options: %s, %s, %s)",
 		ErrInvalidReconciliationTool,

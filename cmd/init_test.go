@@ -78,14 +78,14 @@ func TestInitCmd_Flags(t *testing.T) {
 		)
 	}
 
-	sourceDirectoryFlag := cmd.Flags().Lookup("sourcedirectory")
+	sourceDirectoryFlag := cmd.Flags().Lookup("source-directory")
 	if sourceDirectoryFlag == nil {
-		t.Fatal("expected sourcedirectory flag to exist")
+		t.Fatal("expected source-directory flag to exist")
 	}
 
 	if sourceDirectoryFlag.DefValue != "" {
 		t.Fatalf(
-			"expected sourcedirectory default to be empty (no CLI defaults), got %q",
+			"expected source-directory default to be empty (no CLI defaults), got %q",
 			sourceDirectoryFlag.DefValue,
 		)
 	}

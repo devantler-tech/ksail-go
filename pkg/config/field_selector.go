@@ -38,6 +38,7 @@ func Fields(fieldPtrs ...any) []FieldSelector[v1alpha1.Cluster] {
 		selector := createFieldSelectorFromPointer(fieldPtr)
 		selectors = append(selectors, selector)
 	}
+
 	return selectors
 }
 
@@ -49,6 +50,7 @@ func createFieldSelectorFromPointer(fieldPtr any) FieldSelector[v1alpha1.Cluster
 		if fieldPath == "" {
 			return nil
 		}
+
 		return getFieldByPath(c, fieldPath)
 	}
 }
@@ -60,6 +62,7 @@ func getFieldPathFromPointer(fieldPtr any) string {
 	if fieldVal.Kind() != reflect.Ptr {
 		return ""
 	}
+
 	fieldAddr := fieldVal.Pointer()
 
 	// Get the address of Ref and find the field path
@@ -81,10 +84,12 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 	for _, part := range parts {
 		// Find the field by name (case-insensitive)
 		fieldName := ""
+
 		for i := 0; i < current.NumField(); i++ {
 			field := current.Type().Field(i)
-			if strings.ToLower(field.Name) == strings.ToLower(part) {
+			if strings.EqualFold(field.Name, part) {
 				fieldName = field.Name
+
 				break
 			}
 		}

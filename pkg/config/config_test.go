@@ -29,7 +29,9 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
 	oldDir, _ := os.Getwd()
+
 	defer func() { _ = os.Chdir(oldDir) }()
+
 	_ = os.Chdir(tempDir)
 
 	// Load cluster without any files or env vars
@@ -51,6 +53,7 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	_ = os.Setenv("KSAIL_METADATA_NAME", "test-cluster")
 	_ = os.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
 	_ = os.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/custom/path/kubeconfig")
+
 	defer func() {
 		_ = os.Unsetenv("KSAIL_METADATA_NAME")
 		_ = os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
@@ -60,7 +63,9 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
 	oldDir, _ := os.Getwd()
+
 	defer func() { _ = os.Chdir(oldDir) }()
+
 	_ = os.Chdir(tempDir)
 
 	manager := config.NewManager()

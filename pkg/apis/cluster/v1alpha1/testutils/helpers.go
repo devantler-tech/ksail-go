@@ -16,6 +16,7 @@ func CreateDefaultClusterMetadata(name string) metav1.ObjectMeta {
 		Finalizers:      []string{},
 		ManagedFields:   []metav1.ManagedFieldsEntry{},
 	}
+
 	return metadata
 }
 

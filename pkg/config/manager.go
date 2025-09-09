@@ -96,7 +96,8 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	if distStr := m.viper.GetString("spec-distribution"); distStr != "" {
 		// CLI flag or env var is set
 		var distribution v1alpha1.Distribution
-		if err := distribution.Set(distStr); err == nil {
+		err := distribution.Set(distStr)
+		if err == nil {
 			cluster.Spec.Distribution = distribution
 		} else {
 			cluster.Spec.Distribution = v1alpha1.DistributionKind
@@ -104,7 +105,8 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	} else if fileDistStr := m.viper.GetString("spec.distribution"); fileDistStr != "" {
 		// Config file is set
 		var distribution v1alpha1.Distribution
-		if err := distribution.Set(fileDistStr); err == nil {
+		err := distribution.Set(fileDistStr)
+		if err == nil {
 			cluster.Spec.Distribution = distribution
 		} else {
 			cluster.Spec.Distribution = v1alpha1.DistributionKind
@@ -117,7 +119,8 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	if tool := m.viper.GetString("spec-reconciliationtool"); tool != "" {
 		// CLI flag or env var is set
 		var reconciliationTool v1alpha1.ReconciliationTool
-		if err := reconciliationTool.Set(tool); err == nil {
+		err := reconciliationTool.Set(tool)
+		if err == nil {
 			cluster.Spec.ReconciliationTool = reconciliationTool
 		} else {
 			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
@@ -125,7 +128,8 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	} else if fileTool := m.viper.GetString("spec.reconciliationtool"); fileTool != "" {
 		// Config file is set
 		var reconciliationTool v1alpha1.ReconciliationTool
-		if err := reconciliationTool.Set(fileTool); err == nil {
+		err := reconciliationTool.Set(fileTool)
+		if err == nil {
 			cluster.Spec.ReconciliationTool = reconciliationTool
 		} else {
 			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
@@ -230,8 +234,10 @@ func (m *Manager) GetCluster() *v1alpha1.Cluster {
 	if m.cluster == nil {
 		// Load and return a default cluster using the config manager
 		cluster, _ := m.LoadCluster()
+
 		return cluster
 	}
+
 	return m.cluster
 }
 

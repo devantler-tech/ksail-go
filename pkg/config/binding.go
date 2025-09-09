@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -73,9 +72,9 @@ func discoverAllFields(
 		// Build the current field path
 		var currentPath string
 		if prefix == "" {
-			currentPath = strings.ToLower(fieldType.Name)
+			currentPath = fieldType.Name
 		} else {
-			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
+			currentPath = prefix + "." + fieldType.Name
 		}
 
 		// If this is a struct (but not a special type like time.Duration), recurse into it
@@ -172,6 +171,7 @@ func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
 	if fieldVal.Kind() != reflect.Ptr {
 		return ""
 	}
+
 	fieldAddr := fieldVal.Pointer()
 
 	// Recursively find the field path
@@ -197,9 +197,9 @@ func findFieldPath(
 		// Build the current field path
 		var currentPath string
 		if prefix == "" {
-			currentPath = strings.ToLower(fieldType.Name)
+			currentPath = fieldType.Name
 		} else {
-			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
+			currentPath = prefix + "." + fieldType.Name
 		}
 
 		// Check if this field's address matches our target
@@ -226,7 +226,7 @@ func isTimeType(t reflect.Type) bool {
 // pathToFlagName converts a hierarchical field path to a CLI flag name using the last field only.
 // E.g., "metadata.name" -> "name", "spec.connection.kubeconfig" -> "kubeconfig", "spec.csi" -> "csi"
 // Uppercase fields are converted to lowercase with proper kebab-case conversion.
-// E.g., "spec.CSI" -> "csi", "spec.connection.IPConfig" -> "ip-config"
+// E.g., "spec.CSI" -> "csi", "spec.connection.IPConfig" -> "ip-config".
 func pathToFlagName(path string) string {
 	// Get the last part of the path
 	parts := strings.Split(path, ".")
@@ -237,7 +237,7 @@ func pathToFlagName(path string) string {
 }
 
 // camelToKebab converts camelCase/PascalCase strings to kebab-case.
-// E.g., "IPConfig" -> "ip-config", "CSI" -> "csi", "sourceDirectory" -> "source-directory"
+// E.g., "IPConfig" -> "ip-config", "CSI" -> "csi", "sourceDirectory" -> "source-directory".
 func camelToKebab(s string) string {
 	var result strings.Builder
 
@@ -246,6 +246,7 @@ func camelToKebab(s string) string {
 			(i == len(s)-1 || !isUpper(rune(s[i+1])) || (i > 0 && !isUpper(rune(s[i-1])))) {
 			result.WriteByte('-')
 		}
+
 		result.WriteRune(toLower(r))
 	}
 
@@ -255,26 +256,15 @@ func camelToKebab(s string) string {
 // generateShortName generates a short flag name based on the naming rules.
 // Only creates shortnames for flags longer than 3 characters.
 // Uses first letter for simple names, or first letters of each word for kebab-case names.
-// E.g., "csi" -> no shortname, "csi-controller" -> "cc", "some-snake-cased-longname" -> "sscl"
+// E.g., "csi" -> no shortname, "distribution" -> "d", "source-directory" -> "s".
+// Note: Cobra only supports single-character shortnames, so we use the first letter of the first word.
 func generateShortName(longName string) string {
 	// Don't create shortnames for flags 3 chars or shorter
 	if len(longName) <= 3 {
 		return ""
 	}
 
-	// If it contains hyphens, use first letter of each part
-	if strings.Contains(longName, "-") {
-		parts := strings.Split(longName, "-")
-		var shortName strings.Builder
-		for _, part := range parts {
-			if len(part) > 0 {
-				shortName.WriteByte(part[0])
-			}
-		}
-		return shortName.String()
-	}
-
-	// For simple names, use just the first letter
+	// For simple names or kebab-case names, use just the first letter
 	if len(longName) > 0 {
 		return string(longName[0])
 	}
@@ -282,50 +272,52 @@ func generateShortName(longName string) string {
 	return ""
 }
 
-// isUpper checks if a rune is uppercase
+// isUpper checks if a rune is uppercase.
 func isUpper(r rune) bool {
 	return r >= 'A' && r <= 'Z'
 }
 
-// toLower converts a rune to lowercase
+// toLower converts a rune to lowercase.
 func toLower(r rune) rune {
 	if r >= 'A' && r <= 'Z' {
 		return r + ('a' - 'A')
 	}
+
 	return r
 }
 
 // generateFieldDescription generates a human-readable description for a configuration field.
 func generateFieldDescription(fieldPath string) string {
 	switch fieldPath {
-	case "metadata.name":
+	case "Metadata.Name":
 		return "Configure cluster name"
-	case "spec.distribution":
+	case "Spec.Distribution":
 		return "Configure cluster distribution (EKS, K3d, Kind [default], Tind)"
-	case "spec.distributionconfig":
+	case "Spec.DistributionConfig":
 		return "Configure distribution config file path"
-	case "spec.sourcedirectory":
+	case "Spec.SourceDirectory":
 		return "Configure source directory for Kubernetes manifests"
-	case "spec.connection.kubeconfig":
+	case "Spec.Connection.Kubeconfig":
 		return "Configure kubeconfig file path"
-	case "spec.connection.context":
+	case "Spec.Connection.Context":
 		return "Configure kubectl context"
-	case "spec.connection.timeout":
+	case "Spec.Connection.Timeout":
 		return "Configure connection timeout duration"
-	case "spec.cni":
+	case "Spec.CNI":
 		return "Configure CNI (Container Network Interface)"
-	case "spec.csi":
+	case "Spec.CSI":
 		return "Configure CSI (Container Storage Interface)"
-	case "spec.ingresscontroller":
+	case "Spec.IngressController":
 		return "Configure ingress controller"
-	case "spec.gatewaycontroller":
+	case "Spec.GatewayController":
 		return "Configure gateway controller"
-	case "spec.reconciliationtool":
+	case "Spec.ReconciliationTool":
 		return "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
 	default:
 		// Generate a default description based on the field path
 		parts := strings.Split(fieldPath, ".")
 		lastPart := parts[len(parts)-1]
-		return fmt.Sprintf("Configure %s", strings.ReplaceAll(lastPart, "_", " "))
+
+		return "Configure " + strings.ReplaceAll(lastPart, "_", " ")
 	}
 }

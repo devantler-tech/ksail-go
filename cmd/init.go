@@ -24,6 +24,7 @@ func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []strin
 	cluster, err := configManager.LoadCluster()
 	if err != nil {
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+
 		return err
 	}
 
