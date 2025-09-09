@@ -34,34 +34,117 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 	return selector
 }
 
-// FieldsFrom creates field selectors using direct field references from a reference cluster.
-// This provides a more ergonomic API for creating multiple field selectors.
+// FieldRef represents a typed field reference that can be used for field selection.
+// This provides compile-time safety while eliminating boilerplate.
+type FieldRef[T any] struct {
+	path string
+}
+
+// String returns the field path.
+func (f FieldRef[T]) String() string {
+	return f.path
+}
+
+// Cluster provides compile-time safe field references for v1alpha1.Cluster fields.
+// This eliminates the need for function wrappers while maintaining type safety.
+type Cluster struct{}
+
+// Spec returns field references for Spec fields.
+func (Cluster) Spec() ClusterSpec {
+	return ClusterSpec{}
+}
+
+// Metadata returns field references for Metadata fields.
+func (Cluster) Metadata() ClusterMetadata {
+	return ClusterMetadata{}
+}
+
+// ClusterSpec provides field references for v1alpha1.Spec fields.
+type ClusterSpec struct{}
+
+func (ClusterSpec) Distribution() FieldRef[v1alpha1.Distribution] {
+	return FieldRef[v1alpha1.Distribution]{path: "spec.distribution"}
+}
+
+func (ClusterSpec) SourceDirectory() FieldRef[string] {
+	return FieldRef[string]{path: "spec.sourcedirectory"}
+}
+
+func (ClusterSpec) DistributionConfig() FieldRef[string] {
+	return FieldRef[string]{path: "spec.distributionconfig"}
+}
+
+func (ClusterSpec) Connection() ClusterConnection {
+	return ClusterConnection{}
+}
+
+func (ClusterSpec) CNI() FieldRef[v1alpha1.CNI] {
+	return FieldRef[v1alpha1.CNI]{path: "spec.cni"}
+}
+
+func (ClusterSpec) CSI() FieldRef[v1alpha1.CSI] {
+	return FieldRef[v1alpha1.CSI]{path: "spec.csi"}
+}
+
+func (ClusterSpec) IngressController() FieldRef[v1alpha1.IngressController] {
+	return FieldRef[v1alpha1.IngressController]{path: "spec.ingresscontroller"}
+}
+
+func (ClusterSpec) GatewayController() FieldRef[v1alpha1.GatewayController] {
+	return FieldRef[v1alpha1.GatewayController]{path: "spec.gatewaycontroller"}
+}
+
+func (ClusterSpec) ReconciliationTool() FieldRef[v1alpha1.ReconciliationTool] {
+	return FieldRef[v1alpha1.ReconciliationTool]{path: "spec.reconciliationtool"}
+}
+
+// ClusterMetadata provides field references for Metadata fields.
+type ClusterMetadata struct{}
+
+func (ClusterMetadata) Name() FieldRef[string] {
+	return FieldRef[string]{path: "metadata.name"}
+}
+
+// ClusterConnection provides field references for Connection fields.
+type ClusterConnection struct{}
+
+func (ClusterConnection) Kubeconfig() FieldRef[string] {
+	return FieldRef[string]{path: "spec.connection.kubeconfig"}
+}
+
+func (ClusterConnection) Context() FieldRef[string] {
+	return FieldRef[string]{path: "spec.connection.context"}
+}
+
+func (ClusterConnection) Timeout() FieldRef[metav1.Duration] {
+	return FieldRef[metav1.Duration]{path: "spec.connection.timeout"}
+}
+
+// Ref returns a cluster reference for field selection.
+// This provides the most ergonomic API for field selection with compile-time safety.
 //
 // Usage:
-//   config.FieldsFrom(func(c *v1alpha1.Cluster) []any {
-//       return []any{
-//           &c.Spec.Distribution,
-//           &c.Spec.SourceDirectory,
-//       }
-//   })
-func FieldsFrom(fn func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
-	// Create a reference cluster for field path extraction
-	ref := &v1alpha1.Cluster{}
-	fieldPtrs := fn(ref)
-	
+//   c := config.Ref()
+//   config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())
+func Ref() Cluster {
+	return Cluster{}
+}
+
+// Fields creates field selectors from typed field references.
+// This provides the most ergonomic API for field selection with compile-time safety.
+//
+// Usage:
+//   c := config.Ref()
+//   config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())
+func Fields(fieldRefs ...interface{}) []FieldSelector[v1alpha1.Cluster] {
 	var selectors []FieldSelector[v1alpha1.Cluster]
-	for _, fieldPtr := range fieldPtrs {
-		// Extract the field path from the reference cluster
-		fieldPath := getFieldPath(ref, fieldPtr)
-		if fieldPath == "" {
-			continue
+	for _, fieldRef := range fieldRefs {
+		if ref, ok := fieldRef.(interface{ String() string }); ok {
+			fieldPath := ref.String()
+			selector := createFieldSelectorForPath(fieldPath)
+			selectors = append(selectors, selector)
 		}
-		
-		// Create a field selector that returns the corresponding field from any cluster
-		selector := createFieldSelectorForPath(fieldPath)
-		selectors = append(selectors, selector)
 	}
-	
 	return selectors
 }
 
@@ -140,13 +223,12 @@ func NoAutoDiscovery(*v1alpha1.Cluster) any {
 //   // No configuration flags:
 //   config.NewCobraCommand("root", "Root command", "...", handleRootRunE, config.NoAutoDiscovery)
 //
-//   // Selective binding with direct field references:
+//   // Simplified selective binding with typed field references:
+//   c := config.Ref()
 //   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//       config.FieldsFrom(func(c *v1alpha1.Cluster) []any {
-//           return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-//       })...)
+//       config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())...)
 //
-//   // Selective binding with function selectors (backward compatible):
+//   // Backward compatible function selectors still supported:
 //   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //       config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
 //       config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }))

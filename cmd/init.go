@@ -3,24 +3,19 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
+	c := config.Ref()
 	return config.NewCobraCommand(
 		"init",
 		"Initialize a new KSail project",
 		`Initialize a new KSail project with the specified configuration options.`,
 		handleInitRunE,
-		config.FieldsFrom(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution,
-				&c.Spec.SourceDirectory,
-			}
-		})...,
+		config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())...,
 	)
 }
 
