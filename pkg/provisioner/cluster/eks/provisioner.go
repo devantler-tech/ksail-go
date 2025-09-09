@@ -35,12 +35,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig     *v1alpha5.ClusterConfig
-	clusterProvider   *eks.ClusterProvider
-	clusterActions    EKSClusterActions
-	clusterLister     EKSClusterLister
-	clusterCreator    EKSClusterCreator
-	nodeGroupManager  EKSNodeGroupManager
+	clusterConfig    *v1alpha5.ClusterConfig
+	clusterProvider  *eks.ClusterProvider
+	clusterActions   EKSClusterActions
+	clusterLister    EKSClusterLister
+	clusterCreator   EKSClusterCreator
+	nodeGroupManager EKSNodeGroupManager
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -219,6 +219,7 @@ func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name st
 }
 
 // setupNodeGroupManager sets up common node group management prerequisites.
+//
 //nolint:ireturn // Returning interface is intended design for dependency injection
 func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
 	err := e.ensureClusterExists(ctx, name)

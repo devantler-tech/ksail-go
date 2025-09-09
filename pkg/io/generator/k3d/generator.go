@@ -107,8 +107,6 @@ func BuildDefaultK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
 	}
 }
 
-
-
 // BuildDefaultK3sOptions creates default K3s options configuration.
 func BuildDefaultK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
 	return v1alpha5.SimpleConfigOptionsK3s{

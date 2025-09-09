@@ -1,0 +1,13 @@
+# Pre-commit configuration for automatic Go code formatting
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint
+        entry: bash -c 'if command -v golangci-lint >/dev/null 2>&1; then golangci-lint run --fix; elif [ -f "$HOME/go/bin/golangci-lint" ]; then "$HOME/go/bin/golangci-lint" run --fix; elif [ -f "$(go env GOPATH)/bin/golangci-lint" ]; then "$(go env GOPATH)/bin/golangci-lint" run --fix; else echo "golangci-lint not found"; exit 1; fi'
+        language: system
+        files: \.go$
+        pass_filenames: false
