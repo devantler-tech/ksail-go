@@ -19,7 +19,6 @@ import (
 func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("test-cluster")
 	opts := yamlgenerator.Options{
@@ -27,10 +26,8 @@ func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertK3dYAML(t, result, "test-cluster")
 }
@@ -38,7 +35,6 @@ func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
 func TestK3dGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("file-cluster")
 	tempDir := t.TempDir()
@@ -48,10 +44,8 @@ func TestK3dGenerator_Generate_WithFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertK3dYAML(t, result, "file-cluster")
 
@@ -62,7 +56,6 @@ func TestK3dGenerator_Generate_WithFile(t *testing.T) {
 func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("existing-cluster")
 
@@ -81,7 +74,6 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("force-cluster")
 
@@ -100,7 +92,6 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	cluster := createTestCluster("write-error-cluster")
 
@@ -148,7 +139,6 @@ func testK3dMarshalError(
 ) {
 	t.Helper()
 
-	// Arrange
 	gen := generator.NewK3dGenerator()
 	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha5.SimpleConfig]{
 		Marshaller: nil,

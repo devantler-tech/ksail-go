@@ -21,7 +21,6 @@ type TestModel struct {
 func TestYAMLGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewYAMLGenerator[TestModel]()
 	model := createTestModel("1.0.0", true)
 	opts := generator.Options{
@@ -29,10 +28,8 @@ func TestYAMLGenerator_Generate_WithoutFile(t *testing.T) {
 		Force:  false,
 	} // No output file specified
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertYAMLContent(t, result, model)
 }
@@ -40,7 +37,6 @@ func TestYAMLGenerator_Generate_WithoutFile(t *testing.T) {
 func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewYAMLGenerator[TestModel]()
 	model := createTestModel("2.0.0", false)
 	tempDir, outputPath := setupTempFile(t, "test.yaml")
@@ -49,10 +45,8 @@ func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertYAMLContent(t, result, model)
 	verifyFileContent(t, tempDir, outputPath, result)
@@ -61,7 +55,6 @@ func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
 func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
 		t,
 		"3.0.0",
@@ -69,10 +62,8 @@ func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 		false,
 	)
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertYAMLContent(t, result, model)
 	verifyFileContent(t, tempDir, outputPath, existingContent) // File should not be overwritten
@@ -81,7 +72,6 @@ func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
 		t,
 		"4.0.0",
@@ -89,10 +79,8 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 		true,
 	)
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertYAMLContent(t, result, model)
 	verifyFileContent(t, tempDir, outputPath, result) // File should be overwritten
@@ -106,7 +94,6 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewYAMLGenerator[TestModel]()
 	model := createTestModel("5.0.0", true)
 
@@ -118,10 +105,8 @@ func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
 		Force:  true,
 	}
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.Error(t, err, "Generate should fail when file write fails")
 	assert.Contains(
 		t,
@@ -147,10 +132,8 @@ func TestYAMLGenerator_Generate_MarshalError(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(model, opts)
 
-	// Assert
 	require.Error(t, err, "Generate should fail when marshalling fails")
 	assert.Contains(
 		t,

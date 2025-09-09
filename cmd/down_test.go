@@ -8,13 +8,10 @@ import (
 )
 
 func TestNewDownCmd(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
-	// Act
 	cmd := cmd.NewDownCmd()
 
-	// Assert
 	if cmd == nil {
 		t.Fatal("expected command to be created")
 	}
@@ -29,7 +26,6 @@ func TestNewDownCmd(t *testing.T) {
 }
 
 func TestDownCmd_Execute(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -37,7 +33,6 @@ func TestDownCmd_Execute(t *testing.T) {
 	cmd := cmd.NewDownCmd()
 	cmd.SetOut(&out)
 
-	// Act
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -47,7 +42,6 @@ func TestDownCmd_Execute(t *testing.T) {
 
 	expected := "✔ Cluster stopped and removed successfully (stub implementation)\n"
 
-	// Assert
 	if got != expected {
 		t.Fatalf("expected output %q, got %q", expected, got)
 	}

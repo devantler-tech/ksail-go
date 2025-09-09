@@ -115,10 +115,8 @@ func assertDockerEngineSuccess(
 	mockClient.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 
-	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
 
-	// Assert
 	assertSuccessfulEngineCreation(t, engine, err, "Docker", mockClient)
 }
 
@@ -270,14 +268,11 @@ func TestContainerEngine_GetClient(t *testing.T) {
 func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
 	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 
-	// Act
 	engine, err := containerengine.NewContainerEngine(mockClient)
 
-	// Assert
 	require.NoError(t, err)
 	assert.NotNil(t, engine)
 	assert.Equal(t, "Docker", engine.GetName())
@@ -287,10 +282,8 @@ func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
 func TestNewContainerEngine_WithNilClient(t *testing.T) {
 	t.Parallel()
 
-	// Act
 	engine, err := containerengine.NewContainerEngine(nil)
 
-	// Assert
 	require.Error(t, err)
 	assert.Nil(t, engine)
 	assert.Contains(t, err.Error(), "apiClient cannot be nil")
@@ -413,7 +406,6 @@ func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
 
 	// Create client creators using simple map
@@ -521,10 +513,8 @@ func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 		nil, errPodmanSystemUnavailable,
 	)
 
-	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
 
-	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
 	assert.Nil(t, engine)
 }
@@ -532,7 +522,6 @@ func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mockDockerClient := provisioner.NewMockAPIClient(t)
 	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
 	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
@@ -552,10 +541,8 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 		Ping(context.Background()).
 		Return(completePing(), errPodmanSystemNotReady)
 
-	// Act
 	engine, err := containerengine.GetAutoDetectedClient(overrides)
 
-	// Assert
 	assert.Equal(t, containerengine.ErrNoContainerEngine, err)
 	assert.Nil(t, engine)
 }
@@ -563,7 +550,6 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mockClient := provisioner.NewMockAPIClient(t)
 
 	// Test with only Docker creator - other clients will use defaults

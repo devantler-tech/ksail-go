@@ -16,7 +16,6 @@ import (
 func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("test-cluster")
 	opts := yamlgenerator.Options{
@@ -24,10 +23,8 @@ func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertKindYAML(t, result, "test-cluster")
 }
@@ -35,7 +32,6 @@ func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 func TestKindGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("file-cluster")
 	tempDir := t.TempDir()
@@ -45,10 +41,8 @@ func TestKindGenerator_Generate_WithFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertKindYAML(t, result, "file-cluster")
 
@@ -59,7 +53,6 @@ func TestKindGenerator_Generate_WithFile(t *testing.T) {
 func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("existing-no-force")
 
@@ -78,7 +71,6 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("existing-with-force")
 
@@ -97,7 +89,6 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	cluster := createTestCluster("error-cluster")
 
@@ -179,7 +170,6 @@ func testKindMarshalError(
 ) {
 	t.Helper()
 
-	// Arrange
 	gen := generator.NewKindGenerator()
 	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha4.Cluster]{
 		Marshaller: nil,

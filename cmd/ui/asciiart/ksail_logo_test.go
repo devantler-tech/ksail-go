@@ -10,15 +10,12 @@ import (
 )
 
 func TestPrintKSailLogo(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var writer bytes.Buffer
 
-	// Act
 	asciiart.PrintKSailLogo(&writer)
 
-	// Assert
 	snaps.MatchSnapshot(t, writer.String())
 }
 

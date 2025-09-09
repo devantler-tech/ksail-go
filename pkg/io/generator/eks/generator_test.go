@@ -17,7 +17,6 @@ import (
 func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("test-cluster")
 	opts := yamlgenerator.Options{
@@ -25,10 +24,8 @@ func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cfg, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "test-cluster")
 }
@@ -36,7 +33,6 @@ func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
 func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("file-cluster")
 	tempDir := t.TempDir()
@@ -46,10 +42,8 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cfg, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "file-cluster")
 
@@ -60,7 +54,6 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("existing-no-force")
 
@@ -79,7 +72,6 @@ func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("existing-with-force")
 
@@ -98,7 +90,6 @@ func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("error-cluster")
 
@@ -109,10 +100,8 @@ func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 		Force:  true,
 	}
 
-	// Act
 	result, err := gen.Generate(cfg, opts)
 
-	// Assert
 	require.Error(t, err, "Generate should fail when file write fails")
 	assert.Contains(t, err.Error(), "write EKS config", "Error should mention write failure")
 	assert.Empty(t, result, "Result should be empty on error")
@@ -132,7 +121,6 @@ func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
 func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfigWithOptions("custom-cluster")
 	opts := yamlgenerator.Options{
@@ -140,10 +128,8 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cfg, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "custom-cluster")
 
@@ -156,7 +142,6 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	cfg := createTestClusterConfig("default-cluster")
 	opts := yamlgenerator.Options{
@@ -164,10 +149,8 @@ func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cfg, opts)
 
-	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "default-cluster")
 }
@@ -289,7 +272,6 @@ func testEKSMarshalError(
 ) {
 	t.Helper()
 
-	// Arrange
 	gen := generator.NewEKSGenerator()
 	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha5.ClusterConfig]{
 		Marshaller: nil,

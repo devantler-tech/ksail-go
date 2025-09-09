@@ -14,23 +14,19 @@ import (
 func TestNewFluxInstaller(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	kubeconfig := "~/.kube/config"
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	// Act
 	client := fluxinstaller.NewMockHelmClient(t)
 	installer := fluxinstaller.NewFluxInstaller(client, kubeconfig, context, timeout)
 
-	// Assert
 	assert.NotNil(t, installer)
 }
 
 func TestFluxInstaller_Install_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
 	client.EXPECT().Install(mock.Anything, mock.Anything).Return(nil)
 
@@ -41,17 +37,14 @@ func TestFluxInstaller_Install_Success(t *testing.T) {
 		5*time.Second,
 	)
 
-	// Act
 	err := installer.Install(context.Background())
 
-	// Assert
 	require.NoError(t, err)
 }
 
 func TestFluxInstaller_Install_Error(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
 	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
 
@@ -62,10 +55,8 @@ func TestFluxInstaller_Install_Error(t *testing.T) {
 		5*time.Second,
 	)
 
-	// Act
 	err := installer.Install(context.Background())
 
-	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to install Flux operator")
 }
@@ -73,7 +64,6 @@ func TestFluxInstaller_Install_Error(t *testing.T) {
 func TestFluxInstaller_Uninstall_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
 	client.EXPECT().Uninstall("flux-operator").Return(nil)
 
@@ -84,17 +74,14 @@ func TestFluxInstaller_Uninstall_Success(t *testing.T) {
 		5*time.Second,
 	)
 
-	// Act
 	err := installer.Uninstall(context.Background())
 
-	// Assert
 	require.NoError(t, err)
 }
 
 func TestFluxInstaller_Uninstall_Error(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	client := fluxinstaller.NewMockHelmClient(t)
 	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
 
@@ -105,10 +92,8 @@ func TestFluxInstaller_Uninstall_Error(t *testing.T) {
 		5*time.Second,
 	)
 
-	// Act
 	err := installer.Uninstall(context.Background())
 
-	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
 }

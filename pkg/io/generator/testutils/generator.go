@@ -25,10 +25,8 @@ func TestGeneratorMarshalError[T, M any](
 		Force:  false,
 	}
 
-	// Act
 	result, err := gen.Generate(cluster, opts)
 
-	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedErrorContains)
 	assert.Empty(t, result)

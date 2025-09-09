@@ -39,14 +39,11 @@ func TestK3dCreate_Success(t *testing.T) {
 
 func TestK3dCreate_Error_TransformFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, _, configProvider := newK3dProvisionerForTest(t)
 	expectTransformSimpleToClusterConfigErr(configProvider, errK3dBoom)
 
-	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
 
-	// Assert
 	testutils.AssertErrWrappedContains(
 		t,
 		err,
@@ -58,16 +55,13 @@ func TestK3dCreate_Error_TransformFailed(t *testing.T) {
 
 func TestK3dCreate_Error_ClusterRunFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, configProvider := newK3dProvisionerForTest(t)
 
 	expectTransformSimpleToClusterConfigOK(configProvider)
 	clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(errK3dBoom)
 
-	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
 
-	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
 }
 
@@ -90,15 +84,12 @@ func TestK3dDelete_Success(t *testing.T) {
 
 func TestK3dDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clientProvider.On("ClusterDelete", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(errK3dBoom)
 
-	// Act
 	err := provisioner.Delete(context.Background(), "bad")
 
-	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
 }
 
@@ -179,7 +170,6 @@ func TestK3dStop_Error_StopFailed(t *testing.T) {
 
 func TestK3dList_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clusters := []*types.Cluster{
 		{Name: "cluster-a"},
@@ -187,30 +177,24 @@ func TestK3dList_Success(t *testing.T) {
 	}
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
-	// Act
 	got, err := provisioner.List(context.Background())
 
-	// Assert
 	require.NoError(t, err, "List()")
 	assert.Equal(t, []string{"cluster-a", "cluster-b"}, got, "List()")
 }
 
 func TestK3dList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
 
-	// Act
 	_, err := provisioner.List(context.Background())
 
-	// Assert
 	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
 }
 
 func TestK3dExists_Success_False(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clusters := []*types.Cluster{
 		{Name: "cluster-x"},
@@ -218,9 +202,7 @@ func TestK3dExists_Success_False(t *testing.T) {
 	}
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "not-here")
-	// Assert
 	if err != nil {
 		t.Fatalf("Exists() unexpected error: %v", err)
 	}
@@ -232,7 +214,6 @@ func TestK3dExists_Success_False(t *testing.T) {
 
 func TestK3dExists_Success_True(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clusters := []*types.Cluster{
 		{Name: "cluster-x"},
@@ -240,9 +221,7 @@ func TestK3dExists_Success_True(t *testing.T) {
 	}
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "")
-	// Assert
 	if err != nil {
 		t.Fatalf("Exists() unexpected error: %v", err)
 	}
@@ -254,14 +233,11 @@ func TestK3dExists_Success_True(t *testing.T) {
 
 func TestK3dExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
 	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "any")
 
-	// Assert
 	if exists {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}

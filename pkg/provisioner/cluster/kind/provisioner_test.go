@@ -42,15 +42,12 @@ func TestCreate_Success(t *testing.T) {
 
 func TestCreate_Error_CreateFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).
 		Return(clustertestutils.ErrCreateClusterFailed)
 
-	// Act
 	err := provisioner.Create(context.Background(), "my-cluster")
 
-	// Assert
 	testutils.AssertErrWrappedContains(
 		t,
 		err,
@@ -88,14 +85,11 @@ func TestDelete_Success(t *testing.T) {
 
 func TestDelete_Error_DeleteFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("Delete", "bad", mock.Anything).Return(clustertestutils.ErrDeleteClusterFailed)
 
-	// Act
 	err := provisioner.Delete(context.Background(), "bad")
 
-	// Assert
 	testutils.AssertErrWrappedContains(
 		t,
 		err,
@@ -107,13 +101,10 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 
 func TestExists_Success_False(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"x", "y"}, nil)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "not-here")
-	// Assert
 	if err != nil {
 		t.Fatalf("Exists() unexpected error: %v", err)
 	}
@@ -125,13 +116,10 @@ func TestExists_Success_False(t *testing.T) {
 
 func TestExists_Success_True(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"x", "cfg-name"}, nil)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "")
-	// Assert
 	if err != nil {
 		t.Fatalf("Exists() unexpected error: %v", err)
 	}
@@ -143,14 +131,11 @@ func TestExists_Success_True(t *testing.T) {
 
 func TestExists_Error_ListFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
-	// Act
 	exists, err := provisioner.Exists(context.Background(), "any")
 
-	// Assert
 	if exists {
 		t.Fatalf("Exists() got true, want false when error occurs")
 	}
@@ -161,28 +146,22 @@ func TestExists_Error_ListFailed(t *testing.T) {
 
 func TestList_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"a", "b"}, nil)
 
-	// Act
 	got, err := provisioner.List(context.Background())
 
-	// Assert
 	require.NoError(t, err, "List()")
 	assert.Equal(t, []string{"a", "b"}, got, "List()")
 }
 
 func TestList_Error_ListFailed(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
 
-	// Act
 	_, err := provisioner.List(context.Background())
 
-	// Assert
 	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed,
 		"failed to list kind clusters", "List()")
 }
@@ -196,14 +175,11 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 
 func TestStart_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStartClusterFailed)
 
-	// Act
 	err := provisioner.Start(context.Background(), "")
 
-	// Assert
 	if err == nil {
 		t.Fatalf("Start() expected error, got nil")
 	}
@@ -211,7 +187,6 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 
 func TestStart_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
 	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane", "kind-worker"}, nil)
@@ -219,9 +194,7 @@ func TestStart_Success(t *testing.T) {
 	// Expect ContainerStart called twice with any args
 	client.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything).Return(nil).Times(2)
 
-	// Act
 	err := provisioner.Start(context.Background(), "")
-	// Assert
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -250,14 +223,11 @@ func TestStop_Error_ClusterNotFound(t *testing.T) {
 
 func TestStop_Error_NoNodesFound(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStopClusterFailed)
 
-	// Act
 	err := provisioner.Stop(context.Background(), "")
 
-	// Assert
 	if err == nil {
 		t.Fatalf("Stop() expected error, got nil")
 	}
@@ -279,7 +249,6 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 
 func TestStop_Success(t *testing.T) {
 	t.Parallel()
-	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
 	provider.On("ListNodes", "cfg-name").
@@ -287,9 +256,7 @@ func TestStop_Success(t *testing.T) {
 
 	client.On("ContainerStop", mock.Anything, mock.Anything, mock.Anything).Return(nil).Times(3)
 
-	// Act
 	err := provisioner.Stop(context.Background(), "")
-	// Assert
 	if err != nil {
 		t.Fatalf("Stop() unexpected error: %v", err)
 	}
@@ -354,17 +321,14 @@ func runDockerOperationFailureTest(
 	expectedErrorMsg string,
 ) {
 	t.Helper()
-	// Arrange
 	provisioner, provider, client := newProvisionerForTest(t)
 
 	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane"}, nil)
 
 	expectDockerCall(client)
 
-	// Act
 	err := operation(provisioner)
 
-	// Assert
 	if err == nil {
 		t.Fatalf("%s() expected error, got nil", operationName)
 	}
