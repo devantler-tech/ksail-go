@@ -29,16 +29,13 @@ func TestMain(main *testing.M) {
 }
 
 func TestNewRootCmd_VersionFormatting(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
-	// Act
 	version := "1.2.3"
 	commit := "abc123"
 	date := "2025-08-17"
 	cmd := cmd.NewRootCmd(version, commit, date)
 
-	// Assert
 	expectedVersion := version + " (Built on " + date + " from Git SHA " + commit + ")"
 	if cmd.Version != expectedVersion {
 		t.Fatalf("unexpected version string. want %q, got %q", expectedVersion, cmd.Version)
@@ -46,7 +43,6 @@ func TestNewRootCmd_VersionFormatting(t *testing.T) {
 }
 
 func TestExecute_ShowsHelp(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -54,10 +50,8 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	root := cmd.NewRootCmd("", "", "")
 	root.SetOut(&out)
 
-	// Act
 	_ = root.Execute()
 
-	// Assert
 	snaps.MatchSnapshot(t, out.String())
 }
 
@@ -67,7 +61,6 @@ func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobr
 }
 
 func TestExecute_ReturnsError(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
@@ -78,10 +71,7 @@ func TestExecute_ReturnsError(t *testing.T) {
 	actual.SetArgs([]string{"fail"})
 	actual.AddCommand(failing)
 
-	// Act
 	err := actual.Execute()
-
-	// Assert
 	if err == nil {
 		t.Fatal("Expected error but got none")
 	}
@@ -110,14 +100,11 @@ func TestExecuteSuccess(t *testing.T) {
 		return nil
 	})
 
-	// Act
 	actual := cmd.NewRootCmd("test", "test", "test")
 	actual.SetArgs([]string{"ok"})
 	actual.AddCommand(succeeding)
 
 	err := actual.Execute()
-
-	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
 	}
@@ -126,7 +113,6 @@ func TestExecuteSuccess(t *testing.T) {
 func TestExecute_WrapperSuccess(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
 		return nil
 	})
@@ -135,10 +121,7 @@ func TestExecute_WrapperSuccess(t *testing.T) {
 	rootCmd.SetArgs([]string{"ok"})
 	rootCmd.AddCommand(succeeding)
 
-	// Act
 	err := cmd.Execute(rootCmd)
-
-	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
 	}
@@ -147,7 +130,6 @@ func TestExecute_WrapperSuccess(t *testing.T) {
 func TestExecute_WrapperError(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
 		return errRootTest
 	})
@@ -156,10 +138,7 @@ func TestExecute_WrapperError(t *testing.T) {
 	rootCmd.SetArgs([]string{"fail"})
 	rootCmd.AddCommand(failing)
 
-	// Act
 	err := cmd.Execute(rootCmd)
-
-	// Assert
 	if err == nil {
 		t.Fatal("Expected error but got none")
 	}

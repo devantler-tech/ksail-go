@@ -8,13 +8,10 @@ import (
 )
 
 func TestNewStopCmd(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
-	// Act
 	cmd := cmd.NewStopCmd()
 
-	// Assert
 	if cmd == nil {
 		t.Fatal("expected command to be created")
 	}
@@ -29,7 +26,6 @@ func TestNewStopCmd(t *testing.T) {
 }
 
 func TestStopCmd_Execute(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -37,10 +33,7 @@ func TestStopCmd_Execute(t *testing.T) {
 	cmd := cmd.NewStopCmd()
 	cmd.SetOut(&out)
 
-	// Act
 	err := cmd.Execute()
-
-	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

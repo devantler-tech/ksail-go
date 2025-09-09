@@ -11,7 +11,6 @@ import (
 func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	usr, err := user.Current()
 	if err != nil {
 		t.Fatalf("failed to get current user: %v", err)
@@ -19,7 +18,6 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 
 	input := "~/some/nested/dir"
 
-	// Act
 	got, err := pathutils.ExpandHomePath(input)
 	if err != nil {
 		t.Fatalf("ExpandHomePath returned error: %v", err)
@@ -27,7 +25,6 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 
 	want := filepath.Join(usr.HomeDir, "some", "nested", "dir")
 
-	// Assert
 	if got != want {
 		t.Fatalf("ExpandHomePath(%q) = %q, want %q", input, got, want)
 	}
@@ -36,20 +33,17 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	cases := []string{
 		filepath.Join("var", "tmp"),                              // relative path
 		filepath.Join(string(filepath.Separator), "tmp", "file"), // absolute path
 	}
 
 	for _, inputPath := range cases {
-		// Act
 		got, err := pathutils.ExpandHomePath(inputPath)
 		if err != nil {
 			t.Fatalf("ExpandHomePath returned error for %q: %v", inputPath, err)
 		}
 
-		// Assert
 		if got != inputPath {
 			t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", inputPath, got)
 		}
@@ -59,16 +53,13 @@ func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
 func TestExpandPath_TildeOnlyUnchanged(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	input := "~" // No trailing slash, function should leave unchanged
 
-	// Act
 	got, err := pathutils.ExpandHomePath(input)
 	if err != nil {
 		t.Fatalf("ExpandHomePath returned error: %v", err)
 	}
 
-	// Assert
 	if got != input {
 		t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", input, got)
 	}

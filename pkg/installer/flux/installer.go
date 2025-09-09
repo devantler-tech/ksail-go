@@ -12,7 +12,9 @@ import (
 )
 
 // ErrUnexpectedClientType is returned when the helm client constructor returns an unexpected type.
-var ErrUnexpectedClientType = errors.New("unexpected client type returned from helm client constructor")
+var ErrUnexpectedClientType = errors.New(
+	"unexpected client type returned from helm client constructor",
+)
 
 // FluxInstaller implements the installer.Installer interface for Flux.
 type FluxInstaller struct {
@@ -23,7 +25,11 @@ type FluxInstaller struct {
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
-func NewFluxInstaller(client HelmClient, kubeconfig, context string, timeout time.Duration) *FluxInstaller {
+func NewFluxInstaller(
+	client HelmClient,
+	kubeconfig, context string,
+	timeout time.Duration,
+) *FluxInstaller {
 	return &FluxInstaller{
 		client:     client,
 		kubeconfig: kubeconfig,

@@ -17,10 +17,10 @@ var ErrEmptyOutputPath = errors.New("output path cannot be empty")
 var ErrBasePath = errors.New("base path cannot be empty")
 
 // user read/write permission.
-const filePermUserRW = 0600
+const filePermUserRW = 0o600
 
 // directory permissions: user read/write/execute, group read/execute.
-const dirPermUserGroupRX = 0750
+const dirPermUserGroupRX = 0o750
 
 // TryWrite writes content to the provided writer.
 func TryWrite(content string, writer io.Writer) (string, error) {

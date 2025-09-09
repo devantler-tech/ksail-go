@@ -10,16 +10,13 @@ import (
 func TestNewCobraCommand(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	use := "test"
 	short := "Test command"
 	long := "This is a test command for testing purposes"
 	runE := func(_ *cobra.Command, _ []string) error { return nil }
 
-	// Act
 	cmd := factory.NewCobraCommand(use, short, long, runE)
 
-	// Assert
 	assertBasicCommandProperties(t, cmd, use, short, long)
 
 	if cmd.SilenceErrors != false {
@@ -34,7 +31,6 @@ func TestNewCobraCommand(t *testing.T) {
 func TestNewCobraCommandWithFlags(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	use := "flagged"
 	short := "Flagged command"
 	long := "This is a command with flags for testing purposes"
@@ -46,10 +42,8 @@ func TestNewCobraCommandWithFlags(t *testing.T) {
 		cmd.Flags().String("test-flag", "", "A test flag")
 	}
 
-	// Act
 	cmd := factory.NewCobraCommandWithFlags(use, short, long, runE, setupFlags)
 
-	// Assert
 	assertBasicCommandProperties(t, cmd, use, short, long)
 
 	if !flagCalled {

@@ -29,7 +29,10 @@ func NewKustomizationGenerator(cfg *v1alpha1.Cluster) *KustomizationGenerator {
 }
 
 // Generate creates a kustomization.yaml file and writes it to the specified output file path.
-func (g *KustomizationGenerator) Generate(_ *v1alpha1.Cluster, opts yamlgenerator.Options) (string, error) {
+func (g *KustomizationGenerator) Generate(
+	_ *v1alpha1.Cluster,
+	opts yamlgenerator.Options,
+) (string, error) {
 	//nolint:exhaustruct // Only basic fields needed for minimal kustomization
 	kustomization := ktypes.Kustomization{
 		TypeMeta: ktypes.TypeMeta{

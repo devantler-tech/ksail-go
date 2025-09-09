@@ -46,7 +46,10 @@ type ClientCreator func() (client.APIClient, error)
 //
 //nolint:ireturn // Interface return required for dependency injection pattern
 func GetDockerClient() (client.APIClient, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}

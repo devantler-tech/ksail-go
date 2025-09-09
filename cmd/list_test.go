@@ -8,13 +8,10 @@ import (
 )
 
 func TestNewListCmd(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
-	// Act
 	cmd := cmd.NewListCmd()
 
-	// Assert
 	if cmd == nil {
 		t.Fatal("expected command to be created")
 	}
@@ -29,7 +26,6 @@ func TestNewListCmd(t *testing.T) {
 }
 
 func TestListCmd_Execute_Default(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -37,10 +33,7 @@ func TestListCmd_Execute_Default(t *testing.T) {
 	cmd := cmd.NewListCmd()
 	cmd.SetOut(&out)
 
-	// Act
 	err := cmd.Execute()
-
-	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -55,7 +48,6 @@ func TestListCmd_Execute_Default(t *testing.T) {
 }
 
 func TestListCmd_Execute_All(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -64,10 +56,7 @@ func TestListCmd_Execute_All(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--all"})
 
-	// Act
 	err := cmd.Execute()
-
-	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -82,7 +71,6 @@ func TestListCmd_Execute_All(t *testing.T) {
 }
 
 func TestListCmd_Flags(t *testing.T) {
-	// Arrange
 	t.Parallel()
 
 	cmd := cmd.NewListCmd()

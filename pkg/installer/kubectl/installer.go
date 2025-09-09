@@ -126,9 +126,17 @@ func (b *KubectlInstaller) Uninstall(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
-	_ = b.dynamicClient.Delete(timeoutCtx, "ksail", createDefaultDeleteOptions()) // ignore errors (including NotFound)
+	_ = b.dynamicClient.Delete(
+		timeoutCtx,
+		"ksail",
+		createDefaultDeleteOptions(),
+	) // ignore errors (including NotFound)
 
-	_ = b.apiExtensionsClient.Delete(timeoutCtx, "applysets.k8s.devantler.tech", createDefaultDeleteOptions())
+	_ = b.apiExtensionsClient.Delete(
+		timeoutCtx,
+		"applysets.k8s.devantler.tech",
+		createDefaultDeleteOptions(),
+	)
 
 	return nil
 }
@@ -236,7 +244,8 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 			}
 
 			for _, cond := range crd.Status.Conditions {
-				if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
+				if cond.Type == apiextensionsv1.Established &&
+					cond.Status == apiextensionsv1.ConditionTrue {
 					return true, nil
 				}
 
@@ -268,7 +277,9 @@ func (b *KubectlInstaller) applyApplySetCR(
 		return fmt.Errorf("failed to unmarshal ApplySet CR yaml: %w", err)
 	}
 	// Ensure GVK since yaml->map won't set it.
-	applySetObj.SetGroupVersionKind(schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"})
+	applySetObj.SetGroupVersionKind(
+		schema.GroupVersionKind{Group: "k8s.devantler.tech", Version: "v1", Kind: "ApplySet"},
+	)
 	applySetObj.SetName(name)
 
 	_, err = dyn.Create(ctx, &applySetObj, createDefaultCreateOptions())

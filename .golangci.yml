@@ -1,6 +1,14 @@
 version: "2"
 run:
   allow-parallel-runners: true
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+    - swaggo
 linters:
   default: all
   enable:

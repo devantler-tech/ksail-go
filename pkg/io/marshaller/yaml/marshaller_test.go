@@ -26,7 +26,6 @@ type bad struct {
 func TestMarshal_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mar := yamlmarshaller.NewMarshaller[sample]()
 	want := sample{
 		Name:   "app",
@@ -35,10 +34,8 @@ func TestMarshal_Success(t *testing.T) {
 		Tags:   []string{"dev", "test"},
 	}
 
-	// Act
 	out, err := mar.Marshal(want)
 
-	// Assert
 	require.NoError(t, err)
 	assert.NotEmpty(t, out)
 
@@ -52,7 +49,6 @@ func TestMarshal_Success(t *testing.T) {
 func TestMarshalString_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mar := yamlmarshaller.NewMarshaller[sample]()
 	input := sample{
 		Name:   "app",
@@ -61,7 +57,6 @@ func TestMarshalString_Success(t *testing.T) {
 		Tags:   []string{"dev", "test"},
 	}
 
-	// Act
 	out := testutils.MustMarshal(t, mar, input)
 	// Some yaml libs may preserve struct field names; accept either lowercase (from tags) or field name casing.
 	testutils.AssertStringContainsOneOf(t, out, "name: app", "Name: app")
@@ -73,7 +68,6 @@ func TestMarshalString_Success(t *testing.T) {
 func TestUnmarshal_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mar := yamlmarshaller.NewMarshaller[sample]()
 	data := []byte("" +
 		"name: app\n" +
@@ -90,7 +84,6 @@ func TestUnmarshal_Success(t *testing.T) {
 		Tags:   []string{"dev", "test"},
 	}
 
-	// Act
 	var got sample
 
 	testutils.MustUnmarshal[sample](t, mar, data, &got)
@@ -100,7 +93,6 @@ func TestUnmarshal_Success(t *testing.T) {
 func TestUnmarshalString_Success(t *testing.T) {
 	t.Parallel()
 
-	// Arrange
 	mar := yamlmarshaller.NewMarshaller[sample]()
 	data := "" +
 		"name: app\n" +
@@ -116,7 +108,6 @@ func TestUnmarshalString_Success(t *testing.T) {
 		Tags:   []string{"dev", "test"},
 	}
 
-	// Act
 	var got sample
 
 	testutils.MustUnmarshalString[sample](t, mar, data, &got)
@@ -134,10 +125,8 @@ func TestMarshal_Error_UnsupportedType(t *testing.T) {
 	mar := yamlmarshaller.NewMarshaller[bad]()
 	input := bad{F: func() {}}
 
-	// Act
 	yamlText, err := mar.Marshal(input)
 
-	// Assert
 	require.Error(t, err)
 	assert.Empty(t, yamlText)
 	assert.ErrorContains(t, err, "failed to marshal YAML")
@@ -160,7 +149,10 @@ func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
 }
 
 // assertBadUnmarshalError runs the provided unmarshal op and asserts the wrapped error.
-func assertBadUnmarshalError(t *testing.T, operation func(mar marshaller.Marshaller[bad], model *bad) error) {
+func assertBadUnmarshalError(
+	t *testing.T,
+	operation func(mar marshaller.Marshaller[bad], model *bad) error,
+) {
 	t.Helper()
 
 	mar := yamlmarshaller.NewMarshaller[bad]()

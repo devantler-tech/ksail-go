@@ -140,6 +140,12 @@
     "ireturn",
     "objectmeta",
     "k8sutils",
-    "unparam"
+    "unparam",
+    "coverprofile",
+    "gofmt",
+    "gofumpt",
+    "goimports",
+    "golines",
+    "swaggo"
   ]
 }

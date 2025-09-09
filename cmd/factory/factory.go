@@ -7,7 +7,10 @@ import "github.com/spf13/cobra"
 const SuggestionsMinimumDistance = 2
 
 // NewCobraCommand creates a cobra.Command.
-func NewCobraCommand(use, short, long string, runE func(*cobra.Command, []string) error) *cobra.Command {
+func NewCobraCommand(
+	use, short, long string,
+	runE func(*cobra.Command, []string) error,
+) *cobra.Command {
 	return &cobra.Command{
 		Use:                    use,
 		Short:                  short,
