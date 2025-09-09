@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
 			`from one simple command line tool.`,
 		handleRootRunE,
-		[]string{}, // Root command doesn't need configuration flags
+		[]config.FieldSelector[v1alpha1.Cluster]{}, // Root command doesn't need configuration flags
 	)
 
 	// Silence errors and usage

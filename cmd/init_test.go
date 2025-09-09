@@ -61,9 +61,9 @@ func TestInitCmd_Flags(t *testing.T) {
 	cmd := cmd.NewInitCmd()
 
 	// Act & Assert
-	distributionFlag := cmd.Flags().Lookup("distribution")
+	distributionFlag := cmd.Flags().Lookup("spec-distribution")
 	if distributionFlag == nil {
-		t.Fatal("expected distribution flag to exist")
+		t.Fatal("expected spec-distribution flag to exist")
 	}
 
 	// Following Viper best practices: CLI flags should not have defaults

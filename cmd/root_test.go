@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
@@ -65,7 +66,7 @@ func TestExecute_ShowsHelp(t *testing.T) {
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
 	return config.NewCobraCommand(use, "", "", func(cmd *cobra.Command, _ *config.Manager, args []string) error {
 		return runE(cmd, args)
-	}, []string{}) // No configuration flags needed for test commands
+	}, []config.FieldSelector[v1alpha1.Cluster]{}) // No configuration flags needed for test commands
 }
 
 func TestExecute_ReturnsError(t *testing.T) {

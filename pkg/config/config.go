@@ -2,6 +2,8 @@
 package config
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -21,15 +23,44 @@ const (
 	SuggestionsMinimumDistance = 2
 )
 
+// FieldSelector represents a type-safe field selector for auto-binding.
+// It provides compile-time safety by referencing actual struct fields.
+type FieldSelector[T any] func(*T) any
 
-// NewCobraCommand creates a cobra.Command with automatic configuration binding.
-// This is the only constructor provided for initializing CobraCommands with configuration field paths.
+// Predefined field selectors for common configuration fields.
+// These provide compile-time safety - if the struct changes, these will cause compilation errors.
+var (
+	// Metadata fields
+	MetadataNameField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }
+	
+	// Spec fields
+	SpecDistributionField       FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }
+	SpecDistributionConfigField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig }
+	SpecSourceDirectoryField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }
+	SpecCNIField                FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.CNI }
+	SpecCSIField                FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.CSI }
+	SpecIngressControllerField  FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController }
+	SpecGatewayControllerField  FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController }
+	SpecReconciliationToolField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool }
+	
+	// Connection fields
+	SpecConnectionKubeconfigField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }
+	SpecConnectionContextField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }
+	SpecConnectionTimeoutField    FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout }
+	
+	// Special CLI-only fields (not part of the cluster structure)
+	AllField FieldSelector[v1alpha1.Cluster] = func(c *v1alpha1.Cluster) any { return nil } // Special marker for CLI-only flags
+)
+
+
+// NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding.
+// This is the only constructor provided for initializing CobraCommands with field selectors.
 // The binding automatically handles CLI flags (priority 1), environment variables (priority 2), 
 // and configuration defaults (priority 3).
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,
-	configPaths []string,
+	fieldSelectors []FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := NewManager()
 	
@@ -44,66 +75,156 @@ func NewCobraCommand(
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 	
-	// Bind flags based on configuration paths
-	if len(configPaths) > 0 {
-		bindConfigurationPaths(cmd, manager, configPaths)
+	// Auto-bind flags based on field selectors
+	if len(fieldSelectors) > 0 {
+		bindFieldSelectors(cmd, manager, fieldSelectors)
 	}
 	
 	return cmd
 }
 
-// bindConfigurationPaths binds CLI flags for the specified configuration paths.
-func bindConfigurationPaths(cmd *cobra.Command, manager *Manager, configPaths []string) {
-	for _, path := range configPaths {
-		flagName, description := getConfigPathInfo(path)
-		if flagName == "" {
+// bindFieldSelectors automatically discovers and binds CLI flags for the specified field selectors.
+func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []FieldSelector[v1alpha1.Cluster]) {
+	// Create a dummy cluster to introspect field paths
+	dummy := &v1alpha1.Cluster{}
+	
+	for _, selector := range fieldSelectors {
+		// Get the field reference from the selector
+		fieldPtr := selector(dummy)
+		
+		// Handle special CLI-only fields
+		if fieldPtr == nil {
+			// This is a special CLI-only field (like AllField)
+			if isAllField(selector) {
+				cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+				_ = manager.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
+			}
 			continue
 		}
 		
-		// Handle special CLI-only flags
-		if flagName == "all" {
-			cmd.Flags().Bool("all", false, description)
-			_ = manager.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
+		// Use reflection to discover the field path
+		fieldPath := getFieldPath(dummy, fieldPtr)
+		if fieldPath == "" {
 			continue
 		}
 		
-		// Add string flag for configuration fields
+		// Convert hierarchical path to kebab-case CLI flag
+		flagName := pathToFlagName(fieldPath)
+		
+		// Generate description
+		description := generateFieldDescription(fieldPath)
+		
+		// Add string flag (all config values are treated as strings initially)
 		cmd.Flags().String(flagName, "", description)
+		
+		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
 		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+		_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
 	}
 }
 
-// getConfigPathInfo maps configuration paths to flag names and descriptions.
-func getConfigPathInfo(configPath string) (flagName, description string) {
-	switch configPath {
-	case "spec.distribution":
-		return "distribution", "Configure cluster distribution (Kind, K3d, EKS, Tind)"
-	case "spec.distributionConfig":
-		return "distribution-config", "Configure distribution config file path"
-	case "spec.sourceDirectory":
-		return "source-directory", "Configure source directory for Kubernetes manifests"
-	case "spec.connection.kubeconfig":
-		return "connection-kubeconfig", "Configure kubeconfig file path"
-	case "spec.connection.context":
-		return "connection-context", "Configure kubectl context"
-	case "spec.connection.timeout":
-		return "connection-timeout", "Configure connection timeout duration"
-	case "spec.cni":
-		return "c-n-i", "Configure CNI (Container Network Interface)"
-	case "spec.csi":
-		return "c-s-i", "Configure CSI (Container Storage Interface)"
-	case "spec.ingressController":
-		return "ingress-controller", "Configure ingress controller"
-	case "spec.gatewayController":
-		return "gateway-controller", "Configure gateway controller"
-	case "spec.reconciliationTool":
-		return "reconciliation-tool", "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
+// isAllField checks if a field selector is the special AllField.
+func isAllField(selector FieldSelector[v1alpha1.Cluster]) bool {
+	// Compare function pointers - this is a Go-specific way to identify the specific function
+	dummy := &v1alpha1.Cluster{}
+	return selector(dummy) == nil && reflect.ValueOf(selector).Pointer() == reflect.ValueOf(AllField).Pointer()
+}
+
+// getFieldPath uses reflection to determine the path of a field within the cluster structure.
+func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
+	// Get the value and type of the cluster
+	clusterVal := reflect.ValueOf(cluster).Elem()
+	clusterType := clusterVal.Type()
+	
+	// Convert the field pointer to a reflect.Value
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr {
+		return ""
+	}
+	fieldAddr := fieldVal.Pointer()
+	
+	// Recursively find the field path
+	return findFieldPath(clusterVal, clusterType, fieldAddr, "")
+}
+
+// findFieldPath recursively searches for a field's path in a struct.
+func findFieldPath(structVal reflect.Value, structType reflect.Type, targetAddr uintptr, prefix string) string {
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Field(i)
+		fieldType := structType.Field(i)
+		
+		// Skip unexported fields
+		if !field.CanAddr() {
+			continue
+		}
+		
+		// Build the current field path
+		var currentPath string
+		if prefix == "" {
+			currentPath = strings.ToLower(fieldType.Name)
+		} else {
+			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
+		}
+		
+		// Check if this field's address matches our target
+		if field.CanAddr() && field.Addr().Pointer() == targetAddr {
+			return currentPath
+		}
+		
+		// If this is a struct, recurse into it
+		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
+			if result := findFieldPath(field, field.Type(), targetAddr, currentPath); result != "" {
+				return result
+			}
+		}
+	}
+	
+	return ""
+}
+
+// isTimeType checks if a type is a time-related type that shouldn't be recursed into.
+func isTimeType(t reflect.Type) bool {
+	return t == reflect.TypeOf(time.Time{}) || t == reflect.TypeOf(metav1.Duration{})
+}
+
+// pathToFlagName converts a hierarchical field path to a kebab-case CLI flag name.
+// E.g., "metadata.name" -> "metadata-name", "spec.connection.kubeconfig" -> "spec-connection-kubeconfig"
+func pathToFlagName(path string) string {
+	return strings.ReplaceAll(path, ".", "-")
+}
+
+// generateFieldDescription generates a human-readable description for a configuration field.
+func generateFieldDescription(fieldPath string) string {
+	switch fieldPath {
 	case "metadata.name":
-		return "name", "Configure cluster name"
-	case "all":
-		return "all", "List all clusters including stopped ones"
+		return "Configure cluster name"
+	case "spec.distribution":
+		return "Configure cluster distribution (Kind, K3d, EKS, Tind)"
+	case "spec.distributionconfig":
+		return "Configure distribution config file path"
+	case "spec.sourcedirectory":
+		return "Configure source directory for Kubernetes manifests"
+	case "spec.connection.kubeconfig":
+		return "Configure kubeconfig file path"
+	case "spec.connection.context":
+		return "Configure kubectl context"
+	case "spec.connection.timeout":
+		return "Configure connection timeout duration"
+	case "spec.cni":
+		return "Configure CNI (Container Network Interface)"
+	case "spec.csi":
+		return "Configure CSI (Container Storage Interface)"
+	case "spec.ingresscontroller":
+		return "Configure ingress controller"
+	case "spec.gatewaycontroller":
+		return "Configure gateway controller"
+	case "spec.reconciliationtool":
+		return "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
 	default:
-		return "", ""
+		// Generate a default description based on the field path
+		parts := strings.Split(fieldPath, ".")
+		lastPart := parts[len(parts)-1]
+		return fmt.Sprintf("Configure %s", strings.ReplaceAll(lastPart, "_", " "))
 	}
 }
 
@@ -159,7 +280,9 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 // setMetadataFromConfig sets metadata values from configuration with defaults.
 func (m *Manager) setMetadataFromConfig(cluster *v1alpha1.Cluster) {
 	// Set name - try hierarchical first, then apply default
-	if name := m.viper.GetString("metadata.name"); name != "" {
+	if name := m.viper.GetString("metadata-name"); name != "" {
+		cluster.Metadata.Name = name
+	} else if name := m.viper.GetString("metadata.name"); name != "" {
 		cluster.Metadata.Name = name
 	} else {
 		cluster.Metadata.Name = "ksail-default"
@@ -169,10 +292,10 @@ func (m *Manager) setMetadataFromConfig(cluster *v1alpha1.Cluster) {
 // setSpecFromConfig sets spec values from configuration with defaults.
 func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	// Distribution Config
-	if distConfig := m.viper.GetString("distribution-config"); distConfig != "" {
+	if distConfig := m.viper.GetString("spec-distributionconfig"); distConfig != "" {
 		// CLI flag or env var is set
 		cluster.Spec.DistributionConfig = distConfig
-	} else if fileDistConfig := m.viper.GetString("spec.distributionConfig"); fileDistConfig != "" {
+	} else if fileDistConfig := m.viper.GetString("spec.distributionconfig"); fileDistConfig != "" {
 		// Config file is set
 		cluster.Spec.DistributionConfig = fileDistConfig
 	} else {
@@ -180,10 +303,10 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Source Directory
-	if sourceDir := m.viper.GetString("source-directory"); sourceDir != "" {
+	if sourceDir := m.viper.GetString("spec-sourcedirectory"); sourceDir != "" {
 		// CLI flag or env var is set
 		cluster.Spec.SourceDirectory = sourceDir
-	} else if fileSourceDir := m.viper.GetString("spec.sourceDirectory"); fileSourceDir != "" {
+	} else if fileSourceDir := m.viper.GetString("spec.sourcedirectory"); fileSourceDir != "" {
 		// Config file is set
 		cluster.Spec.SourceDirectory = fileSourceDir
 	} else {
@@ -191,7 +314,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Distribution - check CLI flag first, then config file, then default
-	if distStr := m.viper.GetString("distribution"); distStr != "" {
+	if distStr := m.viper.GetString("spec-distribution"); distStr != "" {
 		// CLI flag or env var is set
 		var distribution v1alpha1.Distribution
 		if err := distribution.Set(distStr); err == nil {
@@ -212,7 +335,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Reconciliation Tool
-	if tool := m.viper.GetString("reconciliation-tool"); tool != "" {
+	if tool := m.viper.GetString("spec-reconciliationtool"); tool != "" {
 		// CLI flag or env var is set
 		var reconciliationTool v1alpha1.ReconciliationTool
 		if err := reconciliationTool.Set(tool); err == nil {
@@ -220,7 +343,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 		} else {
 			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
 		}
-	} else if fileTool := m.viper.GetString("spec.reconciliationTool"); fileTool != "" {
+	} else if fileTool := m.viper.GetString("spec.reconciliationtool"); fileTool != "" {
 		// Config file is set
 		var reconciliationTool v1alpha1.ReconciliationTool
 		if err := reconciliationTool.Set(fileTool); err == nil {
@@ -233,7 +356,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// CNI
-	if cni := m.viper.GetString("c-n-i"); cni != "" {
+	if cni := m.viper.GetString("spec-cni"); cni != "" {
 		// CLI flag or env var is set
 		cluster.Spec.CNI = v1alpha1.CNI(cni)
 	} else if fileCni := m.viper.GetString("spec.cni"); fileCni != "" {
@@ -244,7 +367,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// CSI
-	if csi := m.viper.GetString("c-s-i"); csi != "" {
+	if csi := m.viper.GetString("spec-csi"); csi != "" {
 		// CLI flag or env var is set
 		cluster.Spec.CSI = v1alpha1.CSI(csi)
 	} else if fileCSI := m.viper.GetString("spec.csi"); fileCSI != "" {
@@ -255,10 +378,10 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Ingress Controller
-	if ingress := m.viper.GetString("ingress-controller"); ingress != "" {
+	if ingress := m.viper.GetString("spec-ingresscontroller"); ingress != "" {
 		// CLI flag or env var is set
 		cluster.Spec.IngressController = v1alpha1.IngressController(ingress)
-	} else if fileIngress := m.viper.GetString("spec.ingressController"); fileIngress != "" {
+	} else if fileIngress := m.viper.GetString("spec.ingresscontroller"); fileIngress != "" {
 		// Config file is set
 		cluster.Spec.IngressController = v1alpha1.IngressController(fileIngress)
 	} else {
@@ -266,10 +389,10 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Gateway Controller
-	if gateway := m.viper.GetString("gateway-controller"); gateway != "" {
+	if gateway := m.viper.GetString("spec-gatewaycontroller"); gateway != "" {
 		// CLI flag or env var is set
 		cluster.Spec.GatewayController = v1alpha1.GatewayController(gateway)
-	} else if fileGateway := m.viper.GetString("spec.gatewayController"); fileGateway != "" {
+	} else if fileGateway := m.viper.GetString("spec.gatewaycontroller"); fileGateway != "" {
 		// Config file is set
 		cluster.Spec.GatewayController = v1alpha1.GatewayController(fileGateway)
 	} else {
@@ -282,7 +405,7 @@ const defaultConnectionTimeoutMinutes = 5
 // setConnectionFromConfig sets connection values from configuration with defaults.
 func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
 	// Kubeconfig
-	if kubeconfig := m.viper.GetString("connection-kubeconfig"); kubeconfig != "" {
+	if kubeconfig := m.viper.GetString("spec-connection-kubeconfig"); kubeconfig != "" {
 		// CLI flag or env var is set
 		cluster.Spec.Connection.Kubeconfig = kubeconfig
 	} else if fileKubeconfig := m.viper.GetString("spec.connection.kubeconfig"); fileKubeconfig != "" {
@@ -293,7 +416,7 @@ func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Context
-	if context := m.viper.GetString("connection-context"); context != "" {
+	if context := m.viper.GetString("spec-connection-context"); context != "" {
 		// CLI flag or env var is set
 		cluster.Spec.Connection.Context = context
 	} else if fileContext := m.viper.GetString("spec.connection.context"); fileContext != "" {
@@ -304,7 +427,7 @@ func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
 	}
 
 	// Timeout
-	if timeoutStr := m.viper.GetString("connection-timeout"); timeoutStr != "" {
+	if timeoutStr := m.viper.GetString("spec-connection-timeout"); timeoutStr != "" {
 		// CLI flag or env var is set
 		if duration, err := time.ParseDuration(timeoutStr); err == nil {
 			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: duration}
