@@ -31,7 +31,6 @@ type EKSClusterActions interface {
 	) error
 }
 
-
 // EKSClusterLister describes the interface for listing clusters.
 type EKSClusterLister interface {
 	// GetClusters lists all EKS clusters
