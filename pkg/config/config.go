@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -18,7 +19,151 @@ const (
 	DefaultConfigFileName = "ksail"
 	// EnvPrefix is the prefix for environment variables.
 	EnvPrefix = "KSAIL"
+	// SuggestionsMinimumDistance is the minimum edit distance to suggest a command.
+	SuggestionsMinimumDistance = 2
 )
+
+// FieldSelector represents a type-safe way to select fields from the v1alpha1.Cluster structure.
+type FieldSelector func(*v1alpha1.Cluster) any
+
+// Predefined field selectors for common configuration options.
+var (
+	// Core cluster configuration
+	DistributionField       FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Distribution }
+	DistributionConfigField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.DistributionConfig }
+	SourceDirectoryField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.SourceDirectory }
+	
+	// Connection configuration
+	ConnectionKubeconfigField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Kubeconfig }
+	ConnectionContextField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Context }
+	ConnectionTimeoutField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Timeout }
+	
+	// Network configuration
+	CNIField                FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.CNI }
+	CSIField                FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.CSI }
+	IngressControllerField  FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.IngressController }
+	GatewayControllerField  FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.GatewayController }
+	ReconciliationToolField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.ReconciliationTool }
+	
+	// CLI-only fields (not part of v1alpha1.Cluster)
+	AllField FieldSelector = func(c *v1alpha1.Cluster) any { return false } // Special case for CLI-only flag
+)
+
+// NewCobraCommand creates a cobra.Command with automatic configuration binding.
+// This is the only constructor provided for initializing CobraCommands with type-safe field selection.
+// The binding automatically handles CLI flags (priority 1), environment variables (priority 2), 
+// and configuration defaults (priority 3).
+func NewCobraCommand(
+	use, short, long string,
+	runE func(*cobra.Command, *Manager, []string) error,
+	fieldSelectors []FieldSelector,
+) *cobra.Command {
+	manager := NewManager()
+	
+	// Create the base command
+	cmd := &cobra.Command{
+		Use:   use,
+		Short: short,
+		Long:  long,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(cmd, manager, args)
+		},
+		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
+	}
+	
+	// Bind flags based on field selectors
+	if len(fieldSelectors) > 0 {
+		bindFieldSelectors(cmd, manager, fieldSelectors)
+	}
+	// If no selectors provided, don't bind any flags (unlike the auto-bind-all behavior)
+	
+	return cmd
+}
+
+// bindFieldSelectors binds CLI flags for the specified field selectors.
+func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []FieldSelector) {
+	// Create a dummy cluster to inspect field paths
+	dummyCluster := &v1alpha1.Cluster{}
+	
+	for _, selector := range fieldSelectors {
+		flagName, description := getFieldInfo(selector, dummyCluster)
+		if flagName == "" {
+			continue
+		}
+		
+		// Handle special CLI-only flags
+		if flagName == "all" {
+			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+			_ = manager.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
+			continue
+		}
+		
+		// Add flag based on field type
+		cmd.Flags().String(flagName, "", description)
+		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+	}
+}
+
+// getFieldInfo extracts flag name and description from a field selector.
+func getFieldInfo(selector FieldSelector, cluster *v1alpha1.Cluster) (flagName, description string) {
+	// Create a dummy cluster with known values to test the selector
+	testCluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.Distribution("test-distribution"),
+			DistributionConfig: "test-distribution-config",
+			SourceDirectory: "test-source-directory",
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "test-kubeconfig",
+				Context: "test-context",
+				Timeout: metav1.Duration{Duration: time.Minute},
+			},
+			CNI: v1alpha1.CNI("test-cni"),
+			CSI: v1alpha1.CSI("test-csi"),
+			IngressController: v1alpha1.IngressController("test-ingress"),
+			GatewayController: v1alpha1.GatewayController("test-gateway"),
+			ReconciliationTool: v1alpha1.ReconciliationTool("test-reconciliation"),
+		},
+	}
+	
+	// Get the value returned by the selector to identify which field it accesses
+	value := selector(testCluster)
+	
+	// Use string comparison to identify the field (convert to string for comparison)
+	valueStr := fmt.Sprintf("%v", value)
+	
+	switch valueStr {
+	case "test-distribution":
+		return "distribution", "Configure cluster distribution (Kind, K3d, EKS, Tind)"
+	case "test-distribution-config":
+		return "distribution-config", "Configure distribution config file path"
+	case "test-source-directory":
+		return "source-directory", "Configure source directory for Kubernetes manifests"
+	case "test-kubeconfig":
+		return "connection-kubeconfig", "Configure kubeconfig file path"
+	case "test-context":
+		return "connection-context", "Configure kubectl context"
+	case "test-cni":
+		return "c-n-i", "Configure CNI (Container Network Interface)"
+	case "test-csi":
+		return "c-s-i", "Configure CSI (Container Storage Interface)"
+	case "test-ingress":
+		return "ingress-controller", "Configure ingress controller"
+	case "test-gateway":
+		return "gateway-controller", "Configure gateway controller"
+	case "test-reconciliation":
+		return "reconciliation-tool", "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
+	default:
+		// Handle special cases like timeout (Duration type) and CLI-only fields
+		if duration, ok := value.(metav1.Duration); ok && duration.Duration == time.Minute {
+			return "connection-timeout", "Configure connection timeout duration"
+		}
+		// Handle CLI-only flags
+		if value == false {
+			return "all", "List all clusters including stopped ones"
+		}
+		return "", ""
+	}
+}
 
 // Manager provides configuration management functionality using the v1alpha1.Cluster structure.
 type Manager struct {

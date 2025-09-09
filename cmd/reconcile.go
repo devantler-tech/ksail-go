@@ -2,24 +2,25 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
-	return factory.NewCobraCommand(
+	return config.NewCobraCommand(
 		"reconcile",
 		"Reconcile workloads in the Kubernetes cluster",
 		`Reconcile workloads in the Kubernetes cluster to match the desired state
 defined in configuration files.`,
 		handleReconcileRunE,
+		[]config.FieldSelector{}, // No specific configuration flags needed
 	)
 }
 
 // handleReconcileRunE handles the reconcile command.
-func handleReconcileRunE(cmd *cobra.Command, _ []string) error {
+func handleReconcileRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
 	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
 
 	return nil

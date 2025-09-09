@@ -4,8 +4,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/factory"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -16,12 +16,13 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := factory.NewCobraCommand(
+	cmd := config.NewCobraCommand(
 		"ksail",
 		"SDK for operating and managing K8s clusters and workloads",
 		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
 			`from one simple command line tool.`,
 		handleRootRunE,
+		[]config.FieldSelector{}, // Root command doesn't need configuration flags
 	)
 
 	// Silence errors and usage
@@ -57,7 +58,7 @@ func Execute(cmd *cobra.Command) error {
 // --- internals ---
 
 // handleRootRunE handles the root command.
-func handleRootRunE(cmd *cobra.Command, _ []string) error {
+func handleRootRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())
 
 	// The err can safely be ignored, as it can never fail at runtime.
