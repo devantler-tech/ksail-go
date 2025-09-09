@@ -34,6 +34,95 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 	return selector
 }
 
+// FieldsFrom creates field selectors using direct field references from a reference cluster.
+// This provides a more ergonomic API for creating multiple field selectors.
+//
+// Usage:
+//   config.FieldsFrom(func(c *v1alpha1.Cluster) []any {
+//       return []any{
+//           &c.Spec.Distribution,
+//           &c.Spec.SourceDirectory,
+//       }
+//   })
+func FieldsFrom(fn func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
+	// Create a reference cluster for field path extraction
+	ref := &v1alpha1.Cluster{}
+	fieldPtrs := fn(ref)
+	
+	var selectors []FieldSelector[v1alpha1.Cluster]
+	for _, fieldPtr := range fieldPtrs {
+		// Extract the field path from the reference cluster
+		fieldPath := getFieldPath(ref, fieldPtr)
+		if fieldPath == "" {
+			continue
+		}
+		
+		// Create a field selector that returns the corresponding field from any cluster
+		selector := createFieldSelectorForPath(fieldPath)
+		selectors = append(selectors, selector)
+	}
+	
+	return selectors
+}
+
+// createFieldSelectorForPath creates a field selector that returns the field at the given path.
+func createFieldSelectorForPath(fieldPath string) FieldSelector[v1alpha1.Cluster] {
+	return func(c *v1alpha1.Cluster) any {
+		// Use reflection to get the field at the specified path
+		return getFieldByPath(c, fieldPath)
+	}
+}
+
+// getFieldByPath returns a pointer to the field at the specified path in the cluster.
+func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
+	// Split the path into components
+	parts := strings.Split(path, ".")
+	
+	// Start with the cluster value
+	current := reflect.ValueOf(cluster).Elem()
+	
+	// Navigate to the target field
+	for _, part := range parts {
+		// Find the field by name (case-insensitive)
+		fieldName := ""
+		for i := 0; i < current.NumField(); i++ {
+			field := current.Type().Field(i)
+			if strings.ToLower(field.Name) == strings.ToLower(part) {
+				fieldName = field.Name
+				break
+			}
+		}
+		
+		if fieldName == "" {
+			return nil
+		}
+		
+		current = current.FieldByName(fieldName)
+		if !current.IsValid() {
+			return nil
+		}
+	}
+	
+	// Return a pointer to the field
+	if current.CanAddr() {
+		return current.Addr().Interface()
+	}
+	
+	return nil
+}
+
+
+// NoAutoDiscoveryMarker is used to identify when auto-discovery should be disabled.
+type NoAutoDiscoveryMarker struct{}
+
+// noAutoDiscoveryInstance is the singleton instance of NoAutoDiscoveryMarker.
+var noAutoDiscoveryInstance = &NoAutoDiscoveryMarker{}
+
+// NoAutoDiscovery is a special field selector that disables auto-discovery.
+// Use this when you want a command with no configuration flags.
+func NoAutoDiscovery(*v1alpha1.Cluster) any {
+	return noAutoDiscoveryInstance
+}
 
 // NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding.
 // This is the only constructor provided for initializing CobraCommands.
@@ -42,7 +131,25 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 //
 // If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
 // If fieldSelectors is empty, all available fields from v1alpha1.Cluster will be auto-discovered and bound.
-// Special flags like --all can be added using Field(func(c *v1alpha1.Cluster) any { return nil }) with a custom handler.
+// To disable auto-discovery entirely, use the NoAutoDiscovery selector.
+//
+// Usage examples:
+//   // Auto-discovery (all fields automatically available as CLI flags):
+//   config.NewCobraCommand("status", "Show status", "...", handleStatusRunE)
+//
+//   // No configuration flags:
+//   config.NewCobraCommand("root", "Root command", "...", handleRootRunE, config.NoAutoDiscovery)
+//
+//   // Selective binding with direct field references:
+//   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//       config.FieldsFrom(func(c *v1alpha1.Cluster) []any {
+//           return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+//       })...)
+//
+//   // Selective binding with function selectors (backward compatible):
+//   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//       config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
+//       config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }))
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,
@@ -59,6 +166,14 @@ func NewCobraCommand(
 			return runE(cmd, manager, args)
 		},
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
+	}
+	
+	// Check for NoAutoDiscovery
+	if len(fieldSelectors) == 1 {
+		if marker := fieldSelectors[0](&v1alpha1.Cluster{}); marker == noAutoDiscoveryInstance {
+			// No configuration flags - skip all binding
+			return cmd
+		}
 	}
 	
 	// Auto-bind flags based on field selectors or auto-discovery
