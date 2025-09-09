@@ -96,6 +96,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	if distStr := m.viper.GetString("spec-distribution"); distStr != "" {
 		// CLI flag or env var is set
 		var distribution v1alpha1.Distribution
+
 		err := distribution.Set(distStr)
 		if err == nil {
 			cluster.Spec.Distribution = distribution
@@ -105,6 +106,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	} else if fileDistStr := m.viper.GetString("spec.distribution"); fileDistStr != "" {
 		// Config file is set
 		var distribution v1alpha1.Distribution
+
 		err := distribution.Set(fileDistStr)
 		if err == nil {
 			cluster.Spec.Distribution = distribution
@@ -119,6 +121,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	if tool := m.viper.GetString("spec-reconciliationtool"); tool != "" {
 		// CLI flag or env var is set
 		var reconciliationTool v1alpha1.ReconciliationTool
+
 		err := reconciliationTool.Set(tool)
 		if err == nil {
 			cluster.Spec.ReconciliationTool = reconciliationTool
@@ -128,6 +131,7 @@ func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
 	} else if fileTool := m.viper.GetString("spec.reconciliationtool"); fileTool != "" {
 		// Config file is set
 		var reconciliationTool v1alpha1.ReconciliationTool
+
 		err := reconciliationTool.Set(fileTool)
 		if err == nil {
 			cluster.Spec.ReconciliationTool = reconciliationTool
