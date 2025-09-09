@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,42 @@ func TestSetDefaults(t *testing.T) {
 	// Test custom values preserved
 	cluster = createTestClusterWithCustomValues()
 	cluster.SetDefaults()
+	assertCustomValues(t, cluster)
+}
+
+func TestSetDefaultsFromConfig(t *testing.T) {
+	t.Parallel()
+
+	// Create test config
+	cfg := &config.Config{
+		Distribution: "K3d",
+		Cluster: config.ClusterConfig{
+			Name:               "test-cluster",
+			DistributionConfig: "k3d.yaml",
+			SourceDirectory:    "manifests",
+			Connection: config.ConnectionConfig{
+				Kubeconfig: "/test/kubeconfig",
+				Context:    "k3d-test-cluster",
+				Timeout:    "10m",
+			},
+		},
+	}
+
+	// Test all config defaults applied
+	cluster := createTestClusterWithDefaults()
+	cluster.SetDefaultsFromConfig(cfg)
+
+	assert.Equal(t, "test-cluster", cluster.Metadata.Name)
+	assert.Equal(t, "k3d.yaml", cluster.Spec.DistributionConfig)
+	assert.Equal(t, "manifests", cluster.Spec.SourceDirectory)
+	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
+	assert.Equal(t, "/test/kubeconfig", cluster.Spec.Connection.Kubeconfig)
+	assert.Equal(t, "k3d-test-cluster", cluster.Spec.Connection.Context)
+	assert.Equal(t, time.Duration(10)*time.Minute, cluster.Spec.Connection.Timeout.Duration)
+
+	// Test custom values preserved
+	cluster = createTestClusterWithCustomValues()
+	cluster.SetDefaultsFromConfig(cfg)
 	assertCustomValues(t, cluster)
 }
 

@@ -47,7 +47,7 @@ func TestInitCmd_Execute(t *testing.T) {
 
 	got := out.String()
 
-	expected := "✔ Project initialized successfully (stub implementation)\n"
+	expected := "✔ Project initialized successfully with Kind distribution (stub implementation)\n"
 
 	if got != expected {
 		t.Fatalf("expected output %q, got %q", expected, got)

@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
+	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,7 +27,7 @@ var ErrInvalidContainerEngine = errors.New("invalid container engine")
 
 // CreateDefaultMetadata creates a default metav1.ObjectMeta with the given name.
 func CreateDefaultMetadata(name string) metav1.ObjectMeta {
-	metadata := k8sutils.NewEmptyObjectMeta()
+	metadata := k8s.NewEmptyObjectMeta()
 	metadata.Name = name
 	metadata.OwnerReferences = []metav1.OwnerReference{}
 	metadata.Finalizers = []string{}
@@ -42,7 +43,7 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: k8sutils.NewEmptyObjectMeta(),
+		Metadata: k8s.NewEmptyObjectMeta(),
 		Spec: Spec{
 			Connection: Connection{
 				Kubeconfig: "",
@@ -159,9 +160,22 @@ func (c *Cluster) SetDefaults() {
 	c.setSpecConnectionDefaults()
 }
 
+// SetDefaultsFromConfig sets default values for the Cluster fields using configuration values.
+func (c *Cluster) SetDefaultsFromConfig(cfg *config.Config) {
+	c.setMetadataDefaultsFromConfig(cfg)
+	c.setSpecDefaultsFromConfig(cfg)
+	c.setSpecConnectionDefaultsFromConfig(cfg)
+}
+
 func (c *Cluster) setMetadataDefaults() {
 	if c.Metadata.Name == "" {
 		c.Metadata.Name = "ksail-default"
+	}
+}
+
+func (c *Cluster) setMetadataDefaultsFromConfig(cfg *config.Config) {
+	if c.Metadata.Name == "" {
+		c.Metadata.Name = cfg.Cluster.Name
 	}
 }
 
@@ -199,6 +213,43 @@ func (c *Cluster) setSpecDefaults() {
 	}
 }
 
+func (c *Cluster) setSpecDefaultsFromConfig(cfg *config.Config) {
+	if c.Spec.DistributionConfig == "" {
+		c.Spec.DistributionConfig = cfg.Cluster.DistributionConfig
+	}
+
+	if c.Spec.SourceDirectory == "" {
+		c.Spec.SourceDirectory = cfg.Cluster.SourceDirectory
+	}
+
+	if c.Spec.Distribution == "" {
+		// Parse the distribution string
+		var dist Distribution
+		dist.Set(cfg.Distribution)
+		c.Spec.Distribution = dist
+	}
+
+	if c.Spec.ReconciliationTool == "" {
+		c.Spec.ReconciliationTool = ReconciliationToolKubectl
+	}
+
+	if c.Spec.CNI == "" {
+		c.Spec.CNI = CNIDefault
+	}
+
+	if c.Spec.CSI == "" {
+		c.Spec.CSI = CSIDefault
+	}
+
+	if c.Spec.IngressController == "" {
+		c.Spec.IngressController = IngressControllerDefault
+	}
+
+	if c.Spec.GatewayController == "" {
+		c.Spec.GatewayController = GatewayControllerDefault
+	}
+}
+
 const defaultConnectionTimeoutMinutes = 5
 
 func (c *Cluster) setSpecConnectionDefaults() {
@@ -212,6 +263,26 @@ func (c *Cluster) setSpecConnectionDefaults() {
 
 	if c.Spec.Connection.Timeout.Duration == 0 {
 		c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+	}
+}
+
+func (c *Cluster) setSpecConnectionDefaultsFromConfig(cfg *config.Config) {
+	if c.Spec.Connection.Kubeconfig == "" {
+		c.Spec.Connection.Kubeconfig = cfg.Cluster.Connection.Kubeconfig
+	}
+
+	if c.Spec.Connection.Context == "" {
+		c.Spec.Connection.Context = cfg.Cluster.Connection.Context
+	}
+
+	if c.Spec.Connection.Timeout.Duration == 0 {
+		// Parse the timeout duration
+		if timeout, err := time.ParseDuration(cfg.Cluster.Connection.Timeout); err == nil {
+			c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
+		} else {
+			// Fallback to default if parsing fails
+			c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+		}
 	}
 }
 
