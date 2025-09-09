@@ -20,7 +20,7 @@ func NewInitCmd() *cobra.Command {
 			return handleInitRunE(cmd, configManager)
 		},
 		func(cmd *cobra.Command) {
-			cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d, EKS)")
+			cmd.Flags().String("distribution", "", "Kubernetes distribution to use (Kind, K3d, EKS)")
 			_ = configManager.GetViper().BindPFlag("distribution", cmd.Flags().Lookup("distribution"))
 		},
 	)
@@ -28,20 +28,15 @@ func NewInitCmd() *cobra.Command {
 
 // handleInitRunE handles the init command.
 func handleInitRunE(cmd *cobra.Command, configManager *config.Manager) error {
-	// Load the full cluster configuration first
+	// Load the full cluster configuration (Viper handles all precedence automatically)
 	cluster, err := configManager.LoadCluster()
 	if err != nil {
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
 		return err
 	}
 	
-	// Use cluster distribution for consistency, but allow CLI flag to override
-	distribution := configManager.GetString("distribution")
-	
-	// If CLI flag is still the default and we have a config file value, use the config file value for display
-	if distribution == "Kind" && string(cluster.Spec.Distribution) != "" && string(cluster.Spec.Distribution) != "Kind" {
-		distribution = string(cluster.Spec.Distribution)
-	}
+	// Use the final resolved values from the cluster configuration
+	distribution := string(cluster.Spec.Distribution)
 	
 	notify.Successln(cmd.OutOrStdout(), 
 		"Project initialized successfully with "+distribution+" distribution (stub implementation)")

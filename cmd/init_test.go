@@ -47,7 +47,7 @@ func TestInitCmd_Execute(t *testing.T) {
 
 	got := out.String()
 
-	expected := "✔ Project initialized successfully with Kind distribution (stub implementation)\n"
+	expected := "✔ Project initialized successfully with Kind distribution (stub implementation)\n► Cluster name: ksail-default\n► Source directory: k8s\n"
 
 	if got != expected {
 		t.Fatalf("expected output %q, got %q", expected, got)
@@ -66,7 +66,8 @@ func TestInitCmd_Flags(t *testing.T) {
 		t.Fatal("expected distribution flag to exist")
 	}
 
-	if distributionFlag.DefValue != "Kind" {
-		t.Fatalf("expected distribution default to be 'Kind', got %q", distributionFlag.DefValue)
+	// Following Viper best practices: CLI flags should not have defaults
+	if distributionFlag.DefValue != "" {
+		t.Fatalf("expected distribution default to be empty (no CLI defaults), got %q", distributionFlag.DefValue)
 	}
 }

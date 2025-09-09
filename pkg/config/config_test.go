@@ -32,8 +32,8 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	cfg, err := config.LoadConfig()
 	require.NoError(t, err)
 
-	// Test defaults
-	assert.Equal(t, "Kind", cfg.Distribution)
+	// Test defaults - distribution should be empty from CLI/env, but cluster should have defaults
+	assert.Equal(t, "", cfg.Distribution) // No CLI default anymore
 	assert.False(t, cfg.All)
 	assert.Equal(t, "ksail-default", cfg.Cluster.Name)
 	assert.Equal(t, "kind.yaml", cfg.Cluster.DistributionConfig)
@@ -79,10 +79,10 @@ func TestInitializeViper(t *testing.T) {
 	v := config.InitializeViper()
 	assert.NotNil(t, v)
 
-	// Test that defaults are set
-	assert.Equal(t, "Kind", v.GetString("distribution"))
+	// Test that no CLI defaults are set (following Viper best practices)
+	assert.Equal(t, "", v.GetString("distribution"))
 	assert.False(t, v.GetBool("all"))
-	assert.Equal(t, "ksail-default", v.GetString("cluster.name"))
+	assert.Equal(t, "", v.GetString("cluster.name")) // No defaults in Viper anymore
 }
 
 func TestGetConfigFilePath(t *testing.T) {

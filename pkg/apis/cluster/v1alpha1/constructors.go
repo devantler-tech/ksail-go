@@ -234,7 +234,7 @@ func (c *Cluster) setMetadataDefaultsFromConfigSource(configSource ConfigSource)
 		if name := configSource.GetString("metadata.name"); name != "" {
 			c.Metadata.Name = name
 		} else if name := configSource.GetString("cluster.name"); name != "" {
-			// Backward compatibility for flat config structure
+			// Support flat environment variables like KSAIL_CLUSTER_NAME
 			c.Metadata.Name = name
 		} else {
 			c.Metadata.Name = "ksail-default"
@@ -262,18 +262,20 @@ func (c *Cluster) setSpecDefaultsFromConfigSource(configSource ConfigSource) {
 	}
 
 	if c.Spec.Distribution == "" {
-		// Try CLI flag first (highest precedence), then hierarchical structure (ksail.yaml format)
+		// Get final value from Viper (it handles CLI flags > env vars > config file precedence)
 		var distStr string
-		if distStr = configSource.GetString("distribution"); distStr == "Kind" {
-			// If CLI is still default, try config file
-			if fileDistStr := configSource.GetString("spec.distribution"); fileDistStr != "" {
-				distStr = fileDistStr
-			}
-		}
-		
-		if distStr != "" {
+		if distStr = configSource.GetString("distribution"); distStr != "" {
+			// CLI flag or env var is set
 			var distribution Distribution
 			if err := distribution.Set(distStr); err == nil {
+				c.Spec.Distribution = distribution
+			} else {
+				c.Spec.Distribution = DistributionKind
+			}
+		} else if fileDistStr := configSource.GetString("spec.distribution"); fileDistStr != "" {
+			// Config file is set
+			var distribution Distribution
+			if err := distribution.Set(fileDistStr); err == nil {
 				c.Spec.Distribution = distribution
 			} else {
 				c.Spec.Distribution = DistributionKind
@@ -340,7 +342,7 @@ func (c *Cluster) setSpecConnectionDefaultsFromConfigSource(configSource ConfigS
 		if kubeconfig := configSource.GetString("spec.connection.kubeconfig"); kubeconfig != "" {
 			c.Spec.Connection.Kubeconfig = kubeconfig
 		} else if kubeconfig := configSource.GetString("cluster.connection.kubeconfig"); kubeconfig != "" {
-			// Backward compatibility for flat config structure
+			// Support flat environment variables like KSAIL_CLUSTER_CONNECTION_KUBECONFIG
 			c.Spec.Connection.Kubeconfig = kubeconfig
 		} else {
 			c.Spec.Connection.Kubeconfig = "~/.kube/config"
@@ -352,7 +354,7 @@ func (c *Cluster) setSpecConnectionDefaultsFromConfigSource(configSource ConfigS
 		if context := configSource.GetString("spec.connection.context"); context != "" {
 			c.Spec.Connection.Context = context
 		} else if context := configSource.GetString("cluster.connection.context"); context != "" {
-			// Backward compatibility for flat config structure
+			// Support flat environment variables like KSAIL_CLUSTER_CONNECTION_CONTEXT
 			c.Spec.Connection.Context = context
 		} else {
 			c.Spec.Connection.Context = "kind-ksail-default"
@@ -368,7 +370,7 @@ func (c *Cluster) setSpecConnectionDefaultsFromConfigSource(configSource ConfigS
 				c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
 			}
 		} else if timeoutStr := configSource.GetString("cluster.connection.timeout"); timeoutStr != "" {
-			// Backward compatibility for flat config structure
+			// Support flat environment variables like KSAIL_CLUSTER_CONNECTION_TIMEOUT
 			if timeout, err := time.ParseDuration(timeoutStr); err == nil {
 				c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
 			} else {

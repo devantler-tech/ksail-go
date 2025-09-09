@@ -95,18 +95,6 @@ func initializeViper() *viper.Viper {
 	viperInstance.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viperInstance.AutomaticEnv()
 
-	// Set CLI-specific defaults (these are for CLI flags, not cluster configuration)
-	viperInstance.SetDefault("distribution", "Kind")
-	viperInstance.SetDefault("all", false)
-
-	// Set backward compatibility defaults for tests
-	viperInstance.SetDefault("cluster.name", "ksail-default")
-	viperInstance.SetDefault("cluster.distribution_config", "kind.yaml")
-	viperInstance.SetDefault("cluster.source_directory", "k8s")
-	viperInstance.SetDefault("cluster.connection.kubeconfig", "~/.kube/config")
-	viperInstance.SetDefault("cluster.connection.context", "kind-ksail-default")
-	viperInstance.SetDefault("cluster.connection.timeout", "5m")
-
 	// Read configuration file (optional)
 	_ = viperInstance.ReadInConfig() // Ignore errors for missing config files
 
