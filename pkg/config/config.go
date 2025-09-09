@@ -34,152 +34,54 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 	return selector
 }
 
-// FieldRef represents a field reference that tracks its path within the v1alpha1.Cluster structure.
-// This enables compile-time safety with zero maintenance overhead.
-type FieldRef struct {
-	path string
-}
-
-// ClusterRef provides compile-time safe field references for v1alpha1.Cluster.
-// It uses a tracking mechanism to automatically discover field paths.
-type ClusterRef struct {
-	pathPrefix string
-}
-
-// SpecRef provides compile-time safe field references for v1alpha1.Spec.
-type SpecRef struct {
-	pathPrefix string
-}
-
-// MetadataRef provides compile-time safe field references for v1alpha1.Metadata.
-type MetadataRef struct {
-	pathPrefix string
-}
-
-// ConnectionRef provides compile-time safe field references for v1alpha1.Connection.
-type ConnectionRef struct {
-	pathPrefix string
-}
-
-// OptionsRef provides compile-time safe field references for v1alpha1.Options.
-type OptionsRef struct {
-	pathPrefix string
-}
-
-// Ref returns a cluster reference for field selection with automatic path tracking.
-// This provides compile-time safety with zero maintenance overhead by directly
-// referencing the v1alpha1.Cluster structure.
+// Ref provides a v1alpha1.Cluster instance for direct field references.
+// This eliminates boilerplate while maintaining compile-time safety.
 //
 // Usage:
-//   c := config.Ref()
-//   config.Fields(c.Spec.Distribution, c.Spec.SourceDirectory)
-func Ref() *ClusterRef {
-	return &ClusterRef{pathPrefix: ""}
-}
+//   config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
+var Ref = &v1alpha1.Cluster{}
 
-// Spec returns a reference to the Spec field.
-func (c *ClusterRef) Spec() *SpecRef {
-	return &SpecRef{pathPrefix: "spec"}
-}
-
-// Metadata returns a reference to the Metadata field.
-func (c *ClusterRef) Metadata() *MetadataRef {
-	return &MetadataRef{pathPrefix: "metadata"}
-}
-
-// Distribution returns a field reference for the Distribution field.
-func (s *SpecRef) Distribution() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".distribution"}
-}
-
-// SourceDirectory returns a field reference for the SourceDirectory field.
-func (s *SpecRef) SourceDirectory() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".sourcedirectory"}
-}
-
-// DistributionConfig returns a field reference for the DistributionConfig field.
-func (s *SpecRef) DistributionConfig() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".distributionconfig"}
-}
-
-// CNI returns a field reference for the CNI field.
-func (s *SpecRef) CNI() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".cni"}
-}
-
-// CSI returns a field reference for the CSI field.
-func (s *SpecRef) CSI() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".csi"}
-}
-
-// IngressController returns a field reference for the IngressController field.
-func (s *SpecRef) IngressController() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".ingresscontroller"}
-}
-
-// GatewayController returns a field reference for the GatewayController field.
-func (s *SpecRef) GatewayController() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".gatewaycontroller"}
-}
-
-// ReconciliationTool returns a field reference for the ReconciliationTool field.
-func (s *SpecRef) ReconciliationTool() FieldRef {
-	return FieldRef{path: s.pathPrefix + ".reconciliationtool"}
-}
-
-// Connection returns a reference to the Connection field.
-func (s *SpecRef) Connection() *ConnectionRef {
-	return &ConnectionRef{pathPrefix: s.pathPrefix + ".connection"}
-}
-
-// Options returns a reference to the Options field.
-func (s *SpecRef) Options() *OptionsRef {
-	return &OptionsRef{pathPrefix: s.pathPrefix + ".options"}
-}
-
-// Name returns a field reference for the Name field.
-func (m *MetadataRef) Name() FieldRef {
-	return FieldRef{path: m.pathPrefix + ".name"}
-}
-
-// Kubeconfig returns a field reference for the Kubeconfig field.
-func (c *ConnectionRef) Kubeconfig() FieldRef {
-	return FieldRef{path: c.pathPrefix + ".kubeconfig"}
-}
-
-// Context returns a field reference for the Context field.
-func (c *ConnectionRef) Context() FieldRef {
-	return FieldRef{path: c.pathPrefix + ".context"}
-}
-
-// Timeout returns a field reference for the Timeout field.
-func (c *ConnectionRef) Timeout() FieldRef {
-	return FieldRef{path: c.pathPrefix + ".timeout"}
-}
-
-// Fields creates field selectors from field references.
-// This provides compile-time safety with zero maintenance by automatically
-// discovering field paths from the reference structure.
+// Fields creates field selectors from direct field pointers.
+// This provides compile-time safety with zero maintenance overhead.
 //
 // Usage:
-//   c := config.Ref()
-//   config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())
-func Fields(fieldRefs ...FieldRef) []FieldSelector[v1alpha1.Cluster] {
+//   config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
+func Fields(fieldPtrs ...any) []FieldSelector[v1alpha1.Cluster] {
 	var selectors []FieldSelector[v1alpha1.Cluster]
 	
-	for _, fieldRef := range fieldRefs {
-		selector := createFieldSelectorForPath(fieldRef.path)
+	for _, fieldPtr := range fieldPtrs {
+		selector := createFieldSelectorFromPointer(fieldPtr)
 		selectors = append(selectors, selector)
 	}
 	return selectors
 }
 
-// createFieldSelectorForPath creates a field selector that returns the field at the given path.
-func createFieldSelectorForPath(fieldPath string) FieldSelector[v1alpha1.Cluster] {
+// createFieldSelectorFromPointer creates a field selector from a direct field pointer.
+func createFieldSelectorFromPointer(fieldPtr any) FieldSelector[v1alpha1.Cluster] {
 	return func(c *v1alpha1.Cluster) any {
-		// Use reflection to get the field at the specified path
+		// Use reflection to find the field path and return the corresponding field in the target cluster
+		fieldPath := getFieldPathFromPointer(fieldPtr)
+		if fieldPath == "" {
+			return nil
+		}
 		return getFieldByPath(c, fieldPath)
 	}
+}
+
+// getFieldPathFromPointer determines the field path from a pointer to a field in Ref.
+func getFieldPathFromPointer(fieldPtr any) string {
+	// Get the value and type of the pointer
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr {
+		return ""
+	}
+	fieldAddr := fieldVal.Pointer()
+	
+	// Get the address of Ref and find the field path
+	refVal := reflect.ValueOf(Ref).Elem()
+	refType := refVal.Type()
+	
+	return findFieldPath(refVal, refType, fieldAddr, "")
 }
 
 // getFieldByPath returns a pointer to the field at the specified path in the cluster.
@@ -249,10 +151,9 @@ func NoAutoDiscovery(*v1alpha1.Cluster) any {
 //   // No configuration flags:
 //   config.NewCobraCommand("root", "Root command", "...", handleRootRunE, config.NoAutoDiscovery)
 //
-//   // Simplified selective binding with direct field references (zero maintenance):
-//   c := config.Ref()
+//   // Type-safe selective binding with direct field pointers (zero maintenance):
 //   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//       config.Fields(c.Spec().Distribution(), c.Spec().SourceDirectory())...)
+//       config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)...)
 //
 //   // Backward compatible function selectors still supported:
 //   config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
