@@ -160,7 +160,10 @@ func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
 }
 
 // assertBadUnmarshalError runs the provided unmarshal op and asserts the wrapped error.
-func assertBadUnmarshalError(t *testing.T, operation func(mar marshaller.Marshaller[bad], model *bad) error) {
+func assertBadUnmarshalError(
+	t *testing.T,
+	operation func(mar marshaller.Marshaller[bad], model *bad) error,
+) {
 	t.Helper()
 
 	mar := yamlmarshaller.NewMarshaller[bad]()

@@ -26,7 +26,10 @@ func NewEKSGenerator() *EKSGenerator {
 }
 
 // Generate creates an EKS cluster YAML configuration and writes it to the specified output.
-func (g *EKSGenerator) Generate(cfg *v1alpha5.ClusterConfig, opts yamlgenerator.Options) (string, error) {
+func (g *EKSGenerator) Generate(
+	cfg *v1alpha5.ClusterConfig,
+	opts yamlgenerator.Options,
+) (string, error) {
 	// Ensure TypeMeta is set before applying defaults
 	cfg.TypeMeta = v1alpha5.ClusterConfigTypeMeta()
 
@@ -47,4 +50,3 @@ func (g *EKSGenerator) Generate(cfg *v1alpha5.ClusterConfig, opts yamlgenerator.
 
 	return out, nil
 }
-

@@ -144,7 +144,13 @@ func TestDistribution_Set(t *testing.T) {
 
 		return dist.Set("invalid")
 	}()
-	testutils.AssertErrWrappedContains(t, err, v1alpha1.ErrInvalidDistribution, "invalid", "Set(invalid)")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidDistribution,
+		"invalid",
+		"Set(invalid)",
+	)
 }
 
 func TestReconciliationTool_Set(t *testing.T) {
@@ -166,7 +172,13 @@ func TestReconciliationTool_Set(t *testing.T) {
 
 		return tool.Set("invalid")
 	}()
-	testutils.AssertErrWrappedContains(t, err, v1alpha1.ErrInvalidReconciliationTool, "invalid", "Set(invalid)")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidReconciliationTool,
+		"invalid",
+		"Set(invalid)",
+	)
 }
 
 func TestStringAndTypeMethods(t *testing.T) {

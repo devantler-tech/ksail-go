@@ -12,12 +12,12 @@ import (
 
 // Common error variables used across cluster provisioner tests to avoid duplication.
 var (
-	ErrCreateClusterFailed    = errors.New("create cluster failed")
-	ErrDeleteClusterFailed    = errors.New("delete cluster failed")
-	ErrListClustersFailed     = errors.New("list clusters failed")
-	ErrStartClusterFailed     = errors.New("start cluster failed")
-	ErrStopClusterFailed      = errors.New("stop cluster failed")
-	ErrScaleNodeGroupFailed   = errors.New("scale node group failed")
+	ErrCreateClusterFailed  = errors.New("create cluster failed")
+	ErrDeleteClusterFailed  = errors.New("delete cluster failed")
+	ErrListClustersFailed   = errors.New("list clusters failed")
+	ErrStartClusterFailed   = errors.New("start cluster failed")
+	ErrStopClusterFailed    = errors.New("stop cluster failed")
+	ErrScaleNodeGroupFailed = errors.New("scale node group failed")
 )
 
 // DefaultDeleteCases returns standard test cases for testing delete operations with name handling.
@@ -73,10 +73,10 @@ func RunCreateTest(
 
 // EKSNodeGroupBaseOptions provides configuration options for creating test EKS NodeGroupBase.
 type EKSNodeGroupBaseOptions struct {
-	Name           string
-	InstanceType   string
-	MinSize        *int
-	MaxSize        *int
+	Name            string
+	InstanceType    string
+	MinSize         *int
+	MaxSize         *int
 	DesiredCapacity *int
 }
 
@@ -94,46 +94,46 @@ func CreateTestEKSNodeGroupBase(opts EKSNodeGroupBaseOptions) *v1alpha5.NodeGrou
 	}
 
 	return &v1alpha5.NodeGroupBase{
-		Name:                        opts.Name,
-		AMIFamily:                   "",
-		InstanceType:                opts.InstanceType,
-		AvailabilityZones:           nil,
-		Subnets:                     nil,
-		InstancePrefix:              "",
-		InstanceName:                "",
-		VolumeSize:                  nil,
-		SSH:                         nil,
-		Labels:                      nil,
-		PrivateNetworking:           false,
-		Tags:                        nil,
-		IAM:                         nil,
-		AMI:                         "",
-		SecurityGroups:              nil,
-		MaxPodsPerNode:              0,
-		ASGSuspendProcesses:         nil,
-		EBSOptimized:                nil,
-		VolumeType:                  nil,
-		VolumeName:                  nil,
-		VolumeEncrypted:             nil,
-		VolumeKmsKeyID:              nil,
-		VolumeIOPS:                  nil,
-		VolumeThroughput:            nil,
-		AdditionalVolumes:           nil,
-		PreBootstrapCommands:        nil,
-		OverrideBootstrapCommand:    nil,
-		PropagateASGTags:            nil,
-		DisableIMDSv1:               nil,
-		DisablePodIMDS:              nil,
-		Placement:                   nil,
-		EFAEnabled:                  nil,
-		InstanceSelector:            nil,
-		AdditionalEncryptedVolume:   "",
-		Bottlerocket:                nil,
-		EnableDetailedMonitoring:    nil,
-		CapacityReservation:         nil,
-		InstanceMarketOptions:       nil,
-		OutpostARN:                  "",
-		ScalingConfig:               scalingConfig,
+		Name:                      opts.Name,
+		AMIFamily:                 "",
+		InstanceType:              opts.InstanceType,
+		AvailabilityZones:         nil,
+		Subnets:                   nil,
+		InstancePrefix:            "",
+		InstanceName:              "",
+		VolumeSize:                nil,
+		SSH:                       nil,
+		Labels:                    nil,
+		PrivateNetworking:         false,
+		Tags:                      nil,
+		IAM:                       nil,
+		AMI:                       "",
+		SecurityGroups:            nil,
+		MaxPodsPerNode:            0,
+		ASGSuspendProcesses:       nil,
+		EBSOptimized:              nil,
+		VolumeType:                nil,
+		VolumeName:                nil,
+		VolumeEncrypted:           nil,
+		VolumeKmsKeyID:            nil,
+		VolumeIOPS:                nil,
+		VolumeThroughput:          nil,
+		AdditionalVolumes:         nil,
+		PreBootstrapCommands:      nil,
+		OverrideBootstrapCommand:  nil,
+		PropagateASGTags:          nil,
+		DisableIMDSv1:             nil,
+		DisablePodIMDS:            nil,
+		Placement:                 nil,
+		EFAEnabled:                nil,
+		InstanceSelector:          nil,
+		AdditionalEncryptedVolume: "",
+		Bottlerocket:              nil,
+		EnableDetailedMonitoring:  nil,
+		CapacityReservation:       nil,
+		InstanceMarketOptions:     nil,
+		OutpostARN:                "",
+		ScalingConfig:             scalingConfig,
 	}
 }
 

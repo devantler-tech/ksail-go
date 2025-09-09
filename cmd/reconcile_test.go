@@ -39,7 +39,6 @@ func TestReconcileCmd_Execute(t *testing.T) {
 
 	// Act
 	err := cmd.Execute()
-
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

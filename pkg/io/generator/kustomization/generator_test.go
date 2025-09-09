@@ -149,7 +149,12 @@ func createTestCluster(name string) *v1alpha1.Cluster {
 // assertKustomizationYAML ensures the generated YAML contains the expected boilerplate.
 func assertKustomizationYAML(t *testing.T, result string) {
 	t.Helper()
-	assert.Contains(t, result, "apiVersion: kustomize.config.k8s.io/v1beta1", "YAML should contain API version")
+	assert.Contains(
+		t,
+		result,
+		"apiVersion: kustomize.config.k8s.io/v1beta1",
+		"YAML should contain API version",
+	)
 	assert.Contains(t, result, "kind: Kustomization", "YAML should contain kind")
 }
 

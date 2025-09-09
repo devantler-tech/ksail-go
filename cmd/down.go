@@ -19,7 +19,10 @@ func NewDownCmd() *cobra.Command {
 
 // handleDownRunE handles the down command.
 func handleDownRunE(cmd *cobra.Command, _ []string) error {
-	notify.Successln(cmd.OutOrStdout(), "Cluster stopped and removed successfully (stub implementation)")
+	notify.Successln(
+		cmd.OutOrStdout(),
+		"Cluster stopped and removed successfully (stub implementation)",
+	)
 
 	return nil
 }

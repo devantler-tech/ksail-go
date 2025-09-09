@@ -35,12 +35,12 @@ const (
 
 // EKSClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning EKS clusters.
 type EKSClusterProvisioner struct {
-	clusterConfig     *v1alpha5.ClusterConfig
-	clusterProvider   *eks.ClusterProvider
-	clusterActions    EKSClusterActions
-	clusterLister     EKSClusterLister
-	clusterCreator    EKSClusterCreator
-	nodeGroupManager  EKSNodeGroupManager
+	clusterConfig    *v1alpha5.ClusterConfig
+	clusterProvider  *eks.ClusterProvider
+	clusterActions   EKSClusterActions
+	clusterLister    EKSClusterLister
+	clusterCreator   EKSClusterCreator
+	nodeGroupManager EKSNodeGroupManager
 }
 
 // NewEKSClusterProvisioner constructs an EKSClusterProvisioner with explicit dependencies
@@ -163,7 +163,12 @@ func (e *EKSClusterProvisioner) Stop(ctx context.Context, name string) error {
 
 // List lists all EKS clusters.
 func (e *EKSClusterProvisioner) List(ctx context.Context) ([]string, error) {
-	descriptions, err := e.clusterLister.GetClusters(ctx, e.clusterProvider, false, DefaultChunkSize)
+	descriptions, err := e.clusterLister.GetClusters(
+		ctx,
+		e.clusterProvider,
+		false,
+		DefaultChunkSize,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list EKS clusters: %w", err)
 	}
@@ -189,7 +194,10 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 }
 
 // setupClusterOperation sets up common cluster operation prerequisites.
-func (e *EKSClusterProvisioner) setupClusterOperation(_ context.Context, name string) (*eks.ClusterProvider, error) {
+func (e *EKSClusterProvisioner) setupClusterOperation(
+	_ context.Context,
+	name string,
+) (*eks.ClusterProvider, error) {
 	if e.clusterConfig == nil || e.clusterConfig.Metadata == nil {
 		return nil, ErrInvalidClusterConfig
 	}
@@ -219,8 +227,12 @@ func (e *EKSClusterProvisioner) ensureClusterExists(ctx context.Context, name st
 }
 
 // setupNodeGroupManager sets up common node group management prerequisites.
+//
 //nolint:ireturn // Returning interface is intended design for dependency injection
-func (e *EKSClusterProvisioner) setupNodeGroupManager(ctx context.Context, name string) (EKSNodeGroupManager, error) {
+func (e *EKSClusterProvisioner) setupNodeGroupManager(
+	ctx context.Context,
+	name string,
+) (EKSNodeGroupManager, error) {
 	err := e.ensureClusterExists(ctx, name)
 	if err != nil {
 		return nil, err

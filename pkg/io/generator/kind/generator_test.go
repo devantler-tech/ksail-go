@@ -161,7 +161,12 @@ func createTestCluster(name string) *v1alpha4.Cluster {
 // assertKindYAML ensures the generated YAML contains the expected boilerplate and cluster name.
 func assertKindYAML(t *testing.T, result string, clusterName string) {
 	t.Helper()
-	assert.Contains(t, result, "apiVersion: kind.x-k8s.io/v1alpha4", "YAML should contain API version")
+	assert.Contains(
+		t,
+		result,
+		"apiVersion: kind.x-k8s.io/v1alpha4",
+		"YAML should contain API version",
+	)
 	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
 	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
 }

@@ -43,9 +43,13 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 type ClientCreator func() (client.APIClient, error)
 
 // GetDockerClient creates a Docker client using environment configuration.
+//
 //nolint:ireturn // Interface return required for dependency injection pattern
 func GetDockerClient() (client.APIClient, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
 	}
@@ -54,6 +58,7 @@ func GetDockerClient() (client.APIClient, error) {
 }
 
 // GetPodmanUserClient creates a Podman client using the user-specific socket.
+//
 //nolint:ireturn // Interface return required for dependency injection pattern
 func GetPodmanUserClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
@@ -68,6 +73,7 @@ func GetPodmanUserClient() (client.APIClient, error) {
 }
 
 // GetPodmanSystemClient creates a Podman client using the system-wide socket.
+//
 //nolint:ireturn // Interface return required for dependency injection pattern
 func GetPodmanSystemClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
@@ -85,6 +91,7 @@ func GetPodmanSystemClient() (client.APIClient, error) {
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
+
 // GetAutoDetectedClient attempts to automatically detect and create a container engine client.
 // It tries Docker first, then Podman with different socket configurations.
 // For testing, you can override specific creators using a map with keys:
@@ -145,7 +152,6 @@ func tryCreateEngine(ctx context.Context, creator ClientCreator) (*ContainerEngi
 
 	return nil, fmt.Errorf("%w: client not ready", ErrClientNotReady)
 }
-
 
 // CheckReady checks if the container engine is available using the API client.
 func (u *ContainerEngine) CheckReady(ctx context.Context) (bool, error) {

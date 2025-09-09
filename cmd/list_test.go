@@ -39,7 +39,6 @@ func TestListCmd_Execute_Default(t *testing.T) {
 
 	// Act
 	err := cmd.Execute()
-
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -66,7 +65,6 @@ func TestListCmd_Execute_All(t *testing.T) {
 
 	// Act
 	err := cmd.Execute()
-
 	// Assert
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

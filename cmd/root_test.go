@@ -116,7 +116,6 @@ func TestExecuteSuccess(t *testing.T) {
 	actual.AddCommand(succeeding)
 
 	err := actual.Execute()
-
 	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)
@@ -137,7 +136,6 @@ func TestExecute_WrapperSuccess(t *testing.T) {
 
 	// Act
 	err := cmd.Execute(rootCmd)
-
 	// Assert
 	if err != nil {
 		t.Fatalf("Expected no error but got %v", err)

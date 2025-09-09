@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	testContent      = "test content"
-	originalContent  = "original content"
+	testContent     = "test content"
+	originalContent = "original content"
 )
 
 func TestTryWrite_WithBuffer(t *testing.T) {
@@ -118,7 +118,7 @@ func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	outputPath := filepath.Join(tempDir, "existing.txt")
 
 	// Create existing file
-	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
+	err := os.WriteFile(outputPath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile() setup")
 
 	// Act
@@ -131,7 +131,12 @@ func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 	require.NoError(t, err, "ReadFile()")
-	assert.Equal(t, originalContent, string(writtenContent), "file content (should not be overwritten)")
+	assert.Equal(
+		t,
+		originalContent,
+		string(writtenContent),
+		"file content (should not be overwritten)",
+	)
 }
 
 func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
@@ -143,7 +148,7 @@ func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 	outputPath := filepath.Join(tempDir, "existing-force.txt")
 
 	// Create existing file
-	err := os.WriteFile(outputPath, []byte(originalContent), 0600)
+	err := os.WriteFile(outputPath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile() setup")
 
 	// Act
@@ -169,7 +174,7 @@ func TestTryWriteFile_StatError(t *testing.T) {
 
 	// Create a directory with no permissions to simulate stat error
 	restrictedDir := filepath.Join(tempDir, "restricted")
-	err := os.Mkdir(restrictedDir, 0000)
+	err := os.Mkdir(restrictedDir, 0o000)
 	require.NoError(t, err, "Mkdir() setup")
 
 	// Act
@@ -193,7 +198,12 @@ func TestTryWriteFile_WriteError(t *testing.T) {
 	result, err := ioutils.TryWriteFile(content, invalidPath, false)
 
 	// Assert - expect error containing specific message about directory creation failure
-	testutils.AssertErrContains(t, err, "failed to create directory", "TryWriteFile() directory creation failure")
+	testutils.AssertErrContains(
+		t,
+		err,
+		"failed to create directory",
+		"TryWriteFile() directory creation failure",
+	)
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
@@ -218,7 +228,7 @@ func TestTryWriteFile_FileWriteError(t *testing.T) {
 	outputPath := filepath.Join(tempDir, "readonly.txt")
 
 	// Create a directory that exists but make it read-only to cause file write failure
-	err := os.WriteFile(outputPath, []byte("existing"), 0000) // No write permissions
+	err := os.WriteFile(outputPath, []byte("existing"), 0o000) // No write permissions
 	require.NoError(t, err, "WriteFile() setup")
 
 	// Act
@@ -240,7 +250,13 @@ func TestWriteFileSafe_EmptyBasePath(t *testing.T) {
 	err := ioutils.WriteFileSafe(content, "", filePath, false)
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrBasePath, "", "WriteFileSafe empty base path")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrBasePath,
+		"",
+		"WriteFileSafe empty base path",
+	)
 }
 
 func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
@@ -254,7 +270,13 @@ func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
 	err := ioutils.WriteFileSafe(content, basePath, "", false)
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrEmptyOutputPath, "", "WriteFileSafe empty file path")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrEmptyOutputPath,
+		"",
+		"WriteFileSafe empty file path",
+	)
 }
 
 func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
@@ -269,7 +291,13 @@ func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
 	err := ioutils.WriteFileSafe(content, basePath, outsidePath, false)
 
 	// Assert
-	testutils.AssertErrWrappedContains(t, err, ioutils.ErrPathOutsideBase, "", "WriteFileSafe path outside base")
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		ioutils.ErrPathOutsideBase,
+		"",
+		"WriteFileSafe path outside base",
+	)
 }
 
 func TestWriteFileSafe_NewFile(t *testing.T) {
@@ -301,7 +329,7 @@ func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
 	filePath := filepath.Join(basePath, "existing.txt")
 
 	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0600)
+	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile setup")
 
 	// Act
@@ -313,7 +341,12 @@ func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
 	// Verify file was NOT overwritten
 	writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
 	require.NoError(t, err, "ReadFile")
-	assert.Equal(t, originalContent, string(writtenContent), "file content should not be overwritten")
+	assert.Equal(
+		t,
+		originalContent,
+		string(writtenContent),
+		"file content should not be overwritten",
+	)
 }
 
 func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
@@ -325,7 +358,7 @@ func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
 	filePath := filepath.Join(basePath, "existing-force.txt")
 
 	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0600)
+	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
 	require.NoError(t, err, "WriteFile setup")
 
 	// Act
@@ -350,7 +383,7 @@ func TestWriteFileSafe_StatError(t *testing.T) {
 
 	// Create a directory with no permissions to simulate stat error
 	restrictedDir := filepath.Join(basePath, "restricted")
-	err := os.Mkdir(restrictedDir, 0000)
+	err := os.Mkdir(restrictedDir, 0o000)
 	require.NoError(t, err, "Mkdir setup")
 
 	// Act
@@ -370,14 +403,24 @@ func TestWriteFileSafe_DirectoryCreationError(t *testing.T) {
 
 	// Create a file with the same name as the directory we want to create
 	subdirPath := filepath.Join(basePath, "subdir")
-	err := os.WriteFile(subdirPath, []byte("blocking file"), 0600)
+	err := os.WriteFile(subdirPath, []byte("blocking file"), 0o600)
 	require.NoError(t, err, "WriteFile setup to block directory creation")
 
 	// Act
-	err = ioutils.WriteFileSafe(content, basePath, filePath, true) // Use force=true to skip stat check
+	err = ioutils.WriteFileSafe(
+		content,
+		basePath,
+		filePath,
+		true,
+	) // Use force=true to skip stat check
 
 	// Assert - expect error containing specific message about directory creation failure
-	testutils.AssertErrContains(t, err, "failed to create directory", "WriteFileSafe directory creation failure")
+	testutils.AssertErrContains(
+		t,
+		err,
+		"failed to create directory",
+		"WriteFileSafe directory creation failure",
+	)
 }
 
 func TestWriteFileSafe_FileWriteError(t *testing.T) {
@@ -389,7 +432,7 @@ func TestWriteFileSafe_FileWriteError(t *testing.T) {
 	filePath := filepath.Join(basePath, "readonly.txt")
 
 	// Create a file with no write permissions to cause write failure
-	err := os.WriteFile(filePath, []byte("existing"), 0000) // No write permissions
+	err := os.WriteFile(filePath, []byte("existing"), 0o000) // No write permissions
 	require.NoError(t, err, "WriteFile setup")
 
 	// Act

@@ -44,7 +44,12 @@ func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	k.simpleCfg.Name = target
 
 	// Transform SimpleConfig -> ClusterConfig
-	clusterCfg, err := k.configProvider.TransformSimpleToClusterConfig(ctx, runtime, *k.simpleCfg, "k3d.yaml")
+	clusterCfg, err := k.configProvider.TransformSimpleToClusterConfig(
+		ctx,
+		runtime,
+		*k.simpleCfg,
+		"k3d.yaml",
+	)
 	if err != nil {
 		return fmt.Errorf("transform simple to cluster config: %w", err)
 	}

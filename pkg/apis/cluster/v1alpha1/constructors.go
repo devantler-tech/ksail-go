@@ -211,7 +211,9 @@ func (c *Cluster) setSpecConnectionDefaults() {
 	}
 
 	if c.Spec.Connection.Timeout.Duration == 0 {
-		c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+		c.Spec.Connection.Timeout = metav1.Duration{
+			Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute,
+		}
 	}
 }
 
@@ -243,8 +245,14 @@ func (d *ReconciliationTool) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidReconciliationTool, value, ReconciliationToolKubectl, ReconciliationToolFlux, ReconciliationToolArgoCD)
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidReconciliationTool,
+		value,
+		ReconciliationToolKubectl,
+		ReconciliationToolFlux,
+		ReconciliationToolArgoCD,
+	)
 }
 
 // -- pflags --

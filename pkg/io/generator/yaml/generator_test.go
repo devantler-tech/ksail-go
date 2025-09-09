@@ -62,7 +62,12 @@ func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(t, "3.0.0", true, false)
+	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
+		t,
+		"3.0.0",
+		true,
+		false,
+	)
 
 	// Act
 	result, err := gen.Generate(model, opts)
@@ -77,7 +82,12 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(t, "4.0.0", false, true)
+	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
+		t,
+		"4.0.0",
+		false,
+		true,
+	)
 
 	// Act
 	result, err := gen.Generate(model, opts)
@@ -113,7 +123,12 @@ func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
 
 	// Assert
 	require.Error(t, err, "Generate should fail when file write fails")
-	assert.Contains(t, err.Error(), "failed to write YAML to file", "Error should mention file write failure")
+	assert.Contains(
+		t,
+		err.Error(),
+		"failed to write YAML to file",
+		"Error should mention file write failure",
+	)
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
@@ -125,7 +140,7 @@ func TestYAMLGenerator_Generate_MarshalError(t *testing.T) {
 	gen := generator.NewYAMLGenerator[func()]()
 
 	// Create a function value that will cause marshalling to fail
-	var model = func() {}
+	model := func() {}
 
 	opts := generator.Options{
 		Output: "",
@@ -137,7 +152,12 @@ func TestYAMLGenerator_Generate_MarshalError(t *testing.T) {
 
 	// Assert
 	require.Error(t, err, "Generate should fail when marshalling fails")
-	assert.Contains(t, err.Error(), "failed to marshal model to YAML", "Error should mention marshalling failure")
+	assert.Contains(
+		t,
+		err.Error(),
+		"failed to marshal model to YAML",
+		"Error should mention marshalling failure",
+	)
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
@@ -163,7 +183,7 @@ func setupTempFile(t *testing.T, filename string) (string, string) {
 func createExistingFile(t *testing.T, outputPath, content string) {
 	t.Helper()
 
-	err := os.WriteFile(outputPath, []byte(content), 0600)
+	err := os.WriteFile(outputPath, []byte(content), 0o600)
 	require.NoError(t, err, "Setup: create existing file")
 }
 

@@ -26,5 +26,11 @@ func AssertStringContainsOneOf(t *testing.T, haystack string, options ...string)
 		}
 	}
 
-	assert.Failf(t, "string did not contain any expected option", "wanted one of %v in: %s", options, haystack)
+	assert.Failf(
+		t,
+		"string did not contain any expected option",
+		"wanted one of %v in: %s",
+		options,
+		haystack,
+	)
 }

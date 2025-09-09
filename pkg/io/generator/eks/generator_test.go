@@ -52,7 +52,7 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "file-cluster")
-	
+
 	// Verify file was written
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
@@ -146,7 +146,7 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "custom-cluster")
-	
+
 	// Verify custom options are applied
 	assert.Contains(t, result, "us-east-1", "YAML should contain custom region")
 	assert.Contains(t, result, "t3.medium", "YAML should contain custom instance type")
@@ -191,30 +191,36 @@ func createTestClusterConfigBase(
 		Addons:                  nil,
 		AddonsConfig:            createTestAddonsConfig(),
 		PrivateCluster:          nil,
-		NodeGroups:              createTestNodeGroups(name, instanceType, minNodes, maxNodes, desiredNodes),
-		ManagedNodeGroups:       nil,
-		FargateProfiles:         nil,
-		AvailabilityZones:       nil,
-		LocalZones:              nil,
-		CloudWatch:              nil,
-		SecretsEncryption:       nil,
-		Status:                  nil,
-		GitOps:                  nil,
-		Karpenter:               nil,
-		Outpost:                 nil,
-		ZonalShiftConfig:        nil,
+		NodeGroups: createTestNodeGroups(
+			name,
+			instanceType,
+			minNodes,
+			maxNodes,
+			desiredNodes,
+		),
+		ManagedNodeGroups: nil,
+		FargateProfiles:   nil,
+		AvailabilityZones: nil,
+		LocalZones:        nil,
+		CloudWatch:        nil,
+		SecretsEncryption: nil,
+		Status:            nil,
+		GitOps:            nil,
+		Karpenter:         nil,
+		Outpost:           nil,
+		ZonalShiftConfig:  nil,
 	}
 }
 
 func createTestMetadata(name, region, version string) *v1alpha5.ClusterMeta {
 	return &v1alpha5.ClusterMeta{
-		Name:                name,
-		Region:              region,
-		Version:             version,
-		ForceUpdateVersion:  nil,
-		Tags:                nil,
-		Annotations:         nil,
-		AccountID:           "",
+		Name:               name,
+		Region:             region,
+		Version:            version,
+		ForceUpdateVersion: nil,
+		Tags:               nil,
+		Annotations:        nil,
+		AccountID:          "",
 	}
 }
 
@@ -225,15 +231,27 @@ func createTestAddonsConfig() v1alpha5.AddonsConfig {
 	}
 }
 
-func createTestNodeGroups(name, instanceType string, minNodes, maxNodes, desiredNodes int) []*v1alpha5.NodeGroup {
+func createTestNodeGroups(
+	name, instanceType string,
+	minNodes, maxNodes, desiredNodes int,
+) []*v1alpha5.NodeGroup {
 	return []*v1alpha5.NodeGroup{
 		{
-			NodeGroupBase: createTestNodeGroupBase(name, instanceType, minNodes, maxNodes, desiredNodes),
+			NodeGroupBase: createTestNodeGroupBase(
+				name,
+				instanceType,
+				minNodes,
+				maxNodes,
+				desiredNodes,
+			),
 		},
 	}
 }
 
-func createTestNodeGroupBase(name, instanceType string, minNodes, maxNodes, desiredNodes int) *v1alpha5.NodeGroupBase {
+func createTestNodeGroupBase(
+	name, instanceType string,
+	minNodes, maxNodes, desiredNodes int,
+) *v1alpha5.NodeGroupBase {
 	return clustertestutils.CreateTestEKSNodeGroupBase(clustertestutils.EKSNodeGroupBaseOptions{
 		Name:            name + "-workers",
 		InstanceType:    instanceType,
