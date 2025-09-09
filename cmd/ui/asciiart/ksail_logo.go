@@ -53,13 +53,53 @@ func colorGreen() *color.Color  { return color.New(color.Bold, color.FgGreen) }
 func colorCyan() *color.Color   { return color.New(color.FgCyan) }
 
 func printGreenBlueCyanPart(out io.Writer, line string) {
+	lineLen := len(line)
+
+	// Ensure we have enough characters for all segments
+	if lineLen < greenCyanSplitIndex {
+		printlnc(out, colorGreen(), line)
+
+		return
+	}
+
+	// Print green segment
 	printc(out, colorGreen(), line[:greenCyanSplitIndex])
+
+	// Print cyan segment if we have enough characters
+	if lineLen < blueStartIndex {
+		printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
+
+		return
+	}
+
 	printc(out, colorCyan(), line[greenCyanSplitIndex:blueStartIndex])
+
+	// Print blue segment if we have enough characters
+	if lineLen < cyanStartIndex {
+		printlnc(out, colorBlue(), line[blueStartIndex:])
+
+		return
+	}
+
 	printc(out, colorBlue(), line[blueStartIndex:cyanStartIndex])
+
+	// Print final cyan segment
 	printlnc(out, colorCyan(), line[cyanStartIndex:])
 }
 
 func printGreenCyanPart(out io.Writer, line string) {
+	lineLen := len(line)
+
+	// Ensure we have enough characters for the split
+	if lineLen < greenCyanSplitIndex {
+		printlnc(out, colorGreen(), line)
+
+		return
+	}
+
+	// Print green segment
 	printc(out, colorGreen(), line[:greenCyanSplitIndex])
+
+	// Print cyan segment (remainder of the line)
 	printlnc(out, colorCyan(), line[greenCyanSplitIndex:])
 }

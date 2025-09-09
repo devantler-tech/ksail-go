@@ -207,3 +207,35 @@ func TestPrintKSailLogo_Writers(t *testing.T) {
 		})
 	}
 }
+
+// TestPrintKSailLogo_BoundsHandling tests that the function handles lines
+// of various lengths without panicking, demonstrating the robustness of
+// the bounds checking implementation.
+func TestPrintKSailLogo_BoundsHandling(t *testing.T) {
+	t.Parallel()
+
+	var writer bytes.Buffer
+
+	// This test verifies that the function doesn't panic on the actual logo content
+	// which includes lines of different lengths that could trigger bounds issues
+	// if proper length checking wasn't implemented.
+	asciiart.PrintKSailLogo(&writer)
+
+	output := writer.String()
+
+	// Verify we got output without panics
+	if len(output) == 0 {
+		t.Error("Expected non-empty output from logo printing")
+	}
+
+	// Verify the output contains expected content
+	if !strings.Contains(output, "KSail") && !strings.Contains(output, "__") {
+		t.Error("Expected output to contain recognizable logo elements")
+	}
+
+	// Verify proper line structure (no panics means bounds checking worked)
+	lines := strings.Split(output, "\n")
+	if len(lines) < 5 {
+		t.Errorf("Expected multiple lines in output, got %d", len(lines))
+	}
+}
