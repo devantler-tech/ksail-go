@@ -12,6 +12,10 @@ linters:
       # Exclude auto-generated mock files from all linting rules
       - ".*mocks.*\\.go$"
       - ".*_mocks_.*\\.go$"
+    rules:
+      - path: ".*_test\\.go$"
+        linters:
+          - exhaustruct
   settings:
     wsl_v5:
       allow-first-in-block: true

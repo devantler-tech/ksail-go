@@ -3,17 +3,14 @@ package k3dprovisioner_test
 import (
 	"context"
 	"errors"
-	"net/netip"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	"github.com/docker/go-connections/nat"
-	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/types"
-	wharfie "github.com/rancher/wharfie/pkg/registries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -284,27 +281,9 @@ func newK3dProvisionerForTest(
 
 func buildTestSimpleConfig() *v1alpha5.SimpleConfig {
 	cfg := &v1alpha5.SimpleConfig{
-		TypeMeta: configtypes.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		ObjectMeta: configtypes.ObjectMeta{
-			Name: "",
-		},
-		Servers:      0,
-		Agents:       0,
-		ExposeAPI:    buildTestExposureOpts(),
-		Image:        "",
-		Network:      "",
-		Subnet:       "",
-		ClusterToken: "",
-		Volumes:      nil,
-		Ports:        nil,
-		Options:      buildTestConfigOptions(),
-		Env:          nil,
-		Registries:   buildTestRegistries(),
-		HostAliases:  nil,
-		Files:        nil,
+		ExposeAPI:  buildTestExposureOpts(),
+		Options:    buildTestConfigOptions(),
+		Registries: buildTestRegistries(),
 	}
 	cfg.Name = "cfg-name"
 
@@ -312,11 +291,7 @@ func buildTestSimpleConfig() *v1alpha5.SimpleConfig {
 }
 
 func buildTestExposureOpts() v1alpha5.SimpleExposureOpts {
-	return v1alpha5.SimpleExposureOpts{
-		Host:     "",
-		HostIP:   "",
-		HostPort: "",
-	}
+	return v1alpha5.SimpleExposureOpts{}
 }
 
 func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
@@ -331,11 +306,7 @@ func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
 
 
 func buildTestRegistries() v1alpha5.SimpleConfigRegistries {
-	return v1alpha5.SimpleConfigRegistries{
-		Use:    nil,
-		Create: nil,
-		Config: "",
-	}
+	return v1alpha5.SimpleConfigRegistries{}
 }
 
 type expectK3dProviderFn func(*k3dprovisioner.MockK3dClientProvider, *k3dprovisioner.MockK3dConfigProvider, string)
@@ -445,25 +416,6 @@ func expectClusterGetByName(clientProvider *k3dprovisioner.MockK3dClientProvider
 func createDefaultCluster(name string) *types.Cluster {
 	return &types.Cluster{
 		Name: name,
-		Network: types.ClusterNetwork{
-			Name:     "",
-			ID:       "",
-			External: false,
-			IPAM: types.IPAM{
-				IPPrefix: netip.Prefix{},
-				IPsUsed:  nil,
-				Managed:  false,
-			},
-			Members: nil,
-		},
-		Token:              "",
-		Nodes:              nil,
-		InitNode:           nil,
-		ExternalDatastore:  nil,
-		KubeAPI:            nil,
-		ServerLoadBalancer: nil,
-		ImageVolume:        "",
-		Volumes:            nil,
 	}
 }
 
@@ -491,36 +443,6 @@ func createClusterWithKubeAPI(name string) *types.Cluster {
 // createDefaultClusterConfig creates a default v1alpha5.ClusterConfig for testing.
 func createDefaultClusterConfig() *v1alpha5.ClusterConfig {
 	return &v1alpha5.ClusterConfig{
-		TypeMeta: configtypes.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
 		Cluster: *createDefaultCluster(""),
-		ClusterCreateOpts: types.ClusterCreateOpts{
-			DisableImageVolume:  false,
-			WaitForServer:       false,
-			Timeout:             0,
-			DisableLoadBalancer: false,
-			GPURequest:          "",
-			ServersMemory:       "",
-			AgentsMemory:        "",
-			NodeHooks:           nil,
-			GlobalLabels:        nil,
-			GlobalEnv:           nil,
-			HostAliases:         nil,
-			Registries: struct {
-				Create *types.Registry   `json:"create,omitempty"`
-				Use    []*types.Registry `json:"use,omitempty"`
-				Config *wharfie.Registry `json:"config,omitempty"`
-			}{
-				Create: nil,
-				Use:    nil,
-				Config: nil,
-			},
-		},
-		KubeconfigOpts: v1alpha5.SimpleConfigOptionsKubeconfig{
-			UpdateDefaultKubeconfig: false,
-			SwitchCurrentContext:    false,
-		},
 	}
 }
