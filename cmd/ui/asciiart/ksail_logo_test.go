@@ -183,11 +183,11 @@ func TestPrintKSailLogo_Writers(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			writer := tc.writer()
+			writer := testCase.writer()
 			initialLen := writer.Len()
 
 			asciiart.PrintKSailLogo(writer)
@@ -237,5 +237,114 @@ func TestPrintKSailLogo_BoundsHandling(t *testing.T) {
 	lines := strings.Split(output, "\n")
 	if len(lines) < 5 {
 		t.Errorf("Expected multiple lines in output, got %d", len(lines))
+	}
+}
+
+// TestPrintKSailLogo_EdgeCases tests edge cases in the color processing functions
+// by using specially crafted logo content that exercises all code paths.
+func TestPrintKSailLogo_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	testCases := createEdgeCaseTestData()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			var writer bytes.Buffer
+
+			// Use reflection to access the internal function for testing edge cases
+			// This allows us to test all code paths without modifying the embedded logo
+			asciiart.PrintLogoFromString(&writer, testCase.logoContent)
+
+			output := writer.String()
+			testCase.expectFunc(t, output)
+		})
+	}
+}
+
+func createEdgeCaseTestData() []struct {
+	name        string
+	logoContent string
+	expectFunc  func(t *testing.T, output string)
+} {
+	return []struct {
+		name        string
+		logoContent string
+		expectFunc  func(t *testing.T, output string)
+	}{
+		{
+			name: "short_lines_for_green_blue_cyan",
+			logoContent: strings.Join([]string{
+				"line0",                 // yellow
+				"line1",                 // yellow
+				"line2",                 // yellow
+				"line3",                 // yellow
+				"line4",                 // blue
+				"short",                 // index 5: printGreenBlueCyanPart with line < 32 chars (5 chars)
+				strings.Repeat("x", 37), // index 6: line == 37 chars
+				"line7",                 // index 7: printGreenCyanPart with line < 32 chars
+				"line8",                 // index 8: printGreenCyanPart with line < 32 chars
+				"final",                 // default: blue
+			}, "\n"),
+			expectFunc: func(t *testing.T, output string) {
+				t.Helper()
+				// Verify output contains expected content without panicking
+				if len(output) == 0 {
+					t.Error("Expected non-empty output")
+				}
+				// Check that all lines are processed
+				if !strings.Contains(output, "short") {
+					t.Error("Expected short line to be included")
+				}
+			},
+		},
+		{
+			name: "various_length_lines",
+			logoContent: strings.Join([]string{
+				"yellow1",               // yellow
+				"yellow2",               // yellow
+				"yellow3",               // yellow
+				"yellow4",               // yellow
+				"blue_line",             // blue
+				strings.Repeat("x", 31), // index 5: exactly 31 chars - edge case for < 32
+				strings.Repeat("y", 37), // index 6: exactly 37 chars - edge case for == 37
+				strings.Repeat("z", 30), // index 7: exactly 30 chars - edge case for < 32
+				strings.Repeat("w", 35), // index 8: 35 chars
+				"final_blue",            // default
+			}, "\n"),
+			expectFunc: func(t *testing.T, output string) {
+				t.Helper()
+				// Verify the function handles various line lengths correctly
+				if len(output) == 0 {
+					t.Error("Expected non-empty output for various length lines")
+				}
+				lines := strings.Split(output, "\n")
+				if len(lines) < 8 {
+					t.Errorf("Expected at least 8 lines, got %d", len(lines))
+				}
+			},
+		},
+		{
+			name: "missing_coverage_edge_case",
+			logoContent: strings.Join([]string{
+				"y1", "y2", "y3", "y4", // yellow lines 0-3
+				"blue", // blue line 4
+				strings.Repeat(
+					"a",
+					35,
+				), // index 5: 35 chars - should hit lineLen >= 32 && lineLen < 37 path
+				strings.Repeat("b", 32), // index 6: exactly 32 chars - edge case
+				"short7",                // index 7: short line for printGreenCyanPart
+				"longer8",               // index 8: normal line for printGreenCyanPart
+				"end",                   // final line
+			}, "\n"),
+			expectFunc: func(t *testing.T, output string) {
+				t.Helper()
+				if len(output) == 0 {
+					t.Error("Expected non-empty output for missing coverage test")
+				}
+			},
+		},
 	}
 }

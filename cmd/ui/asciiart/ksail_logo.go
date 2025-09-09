@@ -20,9 +20,16 @@ const (
 
 // PrintKSailLogo displays the KSail ASCII art with colored formatting.
 func PrintKSailLogo(writer io.Writer) {
+	PrintLogoFromString(writer, ksailLogo)
+}
+
+// PrintLogoFromString processes logo content and applies color formatting.
+// This function is exposed for testing purposes to enable coverage of edge cases.
+// In normal usage, use PrintKSailLogo instead.
+func PrintLogoFromString(writer io.Writer, logoContent string) {
 	const yellowLines = 4
 
-	lines := strings.Split(ksailLogo, "\n")
+	lines := strings.Split(logoContent, "\n")
 
 	for index, line := range lines {
 		switch {
