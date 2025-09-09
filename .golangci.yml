@@ -4,9 +4,9 @@ run:
 linters:
   default: all
   enable:
-    - wsl_v5
-  disable:
     - wsl
+  disable:
+    - wsl_v5  # Not supported in all golangci-lint versions
   exclusions:
     paths:
       # Exclude auto-generated mock files from all linting rules
@@ -17,7 +17,7 @@ linters:
         linters:
           - exhaustruct
   settings:
-    wsl_v5:
+    wsl:
       allow-first-in-block: true
       allow-whole-block: false
       branch-max-lines: 2

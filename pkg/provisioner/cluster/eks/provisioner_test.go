@@ -72,7 +72,6 @@ func TestDelete_Success(t *testing.T) {
 			expectedName,
 			func(clusterActions *eksprovisioner.MockEKSClusterActions, _ string) {
 				// No longer need to mock provider construction since it's injected directly
-
 				// Delete(ctx context.Context, waitInterval, podEvictionWaitPeriod time.Duration,
 				//   wait, force, disableNodegroupEviction bool, parallel int)
 				mockClusterDeleteAction(clusterActions, nil)
