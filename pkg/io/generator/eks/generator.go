@@ -47,4 +47,3 @@ func (g *EKSGenerator) Generate(cfg *v1alpha5.ClusterConfig, opts yamlgenerator.
 
 	return out, nil
 }
-

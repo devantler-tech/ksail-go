@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# Pre-commit hook that runs golangci-lint fmt to format Go code
+# This ensures all Go files are properly formatted before committing
+#
+
+set -e
+
+# Check if golangci-lint is available
+if ! command -v golangci-lint >/dev/null 2>&1; then
+    # Try to find it in common Go bin locations
+    if [ -f "$HOME/go/bin/golangci-lint" ]; then
+        GOLANGCI_LINT="$HOME/go/bin/golangci-lint"
+    elif [ -f "$(go env GOPATH)/bin/golangci-lint" ]; then
+        GOLANGCI_LINT="$(go env GOPATH)/bin/golangci-lint"
+    else
+        echo "Error: golangci-lint not found. Please install it first."
+        echo "You can install it with: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b \$(go env GOPATH)/bin"
+        exit 1
+    fi
+else
+    GOLANGCI_LINT="golangci-lint"
+fi
+
+echo "Running golangci-lint fmt to format Go files..."
+
+# Run golangci-lint fmt on all Go files
+if ! $GOLANGCI_LINT fmt; then
+    echo "Error: golangci-lint fmt failed"
+    exit 1
+fi
+
+echo "Go files formatted successfully. Please review and add any changes to your commit."
+
+# Check if there are any changes after formatting
+if git diff --name-only | grep -q '\.go$'; then
+    echo ""
+    echo "⚠️  Some Go files were reformatted. Please review the changes and add them to your commit:"
+    echo "   git add <files>"
+    echo "   git commit --amend"
+    echo ""
+    echo "Modified files:"
+    git diff --name-only | grep '\.go$' | sed 's/^/   /'
+    echo ""
+    exit 1
+fi
+
+echo "✓ All Go files are properly formatted."

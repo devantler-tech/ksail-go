@@ -19,8 +19,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-
-
 //go:embed assets/apply-set-crd.yaml
 var applySetCRDYAML []byte
 
@@ -39,11 +37,11 @@ func createDefaultDeleteOptions() metav1.DeleteOptions {
 			Kind:       "",
 			APIVersion: "",
 		},
-		GracePeriodSeconds:                               nil,
-		Preconditions:                                    nil,
-		OrphanDependents:                                 nil,
-		PropagationPolicy:                                nil,
-		DryRun:                                           nil,
+		GracePeriodSeconds: nil,
+		Preconditions:      nil,
+		OrphanDependents:   nil,
+		PropagationPolicy:  nil,
+		DryRun:             nil,
 		IgnoreStoreReadErrorWithClusterBreakingPotential: boolPtr(false),
 	}
 }
@@ -107,8 +105,6 @@ func NewKubectlInstaller(
 		dynamicClient:       dynamicClient,
 	}
 }
-
-
 
 // Install ensures the ApplySet CRD and its parent CR exist.
 func (b *KubectlInstaller) Install(ctx context.Context) error {

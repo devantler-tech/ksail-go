@@ -217,7 +217,7 @@ func TestEnsureClusterExists_Error_ExistsCallFailed(t *testing.T) {
 func TestSetupNodeGroupManager_Error_SetupClusterOperationFailed(t *testing.T) {
 	t.Parallel()
 
-	// Test the setupClusterOperation failure in setupNodeGroupManager by 
+	// Test the setupClusterOperation failure in setupNodeGroupManager by
 	// creating a provisioner with empty metadata name and empty input name
 	clusterConfig := &v1alpha5.ClusterConfig{
 		Metadata: &v1alpha5.ClusterMeta{
@@ -284,9 +284,9 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 	_ = clusterActions
 	_ = clusterCreator
 	_ = nodeGroupManager
-	
+
 	mockGetClusters(clusterLister, nil, clustertestutils.ErrListClustersFailed)
-	
+
 	clusters, err := provisioner.List(context.Background())
 
 	assert.Nil(t, clusters)
@@ -601,13 +601,13 @@ func createTestProvisionerNodeGroupBase(desiredCapacity int) *v1alpha5.NodeGroup
 func mockClusterDeleteAction(clusterActions *eksprovisioner.MockEKSClusterActions, returnErr error) {
 	clusterActions.On(
 		"Delete",
-		mock.Anything,                         // ctx context.Context
-		mock.AnythingOfType("time.Duration"),  // waitInterval time.Duration
-		mock.AnythingOfType("time.Duration"),  // podEvictionWaitPeriod time.Duration
-		mock.AnythingOfType("bool"),           // wait bool
-		mock.AnythingOfType("bool"),           // force bool
-		mock.AnythingOfType("bool"),           // disableNodegroupEviction bool
-		mock.AnythingOfType("int"),            // parallel int
+		mock.Anything,                        // ctx context.Context
+		mock.AnythingOfType("time.Duration"), // waitInterval time.Duration
+		mock.AnythingOfType("time.Duration"), // podEvictionWaitPeriod time.Duration
+		mock.AnythingOfType("bool"),          // wait bool
+		mock.AnythingOfType("bool"),          // force bool
+		mock.AnythingOfType("bool"),          // disableNodegroupEviction bool
+		mock.AnythingOfType("int"),           // parallel int
 	).Return(returnErr)
 }
 

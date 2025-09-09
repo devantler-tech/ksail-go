@@ -124,7 +124,9 @@ func TestK3dStart_Error_StartFailed(t *testing.T) {
 		func(clientProvider *k3dprovisioner.MockK3dClientProvider, cluster *types.Cluster) {
 			clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).Return(errK3dBoom)
 		},
-		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Start(context.Background(), "my-cluster") },
+		func(p *k3dprovisioner.K3dClusterProvisioner) error {
+			return p.Start(context.Background(), "my-cluster")
+		},
 		"cluster start",
 	)
 }
@@ -302,8 +304,6 @@ func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
 		Runtime:           k3dgenerator.BuildDefaultRuntimeOptions(),
 	}
 }
-
-
 
 func buildTestRegistries() v1alpha5.SimpleConfigRegistries {
 	return v1alpha5.SimpleConfigRegistries{}

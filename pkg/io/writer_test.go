@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	testContent      = "test content"
-	originalContent  = "original content"
+	testContent     = "test content"
+	originalContent = "original content"
 )
 
 func TestTryWrite_WithBuffer(t *testing.T) {

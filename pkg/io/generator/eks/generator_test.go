@@ -52,7 +52,7 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "file-cluster")
-	
+
 	// Verify file was written
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
@@ -146,7 +146,7 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 	// Assert
 	require.NoError(t, err, "Generate should succeed")
 	assertEKSYAML(t, result, "custom-cluster")
-	
+
 	// Verify custom options are applied
 	assert.Contains(t, result, "us-east-1", "YAML should contain custom region")
 	assert.Contains(t, result, "t3.medium", "YAML should contain custom instance type")
@@ -208,13 +208,13 @@ func createTestClusterConfigBase(
 
 func createTestMetadata(name, region, version string) *v1alpha5.ClusterMeta {
 	return &v1alpha5.ClusterMeta{
-		Name:                name,
-		Region:              region,
-		Version:             version,
-		ForceUpdateVersion:  nil,
-		Tags:                nil,
-		Annotations:         nil,
-		AccountID:           "",
+		Name:               name,
+		Region:             region,
+		Version:            version,
+		ForceUpdateVersion: nil,
+		Tags:               nil,
+		Annotations:        nil,
+		AccountID:          "",
 	}
 }
 

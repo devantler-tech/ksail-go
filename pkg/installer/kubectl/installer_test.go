@@ -233,8 +233,8 @@ func expectCRDEstablishmentWithPolling(apiExtClient *kubectlinstaller.MockCustom
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech")).
 		Times(1)
-	
-	// Second call returns established CRD 
+
+	// Second call returns established CRD
 	expectCRDEstablishmentSuccess(apiExtClient)
 }
 
@@ -245,7 +245,7 @@ func runInstallTestExpectingError(
 	expectedErrorMessage string,
 ) {
 	t.Helper()
-	
+
 	// Act
 	err := installer.Install(context.Background())
 
@@ -260,7 +260,7 @@ func runInstallTestExpectingSuccess(
 	installer *kubectlinstaller.KubectlInstaller,
 ) {
 	t.Helper()
-	
+
 	// Act
 	err := installer.Install(context.Background())
 
@@ -282,7 +282,6 @@ func TestNewKubectlInstaller(t *testing.T) {
 	// Assert
 	assert.NotNil(t, installer)
 }
-
 
 func TestKubectlInstaller_Install_Success(t *testing.T) {
 	t.Parallel()
@@ -307,7 +306,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 
 	// Arrange
 	apiExtClient, dynClient := testSetup(t)
-	
+
 	expectCRDNotFound(apiExtClient)
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errCRDCreationFailed)
@@ -328,7 +327,7 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 		Return(nil, apierrors.NewNotFound(createDefaultGroupResource(), "applysets.k8s.devantler.tech"))
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(createDefaultCRD(), nil)
-	
+
 	// CRD establishment polling returns not established (times out)
 	crdNotEstablished := createDefaultCRD()
 	crdNotEstablished.Status = apiextensionsv1.CustomResourceDefinitionStatus{
@@ -437,7 +436,6 @@ func TestKubectlInstaller_Install_ApplySetGetError(t *testing.T) {
 	runInstallTestExpectingError(t, installer, "failed to get ApplySet CR")
 }
 
-
 func TestKubectlInstaller_EmbeddedCRAsset(t *testing.T) {
 	t.Parallel()
 
@@ -494,12 +492,12 @@ func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 	// Create a simple test that only targets the CRD establishment error path
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD creation succeeds
 	expectCRDCreateSuccess(apiExtClient)
-	
+
 	// During establishment waiting, Get always returns a server error
 	expectCRDEstablishmentError(apiExtClient)
 
@@ -509,7 +507,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 	// Act
 	err := installer.Install(context.Background())
 
-	// Assert 
+	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to get CRD")
 }
@@ -520,12 +518,12 @@ func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testi
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD creation succeeds
 	expectCRDCreateSuccess(apiExtClient)
-	
+
 	// During establishment waiting, return CRD with NamesAccepted = false
 	expectCRDEstablishmentWithNamesNotAccepted(apiExtClient)
 
@@ -534,7 +532,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testi
 	// Act
 	err := installer.Install(context.Background())
 
-	// Assert 
+	// Assert
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "crd names not accepted")
 	assert.Contains(t, err.Error(), "names conflict with existing CRD")
@@ -546,22 +544,22 @@ func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD Create returns AlreadyExists (race condition)
 	expectCRDCreateAlreadyExists(apiExtClient)
-	
+
 	// Get existing CRD for update
 	existingCRD := expectCRDGetForUpdate(apiExtClient)
 	existingCRD.ResourceVersion = "test-version-123"
-	
+
 	// Update succeeds (this triggers createDefaultUpdateOptions)
 	expectCRDUpdateSuccess(apiExtClient, existingCRD)
-	
+
 	// Establishment check - CRD is already established
 	expectCRDEstablishmentSuccess(apiExtClient)
-	
+
 	// ApplySet CR creation
 	expectApplySetNotFound(dynClient)
 	expectApplySetCreateSuccess(dynClient)
@@ -583,16 +581,16 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
 
 	// CRD already exists (skip CRD logic)
 	expectCRDExists(apiExtClient)
-	
+
 	// ApplySet CR not found initially
 	expectApplySetNotFound(dynClient)
-	
+
 	// ApplySet Create returns AlreadyExists (race condition)
 	expectApplySetCreateAlreadyExists(dynClient)
-	
+
 	// Get existing ApplySet for update
 	existingCR := expectApplySetGetForUpdate(dynClient)
-	
+
 	// Update succeeds (this also triggers createDefaultUpdateOptions)
 	expectApplySetUpdateSuccess(dynClient, existingCR)
 
@@ -607,12 +605,12 @@ func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD Create returns AlreadyExists (race condition)
 	expectCRDCreateAlreadyExists(apiExtClient)
-	
+
 	// Get existing CRD fails
 	apiExtClient.EXPECT().Get(mock.Anything, "applysets.k8s.devantler.tech", mock.Anything).
 		Return(nil, errGetError).
@@ -629,16 +627,16 @@ func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD Create returns AlreadyExists (race condition)
 	expectCRDCreateAlreadyExists(apiExtClient)
-	
+
 	// Get existing CRD succeeds
 	existingCRD := expectCRDGetForUpdate(apiExtClient)
 	existingCRD.ResourceVersion = "test-version-123"
-	
+
 	// Update fails
 	apiExtClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errUpdateError).
@@ -657,13 +655,13 @@ func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
 
 	// CRD already exists (skip CRD logic)
 	expectCRDExists(apiExtClient)
-	
+
 	// ApplySet CR not found initially
 	expectApplySetNotFound(dynClient)
-	
+
 	// ApplySet Create returns AlreadyExists (race condition)
 	expectApplySetCreateAlreadyExists(dynClient)
-	
+
 	// Get existing ApplySet fails
 	dynClient.EXPECT().Get(mock.Anything, "ksail", mock.Anything).
 		Return(nil, errGetError).
@@ -682,16 +680,16 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
 
 	// CRD already exists (skip CRD logic)
 	expectCRDExists(apiExtClient)
-	
+
 	// ApplySet CR not found initially
 	expectApplySetNotFound(dynClient)
-	
+
 	// ApplySet Create returns AlreadyExists (race condition)
 	expectApplySetCreateAlreadyExists(dynClient)
-	
+
 	// Get existing ApplySet succeeds
 	expectApplySetGetForUpdate(dynClient)
-	
+
 	// Update fails
 	dynClient.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errUpdateError).
@@ -708,9 +706,9 @@ func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD Create fails with some other error (not AlreadyExists)
 	apiExtClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errCreateFailed).
@@ -729,10 +727,10 @@ func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
 
 	// CRD already exists (skip CRD logic)
 	expectCRDExists(apiExtClient)
-	
+
 	// ApplySet CR not found initially
 	expectApplySetNotFound(dynClient)
-	
+
 	// ApplySet Create fails with some other error (not AlreadyExists)
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
 		Return(nil, errCreateFailed).
@@ -749,15 +747,15 @@ func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD creation succeeds
 	expectCRDCreateSuccess(apiExtClient)
-	
+
 	// During establishment waiting - polling returns NotFound -> Established
 	expectCRDEstablishmentWithPolling(apiExtClient)
-	
+
 	// ApplySet CR creation
 	expectApplySetNotFound(dynClient)
 	expectApplySetCreateSuccess(dynClient)
@@ -777,15 +775,15 @@ func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
 
 	apiExtClient, dynClient := testSetup(t)
 
-	// CRD not found initially 
+	// CRD not found initially
 	expectCRDNotFound(apiExtClient)
-	
+
 	// CRD Create succeeds immediately (no race condition)
 	expectCRDCreateSuccess(apiExtClient)
-	
+
 	// Establishment check - CRD is already established
 	expectCRDEstablishmentSuccess(apiExtClient)
-	
+
 	// ApplySet CR creation
 	expectApplySetNotFound(dynClient)
 	expectApplySetCreateSuccess(dynClient)
@@ -807,10 +805,10 @@ func TestKubectlInstaller_ApplyApplySetCR_CreateSuccess_Direct(t *testing.T) {
 
 	// CRD already exists (skip CRD logic)
 	expectCRDExists(apiExtClient)
-	
+
 	// ApplySet CR not found initially
 	expectApplySetNotFound(dynClient)
-	
+
 	// ApplySet Create succeeds immediately (no race condition)
 	expectApplySetCreateSuccess(dynClient)
 
