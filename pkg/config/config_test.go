@@ -10,14 +10,12 @@ import (
 )
 
 func TestLoadConfig_Defaults(t *testing.T) {
-	t.Parallel()
-
 	// Clear any existing environment variables that might affect the test
 	envVarsToClean := []string{
 		"KSAIL_DISTRIBUTION",
 		"KSAIL_ALL", 
-		"KSAIL_CLUSTER_NAME",
-		"KSAIL_CLUSTER_CONNECTION_KUBECONFIG",
+		"KSAIL_METADATA_NAME",
+		"KSAIL_SPEC_CONNECTION_KUBECONFIG",
 	}
 	for _, envVar := range envVarsToClean {
 		if originalValue := os.Getenv(envVar); originalValue != "" {
@@ -44,14 +42,12 @@ func TestLoadConfig_Defaults(t *testing.T) {
 }
 
 func TestLoadConfig_EnvironmentVariables(t *testing.T) {
-	t.Parallel()
-
-	// Set environment variables
+	// Set environment variables - using the correct hierarchical structure
 	envVars := map[string]string{
-		"KSAIL_DISTRIBUTION":                   "K3d",
-		"KSAIL_ALL":                           "true",
-		"KSAIL_CLUSTER_NAME":                  "test-cluster",
-		"KSAIL_CLUSTER_CONNECTION_KUBECONFIG": "/custom/kubeconfig",
+		"KSAIL_DISTRIBUTION":                        "K3d",
+		"KSAIL_ALL":                                "true",
+		"KSAIL_METADATA_NAME":                      "test-cluster",
+		"KSAIL_SPEC_CONNECTION_KUBECONFIG":         "/custom/kubeconfig",
 	}
 
 	// Set env vars and defer cleanup
@@ -74,7 +70,21 @@ func TestLoadConfig_EnvironmentVariables(t *testing.T) {
 }
 
 func TestInitializeViper(t *testing.T) {
-	t.Parallel()
+	// Clear any existing environment variables that might affect the test
+	envVarsToClean := []string{
+		"KSAIL_DISTRIBUTION",
+		"KSAIL_ALL", 
+		"KSAIL_METADATA_NAME",
+		"KSAIL_SPEC_CONNECTION_KUBECONFIG",
+	}
+	for _, envVar := range envVarsToClean {
+		if originalValue := os.Getenv(envVar); originalValue != "" {
+			_ = os.Unsetenv(envVar)
+			defer func(envVar, originalValue string) {
+				_ = os.Setenv(envVar, originalValue)
+			}(envVar, originalValue)
+		}
+	}
 
 	v := config.InitializeViper()
 	assert.NotNil(t, v)
@@ -82,12 +92,10 @@ func TestInitializeViper(t *testing.T) {
 	// Test that no CLI defaults are set (following Viper best practices)
 	assert.Equal(t, "", v.GetString("distribution"))
 	assert.False(t, v.GetBool("all"))
-	assert.Equal(t, "", v.GetString("cluster.name")) // No defaults in Viper anymore
+	assert.Equal(t, "", v.GetString("metadata.name")) // No defaults in Viper anymore
 }
 
 func TestGetConfigFilePath(t *testing.T) {
-	t.Parallel()
-
 	path := config.GetConfigFilePath()
 	assert.Equal(t, "ksail.yaml", path)
 }

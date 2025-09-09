@@ -7,7 +7,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +15,11 @@ import (
 func TestNewCluster(t *testing.T) {
 	t.Parallel()
 
-	// Test with defaults
+	// Test with no options - should create empty cluster structure
 	cluster := v1alpha1.NewCluster()
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
-	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
+	assert.Equal(t, "", cluster.Metadata.Name) // No defaults in NewCluster anymore
 
 	// Test with options - covers all WithSpec* functions
 	testTimeout := metav1.Duration{Duration: time.Duration(10) * time.Minute}
@@ -38,134 +37,6 @@ func TestNewCluster(t *testing.T) {
 	)
 	assert.Equal(t, "test", cluster.Metadata.Name)
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
-}
-
-func TestSetDefaults(t *testing.T) {
-	t.Parallel()
-
-	// Test all defaults applied
-	cluster := createTestClusterWithDefaults()
-	cluster.SetDefaults()
-	assertDefaultValues(t, cluster)
-
-	// Test custom values preserved
-	cluster = createTestClusterWithCustomValues()
-	cluster.SetDefaults()
-	assertCustomValues(t, cluster)
-}
-
-func TestSetDefaultsFromConfigSource(t *testing.T) {
-	t.Parallel()
-
-	// Create test config source
-	configValues := map[string]string{
-		"distribution":                      "K3d",
-		"metadata.name":                     "test-cluster",
-		"spec.distributionConfig":           "k3d.yaml",
-		"spec.sourceDirectory":              "manifests",
-		"spec.connection.kubeconfig":        "/test/kubeconfig",
-		"spec.connection.context":           "k3d-test-cluster",
-		"spec.connection.timeout":           "10m",
-	}
-	
-	testConfigSource := &testConfigSource{values: configValues}
-
-	// Test all config defaults applied
-	cluster := createTestClusterWithDefaults()
-	cluster.SetDefaultsFromConfigSource(testConfigSource)
-
-	assert.Equal(t, "test-cluster", cluster.Metadata.Name)
-	assert.Equal(t, "k3d.yaml", cluster.Spec.DistributionConfig)
-	assert.Equal(t, "manifests", cluster.Spec.SourceDirectory)
-	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
-	assert.Equal(t, "/test/kubeconfig", cluster.Spec.Connection.Kubeconfig)
-	assert.Equal(t, "k3d-test-cluster", cluster.Spec.Connection.Context)
-	assert.Equal(t, time.Duration(10)*time.Minute, cluster.Spec.Connection.Timeout.Duration)
-
-	// Test custom values preserved
-	cluster = createTestClusterWithCustomValues()
-	cluster.SetDefaultsFromConfigSource(testConfigSource)
-	assertCustomValues(t, cluster)
-}
-
-// testConfigSource implements the ConfigSource interface for testing.
-type testConfigSource struct {
-	values map[string]string
-}
-
-func (t *testConfigSource) GetString(key string) string {
-	return t.values[key]
-}
-
-func createTestClusterWithDefaults() *v1alpha1.Cluster {
-	return &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		Metadata: createDefaultObjectMeta(""),
-		Spec:     createDefaultSpec(),
-	}
-}
-
-func createTestClusterWithCustomValues() *v1alpha1.Cluster {
-	return &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		Metadata: createDefaultObjectMeta("custom"),
-		Spec:     createCustomSpec(),
-	}
-}
-
-func createDefaultObjectMeta(name string) metav1.ObjectMeta {
-	return clustertestutils.CreateDefaultClusterMetadata(name)
-}
-
-func createDefaultSpec() v1alpha1.Spec {
-	return clustertestutils.CreateDefaultSpec()
-}
-
-func createCustomSpec() v1alpha1.Spec {
-	return v1alpha1.Spec{
-		Distribution:       v1alpha1.DistributionK3d,
-		DistributionConfig: "",
-		SourceDirectory:    "",
-		Connection: v1alpha1.Connection{
-			Kubeconfig: "/custom",
-			Context:    "custom-ctx",
-			Timeout:    metav1.Duration{Duration: time.Duration(15) * time.Minute},
-		},
-		CNI:                "",
-		CSI:                "",
-		IngressController:  "",
-		GatewayController:  "",
-		ReconciliationTool: "",
-		Options:            createDefaultOptions(),
-	}
-}
-
-func createDefaultOptions() v1alpha1.Options {
-	return clustertestutils.CreateDefaultSpecOptions()
-}
-
-func assertDefaultValues(t *testing.T, cluster *v1alpha1.Cluster) {
-	t.Helper()
-	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
-	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
-	assert.Equal(t, "k8s", cluster.Spec.SourceDirectory)
-	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
-	assert.Equal(t, "~/.kube/config", cluster.Spec.Connection.Kubeconfig)
-	assert.Equal(t, "kind-ksail-default", cluster.Spec.Connection.Context)
-	assert.Equal(t, time.Duration(5)*time.Minute, cluster.Spec.Connection.Timeout.Duration)
-}
-
-func assertCustomValues(t *testing.T, cluster *v1alpha1.Cluster) {
-	t.Helper()
-	assert.Equal(t, "custom", cluster.Metadata.Name)
-	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
-	assert.Equal(t, "/custom", cluster.Spec.Connection.Kubeconfig)
 }
 
 func TestDistribution_Set(t *testing.T) {

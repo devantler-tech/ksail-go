@@ -4,6 +4,7 @@ package config
 import (
 	"reflect"
 	"strings"
+	"time"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
@@ -45,11 +46,8 @@ func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
 		Spec:     v1alpha1.Spec{},
 	}
 
-	// Apply configuration from the config source FIRST
-	cluster.SetDefaultsFromConfigSource(m.viper)
-
-	// Then apply any missing defaults
-	cluster.SetDefaults()
+	// Apply all configuration and defaults through the config manager
+	m.setClusterFromConfig(cluster)
 
 	// Store the loaded cluster
 	m.cluster = cluster
@@ -57,11 +55,191 @@ func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
 	return cluster, nil
 }
 
+// setClusterFromConfig applies all configuration values and defaults to the cluster.
+func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
+	// Set metadata defaults
+	m.setMetadataFromConfig(cluster)
+	
+	// Set spec defaults
+	m.setSpecFromConfig(cluster)
+	
+	// Set connection defaults
+	m.setConnectionFromConfig(cluster)
+}
+
+// setMetadataFromConfig sets metadata values from configuration with defaults.
+func (m *Manager) setMetadataFromConfig(cluster *v1alpha1.Cluster) {
+	// Set name - try hierarchical first, then apply default
+	if name := m.viper.GetString("metadata.name"); name != "" {
+		cluster.Metadata.Name = name
+	} else {
+		cluster.Metadata.Name = "ksail-default"
+	}
+}
+
+// setSpecFromConfig sets spec values from configuration with defaults.
+func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
+	// Distribution Config
+	if distConfig := m.viper.GetString("distribution-config"); distConfig != "" {
+		// CLI flag or env var is set
+		cluster.Spec.DistributionConfig = distConfig
+	} else if fileDistConfig := m.viper.GetString("spec.distributionConfig"); fileDistConfig != "" {
+		// Config file is set
+		cluster.Spec.DistributionConfig = fileDistConfig
+	} else {
+		cluster.Spec.DistributionConfig = "kind.yaml"
+	}
+
+	// Source Directory
+	if sourceDir := m.viper.GetString("source-directory"); sourceDir != "" {
+		// CLI flag or env var is set
+		cluster.Spec.SourceDirectory = sourceDir
+	} else if fileSourceDir := m.viper.GetString("spec.sourceDirectory"); fileSourceDir != "" {
+		// Config file is set
+		cluster.Spec.SourceDirectory = fileSourceDir
+	} else {
+		cluster.Spec.SourceDirectory = "k8s"
+	}
+
+	// Distribution - check CLI flag first, then config file, then default
+	if distStr := m.viper.GetString("distribution"); distStr != "" {
+		// CLI flag or env var is set
+		var distribution v1alpha1.Distribution
+		if err := distribution.Set(distStr); err == nil {
+			cluster.Spec.Distribution = distribution
+		} else {
+			cluster.Spec.Distribution = v1alpha1.DistributionKind
+		}
+	} else if fileDistStr := m.viper.GetString("spec.distribution"); fileDistStr != "" {
+		// Config file is set
+		var distribution v1alpha1.Distribution
+		if err := distribution.Set(fileDistStr); err == nil {
+			cluster.Spec.Distribution = distribution
+		} else {
+			cluster.Spec.Distribution = v1alpha1.DistributionKind
+		}
+	} else {
+		cluster.Spec.Distribution = v1alpha1.DistributionKind
+	}
+
+	// Reconciliation Tool
+	if tool := m.viper.GetString("reconciliation-tool"); tool != "" {
+		// CLI flag or env var is set
+		var reconciliationTool v1alpha1.ReconciliationTool
+		if err := reconciliationTool.Set(tool); err == nil {
+			cluster.Spec.ReconciliationTool = reconciliationTool
+		} else {
+			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
+		}
+	} else if fileTool := m.viper.GetString("spec.reconciliationTool"); fileTool != "" {
+		// Config file is set
+		var reconciliationTool v1alpha1.ReconciliationTool
+		if err := reconciliationTool.Set(fileTool); err == nil {
+			cluster.Spec.ReconciliationTool = reconciliationTool
+		} else {
+			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
+		}
+	} else {
+		cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
+	}
+
+	// CNI
+	if cni := m.viper.GetString("c-n-i"); cni != "" {
+		// CLI flag or env var is set
+		cluster.Spec.CNI = v1alpha1.CNI(cni)
+	} else if fileCni := m.viper.GetString("spec.cni"); fileCni != "" {
+		// Config file is set
+		cluster.Spec.CNI = v1alpha1.CNI(fileCni)
+	} else {
+		cluster.Spec.CNI = v1alpha1.CNIDefault
+	}
+
+	// CSI
+	if csi := m.viper.GetString("c-s-i"); csi != "" {
+		// CLI flag or env var is set
+		cluster.Spec.CSI = v1alpha1.CSI(csi)
+	} else if fileCSI := m.viper.GetString("spec.csi"); fileCSI != "" {
+		// Config file is set
+		cluster.Spec.CSI = v1alpha1.CSI(fileCSI)
+	} else {
+		cluster.Spec.CSI = v1alpha1.CSIDefault
+	}
+
+	// Ingress Controller
+	if ingress := m.viper.GetString("ingress-controller"); ingress != "" {
+		// CLI flag or env var is set
+		cluster.Spec.IngressController = v1alpha1.IngressController(ingress)
+	} else if fileIngress := m.viper.GetString("spec.ingressController"); fileIngress != "" {
+		// Config file is set
+		cluster.Spec.IngressController = v1alpha1.IngressController(fileIngress)
+	} else {
+		cluster.Spec.IngressController = v1alpha1.IngressControllerDefault
+	}
+
+	// Gateway Controller
+	if gateway := m.viper.GetString("gateway-controller"); gateway != "" {
+		// CLI flag or env var is set
+		cluster.Spec.GatewayController = v1alpha1.GatewayController(gateway)
+	} else if fileGateway := m.viper.GetString("spec.gatewayController"); fileGateway != "" {
+		// Config file is set
+		cluster.Spec.GatewayController = v1alpha1.GatewayController(fileGateway)
+	} else {
+		cluster.Spec.GatewayController = v1alpha1.GatewayControllerDefault
+	}
+}
+
+const defaultConnectionTimeoutMinutes = 5
+
+// setConnectionFromConfig sets connection values from configuration with defaults.
+func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
+	// Kubeconfig
+	if kubeconfig := m.viper.GetString("connection-kubeconfig"); kubeconfig != "" {
+		// CLI flag or env var is set
+		cluster.Spec.Connection.Kubeconfig = kubeconfig
+	} else if fileKubeconfig := m.viper.GetString("spec.connection.kubeconfig"); fileKubeconfig != "" {
+		// Config file is set
+		cluster.Spec.Connection.Kubeconfig = fileKubeconfig
+	} else {
+		cluster.Spec.Connection.Kubeconfig = "~/.kube/config"
+	}
+
+	// Context
+	if context := m.viper.GetString("connection-context"); context != "" {
+		// CLI flag or env var is set
+		cluster.Spec.Connection.Context = context
+	} else if fileContext := m.viper.GetString("spec.connection.context"); fileContext != "" {
+		// Config file is set
+		cluster.Spec.Connection.Context = fileContext
+	} else {
+		cluster.Spec.Connection.Context = "kind-ksail-default"
+	}
+
+	// Timeout
+	if timeoutStr := m.viper.GetString("connection-timeout"); timeoutStr != "" {
+		// CLI flag or env var is set
+		if duration, err := time.ParseDuration(timeoutStr); err == nil {
+			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: duration}
+		} else {
+			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+		}
+	} else if fileTimeoutStr := m.viper.GetString("spec.connection.timeout"); fileTimeoutStr != "" {
+		// Config file is set
+		if duration, err := time.ParseDuration(fileTimeoutStr); err == nil {
+			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: duration}
+		} else {
+			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+		}
+	} else {
+		cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+	}
+}
+
 // GetCluster returns the currently loaded cluster configuration.
 func (m *Manager) GetCluster() *v1alpha1.Cluster {
 	if m.cluster == nil {
-		// Return a default cluster if none is loaded
-		return v1alpha1.NewCluster()
+		// Load and return a default cluster using the config manager
+		cluster, _ := m.LoadCluster()
+		return cluster
 	}
 	return m.cluster
 }
