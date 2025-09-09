@@ -265,20 +265,6 @@ func TestContainerEngine_GetClient(t *testing.T) {
 	assert.Equal(t, mockClient, engine.Client)
 }
 
-func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
-	t.Parallel()
-
-	mockClient := provisioner.NewMockAPIClient(t)
-	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
-
-	engine, err := containerengine.NewContainerEngine(mockClient)
-
-	require.NoError(t, err)
-	assert.NotNil(t, engine)
-	assert.Equal(t, "Docker", engine.GetName())
-	assert.Equal(t, mockClient, engine.Client)
-}
-
 func TestNewContainerEngine_WithNilClient(t *testing.T) {
 	t.Parallel()
 
