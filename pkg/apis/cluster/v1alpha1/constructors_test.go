@@ -8,7 +8,6 @@ import (
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,27 +54,25 @@ func TestSetDefaults(t *testing.T) {
 	assertCustomValues(t, cluster)
 }
 
-func TestSetDefaultsFromConfig(t *testing.T) {
+func TestSetDefaultsFromConfigSource(t *testing.T) {
 	t.Parallel()
 
-	// Create test config
-	cfg := &config.Config{
-		Distribution: "K3d",
-		Cluster: config.ClusterConfig{
-			Name:               "test-cluster",
-			DistributionConfig: "k3d.yaml",
-			SourceDirectory:    "manifests",
-			Connection: config.ConnectionConfig{
-				Kubeconfig: "/test/kubeconfig",
-				Context:    "k3d-test-cluster",
-				Timeout:    "10m",
-			},
-		},
+	// Create test config source
+	configValues := map[string]string{
+		"distribution":                      "K3d",
+		"metadata.name":                     "test-cluster",
+		"spec.distributionConfig":           "k3d.yaml",
+		"spec.sourceDirectory":              "manifests",
+		"spec.connection.kubeconfig":        "/test/kubeconfig",
+		"spec.connection.context":           "k3d-test-cluster",
+		"spec.connection.timeout":           "10m",
 	}
+	
+	testConfigSource := &testConfigSource{values: configValues}
 
 	// Test all config defaults applied
 	cluster := createTestClusterWithDefaults()
-	cluster.SetDefaultsFromConfig(cfg)
+	cluster.SetDefaultsFromConfigSource(testConfigSource)
 
 	assert.Equal(t, "test-cluster", cluster.Metadata.Name)
 	assert.Equal(t, "k3d.yaml", cluster.Spec.DistributionConfig)
@@ -87,8 +84,17 @@ func TestSetDefaultsFromConfig(t *testing.T) {
 
 	// Test custom values preserved
 	cluster = createTestClusterWithCustomValues()
-	cluster.SetDefaultsFromConfig(cfg)
+	cluster.SetDefaultsFromConfigSource(testConfigSource)
 	assertCustomValues(t, cluster)
+}
+
+// testConfigSource implements the ConfigSource interface for testing.
+type testConfigSource struct {
+	values map[string]string
+}
+
+func (t *testConfigSource) GetString(key string) string {
+	return t.values[key]
 }
 
 func createTestClusterWithDefaults() *v1alpha1.Cluster {

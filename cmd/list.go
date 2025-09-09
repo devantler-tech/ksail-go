@@ -6,30 +6,29 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	var viperInstance = config.InitializeViper()
+	configManager := config.NewManager()
 
 	return factory.NewCobraCommandWithFlags(
 		"list",
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		func(cmd *cobra.Command, _ []string) error {
-			return handleListRunE(cmd, viperInstance)
+			return handleListRunE(cmd, configManager)
 		},
 		func(cmd *cobra.Command) {
 			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-			_ = viperInstance.BindPFlag("all", cmd.Flags().Lookup("all"))
+			_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 		},
 	)
 }
 
 // handleListRunE handles the list command.
-func handleListRunE(cmd *cobra.Command, viperInstance *viper.Viper) error {
-	all := viperInstance.GetBool("all")
+func handleListRunE(cmd *cobra.Command, configManager *config.Manager) error {
+	all := configManager.GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
 	} else {

@@ -7,8 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,7 +26,7 @@ var ErrInvalidContainerEngine = errors.New("invalid container engine")
 
 // CreateDefaultMetadata creates a default metav1.ObjectMeta with the given name.
 func CreateDefaultMetadata(name string) metav1.ObjectMeta {
-	metadata := k8s.NewEmptyObjectMeta()
+	metadata := k8sutils.NewEmptyObjectMeta()
 	metadata.Name = name
 	metadata.OwnerReferences = []metav1.OwnerReference{}
 	metadata.Finalizers = []string{}
@@ -43,7 +42,7 @@ func NewCluster(options ...func(*Cluster)) *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: k8s.NewEmptyObjectMeta(),
+		Metadata: k8sutils.NewEmptyObjectMeta(),
 		Spec: Spec{
 			Connection: Connection{
 				Kubeconfig: "",
@@ -160,22 +159,22 @@ func (c *Cluster) SetDefaults() {
 	c.setSpecConnectionDefaults()
 }
 
-// SetDefaultsFromConfig sets default values for the Cluster fields using configuration values.
-func (c *Cluster) SetDefaultsFromConfig(cfg *config.Config) {
-	c.setMetadataDefaultsFromConfig(cfg)
-	c.setSpecDefaultsFromConfig(cfg)
-	c.setSpecConnectionDefaultsFromConfig(cfg)
+// ConfigSource provides a simple interface for configuration values.
+type ConfigSource interface {
+	GetString(key string) string
+}
+
+// SetDefaultsFromConfigSource sets default values for the Cluster fields using a configuration source.
+// This method allows integration with Viper or any other configuration system.
+func (c *Cluster) SetDefaultsFromConfigSource(configSource ConfigSource) {
+	c.setMetadataDefaultsFromConfigSource(configSource)
+	c.setSpecDefaultsFromConfigSource(configSource)
+	c.setSpecConnectionDefaultsFromConfigSource(configSource)
 }
 
 func (c *Cluster) setMetadataDefaults() {
 	if c.Metadata.Name == "" {
 		c.Metadata.Name = "ksail-default"
-	}
-}
-
-func (c *Cluster) setMetadataDefaultsFromConfig(cfg *config.Config) {
-	if c.Metadata.Name == "" {
-		c.Metadata.Name = cfg.Cluster.Name
 	}
 }
 
@@ -190,45 +189,6 @@ func (c *Cluster) setSpecDefaults() {
 
 	if c.Spec.Distribution == "" {
 		c.Spec.Distribution = DistributionKind
-	}
-
-	if c.Spec.ReconciliationTool == "" {
-		c.Spec.ReconciliationTool = ReconciliationToolKubectl
-	}
-
-	if c.Spec.CNI == "" {
-		c.Spec.CNI = CNIDefault
-	}
-
-	if c.Spec.CSI == "" {
-		c.Spec.CSI = CSIDefault
-	}
-
-	if c.Spec.IngressController == "" {
-		c.Spec.IngressController = IngressControllerDefault
-	}
-
-	if c.Spec.GatewayController == "" {
-		c.Spec.GatewayController = GatewayControllerDefault
-	}
-}
-
-func (c *Cluster) setSpecDefaultsFromConfig(cfg *config.Config) {
-	if c.Spec.DistributionConfig == "" {
-		c.Spec.DistributionConfig = cfg.Cluster.DistributionConfig
-	}
-
-	if c.Spec.SourceDirectory == "" {
-		c.Spec.SourceDirectory = cfg.Cluster.SourceDirectory
-	}
-
-	if c.Spec.Distribution == "" {
-		// Parse the distribution string
-		var dist Distribution
-		err := dist.Set(cfg.Distribution)
-		if err == nil {
-			c.Spec.Distribution = dist
-		}
 	}
 
 	if c.Spec.ReconciliationTool == "" {
@@ -268,22 +228,153 @@ func (c *Cluster) setSpecConnectionDefaults() {
 	}
 }
 
-func (c *Cluster) setSpecConnectionDefaultsFromConfig(cfg *config.Config) {
+func (c *Cluster) setMetadataDefaultsFromConfigSource(configSource ConfigSource) {
+	if c.Metadata.Name == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if name := configSource.GetString("metadata.name"); name != "" {
+			c.Metadata.Name = name
+		} else if name := configSource.GetString("cluster.name"); name != "" {
+			// Backward compatibility for flat config structure
+			c.Metadata.Name = name
+		} else {
+			c.Metadata.Name = "ksail-default"
+		}
+	}
+}
+
+func (c *Cluster) setSpecDefaultsFromConfigSource(configSource ConfigSource) {
+	if c.Spec.DistributionConfig == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if distConfig := configSource.GetString("spec.distributionConfig"); distConfig != "" {
+			c.Spec.DistributionConfig = distConfig
+		} else {
+			c.Spec.DistributionConfig = "kind.yaml"
+		}
+	}
+
+	if c.Spec.SourceDirectory == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if sourceDir := configSource.GetString("spec.sourceDirectory"); sourceDir != "" {
+			c.Spec.SourceDirectory = sourceDir
+		} else {
+			c.Spec.SourceDirectory = "k8s"
+		}
+	}
+
+	if c.Spec.Distribution == "" {
+		// Try CLI flag first (highest precedence), then hierarchical structure (ksail.yaml format)
+		var distStr string
+		if distStr = configSource.GetString("distribution"); distStr == "Kind" {
+			// If CLI is still default, try config file
+			if fileDistStr := configSource.GetString("spec.distribution"); fileDistStr != "" {
+				distStr = fileDistStr
+			}
+		}
+		
+		if distStr != "" {
+			var distribution Distribution
+			if err := distribution.Set(distStr); err == nil {
+				c.Spec.Distribution = distribution
+			} else {
+				c.Spec.Distribution = DistributionKind
+			}
+		} else {
+			c.Spec.Distribution = DistributionKind
+		}
+	}
+
+	if c.Spec.ReconciliationTool == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if tool := configSource.GetString("spec.reconciliationTool"); tool != "" {
+			var reconciliationTool ReconciliationTool
+			if err := reconciliationTool.Set(tool); err == nil {
+				c.Spec.ReconciliationTool = reconciliationTool
+			} else {
+				c.Spec.ReconciliationTool = ReconciliationToolKubectl
+			}
+		} else {
+			c.Spec.ReconciliationTool = ReconciliationToolKubectl
+		}
+	}
+
+	if c.Spec.CNI == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if cni := configSource.GetString("spec.cni"); cni != "" {
+			c.Spec.CNI = CNI(cni)
+		} else {
+			c.Spec.CNI = CNIDefault
+		}
+	}
+
+	if c.Spec.CSI == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if csi := configSource.GetString("spec.csi"); csi != "" {
+			c.Spec.CSI = CSI(csi)
+		} else {
+			c.Spec.CSI = CSIDefault
+		}
+	}
+
+	if c.Spec.IngressController == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if ingress := configSource.GetString("spec.ingressController"); ingress != "" {
+			c.Spec.IngressController = IngressController(ingress)
+		} else {
+			c.Spec.IngressController = IngressControllerDefault
+		}
+	}
+
+	if c.Spec.GatewayController == "" {
+		// Try hierarchical structure first (ksail.yaml format)
+		if gateway := configSource.GetString("spec.gatewayController"); gateway != "" {
+			c.Spec.GatewayController = GatewayController(gateway)
+		} else {
+			c.Spec.GatewayController = GatewayControllerDefault
+		}
+	}
+}
+
+func (c *Cluster) setSpecConnectionDefaultsFromConfigSource(configSource ConfigSource) {
 	if c.Spec.Connection.Kubeconfig == "" {
-		c.Spec.Connection.Kubeconfig = cfg.Cluster.Connection.Kubeconfig
+		// Try hierarchical structure first (ksail.yaml format)
+		if kubeconfig := configSource.GetString("spec.connection.kubeconfig"); kubeconfig != "" {
+			c.Spec.Connection.Kubeconfig = kubeconfig
+		} else if kubeconfig := configSource.GetString("cluster.connection.kubeconfig"); kubeconfig != "" {
+			// Backward compatibility for flat config structure
+			c.Spec.Connection.Kubeconfig = kubeconfig
+		} else {
+			c.Spec.Connection.Kubeconfig = "~/.kube/config"
+		}
 	}
 
 	if c.Spec.Connection.Context == "" {
-		c.Spec.Connection.Context = cfg.Cluster.Connection.Context
+		// Try hierarchical structure first (ksail.yaml format)
+		if context := configSource.GetString("spec.connection.context"); context != "" {
+			c.Spec.Connection.Context = context
+		} else if context := configSource.GetString("cluster.connection.context"); context != "" {
+			// Backward compatibility for flat config structure
+			c.Spec.Connection.Context = context
+		} else {
+			c.Spec.Connection.Context = "kind-ksail-default"
+		}
 	}
 
 	if c.Spec.Connection.Timeout.Duration == 0 {
-		// Parse the timeout duration
-		timeout, err := time.ParseDuration(cfg.Cluster.Connection.Timeout)
-		if err == nil {
-			c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
+		// Try hierarchical structure first (ksail.yaml format)
+		if timeoutStr := configSource.GetString("spec.connection.timeout"); timeoutStr != "" {
+			if timeout, err := time.ParseDuration(timeoutStr); err == nil {
+				c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
+			} else {
+				c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+			}
+		} else if timeoutStr := configSource.GetString("cluster.connection.timeout"); timeoutStr != "" {
+			// Backward compatibility for flat config structure
+			if timeout, err := time.ParseDuration(timeoutStr); err == nil {
+				c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
+			} else {
+				c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
+			}
 		} else {
-			// Fallback to default if parsing fails
 			c.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
 		}
 	}
