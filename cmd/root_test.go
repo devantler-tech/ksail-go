@@ -72,7 +72,6 @@ func TestExecute_ReturnsError(t *testing.T) {
 	actual.AddCommand(failing)
 
 	err := actual.Execute()
-
 	if err == nil {
 		t.Fatal("Expected error but got none")
 	}
@@ -140,7 +139,6 @@ func TestExecute_WrapperError(t *testing.T) {
 	rootCmd.AddCommand(failing)
 
 	err := cmd.Execute(rootCmd)
-
 	if err == nil {
 		t.Fatal("Expected error but got none")
 	}

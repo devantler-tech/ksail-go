@@ -179,7 +179,6 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStartClusterFailed)
 
 	err := provisioner.Start(context.Background(), "")
-
 	if err == nil {
 		t.Fatalf("Start() expected error, got nil")
 	}
@@ -227,7 +226,6 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStopClusterFailed)
 
 	err := provisioner.Stop(context.Background(), "")
-
 	if err == nil {
 		t.Fatalf("Stop() expected error, got nil")
 	}
@@ -328,7 +326,6 @@ func runDockerOperationFailureTest(
 	expectDockerCall(client)
 
 	err := operation(provisioner)
-
 	if err == nil {
 		t.Fatalf("%s() expected error, got nil", operationName)
 	}
