@@ -1,0 +1,20 @@
+
+[TestInitCmd_Help - 1]
+Initialize a new KSail project with the specified configuration options.
+
+Usage:
+  init [flags]
+
+Flags:
+  -d, --distribution string      Configure cluster distribution (Kind, K3d, EKS, Tind)
+  -h, --help                     help for init
+  -s, --sourcedirectory string   Configure source directory for Kubernetes manifests
+
+---
+
+[TestInitCmd_Execute - 1]
+✔ Project initialized successfully with Kind distribution (stub implementation)
+► Cluster name: ksail-default
+► Source directory: k8s
+
+---

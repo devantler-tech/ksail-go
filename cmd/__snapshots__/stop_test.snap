@@ -1,0 +1,16 @@
+
+[TestStopCmd_Help - 1]
+Stop the Kubernetes cluster without removing it.
+
+Usage:
+  stop [flags]
+
+Flags:
+  -h, --help   help for stop
+
+---
+
+[TestStopCmd_Execute - 1]
+✔ Cluster stopped successfully (stub implementation)
+
+---

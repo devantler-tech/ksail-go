@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewListCmd(t *testing.T) {
@@ -38,13 +39,7 @@ func TestListCmd_Execute_Default(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
-
-	expected := "✔ Listing running clusters (stub implementation)\n"
-
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestListCmd_Execute_All(t *testing.T) {
@@ -61,13 +56,24 @@ func TestListCmd_Execute_All(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
+	snaps.MatchSnapshot(t, out.String())
+}
 
-	expected := "✔ Listing all clusters (stub implementation)\n"
+func TestListCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
+	var out bytes.Buffer
+
+	cmd := cmd.NewListCmd()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--help"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
+
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestListCmd_Flags(t *testing.T) {

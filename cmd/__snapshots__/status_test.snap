@@ -1,0 +1,16 @@
+
+[TestStatusCmd_Execute - 1]
+✔ Cluster status: Running (stub implementation)
+
+---
+
+[TestStatusCmd_Help - 1]
+Show the current status of the Kubernetes cluster.
+
+Usage:
+  status [flags]
+
+Flags:
+  -h, --help   help for status
+
+---

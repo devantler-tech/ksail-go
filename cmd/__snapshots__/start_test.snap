@@ -1,0 +1,16 @@
+
+[TestStartCmd_Help - 1]
+Start a previously stopped Kubernetes cluster.
+
+Usage:
+  start [flags]
+
+Flags:
+  -h, --help   help for start
+
+---
+
+[TestStartCmd_Execute - 1]
+✔ Cluster started successfully (stub implementation)
+
+---

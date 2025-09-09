@@ -1,0 +1,22 @@
+
+[TestListCmd_Execute_All - 1]
+✔ Listing all clusters (stub implementation)
+
+---
+
+[TestListCmd_Execute_Default - 1]
+✔ Listing running clusters (stub implementation)
+
+---
+
+[TestListCmd_Help - 1]
+List all Kubernetes clusters managed by KSail.
+
+Usage:
+  list [flags]
+
+Flags:
+      --all    List all clusters including stopped ones
+  -h, --help   help for list
+
+---

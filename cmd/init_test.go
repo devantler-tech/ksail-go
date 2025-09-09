@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewInitCmd(t *testing.T) {
@@ -38,13 +39,24 @@ func TestInitCmd_Execute(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
+	snaps.MatchSnapshot(t, out.String())
+}
 
-	expected := "✔ Project initialized successfully with Kind distribution (stub implementation)\n► Cluster name: ksail-default\n► Source directory: k8s\n"
+func TestInitCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
+	var out bytes.Buffer
+
+	cmd := cmd.NewInitCmd()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--help"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
+
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestInitCmd_Flags(t *testing.T) {
@@ -61,5 +73,14 @@ func TestInitCmd_Flags(t *testing.T) {
 	// Following Viper best practices: CLI flags should not have defaults
 	if distributionFlag.DefValue != "" {
 		t.Fatalf("expected distribution default to be empty (no CLI defaults), got %q", distributionFlag.DefValue)
+	}
+
+	sourceDirectoryFlag := cmd.Flags().Lookup("sourcedirectory")
+	if sourceDirectoryFlag == nil {
+		t.Fatal("expected sourcedirectory flag to exist")
+	}
+
+	if sourceDirectoryFlag.DefValue != "" {
+		t.Fatalf("expected sourcedirectory default to be empty (no CLI defaults), got %q", sourceDirectoryFlag.DefValue)
 	}
 }

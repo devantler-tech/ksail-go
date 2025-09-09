@@ -1,0 +1,16 @@
+
+[TestUpCmd_Help - 1]
+Start the Kubernetes cluster defined in the project configuration.
+
+Usage:
+  up [flags]
+
+Flags:
+  -h, --help   help for up
+
+---
+
+[TestUpCmd_Execute - 1]
+✔ Cluster created and started successfully (stub implementation)
+
+---
