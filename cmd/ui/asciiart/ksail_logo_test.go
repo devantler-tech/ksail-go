@@ -2,6 +2,7 @@ package asciiart_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
@@ -28,119 +29,124 @@ func TestPrintKSailLogo(t *testing.T) {
 func TestPrintKSailLogo_Comprehensive(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		testFunc func(t *testing.T)
-	}{
-		{
-			name: "produces_non_empty_output",
-			testFunc: func(t *testing.T) {
-				var writer bytes.Buffer
-				asciiart.PrintKSailLogo(&writer)
-				output := writer.String()
-				if len(output) == 0 {
-					t.Error("Expected non-empty output")
-				}
-			},
-		},
-		{
-			name: "contains_ascii_art_elements",
-			testFunc: func(t *testing.T) {
-				var writer bytes.Buffer
-				asciiart.PrintKSailLogo(&writer)
-				output := writer.String()
+	t.Run("produces_non_empty_output", testNonEmptyOutput)
+	t.Run("contains_ascii_art_elements", testASCIIElements)
+	t.Run("has_proper_line_structure", testLineStructure)
+	t.Run("output_is_consistent", testOutputConsistency)
+	t.Run("handles_different_writers", testDifferentWriters)
+	t.Run("validates_output_format", testOutputFormat)
+}
 
-				// Verify presence of ASCII art characters
-				expectedElements := []string{"__", "/", "\\", "|", "~", "^", "_", "-"}
-				for _, element := range expectedElements {
-					if !bytes.Contains([]byte(output), []byte(element)) {
-						t.Errorf("Expected output to contain ASCII element %q", element)
-					}
-				}
-			},
-		},
-		{
-			name: "has_proper_line_structure",
-			testFunc: func(t *testing.T) {
-				var writer bytes.Buffer
-				asciiart.PrintKSailLogo(&writer)
-				output := writer.String()
+func testNonEmptyOutput(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-				// Verify multi-line structure
-				lines := bytes.Split([]byte(output), []byte("\n"))
-				if len(lines) < 8 {
-					t.Errorf("Expected at least 8 lines of ASCII art, got %d", len(lines))
-				}
+	var writer bytes.Buffer
+	asciiart.PrintKSailLogo(&writer)
 
-				// Verify some lines have content (not all empty)
-				nonEmptyLines := 0
-				for _, line := range lines {
-					if len(bytes.TrimSpace(line)) > 0 {
-						nonEmptyLines++
-					}
-				}
-				if nonEmptyLines < 5 {
-					t.Errorf("Expected at least 5 non-empty lines, got %d", nonEmptyLines)
-				}
-			},
-		},
-		{
-			name: "output_is_consistent",
-			testFunc: func(t *testing.T) {
-				var writer1, writer2 bytes.Buffer
+	output := writer.String()
+	if len(output) == 0 {
+		t.Error("Expected non-empty output")
+	}
+}
 
-				asciiart.PrintKSailLogo(&writer1)
-				asciiart.PrintKSailLogo(&writer2)
+func testASCIIElements(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-				if !bytes.Equal(writer1.Bytes(), writer2.Bytes()) {
-					t.Error("Expected consistent output between multiple calls")
-				}
-			},
-		},
-		{
-			name: "handles_different_writers",
-			testFunc: func(t *testing.T) {
-				writers := []bytes.Buffer{
-					{}, // Fresh buffer
-					{}, // Another fresh buffer
-				}
+	var writer bytes.Buffer
+	asciiart.PrintKSailLogo(&writer)
 
-				for i, writer := range writers {
-					var w bytes.Buffer = writer
-					asciiart.PrintKSailLogo(&w)
-					output := w.String()
-					if len(output) == 0 {
-						t.Errorf("Writer %d produced empty output", i)
-					}
-				}
-			},
-		},
-		{
-			name: "validates_output_format",
-			testFunc: func(t *testing.T) {
-				var writer bytes.Buffer
-				asciiart.PrintKSailLogo(&writer)
-				output := writer.String()
+	output := writer.String()
 
-				// Should end with newline
-				if !bytes.HasSuffix([]byte(output), []byte("\n")) {
-					t.Error("Expected output to end with newline")
-				}
+	// Verify presence of ASCII art characters
+	expectedElements := []string{"__", "/", "\\", "|", "~", "^", "_", "-"}
 
-				// Should contain the KSail text pattern
-				if !bytes.Contains([]byte(output), []byte("__")) {
-					t.Error("Expected output to contain KSail ASCII pattern")
-				}
-			},
-		},
+	for _, element := range expectedElements {
+		if !strings.Contains(output, element) {
+			t.Errorf("Expected output to contain ASCII element %q", element)
+		}
+	}
+}
+
+func testLineStructure(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	var writer bytes.Buffer
+	asciiart.PrintKSailLogo(&writer)
+	output := writer.String()
+
+	// Verify multi-line structure
+	lines := bytes.Split([]byte(output), []byte("\n"))
+	if len(lines) < 8 {
+		t.Errorf("Expected at least 8 lines of ASCII art, got %d", len(lines))
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			tt.testFunc(t)
-		})
+	// Verify some lines have content (not all empty)
+	nonEmptyLines := 0
+
+	for _, line := range lines {
+		if len(bytes.TrimSpace(line)) > 0 {
+			nonEmptyLines++
+		}
+	}
+
+	if nonEmptyLines < 5 {
+		t.Errorf("Expected at least 5 non-empty lines, got %d", nonEmptyLines)
+	}
+}
+
+func testOutputConsistency(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	var writer1, writer2 bytes.Buffer
+
+	asciiart.PrintKSailLogo(&writer1)
+	asciiart.PrintKSailLogo(&writer2)
+
+	if !bytes.Equal(writer1.Bytes(), writer2.Bytes()) {
+		t.Error("Expected consistent output between multiple calls")
+	}
+}
+
+func testDifferentWriters(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	writers := []bytes.Buffer{
+		{}, // Fresh buffer
+		{}, // Another fresh buffer
+	}
+
+	for index, writer := range writers {
+		w := writer
+		asciiart.PrintKSailLogo(&w)
+
+		output := w.String()
+		if len(output) == 0 {
+			t.Errorf("Writer %d produced empty output", index)
+		}
+	}
+}
+
+func testOutputFormat(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	var writer bytes.Buffer
+	asciiart.PrintKSailLogo(&writer)
+	output := writer.String()
+
+	// Should end with newline
+	if !strings.HasSuffix(output, "\n") {
+		t.Error("Expected output to end with newline")
+	}
+
+	// Should contain the KSail text pattern
+	if !strings.Contains(output, "__") {
+		t.Error("Expected output to contain KSail ASCII pattern")
 	}
 }
 
@@ -165,6 +171,7 @@ func TestPrintKSailLogo_Writers(t *testing.T) {
 			writer: func() *bytes.Buffer {
 				buf := &bytes.Buffer{}
 				buf.WriteString("prefix_")
+
 				return buf
 			},
 		},
@@ -173,13 +180,13 @@ func TestPrintKSailLogo_Writers(t *testing.T) {
 			writer: func() *bytes.Buffer {
 				buf := &bytes.Buffer{}
 				buf.Grow(1000) // Pre-allocate space
+
 				return buf
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

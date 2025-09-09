@@ -580,7 +580,24 @@ func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
 func TestDetectEngineType_EdgeCases(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
+	testCases := getEdgeCaseTestData()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runEdgeCaseTest(t, testCase)
+		})
+	}
+}
+
+func getEdgeCaseTestData() []struct {
+	name             string
+	serverVersion    types.Version
+	serverVersionErr error
+	expectedType     string
+	expectError      bool
+} {
+	return []struct {
 		name             string
 		serverVersion    types.Version
 		serverVersionErr error
@@ -618,26 +635,31 @@ func TestDetectEngineType_EdgeCases(t *testing.T) {
 		{"Both platform name and version empty", emptyVersion(), nil, "", true},
 		{"ServerVersion API call fails", emptyVersion(), errServerVersionFailed, "", true},
 	}
+}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+func runEdgeCaseTest(t *testing.T, testCase struct {
+	name             string
+	serverVersion    types.Version
+	serverVersionErr error
+	expectedType     string
+	expectError      bool
+},
+) {
+	t.Helper()
 
-			mockClient := setupMockClientForEngineTest(t, nameTestCase{
-				name: testCase.name, serverVersion: testCase.serverVersion,
-				serverVersionErr: testCase.serverVersionErr, expectedName: testCase.expectedType,
-			})
+	mockClient := setupMockClientForEngineTest(t, nameTestCase{
+		name: testCase.name, serverVersion: testCase.serverVersion,
+		serverVersionErr: testCase.serverVersionErr, expectedName: testCase.expectedType,
+	})
 
-			engine, err := containerengine.NewContainerEngine(mockClient)
-			require.NoError(t, err)
+	engine, err := containerengine.NewContainerEngine(mockClient)
+	require.NoError(t, err)
 
-			name := engine.GetName()
-			if testCase.expectError {
-				assert.Equal(t, "Unknown", name)
-			} else {
-				assert.Equal(t, testCase.expectedType, name)
-			}
-		})
+	name := engine.GetName()
+	if testCase.expectError {
+		assert.Equal(t, "Unknown", name)
+	} else {
+		assert.Equal(t, testCase.expectedType, name)
 	}
 }
 
