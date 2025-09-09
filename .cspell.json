@@ -137,6 +137,7 @@
     "Bottlerocket",
     "ireturn",
     "objectmeta",
-    "k8sutils"
+    "k8sutils",
+    "unparam"
   ]
 }
