@@ -11,6 +11,7 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
@@ -140,10 +141,18 @@ func TestNewKustomizationGenerator(t *testing.T) {
 
 // createTestCluster creates a minimal test cluster configuration.
 func createTestCluster(name string) *v1alpha1.Cluster {
-	return v1alpha1.NewCluster(
-		v1alpha1.WithMetadataName(name),
-		v1alpha1.WithSpecDistribution(v1alpha1.DistributionKind),
-	)
+	return &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionKind,
+		},
+	}
 }
 
 // assertKustomizationYAML ensures the generated YAML contains the expected boilerplate.

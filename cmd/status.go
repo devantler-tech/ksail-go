@@ -14,7 +14,7 @@ func NewStatusCmd() *cobra.Command {
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
 		handleStatusRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

@@ -10,7 +10,13 @@ import (
 
 // CreateDefaultClusterMetadata creates a default metav1.ObjectMeta for testing cluster configurations.
 func CreateDefaultClusterMetadata(name string) metav1.ObjectMeta {
-	return v1alpha1.CreateDefaultMetadata(name)
+	metadata := metav1.ObjectMeta{
+		Name:            name,
+		OwnerReferences: []metav1.OwnerReference{},
+		Finalizers:      []string{},
+		ManagedFields:   []metav1.ManagedFieldsEntry{},
+	}
+	return metadata
 }
 
 // CreateDefaultSpecOptions creates a default v1alpha1.Options for testing.

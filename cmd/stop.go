@@ -14,7 +14,7 @@ func NewStopCmd() *cobra.Command {
 		"Stop the Kubernetes cluster",
 		`Stop the Kubernetes cluster without removing it.`,
 		handleStopRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

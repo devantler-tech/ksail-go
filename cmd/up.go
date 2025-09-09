@@ -14,7 +14,7 @@ func NewUpCmd() *cobra.Command {
 		"Start the Kubernetes cluster",
 		`Start the Kubernetes cluster defined in the project configuration.`,
 		handleUpRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

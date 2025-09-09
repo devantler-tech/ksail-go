@@ -12,29 +12,35 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestNewCluster(t *testing.T) {
+func TestClusterDirectCreation(t *testing.T) {
 	t.Parallel()
 
-	// Test with no options - should create empty cluster structure
-	cluster := v1alpha1.NewCluster()
+	// Test direct cluster creation without constructors
+	cluster := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionK3d,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "/test",
+				Context:    "test-ctx",
+				Timeout:    metav1.Duration{Duration: time.Duration(10) * time.Minute},
+			},
+			CNI:                v1alpha1.CNICilium,
+			CSI:                v1alpha1.CSILocalPathStorage,
+			IngressController:  v1alpha1.IngressControllerTraefik,
+			GatewayController:  v1alpha1.GatewayControllerCilium,
+			ReconciliationTool: v1alpha1.ReconciliationToolFlux,
+		},
+	}
+	
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
-	assert.Equal(t, "", cluster.Metadata.Name) // No defaults in NewCluster anymore
-
-	// Test with options - covers all WithSpec* functions
-	testTimeout := metav1.Duration{Duration: time.Duration(10) * time.Minute}
-	cluster = v1alpha1.NewCluster(
-		v1alpha1.WithMetadataName("test"),
-		v1alpha1.WithSpecDistribution(v1alpha1.DistributionK3d),
-		v1alpha1.WithSpecConnectionKubeconfig("/test"),
-		v1alpha1.WithSpecConnectionContext("test-ctx"),
-		v1alpha1.WithSpecConnectionTimeout(testTimeout),
-		v1alpha1.WithSpecCNI(v1alpha1.CNICilium),
-		v1alpha1.WithSpecCSI(v1alpha1.CSILocalPathStorage),
-		v1alpha1.WithSpecIngressController(v1alpha1.IngressControllerTraefik),
-		v1alpha1.WithSpecGatewayController(v1alpha1.GatewayControllerCilium),
-		v1alpha1.WithSpecReconciliationTool(v1alpha1.ReconciliationToolFlux),
-	)
 	assert.Equal(t, "test", cluster.Metadata.Name)
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 }

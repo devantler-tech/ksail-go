@@ -2,8 +2,6 @@
 package config
 
 import (
-	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -23,40 +21,15 @@ const (
 	SuggestionsMinimumDistance = 2
 )
 
-// FieldSelector represents a type-safe way to select fields from the v1alpha1.Cluster structure.
-type FieldSelector func(*v1alpha1.Cluster) any
-
-// Predefined field selectors for common configuration options.
-var (
-	// Core cluster configuration
-	DistributionField       FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Distribution }
-	DistributionConfigField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.DistributionConfig }
-	SourceDirectoryField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.SourceDirectory }
-	
-	// Connection configuration
-	ConnectionKubeconfigField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Kubeconfig }
-	ConnectionContextField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Context }
-	ConnectionTimeoutField    FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.Connection.Timeout }
-	
-	// Network configuration
-	CNIField                FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.CNI }
-	CSIField                FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.CSI }
-	IngressControllerField  FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.IngressController }
-	GatewayControllerField  FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.GatewayController }
-	ReconciliationToolField FieldSelector = func(c *v1alpha1.Cluster) any { return c.Spec.ReconciliationTool }
-	
-	// CLI-only fields (not part of v1alpha1.Cluster)
-	AllField FieldSelector = func(c *v1alpha1.Cluster) any { return false } // Special case for CLI-only flag
-)
 
 // NewCobraCommand creates a cobra.Command with automatic configuration binding.
-// This is the only constructor provided for initializing CobraCommands with type-safe field selection.
+// This is the only constructor provided for initializing CobraCommands with configuration field paths.
 // The binding automatically handles CLI flags (priority 1), environment variables (priority 2), 
 // and configuration defaults (priority 3).
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,
-	fieldSelectors []FieldSelector,
+	configPaths []string,
 ) *cobra.Command {
 	manager := NewManager()
 	
@@ -71,99 +44,70 @@ func NewCobraCommand(
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 	
-	// Bind flags based on field selectors
-	if len(fieldSelectors) > 0 {
-		bindFieldSelectors(cmd, manager, fieldSelectors)
+	// Bind flags based on configuration paths
+	if len(configPaths) > 0 {
+		bindConfigurationPaths(cmd, manager, configPaths)
 	}
-	// If no selectors provided, don't bind any flags (unlike the auto-bind-all behavior)
 	
 	return cmd
 }
 
-// bindFieldSelectors binds CLI flags for the specified field selectors.
-func bindFieldSelectors(cmd *cobra.Command, manager *Manager, fieldSelectors []FieldSelector) {
-	// Create a dummy cluster to inspect field paths
-	dummyCluster := &v1alpha1.Cluster{}
-	
-	for _, selector := range fieldSelectors {
-		flagName, description := getFieldInfo(selector, dummyCluster)
+// bindConfigurationPaths binds CLI flags for the specified configuration paths.
+func bindConfigurationPaths(cmd *cobra.Command, manager *Manager, configPaths []string) {
+	for _, path := range configPaths {
+		flagName, description := getConfigPathInfo(path)
 		if flagName == "" {
 			continue
 		}
 		
 		// Handle special CLI-only flags
 		if flagName == "all" {
-			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+			cmd.Flags().Bool("all", false, description)
 			_ = manager.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 			continue
 		}
 		
-		// Add flag based on field type
+		// Add string flag for configuration fields
 		cmd.Flags().String(flagName, "", description)
 		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
 	}
 }
 
-// getFieldInfo extracts flag name and description from a field selector.
-func getFieldInfo(selector FieldSelector, cluster *v1alpha1.Cluster) (flagName, description string) {
-	// Create a dummy cluster with known values to test the selector
-	testCluster := &v1alpha1.Cluster{
-		Spec: v1alpha1.Spec{
-			Distribution: v1alpha1.Distribution("test-distribution"),
-			DistributionConfig: "test-distribution-config",
-			SourceDirectory: "test-source-directory",
-			Connection: v1alpha1.Connection{
-				Kubeconfig: "test-kubeconfig",
-				Context: "test-context",
-				Timeout: metav1.Duration{Duration: time.Minute},
-			},
-			CNI: v1alpha1.CNI("test-cni"),
-			CSI: v1alpha1.CSI("test-csi"),
-			IngressController: v1alpha1.IngressController("test-ingress"),
-			GatewayController: v1alpha1.GatewayController("test-gateway"),
-			ReconciliationTool: v1alpha1.ReconciliationTool("test-reconciliation"),
-		},
-	}
-	
-	// Get the value returned by the selector to identify which field it accesses
-	value := selector(testCluster)
-	
-	// Use string comparison to identify the field (convert to string for comparison)
-	valueStr := fmt.Sprintf("%v", value)
-	
-	switch valueStr {
-	case "test-distribution":
+// getConfigPathInfo maps configuration paths to flag names and descriptions.
+func getConfigPathInfo(configPath string) (flagName, description string) {
+	switch configPath {
+	case "spec.distribution":
 		return "distribution", "Configure cluster distribution (Kind, K3d, EKS, Tind)"
-	case "test-distribution-config":
+	case "spec.distributionConfig":
 		return "distribution-config", "Configure distribution config file path"
-	case "test-source-directory":
+	case "spec.sourceDirectory":
 		return "source-directory", "Configure source directory for Kubernetes manifests"
-	case "test-kubeconfig":
+	case "spec.connection.kubeconfig":
 		return "connection-kubeconfig", "Configure kubeconfig file path"
-	case "test-context":
+	case "spec.connection.context":
 		return "connection-context", "Configure kubectl context"
-	case "test-cni":
+	case "spec.connection.timeout":
+		return "connection-timeout", "Configure connection timeout duration"
+	case "spec.cni":
 		return "c-n-i", "Configure CNI (Container Network Interface)"
-	case "test-csi":
+	case "spec.csi":
 		return "c-s-i", "Configure CSI (Container Storage Interface)"
-	case "test-ingress":
+	case "spec.ingressController":
 		return "ingress-controller", "Configure ingress controller"
-	case "test-gateway":
+	case "spec.gatewayController":
 		return "gateway-controller", "Configure gateway controller"
-	case "test-reconciliation":
+	case "spec.reconciliationTool":
 		return "reconciliation-tool", "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
+	case "metadata.name":
+		return "name", "Configure cluster name"
+	case "all":
+		return "all", "List all clusters including stopped ones"
 	default:
-		// Handle special cases like timeout (Duration type) and CLI-only fields
-		if duration, ok := value.(metav1.Duration); ok && duration.Duration == time.Minute {
-			return "connection-timeout", "Configure connection timeout duration"
-		}
-		// Handle CLI-only flags
-		if value == false {
-			return "all", "List all clusters including stopped ones"
-		}
 		return "", ""
 	}
 }
+
+
 
 // Manager provides configuration management functionality using the v1alpha1.Cluster structure.
 type Manager struct {
@@ -394,205 +338,7 @@ func (m *Manager) GetViper() *viper.Viper {
 	return m.viper
 }
 
-// AutoBindFlags automatically binds CLI flags to Viper based on the v1alpha1.Cluster structure.
-// This eliminates the need for manual BindPFlag calls for each flag.
-func (m *Manager) AutoBindFlags(cmd *cobra.Command) {
-	m.bindStructFlags(cmd, reflect.TypeOf(v1alpha1.Cluster{}), "")
-	
-	// Add common CLI-only flags that are not part of the cluster structure
-	m.bindCLIOnlyFlags(cmd)
-}
 
-// BindSelectiveFlags binds only the specified flags.
-func (m *Manager) BindSelectiveFlags(cmd *cobra.Command, flagsToInclude map[string]bool) {
-	// Bind cluster structure flags selectively
-	m.bindStructFlagsSelectively(cmd, reflect.TypeOf(v1alpha1.Cluster{}), "", flagsToInclude)
-	
-	// Bind CLI-only flags selectively
-	m.bindCLIOnlyFlagsSelectively(cmd, flagsToInclude)
-}
-
-// bindCLIOnlyFlags adds CLI-specific flags that are not part of the cluster configuration.
-func (m *Manager) bindCLIOnlyFlags(cmd *cobra.Command) {
-	// Add 'all' flag for commands that need it
-	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-	_ = m.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
-}
-
-// bindStructFlagsSelectively recursively binds only specified struct fields as CLI flags.
-func (m *Manager) bindStructFlagsSelectively(cmd *cobra.Command, t reflect.Type, prefix string, flagsToInclude map[string]bool) {
-	// Handle pointers and nested types
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		
-		// Skip unexported fields and embedded metadata fields
-		if !field.IsExported() || 
-		   field.Name == "TypeMeta" || 
-		   field.Name == "Metadata" ||
-		   field.Type == reflect.TypeOf(metav1.ObjectMeta{}) {
-			continue
-		}
-
-		// Get field name for the flag
-		flagName := m.getFieldFlagName(field, prefix)
-		if flagName == "" {
-			continue
-		}
-
-		// Only bind if this flag is requested
-		if !flagsToInclude[flagName] {
-			// For nested structs, check if any nested flags are requested
-			if field.Type.Kind() == reflect.Struct && field.Type != reflect.TypeOf(metav1.Duration{}) {
-				nestedPrefix := flagName
-				if prefix != "" {
-					nestedPrefix = prefix + "." + flagName
-				}
-				m.bindStructFlagsSelectively(cmd, field.Type, nestedPrefix, flagsToInclude)
-			}
-			continue
-		}
-
-		// Handle different field types (same logic as bindStructFlags)
-		switch field.Type.Kind() {
-		case reflect.String:
-			cmd.Flags().String(flagName, "", m.getFieldDescription(field))
-			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			
-		case reflect.Bool:
-			cmd.Flags().Bool(flagName, false, m.getFieldDescription(field))
-			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			
-		case reflect.Struct:
-			if field.Type == reflect.TypeOf(metav1.Duration{}) {
-				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
-				_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			} else {
-				nestedPrefix := flagName
-				if prefix != "" {
-					nestedPrefix = prefix + "." + flagName
-				}
-				m.bindStructFlagsSelectively(cmd, field.Type, nestedPrefix, flagsToInclude)
-			}
-		}
-	}
-}
-
-// bindCLIOnlyFlagsSelectively adds only requested CLI-specific flags.
-func (m *Manager) bindCLIOnlyFlagsSelectively(cmd *cobra.Command, flagsToInclude map[string]bool) {
-	if flagsToInclude["all"] {
-		cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-		_ = m.viper.BindPFlag("all", cmd.Flags().Lookup("all"))
-	}
-}
-
-// bindStructFlags recursively binds struct fields as CLI flags.
-func (m *Manager) bindStructFlags(cmd *cobra.Command, t reflect.Type, prefix string) {
-	// Handle pointers and nested types
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		
-		// Skip unexported fields and embedded metadata fields
-		if !field.IsExported() || 
-		   field.Name == "TypeMeta" || 
-		   field.Name == "Metadata" ||
-		   field.Type == reflect.TypeOf(metav1.ObjectMeta{}) {
-			continue
-		}
-
-		// Special handling for the Spec field - don't add it to the prefix, just recurse into it
-		if field.Name == "Spec" && field.Type.Kind() == reflect.Struct {
-			m.bindStructFlags(cmd, field.Type, prefix)
-			continue
-		}
-
-		// Get field name for the flag
-		flagName := m.getFieldFlagName(field, prefix)
-		if flagName == "" {
-			continue
-		}
-
-		// Handle different field types
-		switch field.Type.Kind() {
-		case reflect.String:
-			// Handle string enums and regular strings
-			if m.isEnumType(field.Type) {
-				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
-			} else {
-				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
-			}
-			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			
-		case reflect.Bool:
-			cmd.Flags().Bool(flagName, false, m.getFieldDescription(field))
-			_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			
-		case reflect.Struct:
-			// Skip metav1.Duration and other special types, handle as strings
-			if field.Type == reflect.TypeOf(metav1.Duration{}) {
-				cmd.Flags().String(flagName, "", m.getFieldDescription(field))
-				_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-			} else {
-				// Recursively handle nested structs
-				nestedPrefix := flagName
-				if prefix != "" {
-					nestedPrefix = prefix + "-" + flagName
-				}
-				m.bindStructFlags(cmd, field.Type, nestedPrefix)
-			}
-		}
-	}
-}
-
-// getFieldFlagName converts a struct field to a CLI flag name.
-func (m *Manager) getFieldFlagName(field reflect.StructField, prefix string) string {
-	// Convert camelCase to kebab-case
-	flagName := m.camelToKebab(field.Name)
-	
-	// Add prefix for nested fields
-	if prefix != "" {
-		flagName = prefix + "-" + flagName
-	}
-	
-	return flagName
-}
-
-// getFieldDescription generates a description for the CLI flag.
-func (m *Manager) getFieldDescription(field reflect.StructField) string {
-	// You could add struct tags for descriptions, for now use field name
-	return "Configure " + strings.ToLower(field.Name)
-}
-
-// isEnumType checks if a type is a custom enum type (like Distribution).
-func (m *Manager) isEnumType(t reflect.Type) bool {
-	// Check if it's a custom string type (enum)
-	return t.Kind() == reflect.String && t.PkgPath() != ""
-}
-
-// camelToKebab converts camelCase to kebab-case.
-func (m *Manager) camelToKebab(s string) string {
-	var result strings.Builder
-	for i, r := range s {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			result.WriteByte('-')
-		}
-		result.WriteRune(r)
-	}
-	return strings.ToLower(result.String())
-}
 
 // GetString gets a configuration value as string.
 func (m *Manager) GetString(key string) string {

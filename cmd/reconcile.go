@@ -15,7 +15,7 @@ func NewReconcileCmd() *cobra.Command {
 		`Reconcile workloads in the Kubernetes cluster to match the desired state
 defined in configuration files.`,
 		handleReconcileRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

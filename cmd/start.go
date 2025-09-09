@@ -14,7 +14,7 @@ func NewStartCmd() *cobra.Command {
 		"Start a stopped Kubernetes cluster",
 		`Start a previously stopped Kubernetes cluster.`,
 		handleStartRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

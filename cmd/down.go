@@ -14,7 +14,7 @@ func NewDownCmd() *cobra.Command {
 		"Stop and remove the Kubernetes cluster",
 		`Stop and remove the Kubernetes cluster defined in the project configuration.`,
 		handleDownRunE,
-		[]config.FieldSelector{}, // No specific configuration flags needed
+		[]string{}, // No specific configuration flags needed
 	)
 }
 

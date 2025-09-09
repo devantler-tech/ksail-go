@@ -14,7 +14,7 @@ func NewListCmd() *cobra.Command {
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		handleListRunE,
-		[]config.FieldSelector{config.AllField}, // Only include the 'all' flag for list command
+		[]string{"all"}, // Only include the 'all' flag for list command
 	)
 }
 
