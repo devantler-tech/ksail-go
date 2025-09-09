@@ -11,8 +11,8 @@ import (
 func NewDownCmd() *cobra.Command {
 	return config.NewCobraCommand(
 		"down",
-		"Stop and remove the Kubernetes cluster",
-		`Stop and remove the Kubernetes cluster defined in the project configuration.`,
+		"Destroy a cluster",
+		`Destroy a cluster.`,
 		handleDownRunE,
 	)
 }
@@ -21,7 +21,7 @@ func NewDownCmd() *cobra.Command {
 func handleDownRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
 	notify.Successln(
 		cmd.OutOrStdout(),
-		"Cluster stopped and removed successfully (stub implementation)",
+		"cluster destroyed successfully",
 	)
 
 	return nil

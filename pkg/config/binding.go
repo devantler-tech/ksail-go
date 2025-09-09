@@ -301,7 +301,7 @@ func generateFieldDescription(fieldPath string) string {
 	case "metadata.name":
 		return "Configure cluster name"
 	case "spec.distribution":
-		return "Configure cluster distribution (Kind, K3d, EKS, Tind)"
+		return "Configure cluster distribution (EKS, K3d, Kind [default], Tind)"
 	case "spec.distributionconfig":
 		return "Configure distribution config file path"
 	case "spec.sourcedirectory":

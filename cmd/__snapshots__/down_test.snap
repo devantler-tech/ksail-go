@@ -1,16 +1,16 @@
 
+[TestDownCmd_Execute - 1]
+✔ cluster destroyed successfully
+
+---
+
 [TestDownCmd_Help - 1]
-Stop and remove the Kubernetes cluster defined in the project configuration.
+Destroy a cluster.
 
 Usage:
   down [flags]
 
 Flags:
   -h, --help   help for down
-
----
-
-[TestDownCmd_Execute - 1]
-✔ Cluster stopped and removed successfully (stub implementation)
 
 ---

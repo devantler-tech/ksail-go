@@ -21,7 +21,7 @@ func TestNewInitCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'init', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Initialize a new KSail project" {
+	if cmd.Short != "Initialize a new project" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }

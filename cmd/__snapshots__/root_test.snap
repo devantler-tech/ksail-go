@@ -19,9 +19,9 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  down        Stop and remove the Kubernetes cluster
+  down        Destroy a cluster
   help        Help about any command
-  init        Initialize a new KSail project
+  init        Initialize a new project
   list        List Kubernetes clusters
   reconcile   Reconcile workloads in the Kubernetes cluster
   start       Start a stopped Kubernetes cluster

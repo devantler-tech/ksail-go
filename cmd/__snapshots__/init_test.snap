@@ -1,12 +1,12 @@
 
 [TestInitCmd_Help - 1]
-Initialize a new KSail project with the specified configuration options.
+Initialize a new project.
 
 Usage:
   init [flags]
 
 Flags:
-  -d, --distribution string      Configure cluster distribution (Kind, K3d, EKS, Tind)
+  -d, --distribution string      Configure cluster distribution (EKS, K3d, Kind [default], Tind)
   -h, --help                     help for init
   -s, --sourcedirectory string   Configure source directory for Kubernetes manifests
 

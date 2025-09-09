@@ -21,7 +21,7 @@ func TestNewDownCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'down', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Stop and remove the Kubernetes cluster" {
+	if cmd.Short != "Destroy a cluster" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
