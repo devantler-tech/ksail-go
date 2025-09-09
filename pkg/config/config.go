@@ -2,6 +2,8 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -43,35 +45,38 @@ type ConnectionConfig struct {
 
 // LoadConfig loads configuration from files, environment variables, and sets defaults.
 func LoadConfig() (*Config, error) {
-	v := viper.New()
+	viperInstance := viper.New()
 
 	// Set configuration file settings
-	v.SetConfigName(DefaultConfigFileName)
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
-	v.AddConfigPath("$HOME")
-	v.AddConfigPath("/etc/ksail")
+	viperInstance.SetConfigName(DefaultConfigFileName)
+	viperInstance.SetConfigType("yaml")
+	viperInstance.AddConfigPath(".")
+	viperInstance.AddConfigPath("$HOME")
+	viperInstance.AddConfigPath("/etc/ksail")
 
 	// Set environment variable settings
-	v.SetEnvPrefix(EnvPrefix)
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
-	v.AutomaticEnv()
+	viperInstance.SetEnvPrefix(EnvPrefix)
+	viperInstance.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viperInstance.AutomaticEnv()
 
 	// Set defaults
-	setDefaults(v)
+	setDefaults(viperInstance)
 
 	// Read configuration file (optional)
-	if err := v.ReadInConfig(); err != nil {
+	err := viperInstance.ReadInConfig()
+	if err != nil {
 		// Configuration file is optional, so we only return error for parsing issues
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, err
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			return nil, fmt.Errorf("failed to read config: %w", err)
 		}
 	}
 
 	// Unmarshal into config struct
 	var config Config
-	if err := v.Unmarshal(&config); err != nil {
-		return nil, err
+	err = viperInstance.Unmarshal(&config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
 	return &config, nil
@@ -80,44 +85,44 @@ func LoadConfig() (*Config, error) {
 // InitializeViper initializes a Viper instance with KSail configuration settings.
 // This can be used by commands to bind flags and get configuration values.
 func InitializeViper() *viper.Viper {
-	v := viper.New()
+	viperInstance := viper.New()
 
 	// Set configuration file settings
-	v.SetConfigName(DefaultConfigFileName)
-	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
-	v.AddConfigPath("$HOME")
-	v.AddConfigPath("/etc/ksail")
+	viperInstance.SetConfigName(DefaultConfigFileName)
+	viperInstance.SetConfigType("yaml")
+	viperInstance.AddConfigPath(".")
+	viperInstance.AddConfigPath("$HOME")
+	viperInstance.AddConfigPath("/etc/ksail")
 
 	// Set environment variable settings
-	v.SetEnvPrefix(EnvPrefix)
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
-	v.AutomaticEnv()
+	viperInstance.SetEnvPrefix(EnvPrefix)
+	viperInstance.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	viperInstance.AutomaticEnv()
 
 	// Set defaults
-	setDefaults(v)
+	setDefaults(viperInstance)
 
 	// Read configuration file (optional)
-	_ = v.ReadInConfig() // Ignore errors for missing config files
+	_ = viperInstance.ReadInConfig() // Ignore errors for missing config files
 
-	return v
+	return viperInstance
 }
 
 // setDefaults sets default configuration values.
-func setDefaults(v *viper.Viper) {
+func setDefaults(viperInstance *viper.Viper) {
 	// Init command defaults
-	v.SetDefault("distribution", "Kind")
+	viperInstance.SetDefault("distribution", "Kind")
 
 	// List command defaults
-	v.SetDefault("all", false)
+	viperInstance.SetDefault("all", false)
 
 	// Cluster defaults
-	v.SetDefault("cluster.name", "ksail-default")
-	v.SetDefault("cluster.distribution_config", "kind.yaml")
-	v.SetDefault("cluster.source_directory", "k8s")
-	v.SetDefault("cluster.connection.kubeconfig", "~/.kube/config")
-	v.SetDefault("cluster.connection.context", "kind-ksail-default")
-	v.SetDefault("cluster.connection.timeout", "5m")
+	viperInstance.SetDefault("cluster.name", "ksail-default")
+	viperInstance.SetDefault("cluster.distribution_config", "kind.yaml")
+	viperInstance.SetDefault("cluster.source_directory", "k8s")
+	viperInstance.SetDefault("cluster.connection.kubeconfig", "~/.kube/config")
+	viperInstance.SetDefault("cluster.connection.context", "kind-ksail-default")
+	viperInstance.SetDefault("cluster.connection.timeout", "5m")
 }
 
 // GetConfigFilePath returns the path where the configuration file should be written.

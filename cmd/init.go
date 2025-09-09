@@ -11,26 +11,27 @@ import (
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	var v = config.InitializeViper()
+	var viperInstance = config.InitializeViper()
 
 	return factory.NewCobraCommandWithFlags(
 		"init",
 		"Initialize a new KSail project",
 		`Initialize a new KSail project with the specified configuration options.`,
 		func(cmd *cobra.Command, _ []string) error {
-			return handleInitRunE(cmd, v)
+			return handleInitRunE(cmd, viperInstance)
 		},
 		func(cmd *cobra.Command) {
 			cmd.Flags().String("distribution", "Kind", "Kubernetes distribution to use (Kind, K3d, EKS)")
-			v.BindPFlag("distribution", cmd.Flags().Lookup("distribution"))
+			_ = viperInstance.BindPFlag("distribution", cmd.Flags().Lookup("distribution"))
 		},
 	)
 }
 
 // handleInitRunE handles the init command.
-func handleInitRunE(cmd *cobra.Command, v *viper.Viper) error {
-	distribution := v.GetString("distribution")
-	notify.Successln(cmd.OutOrStdout(), "Project initialized successfully with "+distribution+" distribution (stub implementation)")
+func handleInitRunE(cmd *cobra.Command, viperInstance *viper.Viper) error {
+	distribution := viperInstance.GetString("distribution")
+	notify.Successln(cmd.OutOrStdout(), 
+		"Project initialized successfully with "+distribution+" distribution (stub implementation)")
 
 	return nil
 }

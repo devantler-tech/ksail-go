@@ -37,6 +37,7 @@ linters:
             - github.com/mittwald/go-helm-client
             - github.com/rancher
             - github.com/spf13/cobra
+            - github.com/spf13/viper
             - github.com/stretchr/testify
             - github.com/weaveworks/eksctl
             - k8s.io

@@ -11,25 +11,25 @@ import (
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	var v = config.InitializeViper()
+	var viperInstance = config.InitializeViper()
 
 	return factory.NewCobraCommandWithFlags(
 		"list",
 		"List Kubernetes clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		func(cmd *cobra.Command, _ []string) error {
-			return handleListRunE(cmd, v)
+			return handleListRunE(cmd, viperInstance)
 		},
 		func(cmd *cobra.Command) {
 			cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-			v.BindPFlag("all", cmd.Flags().Lookup("all"))
+			_ = viperInstance.BindPFlag("all", cmd.Flags().Lookup("all"))
 		},
 	)
 }
 
 // handleListRunE handles the list command.
-func handleListRunE(cmd *cobra.Command, v *viper.Viper) error {
-	all := v.GetBool("all")
+func handleListRunE(cmd *cobra.Command, viperInstance *viper.Viper) error {
+	all := viperInstance.GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
 	} else {

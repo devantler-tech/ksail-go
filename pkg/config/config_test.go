@@ -21,8 +21,10 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	}
 	for _, envVar := range envVarsToClean {
 		if originalValue := os.Getenv(envVar); originalValue != "" {
-			os.Unsetenv(envVar)
-			defer os.Setenv(envVar, originalValue)
+			_ = os.Unsetenv(envVar)
+			defer func(envVar, originalValue string) {
+				_ = os.Setenv(envVar, originalValue)
+			}(envVar, originalValue)
 		}
 	}
 
@@ -54,8 +56,10 @@ func TestLoadConfig_EnvironmentVariables(t *testing.T) {
 
 	// Set env vars and defer cleanup
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
+		defer func(key string) {
+			_ = os.Unsetenv(key)
+		}(key)
 	}
 
 	// Load config

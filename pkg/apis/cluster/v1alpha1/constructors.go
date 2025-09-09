@@ -225,8 +225,10 @@ func (c *Cluster) setSpecDefaultsFromConfig(cfg *config.Config) {
 	if c.Spec.Distribution == "" {
 		// Parse the distribution string
 		var dist Distribution
-		dist.Set(cfg.Distribution)
-		c.Spec.Distribution = dist
+		err := dist.Set(cfg.Distribution)
+		if err == nil {
+			c.Spec.Distribution = dist
+		}
 	}
 
 	if c.Spec.ReconciliationTool == "" {
@@ -277,7 +279,8 @@ func (c *Cluster) setSpecConnectionDefaultsFromConfig(cfg *config.Config) {
 
 	if c.Spec.Connection.Timeout.Duration == 0 {
 		// Parse the timeout duration
-		if timeout, err := time.ParseDuration(cfg.Cluster.Connection.Timeout); err == nil {
+		timeout, err := time.ParseDuration(cfg.Cluster.Connection.Timeout)
+		if err == nil {
 			c.Spec.Connection.Timeout = metav1.Duration{Duration: timeout}
 		} else {
 			// Fallback to default if parsing fails
