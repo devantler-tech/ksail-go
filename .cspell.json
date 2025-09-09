@@ -139,6 +139,11 @@
     "objectmeta",
     "k8sutils",
     "unparam",
-    "coverprofile"
+    "coverprofile",
+    "gofmt",
+    "gofumpt",
+    "goimports",
+    "golines",
+    "swaggo"
   ]
 }
