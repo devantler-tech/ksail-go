@@ -37,13 +37,16 @@ func bindFieldSelectors(
 			continue
 		}
 
-		// Convert hierarchical path to kebab-case CLI flag
-		flagName := pathToFlagName(fieldPath)
+		// Get field path with preserved case for flag name generation
+		fieldPathWithCase := getFieldPathPreservingCase(dummy, fieldPtr)
+
+		// Convert hierarchical path to kebab-case CLI flag (use case-preserving path)
+		flagName := pathToFlagName(fieldPathWithCase)
 
 		// Use embedded description if provided, otherwise generate default
 		description := fieldSelector.description
 		if description == "" {
-			description = generateFieldDescription(fieldPath)
+			description = generateFieldDescription(fieldPathWithCase)
 		}
 
 		// Get default value from field selector or fallback to Viper
@@ -225,8 +228,7 @@ func bindFieldSelectors(
 	}
 }
 
-// getFieldPath uses a different approach - it walks the structure to find the field path
-// by comparing field types and offsets rather than memory addresses.
+// getFieldPath uses a combination of memory address and reflection to discover the field path.
 func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
 	// Get reflection info about the field pointer
 	fieldVal := reflect.ValueOf(fieldPtr)
@@ -234,11 +236,79 @@ func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
 		return ""
 	}
 
-	fieldType := fieldVal.Type().Elem() // Get the type of what the pointer points to
+	// Get the address and type of the field
+	fieldAddr := fieldVal.Pointer()
+	fieldType := fieldVal.Type()
 	
-	// Walk the cluster structure to find where this field type occurs
+	// Walk the cluster structure to find the field with this address and type
 	clusterVal := reflect.ValueOf(cluster).Elem()
-	return findFieldPathByType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldType, "")
+	
+	// Get the field path in original case first
+	originalPath := findFieldPathByAddressAndType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldAddr, fieldType, "", false)
+	
+	// Convert to lowercase for Viper compatibility
+	return strings.ToLower(originalPath)
+}
+
+// getFieldPathPreservingCase gets the field path while preserving original case for flag name generation.
+func getFieldPathPreservingCase(cluster *v1alpha1.Cluster, fieldPtr any) string {
+	// Get reflection info about the field pointer
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr {
+		return ""
+	}
+
+	// Get the address and type of the field
+	fieldAddr := fieldVal.Pointer()
+	fieldType := fieldVal.Type()
+	
+	// Walk the cluster structure to find the field with this address and type
+	clusterVal := reflect.ValueOf(cluster).Elem()
+	
+	// Return the field path in original case
+	return findFieldPathByAddressAndType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldAddr, fieldType, "", true)
+}
+
+// findFieldPathByAddressAndType recursively searches for a field's path by comparing memory addresses and types.
+func findFieldPathByAddressAndType(
+	structVal reflect.Value,
+	structType reflect.Type,
+	targetAddr uintptr,
+	targetType reflect.Type,
+	prefix string,
+	preserveCase bool,
+) string {
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Field(i)
+		fieldType := structType.Field(i)
+
+		// Skip unexported fields
+		if !field.CanAddr() {
+			continue
+		}
+
+		// Build the current field path (preserve original case for accurate discovery)
+		var currentPath string
+		if prefix == "" {
+			currentPath = fieldType.Name
+		} else {
+			currentPath = prefix + "." + fieldType.Name
+		}
+
+		// Check if this field's address AND type matches our target
+		if field.CanAddr() && field.Addr().Pointer() == targetAddr && field.Addr().Type() == targetType {
+			return currentPath
+		}
+
+		// If this is a struct, recurse into it
+		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
+			if result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, preserveCase); result != "" {
+				return result
+			}
+		}
+	}
+
+	return ""
 }
 
 // findFieldPathByType recursively searches for a field's path in a struct by matching types.
@@ -257,17 +327,18 @@ func findFieldPathByType(
 			continue
 		}
 
-		// Build the current field path (use lowercase for Viper compatibility)
+		// Build the current field path (preserve original case for accurate discovery)
 		var currentPath string
 		if prefix == "" {
-			currentPath = strings.ToLower(fieldType.Name)
+			currentPath = fieldType.Name
 		} else {
-			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
+			currentPath = prefix + "." + fieldType.Name
 		}
 
 		// Check if this field's type matches our target type
 		if field.Type() == targetType {
-			return currentPath
+			// Convert to lowercase for Viper compatibility when returning the final path
+			return strings.ToLower(currentPath)
 		}
 
 		// If this is a struct, recurse into it

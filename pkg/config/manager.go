@@ -71,6 +71,9 @@ func setViperDefaultsFromConfigDefaults(v *viper.Viper) {
 	configDefaults := GetConfigDefaults()
 
 	for _, configDefault := range configDefaults {
+		// Get the path dynamically from the field selector
+		path := configDefault.GetPath()
+		
 		// Convert typed default value to appropriate format for Viper
 		var viperValue any
 		switch val := configDefault.DefaultValue.(type) {
@@ -90,7 +93,7 @@ func setViperDefaultsFromConfigDefaults(v *viper.Viper) {
 			viperValue = val
 		}
 
-		v.SetDefault(configDefault.Path, viperValue)
+		v.SetDefault(path, viperValue)
 	}
 }
 
@@ -99,8 +102,11 @@ func (m *Manager) setClusterFromConfigDefaults(cluster *v1alpha1.Cluster) {
 	configDefaults := GetConfigDefaults()
 
 	for _, configDefault := range configDefaults {
+		// Get the path dynamically from the field selector
+		path := configDefault.GetPath()
+		
 		// Get value from Viper and set it in the cluster
-		value := m.getTypedValueFromViperByPath(configDefault.Path)
+		value := m.getTypedValueFromViperByPath(path)
 		configDefault.SetValue(cluster, value)
 	}
 }
