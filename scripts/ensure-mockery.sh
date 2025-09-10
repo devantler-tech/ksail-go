@@ -62,7 +62,6 @@ run_mockery() {
 
 # Main execution
 main() {
-    check_result=$?
     if ! check_mockery; then
         check_result=$?
         case $check_result in
