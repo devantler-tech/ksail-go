@@ -48,6 +48,8 @@ go build ./...
 mockery
 ```
 
+**Note**: A pre-commit hook is automatically installed that ensures mockery is available and runs it before each commit. This keeps mocks up-to-date automatically. The hook will attempt to install mockery if it's not found, but for best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
+
 #### Unit tests
 
 ```sh
