@@ -48,6 +48,8 @@ go build ./...
 mockery
 ```
 
+A pre-commit hook automatically ensures mockery is installed and runs it before each commit to keep mocks up-to-date. For best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
+
 #### Unit tests
 
 ```sh
@@ -61,20 +63,11 @@ System tests are configured in a GitHub Actions workflow file located at `.githu
 
 ## CI
 
+> **Note**: Pre-commit hooks are automatically executed for user pushes through the [pre-commit.ci](https://pre-commit.ci/) GitHub app, which validates and runs these hooks if you forget to configure them locally or push without hooks enabled. This automatic execution only applies to user pushes and not bot pushes.
+
 ### Pre-commit Hooks
 
-KSail uses pre-commit hooks to ensure code quality and consistency before commits. The project includes two types of pre-commit hooks:
-
-#### Automatic Git Hooks
-
-A pre-commit hook is automatically available that ensures mockery is installed and runs it before each commit. This keeps mocks up-to-date automatically without requiring manual intervention. The hook:
-
-- Detects if mockery is available in your PATH or `~/go/bin/`
-- Tests compatibility with the project's `.mockery.yml` configuration via `--dry-run`
-- Attempts automatic installation if mockery is missing
-- Provides clear guidance for manual installation of mockery v3.x if needed
-
-For best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
+KSail uses pre-commit hooks to ensure code quality and consistency before commits through the [pre-commit.ci](https://pre-commit.ci/) GitHub app integration.
 
 #### Pre-commit Framework Hooks
 
