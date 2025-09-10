@@ -1,4 +1,4 @@
-# Pre-commit configuration for automatic Go code formatting
+# Pre-commit configuration for automatic Go code formatting and mockery
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
@@ -7,3 +7,11 @@ repos:
     rev: v2.4.0
     hooks:
       - id: golangci-lint-fmt
+  - repo: local
+    hooks:
+      - id: mockery
+        name: Generate mocks with mockery
+        entry: scripts/ensure-mockery.sh
+        language: script
+        files: '\.go$'
+        pass_filenames: false
