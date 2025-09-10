@@ -21,7 +21,9 @@ import (
 //
 //	// Type-safe selective binding with direct field pointers (zero maintenance):
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)...)
+//	    config.Fields(func(c *v1alpha1.Cluster) []any {
+//	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+//	    })...)
 //
 //	// Backward compatible function selectors still supported:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,

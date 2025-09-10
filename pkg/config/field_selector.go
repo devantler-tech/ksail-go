@@ -17,25 +17,23 @@ func Field[T any](selector func(*T) any) FieldSelector[T] {
 	return selector
 }
 
-// Ref provides a v1alpha1.Cluster instance for direct field references.
-// This eliminates boilerplate while maintaining compile-time safety.
+// Fields creates field selectors from a function that provides field references.
+// This provides compile-time safety with zero maintenance overhead and no global variables.
 //
 // Usage:
 //
-//	config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
-var Ref = &v1alpha1.Cluster{}
+//	config.Fields(func(c *v1alpha1.Cluster) []any {
+//	    return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+//	})
+func Fields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
+	// Create a reference instance for field discovery
+	ref := &v1alpha1.Cluster{}
+	fieldPtrs := fieldSelector(ref)
 
-// Fields creates field selectors from direct field pointers.
-// This provides compile-time safety with zero maintenance overhead.
-//
-// Usage:
-//
-//	config.Fields(&config.Ref.Spec.Distribution, &config.Ref.Spec.SourceDirectory)
-func Fields(fieldPtrs ...any) []FieldSelector[v1alpha1.Cluster] {
 	var selectors []FieldSelector[v1alpha1.Cluster]
 
 	for _, fieldPtr := range fieldPtrs {
-		selector := createFieldSelectorFromPointer(fieldPtr)
+		selector := createFieldSelectorFromPointer(fieldPtr, ref)
 		selectors = append(selectors, selector)
 	}
 
@@ -43,10 +41,10 @@ func Fields(fieldPtrs ...any) []FieldSelector[v1alpha1.Cluster] {
 }
 
 // createFieldSelectorFromPointer creates a field selector from a direct field pointer.
-func createFieldSelectorFromPointer(fieldPtr any) FieldSelector[v1alpha1.Cluster] {
+func createFieldSelectorFromPointer(fieldPtr any, ref *v1alpha1.Cluster) FieldSelector[v1alpha1.Cluster] {
 	return func(c *v1alpha1.Cluster) any {
 		// Use reflection to find the field path and return the corresponding field in the target cluster
-		fieldPath := getFieldPathFromPointer(fieldPtr)
+		fieldPath := getFieldPathFromPointer(fieldPtr, ref)
 		if fieldPath == "" {
 			return nil
 		}
@@ -55,8 +53,8 @@ func createFieldSelectorFromPointer(fieldPtr any) FieldSelector[v1alpha1.Cluster
 	}
 }
 
-// getFieldPathFromPointer determines the field path from a pointer to a field in Ref.
-func getFieldPathFromPointer(fieldPtr any) string {
+// getFieldPathFromPointer determines the field path from a pointer to a field in the reference cluster.
+func getFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
 	// Get the value and type of the pointer
 	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr {
@@ -65,8 +63,8 @@ func getFieldPathFromPointer(fieldPtr any) string {
 
 	fieldAddr := fieldVal.Pointer()
 
-	// Get the address of Ref and find the field path
-	refVal := reflect.ValueOf(Ref).Elem()
+	// Get the address of ref and find the field path
+	refVal := reflect.ValueOf(ref).Elem()
 	refType := refVal.Type()
 
 	return findFieldPath(refVal, refType, fieldAddr, "")
