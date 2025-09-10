@@ -9,12 +9,27 @@ import (
 
 // FieldSelector represents a type-safe field selector for auto-binding.
 // It provides compile-time safety by referencing actual struct fields.
-type FieldSelector[T any] func(*T) any
+type FieldSelector[T any] struct {
+	selector    func(*T) any
+	description string
+}
 
 // Field returns a type-safe field selector for the given field path.
 // This provides compile-time safety - if the struct changes, this will cause compilation errors.
 func Field[T any](selector func(*T) any) FieldSelector[T] {
-	return selector
+	return FieldSelector[T]{
+		selector:    selector,
+		description: "",
+	}
+}
+
+// FieldWithDesc returns a type-safe field selector with a custom description.
+// This provides compile-time safety - if the struct changes, this will cause compilation errors.
+func FieldWithDesc[T any](selector func(*T) any, description string) FieldSelector[T] {
+	return FieldSelector[T]{
+		selector:    selector,
+		description: description,
+	}
 }
 
 // Fields creates field selectors from a function that provides field references.
@@ -34,14 +49,78 @@ func Fields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha
 
 	for _, fieldPtr := range fieldPtrs {
 		selector := createFieldSelectorFromPointer(fieldPtr, ref)
-		selectors = append(selectors, selector)
+		selectors = append(selectors, FieldSelector[v1alpha1.Cluster]{
+			selector:    selector,
+			description: "",
+		})
+	}
+
+	return selectors
+}
+
+// FieldsWithDesc creates field selectors with descriptions from a function that provides
+// field references and their descriptions. Each field reference should be followed by its
+// description string.
+//
+// Usage:
+//
+//	config.FieldsWithDesc(func(c *v1alpha1.Cluster) []any {
+//	    return []any{
+//	        &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
+//	        &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
+//	    }
+//	})
+func FieldsWithDesc(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
+	// Create a reference instance for field discovery
+	ref := &v1alpha1.Cluster{}
+	items := fieldSelector(ref)
+
+	var selectors []FieldSelector[v1alpha1.Cluster]
+
+	// Process items in pairs: field pointer, description
+	for i := 0; i < len(items); i += 2 {
+		if i+1 >= len(items) {
+			// Odd number of items, treat as field without description
+			fieldPtr := items[i]
+			selector := createFieldSelectorFromPointer(fieldPtr, ref)
+			selectors = append(selectors, FieldSelector[v1alpha1.Cluster]{
+				selector:    selector,
+				description: "",
+			})
+			continue
+		}
+
+		fieldPtr := items[i]
+		desc, ok := items[i+1].(string)
+		if !ok {
+			// Not a string description, treat both as fields without descriptions
+			selector1 := createFieldSelectorFromPointer(fieldPtr, ref)
+			selectors = append(selectors, FieldSelector[v1alpha1.Cluster]{
+				selector:    selector1,
+				description: "",
+			})
+
+			selector2 := createFieldSelectorFromPointer(items[i+1], ref)
+			selectors = append(selectors, FieldSelector[v1alpha1.Cluster]{
+				selector:    selector2,
+				description: "",
+			})
+			continue
+		}
+
+		// Valid field + description pair
+		selector := createFieldSelectorFromPointer(fieldPtr, ref)
+		selectors = append(selectors, FieldSelector[v1alpha1.Cluster]{
+			selector:    selector,
+			description: desc,
+		})
 	}
 
 	return selectors
 }
 
 // createFieldSelectorFromPointer creates a field selector from a direct field pointer.
-func createFieldSelectorFromPointer(fieldPtr any, ref *v1alpha1.Cluster) FieldSelector[v1alpha1.Cluster] {
+func createFieldSelectorFromPointer(fieldPtr any, ref *v1alpha1.Cluster) func(*v1alpha1.Cluster) any {
 	return func(c *v1alpha1.Cluster) any {
 		// Use reflection to find the field path and return the corresponding field in the target cluster
 		fieldPath := getFieldPathFromPointer(fieldPtr, ref)

@@ -12,12 +12,6 @@ import (
 
 // bindAllFields automatically discovers and binds all fields from v1alpha1.Cluster as CLI flags.
 func bindAllFields(cmd *cobra.Command, manager *Manager) {
-	bindAllFieldsWithDescriptions(cmd, manager, nil)
-}
-
-// bindAllFieldsWithDescriptions automatically discovers and binds all fields from v1alpha1.Cluster as CLI flags
-// with optional custom descriptions.
-func bindAllFieldsWithDescriptions(cmd *cobra.Command, manager *Manager, flagDescriptions map[string]string) {
 	// Create a dummy cluster to introspect all available fields
 	dummy := &v1alpha1.Cluster{}
 
@@ -28,8 +22,8 @@ func bindAllFieldsWithDescriptions(cmd *cobra.Command, manager *Manager, flagDes
 		// Convert hierarchical path to kebab-case CLI flag
 		flagName := pathToFlagName(fieldInfo.Path)
 
-		// Generate description (with custom override if provided)
-		description := generateFieldDescriptionWithOverride(fieldInfo.Path, flagName, flagDescriptions)
+		// Generate description
+		description := generateFieldDescription(fieldInfo.Path)
 
 		// Add shortname flag if appropriate
 		shortName := generateShortName(flagName)
@@ -45,6 +39,7 @@ func bindAllFieldsWithDescriptions(cmd *cobra.Command, manager *Manager, flagDes
 		_ = manager.viper.BindPFlag(fieldInfo.Path, cmd.Flags().Lookup(flagName))
 	}
 }
+
 
 // fieldInfo represents information about a discoverable field.
 type fieldInfo struct {
@@ -125,23 +120,12 @@ func bindFieldSelectors(
 	manager *Manager,
 	fieldSelectors []FieldSelector[v1alpha1.Cluster],
 ) {
-	bindFieldSelectorsWithDescriptions(cmd, manager, fieldSelectors, nil)
-}
-
-// bindFieldSelectorsWithDescriptions automatically discovers and binds CLI flags for the specified field selectors
-// with optional custom descriptions.
-func bindFieldSelectorsWithDescriptions(
-	cmd *cobra.Command,
-	manager *Manager,
-	fieldSelectors []FieldSelector[v1alpha1.Cluster],
-	flagDescriptions map[string]string,
-) {
 	// Create a dummy cluster to introspect field paths
 	dummy := &v1alpha1.Cluster{}
 
-	for _, selector := range fieldSelectors {
+	for _, fieldSelector := range fieldSelectors {
 		// Get the field reference from the selector
-		fieldPtr := selector(dummy)
+		fieldPtr := fieldSelector.selector(dummy)
 
 		// Handle special CLI-only flags that return nil
 		if fieldPtr == nil {
@@ -159,8 +143,11 @@ func bindFieldSelectorsWithDescriptions(
 		// Convert hierarchical path to kebab-case CLI flag
 		flagName := pathToFlagName(fieldPath)
 
-		// Generate description (with custom override if provided)
-		description := generateFieldDescriptionWithOverride(fieldPath, flagName, flagDescriptions)
+		// Use embedded description if provided, otherwise generate default
+		description := fieldSelector.description
+		if description == "" {
+			description = generateFieldDescription(fieldPath)
+		}
 
 		// Add shortname flag if appropriate
 		shortName := generateShortName(flagName)
@@ -176,6 +163,8 @@ func bindFieldSelectorsWithDescriptions(
 		_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
 	}
 }
+
+
 
 // getFieldPath uses reflection to determine the path of a field within the cluster structure.
 func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
@@ -305,22 +294,11 @@ func toLower(r rune) rune {
 
 // generateFieldDescription generates a human-readable description for a configuration field.
 func generateFieldDescription(fieldPath string) string {
-	return generateFieldDescriptionWithOverride(fieldPath, "", nil)
-}
-
-// generateFieldDescriptionWithOverride generates a human-readable description for a configuration field,
-// with support for custom description overrides.
-func generateFieldDescriptionWithOverride(fieldPath, flagName string, flagDescriptions map[string]string) string {
-	// Check for custom description override first
-	if flagDescriptions != nil && flagName != "" {
-		if customDesc, exists := flagDescriptions[flagName]; exists {
-			return customDesc
-		}
-	}
-
 	// Generate a default description based on the field path
 	parts := strings.Split(fieldPath, ".")
 	lastPart := parts[len(parts)-1]
 
 	return "Configure " + strings.ReplaceAll(lastPart, "_", " ")
 }
+
+

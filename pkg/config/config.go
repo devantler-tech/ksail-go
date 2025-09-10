@@ -12,6 +12,7 @@ import (
 // and configuration defaults (priority 3).
 //
 // If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
+// Field selectors can include optional descriptions by using FieldWithDesc or FieldsWithDesc.
 // If fieldSelectors is empty, no configuration flags will be added (no auto-discovery by default).
 //
 // Usage examples:
@@ -25,49 +26,30 @@ import (
 //	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
 //	    })...)
 //
-//	// Backward compatible function selectors still supported:
+//	// With embedded descriptions using FieldsWithDesc:
+//	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//	    config.FieldsWithDesc(func(c *v1alpha1.Cluster) []any {
+//	        return []any{
+//	            &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
+//	            &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
+//	        }
+//	    })...)
+//
+//	// Individual field selectors with descriptions:
+//	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+//	        "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)"),
+//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	        "Directory containing workloads to deploy"))
+//
+//	// Mixed approach - some fields with descriptions, others without:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
-//	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }))
-//
-//	// With custom flag descriptions:
-//	config.NewCobraCommandWithDescriptions("init", "Initialize", "...", handleInitRunE,
-//	    map[string]string{
-//	        "distribution": "Kubernetes distribution to use (Kind, K3d, EKS, Tind)",
-//	        "source-directory": "Directory containing workloads to deploy",
-//	    },
-//	    config.Fields(func(c *v1alpha1.Cluster) []any {
-//	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-//	    })...)
+//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	        "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,
-	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
-) *cobra.Command {
-	return NewCobraCommandWithDescriptions(use, short, long, runE, nil, fieldSelectors...)
-}
-
-// NewCobraCommandWithDescriptions creates a cobra.Command with automatic type-safe configuration binding
-// and custom flag descriptions. This allows manual override of the automatically generated flag descriptions.
-//
-// The flagDescriptions map uses flag names (not field paths) as keys. For example:
-// - "distribution" for the --distribution flag (from Spec.Distribution)
-// - "source-directory" for the --source-directory flag (from Spec.SourceDirectory)
-//
-// Usage example:
-//
-//	config.NewCobraCommandWithDescriptions("init", "Initialize", "...", handleInitRunE,
-//	    map[string]string{
-//	        "distribution": "Kubernetes distribution to use (Kind, K3d, EKS, Tind)",
-//	        "source-directory": "Directory containing workloads to deploy",
-//	    },
-//	    config.Fields(func(c *v1alpha1.Cluster) []any {
-//	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-//	    })...)
-func NewCobraCommandWithDescriptions(
-	use, short, long string,
-	runE func(*cobra.Command, *Manager, []string) error,
-	flagDescriptions map[string]string,
 	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := NewManager()
@@ -85,10 +67,12 @@ func NewCobraCommandWithDescriptions(
 
 	// Auto-bind flags based on field selectors
 	if len(fieldSelectors) > 0 {
-		// Bind only the specified field selectors with custom descriptions
-		bindFieldSelectorsWithDescriptions(cmd, manager, fieldSelectors, flagDescriptions)
+		// Bind only the specified field selectors
+		bindFieldSelectors(cmd, manager, fieldSelectors)
 	}
 	// No else clause - when no field selectors provided, no configuration flags are added
 
 	return cmd
 }
+
+

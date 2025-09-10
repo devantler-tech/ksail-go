@@ -11,25 +11,21 @@ import (
 )
 
 // TestNewCobraCommandWithDescriptions verifies that custom flag descriptions
-// can be provided when constructing Cobra commands.
+// can be provided when constructing Cobra commands using FieldsWithDesc.
 func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Define custom descriptions
-	customDescriptions := map[string]string{
-		"distribution":      "Choose your preferred Kubernetes distribution",
-		"source-directory": "Path to workload manifests",
-	}
-
-	// Create command with custom descriptions
-	cmd := config.NewCobraCommandWithDescriptions(
+	// Create command with custom descriptions using FieldsWithDesc
+	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
 		"Test command with custom descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		customDescriptions,
-		config.Fields(func(c *v1alpha1.Cluster) []any {
-			return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+		config.FieldsWithDesc(func(c *v1alpha1.Cluster) []any {
+			return []any{
+				&c.Spec.Distribution, "Choose your preferred Kubernetes distribution",
+				&c.Spec.SourceDirectory, "Path to workload manifests",
+			}
 		})...,
 	)
 
@@ -69,7 +65,7 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Create command without custom descriptions (using original constructor)
+	// Create command without custom descriptions (using Fields)
 	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
@@ -102,26 +98,20 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	}
 }
 
-// TestNewCobraCommandPartialDescriptions verifies that partial custom descriptions
-// work correctly (some flags have custom descriptions, others use defaults).
-func TestNewCobraCommandPartialDescriptions(t *testing.T) {
+// TestNewCobraCommandMixedDescriptions verifies that mixed field selectors work correctly
+// (some fields have custom descriptions, others use defaults).
+func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Define partial custom descriptions (only distribution)
-	customDescriptions := map[string]string{
-		"distribution": "Select Kubernetes distribution (Kind, K3d, EKS, Tind)",
-	}
-
-	// Create command with partial custom descriptions
-	cmd := config.NewCobraCommandWithDescriptions(
+	// Create command with mixed field selectors
+	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
-		"Test command with partial custom descriptions",
+		"Test command with mixed descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		customDescriptions,
-		config.Fields(func(c *v1alpha1.Cluster) []any {
-			return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-		})...,
+		config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+			"Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
+		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
 	)
 
 	// Capture help output
