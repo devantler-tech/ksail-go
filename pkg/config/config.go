@@ -12,7 +12,7 @@ import (
 // and configuration defaults (priority 3).
 //
 // If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
-// Field selectors can include optional descriptions by using FieldWithDesc or FieldsWithDesc.
+// Field selectors can include optional descriptions.
 // If fieldSelectors is empty, no configuration flags will be added (no auto-discovery by default).
 //
 // Usage examples:
@@ -26,9 +26,9 @@ import (
 //	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
 //	    })...)
 //
-//	// With embedded descriptions using FieldsWithDesc:
+//	// With embedded descriptions using Fields:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.FieldsWithDesc(func(c *v1alpha1.Cluster) []any {
+//	    config.Fields(func(c *v1alpha1.Cluster) []any {
 //	        return []any{
 //	            &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
 //	            &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
@@ -37,15 +37,15 @@ import (
 //
 //	// Individual field selectors with descriptions:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+//	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
 //	        "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)"),
-//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
 //	        "Directory containing workloads to deploy"))
 //
 //	// Mixed approach - some fields with descriptions, others without:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
-//	    config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	    config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
 //	        "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,

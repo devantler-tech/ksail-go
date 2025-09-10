@@ -11,17 +11,17 @@ import (
 )
 
 // TestNewCobraCommandWithDescriptions verifies that custom flag descriptions
-// can be provided when constructing Cobra commands using FieldsWithDesc.
+// can be provided when constructing Cobra commands using Fields.
 func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Create command with custom descriptions using FieldsWithDesc
+	// Create command with custom descriptions using Fields
 	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
 		"Test command with custom descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.FieldsWithDesc(func(c *v1alpha1.Cluster) []any {
+		config.Fields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, "Choose your preferred Kubernetes distribution",
 				&c.Spec.SourceDirectory, "Path to workload manifests",
@@ -109,7 +109,7 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 		"Test command",
 		"Test command with mixed descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.FieldWithDesc(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
 			"Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
 		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
 	)
