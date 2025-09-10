@@ -20,6 +20,8 @@ linters:
       # Exclude auto-generated mock files from all linting rules
       - ".*mocks.*\\.go$"
       - ".*_mocks_.*\\.go$"
+      # Exclude testutils folders from all linting rules
+      - ".*/testutils/.*\\.go$"
     rules:
       - path: ".*_test\\.go$"
         linters:
