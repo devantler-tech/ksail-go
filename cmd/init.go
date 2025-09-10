@@ -10,11 +10,15 @@ import (
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	return config.NewCobraCommandWithDescriptions(
 		"init",
 		"Initialize a new project",
 		`Initialize a new project.`,
 		handleInitRunE,
+		map[string]string{
+			"distribution":      "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
+			"source-directory": "Directory containing workloads to deploy",
+		},
 		config.Fields(func(c *v1alpha1.Cluster) []any {
 			return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
 		})...,
