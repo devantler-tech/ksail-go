@@ -52,7 +52,7 @@ func NewCobraCommand(
 	runE func(*cobra.Command, *Manager, []string) error,
 	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := NewManager()
+	manager := NewManagerWithFieldSelectors(fieldSelectors)
 
 	// Create the base command
 	cmd := &cobra.Command{

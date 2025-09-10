@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +14,7 @@ type Manager struct {
 	viper          *viper.Viper
 	cluster        *v1alpha1.Cluster
 	defaultCluster *v1alpha1.Cluster
+	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 }
 
 // NewManager creates a new configuration manager.
@@ -22,29 +22,47 @@ func NewManager() *Manager {
 	v := initializeViper()
 	defaultCluster := v1alpha1.NewDefaultCluster()
 
-	// Set all defaults using the default cluster instance
-	setViperDefaultsFromCluster(v, defaultCluster)
+	// For backward compatibility, set all defaults when no field selectors are provided
+	setViperDefaultsFromAllFields(v, defaultCluster)
 
 	return &Manager{
 		viper:          v,
 		cluster:        nil,
 		defaultCluster: defaultCluster,
+		fieldSelectors: nil,
+	}
+}
+
+// NewManagerWithFieldSelectors creates a new configuration manager with specific field selectors.
+// This allows the manager to only handle configuration for fields that commands actually need.
+func NewManagerWithFieldSelectors(fieldSelectors []FieldSelector[v1alpha1.Cluster]) *Manager {
+	v := initializeViper()
+	defaultCluster := v1alpha1.NewDefaultCluster()
+
+	if len(fieldSelectors) > 0 {
+		// Only set Viper defaults for the fields specified by field selectors
+		// This achieves true zero-maintenance by reusing the same field selectors
+		setViperDefaultsFromFieldSelectors(v, defaultCluster, fieldSelectors)
+	} else {
+		// When no field selectors are provided, fall back to all fields for backward compatibility
+		setViperDefaultsFromAllFields(v, defaultCluster)
+	}
+
+	return &Manager{
+		viper:          v,
+		cluster:        nil,
+		defaultCluster: defaultCluster,
+		fieldSelectors: fieldSelectors,
 	}
 }
 
 // LoadCluster loads the cluster configuration from files and environment variables.
 func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
-	// Create a cluster WITHOUT defaults first
-	cluster := &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       v1alpha1.Kind,
-			APIVersion: v1alpha1.APIVersion,
-		},
-		Metadata: k8s.NewEmptyObjectMeta(),
-		Spec:     v1alpha1.Spec{},
-	}
+	// Start with a cluster that has all meaningful defaults from the constructor
+	cluster := v1alpha1.NewDefaultCluster()
 
-	// Apply all configuration and defaults through the default cluster
+	// Apply configuration values from Viper (CLI flags, env vars, config files)
+	// Only fields that have been configured in Viper will be overridden
 	m.setClusterFromConfig(cluster)
 
 	// Store the loaded cluster
@@ -70,8 +88,74 @@ func (m *Manager) GetViper() *viper.Viper {
 	return m.viper
 }
 
-// setViperDefaultsFromCluster sets all configuration defaults in Viper using the default cluster instance.
-func setViperDefaultsFromCluster(v *viper.Viper, defaultCluster *v1alpha1.Cluster) {
+// setViperDefaultsFromFieldSelectors sets Viper defaults for only the fields specified by field selectors.
+// This reuses the same field selectors that commands provide for CLI flags to also set Viper defaults,
+// eliminating the need for manual field mappings.
+func setViperDefaultsFromFieldSelectors(
+	v *viper.Viper,
+	defaultCluster *v1alpha1.Cluster,
+	fieldSelectors []FieldSelector[v1alpha1.Cluster],
+) {
+	for _, fieldSelector := range fieldSelectors {
+		// Get the field reference from the selector
+		fieldPtr := fieldSelector.selector(defaultCluster)
+		if fieldPtr == nil {
+			continue
+		}
+
+		// Get the path dynamically from the field selector
+		path := getFieldPathFromPointer(fieldPtr, defaultCluster)
+		if path == "" {
+			continue
+		}
+
+		// Get the default value from the default cluster instance
+		defaultValue := getValueFromFieldPointer(fieldPtr)
+		if defaultValue == nil {
+			continue
+		}
+
+		// Convert typed default value to appropriate format for Viper
+		var viperValue any
+		switch val := defaultValue.(type) {
+		case v1alpha1.Distribution:
+			viperValue = string(val)
+		case v1alpha1.ReconciliationTool:
+			viperValue = string(val)
+		case v1alpha1.CNI:
+			viperValue = string(val)
+		case v1alpha1.CSI:
+			viperValue = string(val)
+		case v1alpha1.IngressController:
+			viperValue = string(val)
+		case v1alpha1.GatewayController:
+			viperValue = string(val)
+		default:
+			viperValue = val
+		}
+
+		v.SetDefault(path, viperValue)
+	}
+}
+
+// getValueFromFieldPointer extracts the value from a field pointer.
+func getValueFromFieldPointer(fieldPtr any) any {
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr || !fieldVal.IsValid() {
+		return nil
+	}
+
+	elem := fieldVal.Elem()
+	if !elem.IsValid() {
+		return nil
+	}
+
+	return elem.Interface()
+}
+
+// setViperDefaultsFromAllFields sets all configuration defaults in Viper for backward compatibility.
+// This is used when no field selectors are provided.
+func setViperDefaultsFromAllFields(v *viper.Viper, defaultCluster *v1alpha1.Cluster) {
 	// Get all field selectors from the default cluster
 	configDefaults := getConfigDefaultsFromCluster(defaultCluster)
 
@@ -167,8 +251,48 @@ func getConfigDefaultsFromCluster(defaultCluster *v1alpha1.Cluster) []configDefa
 	}
 }
 
-// setClusterFromConfig applies all configuration values to the cluster using the default cluster as reference.
+// setClusterFromConfig applies configuration values to the cluster.
+// This overlays configuration values from Viper onto the cluster that already has defaults.
 func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
+	if len(m.fieldSelectors) > 0 {
+		// When field selectors are provided, only apply configuration for those specific fields
+		// This achieves true zero-maintenance by reusing the same field selectors
+		m.setClusterFromFieldSelectors(cluster)
+	} else {
+		// Fallback to applying all configuration for backward compatibility
+		m.setClusterFromAllDefaults(cluster)
+	}
+}
+
+// setClusterFromFieldSelectors applies configuration values using the specified field selectors.
+// This reuses the same field selectors that commands provide for CLI flags.
+func (m *Manager) setClusterFromFieldSelectors(cluster *v1alpha1.Cluster) {
+	for _, fieldSelector := range m.fieldSelectors {
+		// Get the field reference from the selector using the default cluster for path resolution
+		defaultFieldPtr := fieldSelector.selector(m.defaultCluster)
+		if defaultFieldPtr == nil {
+			continue
+		}
+
+		// Get the path from the field pointer in the default cluster
+		path := getFieldPathFromPointer(defaultFieldPtr, m.defaultCluster)
+		if path == "" {
+			continue
+		}
+
+		// Get value from Viper
+		value := m.getTypedValueFromViperByPath(path, cluster)
+		
+		// Get the corresponding field pointer in the target cluster
+		targetFieldPtr := fieldSelector.selector(cluster)
+		if targetFieldPtr != nil {
+			m.setValueAtFieldPointer(cluster, targetFieldPtr, value)
+		}
+	}
+}
+
+// setClusterFromAllDefaults applies all default configuration values.
+func (m *Manager) setClusterFromAllDefaults(cluster *v1alpha1.Cluster) {
 	// Get all field mappings from the default cluster
 	configDefaults := getConfigDefaultsFromCluster(m.defaultCluster)
 
@@ -178,31 +302,19 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 
 		// Get value from Viper and set it in the cluster
 		value := m.getTypedValueFromViperByPath(path, cluster)
-		setValueAtFieldPointer(cluster, configDefault.FieldPtr, m.defaultCluster, value)
+		
+		// Get the corresponding field pointer in the target cluster instance
+		targetFieldPtr := getFieldByPath(cluster, path)
+		if targetFieldPtr != nil {
+			m.setValueAtFieldPointer(cluster, targetFieldPtr, value)
+		}
 	}
 }
 
 // setValueAtFieldPointer sets a value at the field location specified by the field pointer.
-func setValueAtFieldPointer(
-	cluster *v1alpha1.Cluster,
-	fieldPtr any,
-	ref *v1alpha1.Cluster,
-	value any,
-) {
-	// Get the field path to determine where to set the value
-	path := getFieldPathFromPointer(fieldPtr, ref)
-	if path == "" {
-		return
-	}
-
-	// Use the existing getFieldByPath function to navigate to the field
-	targetFieldPtr := getFieldByPath(cluster, path)
-	if targetFieldPtr == nil {
-		return
-	}
-
-	// Set the value using reflection
-	fieldVal := reflect.ValueOf(targetFieldPtr)
+func (m *Manager) setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any, value any) {
+	// Use reflection to set the value directly
+	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr || !fieldVal.Elem().CanSet() {
 		return
 	}
@@ -214,6 +326,7 @@ func setValueAtFieldPointer(
 		targetField.Set(reflect.ValueOf(convertedValue))
 	}
 }
+
 
 // getTypedValueFromViperByPath retrieves a properly typed value from Viper based on the path.
 func (m *Manager) getTypedValueFromViperByPath(path string, cluster *v1alpha1.Cluster) any {
