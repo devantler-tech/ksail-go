@@ -18,7 +18,7 @@ Usage:
   list [flags]
 
 Flags:
-      --all                         List all clusters including stopped ones (default false)
+      --all                         List all clusters including stopped ones
   -d, --distribution Distribution   Kubernetes distribution to list clusters for (default Kind)
   -h, --help                        help for list
 

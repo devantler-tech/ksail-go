@@ -23,7 +23,7 @@ func NewListCmd() *cobra.Command {
 	)
 
 	// Add the special --all flag manually since it's CLI-only
-	cmd.Flags().Bool("all", false, "List all clusters including stopped ones (default false)")
+	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
 	return cmd
 }
