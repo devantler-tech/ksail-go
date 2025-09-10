@@ -10,109 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// bindAllFields automatically discovers and binds all fields from v1alpha1.Cluster as CLI flags.
-func bindAllFields(cmd *cobra.Command, manager *Manager) {
-	// Create a dummy cluster to introspect all available fields
-	dummy := &v1alpha1.Cluster{}
-
-	// Use reflection to discover all bindable fields
-	allFields := discoverAllFields(dummy, reflect.ValueOf(dummy).Elem(), reflect.TypeOf(*dummy), "")
-
-	for _, fieldInfo := range allFields {
-		// Convert hierarchical path to kebab-case CLI flag
-		flagName := pathToFlagName(fieldInfo.Path)
-
-		// Generate description
-		description := generateFieldDescription(fieldInfo.Path)
-
-		// Add shortname flag if appropriate
-		shortName := generateShortName(flagName)
-		if shortName != "" {
-			cmd.Flags().StringP(flagName, shortName, "", description)
-		} else {
-			// Add string flag without shortname
-			cmd.Flags().String(flagName, "", description)
-		}
-
-		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
-		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
-		_ = manager.viper.BindPFlag(fieldInfo.Path, cmd.Flags().Lookup(flagName))
-	}
-}
-
-// fieldInfo represents information about a discoverable field.
-type fieldInfo struct {
-	Path string
-	Type reflect.Type
-}
-
-// discoverAllFields recursively discovers all bindable fields in a struct.
-func discoverAllFields(
-	rootStruct any,
-	structVal reflect.Value,
-	structType reflect.Type,
-	prefix string,
-) []fieldInfo {
-	var fields []fieldInfo
-
-	for i := 0; i < structVal.NumField(); i++ {
-		field := structVal.Field(i)
-		fieldType := structType.Field(i)
-
-		// Skip unexported fields
-		if !fieldType.IsExported() {
-			continue
-		}
-
-		// Skip embedded types (like TypeMeta) that we don't want as CLI flags
-		if fieldType.Anonymous {
-			continue
-		}
-
-		// Build the current field path
-		var currentPath string
-		if prefix == "" {
-			currentPath = fieldType.Name
-		} else {
-			currentPath = prefix + "." + fieldType.Name
-		}
-
-		// If this is a struct (but not a special type like time.Duration), recurse into it
-		if field.Kind() == reflect.Struct && !isSpecialType(field.Type()) {
-			nestedFields := discoverAllFields(rootStruct, field, field.Type(), currentPath)
-			fields = append(fields, nestedFields...)
-		} else {
-			// This is a bindable field
-			fields = append(fields, fieldInfo{
-				Path: currentPath,
-				Type: field.Type(),
-			})
-		}
-	}
-
-	return fields
-}
-
-// isSpecialType checks if a type should be treated as a primitive rather than recursed into.
-func isSpecialType(t reflect.Type) bool {
-	// Special types that should not be recursed into
-	specialTypes := []string{
-		"time.Duration",
-		"metav1.Duration",
-		"metav1.Time",
-		"metav1.ObjectMeta",
-	}
-
-	fullTypeName := t.PkgPath() + "." + t.Name()
-	for _, special := range specialTypes {
-		if strings.Contains(fullTypeName, special) || t.Name() == special {
-			return true
-		}
-	}
-
-	return false
-}
-
 // bindFieldSelectors automatically discovers and binds CLI flags for the specified field selectors.
 func bindFieldSelectors(
 	cmd *cobra.Command,
@@ -157,8 +54,8 @@ func bindFieldSelectors(
 			cmd.Flags().String(flagName, "", description)
 		}
 
-		// Bind to both the hierarchical path (for config files) and the flat flag name (for CLI/env)
-		_ = manager.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+		// Bind flag to the hierarchical path (for consistent config file access)
+		// This ensures CLI flags, environment variables, and config files all use the same key
 		_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
 	}
 }

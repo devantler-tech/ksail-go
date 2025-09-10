@@ -58,178 +58,78 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 
 // setMetadataFromConfig sets metadata values from configuration with defaults.
 func (m *Manager) setMetadataFromConfig(cluster *v1alpha1.Cluster) {
-	// Set name - try hierarchical first, then apply default
-	if name := m.viper.GetString("metadata-name"); name != "" {
-		cluster.Metadata.Name = name
-	} else if name := m.viper.GetString("metadata.name"); name != "" {
-		cluster.Metadata.Name = name
-	} else {
-		cluster.Metadata.Name = "ksail-default"
-	}
+	// Set defaults in Viper if not already set
+	m.viper.SetDefault("metadata.name", "ksail-default")
+
+	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	cluster.Metadata.Name = m.viper.GetString("metadata.name")
 }
 
 // setSpecFromConfig sets spec values from configuration with defaults.
 func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
-	// Distribution Config
-	if distConfig := m.viper.GetString("spec-distributionconfig"); distConfig != "" {
-		// CLI flag or env var is set
-		cluster.Spec.DistributionConfig = distConfig
-	} else if fileDistConfig := m.viper.GetString("spec.distributionconfig"); fileDistConfig != "" {
-		// Config file is set
-		cluster.Spec.DistributionConfig = fileDistConfig
-	} else {
-		cluster.Spec.DistributionConfig = "kind.yaml"
-	}
+	// Set defaults in Viper if not already set
+	m.viper.SetDefault("spec.distributionconfig", "kind.yaml")
+	m.viper.SetDefault("spec.sourcedirectory", "k8s")
+	m.viper.SetDefault("spec.distribution", string(v1alpha1.DistributionKind))
+	m.viper.SetDefault("spec.reconciliationtool", string(v1alpha1.ReconciliationToolKubectl))
+	m.viper.SetDefault("spec.cni", string(v1alpha1.CNIDefault))
+	m.viper.SetDefault("spec.csi", string(v1alpha1.CSIDefault))
+	m.viper.SetDefault("spec.ingresscontroller", string(v1alpha1.IngressControllerDefault))
+	m.viper.SetDefault("spec.gatewaycontroller", string(v1alpha1.GatewayControllerDefault))
 
-	// Source Directory
-	if sourceDir := m.viper.GetString("spec-sourcedirectory"); sourceDir != "" {
-		// CLI flag or env var is set
-		cluster.Spec.SourceDirectory = sourceDir
-	} else if fileSourceDir := m.viper.GetString("spec.sourcedirectory"); fileSourceDir != "" {
-		// Config file is set
-		cluster.Spec.SourceDirectory = fileSourceDir
-	} else {
-		cluster.Spec.SourceDirectory = "k8s"
-	}
+	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	cluster.Spec.DistributionConfig = m.viper.GetString("spec.distributionconfig")
+	cluster.Spec.SourceDirectory = m.viper.GetString("spec.sourcedirectory")
 
-	// Distribution - check CLI flag first, then config file, then default
-	if distStr := m.viper.GetString("spec-distribution"); distStr != "" {
-		// CLI flag or env var is set
+	// Distribution
+	if distStr := m.viper.GetString("spec.distribution"); distStr != "" {
 		var distribution v1alpha1.Distribution
-
 		err := distribution.Set(distStr)
 		if err == nil {
 			cluster.Spec.Distribution = distribution
 		} else {
 			cluster.Spec.Distribution = v1alpha1.DistributionKind
 		}
-	} else if fileDistStr := m.viper.GetString("spec.distribution"); fileDistStr != "" {
-		// Config file is set
-		var distribution v1alpha1.Distribution
-
-		err := distribution.Set(fileDistStr)
-		if err == nil {
-			cluster.Spec.Distribution = distribution
-		} else {
-			cluster.Spec.Distribution = v1alpha1.DistributionKind
-		}
-	} else {
-		cluster.Spec.Distribution = v1alpha1.DistributionKind
 	}
 
 	// Reconciliation Tool
-	if tool := m.viper.GetString("spec-reconciliationtool"); tool != "" {
-		// CLI flag or env var is set
+	if tool := m.viper.GetString("spec.reconciliationtool"); tool != "" {
 		var reconciliationTool v1alpha1.ReconciliationTool
-
 		err := reconciliationTool.Set(tool)
 		if err == nil {
 			cluster.Spec.ReconciliationTool = reconciliationTool
 		} else {
 			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
 		}
-	} else if fileTool := m.viper.GetString("spec.reconciliationtool"); fileTool != "" {
-		// Config file is set
-		var reconciliationTool v1alpha1.ReconciliationTool
-
-		err := reconciliationTool.Set(fileTool)
-		if err == nil {
-			cluster.Spec.ReconciliationTool = reconciliationTool
-		} else {
-			cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
-		}
-	} else {
-		cluster.Spec.ReconciliationTool = v1alpha1.ReconciliationToolKubectl
 	}
 
-	// CNI
-	if cni := m.viper.GetString("spec-cni"); cni != "" {
-		// CLI flag or env var is set
-		cluster.Spec.CNI = v1alpha1.CNI(cni)
-	} else if fileCni := m.viper.GetString("spec.cni"); fileCni != "" {
-		// Config file is set
-		cluster.Spec.CNI = v1alpha1.CNI(fileCni)
-	} else {
-		cluster.Spec.CNI = v1alpha1.CNIDefault
-	}
-
-	// CSI
-	if csi := m.viper.GetString("spec-csi"); csi != "" {
-		// CLI flag or env var is set
-		cluster.Spec.CSI = v1alpha1.CSI(csi)
-	} else if fileCSI := m.viper.GetString("spec.csi"); fileCSI != "" {
-		// Config file is set
-		cluster.Spec.CSI = v1alpha1.CSI(fileCSI)
-	} else {
-		cluster.Spec.CSI = v1alpha1.CSIDefault
-	}
-
-	// Ingress Controller
-	if ingress := m.viper.GetString("spec-ingresscontroller"); ingress != "" {
-		// CLI flag or env var is set
-		cluster.Spec.IngressController = v1alpha1.IngressController(ingress)
-	} else if fileIngress := m.viper.GetString("spec.ingresscontroller"); fileIngress != "" {
-		// Config file is set
-		cluster.Spec.IngressController = v1alpha1.IngressController(fileIngress)
-	} else {
-		cluster.Spec.IngressController = v1alpha1.IngressControllerDefault
-	}
-
-	// Gateway Controller
-	if gateway := m.viper.GetString("spec-gatewaycontroller"); gateway != "" {
-		// CLI flag or env var is set
-		cluster.Spec.GatewayController = v1alpha1.GatewayController(gateway)
-	} else if fileGateway := m.viper.GetString("spec.gatewaycontroller"); fileGateway != "" {
-		// Config file is set
-		cluster.Spec.GatewayController = v1alpha1.GatewayController(fileGateway)
-	} else {
-		cluster.Spec.GatewayController = v1alpha1.GatewayControllerDefault
-	}
+	// Other fields use simple string assignment
+	cluster.Spec.CNI = v1alpha1.CNI(m.viper.GetString("spec.cni"))
+	cluster.Spec.CSI = v1alpha1.CSI(m.viper.GetString("spec.csi"))
+	cluster.Spec.IngressController = v1alpha1.IngressController(m.viper.GetString("spec.ingresscontroller"))
+	cluster.Spec.GatewayController = v1alpha1.GatewayController(m.viper.GetString("spec.gatewaycontroller"))
 }
 
 const defaultConnectionTimeoutMinutes = 5
 
 // setConnectionFromConfig sets connection values from configuration with defaults.
 func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
-	// Kubeconfig
-	if kubeconfig := m.viper.GetString("spec-connection-kubeconfig"); kubeconfig != "" {
-		// CLI flag or env var is set
-		cluster.Spec.Connection.Kubeconfig = kubeconfig
-	} else if fileKubeconfig := m.viper.GetString("spec.connection.kubeconfig"); fileKubeconfig != "" {
-		// Config file is set
-		cluster.Spec.Connection.Kubeconfig = fileKubeconfig
-	} else {
-		cluster.Spec.Connection.Kubeconfig = "~/.kube/config"
-	}
+	// Set defaults in Viper if not already set
+	m.viper.SetDefault("spec.connection.kubeconfig", "~/.kube/config")
+	m.viper.SetDefault("spec.connection.context", "kind-ksail-default")
+	m.viper.SetDefault("spec.connection.timeout", "5m")
 
-	// Context
-	if context := m.viper.GetString("spec-connection-context"); context != "" {
-		// CLI flag or env var is set
-		cluster.Spec.Connection.Context = context
-	} else if fileContext := m.viper.GetString("spec.connection.context"); fileContext != "" {
-		// Config file is set
-		cluster.Spec.Connection.Context = fileContext
-	} else {
-		cluster.Spec.Connection.Context = "kind-ksail-default"
-	}
+	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	cluster.Spec.Connection.Kubeconfig = m.viper.GetString("spec.connection.kubeconfig")
+	cluster.Spec.Connection.Context = m.viper.GetString("spec.connection.context")
 
-	// Timeout
-	if timeoutStr := m.viper.GetString("spec-connection-timeout"); timeoutStr != "" {
-		// CLI flag or env var is set
+	// Timeout requires parsing
+	if timeoutStr := m.viper.GetString("spec.connection.timeout"); timeoutStr != "" {
 		if duration, err := time.ParseDuration(timeoutStr); err == nil {
 			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: duration}
 		} else {
 			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
 		}
-	} else if fileTimeoutStr := m.viper.GetString("spec.connection.timeout"); fileTimeoutStr != "" {
-		// Config file is set
-		if duration, err := time.ParseDuration(fileTimeoutStr); err == nil {
-			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: duration}
-		} else {
-			cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
-		}
-	} else {
-		cluster.Spec.Connection.Timeout = metav1.Duration{Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute}
 	}
 }
 
