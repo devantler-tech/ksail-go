@@ -55,10 +55,6 @@ mockery
 go test ./...
 ```
 
-#### System tests
-
-System tests are configured in a GitHub Actions workflow file located at `.github/workflows/ci.yaml`. These test e2e scenarios for various providers and configurations. You are unable to run these tests locally, but they are required in CI, so breaking changes will result in failed checks.
-
 ## CI
 
 ### Pre-commit Hooks
@@ -84,7 +80,13 @@ To use these hooks, install pre-commit and run:
 pre-commit install
 ```
 
-### Release Process
+### GitHub Workflows
+
+#### System Tests
+
+System tests are configured in a GitHub Actions workflow file located at `.github/workflows/ci.yaml`. These test e2e scenarios for various providers and configurations. You are unable to run these tests locally, but they are required in CI, so breaking changes will result in failed checks.
+
+#### Release Process
 
 The release process for KSail is fully-automated and relies on semantic versioning. When PRs are merged into the main branch, a new version is automatically released based on the name of the PR. The following conventions are used:
 
