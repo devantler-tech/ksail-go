@@ -63,7 +63,6 @@ go test ./...
 
 KSail uses pre-commit hooks to ensure code quality and consistency before commits are made. This is done via the [pre-commit framework](https://pre-commit.com/). Active hooks are defined in the `.pre-commit-config.yaml` file:
 
-
 - **golangci-lint-fmt**: Automatically formats Go code using golangci-lint
 - **mockery**: Generates mocks using the local `scripts/ensure-mockery.sh` script
 
