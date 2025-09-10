@@ -82,8 +82,6 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 }
 
 func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
-	t.Parallel()
-
 	// Set environment variables - using the correct hierarchical structure
 	_ = os.Setenv("KSAIL_METADATA_NAME", "test-cluster")
 	_ = os.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
@@ -202,8 +200,6 @@ spec:
 }
 
 func TestManager_LoadCluster_MixedConfiguration(t *testing.T) {
-	t.Parallel()
-
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
 	oldDir, _ := os.Getwd()
