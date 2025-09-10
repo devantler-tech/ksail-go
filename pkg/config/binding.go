@@ -64,12 +64,115 @@ func bindFieldSelectors(
 				cmd.Flags().Var(pflagValue, flagName, description)
 			}
 		} else {
-			// Use regular string flags for basic types
-			defaultVal := manager.viper.GetString(fieldPath)
-			if shortName != "" {
-				cmd.Flags().StringP(flagName, shortName, defaultVal, description)
-			} else {
-				cmd.Flags().String(flagName, defaultVal, description)
+			// Auto-detect type and use appropriate pflag method
+			switch fieldPtr.(type) {
+			case *string:
+				defaultVal := manager.viper.GetString(fieldPath)
+				if shortName != "" {
+					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().String(flagName, defaultVal, description)
+				}
+			case *bool:
+				defaultVal := manager.viper.GetBool(fieldPath)
+				if shortName != "" {
+					cmd.Flags().BoolP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Bool(flagName, defaultVal, description)
+				}
+			case *int:
+				defaultVal := manager.viper.GetInt(fieldPath)
+				if shortName != "" {
+					cmd.Flags().IntP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Int(flagName, defaultVal, description)
+				}
+			case *int32:
+				defaultVal := manager.viper.GetInt32(fieldPath)
+				if shortName != "" {
+					cmd.Flags().Int32P(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Int32(flagName, defaultVal, description)
+				}
+			case *int64:
+				defaultVal := manager.viper.GetInt64(fieldPath)
+				if shortName != "" {
+					cmd.Flags().Int64P(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Int64(flagName, defaultVal, description)
+				}
+			case *uint:
+				defaultVal := manager.viper.GetUint(fieldPath)
+				if shortName != "" {
+					cmd.Flags().UintP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Uint(flagName, defaultVal, description)
+				}
+			case *uint32:
+				defaultVal := manager.viper.GetUint32(fieldPath)
+				if shortName != "" {
+					cmd.Flags().Uint32P(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Uint32(flagName, defaultVal, description)
+				}
+			case *uint64:
+				defaultVal := manager.viper.GetUint64(fieldPath)
+				if shortName != "" {
+					cmd.Flags().Uint64P(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Uint64(flagName, defaultVal, description)
+				}
+			case *float32:
+				defaultVal := manager.viper.GetFloat64(fieldPath) // Viper only has Float64
+				if shortName != "" {
+					cmd.Flags().Float32P(flagName, shortName, float32(defaultVal), description)
+				} else {
+					cmd.Flags().Float32(flagName, float32(defaultVal), description)
+				}
+			case *float64:
+				defaultVal := manager.viper.GetFloat64(fieldPath)
+				if shortName != "" {
+					cmd.Flags().Float64P(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Float64(flagName, defaultVal, description)
+				}
+			case *time.Duration:
+				defaultVal := manager.viper.GetDuration(fieldPath)
+				if shortName != "" {
+					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Duration(flagName, defaultVal, description)
+				}
+			case *[]string:
+				defaultVal := manager.viper.GetStringSlice(fieldPath)
+				if shortName != "" {
+					cmd.Flags().StringSliceP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().StringSlice(flagName, defaultVal, description)
+				}
+			case *[]int:
+				defaultVal := manager.viper.GetIntSlice(fieldPath)
+				if shortName != "" {
+					cmd.Flags().IntSliceP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().IntSlice(flagName, defaultVal, description)
+				}
+			case *metav1.Duration:
+				// Handle metav1.Duration specially as it's not a standard Duration
+				defaultVal := manager.viper.GetDuration(fieldPath)
+				if shortName != "" {
+					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().Duration(flagName, defaultVal, description)
+				}
+			default:
+				// Fallback to string for unknown types
+				defaultVal := manager.viper.GetString(fieldPath)
+				if shortName != "" {
+					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
+				} else {
+					cmd.Flags().String(flagName, defaultVal, description)
+				}
 			}
 		}
 
