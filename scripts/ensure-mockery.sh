@@ -34,12 +34,12 @@ install_mockery() {
     echo "The script will attempt automatic installation, but manual installation may be required."
     echo ""
     
-    # Try go install as fallback (this installs v2 which may not be compatible)
-    echo "Installing mockery via go install (may require manual upgrade to v3.x)..."
-    go install github.com/vektra/mockery/v2@latest
+    # Try go install for mockery v3.x
+    echo "Installing mockery v3.x via go install..."
+    go install github.com/vektra/mockery/v3@latest
     
     echo ""
-    echo "If you encounter configuration errors, please install mockery v3.x manually:"
+    echo "If you encounter configuration errors, please see the manual installation instructions for mockery v3.x:"
     echo "https://vektra.github.io/mockery/v3.5/installation/"
     echo ""
 }
