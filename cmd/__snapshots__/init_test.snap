@@ -6,9 +6,9 @@ Usage:
   init [flags]
 
 Flags:
-  -d, --distribution string       Configure cluster distribution (EKS, K3d, Kind [default], Tind)
+  -d, --distribution string       Configure Distribution
   -h, --help                      help for init
-  -s, --source-directory string   Configure source directory for Kubernetes manifests
+  -s, --source-directory string   Configure SourceDirectory
 
 ---
 

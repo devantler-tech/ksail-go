@@ -288,36 +288,9 @@ func toLower(r rune) rune {
 
 // generateFieldDescription generates a human-readable description for a configuration field.
 func generateFieldDescription(fieldPath string) string {
-	switch fieldPath {
-	case "Metadata.Name":
-		return "Configure cluster name"
-	case "Spec.Distribution":
-		return "Configure cluster distribution (EKS, K3d, Kind [default], Tind)"
-	case "Spec.DistributionConfig":
-		return "Configure distribution config file path"
-	case "Spec.SourceDirectory":
-		return "Configure source directory for Kubernetes manifests"
-	case "Spec.Connection.Kubeconfig":
-		return "Configure kubeconfig file path"
-	case "Spec.Connection.Context":
-		return "Configure kubectl context"
-	case "Spec.Connection.Timeout":
-		return "Configure connection timeout duration"
-	case "Spec.CNI":
-		return "Configure CNI (Container Network Interface)"
-	case "Spec.CSI":
-		return "Configure CSI (Container Storage Interface)"
-	case "Spec.IngressController":
-		return "Configure ingress controller"
-	case "Spec.GatewayController":
-		return "Configure gateway controller"
-	case "Spec.ReconciliationTool":
-		return "Configure reconciliation tool (Kubectl, Flux, ArgoCD)"
-	default:
-		// Generate a default description based on the field path
-		parts := strings.Split(fieldPath, ".")
-		lastPart := parts[len(parts)-1]
+	// Generate a default description based on the field path
+	parts := strings.Split(fieldPath, ".")
+	lastPart := parts[len(parts)-1]
 
-		return "Configure " + strings.ReplaceAll(lastPart, "_", " ")
-	}
+	return "Configure " + strings.ReplaceAll(lastPart, "_", " ")
 }

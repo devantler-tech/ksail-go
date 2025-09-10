@@ -23,8 +23,7 @@ func initializeViper() *viper.Viper {
 	viperInstance.SetConfigName(DefaultConfigFileName)
 	viperInstance.SetConfigType("yaml")
 	viperInstance.AddConfigPath(".")
-	viperInstance.AddConfigPath("$HOME")
-	viperInstance.AddConfigPath("/etc/ksail")
+	viperInstance.AddConfigPath("$HOME/.ksail")
 
 	// Set environment variable settings
 	viperInstance.SetEnvPrefix(EnvPrefix)
