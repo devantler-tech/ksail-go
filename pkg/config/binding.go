@@ -300,7 +300,11 @@ func bindIntFlag(
 }
 
 // bindInt32Flag binds an int32 flag to the command.
-func bindInt32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindInt32Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetInt32(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Int32P(flagName, shortName, defaultVal, description)
@@ -310,7 +314,11 @@ func bindInt32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, de
 }
 
 // bindInt64Flag binds an int64 flag to the command.
-func bindInt64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindInt64Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetInt64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Int64P(flagName, shortName, defaultVal, description)
@@ -320,7 +328,11 @@ func bindInt64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, de
 }
 
 // bindUintFlag binds a uint flag to the command.
-func bindUintFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindUintFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetUint(fieldPath)
 	if shortName != "" {
 		cmd.Flags().UintP(flagName, shortName, defaultVal, description)
@@ -330,7 +342,11 @@ func bindUintFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, des
 }
 
 // bindUint32Flag binds a uint32 flag to the command.
-func bindUint32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindUint32Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetUint32(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Uint32P(flagName, shortName, defaultVal, description)
@@ -340,7 +356,11 @@ func bindUint32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, d
 }
 
 // bindUint64Flag binds a uint64 flag to the command.
-func bindUint64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindUint64Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetUint64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Uint64P(flagName, shortName, defaultVal, description)
@@ -350,7 +370,11 @@ func bindUint64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, d
 }
 
 // bindFloat32Flag binds a float32 flag to the command.
-func bindFloat32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindFloat32Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetFloat64(fieldPath) // Viper only has Float64
 	if shortName != "" {
 		cmd.Flags().Float32P(flagName, shortName, float32(defaultVal), description)
@@ -360,7 +384,11 @@ func bindFloat32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, 
 }
 
 // bindFloat64Flag binds a float64 flag to the command.
-func bindFloat64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindFloat64Flag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetFloat64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Float64P(flagName, shortName, defaultVal, description)
@@ -370,7 +398,11 @@ func bindFloat64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, 
 }
 
 // bindDurationFlag binds a time.Duration flag to the command.
-func bindDurationFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindDurationFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetDuration(fieldPath)
 	if shortName != "" {
 		cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
@@ -380,7 +412,11 @@ func bindDurationFlag(cmd *cobra.Command, manager *Manager, flagName, shortName,
 }
 
 // bindStringSliceFlag binds a []string flag to the command.
-func bindStringSliceFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindStringSliceFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetStringSlice(fieldPath)
 	if shortName != "" {
 		cmd.Flags().StringSliceP(flagName, shortName, defaultVal, description)
@@ -390,7 +426,11 @@ func bindStringSliceFlag(cmd *cobra.Command, manager *Manager, flagName, shortNa
 }
 
 // bindIntSliceFlag binds a []int flag to the command.
-func bindIntSliceFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+func bindIntSliceFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+) {
 	defaultVal := manager.viper.GetIntSlice(fieldPath)
 	if shortName != "" {
 		cmd.Flags().IntSliceP(flagName, shortName, defaultVal, description)
