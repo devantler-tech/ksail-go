@@ -1,10 +1,8 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
 
@@ -33,39 +31,4 @@ func testCommandCreation(t *testing.T, cfg CommandTestConfig) {
 	if cmd.Short != cfg.ExpectedShort {
 		t.Fatalf("expected Short description to be %q, got %q", cfg.ExpectedShort, cmd.Short)
 	}
-}
-
-// testCommandExecution tests the execution of a command.
-func testCommandExecution(t *testing.T, newCommandFunc func() *cobra.Command) {
-	t.Helper()
-
-	var out bytes.Buffer
-
-	cmd := newCommandFunc()
-	cmd.SetOut(&out)
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
-}
-
-// testCommandHelp tests the help output of a command.
-func testCommandHelp(t *testing.T, newCommandFunc func() *cobra.Command) {
-	t.Helper()
-
-	var out bytes.Buffer
-
-	cmd := newCommandFunc()
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--help"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
 }

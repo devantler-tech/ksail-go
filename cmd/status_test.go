@@ -1,9 +1,12 @@
+//nolint:dupl // Test files naturally have similar patterns for different commands
 package cmd_test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewStatusCmd(t *testing.T) {
@@ -20,11 +23,32 @@ func TestNewStatusCmd(t *testing.T) {
 func TestStatusCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	testCommandExecution(t, cmd.NewStatusCmd)
+	var out bytes.Buffer
+
+	cmd := cmd.NewStatusCmd()
+	cmd.SetOut(&out)
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestStatusCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	testCommandHelp(t, cmd.NewStatusCmd)
+	var out bytes.Buffer
+
+	cmd := cmd.NewStatusCmd()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--help"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	snaps.MatchSnapshot(t, out.String())
 }
