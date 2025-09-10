@@ -26,7 +26,11 @@ type FieldSelector[T any] struct {
 //
 //	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind)
 //	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind, "Custom description")
-func AddFlagFromField[T any](selector func(*T) any, defaultValue any, description ...string) FieldSelector[T] {
+func AddFlagFromField[T any](
+	selector func(*T) any,
+	defaultValue any,
+	description ...string,
+) FieldSelector[T] {
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
@@ -43,21 +47,21 @@ func AddFlagFromField[T any](selector func(*T) any, defaultValue any, descriptio
 // This provides compile-time safety with zero maintenance overhead and no global variables.
 // Each field must be followed by its default value and optionally by a description string.
 //
-//  Usage with defaults only:
-//     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//         return []any{
-//             &c.Spec.Distribution, v1alpha1.DistributionKind,
-//             &c.Spec.SourceDirectory, "k8s",
-//         }
-//     })
+//	Usage with defaults only:
+//	   config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+//	       return []any{
+//	           &c.Spec.Distribution, v1alpha1.DistributionKind,
+//	           &c.Spec.SourceDirectory, "k8s",
+//	       }
+//	   })
 //
-//  Usage with defaults and descriptions:
-//     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//         return []any{
-//             &c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
-//             &c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
-//         }
-//     })
+//	Usage with defaults and descriptions:
+//	   config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+//	       return []any{
+//	           &c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
+//	           &c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
+//	       }
+//	   })
 func AddFlagsFromFields(
 	fieldSelector func(*v1alpha1.Cluster) []any,
 ) []FieldSelector[v1alpha1.Cluster] {
@@ -80,6 +84,7 @@ func AddFlagsFromFields(
 
 		// Check if next item is a description (string)
 		description := ""
+
 		if i < len(items) {
 			if desc, ok := items[i].(string); ok {
 				description = desc
@@ -229,7 +234,7 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 				return v1alpha1.GatewayControllerDefault
 			}
 		}
-		
+
 		// Fallback to direct type conversion for non-pflag.Value types
 		switch targetType {
 		case reflect.TypeOf(""):

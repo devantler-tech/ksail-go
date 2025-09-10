@@ -16,6 +16,8 @@ import (
 )
 
 func TestManager_LoadCluster_Defaults(t *testing.T) {
+	t.Parallel()
+
 	// Clear any existing environment variables that might affect the test
 	envVarsToClean := []string{
 		"KSAIL_SPEC_DISTRIBUTION",
@@ -41,12 +43,30 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 
 	// Load cluster with field selectors to provide defaults
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig }, "kind.yaml"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			"kind.yaml",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			"~/.kube/config",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"kind-ksail-default",
+		),
 	}
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
@@ -62,6 +82,8 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 }
 
 func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
+	t.Parallel()
+
 	// Set environment variables - using the correct hierarchical structure
 	_ = os.Setenv("KSAIL_METADATA_NAME", "test-cluster")
 	_ = os.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
@@ -82,9 +104,18 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	_ = os.Chdir(tempDir)
 
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			"~/.kube/config",
+		),
 	}
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
@@ -97,12 +128,16 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 }
 
 func TestNewManager(t *testing.T) {
+	t.Parallel()
+
 	manager := config.NewManager()
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.GetViper())
 }
 
 func TestManager_LoadCluster_ConfigFile(t *testing.T) {
+	t.Parallel()
+
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
 	oldDir, _ := os.Getwd()
@@ -128,12 +163,30 @@ spec:
 	require.NoError(t, err)
 
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout }, metav1.Duration{Duration: 5 * time.Minute}),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			"~/.kube/config",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"kind-ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+			metav1.Duration{Duration: 5 * time.Minute},
+		),
 	}
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
@@ -149,6 +202,8 @@ spec:
 }
 
 func TestManager_LoadCluster_MixedConfiguration(t *testing.T) {
+	t.Parallel()
+
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
 	oldDir, _ := os.Getwd()
@@ -182,11 +237,26 @@ spec:
 	}()
 
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			"~/.kube/config",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"kind-ksail-default",
+		),
 	}
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()

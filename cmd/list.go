@@ -23,7 +23,7 @@ func NewListCmd() *cobra.Command {
 	)
 
 	// Add the special --all flag manually since it's CLI-only
-	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+	cmd.Flags().Bool("all", false, "List all clusters including stopped ones (default false)")
 
 	return cmd
 }
@@ -46,6 +46,7 @@ func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []strin
 	} else {
 		notify.Successln(cmd.OutOrStdout(), "Listing running clusters (stub implementation)")
 	}
+
 	notify.Activityln(cmd.OutOrStdout(),
 		"Distribution filter: "+string(cluster.Spec.Distribution))
 

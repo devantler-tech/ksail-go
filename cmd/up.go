@@ -23,7 +23,9 @@ func NewUpCmd() *cobra.Command {
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
 				&c.Spec.DistributionConfig, "kind.yaml", "Configuration file for the distribution",
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to use",
-				&c.Spec.Connection.Timeout, metav1.Duration{Duration: 5 * time.Minute}, "Timeout for cluster operations",
+				&c.Spec.Connection.Timeout,
+				metav1.Duration{Duration: 5 * time.Minute},
+				"Timeout for cluster operations",
 			}
 		})...,
 	)

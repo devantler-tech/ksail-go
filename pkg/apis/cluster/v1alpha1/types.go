@@ -113,12 +113,21 @@ func validCSIs() []CSI {
 
 // validIngressControllers returns supported ingress controller values.
 func validIngressControllers() []IngressController {
-	return []IngressController{IngressControllerDefault, IngressControllerTraefik, IngressControllerNone}
+	return []IngressController{
+		IngressControllerDefault,
+		IngressControllerTraefik,
+		IngressControllerNone,
+	}
 }
 
 // validGatewayControllers returns supported gateway controller values.
 func validGatewayControllers() []GatewayController {
-	return []GatewayController{GatewayControllerDefault, GatewayControllerTraefik, GatewayControllerCilium, GatewayControllerNone}
+	return []GatewayController{
+		GatewayControllerDefault,
+		GatewayControllerTraefik,
+		GatewayControllerCilium,
+		GatewayControllerNone,
+	}
 }
 
 // CNI defines the CNI options for a KSail cluster.
@@ -334,8 +343,14 @@ func (i *IngressController) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidIngressController, value, IngressControllerDefault, IngressControllerTraefik, IngressControllerNone)
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidIngressController,
+		value,
+		IngressControllerDefault,
+		IngressControllerTraefik,
+		IngressControllerNone,
+	)
 }
 
 // Set for GatewayController.
@@ -348,8 +363,15 @@ func (g *GatewayController) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s, %s)",
-		ErrInvalidGatewayController, value, GatewayControllerDefault, GatewayControllerTraefik, GatewayControllerCilium, GatewayControllerNone)
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s, %s, %s)",
+		ErrInvalidGatewayController,
+		value,
+		GatewayControllerDefault,
+		GatewayControllerTraefik,
+		GatewayControllerCilium,
+		GatewayControllerNone,
+	)
 }
 
 // String returns the string representation of the Distribution.

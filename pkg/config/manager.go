@@ -97,6 +97,7 @@ func setViperDefaultsFromFieldSelectors(
 
 		// Convert typed default value to appropriate format for Viper
 		var viperValue any
+
 		switch val := defaultValue.(type) {
 		case v1alpha1.Distribution:
 			viperValue = string(val)
@@ -120,8 +121,6 @@ func setViperDefaultsFromFieldSelectors(
 		v.SetDefault(path, viperValue)
 	}
 }
-
-
 
 // setClusterFromViperConfig applies configuration values to the cluster.
 // This overlays configuration values from Viper onto the cluster that already has defaults.
@@ -155,7 +154,7 @@ func (m *Manager) setClusterFromFieldSelectors(cluster *v1alpha1.Cluster) {
 
 		// Get value from Viper
 		value := m.getTypedValueFromViperByPath(path, cluster)
-		
+
 		// Get the corresponding field pointer in the target cluster
 		targetFieldPtr := fieldSelector.selector(cluster)
 		if targetFieldPtr != nil {
@@ -164,10 +163,8 @@ func (m *Manager) setClusterFromFieldSelectors(cluster *v1alpha1.Cluster) {
 	}
 }
 
-
-
 // setValueAtFieldPointer sets a value at the field location specified by the field pointer.
-func (m *Manager) setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any, value any) {
+func (m *Manager) setValueAtFieldPointer(_ *v1alpha1.Cluster, fieldPtr any, value any) {
 	// Use reflection to set the value directly
 	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr || !fieldVal.Elem().CanSet() {
@@ -176,12 +173,12 @@ func (m *Manager) setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any
 
 	// Convert and set the value
 	targetField := fieldVal.Elem()
+
 	convertedValue := convertValueToFieldType(value, targetField.Type())
 	if convertedValue != nil {
 		targetField.Set(reflect.ValueOf(convertedValue))
 	}
 }
-
 
 // getTypedValueFromViperByPath retrieves a properly typed value from Viper based on the path.
 func (m *Manager) getTypedValueFromViperByPath(path string, cluster *v1alpha1.Cluster) any {

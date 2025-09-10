@@ -61,6 +61,7 @@ func bindFieldSelectors(
 		if shortName != "" && usedShorthands[shortName] {
 			shortName = "" // Avoid conflicts by not using shorthand
 		}
+
 		if shortName != "" {
 			usedShorthands[shortName] = true
 		}
@@ -114,6 +115,7 @@ func bindFieldSelectors(
 				} else {
 					defaultVal = manager.viper.GetString(fieldPath)
 				}
+
 				if shortName != "" {
 					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
 				} else {
@@ -128,6 +130,7 @@ func bindFieldSelectors(
 				} else {
 					defaultVal = manager.viper.GetBool(fieldPath)
 				}
+
 				if shortName != "" {
 					cmd.Flags().BoolP(flagName, shortName, defaultVal, description)
 				} else {
@@ -304,7 +307,7 @@ func findFieldPathByAddressAndType(
 	targetAddr uintptr,
 	targetType reflect.Type,
 	prefix string,
-	preserveCase bool,
+	_ bool, // preserveCase is unused
 ) string {
 	for i := 0; i < structVal.NumField(); i++ {
 		field := structVal.Field(i)
@@ -331,48 +334,7 @@ func findFieldPathByAddressAndType(
 
 		// If this is a struct, recurse into it
 		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
-			if result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, preserveCase); result != "" {
-				return result
-			}
-		}
-	}
-
-	return ""
-}
-
-// findFieldPathByType recursively searches for a field's path in a struct by matching types.
-func findFieldPathByType(
-	structVal reflect.Value,
-	structType reflect.Type,
-	targetType reflect.Type,
-	prefix string,
-) string {
-	for i := 0; i < structVal.NumField(); i++ {
-		field := structVal.Field(i)
-		fieldType := structType.Field(i)
-
-		// Skip unexported fields
-		if !field.CanAddr() {
-			continue
-		}
-
-		// Build the current field path (preserve original case for accurate discovery)
-		var currentPath string
-		if prefix == "" {
-			currentPath = fieldType.Name
-		} else {
-			currentPath = prefix + "." + fieldType.Name
-		}
-
-		// Check if this field's type matches our target type
-		if field.Type() == targetType {
-			// Convert to lowercase for Viper compatibility when returning the final path
-			return strings.ToLower(currentPath)
-		}
-
-		// If this is a struct, recurse into it
-		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
-			if result := findFieldPathByType(field, field.Type(), targetType, currentPath); result != "" {
+			if result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, false); result != "" {
 				return result
 			}
 		}

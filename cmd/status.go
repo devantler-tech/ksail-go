@@ -22,7 +22,9 @@ func NewStatusCmd() *cobra.Command {
 			return []any{
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to check status for",
 				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
-				&c.Spec.Connection.Timeout, metav1.Duration{Duration: 5 * time.Minute}, "Timeout for status check operations",
+				&c.Spec.Connection.Timeout,
+				metav1.Duration{Duration: 5 * time.Minute},
+				"Timeout for status check operations",
 			}
 		})...,
 	)
