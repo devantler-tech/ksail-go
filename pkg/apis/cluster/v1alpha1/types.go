@@ -56,8 +56,8 @@ func NewCluster() *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{},
-		Spec:     Spec{},
+		Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty, filled in later
+		Spec:     Spec{},              //nolint:exhaustruct // Intentionally empty, filled in later
 	}
 }
 
@@ -362,6 +362,7 @@ func (g *GatewayController) Set(value string) error {
 	for _, gc := range validGatewayControllers() {
 		if strings.EqualFold(value, string(gc)) {
 			*g = gc
+
 			return nil
 		}
 	}

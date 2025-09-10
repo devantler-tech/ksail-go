@@ -43,8 +43,6 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 type ClientCreator func() (client.APIClient, error)
 
 // GetDockerClient creates a Docker client using environment configuration.
-//
-//nolint:ireturn // Interface return required for dependency injection pattern
 func GetDockerClient() (client.APIClient, error) {
 	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
@@ -58,8 +56,6 @@ func GetDockerClient() (client.APIClient, error) {
 }
 
 // GetPodmanUserClient creates a Podman client using the user-specific socket.
-//
-//nolint:ireturn // Interface return required for dependency injection pattern
 func GetPodmanUserClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
@@ -73,8 +69,6 @@ func GetPodmanUserClient() (client.APIClient, error) {
 }
 
 // GetPodmanSystemClient creates a Podman client using the system-wide socket.
-//
-//nolint:ireturn // Interface return required for dependency injection pattern
 func GetPodmanSystemClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/podman/podman.sock"),

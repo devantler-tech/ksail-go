@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -38,7 +39,8 @@ func handleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []str
 	cluster, err := configManager.LoadCluster()
 	if err != nil {
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-		return err
+
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")

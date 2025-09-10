@@ -82,7 +82,11 @@ func setViperDefaultsFromFieldSelectors(
 }
 
 // processFieldSelector processes a single field selector for Viper default setting.
-func processFieldSelector(viperInstance *viper.Viper, ref *v1alpha1.Cluster, fieldSelector FieldSelector[v1alpha1.Cluster]) {
+func processFieldSelector(
+	viperInstance *viper.Viper,
+	ref *v1alpha1.Cluster,
+	fieldSelector FieldSelector[v1alpha1.Cluster],
+) {
 	// Get the field reference from the selector
 	fieldPtr := fieldSelector.selector(ref)
 	if fieldPtr == nil {
@@ -258,6 +262,7 @@ func (m *Manager) getIntegerValueFromViper(path string, fieldType reflect.Type) 
 	case reflect.TypeOf(uint64(0)):
 		return m.viper.GetUint64(path)
 	}
+
 	return nil
 }
 
@@ -269,15 +274,17 @@ func (m *Manager) getFloatValueFromViper(path string, fieldType reflect.Type) an
 	case reflect.TypeOf(float64(0)):
 		return m.viper.GetFloat64(path)
 	}
+
 	return nil
 }
 
 // getDurationValueFromViper handles duration type values from Viper.
 func (m *Manager) getDurationValueFromViper(path string, fieldType reflect.Type) any {
 	switch fieldType {
-	case reflect.TypeOf(time.Duration(0)), reflect.TypeOf(metav1.Duration{}):
+	case reflect.TypeOf(time.Duration(0)), reflect.TypeOf(metav1.Duration{}): //nolint:exhaustruct
 		return m.viper.GetDuration(path)
 	}
+
 	return nil
 }
 
@@ -289,5 +296,6 @@ func (m *Manager) getSliceValueFromViper(path string, fieldType reflect.Type) an
 	case reflect.TypeOf([]int{}):
 		return m.viper.GetIntSlice(path)
 	}
+
 	return nil
 }

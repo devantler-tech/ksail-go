@@ -15,6 +15,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TestManager_LoadCluster_Defaults tests loading a cluster with field selectors providing defaults.
+//
+//nolint:paralleltest // This test modifies environment variables and cannot be run in parallel
 func TestManager_LoadCluster_Defaults(t *testing.T) {
 	// Clear any existing environment variables that might affect the test
 	envVarsToClean := []string{
@@ -114,6 +117,9 @@ func TestNewManager(t *testing.T) {
 	require.NotNil(t, manager.GetViper())
 }
 
+// TestManager_LoadCluster_ConfigFile tests loading cluster configuration from a config file.
+//
+//nolint:paralleltest // This test changes directories and cannot be run in parallel
 func TestManager_LoadCluster_ConfigFile(t *testing.T) {
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()

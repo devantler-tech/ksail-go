@@ -18,231 +18,408 @@ func bindFieldSelectors(
 	fieldSelectors []FieldSelector[v1alpha1.Cluster],
 ) {
 	// Create a dummy cluster to introspect field paths
-	dummy := &v1alpha1.Cluster{}
+	dummy := &v1alpha1.Cluster{} //nolint:exhaustruct // Only used for reflection, empty is correct
 	usedShorthands := make(map[string]bool)
 
 	for _, fieldSelector := range fieldSelectors {
-		// Get the field reference from the selector
-		fieldPtr := fieldSelector.selector(dummy)
+		bindSingleFieldSelector(cmd, manager, dummy, fieldSelector, usedShorthands)
+	}
+}
 
-		// Handle special CLI-only flags that return nil
-		if fieldPtr == nil {
-			// For now, we'll skip special fields - commands can add them manually if needed
-			// This eliminates the need for hardcoded special field detection
-			continue
+// bindSingleFieldSelector binds a single field selector to the command.
+func bindSingleFieldSelector(
+	cmd *cobra.Command,
+	manager *Manager,
+	dummy *v1alpha1.Cluster,
+	fieldSelector FieldSelector[v1alpha1.Cluster],
+	usedShorthands map[string]bool,
+) {
+	// Get the field reference from the selector
+	fieldPtr := fieldSelector.selector(dummy)
+
+	// Handle special CLI-only flags that return nil
+	if fieldPtr == nil {
+		// For now, we'll skip special fields - commands can add them manually if needed
+		// This eliminates the need for hardcoded special field detection
+		return
+	}
+
+	// Use reflection to discover the field path
+	fieldPath := getFieldPath(dummy, fieldPtr)
+	if fieldPath == "" {
+		return
+	}
+
+	// Get field path with preserved case for flag name generation
+	fieldPathWithCase := getFieldPathPreservingCase(dummy, fieldPtr)
+
+	// Convert hierarchical path to kebab-case CLI flag (use case-preserving path)
+	flagName := pathToFlagName(fieldPathWithCase)
+
+	// Use embedded description if provided, otherwise generate default
+	description := fieldSelector.description
+	if description == "" {
+		description = generateFieldDescription(fieldPathWithCase)
+	}
+
+	// Get default value from field selector or fallback to Viper
+	var defaultValue any
+	if fieldSelector.defaultValue != nil {
+		defaultValue = fieldSelector.defaultValue
+	}
+
+	// Add shortname flag if appropriate and not conflicting
+	shortName := generateShortName(flagName)
+	if shortName != "" && usedShorthands[shortName] {
+		shortName = "" // Avoid conflicts by not using shorthand
+	}
+
+	if shortName != "" {
+		usedShorthands[shortName] = true
+	}
+
+	// Check if the field implements pflag.Value interface for custom types
+	if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {
+		bindPflagValue(
+			cmd, manager, pflagValue, flagName, shortName, description, fieldPath, defaultValue,
+		)
+	} else {
+		bindStandardType(
+			cmd, manager, fieldPtr, flagName, shortName, description, fieldPath, defaultValue,
+		)
+	}
+
+	// Bind flag to the hierarchical path (for consistent config file access)
+	// This ensures CLI flags, environment variables, and config files all use the same key
+	_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
+}
+
+// bindPflagValue binds a pflag.Value type to the command.
+func bindPflagValue(
+	cmd *cobra.Command,
+	manager *Manager,
+	pflagValue pflag.Value,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	// Set default value from field selector or Viper defaults
+	if defaultValue != nil {
+		setPflagValueDefault(pflagValue, defaultValue)
+	} else {
+		// Fallback to Viper defaults
+		defaultVal := manager.viper.GetString(fieldPath)
+		if defaultVal != "" {
+			_ = pflagValue.Set(defaultVal)
 		}
+	}
 
-		// Use reflection to discover the field path
-		fieldPath := getFieldPath(dummy, fieldPtr)
-		if fieldPath == "" {
-			continue
+	// Use Var/VarP for custom pflag types (provides automatic validation and help)
+	if shortName != "" {
+		cmd.Flags().VarP(pflagValue, flagName, shortName, description)
+	} else {
+		cmd.Flags().Var(pflagValue, flagName, description)
+	}
+}
+
+// setPflagValueDefault sets the default value for a pflag.Value.
+func setPflagValueDefault(pflagValue pflag.Value, defaultValue any) {
+	// Convert custom types to string for pflag.Value.Set()
+	switch val := defaultValue.(type) {
+	case v1alpha1.Distribution:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.ReconciliationTool:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.CNI:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.CSI:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.IngressController:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.GatewayController:
+		_ = pflagValue.Set(string(val))
+	default:
+		if str, ok := val.(string); ok {
+			_ = pflagValue.Set(str)
 		}
+	}
+}
 
-		// Get field path with preserved case for flag name generation
-		fieldPathWithCase := getFieldPathPreservingCase(dummy, fieldPtr)
+// bindStandardType binds a standard type to the command using type detection.
+func bindStandardType(
+	cmd *cobra.Command,
+	manager *Manager,
+	fieldPtr any,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	// Auto-detect type and use appropriate pflag method
+	switch fieldPtr.(type) {
+	case *string:
+		bindStringFlag(cmd, manager, flagName, shortName, description, fieldPath, defaultValue)
+	case *bool:
+		bindBoolFlag(cmd, manager, flagName, shortName, description, fieldPath, defaultValue)
+	case *int, *int32, *int64:
+		bindIntegerFlag(cmd, manager, fieldPtr, flagName, shortName, description, fieldPath)
+	case *uint, *uint32, *uint64:
+		bindUnsignedIntegerFlag(cmd, manager, fieldPtr, flagName, shortName, description, fieldPath)
+	case *float32, *float64:
+		bindFloatFlag(cmd, manager, fieldPtr, flagName, shortName, description, fieldPath)
+	case *time.Duration, *metav1.Duration:
+		bindDurationTypes(cmd, manager, fieldPtr, flagName, shortName, description, fieldPath, defaultValue)
+	case *[]string:
+		bindStringSliceFlag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *[]int:
+		bindIntSliceFlag(cmd, manager, flagName, shortName, description, fieldPath)
+	default:
+		// Fallback to string for unknown types
+		bindStringFlag(cmd, manager, flagName, shortName, description, fieldPath, defaultValue)
+	}
+}
 
-		// Convert hierarchical path to kebab-case CLI flag (use case-preserving path)
-		flagName := pathToFlagName(fieldPathWithCase)
+// bindDurationTypes binds duration types to the command.
+func bindDurationTypes(
+	cmd *cobra.Command,
+	manager *Manager,
+	fieldPtr any,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	switch fieldPtr.(type) {
+	case *time.Duration:
+		bindDurationFlag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *metav1.Duration:
+		bindMetav1DurationFlag(cmd, manager, flagName, shortName, description, fieldPath, defaultValue)
+	}
+}
 
-		// Use embedded description if provided, otherwise generate default
-		description := fieldSelector.description
-		if description == "" {
-			description = generateFieldDescription(fieldPathWithCase)
+// bindIntegerFlag binds integer types to the command.
+func bindIntegerFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	fieldPtr any,
+	flagName, shortName, description, fieldPath string,
+) {
+	switch fieldPtr.(type) {
+	case *int:
+		bindIntFlag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *int32:
+		bindInt32Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *int64:
+		bindInt64Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	}
+}
+
+// bindUnsignedIntegerFlag binds unsigned integer types to the command.
+func bindUnsignedIntegerFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	fieldPtr any,
+	flagName, shortName, description, fieldPath string,
+) {
+	switch fieldPtr.(type) {
+	case *uint:
+		bindUintFlag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *uint32:
+		bindUint32Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *uint64:
+		bindUint64Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	}
+}
+
+// bindFloatFlag binds float types to the command.
+func bindFloatFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	fieldPtr any,
+	flagName, shortName, description, fieldPath string,
+) {
+	switch fieldPtr.(type) {
+	case *float32:
+		bindFloat32Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	case *float64:
+		bindFloat64Flag(cmd, manager, flagName, shortName, description, fieldPath)
+	}
+}
+
+// bindStringFlag binds a string flag to the command.
+func bindStringFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	var defaultVal string
+	if defaultValue != nil {
+		if str, ok := defaultValue.(string); ok {
+			defaultVal = str
 		}
+	} else {
+		defaultVal = manager.viper.GetString(fieldPath)
+	}
 
-		// Get default value from field selector or fallback to Viper
-		var defaultValue any
-		if fieldSelector.defaultValue != nil {
-			defaultValue = fieldSelector.defaultValue
+	if shortName != "" {
+		cmd.Flags().StringP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().String(flagName, defaultVal, description)
+	}
+}
+
+// bindBoolFlag binds a bool flag to the command.
+func bindBoolFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	var defaultVal bool
+	if defaultValue != nil {
+		if b, ok := defaultValue.(bool); ok {
+			defaultVal = b
 		}
+	} else {
+		defaultVal = manager.viper.GetBool(fieldPath)
+	}
 
-		// Add shortname flag if appropriate and not conflicting
-		shortName := generateShortName(flagName)
-		if shortName != "" && usedShorthands[shortName] {
-			shortName = "" // Avoid conflicts by not using shorthand
+	if shortName != "" {
+		cmd.Flags().BoolP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Bool(flagName, defaultVal, description)
+	}
+}
+
+// bindIntFlag binds an int flag to the command.
+func bindIntFlag(
+	cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string,
+) {
+	defaultVal := manager.viper.GetInt(fieldPath)
+	if shortName != "" {
+		cmd.Flags().IntP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Int(flagName, defaultVal, description)
+	}
+}
+
+// bindInt32Flag binds an int32 flag to the command.
+func bindInt32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetInt32(fieldPath)
+	if shortName != "" {
+		cmd.Flags().Int32P(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Int32(flagName, defaultVal, description)
+	}
+}
+
+// bindInt64Flag binds an int64 flag to the command.
+func bindInt64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetInt64(fieldPath)
+	if shortName != "" {
+		cmd.Flags().Int64P(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Int64(flagName, defaultVal, description)
+	}
+}
+
+// bindUintFlag binds a uint flag to the command.
+func bindUintFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetUint(fieldPath)
+	if shortName != "" {
+		cmd.Flags().UintP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Uint(flagName, defaultVal, description)
+	}
+}
+
+// bindUint32Flag binds a uint32 flag to the command.
+func bindUint32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetUint32(fieldPath)
+	if shortName != "" {
+		cmd.Flags().Uint32P(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Uint32(flagName, defaultVal, description)
+	}
+}
+
+// bindUint64Flag binds a uint64 flag to the command.
+func bindUint64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetUint64(fieldPath)
+	if shortName != "" {
+		cmd.Flags().Uint64P(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Uint64(flagName, defaultVal, description)
+	}
+}
+
+// bindFloat32Flag binds a float32 flag to the command.
+func bindFloat32Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetFloat64(fieldPath) // Viper only has Float64
+	if shortName != "" {
+		cmd.Flags().Float32P(flagName, shortName, float32(defaultVal), description)
+	} else {
+		cmd.Flags().Float32(flagName, float32(defaultVal), description)
+	}
+}
+
+// bindFloat64Flag binds a float64 flag to the command.
+func bindFloat64Flag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetFloat64(fieldPath)
+	if shortName != "" {
+		cmd.Flags().Float64P(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Float64(flagName, defaultVal, description)
+	}
+}
+
+// bindDurationFlag binds a time.Duration flag to the command.
+func bindDurationFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetDuration(fieldPath)
+	if shortName != "" {
+		cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Duration(flagName, defaultVal, description)
+	}
+}
+
+// bindStringSliceFlag binds a []string flag to the command.
+func bindStringSliceFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetStringSlice(fieldPath)
+	if shortName != "" {
+		cmd.Flags().StringSliceP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().StringSlice(flagName, defaultVal, description)
+	}
+}
+
+// bindIntSliceFlag binds a []int flag to the command.
+func bindIntSliceFlag(cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string) {
+	defaultVal := manager.viper.GetIntSlice(fieldPath)
+	if shortName != "" {
+		cmd.Flags().IntSliceP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().IntSlice(flagName, defaultVal, description)
+	}
+}
+
+// bindMetav1DurationFlag binds a metav1.Duration flag to the command.
+func bindMetav1DurationFlag(
+	cmd *cobra.Command,
+	manager *Manager,
+	flagName, shortName, description, fieldPath string,
+	defaultValue any,
+) {
+	// Handle metav1.Duration specially as it's not a standard Duration
+	var defaultVal time.Duration
+	if defaultValue != nil {
+		if metaDur, ok := defaultValue.(metav1.Duration); ok {
+			defaultVal = metaDur.Duration
 		}
+	} else {
+		defaultVal = manager.viper.GetDuration(fieldPath)
+	}
 
-		if shortName != "" {
-			usedShorthands[shortName] = true
-		}
-
-		// Check if the field implements pflag.Value interface for custom types
-		if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {
-			// Set default value from field selector or Viper defaults
-			if defaultValue != nil {
-				// Convert custom types to string for pflag.Value.Set()
-				switch val := defaultValue.(type) {
-				case v1alpha1.Distribution:
-					_ = pflagValue.Set(string(val))
-				case v1alpha1.ReconciliationTool:
-					_ = pflagValue.Set(string(val))
-				case v1alpha1.CNI:
-					_ = pflagValue.Set(string(val))
-				case v1alpha1.CSI:
-					_ = pflagValue.Set(string(val))
-				case v1alpha1.IngressController:
-					_ = pflagValue.Set(string(val))
-				case v1alpha1.GatewayController:
-					_ = pflagValue.Set(string(val))
-				default:
-					if str, ok := val.(string); ok {
-						_ = pflagValue.Set(str)
-					}
-				}
-			} else {
-				// Fallback to Viper defaults
-				defaultVal := manager.viper.GetString(fieldPath)
-				if defaultVal != "" {
-					_ = pflagValue.Set(defaultVal)
-				}
-			}
-
-			// Use Var/VarP for custom pflag types (provides automatic validation and help)
-			if shortName != "" {
-				cmd.Flags().VarP(pflagValue, flagName, shortName, description)
-			} else {
-				cmd.Flags().Var(pflagValue, flagName, description)
-			}
-		} else {
-			// Auto-detect type and use appropriate pflag method
-			switch fieldPtr.(type) {
-			case *string:
-				var defaultVal string
-				if defaultValue != nil {
-					if str, ok := defaultValue.(string); ok {
-						defaultVal = str
-					}
-				} else {
-					defaultVal = manager.viper.GetString(fieldPath)
-				}
-
-				if shortName != "" {
-					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().String(flagName, defaultVal, description)
-				}
-			case *bool:
-				var defaultVal bool
-				if defaultValue != nil {
-					if b, ok := defaultValue.(bool); ok {
-						defaultVal = b
-					}
-				} else {
-					defaultVal = manager.viper.GetBool(fieldPath)
-				}
-
-				if shortName != "" {
-					cmd.Flags().BoolP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Bool(flagName, defaultVal, description)
-				}
-			case *int:
-				defaultVal := manager.viper.GetInt(fieldPath)
-				if shortName != "" {
-					cmd.Flags().IntP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Int(flagName, defaultVal, description)
-				}
-			case *int32:
-				defaultVal := manager.viper.GetInt32(fieldPath)
-				if shortName != "" {
-					cmd.Flags().Int32P(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Int32(flagName, defaultVal, description)
-				}
-			case *int64:
-				defaultVal := manager.viper.GetInt64(fieldPath)
-				if shortName != "" {
-					cmd.Flags().Int64P(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Int64(flagName, defaultVal, description)
-				}
-			case *uint:
-				defaultVal := manager.viper.GetUint(fieldPath)
-				if shortName != "" {
-					cmd.Flags().UintP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Uint(flagName, defaultVal, description)
-				}
-			case *uint32:
-				defaultVal := manager.viper.GetUint32(fieldPath)
-				if shortName != "" {
-					cmd.Flags().Uint32P(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Uint32(flagName, defaultVal, description)
-				}
-			case *uint64:
-				defaultVal := manager.viper.GetUint64(fieldPath)
-				if shortName != "" {
-					cmd.Flags().Uint64P(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Uint64(flagName, defaultVal, description)
-				}
-			case *float32:
-				defaultVal := manager.viper.GetFloat64(fieldPath) // Viper only has Float64
-				if shortName != "" {
-					cmd.Flags().Float32P(flagName, shortName, float32(defaultVal), description)
-				} else {
-					cmd.Flags().Float32(flagName, float32(defaultVal), description)
-				}
-			case *float64:
-				defaultVal := manager.viper.GetFloat64(fieldPath)
-				if shortName != "" {
-					cmd.Flags().Float64P(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Float64(flagName, defaultVal, description)
-				}
-			case *time.Duration:
-				defaultVal := manager.viper.GetDuration(fieldPath)
-				if shortName != "" {
-					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Duration(flagName, defaultVal, description)
-				}
-			case *[]string:
-				defaultVal := manager.viper.GetStringSlice(fieldPath)
-				if shortName != "" {
-					cmd.Flags().StringSliceP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().StringSlice(flagName, defaultVal, description)
-				}
-			case *[]int:
-				defaultVal := manager.viper.GetIntSlice(fieldPath)
-				if shortName != "" {
-					cmd.Flags().IntSliceP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().IntSlice(flagName, defaultVal, description)
-				}
-			case *metav1.Duration:
-				// Handle metav1.Duration specially as it's not a standard Duration
-				var defaultVal time.Duration
-				if defaultValue != nil {
-					if metaDur, ok := defaultValue.(metav1.Duration); ok {
-						defaultVal = metaDur.Duration
-					}
-				} else {
-					defaultVal = manager.viper.GetDuration(fieldPath)
-				}
-
-				if shortName != "" {
-					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().Duration(flagName, defaultVal, description)
-				}
-			default:
-				// Fallback to string for unknown types
-				defaultVal := manager.viper.GetString(fieldPath)
-				if shortName != "" {
-					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
-				} else {
-					cmd.Flags().String(flagName, defaultVal, description)
-				}
-			}
-		}
-
-		// Bind flag to the hierarchical path (for consistent config file access)
-		// This ensures CLI flags, environment variables, and config files all use the same key
-		_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
+	if shortName != "" {
+		cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
+	} else {
+		cmd.Flags().Duration(flagName, defaultVal, description)
 	}
 }
 
@@ -335,7 +512,9 @@ func findFieldPathByAddressAndType(
 
 		// If this is a struct, recurse into it
 		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
-			result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, false)
+			result := findFieldPathByAddressAndType(
+				field, field.Type(), targetAddr, targetType, currentPath, false,
+			)
 			if result != "" {
 				return result
 			}
@@ -347,7 +526,8 @@ func findFieldPathByAddressAndType(
 
 // isTimeType checks if a type is a time-related type that shouldn't be recursed into.
 func isTimeType(t reflect.Type) bool {
-	return t == reflect.TypeOf(time.Time{}) || t == reflect.TypeOf(metav1.Duration{})
+	return t == reflect.TypeOf(time.Time{}) ||
+		t == reflect.TypeOf(metav1.Duration{}) //nolint:exhaustruct
 }
 
 // pathToFlagName converts a hierarchical field path to a CLI flag name using the last field only.
@@ -387,7 +567,7 @@ func camelToKebab(s string) string {
 // Note: Cobra only supports single-character shortnames, so we use the first letter of the first word.
 func generateShortName(longName string) string {
 	const minShortnameLength = 3
-	
+
 	// Don't create shortnames for flags shorter than the minimum length
 	if len(longName) <= minShortnameLength {
 		return ""

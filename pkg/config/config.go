@@ -59,7 +59,7 @@ func NewCobraCommand(
 	manager := NewManager(fieldSelectors...)
 
 	// Create the base command
-	cmd := &cobra.Command{
+	cmd := &cobra.Command{ //nolint:exhaustruct // Only setting needed fields
 		Use:   use,
 		Short: short,
 		Long:  long,

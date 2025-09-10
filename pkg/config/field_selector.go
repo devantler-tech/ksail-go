@@ -69,7 +69,7 @@ func AddFlagsFromFields(
 	fieldSelector func(*v1alpha1.Cluster) []any,
 ) []FieldSelector[v1alpha1.Cluster] {
 	// Create a reference instance for field discovery
-	ref := &v1alpha1.Cluster{}
+	ref := &v1alpha1.Cluster{} //nolint:exhaustruct // Only used for reflection, empty is correct
 	items := fieldSelector(ref)
 
 	var selectors []FieldSelector[v1alpha1.Cluster]
@@ -215,7 +215,7 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 
 // handleMetav1Duration handles conversion for metav1.Duration type.
 func handleMetav1Duration(value any, targetType reflect.Type) any {
-	if targetType != reflect.TypeOf(metav1.Duration{}) {
+	if targetType != reflect.TypeOf(metav1.Duration{}) { //nolint:exhaustruct
 		return nil
 	}
 
@@ -227,10 +227,12 @@ func handleMetav1Duration(value any, targetType reflect.Type) any {
 		if err == nil {
 			return metav1.Duration{Duration: duration}
 		}
+
 		return metav1.Duration{Duration: defaultDurationTimeout}
 	case metav1.Duration:
 		return val
 	}
+
 	return metav1.Duration{Duration: defaultDurationTimeout}
 }
 
@@ -272,6 +274,7 @@ func getEnumDefault(targetType reflect.Type) any {
 	case reflect.TypeOf(v1alpha1.GatewayController("")):
 		return v1alpha1.GatewayControllerDefault
 	}
+
 	return nil
 }
 
