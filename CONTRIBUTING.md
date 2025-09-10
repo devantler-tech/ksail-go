@@ -61,7 +61,7 @@ go test ./...
 
 > **Note**: Pre-commit hooks are automatically executed for user pushes through the [pre-commit.ci](https://pre-commit.ci/) GitHub app, which validates and runs these hooks if you forget to configure them locally or push without hooks enabled. This automatic execution only applies to user pushes and not bot pushes.
 
-KSail uses pre-commit hooks to ensure code quality and consistency before commits through the [pre-commit.ci](https://pre-commit.ci/) GitHub app integration.
+KSail uses pre-commit hooks to ensure code quality and consistency before commits are made. This is done via the [pre-commit framework](https://pre-commit.com/). Active hooks are defined in the `.pre-commit-config.yaml` file:
 
 A pre-commit hook automatically ensures mockery is installed and runs it before each commit to keep mocks up-to-date. For best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
 
@@ -87,7 +87,7 @@ go test ./...
 
 #### Integration Tests
 
-Integration tests validate component interactions and mock integrations within the codebase.
+*KSail currently does not define integration tests.*
 
 #### System Tests
 
