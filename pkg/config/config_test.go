@@ -108,7 +108,7 @@ spec:
     context: config-context
     timeout: 60s
 `
-	err := os.WriteFile("ksail.yaml", []byte(configContent), 0600)
+	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	manager := config.NewManager()
@@ -145,7 +145,7 @@ spec:
     kubeconfig: /config/path/kubeconfig
     context: config-context
 `
-	err := os.WriteFile("ksail.yaml", []byte(configContent), 0600)
+	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Set environment variables (should override config file)
@@ -162,9 +162,9 @@ spec:
 	require.NoError(t, err)
 
 	// Test precedence: env vars override config file
-	assert.Equal(t, "env-cluster", cluster.Metadata.Name)                          // From env var
-	assert.Equal(t, "/env/path/kubeconfig", cluster.Spec.Connection.Kubeconfig)     // From env var
-	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)           // From config file
-	assert.Equal(t, "config-k8s", cluster.Spec.SourceDirectory)                    // From config file
-	assert.Equal(t, "config-context", cluster.Spec.Connection.Context)             // From config file
+	assert.Equal(t, "env-cluster", cluster.Metadata.Name)                       // From env var
+	assert.Equal(t, "/env/path/kubeconfig", cluster.Spec.Connection.Kubeconfig) // From env var
+	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)        // From config file
+	assert.Equal(t, "config-k8s", cluster.Spec.SourceDirectory)                 // From config file
+	assert.Equal(t, "config-context", cluster.Spec.Connection.Context)          // From config file
 }
