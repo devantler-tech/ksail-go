@@ -19,6 +19,7 @@ func bindFieldSelectors(
 ) {
 	// Create a dummy cluster to introspect field paths
 	dummy := &v1alpha1.Cluster{}
+	usedShorthands := make(map[string]bool)
 
 	for _, fieldSelector := range fieldSelectors {
 		// Get the field reference from the selector
@@ -55,8 +56,14 @@ func bindFieldSelectors(
 			defaultValue = fieldSelector.defaultValue
 		}
 
-		// Add shortname flag if appropriate
+		// Add shortname flag if appropriate and not conflicting
 		shortName := generateShortName(flagName)
+		if shortName != "" && usedShorthands[shortName] {
+			shortName = "" // Avoid conflicts by not using shorthand
+		}
+		if shortName != "" {
+			usedShorthands[shortName] = true
+		}
 
 		// Check if the field implements pflag.Value interface for custom types
 		if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {

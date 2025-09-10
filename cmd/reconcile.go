@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -15,12 +16,33 @@ func NewReconcileCmd() *cobra.Command {
 		`Reconcile workloads in the cluster to match the desired state
 defined in configuration files.`,
 		handleReconcileRunE,
+		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+			return []any{
+				&c.Spec.ReconciliationTool, "Tool to use for reconciling workloads",
+				&c.Spec.SourceDirectory, "Directory containing workloads to reconcile",
+				&c.Spec.Connection.Context, "Kubernetes context to reconcile workloads in",
+				&c.Spec.Connection.Kubeconfig, "Path to kubeconfig file",
+			}
+		})...,
 	)
 }
 
 // handleReconcileRunE handles the reconcile command.
-func handleReconcileRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
+func handleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+	// Load the full cluster configuration (Viper handles all precedence automatically)
+	cluster, err := configManager.LoadCluster()
+	if err != nil {
+		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+		return err
+	}
+
 	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
+	notify.Activityln(cmd.OutOrStdout(),
+		"Reconciliation tool: "+string(cluster.Spec.ReconciliationTool))
+	notify.Activityln(cmd.OutOrStdout(),
+		"Source directory: "+cluster.Spec.SourceDirectory)
+	notify.Activityln(cmd.OutOrStdout(),
+		"Context: "+cluster.Spec.Connection.Context)
 
 	return nil
 }

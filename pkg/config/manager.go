@@ -17,13 +17,11 @@ type Manager struct {
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 }
 
-// NewManager creates a new configuration manager.
+// NewManager creates a new configuration manager with no field selectors.
+// This is used when commands don't need any configuration fields.
 func NewManager() *Manager {
 	v := initializeViper()
 	defaultCluster := v1alpha1.NewDefaultCluster()
-
-	// For backward compatibility, set all defaults when no field selectors are provided
-	setViperDefaultsFromAllFields(v, defaultCluster)
 
 	return &Manager{
 		viper:          v,
@@ -39,13 +37,10 @@ func NewManagerWithFieldSelectors(fieldSelectors []FieldSelector[v1alpha1.Cluste
 	v := initializeViper()
 	defaultCluster := v1alpha1.NewDefaultCluster()
 
+	// Only set Viper defaults for the fields specified by field selectors
+	// This achieves true zero-maintenance by reusing the same field selectors
 	if len(fieldSelectors) > 0 {
-		// Only set Viper defaults for the fields specified by field selectors
-		// This achieves true zero-maintenance by reusing the same field selectors
 		setViperDefaultsFromFieldSelectors(v, defaultCluster, fieldSelectors)
-	} else {
-		// When no field selectors are provided, fall back to all fields for backward compatibility
-		setViperDefaultsFromAllFields(v, defaultCluster)
 	}
 
 	return &Manager{
@@ -153,115 +148,17 @@ func getValueFromFieldPointer(fieldPtr any) any {
 	return elem.Interface()
 }
 
-// setViperDefaultsFromAllFields sets all configuration defaults in Viper for backward compatibility.
-// This is used when no field selectors are provided.
-func setViperDefaultsFromAllFields(v *viper.Viper, defaultCluster *v1alpha1.Cluster) {
-	// Get all field selectors from the default cluster
-	configDefaults := getConfigDefaultsFromCluster(defaultCluster)
 
-	for _, configDefault := range configDefaults {
-		// Get the path dynamically from the field selector
-		path := getFieldPathFromPointer(configDefault.FieldPtr, defaultCluster)
-
-		// Convert typed default value to appropriate format for Viper
-		var viperValue any
-		switch val := configDefault.DefaultValue.(type) {
-		case v1alpha1.Distribution:
-			viperValue = string(val)
-		case v1alpha1.ReconciliationTool:
-			viperValue = string(val)
-		case v1alpha1.CNI:
-			viperValue = string(val)
-		case v1alpha1.CSI:
-			viperValue = string(val)
-		case v1alpha1.IngressController:
-			viperValue = string(val)
-		case v1alpha1.GatewayController:
-			viperValue = string(val)
-		default:
-			viperValue = val
-		}
-
-		v.SetDefault(path, viperValue)
-	}
-}
-
-// configDefaultEntry represents a configuration field with its default value.
-type configDefaultEntry struct {
-	FieldPtr     any
-	DefaultValue any
-}
-
-// getConfigDefaultsFromCluster extracts configuration defaults from a default cluster instance.
-func getConfigDefaultsFromCluster(defaultCluster *v1alpha1.Cluster) []configDefaultEntry {
-	return []configDefaultEntry{
-		// Metadata defaults
-		{
-			FieldPtr:     &defaultCluster.Metadata.Name,
-			DefaultValue: defaultCluster.Metadata.Name,
-		},
-
-		// Spec defaults
-		{
-			FieldPtr:     &defaultCluster.Spec.DistributionConfig,
-			DefaultValue: defaultCluster.Spec.DistributionConfig,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.SourceDirectory,
-			DefaultValue: defaultCluster.Spec.SourceDirectory,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.Distribution,
-			DefaultValue: defaultCluster.Spec.Distribution,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.ReconciliationTool,
-			DefaultValue: defaultCluster.Spec.ReconciliationTool,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.CNI,
-			DefaultValue: defaultCluster.Spec.CNI,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.CSI,
-			DefaultValue: defaultCluster.Spec.CSI,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.IngressController,
-			DefaultValue: defaultCluster.Spec.IngressController,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.GatewayController,
-			DefaultValue: defaultCluster.Spec.GatewayController,
-		},
-
-		// Connection defaults
-		{
-			FieldPtr:     &defaultCluster.Spec.Connection.Kubeconfig,
-			DefaultValue: defaultCluster.Spec.Connection.Kubeconfig,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.Connection.Context,
-			DefaultValue: defaultCluster.Spec.Connection.Context,
-		},
-		{
-			FieldPtr:     &defaultCluster.Spec.Connection.Timeout,
-			DefaultValue: defaultCluster.Spec.Connection.Timeout,
-		},
-	}
-}
 
 // setClusterFromConfig applies configuration values to the cluster.
 // This overlays configuration values from Viper onto the cluster that already has defaults.
 func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 	if len(m.fieldSelectors) > 0 {
-		// When field selectors are provided, only apply configuration for those specific fields
+		// Apply configuration for the specified field selectors
 		// This achieves true zero-maintenance by reusing the same field selectors
 		m.setClusterFromFieldSelectors(cluster)
-	} else {
-		// Fallback to applying all configuration for backward compatibility
-		m.setClusterFromAllDefaults(cluster)
 	}
+	// No fallback - commands must specify their field requirements
 }
 
 // setClusterFromFieldSelectors applies configuration values using the specified field selectors.
@@ -291,25 +188,7 @@ func (m *Manager) setClusterFromFieldSelectors(cluster *v1alpha1.Cluster) {
 	}
 }
 
-// setClusterFromAllDefaults applies all default configuration values.
-func (m *Manager) setClusterFromAllDefaults(cluster *v1alpha1.Cluster) {
-	// Get all field mappings from the default cluster
-	configDefaults := getConfigDefaultsFromCluster(m.defaultCluster)
 
-	for _, configDefault := range configDefaults {
-		// Get the path from the field pointer
-		path := getFieldPathFromPointer(configDefault.FieldPtr, m.defaultCluster)
-
-		// Get value from Viper and set it in the cluster
-		value := m.getTypedValueFromViperByPath(path, cluster)
-		
-		// Get the corresponding field pointer in the target cluster instance
-		targetFieldPtr := getFieldByPath(cluster, path)
-		if targetFieldPtr != nil {
-			m.setValueAtFieldPointer(cluster, targetFieldPtr, value)
-		}
-	}
-}
 
 // setValueAtFieldPointer sets a value at the field location specified by the field pointer.
 func (m *Manager) setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any, value any) {
