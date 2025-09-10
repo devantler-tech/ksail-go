@@ -85,20 +85,20 @@ func AddFlagsFromFields(
 	i := 0
 	for i < len(items) {
 		fieldPtr := items[i]
-		
+
 		// Start with field only
 		selector := FieldSelector[v1alpha1.Cluster]{
 			selector:     createFieldSelectorFromPointer(fieldPtr, ref),
 			description:  "",
 			defaultValue: nil,
 		}
-		
+
 		// Check if next item is a description (string)
 		if i+1 < len(items) {
 			if desc, ok := items[i+1].(string); ok {
 				selector.description = desc
 				i++ // consume description
-				
+
 				// Check if there's a default value after description
 				if i+1 < len(items) {
 					// If next item is not a pointer (field), it's likely a default value
@@ -110,7 +110,7 @@ func AddFlagsFromFields(
 				}
 			}
 		}
-		
+
 		selectors = append(selectors, selector)
 		i++ // move to next field
 	}
@@ -145,12 +145,19 @@ func getFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
 	// Get the address and type of the field
 	fieldAddr := fieldVal.Pointer()
 	fieldType := fieldVal.Type()
-	
+
 	// Walk the cluster structure to find the field with this address and type
 	refVal := reflect.ValueOf(ref).Elem()
-	
+
 	// Get path in original case then convert to lowercase for Viper
-	originalPath := findFieldPathByAddressAndType(refVal, reflect.TypeOf(ref).Elem(), fieldAddr, fieldType, "", false)
+	originalPath := findFieldPathByAddressAndType(
+		refVal,
+		reflect.TypeOf(ref).Elem(),
+		fieldAddr,
+		fieldType,
+		"",
+		false,
+	)
 	return strings.ToLower(originalPath)
 }
 
@@ -199,7 +206,7 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 	if value == nil {
 		return nil
 	}
-	
+
 	// Handle metav1.Duration specially - it has a time.Duration field
 	if targetType == reflect.TypeOf(metav1.Duration{}) {
 		switch v := value.(type) {
@@ -215,7 +222,7 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 		}
 		return metav1.Duration{Duration: 5 * time.Minute}
 	}
-	
+
 	// Handle string values from Viper
 	if strVal, ok := value.(string); ok {
 		switch targetType {
@@ -243,19 +250,17 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 			return strVal
 		}
 	}
-	
+
 	// Handle other types (direct assignment)
 	if reflect.TypeOf(value) == targetType {
 		return value
 	}
-	
+
 	// Fallback: try to convert using reflection
 	valueVal := reflect.ValueOf(value)
 	if valueVal.Type().ConvertibleTo(targetType) {
 		return valueVal.Convert(targetType).Interface()
 	}
-	
+
 	return value
 }
-
-

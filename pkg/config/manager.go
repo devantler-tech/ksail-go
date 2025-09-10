@@ -21,10 +21,10 @@ type Manager struct {
 func NewManager() *Manager {
 	v := initializeViper()
 	defaultCluster := v1alpha1.NewDefaultCluster()
-	
+
 	// Set all defaults using the default cluster instance
 	setViperDefaultsFromCluster(v, defaultCluster)
-	
+
 	return &Manager{
 		viper:          v,
 		cluster:        nil,
@@ -78,7 +78,7 @@ func setViperDefaultsFromCluster(v *viper.Viper, defaultCluster *v1alpha1.Cluste
 	for _, configDefault := range configDefaults {
 		// Get the path dynamically from the field selector
 		path := getFieldPathFromPointer(configDefault.FieldPtr, defaultCluster)
-		
+
 		// Convert typed default value to appropriate format for Viper
 		var viperValue any
 		switch val := configDefault.DefaultValue.(type) {
@@ -175,7 +175,7 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 	for _, configDefault := range configDefaults {
 		// Get the path from the field pointer
 		path := getFieldPathFromPointer(configDefault.FieldPtr, m.defaultCluster)
-		
+
 		// Get value from Viper and set it in the cluster
 		value := m.getTypedValueFromViperByPath(path, cluster)
 		setValueAtFieldPointer(cluster, configDefault.FieldPtr, m.defaultCluster, value)
@@ -183,25 +183,30 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 }
 
 // setValueAtFieldPointer sets a value at the field location specified by the field pointer.
-func setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any, ref *v1alpha1.Cluster, value any) {
+func setValueAtFieldPointer(
+	cluster *v1alpha1.Cluster,
+	fieldPtr any,
+	ref *v1alpha1.Cluster,
+	value any,
+) {
 	// Get the field path to determine where to set the value
 	path := getFieldPathFromPointer(fieldPtr, ref)
 	if path == "" {
 		return
 	}
-	
+
 	// Use the existing getFieldByPath function to navigate to the field
 	targetFieldPtr := getFieldByPath(cluster, path)
 	if targetFieldPtr == nil {
 		return
 	}
-	
+
 	// Set the value using reflection
 	fieldVal := reflect.ValueOf(targetFieldPtr)
 	if fieldVal.Kind() != reflect.Ptr || !fieldVal.Elem().CanSet() {
 		return
 	}
-	
+
 	// Convert and set the value
 	targetField := fieldVal.Elem()
 	convertedValue := convertValueToFieldType(value, targetField.Type())
@@ -209,7 +214,6 @@ func setValueAtFieldPointer(cluster *v1alpha1.Cluster, fieldPtr any, ref *v1alph
 		targetField.Set(reflect.ValueOf(convertedValue))
 	}
 }
-
 
 // getTypedValueFromViperByPath retrieves a properly typed value from Viper based on the path.
 func (m *Manager) getTypedValueFromViperByPath(path string, cluster *v1alpha1.Cluster) any {
@@ -219,17 +223,17 @@ func (m *Manager) getTypedValueFromViperByPath(path string, cluster *v1alpha1.Cl
 		// Fallback to string for unknown paths
 		return m.viper.GetString(path)
 	}
-	
+
 	fieldVal := reflect.ValueOf(targetFieldPtr)
 	if fieldVal.Kind() != reflect.Ptr {
 		return m.viper.GetString(path)
 	}
-	
+
 	fieldType := fieldVal.Elem().Type()
-	
+
 	// Get the value from Viper based on the field type
 	rawValue := m.getValueFromViperByType(path, fieldType)
-	
+
 	// Convert the value to the appropriate type
 	return convertValueToFieldType(rawValue, fieldType)
 }

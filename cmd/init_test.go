@@ -84,7 +84,7 @@ func TestInitCmd_Flags(t *testing.T) {
 		t.Fatal("expected source-directory flag to exist")
 	}
 
-	// Source directory should show its default value  
+	// Source directory should show its default value
 	if sourceDirectoryFlag.DefValue != "k8s" {
 		t.Fatalf(
 			"expected source-directory default to be 'k8s' for help display, got %q",

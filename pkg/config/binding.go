@@ -57,10 +57,10 @@ func bindFieldSelectors(
 
 		// Add shortname flag if appropriate
 		shortName := generateShortName(flagName)
-		
+
 		// Check if the field implements pflag.Value interface for custom types
 		if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {
-			// Set default value from field selector or Viper defaults 
+			// Set default value from field selector or Viper defaults
 			if defaultValue != nil {
 				// Convert custom types to string for pflag.Value.Set()
 				switch val := defaultValue.(type) {
@@ -88,7 +88,7 @@ func bindFieldSelectors(
 					_ = pflagValue.Set(defaultVal)
 				}
 			}
-			
+
 			// Use Var/VarP for custom pflag types (provides automatic validation and help)
 			if shortName != "" {
 				cmd.Flags().VarP(pflagValue, flagName, shortName, description)
@@ -239,13 +239,20 @@ func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
 	// Get the address and type of the field
 	fieldAddr := fieldVal.Pointer()
 	fieldType := fieldVal.Type()
-	
+
 	// Walk the cluster structure to find the field with this address and type
 	clusterVal := reflect.ValueOf(cluster).Elem()
-	
+
 	// Get the field path in original case first
-	originalPath := findFieldPathByAddressAndType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldAddr, fieldType, "", false)
-	
+	originalPath := findFieldPathByAddressAndType(
+		clusterVal,
+		reflect.TypeOf(cluster).Elem(),
+		fieldAddr,
+		fieldType,
+		"",
+		false,
+	)
+
 	// Convert to lowercase for Viper compatibility
 	return strings.ToLower(originalPath)
 }
@@ -261,12 +268,19 @@ func getFieldPathPreservingCase(cluster *v1alpha1.Cluster, fieldPtr any) string 
 	// Get the address and type of the field
 	fieldAddr := fieldVal.Pointer()
 	fieldType := fieldVal.Type()
-	
+
 	// Walk the cluster structure to find the field with this address and type
 	clusterVal := reflect.ValueOf(cluster).Elem()
-	
+
 	// Return the field path in original case
-	return findFieldPathByAddressAndType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldAddr, fieldType, "", true)
+	return findFieldPathByAddressAndType(
+		clusterVal,
+		reflect.TypeOf(cluster).Elem(),
+		fieldAddr,
+		fieldType,
+		"",
+		true,
+	)
 }
 
 // findFieldPathByAddressAndType recursively searches for a field's path by comparing memory addresses and types.
@@ -296,7 +310,8 @@ func findFieldPathByAddressAndType(
 		}
 
 		// Check if this field's address AND type matches our target
-		if field.CanAddr() && field.Addr().Pointer() == targetAddr && field.Addr().Type() == targetType {
+		if field.CanAddr() && field.Addr().Pointer() == targetAddr &&
+			field.Addr().Type() == targetType {
 			return currentPath
 		}
 
