@@ -195,9 +195,9 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 }
 
 // ConfigDefault represents a configuration default with a type-safe field selector and default value.
+// SetValue is automatically inferred from the field selector using reflection - no manual implementation needed.
 type ConfigDefault struct {
 	FieldSelector func(*v1alpha1.Cluster) any
-	SetValue      func(*v1alpha1.Cluster, any)
 	DefaultValue  any
 }
 
@@ -209,73 +209,153 @@ func (cd *ConfigDefault) GetPath() string {
 	return getFieldPath(dummy, fieldPtr)
 }
 
+// SetValue automatically sets the value in the cluster using reflection and the field selector.
+// This eliminates the need for manual SetValue functions - the system infers how to set values
+// based on the field type and location.
+func (cd *ConfigDefault) SetValue(cluster *v1alpha1.Cluster, value any) {
+	// Get the field pointer from the field selector
+	fieldPtr := cd.FieldSelector(cluster)
+	
+	// Use reflection to set the value
+	if fieldPtr == nil {
+		return
+	}
+	
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr || !fieldVal.Elem().CanSet() {
+		return
+	}
+	
+	// Get the target field
+	targetField := fieldVal.Elem()
+	
+	// Convert the value to the appropriate type and set it
+	convertedValue := convertValueToFieldType(value, targetField.Type())
+	if convertedValue != nil {
+		targetField.Set(reflect.ValueOf(convertedValue))
+	}
+}
+
+// convertValueToFieldType converts a value from Viper to the appropriate field type.
+func convertValueToFieldType(value any, targetType reflect.Type) any {
+	if value == nil {
+		return nil
+	}
+	
+	// Handle metav1.Duration specially - it has a time.Duration field
+	if targetType == reflect.TypeOf(metav1.Duration{}) {
+		switch v := value.(type) {
+		case time.Duration:
+			return metav1.Duration{Duration: v}
+		case string:
+			if duration, err := time.ParseDuration(v); err == nil {
+				return metav1.Duration{Duration: duration}
+			}
+			return metav1.Duration{Duration: 5 * time.Minute}
+		case metav1.Duration:
+			return v
+		}
+		return metav1.Duration{Duration: 5 * time.Minute}
+	}
+	
+	// Handle string values from Viper
+	if strVal, ok := value.(string); ok {
+		switch targetType {
+		case reflect.TypeOf(v1alpha1.Distribution("")):
+			var dist v1alpha1.Distribution
+			if err := dist.Set(strVal); err == nil {
+				return dist
+			}
+			return v1alpha1.DistributionKind
+		case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
+			var tool v1alpha1.ReconciliationTool
+			if err := tool.Set(strVal); err == nil {
+				return tool
+			}
+			return v1alpha1.ReconciliationToolKubectl
+		case reflect.TypeOf(v1alpha1.CNI("")):
+			return v1alpha1.CNI(strVal)
+		case reflect.TypeOf(v1alpha1.CSI("")):
+			return v1alpha1.CSI(strVal)
+		case reflect.TypeOf(v1alpha1.IngressController("")):
+			return v1alpha1.IngressController(strVal)
+		case reflect.TypeOf(v1alpha1.GatewayController("")):
+			return v1alpha1.GatewayController(strVal)
+		case reflect.TypeOf(""):
+			return strVal
+		}
+	}
+	
+	// Handle other types (direct assignment)
+	if reflect.TypeOf(value) == targetType {
+		return value
+	}
+	
+	// Fallback: try to convert using reflection
+	valueVal := reflect.ValueOf(value)
+	if valueVal.Type().ConvertibleTo(targetType) {
+		return valueVal.Convert(targetType).Interface()
+	}
+	
+	return value
+}
+
 // GetConfigDefaults returns all configuration defaults using type-safe field selectors.
 // This eliminates hardcoded paths and provides true type-safe default configuration.
+// SetValue is automatically inferred from field selectors using reflection.
 func GetConfigDefaults() []ConfigDefault {
 	return []ConfigDefault{
 		// Metadata defaults
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Metadata.Name = val.(string) },
 			DefaultValue:  "ksail-default",
 		},
 
 		// Spec defaults
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.DistributionConfig = val.(string) },
 			DefaultValue:  "kind.yaml",
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.SourceDirectory = val.(string) },
 			DefaultValue:  "k8s",
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.Distribution = val.(v1alpha1.Distribution) },
 			DefaultValue:  v1alpha1.DistributionKind,
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.ReconciliationTool = val.(v1alpha1.ReconciliationTool) },
 			DefaultValue:  v1alpha1.ReconciliationToolKubectl,
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.CNI = val.(v1alpha1.CNI) },
 			DefaultValue:  v1alpha1.CNIDefault,
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.CSI = val.(v1alpha1.CSI) },
 			DefaultValue:  v1alpha1.CSIDefault,
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.IngressController = val.(v1alpha1.IngressController) },
 			DefaultValue:  v1alpha1.IngressControllerDefault,
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.GatewayController = val.(v1alpha1.GatewayController) },
 			DefaultValue:  v1alpha1.GatewayControllerDefault,
 		},
 
 		// Connection defaults
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.Connection.Kubeconfig = val.(string) },
 			DefaultValue:  "~/.kube/config",
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.Connection.Context = val.(string) },
 			DefaultValue:  "kind-ksail-default",
 		},
 		{
 			FieldSelector: func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-			SetValue:      func(c *v1alpha1.Cluster, val any) { c.Spec.Connection.Timeout = val.(metav1.Duration) },
 			DefaultValue:  metav1.Duration{Duration: 5 * time.Minute},
 		},
 	}

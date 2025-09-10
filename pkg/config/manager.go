@@ -1,6 +1,7 @@
 package config
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/internal/utils/k8s"
@@ -112,42 +113,72 @@ func (m *Manager) setClusterFromConfigDefaults(cluster *v1alpha1.Cluster) {
 }
 
 // getTypedValueFromViperByPath retrieves a properly typed value from Viper based on the path.
+// This now uses dynamic type inference instead of hardcoded paths.
 func (m *Manager) getTypedValueFromViperByPath(path string) any {
-	// Determine expected type based on path
-	switch path {
-	case "metadata.name", "spec.distributionconfig", "spec.sourcedirectory",
-		"spec.connection.kubeconfig", "spec.connection.context":
-		return m.viper.GetString(path)
-	case "spec.distribution":
-		distStr := m.viper.GetString(path)
-		var distribution v1alpha1.Distribution
-		if err := distribution.Set(distStr); err == nil {
-			return distribution
+	// Find the corresponding ConfigDefault to determine the expected type
+	configDefaults := GetConfigDefaults()
+	
+	for _, configDefault := range configDefaults {
+		if configDefault.GetPath() == path {
+			// Get the expected type from the field selector
+			dummy := &v1alpha1.Cluster{}
+			fieldPtr := configDefault.FieldSelector(dummy)
+			
+			if fieldPtr == nil {
+				continue
+			}
+			
+			fieldVal := reflect.ValueOf(fieldPtr)
+			if fieldVal.Kind() != reflect.Ptr {
+				continue
+			}
+			
+			fieldType := fieldVal.Elem().Type()
+			
+			// Get the value from Viper based on the field type
+			rawValue := m.getValueFromViperByType(path, fieldType)
+			
+			// Convert the value to the appropriate type
+			return convertValueToFieldType(rawValue, fieldType)
 		}
-		return v1alpha1.DistributionKind
-	case "spec.reconciliationtool":
-		toolStr := m.viper.GetString(path)
-		var tool v1alpha1.ReconciliationTool
-		if err := tool.Set(toolStr); err == nil {
-			return tool
-		}
-		return v1alpha1.ReconciliationToolKubectl
-	case "spec.cni":
-		return v1alpha1.CNI(m.viper.GetString(path))
-	case "spec.csi":
-		return v1alpha1.CSI(m.viper.GetString(path))
-	case "spec.ingresscontroller":
-		return v1alpha1.IngressController(m.viper.GetString(path))
-	case "spec.gatewaycontroller":
-		return v1alpha1.GatewayController(m.viper.GetString(path))
-	case "spec.connection.timeout":
-		timeoutStr := m.viper.GetString(path)
-		if duration, err := time.ParseDuration(timeoutStr); err == nil {
-			return metav1.Duration{Duration: duration}
-		}
-		return metav1.Duration{Duration: 5 * time.Minute}
+	}
+	
+	// Fallback to string for unknown paths
+	return m.viper.GetString(path)
+}
+
+// getValueFromViperByType retrieves a value from Viper using the appropriate method based on the field type.
+func (m *Manager) getValueFromViperByType(path string, fieldType reflect.Type) any {
+	switch fieldType {
+	case reflect.TypeOf(true):
+		return m.viper.GetBool(path)
+	case reflect.TypeOf(int(0)):
+		return m.viper.GetInt(path)
+	case reflect.TypeOf(int32(0)):
+		return m.viper.GetInt32(path)
+	case reflect.TypeOf(int64(0)):
+		return m.viper.GetInt64(path)
+	case reflect.TypeOf(uint(0)):
+		return m.viper.GetUint(path)
+	case reflect.TypeOf(uint32(0)):
+		return m.viper.GetUint32(path)
+	case reflect.TypeOf(uint64(0)):
+		return m.viper.GetUint64(path)
+	case reflect.TypeOf(float32(0)):
+		return float32(m.viper.GetFloat64(path))
+	case reflect.TypeOf(float64(0)):
+		return m.viper.GetFloat64(path)
+	case reflect.TypeOf(time.Duration(0)):
+		return m.viper.GetDuration(path)
+	case reflect.TypeOf([]string{}):
+		return m.viper.GetStringSlice(path)
+	case reflect.TypeOf([]int{}):
+		return m.viper.GetIntSlice(path)
+	case reflect.TypeOf(metav1.Duration{}):
+		return m.viper.GetDuration(path)
 	default:
-		// Fallback to string for unknown paths
+		// For all other types (including custom types), get as string
+		// The conversion function will handle the proper type conversion
 		return m.viper.GetString(path)
 	}
 }
