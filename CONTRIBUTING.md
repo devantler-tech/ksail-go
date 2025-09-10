@@ -63,11 +63,7 @@ go test ./...
 
 KSail uses pre-commit hooks to ensure code quality and consistency before commits through the [pre-commit.ci](https://pre-commit.ci/) GitHub app integration.
 
-#### Automatic Git Hooks
-
 A pre-commit hook automatically ensures mockery is installed and runs it before each commit to keep mocks up-to-date. For best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
-
-#### Pre-commit Framework Hooks
 
 If you use the [pre-commit framework](https://pre-commit.com/), the `.pre-commit-config.yaml` file defines additional hooks:
 
@@ -82,11 +78,24 @@ pre-commit install
 
 ### GitHub Workflows
 
+#### Unit Tests
+
+```sh
+# working-directory: ./
+go test ./...
+```
+
+#### Integration Tests
+
+Integration tests validate component interactions and mock integrations within the codebase.
+
 #### System Tests
 
 System tests are configured in a GitHub Actions workflow file located at `.github/workflows/ci.yaml`. These test e2e scenarios for various providers and configurations. You are unable to run these tests locally, but they are required in CI, so breaking changes will result in failed checks.
 
-#### Release Process
+## CD
+
+### Release Process
 
 The release process for KSail is fully-automated and relies on semantic versioning. When PRs are merged into the main branch, a new version is automatically released based on the name of the PR. The following conventions are used:
 
