@@ -70,10 +70,11 @@ func TestInitCmd_Flags(t *testing.T) {
 		t.Fatal("expected distribution flag to exist")
 	}
 
-	// Following Viper best practices: CLI flags should not have defaults
-	if distributionFlag.DefValue != "" {
+	// Verify that CLI flags show appropriate defaults for better UX
+	// Distribution should show its default value
+	if distributionFlag.DefValue != "Kind" {
 		t.Fatalf(
-			"expected distribution default to be empty (no CLI defaults), got %q",
+			"expected distribution default to be 'Kind' for help display, got %q",
 			distributionFlag.DefValue,
 		)
 	}
@@ -83,9 +84,10 @@ func TestInitCmd_Flags(t *testing.T) {
 		t.Fatal("expected source-directory flag to exist")
 	}
 
-	if sourceDirectoryFlag.DefValue != "" {
+	// Source directory should show its default value  
+	if sourceDirectoryFlag.DefValue != "k8s" {
 		t.Fatalf(
-			"expected source-directory default to be empty (no CLI defaults), got %q",
+			"expected source-directory default to be 'k8s' for help display, got %q",
 			sourceDirectoryFlag.DefValue,
 		)
 	}

@@ -17,7 +17,7 @@ func NewInitCmd() *cobra.Command {
 		handleInitRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
+				&c.Spec.Distribution, "Kubernetes distribution to use",
 				&c.Spec.SourceDirectory, "Directory containing workloads to deploy",
 			}
 		})...,

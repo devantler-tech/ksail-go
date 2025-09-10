@@ -7,6 +7,7 @@ import (
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -47,11 +48,29 @@ func bindFieldSelectors(
 
 		// Add shortname flag if appropriate
 		shortName := generateShortName(flagName)
-		if shortName != "" {
-			cmd.Flags().StringP(flagName, shortName, "", description)
+		
+		// Check if the field implements pflag.Value interface for custom types
+		if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {
+			// Set default value from Viper defaults BEFORE registering the flag
+			defaultVal := manager.viper.GetString(fieldPath)
+			if defaultVal != "" {
+				_ = pflagValue.Set(defaultVal)
+			}
+			
+			// Use Var/VarP for custom pflag types (provides automatic validation and help)
+			if shortName != "" {
+				cmd.Flags().VarP(pflagValue, flagName, shortName, description)
+			} else {
+				cmd.Flags().Var(pflagValue, flagName, description)
+			}
 		} else {
-			// Add string flag without shortname
-			cmd.Flags().String(flagName, "", description)
+			// Use regular string flags for basic types
+			defaultVal := manager.viper.GetString(fieldPath)
+			if shortName != "" {
+				cmd.Flags().StringP(flagName, shortName, defaultVal, description)
+			} else {
+				cmd.Flags().String(flagName, defaultVal, description)
+			}
 		}
 
 		// Bind flag to the hierarchical path (for consistent config file access)

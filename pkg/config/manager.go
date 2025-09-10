@@ -17,10 +17,36 @@ type Manager struct {
 
 // NewManager creates a new configuration manager.
 func NewManager() *Manager {
+	v := initializeViper()
+	
+	// Set all defaults immediately so they're available for flag registration
+	setViperDefaults(v)
+	
 	return &Manager{
-		viper:   initializeViper(),
+		viper:   v,
 		cluster: nil,
 	}
+}
+
+// setViperDefaults sets all configuration defaults in Viper.
+func setViperDefaults(v *viper.Viper) {
+	// Metadata defaults
+	v.SetDefault("metadata.name", "ksail-default")
+	
+	// Spec defaults
+	v.SetDefault("spec.distributionconfig", "kind.yaml")
+	v.SetDefault("spec.sourcedirectory", "k8s")
+	v.SetDefault("spec.distribution", string(v1alpha1.DistributionKind))
+	v.SetDefault("spec.reconciliationtool", string(v1alpha1.ReconciliationToolKubectl))
+	v.SetDefault("spec.cni", string(v1alpha1.CNIDefault))
+	v.SetDefault("spec.csi", string(v1alpha1.CSIDefault))
+	v.SetDefault("spec.ingresscontroller", string(v1alpha1.IngressControllerDefault))
+	v.SetDefault("spec.gatewaycontroller", string(v1alpha1.GatewayControllerDefault))
+	
+	// Connection defaults
+	v.SetDefault("spec.connection.kubeconfig", "~/.kube/config")
+	v.SetDefault("spec.connection.context", "kind-ksail-default")
+	v.SetDefault("spec.connection.timeout", "5m")
 }
 
 // LoadCluster loads the cluster configuration from files and environment variables.
@@ -58,26 +84,13 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 
 // setMetadataFromConfig sets metadata values from configuration with defaults.
 func (m *Manager) setMetadataFromConfig(cluster *v1alpha1.Cluster) {
-	// Set defaults in Viper if not already set
-	m.viper.SetDefault("metadata.name", "ksail-default")
-
-	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	// Defaults already set in NewManager, Viper handles precedence automatically
 	cluster.Metadata.Name = m.viper.GetString("metadata.name")
 }
 
 // setSpecFromConfig sets spec values from configuration with defaults.
 func (m *Manager) setSpecFromConfig(cluster *v1alpha1.Cluster) {
-	// Set defaults in Viper if not already set
-	m.viper.SetDefault("spec.distributionconfig", "kind.yaml")
-	m.viper.SetDefault("spec.sourcedirectory", "k8s")
-	m.viper.SetDefault("spec.distribution", string(v1alpha1.DistributionKind))
-	m.viper.SetDefault("spec.reconciliationtool", string(v1alpha1.ReconciliationToolKubectl))
-	m.viper.SetDefault("spec.cni", string(v1alpha1.CNIDefault))
-	m.viper.SetDefault("spec.csi", string(v1alpha1.CSIDefault))
-	m.viper.SetDefault("spec.ingresscontroller", string(v1alpha1.IngressControllerDefault))
-	m.viper.SetDefault("spec.gatewaycontroller", string(v1alpha1.GatewayControllerDefault))
-
-	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	// Defaults already set in NewManager, Viper handles precedence automatically
 	cluster.Spec.DistributionConfig = m.viper.GetString("spec.distributionconfig")
 	cluster.Spec.SourceDirectory = m.viper.GetString("spec.sourcedirectory")
 
@@ -114,12 +127,7 @@ const defaultConnectionTimeoutMinutes = 5
 
 // setConnectionFromConfig sets connection values from configuration with defaults.
 func (m *Manager) setConnectionFromConfig(cluster *v1alpha1.Cluster) {
-	// Set defaults in Viper if not already set
-	m.viper.SetDefault("spec.connection.kubeconfig", "~/.kube/config")
-	m.viper.SetDefault("spec.connection.context", "kind-ksail-default")
-	m.viper.SetDefault("spec.connection.timeout", "5m")
-
-	// Let Viper handle precedence automatically: flags > env vars > config file > defaults
+	// Defaults already set in NewManager, Viper handles precedence automatically
 	cluster.Spec.Connection.Kubeconfig = m.viper.GetString("spec.connection.kubeconfig")
 	cluster.Spec.Connection.Context = m.viper.GetString("spec.connection.context")
 
