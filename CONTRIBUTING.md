@@ -48,8 +48,6 @@ go build ./...
 mockery
 ```
 
-**Note**: A pre-commit hook is automatically installed that ensures mockery is available and runs it before each commit. This keeps mocks up-to-date automatically. The hook will attempt to install mockery if it's not found, but for best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
-
 #### Unit tests
 
 ```sh
@@ -60,6 +58,36 @@ go test ./...
 #### System tests
 
 System tests are configured in a GitHub Actions workflow file located at `.github/workflows/ci.yaml`. These test e2e scenarios for various providers and configurations. You are unable to run these tests locally, but they are required in CI, so breaking changes will result in failed checks.
+
+## CI
+
+### Pre-commit Hooks
+
+KSail uses pre-commit hooks to ensure code quality and consistency before commits. The project includes two types of pre-commit hooks:
+
+#### Automatic Git Hooks
+
+A pre-commit hook is automatically available that ensures mockery is installed and runs it before each commit. This keeps mocks up-to-date automatically without requiring manual intervention. The hook:
+
+- Detects if mockery is available in your PATH or `~/go/bin/`
+- Tests compatibility with the project's `.mockery.yml` configuration via `--dry-run`
+- Attempts automatic installation if mockery is missing
+- Provides clear guidance for manual installation of mockery v3.x if needed
+
+For best compatibility, manually install mockery v3.x following the [installation guide](https://vektra.github.io/mockery/v3.5/installation/).
+
+#### Pre-commit Framework Hooks
+
+If you use the [pre-commit framework](https://pre-commit.com/), the `.pre-commit-config.yaml` file defines additional hooks:
+
+- **golangci-lint-fmt**: Automatically formats Go code using golangci-lint
+- **mockery**: Generates mocks using the local `scripts/ensure-mockery.sh` script
+
+To use these hooks, install pre-commit and run:
+
+```sh
+pre-commit install
+```
 
 ### Release Process
 
