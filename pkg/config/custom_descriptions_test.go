@@ -11,17 +11,17 @@ import (
 )
 
 // TestNewCobraCommandWithDescriptions verifies that custom flag descriptions
-// can be provided when constructing Cobra commands using Fields.
+// can be provided when constructing Cobra commands using AddFlagsFromFields.
 func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Create command with custom descriptions using Fields
+	// Create command with custom descriptions using AddFlagsFromFields
 	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
 		"Test command with custom descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.Fields(func(c *v1alpha1.Cluster) []any {
+		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, "Choose your preferred Kubernetes distribution",
 				&c.Spec.SourceDirectory, "Path to workload manifests",
@@ -65,13 +65,13 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	t.Parallel()
 
-	// Create command without custom descriptions (using Fields)
+	// Create command without custom descriptions (using AddFlagsFromFields)
 	cmd := config.NewCobraCommand(
 		"test",
 		"Test command",
 		"Test command with default descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.Fields(func(c *v1alpha1.Cluster) []any {
+		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
 		})...,
 	)
@@ -109,9 +109,9 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 		"Test command",
 		"Test command with mixed descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
 			"Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
-		config.Field(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
 	)
 
 	// Capture help output

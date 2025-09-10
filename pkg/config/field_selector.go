@@ -14,14 +14,14 @@ type FieldSelector[T any] struct {
 	description string
 }
 
-// Field returns a type-safe field selector for the given field path.
+// AddFlagFromField returns a type-safe field selector for the given field path.
 // This provides compile-time safety - if the struct changes, this will cause compilation errors.
 // Optionally accepts a description as the second parameter.
 //
 // Usage:
-//   Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution })
-//   Field(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description")
-func Field[T any](selector func(*T) any, description ...string) FieldSelector[T] {
+//   AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution })
+//   AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description")
+func AddFlagFromField[T any](selector func(*T) any, description ...string) FieldSelector[T] {
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
@@ -32,23 +32,23 @@ func Field[T any](selector func(*T) any, description ...string) FieldSelector[T]
 	}
 }
 
-// Fields creates field selectors from a function that provides field references.
+// AddFlagsFromFields creates field selectors from a function that provides field references.
 // This provides compile-time safety with zero maintenance overhead and no global variables.
 // Supports two modes:
 //
 // 1. Without descriptions - each item in the array is a field reference:
-//    config.Fields(func(c *v1alpha1.Cluster) []any {
+//    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 //        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
 //    })
 //
 // 2. With descriptions - each field reference is followed by its description string:
-//    config.Fields(func(c *v1alpha1.Cluster) []any {
+//    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 //        return []any{
 //            &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
 //            &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
 //        }
 //    })
-func Fields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
+func AddFlagsFromFields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
 	// Create a reference instance for field discovery
 	ref := &v1alpha1.Cluster{}
 	items := fieldSelector(ref)
