@@ -212,7 +212,14 @@ func bindFieldSelectors(
 				}
 			case *metav1.Duration:
 				// Handle metav1.Duration specially as it's not a standard Duration
-				defaultVal := manager.viper.GetDuration(fieldPath)
+				var defaultVal time.Duration
+				if defaultValue != nil {
+					if metaDur, ok := defaultValue.(metav1.Duration); ok {
+						defaultVal = metaDur.Duration
+					}
+				} else {
+					defaultVal = manager.viper.GetDuration(fieldPath)
+				}
 				if shortName != "" {
 					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
 				} else {

@@ -10,7 +10,7 @@ Flags:
   -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
       --distribution-config string   Configuration file for the distribution (default "kind.yaml")
   -h, --help                         help for up
-  -t, --timeout duration             Timeout for cluster operations
+  -t, --timeout duration             Timeout for cluster operations (default 5m0s)
 
 ---
 

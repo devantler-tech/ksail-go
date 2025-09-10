@@ -48,7 +48,7 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
 	}
-	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
+	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
 	}
-	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
+	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -135,7 +135,7 @@ spec:
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout }, metav1.Duration{Duration: 5 * time.Minute}),
 	}
-	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
+	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -188,7 +188,7 @@ spec:
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
 	}
-	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
+	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 

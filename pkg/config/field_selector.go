@@ -6,6 +6,7 @@ import (
 	"time"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -203,21 +204,26 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 		return metav1.Duration{Duration: 5 * time.Minute}
 	}
 
-	// Handle string values from Viper
+	// Handle string values from Viper - try pflag.Value interface first for more elegant enum handling
 	if strVal, ok := value.(string); ok {
+		// Check if target type implements pflag.Value interface
+		targetValuePtr := reflect.New(targetType)
+		if pflagValue, implements := targetValuePtr.Interface().(pflag.Value); implements {
+			// Use pflag.Value interface for elegant enum conversion
+			if err := pflagValue.Set(strVal); err == nil {
+				return targetValuePtr.Elem().Interface()
+			}
+			// Fallback to type-specific defaults on error
+			switch targetType {
+			case reflect.TypeOf(v1alpha1.Distribution("")):
+				return v1alpha1.DistributionKind
+			case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
+				return v1alpha1.ReconciliationToolKubectl
+			}
+		}
+		
+		// Fallback to direct type conversion for non-pflag.Value types
 		switch targetType {
-		case reflect.TypeOf(v1alpha1.Distribution("")):
-			var dist v1alpha1.Distribution
-			if err := dist.Set(strVal); err == nil {
-				return dist
-			}
-			return v1alpha1.DistributionKind
-		case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
-			var tool v1alpha1.ReconciliationTool
-			if err := tool.Set(strVal); err == nil {
-				return tool
-			}
-			return v1alpha1.ReconciliationToolKubectl
 		case reflect.TypeOf(v1alpha1.CNI("")):
 			return v1alpha1.CNI(strVal)
 		case reflect.TypeOf(v1alpha1.CSI("")):

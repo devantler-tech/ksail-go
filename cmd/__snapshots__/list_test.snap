@@ -1,11 +1,13 @@
 
 [TestListCmd_Execute_All - 1]
 ✔ Listing all clusters (stub implementation)
+► Distribution filter: Kind
 
 ---
 
 [TestListCmd_Execute_Default - 1]
 ✔ Listing running clusters (stub implementation)
+► Distribution filter: Kind
 
 ---
 
@@ -16,7 +18,8 @@ Usage:
   list [flags]
 
 Flags:
-      --all    List all clusters including stopped ones
-  -h, --help   help for list
+      --all                         List all clusters including stopped ones
+  -d, --distribution Distribution   Kubernetes distribution to list clusters for (default Kind)
+  -h, --help                        help for list
 
 ---

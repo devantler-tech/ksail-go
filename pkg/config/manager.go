@@ -16,21 +16,9 @@ type Manager struct {
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 }
 
-// NewManager creates a new configuration manager with no field selectors.
-// This is used when commands don't need any configuration fields.
-func NewManager() *Manager {
-	v := initializeViper()
-
-	return &Manager{
-		viper:          v,
-		cluster:        nil,
-		fieldSelectors: nil,
-	}
-}
-
-// NewManagerWithFieldSelectors creates a new configuration manager with specific field selectors.
-// This allows the manager to only handle configuration for fields that commands actually need.
-func NewManagerWithFieldSelectors(fieldSelectors []FieldSelector[v1alpha1.Cluster]) *Manager {
+// NewManager creates a new configuration manager.
+// Field selectors are optional - if none provided, manager works for commands without configuration needs.
+func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 	v := initializeViper()
 
 	// Only set Viper defaults for the fields specified by field selectors
@@ -53,7 +41,7 @@ func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
 
 	// Apply configuration values from Viper (CLI flags, env vars, config files, field selector defaults)
 	// Only fields that have been configured in Viper will be overridden
-	m.setClusterFromConfig(cluster)
+	m.setClusterFromViperConfig(cluster)
 
 	// Store the loaded cluster
 	m.cluster = cluster
@@ -122,6 +110,9 @@ func setViperDefaultsFromFieldSelectors(
 			viperValue = string(val)
 		case v1alpha1.GatewayController:
 			viperValue = string(val)
+		case metav1.Duration:
+			// Convert metav1.Duration to time.Duration for Viper
+			viperValue = val.Duration
 		default:
 			viperValue = val
 		}
@@ -132,9 +123,9 @@ func setViperDefaultsFromFieldSelectors(
 
 
 
-// setClusterFromConfig applies configuration values to the cluster.
+// setClusterFromViperConfig applies configuration values to the cluster.
 // This overlays configuration values from Viper onto the cluster that already has defaults.
-func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
+func (m *Manager) setClusterFromViperConfig(cluster *v1alpha1.Cluster) {
 	if len(m.fieldSelectors) > 0 {
 		// Apply configuration for the specified field selectors
 		// This achieves true zero-maintenance by reusing the same field selectors
