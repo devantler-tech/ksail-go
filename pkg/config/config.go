@@ -37,15 +37,15 @@ import (
 //
 //	// Individual field selectors with descriptions:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 //	        "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)"),
-//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 //	        "Directory containing workloads to deploy"))
 //
 //	// Mixed approach - some fields with descriptions, others without:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
-//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, 
+//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 //	        "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
@@ -74,5 +74,3 @@ func NewCobraCommand(
 
 	return cmd
 }
-
-

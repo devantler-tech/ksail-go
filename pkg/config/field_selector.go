@@ -19,8 +19,9 @@ type FieldSelector[T any] struct {
 // Optionally accepts a description as the second parameter.
 //
 // Usage:
-//   AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution })
-//   AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description")
+//
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution })
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description")
 func AddFlagFromField[T any](selector func(*T) any, description ...string) FieldSelector[T] {
 	desc := ""
 	if len(description) > 0 {
@@ -36,19 +37,21 @@ func AddFlagFromField[T any](selector func(*T) any, description ...string) Field
 // This provides compile-time safety with zero maintenance overhead and no global variables.
 // Supports two modes:
 //
-// 1. Without descriptions - each item in the array is a field reference:
-//    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-//    })
+//  1. Without descriptions - each item in the array is a field reference:
+//     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+//     return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+//     })
 //
-// 2. With descriptions - each field reference is followed by its description string:
-//    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//        return []any{
-//            &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
-//            &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
-//        }
-//    })
-func AddFlagsFromFields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSelector[v1alpha1.Cluster] {
+//  2. With descriptions - each field reference is followed by its description string:
+//     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+//     return []any{
+//     &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
+//     &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
+//     }
+//     })
+func AddFlagsFromFields(
+	fieldSelector func(*v1alpha1.Cluster) []any,
+) []FieldSelector[v1alpha1.Cluster] {
 	// Create a reference instance for field discovery
 	ref := &v1alpha1.Cluster{}
 	items := fieldSelector(ref)
@@ -118,7 +121,10 @@ func AddFlagsFromFields(fieldSelector func(*v1alpha1.Cluster) []any) []FieldSele
 }
 
 // createFieldSelectorFromPointer creates a field selector from a direct field pointer.
-func createFieldSelectorFromPointer(fieldPtr any, ref *v1alpha1.Cluster) func(*v1alpha1.Cluster) any {
+func createFieldSelectorFromPointer(
+	fieldPtr any,
+	ref *v1alpha1.Cluster,
+) func(*v1alpha1.Cluster) any {
 	return func(c *v1alpha1.Cluster) any {
 		// Use reflection to find the field path and return the corresponding field in the target cluster
 		fieldPath := getFieldPathFromPointer(fieldPtr, ref)

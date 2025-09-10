@@ -33,7 +33,7 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--help"})
-	
+
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -80,7 +80,7 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--help"})
-	
+
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -109,7 +109,7 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 		"Test command",
 		"Test command with mixed descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, 
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			"Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
 	)
@@ -118,7 +118,7 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--help"})
-	
+
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

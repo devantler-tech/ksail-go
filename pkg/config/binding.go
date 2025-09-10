@@ -40,7 +40,6 @@ func bindAllFields(cmd *cobra.Command, manager *Manager) {
 	}
 }
 
-
 // fieldInfo represents information about a discoverable field.
 type fieldInfo struct {
 	Path string
@@ -163,8 +162,6 @@ func bindFieldSelectors(
 		_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
 	}
 }
-
-
 
 // getFieldPath uses reflection to determine the path of a field within the cluster structure.
 func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
@@ -300,5 +297,3 @@ func generateFieldDescription(fieldPath string) string {
 
 	return "Configure " + strings.ReplaceAll(lastPart, "_", " ")
 }
-
-
