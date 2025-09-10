@@ -311,6 +311,7 @@ func (c *CNI) Set(value string) error {
 	for _, cni := range validCNIs() {
 		if strings.EqualFold(value, string(cni)) {
 			*c = cni
+
 			return nil
 		}
 	}
@@ -325,6 +326,7 @@ func (c *CSI) Set(value string) error {
 	for _, csi := range validCSIs() {
 		if strings.EqualFold(value, string(csi)) {
 			*c = csi
+
 			return nil
 		}
 	}
@@ -339,6 +341,7 @@ func (i *IngressController) Set(value string) error {
 	for _, ic := range validIngressControllers() {
 		if strings.EqualFold(value, string(ic)) {
 			*i = ic
+
 			return nil
 		}
 	}

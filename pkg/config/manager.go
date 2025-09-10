@@ -19,16 +19,16 @@ type Manager struct {
 // NewManager creates a new configuration manager.
 // Field selectors are optional - if none provided, manager works for commands without configuration needs.
 func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
-	v := initializeViper()
+	viperInstance := initializeViper()
 
 	// Only set Viper defaults for the fields specified by field selectors
 	// This achieves true zero-maintenance by reusing the same field selectors
 	if len(fieldSelectors) > 0 {
-		setViperDefaultsFromFieldSelectors(v, fieldSelectors)
+		setViperDefaultsFromFieldSelectors(viperInstance, fieldSelectors)
 	}
 
 	return &Manager{
-		viper:          v,
+		viper:          viperInstance,
 		cluster:        nil,
 		fieldSelectors: fieldSelectors,
 	}
@@ -70,55 +70,62 @@ func (m *Manager) GetViper() *viper.Viper {
 // This reuses the same field selectors that commands provide for CLI flags to also set Viper defaults,
 // eliminating the need for manual field mappings.
 func setViperDefaultsFromFieldSelectors(
-	v *viper.Viper,
+	viperInstance *viper.Viper,
 	fieldSelectors []FieldSelector[v1alpha1.Cluster],
 ) {
 	// Create a reference cluster for path discovery
 	ref := v1alpha1.NewCluster()
 
 	for _, fieldSelector := range fieldSelectors {
-		// Get the field reference from the selector
-		fieldPtr := fieldSelector.selector(ref)
-		if fieldPtr == nil {
-			continue
-		}
+		processFieldSelector(viperInstance, ref, fieldSelector)
+	}
+}
 
-		// Get the path dynamically from the field selector
-		path := getFieldPathFromPointer(fieldPtr, ref)
-		if path == "" {
-			continue
-		}
+// processFieldSelector processes a single field selector for Viper default setting.
+func processFieldSelector(viperInstance *viper.Viper, ref *v1alpha1.Cluster, fieldSelector FieldSelector[v1alpha1.Cluster]) {
+	// Get the field reference from the selector
+	fieldPtr := fieldSelector.selector(ref)
+	if fieldPtr == nil {
+		return
+	}
 
-		// Get the default value from the field selector
-		defaultValue := fieldSelector.defaultValue
-		if defaultValue == nil {
-			continue
-		}
+	// Get the path dynamically from the field selector
+	path := getFieldPathFromPointer(fieldPtr, ref)
+	if path == "" {
+		return
+	}
 
-		// Convert typed default value to appropriate format for Viper
-		var viperValue any
+	// Get the default value from the field selector
+	defaultValue := fieldSelector.defaultValue
+	if defaultValue == nil {
+		return
+	}
 
-		switch val := defaultValue.(type) {
-		case v1alpha1.Distribution:
-			viperValue = string(val)
-		case v1alpha1.ReconciliationTool:
-			viperValue = string(val)
-		case v1alpha1.CNI:
-			viperValue = string(val)
-		case v1alpha1.CSI:
-			viperValue = string(val)
-		case v1alpha1.IngressController:
-			viperValue = string(val)
-		case v1alpha1.GatewayController:
-			viperValue = string(val)
-		case metav1.Duration:
-			// Convert metav1.Duration to time.Duration for Viper
-			viperValue = val.Duration
-		default:
-			viperValue = val
-		}
+	// Convert typed default value to appropriate format for Viper
+	viperValue := convertDefaultValueForViper(defaultValue)
+	viperInstance.SetDefault(path, viperValue)
+}
 
-		v.SetDefault(path, viperValue)
+// convertDefaultValueForViper converts typed default values to appropriate format for Viper.
+func convertDefaultValueForViper(defaultValue any) any {
+	switch val := defaultValue.(type) {
+	case v1alpha1.Distribution:
+		return string(val)
+	case v1alpha1.ReconciliationTool:
+		return string(val)
+	case v1alpha1.CNI:
+		return string(val)
+	case v1alpha1.CSI:
+		return string(val)
+	case v1alpha1.IngressController:
+		return string(val)
+	case v1alpha1.GatewayController:
+		return string(val)
+	case metav1.Duration:
+		// Convert metav1.Duration to time.Duration for Viper
+		return val.Duration
+	default:
+		return val
 	}
 }
 
@@ -205,9 +212,39 @@ func (m *Manager) getTypedValueFromViperByPath(path string, cluster *v1alpha1.Cl
 
 // getValueFromViperByType retrieves a value from Viper using the appropriate method based on the field type.
 func (m *Manager) getValueFromViperByType(path string, fieldType reflect.Type) any {
-	switch fieldType {
-	case reflect.TypeOf(true):
+	// Handle boolean types
+	if fieldType == reflect.TypeOf(true) {
 		return m.viper.GetBool(path)
+	}
+
+	// Handle integer types
+	if value := m.getIntegerValueFromViper(path, fieldType); value != nil {
+		return value
+	}
+
+	// Handle float types
+	if value := m.getFloatValueFromViper(path, fieldType); value != nil {
+		return value
+	}
+
+	// Handle duration types
+	if value := m.getDurationValueFromViper(path, fieldType); value != nil {
+		return value
+	}
+
+	// Handle slice types
+	if value := m.getSliceValueFromViper(path, fieldType); value != nil {
+		return value
+	}
+
+	// For all other types (including custom types), get as string
+	// The conversion function will handle the proper type conversion
+	return m.viper.GetString(path)
+}
+
+// getIntegerValueFromViper handles integer type values from Viper.
+func (m *Manager) getIntegerValueFromViper(path string, fieldType reflect.Type) any {
+	switch fieldType {
 	case reflect.TypeOf(int(0)):
 		return m.viper.GetInt(path)
 	case reflect.TypeOf(int32(0)):
@@ -220,21 +257,37 @@ func (m *Manager) getValueFromViperByType(path string, fieldType reflect.Type) a
 		return m.viper.GetUint32(path)
 	case reflect.TypeOf(uint64(0)):
 		return m.viper.GetUint64(path)
+	}
+	return nil
+}
+
+// getFloatValueFromViper handles float type values from Viper.
+func (m *Manager) getFloatValueFromViper(path string, fieldType reflect.Type) any {
+	switch fieldType {
 	case reflect.TypeOf(float32(0)):
 		return float32(m.viper.GetFloat64(path))
 	case reflect.TypeOf(float64(0)):
 		return m.viper.GetFloat64(path)
-	case reflect.TypeOf(time.Duration(0)):
+	}
+	return nil
+}
+
+// getDurationValueFromViper handles duration type values from Viper.
+func (m *Manager) getDurationValueFromViper(path string, fieldType reflect.Type) any {
+	switch fieldType {
+	case reflect.TypeOf(time.Duration(0)), reflect.TypeOf(metav1.Duration{}):
 		return m.viper.GetDuration(path)
+	}
+	return nil
+}
+
+// getSliceValueFromViper handles slice type values from Viper.
+func (m *Manager) getSliceValueFromViper(path string, fieldType reflect.Type) any {
+	switch fieldType {
 	case reflect.TypeOf([]string{}):
 		return m.viper.GetStringSlice(path)
 	case reflect.TypeOf([]int{}):
 		return m.viper.GetIntSlice(path)
-	case reflect.TypeOf(metav1.Duration{}):
-		return m.viper.GetDuration(path)
-	default:
-		// For all other types (including custom types), get as string
-		// The conversion function will handle the proper type conversion
-		return m.viper.GetString(path)
 	}
+	return nil
 }

@@ -16,8 +16,6 @@ import (
 )
 
 func TestManager_LoadCluster_Defaults(t *testing.T) {
-	t.Parallel()
-
 	// Clear any existing environment variables that might affect the test
 	envVarsToClean := []string{
 		"KSAIL_SPEC_DISTRIBUTION",
@@ -26,20 +24,13 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 	}
 	for _, envVar := range envVarsToClean {
 		if originalValue := os.Getenv(envVar); originalValue != "" {
-			_ = os.Unsetenv(envVar)
-			defer func(envVar, originalValue string) {
-				_ = os.Setenv(envVar, originalValue)
-			}(envVar, originalValue)
+			t.Setenv(envVar, "")
 		}
 	}
 
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
-	oldDir, _ := os.Getwd()
-
-	defer func() { _ = os.Chdir(oldDir) }()
-
-	_ = os.Chdir(tempDir)
+	t.Chdir(tempDir)
 
 	// Load cluster with field selectors to provide defaults
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
@@ -83,23 +74,13 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 
 func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	// Set environment variables - using the correct hierarchical structure
-	_ = os.Setenv("KSAIL_METADATA_NAME", "test-cluster")
-	_ = os.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
-	_ = os.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/custom/path/kubeconfig")
-
-	defer func() {
-		_ = os.Unsetenv("KSAIL_METADATA_NAME")
-		_ = os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
-		_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
-	}()
+	t.Setenv("KSAIL_METADATA_NAME", "test-cluster")
+	t.Setenv("KSAIL_SPEC_DISTRIBUTION", "K3d")
+	t.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/custom/path/kubeconfig")
 
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
-	oldDir, _ := os.Getwd()
-
-	defer func() { _ = os.Chdir(oldDir) }()
-
-	_ = os.Chdir(tempDir)
+	t.Chdir(tempDir)
 
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
 		config.AddFlagFromField(
@@ -134,15 +115,9 @@ func TestNewManager(t *testing.T) {
 }
 
 func TestManager_LoadCluster_ConfigFile(t *testing.T) {
-	t.Parallel()
-
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
-	oldDir, _ := os.Getwd()
-
-	defer func() { _ = os.Chdir(oldDir) }()
-
-	_ = os.Chdir(tempDir)
+	t.Chdir(tempDir)
 
 	// Create a ksail.yaml config file
 	configContent := `apiVersion: ksail.dev/v1alpha1
@@ -202,11 +177,7 @@ spec:
 func TestManager_LoadCluster_MixedConfiguration(t *testing.T) {
 	// Setup a temporary directory for testing
 	tempDir := t.TempDir()
-	oldDir, _ := os.Getwd()
-
-	defer func() { _ = os.Chdir(oldDir) }()
-
-	_ = os.Chdir(tempDir)
+	t.Chdir(tempDir)
 
 	// Create a ksail.yaml config file with some values
 	configContent := `apiVersion: ksail.dev/v1alpha1
@@ -224,13 +195,8 @@ spec:
 	require.NoError(t, err)
 
 	// Set environment variables (should override config file)
-	_ = os.Setenv("KSAIL_METADATA_NAME", "env-cluster")
-	_ = os.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/env/path/kubeconfig")
-
-	defer func() {
-		_ = os.Unsetenv("KSAIL_METADATA_NAME")
-		_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
-	}()
+	t.Setenv("KSAIL_METADATA_NAME", "env-cluster")
+	t.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/env/path/kubeconfig")
 
 	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
 		config.AddFlagFromField(

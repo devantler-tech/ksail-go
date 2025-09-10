@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultUpTimeout = 5 * time.Minute
+
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
 	return config.NewCobraCommand(
@@ -24,7 +26,7 @@ func NewUpCmd() *cobra.Command {
 				&c.Spec.DistributionConfig, "kind.yaml", "Configuration file for the distribution",
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to use",
 				&c.Spec.Connection.Timeout,
-				metav1.Duration{Duration: 5 * time.Minute},
+				metav1.Duration{Duration: defaultUpTimeout},
 				"Timeout for cluster operations",
 			}
 		})...,

@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultStatusTimeout = 5 * time.Minute
+
 // NewStatusCmd creates and returns the status command.
 func NewStatusCmd() *cobra.Command {
 	return config.NewCobraCommand(
@@ -23,7 +25,7 @@ func NewStatusCmd() *cobra.Command {
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to check status for",
 				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
 				&c.Spec.Connection.Timeout,
-				metav1.Duration{Duration: 5 * time.Minute},
+				metav1.Duration{Duration: defaultStatusTimeout},
 				"Timeout for status check operations",
 			}
 		})...,

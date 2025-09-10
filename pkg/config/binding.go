@@ -223,6 +223,7 @@ func bindFieldSelectors(
 				} else {
 					defaultVal = manager.viper.GetDuration(fieldPath)
 				}
+
 				if shortName != "" {
 					cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
 				} else {
@@ -309,9 +310,9 @@ func findFieldPathByAddressAndType(
 	prefix string,
 	_ bool, // preserveCase is unused
 ) string {
-	for i := 0; i < structVal.NumField(); i++ {
-		field := structVal.Field(i)
-		fieldType := structType.Field(i)
+	for fieldIndex := range structVal.NumField() {
+		field := structVal.Field(fieldIndex)
+		fieldType := structType.Field(fieldIndex)
 
 		// Skip unexported fields
 		if !field.CanAddr() {
@@ -334,7 +335,8 @@ func findFieldPathByAddressAndType(
 
 		// If this is a struct, recurse into it
 		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
-			if result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, false); result != "" {
+			result := findFieldPathByAddressAndType(field, field.Type(), targetAddr, targetType, currentPath, false)
+			if result != "" {
 				return result
 			}
 		}
@@ -366,13 +368,13 @@ func pathToFlagName(path string) string {
 func camelToKebab(s string) string {
 	var result strings.Builder
 
-	for i, r := range s {
-		if i > 0 && isUpper(r) &&
-			(i == len(s)-1 || !isUpper(rune(s[i+1])) || (i > 0 && !isUpper(rune(s[i-1])))) {
+	for index, char := range s {
+		if index > 0 && isUpper(char) &&
+			(index == len(s)-1 || !isUpper(rune(s[index+1])) || (index > 0 && !isUpper(rune(s[index-1])))) {
 			result.WriteByte('-')
 		}
 
-		result.WriteRune(toLower(r))
+		result.WriteRune(toLower(char))
 	}
 
 	return result.String()
@@ -384,8 +386,10 @@ func camelToKebab(s string) string {
 // E.g., "csi" -> no shortname, "distribution" -> "d", "source-directory" -> "s".
 // Note: Cobra only supports single-character shortnames, so we use the first letter of the first word.
 func generateShortName(longName string) string {
-	// Don't create shortnames for flags 3 chars or shorter
-	if len(longName) <= 3 {
+	const minShortnameLength = 3
+	
+	// Don't create shortnames for flags shorter than the minimum length
+	if len(longName) <= minShortnameLength {
 		return ""
 	}
 

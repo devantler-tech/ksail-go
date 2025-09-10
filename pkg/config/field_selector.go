@@ -10,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultDurationTimeout = 5 * time.Minute
+
 // FieldSelector represents a type-safe field selector for auto-binding.
 // It provides compile-time safety by referencing actual struct fields.
 type FieldSelector[T any] struct {
@@ -25,7 +27,8 @@ type FieldSelector[T any] struct {
 // Usage:
 //
 //	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind)
-//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind, "Custom description")
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+//		v1alpha1.DistributionKind, "Custom description")
 func AddFlagFromField[T any](
 	selector func(*T) any,
 	defaultValue any,
@@ -72,23 +75,23 @@ func AddFlagsFromFields(
 	var selectors []FieldSelector[v1alpha1.Cluster]
 
 	// Each field must have at least a default value, and optionally a description
-	i := 0
-	for i < len(items) {
-		if i+1 >= len(items) {
+	itemIndex := 0
+	for itemIndex < len(items) {
+		if itemIndex+1 >= len(items) {
 			break // Need at least field and default value
 		}
 
-		fieldPtr := items[i]
-		defaultValue := items[i+1]
-		i += 2
+		fieldPtr := items[itemIndex]
+		defaultValue := items[itemIndex+1]
+		itemIndex += 2
 
 		// Check if next item is a description (string)
 		description := ""
 
-		if i < len(items) {
-			if desc, ok := items[i].(string); ok {
+		if itemIndex < len(items) {
+			if desc, ok := items[itemIndex].(string); ok {
 				description = desc
-				i++ // consume description
+				itemIndex++ // consume description
 			}
 		}
 
@@ -109,14 +112,14 @@ func createFieldSelectorFromPointer(
 	fieldPtr any,
 	ref *v1alpha1.Cluster,
 ) func(*v1alpha1.Cluster) any {
-	return func(c *v1alpha1.Cluster) any {
+	return func(cluster *v1alpha1.Cluster) any {
 		// Use reflection to find the field path and return the corresponding field in the target cluster
 		fieldPath := getFieldPathFromPointer(fieldPtr, ref)
 		if fieldPath == "" {
 			return nil
 		}
 
-		return getFieldByPath(c, fieldPath)
+		return getFieldByPath(cluster, fieldPath)
 	}
 }
 
@@ -144,6 +147,7 @@ func getFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
 		"",
 		false,
 	)
+
 	return strings.ToLower(originalPath)
 }
 
@@ -160,8 +164,8 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 		// Find the field by name (case-insensitive)
 		fieldName := ""
 
-		for i := 0; i < current.NumField(); i++ {
-			field := current.Type().Field(i)
+		for fieldIndex := range current.NumField() {
+			field := current.Type().Field(fieldIndex)
 			if strings.EqualFold(field.Name, part) {
 				fieldName = field.Name
 
@@ -194,54 +198,85 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 	}
 
 	// Handle metav1.Duration specially - it has a time.Duration field
-	if targetType == reflect.TypeOf(metav1.Duration{}) {
-		switch v := value.(type) {
-		case time.Duration:
-			return metav1.Duration{Duration: v}
-		case string:
-			if duration, err := time.ParseDuration(v); err == nil {
-				return metav1.Duration{Duration: duration}
-			}
-			return metav1.Duration{Duration: 5 * time.Minute}
-		case metav1.Duration:
-			return v
-		}
-		return metav1.Duration{Duration: 5 * time.Minute}
+	if result := handleMetav1Duration(value, targetType); result != nil {
+		return result
 	}
 
 	// Handle string values from Viper - try pflag.Value interface first for more elegant enum handling
 	if strVal, ok := value.(string); ok {
-		// Check if target type implements pflag.Value interface
-		targetValuePtr := reflect.New(targetType)
-		if pflagValue, implements := targetValuePtr.Interface().(pflag.Value); implements {
-			// Use pflag.Value interface for elegant enum conversion
-			if err := pflagValue.Set(strVal); err == nil {
-				return targetValuePtr.Elem().Interface()
-			}
-			// Fallback to type-specific defaults on error
-			switch targetType {
-			case reflect.TypeOf(v1alpha1.Distribution("")):
-				return v1alpha1.DistributionKind
-			case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
-				return v1alpha1.ReconciliationToolKubectl
-			case reflect.TypeOf(v1alpha1.CNI("")):
-				return v1alpha1.CNIDefault
-			case reflect.TypeOf(v1alpha1.CSI("")):
-				return v1alpha1.CSIDefault
-			case reflect.TypeOf(v1alpha1.IngressController("")):
-				return v1alpha1.IngressControllerDefault
-			case reflect.TypeOf(v1alpha1.GatewayController("")):
-				return v1alpha1.GatewayControllerDefault
-			}
-		}
-
-		// Fallback to direct type conversion for non-pflag.Value types
-		switch targetType {
-		case reflect.TypeOf(""):
-			return strVal
+		if result := handleStringConversion(strVal, targetType); result != nil {
+			return result
 		}
 	}
 
+	// Handle other types (direct assignment)
+	return handleDirectConversion(value, targetType)
+}
+
+// handleMetav1Duration handles conversion for metav1.Duration type.
+func handleMetav1Duration(value any, targetType reflect.Type) any {
+	if targetType != reflect.TypeOf(metav1.Duration{}) {
+		return nil
+	}
+
+	switch val := value.(type) {
+	case time.Duration:
+		return metav1.Duration{Duration: val}
+	case string:
+		duration, err := time.ParseDuration(val)
+		if err == nil {
+			return metav1.Duration{Duration: duration}
+		}
+		return metav1.Duration{Duration: defaultDurationTimeout}
+	case metav1.Duration:
+		return val
+	}
+	return metav1.Duration{Duration: defaultDurationTimeout}
+}
+
+// handleStringConversion handles string value conversions using pflag.Value interface.
+func handleStringConversion(strVal string, targetType reflect.Type) any {
+	// Check if target type implements pflag.Value interface
+	targetValuePtr := reflect.New(targetType)
+	if pflagValue, implements := targetValuePtr.Interface().(pflag.Value); implements {
+		// Use pflag.Value interface for elegant enum conversion
+		err := pflagValue.Set(strVal)
+		if err == nil {
+			return targetValuePtr.Elem().Interface()
+		}
+		// Fallback to type-specific defaults on error
+		return getEnumDefault(targetType)
+	}
+
+	// Fallback to direct type conversion for non-pflag.Value types
+	if targetType == reflect.TypeOf("") {
+		return strVal
+	}
+
+	return nil
+}
+
+// getEnumDefault returns default values for enum types.
+func getEnumDefault(targetType reflect.Type) any {
+	switch targetType {
+	case reflect.TypeOf(v1alpha1.Distribution("")):
+		return v1alpha1.DistributionKind
+	case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
+		return v1alpha1.ReconciliationToolKubectl
+	case reflect.TypeOf(v1alpha1.CNI("")):
+		return v1alpha1.CNIDefault
+	case reflect.TypeOf(v1alpha1.CSI("")):
+		return v1alpha1.CSIDefault
+	case reflect.TypeOf(v1alpha1.IngressController("")):
+		return v1alpha1.IngressControllerDefault
+	case reflect.TypeOf(v1alpha1.GatewayController("")):
+		return v1alpha1.GatewayControllerDefault
+	}
+	return nil
+}
+
+// handleDirectConversion handles direct type conversions.
+func handleDirectConversion(value any, targetType reflect.Type) any {
 	// Handle other types (direct assignment)
 	if reflect.TypeOf(value) == targetType {
 		return value
