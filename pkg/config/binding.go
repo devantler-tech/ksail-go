@@ -46,15 +46,44 @@ func bindFieldSelectors(
 			description = generateFieldDescription(fieldPath)
 		}
 
+		// Get default value from field selector or fallback to Viper
+		var defaultValue any
+		if fieldSelector.defaultValue != nil {
+			defaultValue = fieldSelector.defaultValue
+		}
+
 		// Add shortname flag if appropriate
 		shortName := generateShortName(flagName)
 		
 		// Check if the field implements pflag.Value interface for custom types
 		if pflagValue, isPflagValue := fieldPtr.(pflag.Value); isPflagValue {
-			// Set default value from Viper defaults BEFORE registering the flag
-			defaultVal := manager.viper.GetString(fieldPath)
-			if defaultVal != "" {
-				_ = pflagValue.Set(defaultVal)
+			// Set default value from field selector or Viper defaults 
+			if defaultValue != nil {
+				// Convert custom types to string for pflag.Value.Set()
+				switch val := defaultValue.(type) {
+				case v1alpha1.Distribution:
+					_ = pflagValue.Set(string(val))
+				case v1alpha1.ReconciliationTool:
+					_ = pflagValue.Set(string(val))
+				case v1alpha1.CNI:
+					_ = pflagValue.Set(string(val))
+				case v1alpha1.CSI:
+					_ = pflagValue.Set(string(val))
+				case v1alpha1.IngressController:
+					_ = pflagValue.Set(string(val))
+				case v1alpha1.GatewayController:
+					_ = pflagValue.Set(string(val))
+				default:
+					if str, ok := val.(string); ok {
+						_ = pflagValue.Set(str)
+					}
+				}
+			} else {
+				// Fallback to Viper defaults
+				defaultVal := manager.viper.GetString(fieldPath)
+				if defaultVal != "" {
+					_ = pflagValue.Set(defaultVal)
+				}
 			}
 			
 			// Use Var/VarP for custom pflag types (provides automatic validation and help)
@@ -67,14 +96,28 @@ func bindFieldSelectors(
 			// Auto-detect type and use appropriate pflag method
 			switch fieldPtr.(type) {
 			case *string:
-				defaultVal := manager.viper.GetString(fieldPath)
+				var defaultVal string
+				if defaultValue != nil {
+					if str, ok := defaultValue.(string); ok {
+						defaultVal = str
+					}
+				} else {
+					defaultVal = manager.viper.GetString(fieldPath)
+				}
 				if shortName != "" {
 					cmd.Flags().StringP(flagName, shortName, defaultVal, description)
 				} else {
 					cmd.Flags().String(flagName, defaultVal, description)
 				}
 			case *bool:
-				defaultVal := manager.viper.GetBool(fieldPath)
+				var defaultVal bool
+				if defaultValue != nil {
+					if b, ok := defaultValue.(bool); ok {
+						defaultVal = b
+					}
+				} else {
+					defaultVal = manager.viper.GetBool(fieldPath)
+				}
 				if shortName != "" {
 					cmd.Flags().BoolP(flagName, shortName, defaultVal, description)
 				} else {
@@ -182,29 +225,27 @@ func bindFieldSelectors(
 	}
 }
 
-// getFieldPath uses reflection to determine the path of a field within the cluster structure.
+// getFieldPath uses a different approach - it walks the structure to find the field path
+// by comparing field types and offsets rather than memory addresses.
 func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
-	// Get the value and type of the cluster
-	clusterVal := reflect.ValueOf(cluster).Elem()
-	clusterType := clusterVal.Type()
-
-	// Convert the field pointer to a reflect.Value
+	// Get reflection info about the field pointer
 	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr {
 		return ""
 	}
 
-	fieldAddr := fieldVal.Pointer()
-
-	// Recursively find the field path
-	return findFieldPath(clusterVal, clusterType, fieldAddr, "")
+	fieldType := fieldVal.Type().Elem() // Get the type of what the pointer points to
+	
+	// Walk the cluster structure to find where this field type occurs
+	clusterVal := reflect.ValueOf(cluster).Elem()
+	return findFieldPathByType(clusterVal, reflect.TypeOf(cluster).Elem(), fieldType, "")
 }
 
-// findFieldPath recursively searches for a field's path in a struct.
-func findFieldPath(
+// findFieldPathByType recursively searches for a field's path in a struct by matching types.
+func findFieldPathByType(
 	structVal reflect.Value,
 	structType reflect.Type,
-	targetAddr uintptr,
+	targetType reflect.Type,
 	prefix string,
 ) string {
 	for i := 0; i < structVal.NumField(); i++ {
@@ -216,22 +257,22 @@ func findFieldPath(
 			continue
 		}
 
-		// Build the current field path
+		// Build the current field path (use lowercase for Viper compatibility)
 		var currentPath string
 		if prefix == "" {
-			currentPath = fieldType.Name
+			currentPath = strings.ToLower(fieldType.Name)
 		} else {
-			currentPath = prefix + "." + fieldType.Name
+			currentPath = prefix + "." + strings.ToLower(fieldType.Name)
 		}
 
-		// Check if this field's address matches our target
-		if field.CanAddr() && field.Addr().Pointer() == targetAddr {
+		// Check if this field's type matches our target type
+		if field.Type() == targetType {
 			return currentPath
 		}
 
 		// If this is a struct, recurse into it
 		if field.Kind() == reflect.Struct && !isTimeType(field.Type()) {
-			if result := findFieldPath(field, field.Type(), targetAddr, currentPath); result != "" {
+			if result := findFieldPathByType(field, field.Type(), targetType, currentPath); result != "" {
 				return result
 			}
 		}

@@ -67,7 +67,7 @@ func NewCobraCommand(
 
 	// Auto-bind flags based on field selectors
 	if len(fieldSelectors) > 0 {
-		// Bind only the specified field selectors
+		// Bind only the specified field selectors for CLI flags
 		bindFieldSelectors(cmd, manager, fieldSelectors)
 	}
 	// No else clause - when no field selectors provided, no configuration flags are added
