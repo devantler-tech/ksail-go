@@ -9,10 +9,10 @@ import (
 // NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding.
 // This is the only constructor provided for initializing CobraCommands.
 // The binding automatically handles CLI flags (priority 1), environment variables (priority 2),
-// and configuration defaults (priority 3).
+// configuration files (priority 3), and field selector defaults (priority 4).
 //
 // If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
-// Field selectors can include optional descriptions.
+// Field selectors must include default values and optionally descriptions.
 // If fieldSelectors is empty, no configuration flags will be added (no auto-discovery by default).
 //
 // Usage examples:
@@ -20,33 +20,37 @@ import (
 //	// No configuration flags (default behavior):
 //	config.NewCobraCommand("status", "Show status", "...", handleStatusRunE)
 //
-//	// Type-safe selective binding with direct field pointers (zero maintenance):
-//	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//	        return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
-//	    })...)
-//
-//	// With embedded descriptions using AddFlagsFromFields:
+//	// Type-safe selective binding with defaults and descriptions:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //	    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 //	        return []any{
-//	            &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
-//	            &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
+//	            &c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
+//	            &c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
 //	        }
 //	    })...)
 //
-//	// Individual field selectors with descriptions:
+//	// With defaults only (description inferred):
+//	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//	    config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+//	        return []any{
+//	            &c.Spec.Distribution, v1alpha1.DistributionKind,
+//	            &c.Spec.SourceDirectory, "k8s",
+//	        }
+//	    })...)
+//
+//	// Individual field selectors with defaults and descriptions:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
 //	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-//	        "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)"),
+//	        v1alpha1.DistributionKind, "Kubernetes distribution to use"),
 //	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-//	        "Directory containing workloads to deploy"))
+//	        "k8s", "Directory containing workloads to deploy"))
 //
-//	// Mixed approach - some fields with descriptions, others without:
+//	// Individual field selectors with defaults only:
 //	config.NewCobraCommand("init", "Initialize", "...", handleInitRunE,
-//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }),
+//	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+//	        v1alpha1.DistributionKind),
 //	    config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-//	        "Directory containing workloads to deploy"))
+//	        "k8s"))
 func NewCobraCommand(
 	use, short, long string,
 	runE func(*cobra.Command, *Manager, []string) error,

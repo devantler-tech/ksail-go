@@ -2,10 +2,13 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewUpCmd creates and returns the up command.
@@ -17,10 +20,10 @@ func NewUpCmd() *cobra.Command {
 		handleUpRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to use",
-				&c.Spec.DistributionConfig, "Configuration file for the distribution",
-				&c.Spec.Connection.Context, "Kubernetes context to use",
-				&c.Spec.Connection.Timeout, "Timeout for cluster operations",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
+				&c.Spec.DistributionConfig, "kind.yaml", "Configuration file for the distribution",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to use",
+				&c.Spec.Connection.Timeout, metav1.Duration{Duration: 5 * time.Minute}, "Timeout for cluster operations",
 			}
 		})...,
 	)

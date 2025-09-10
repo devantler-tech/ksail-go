@@ -13,7 +13,6 @@ import (
 type Manager struct {
 	viper          *viper.Viper
 	cluster        *v1alpha1.Cluster
-	defaultCluster *v1alpha1.Cluster
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 }
 
@@ -21,12 +20,10 @@ type Manager struct {
 // This is used when commands don't need any configuration fields.
 func NewManager() *Manager {
 	v := initializeViper()
-	defaultCluster := v1alpha1.NewDefaultCluster()
 
 	return &Manager{
 		viper:          v,
 		cluster:        nil,
-		defaultCluster: defaultCluster,
 		fieldSelectors: nil,
 	}
 }
@@ -35,28 +32,26 @@ func NewManager() *Manager {
 // This allows the manager to only handle configuration for fields that commands actually need.
 func NewManagerWithFieldSelectors(fieldSelectors []FieldSelector[v1alpha1.Cluster]) *Manager {
 	v := initializeViper()
-	defaultCluster := v1alpha1.NewDefaultCluster()
 
 	// Only set Viper defaults for the fields specified by field selectors
 	// This achieves true zero-maintenance by reusing the same field selectors
 	if len(fieldSelectors) > 0 {
-		setViperDefaultsFromFieldSelectors(v, defaultCluster, fieldSelectors)
+		setViperDefaultsFromFieldSelectors(v, fieldSelectors)
 	}
 
 	return &Manager{
 		viper:          v,
 		cluster:        nil,
-		defaultCluster: defaultCluster,
 		fieldSelectors: fieldSelectors,
 	}
 }
 
 // LoadCluster loads the cluster configuration from files and environment variables.
 func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
-	// Start with a cluster that has all meaningful defaults from the constructor
-	cluster := v1alpha1.NewDefaultCluster()
+	// Start with a minimal cluster structure
+	cluster := v1alpha1.NewCluster()
 
-	// Apply configuration values from Viper (CLI flags, env vars, config files)
+	// Apply configuration values from Viper (CLI flags, env vars, config files, field selector defaults)
 	// Only fields that have been configured in Viper will be overridden
 	m.setClusterFromConfig(cluster)
 
@@ -88,24 +83,26 @@ func (m *Manager) GetViper() *viper.Viper {
 // eliminating the need for manual field mappings.
 func setViperDefaultsFromFieldSelectors(
 	v *viper.Viper,
-	defaultCluster *v1alpha1.Cluster,
 	fieldSelectors []FieldSelector[v1alpha1.Cluster],
 ) {
+	// Create a reference cluster for path discovery
+	ref := v1alpha1.NewCluster()
+
 	for _, fieldSelector := range fieldSelectors {
 		// Get the field reference from the selector
-		fieldPtr := fieldSelector.selector(defaultCluster)
+		fieldPtr := fieldSelector.selector(ref)
 		if fieldPtr == nil {
 			continue
 		}
 
 		// Get the path dynamically from the field selector
-		path := getFieldPathFromPointer(fieldPtr, defaultCluster)
+		path := getFieldPathFromPointer(fieldPtr, ref)
 		if path == "" {
 			continue
 		}
 
-		// Get the default value from the default cluster instance
-		defaultValue := getValueFromFieldPointer(fieldPtr)
+		// Get the default value from the field selector
+		defaultValue := fieldSelector.defaultValue
 		if defaultValue == nil {
 			continue
 		}
@@ -133,21 +130,6 @@ func setViperDefaultsFromFieldSelectors(
 	}
 }
 
-// getValueFromFieldPointer extracts the value from a field pointer.
-func getValueFromFieldPointer(fieldPtr any) any {
-	fieldVal := reflect.ValueOf(fieldPtr)
-	if fieldVal.Kind() != reflect.Ptr || !fieldVal.IsValid() {
-		return nil
-	}
-
-	elem := fieldVal.Elem()
-	if !elem.IsValid() {
-		return nil
-	}
-
-	return elem.Interface()
-}
-
 
 
 // setClusterFromConfig applies configuration values to the cluster.
@@ -164,15 +146,18 @@ func (m *Manager) setClusterFromConfig(cluster *v1alpha1.Cluster) {
 // setClusterFromFieldSelectors applies configuration values using the specified field selectors.
 // This reuses the same field selectors that commands provide for CLI flags.
 func (m *Manager) setClusterFromFieldSelectors(cluster *v1alpha1.Cluster) {
+	// Create a reference cluster for path discovery
+	ref := v1alpha1.NewCluster()
+
 	for _, fieldSelector := range m.fieldSelectors {
-		// Get the field reference from the selector using the default cluster for path resolution
-		defaultFieldPtr := fieldSelector.selector(m.defaultCluster)
-		if defaultFieldPtr == nil {
+		// Get the field reference from the selector using the reference cluster for path resolution
+		refFieldPtr := fieldSelector.selector(ref)
+		if refFieldPtr == nil {
 			continue
 		}
 
-		// Get the path from the field pointer in the default cluster
-		path := getFieldPathFromPointer(defaultFieldPtr, m.defaultCluster)
+		// Get the path from the field pointer in the reference cluster
+		path := getFieldPathFromPointer(refFieldPtr, ref)
 		if path == "" {
 			continue
 		}

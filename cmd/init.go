@@ -17,8 +17,8 @@ func NewInitCmd() *cobra.Command {
 		handleInitRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to use",
-				&c.Spec.SourceDirectory, "Directory containing workloads to deploy",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
+				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
 			}
 		})...,
 	)
@@ -37,7 +37,7 @@ func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []strin
 	notify.Successln(cmd.OutOrStdout(),
 		"project initialized successfully")
 	notify.Activityln(cmd.OutOrStdout(),
-		"Cluster name: "+cluster.Metadata.Name)
+		"Distribution: "+string(cluster.Spec.Distribution))
 	notify.Activityln(cmd.OutOrStdout(),
 		"Source directory: "+cluster.Spec.SourceDirectory)
 

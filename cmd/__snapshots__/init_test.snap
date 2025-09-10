@@ -14,7 +14,7 @@ Flags:
 
 [TestInitCmd_Execute - 1]
 ✔ project initialized successfully
-► Cluster name: ksail-default
+► Distribution: Kind
 ► Source directory: k8s
 
 ---

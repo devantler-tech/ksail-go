@@ -6,11 +6,17 @@ Usage:
   up [flags]
 
 Flags:
-  -h, --help   help for up
+  -c, --context string               Kubernetes context to use (default "kind-ksail-default")
+  -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
+      --distribution-config string   Configuration file for the distribution (default "kind.yaml")
+  -h, --help                         help for up
+  -t, --timeout duration             Timeout for cluster operations
 
 ---
 
 [TestUpCmd_Execute - 1]
 ✔ Cluster created and started successfully (stub implementation)
+► Distribution: Kind
+► Context: kind-ksail-default
 
 ---

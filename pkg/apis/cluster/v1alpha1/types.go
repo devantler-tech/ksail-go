@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,32 +36,16 @@ type Cluster struct {
 	Spec     Spec              `json:"spec,omitzero"`
 }
 
-// NewDefaultCluster creates a new Cluster instance with all default values set.
-// This provides a centralized location for all configuration defaults.
-func NewDefaultCluster() *Cluster {
+// NewCluster creates a new Cluster instance with minimal required structure.
+// All default values are now handled by the configuration system via field selectors.
+func NewCluster() *Cluster {
 	return &Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name: "ksail-default",
-		},
-		Spec: Spec{
-			DistributionConfig: "kind.yaml",
-			SourceDirectory:    "k8s",
-			Distribution:       DistributionKind,
-			ReconciliationTool: ReconciliationToolKubectl,
-			CNI:                CNIDefault,
-			CSI:                CSIDefault,
-			IngressController:  IngressControllerDefault,
-			GatewayController:  GatewayControllerDefault,
-			Connection: Connection{
-				Kubeconfig: "~/.kube/config",
-				Context:    "kind-ksail-default",
-				Timeout:    metav1.Duration{Duration: 5 * time.Minute},
-			},
-		},
+		Metadata: metav1.ObjectMeta{},
+		Spec:     Spec{},
 	}
 }
 

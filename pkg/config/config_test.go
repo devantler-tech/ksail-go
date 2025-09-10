@@ -39,8 +39,16 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 
 	_ = os.Chdir(tempDir)
 
-	// Load cluster without any files or env vars
-	manager := config.NewManager()
+	// Load cluster with field selectors to provide defaults
+	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig }, "kind.yaml"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
+	}
+	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -73,7 +81,12 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 
 	_ = os.Chdir(tempDir)
 
-	manager := config.NewManager()
+	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
+	}
+	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -114,7 +127,15 @@ spec:
 	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
-	manager := config.NewManager()
+	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout }, metav1.Duration{Duration: 5 * time.Minute}),
+	}
+	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -160,7 +181,14 @@ spec:
 		_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
 	}()
 
-	manager := config.NewManager()
+	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Metadata.Name }, "ksail-default"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }, "k8s"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig }, "~/.kube/config"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context }, "kind-ksail-default"),
+	}
+	manager := config.NewManagerWithFieldSelectors(fieldSelectors)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
 
@@ -185,8 +213,8 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Choose your preferred Kubernetes distribution",
-				&c.Spec.SourceDirectory, "Path to workload manifests",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Choose your preferred Kubernetes distribution",
+				&c.Spec.SourceDirectory, "k8s", "Path to workload manifests",
 			}
 		})...,
 	)
@@ -234,7 +262,10 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 		"Test command with default descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+			return []any{
+				&c.Spec.Distribution, v1alpha1.DistributionKind,
+				&c.Spec.SourceDirectory, "k8s",
+			}
 		})...,
 	)
 
@@ -250,13 +281,13 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 
 	helpOutput := out.String()
 
-	// Verify default descriptions are used
-	if !strings.Contains(helpOutput, "Configure Distribution") {
-		t.Error("default distribution description not found in help output")
+	// Verify default descriptions are used (empty since no descriptions provided)
+	if !strings.Contains(helpOutput, "--distribution") {
+		t.Error("distribution flag not found in help output")
 	}
 
-	if !strings.Contains(helpOutput, "Configure SourceDirectory") {
-		t.Error("default source-directory description not found in help output")
+	if !strings.Contains(helpOutput, "--source-directory") {
+		t.Error("source-directory flag not found in help output")
 	}
 }
 
@@ -272,8 +303,9 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 		"Test command with mixed descriptions",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			"Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
-		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory }),
+			v1alpha1.DistributionKind, "Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
+		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s"),
 	)
 
 	// Capture help output
@@ -293,8 +325,12 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 		t.Error("custom distribution description not found in help output")
 	}
 
-	// Verify default description is used for source-directory
-	if !strings.Contains(helpOutput, "Configure SourceDirectory") {
-		t.Error("default source-directory description not found in help output")
+	// Verify flags exist
+	if !strings.Contains(helpOutput, "--distribution") {
+		t.Error("distribution flag not found in help output")
+	}
+
+	if !strings.Contains(helpOutput, "--source-directory") {
+		t.Error("source-directory flag not found in help output")
 	}
 }

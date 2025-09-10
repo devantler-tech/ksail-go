@@ -2,10 +2,13 @@
 package cmd
 
 import (
+	"time"
+
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // NewStatusCmd creates and returns the status command.
@@ -17,9 +20,9 @@ func NewStatusCmd() *cobra.Command {
 		handleStatusRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Connection.Context, "Kubernetes context to check status for",
-				&c.Spec.Connection.Kubeconfig, "Path to kubeconfig file",
-				&c.Spec.Connection.Timeout, "Timeout for status check operations",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to check status for",
+				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
+				&c.Spec.Connection.Timeout, metav1.Duration{Duration: 5 * time.Minute}, "Timeout for status check operations",
 			}
 		})...,
 	)

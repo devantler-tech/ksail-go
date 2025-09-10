@@ -17,8 +17,8 @@ func NewStopCmd() *cobra.Command {
 		handleStopRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to stop",
-				&c.Spec.Connection.Context, "Kubernetes context of cluster to stop",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to stop",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context of cluster to stop",
 			}
 		})...,
 	)

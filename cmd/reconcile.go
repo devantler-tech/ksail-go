@@ -18,10 +18,10 @@ defined in configuration files.`,
 		handleReconcileRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.ReconciliationTool, "Tool to use for reconciling workloads",
-				&c.Spec.SourceDirectory, "Directory containing workloads to reconcile",
-				&c.Spec.Connection.Context, "Kubernetes context to reconcile workloads in",
-				&c.Spec.Connection.Kubeconfig, "Path to kubeconfig file",
+				&c.Spec.ReconciliationTool, v1alpha1.ReconciliationToolKubectl, "Tool to use for reconciling workloads",
+				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to reconcile",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to reconcile workloads in",
+				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
 			}
 		})...,
 	)

@@ -17,8 +17,8 @@ func NewStartCmd() *cobra.Command {
 		handleStartRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to start",
-				&c.Spec.Connection.Context, "Kubernetes context of cluster to start",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to start",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context of cluster to start",
 			}
 		})...,
 	)

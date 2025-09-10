@@ -17,7 +17,7 @@ func NewListCmd() *cobra.Command {
 		handleListRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
-				&c.Spec.Distribution, "Kubernetes distribution to list clusters for",
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to list clusters for",
 			}
 		})...,
 	)

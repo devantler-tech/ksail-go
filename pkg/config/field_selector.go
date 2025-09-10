@@ -19,26 +19,16 @@ type FieldSelector[T any] struct {
 
 // AddFlagFromField returns a type-safe field selector for the given field path.
 // This provides compile-time safety - if the struct changes, this will cause compilation errors.
-// Optionally accepts a description as the second parameter and a default value as the third parameter.
+// Requires a default value as the second parameter, optionally accepts a description as the third parameter.
 //
 // Usage:
 //
-//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution })
-//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description")
-//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, "Custom description", v1alpha1.DistributionKind)
-func AddFlagFromField[T any](selector func(*T) any, descAndDefault ...any) FieldSelector[T] {
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind)
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind, "Custom description")
+func AddFlagFromField[T any](selector func(*T) any, defaultValue any, description ...string) FieldSelector[T] {
 	desc := ""
-	var defaultValue any
-
-	for i, arg := range descAndDefault {
-		switch i {
-		case 0:
-			if s, ok := arg.(string); ok {
-				desc = s
-			}
-		case 1:
-			defaultValue = arg
-		}
+	if len(description) > 0 {
+		desc = description[0]
 	}
 
 	return FieldSelector[T]{
@@ -50,27 +40,22 @@ func AddFlagFromField[T any](selector func(*T) any, descAndDefault ...any) Field
 
 // AddFlagsFromFields creates field selectors from a function that provides field references.
 // This provides compile-time safety with zero maintenance overhead and no global variables.
-// Supports multiple modes:
+// Each field must be followed by its default value and optionally by a description string.
 //
-//  1. Without descriptions - each item in the array is a field reference:
+//  Usage with defaults only:
 //     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//     return []any{&c.Spec.Distribution, &c.Spec.SourceDirectory}
+//         return []any{
+//             &c.Spec.Distribution, v1alpha1.DistributionKind,
+//             &c.Spec.SourceDirectory, "k8s",
+//         }
 //     })
 //
-//  2. With descriptions - each field reference is followed by its description string:
+//  Usage with defaults and descriptions:
 //     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//     return []any{
-//     &c.Spec.Distribution, "Kubernetes distribution to use (EKS, K3d, Kind [default], Tind)",
-//     &c.Spec.SourceDirectory, "Directory containing workloads to deploy",
-//     }
-//     })
-//
-//  3. With descriptions and defaults - field, description, default value:
-//     config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-//     return []any{
-//     &c.Spec.Distribution, "Kubernetes distribution to use", v1alpha1.DistributionKind,
-//     &c.Spec.SourceDirectory, "Directory containing workloads", "k8s",
-//     }
+//         return []any{
+//             &c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
+//             &c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
+//         }
 //     })
 func AddFlagsFromFields(
 	fieldSelector func(*v1alpha1.Cluster) []any,
@@ -81,38 +66,33 @@ func AddFlagsFromFields(
 
 	var selectors []FieldSelector[v1alpha1.Cluster]
 
-	// Detect the pattern based on types in the array
+	// Each field must have at least a default value, and optionally a description
 	i := 0
 	for i < len(items) {
-		fieldPtr := items[i]
-
-		// Start with field only
-		selector := FieldSelector[v1alpha1.Cluster]{
-			selector:     createFieldSelectorFromPointer(fieldPtr, ref),
-			description:  "",
-			defaultValue: nil,
+		if i+1 >= len(items) {
+			break // Need at least field and default value
 		}
 
-		// Check if next item is a description (string)
-		if i+1 < len(items) {
-			if desc, ok := items[i+1].(string); ok {
-				selector.description = desc
-				i++ // consume description
+		fieldPtr := items[i]
+		defaultValue := items[i+1]
+		i += 2
 
-				// Check if there's a default value after description
-				if i+1 < len(items) {
-					// If next item is not a pointer (field), it's likely a default value
-					nextItem := items[i+1]
-					if reflect.ValueOf(nextItem).Kind() != reflect.Ptr {
-						selector.defaultValue = nextItem
-						i++ // consume default value
-					}
-				}
+		// Check if next item is a description (string)
+		description := ""
+		if i < len(items) {
+			if desc, ok := items[i].(string); ok {
+				description = desc
+				i++ // consume description
 			}
 		}
 
+		selector := FieldSelector[v1alpha1.Cluster]{
+			selector:     createFieldSelectorFromPointer(fieldPtr, ref),
+			description:  description,
+			defaultValue: defaultValue,
+		}
+
 		selectors = append(selectors, selector)
-		i++ // move to next field
 	}
 
 	return selectors
