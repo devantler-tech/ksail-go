@@ -17,6 +17,18 @@ var ErrInvalidDistribution = errors.New("invalid distribution")
 // ErrInvalidReconciliationTool is returned when an invalid reconciliation tool is specified.
 var ErrInvalidReconciliationTool = errors.New("invalid reconciliation tool")
 
+// ErrInvalidCNI is returned when an invalid CNI is specified.
+var ErrInvalidCNI = errors.New("invalid CNI")
+
+// ErrInvalidCSI is returned when an invalid CSI is specified.
+var ErrInvalidCSI = errors.New("invalid CSI")
+
+// ErrInvalidIngressController is returned when an invalid ingress controller is specified.
+var ErrInvalidIngressController = errors.New("invalid ingress controller")
+
+// ErrInvalidGatewayController is returned when an invalid gateway controller is specified.
+var ErrInvalidGatewayController = errors.New("invalid gateway controller")
+
 const (
 	// Group is the API group for KSail.
 	Group = "ksail.dev"
@@ -87,6 +99,26 @@ const (
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
 	return []Distribution{DistributionEKS, DistributionK3d, DistributionKind, DistributionTind}
+}
+
+// validCNIs returns supported CNI values.
+func validCNIs() []CNI {
+	return []CNI{CNIDefault, CNICilium}
+}
+
+// validCSIs returns supported CSI values.
+func validCSIs() []CSI {
+	return []CSI{CSIDefault, CSILocalPathStorage}
+}
+
+// validIngressControllers returns supported ingress controller values.
+func validIngressControllers() []IngressController {
+	return []IngressController{IngressControllerDefault, IngressControllerTraefik, IngressControllerNone}
+}
+
+// validGatewayControllers returns supported gateway controller values.
+func validGatewayControllers() []GatewayController {
+	return []GatewayController{GatewayControllerDefault, GatewayControllerTraefik, GatewayControllerCilium, GatewayControllerNone}
 }
 
 // CNI defines the CNI options for a KSail cluster.
@@ -264,6 +296,62 @@ func (d *ReconciliationTool) Set(value string) error {
 	)
 }
 
+// Set for CNI.
+func (c *CNI) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
+	for _, cni := range validCNIs() {
+		if strings.EqualFold(value, string(cni)) {
+			*c = cni
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: %s (valid options: %s, %s)",
+		ErrInvalidCNI, value, CNIDefault, CNICilium)
+}
+
+// Set for CSI.
+func (c *CSI) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
+	for _, csi := range validCSIs() {
+		if strings.EqualFold(value, string(csi)) {
+			*c = csi
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: %s (valid options: %s, %s)",
+		ErrInvalidCSI, value, CSIDefault, CSILocalPathStorage)
+}
+
+// Set for IngressController.
+func (i *IngressController) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
+	for _, ic := range validIngressControllers() {
+		if strings.EqualFold(value, string(ic)) {
+			*i = ic
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidIngressController, value, IngressControllerDefault, IngressControllerTraefik, IngressControllerNone)
+}
+
+// Set for GatewayController.
+func (g *GatewayController) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
+	for _, gc := range validGatewayControllers() {
+		if strings.EqualFold(value, string(gc)) {
+			*g = gc
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s, %s)",
+		ErrInvalidGatewayController, value, GatewayControllerDefault, GatewayControllerTraefik, GatewayControllerCilium, GatewayControllerNone)
+}
+
 // String returns the string representation of the Distribution.
 func (d *Distribution) String() string {
 	return string(*d)
@@ -282,4 +370,44 @@ func (d *ReconciliationTool) String() string {
 // Type returns the type of the ReconciliationTool.
 func (d *ReconciliationTool) Type() string {
 	return "ReconciliationTool"
+}
+
+// String returns the string representation of the CNI.
+func (c *CNI) String() string {
+	return string(*c)
+}
+
+// Type returns the type of the CNI.
+func (c *CNI) Type() string {
+	return "CNI"
+}
+
+// String returns the string representation of the CSI.
+func (c *CSI) String() string {
+	return string(*c)
+}
+
+// Type returns the type of the CSI.
+func (c *CSI) Type() string {
+	return "CSI"
+}
+
+// String returns the string representation of the IngressController.
+func (i *IngressController) String() string {
+	return string(*i)
+}
+
+// Type returns the type of the IngressController.
+func (i *IngressController) Type() string {
+	return "IngressController"
+}
+
+// String returns the string representation of the GatewayController.
+func (g *GatewayController) String() string {
+	return string(*g)
+}
+
+// Type returns the type of the GatewayController.
+func (g *GatewayController) Type() string {
+	return "GatewayController"
 }

@@ -101,6 +101,119 @@ func TestReconciliationTool_Set(t *testing.T) {
 	)
 }
 
+func TestCNI_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"cilium", "Cilium"},
+		{"CILIUM", "Cilium"},
+	}
+	for _, validCase := range validCases {
+		var cni v1alpha1.CNI
+
+		require.NoError(t, cni.Set(validCase.input))
+	}
+
+	err := func() error {
+		var cni v1alpha1.CNI
+
+		return cni.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidCNI,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestCSI_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"localpathstorage", "LocalPathStorage"},
+		{"LOCALPATHSTORAGE", "LocalPathStorage"},
+	}
+	for _, validCase := range validCases {
+		var csi v1alpha1.CSI
+
+		require.NoError(t, csi.Set(validCase.input))
+	}
+
+	err := func() error {
+		var csi v1alpha1.CSI
+
+		return csi.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidCSI,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestIngressController_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"traefik", "Traefik"},
+		{"NONE", "None"},
+	}
+	for _, validCase := range validCases {
+		var ic v1alpha1.IngressController
+
+		require.NoError(t, ic.Set(validCase.input))
+	}
+
+	err := func() error {
+		var ic v1alpha1.IngressController
+
+		return ic.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidIngressController,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestGatewayController_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"traefik", "Traefik"},
+		{"cilium", "Cilium"},
+		{"NONE", "None"},
+	}
+	for _, validCase := range validCases {
+		var gc v1alpha1.GatewayController
+
+		require.NoError(t, gc.Set(validCase.input))
+	}
+
+	err := func() error {
+		var gc v1alpha1.GatewayController
+
+		return gc.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidGatewayController,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
 func TestStringAndTypeMethods(t *testing.T) {
 	t.Parallel()
 
@@ -112,4 +225,20 @@ func TestStringAndTypeMethods(t *testing.T) {
 	tool := v1alpha1.ReconciliationToolKubectl
 	assert.Equal(t, "Kubectl", tool.String())
 	assert.Equal(t, "ReconciliationTool", tool.Type())
+
+	cni := v1alpha1.CNIDefault
+	assert.Equal(t, "Default", cni.String())
+	assert.Equal(t, "CNI", cni.Type())
+
+	csi := v1alpha1.CSIDefault
+	assert.Equal(t, "Default", csi.String())
+	assert.Equal(t, "CSI", csi.Type())
+
+	ic := v1alpha1.IngressControllerDefault
+	assert.Equal(t, "Default", ic.String())
+	assert.Equal(t, "IngressController", ic.Type())
+
+	gc := v1alpha1.GatewayControllerDefault
+	assert.Equal(t, "Default", gc.String())
+	assert.Equal(t, "GatewayController", gc.Type())
 }

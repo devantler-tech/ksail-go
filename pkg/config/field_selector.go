@@ -219,19 +219,19 @@ func convertValueToFieldType(value any, targetType reflect.Type) any {
 				return v1alpha1.DistributionKind
 			case reflect.TypeOf(v1alpha1.ReconciliationTool("")):
 				return v1alpha1.ReconciliationToolKubectl
+			case reflect.TypeOf(v1alpha1.CNI("")):
+				return v1alpha1.CNIDefault
+			case reflect.TypeOf(v1alpha1.CSI("")):
+				return v1alpha1.CSIDefault
+			case reflect.TypeOf(v1alpha1.IngressController("")):
+				return v1alpha1.IngressControllerDefault
+			case reflect.TypeOf(v1alpha1.GatewayController("")):
+				return v1alpha1.GatewayControllerDefault
 			}
 		}
 		
 		// Fallback to direct type conversion for non-pflag.Value types
 		switch targetType {
-		case reflect.TypeOf(v1alpha1.CNI("")):
-			return v1alpha1.CNI(strVal)
-		case reflect.TypeOf(v1alpha1.CSI("")):
-			return v1alpha1.CSI(strVal)
-		case reflect.TypeOf(v1alpha1.IngressController("")):
-			return v1alpha1.IngressController(strVal)
-		case reflect.TypeOf(v1alpha1.GatewayController("")):
-			return v1alpha1.GatewayController(strVal)
 		case reflect.TypeOf(""):
 			return strVal
 		}
