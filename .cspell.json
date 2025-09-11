@@ -147,6 +147,10 @@
     "gofumpt",
     "goimports",
     "golines",
-    "swaggo"
+    "swaggo",
+    "localpathstorage",
+    "LOCALPATHSTORAGE",
+    "paralleltest",
+    "shortnames"
   ]
 }
