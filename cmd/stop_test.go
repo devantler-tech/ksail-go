@@ -1,4 +1,3 @@
-//nolint:dupl // Test files naturally have similar patterns for different commands
 package cmd_test
 
 import (
@@ -12,12 +11,19 @@ import (
 func TestNewStopCmd(t *testing.T) {
 	t.Parallel()
 
-	testCommandCreation(t, CommandTestConfig{
-		CommandName:    "stop",
-		ExpectedUse:    "stop",
-		ExpectedShort:  "Stop the Kubernetes cluster",
-		NewCommandFunc: cmd.NewStopCmd,
-	})
+	cmd := cmd.NewStopCmd()
+
+	if cmd == nil {
+		t.Fatal("expected command to be created")
+	}
+
+	if cmd.Use != "stop" {
+		t.Fatalf("expected Use to be 'stop', got %q", cmd.Use)
+	}
+
+	if cmd.Short != "Stop the Kubernetes cluster" {
+		t.Fatalf("expected Short description, got %q", cmd.Short)
+	}
 }
 
 func TestStopCmd_Execute(t *testing.T) {

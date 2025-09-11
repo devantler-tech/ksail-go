@@ -1,4 +1,3 @@
-//nolint:dupl // Test files naturally have similar patterns for different commands
 package cmd_test
 
 import (
@@ -12,12 +11,19 @@ import (
 func TestNewReconcileCmd(t *testing.T) {
 	t.Parallel()
 
-	testCommandCreation(t, CommandTestConfig{
-		CommandName:    "reconcile",
-		ExpectedUse:    "reconcile",
-		ExpectedShort:  "Reconcile workloads in the cluster",
-		NewCommandFunc: cmd.NewReconcileCmd,
-	})
+	cmd := cmd.NewReconcileCmd()
+
+	if cmd == nil {
+		t.Fatal("expected command to be created")
+	}
+
+	if cmd.Use != "reconcile" {
+		t.Fatalf("expected Use to be 'reconcile', got %q", cmd.Use)
+	}
+
+	if cmd.Short != "Reconcile workloads in the cluster" {
+		t.Fatalf("expected Short description, got %q", cmd.Short)
+	}
 }
 
 func TestReconcileCmd_Execute(t *testing.T) {
