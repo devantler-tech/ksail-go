@@ -281,7 +281,8 @@ func (m *Manager) getFloatValueFromViper(path string, fieldType reflect.Type) an
 // getDurationValueFromViper handles duration type values from Viper.
 func (m *Manager) getDurationValueFromViper(path string, fieldType reflect.Type) any {
 	switch fieldType {
-	case reflect.TypeOf(time.Duration(0)), reflect.TypeOf(metav1.Duration{}):
+	case reflect.TypeOf(time.Duration(0)),
+		reflect.TypeOf(metav1.Duration{Duration: time.Duration(0)}):
 		return m.viper.GetDuration(path)
 	}
 
