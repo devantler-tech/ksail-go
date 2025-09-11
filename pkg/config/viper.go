@@ -1,3 +1,5 @@
+// Package config provides centralized configuration management using Viper.
+// This file contains Viper initialization and configuration constants.
 package config
 
 import (

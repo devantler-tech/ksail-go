@@ -1,3 +1,5 @@
+// Package config provides centralized configuration management using Viper.
+// This file contains field selector binding functionality for automatic CLI flag creation.
 package config
 
 import (

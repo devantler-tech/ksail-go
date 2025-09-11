@@ -1,3 +1,5 @@
+// Package config provides centralized configuration management using Viper.
+// This file contains type-safe field selector definitions for compile-time safety.
 package config
 
 import (

@@ -1,3 +1,5 @@
+// Package config provides centralized configuration management using Viper.
+// This file contains the main configuration Manager for handling cluster configuration.
 package config
 
 import (
