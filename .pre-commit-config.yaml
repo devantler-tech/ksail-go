@@ -8,11 +8,11 @@ repos:
     hooks:
       - id: golangci-lint-fmt
         language: golang
-        language_version: "1.24.0"
+        language_version: "1.25.0"
       - id: golangci-lint
         types: [go]
         language: golang
-        language_version: "1.24.0"
+        language_version: "1.25.0"
   - repo: local
     hooks:
       - id: mockery
