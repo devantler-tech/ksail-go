@@ -8,6 +8,9 @@ repos:
     hooks:
       - id: golangci-lint
         args: [--new-from-rev, HEAD, --fix]
+        language_version: "1.25.0"
+        additional_dependencies:
+          - github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
 
   # Local hooks for repository-specific tools
   - repo: local
