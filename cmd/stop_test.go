@@ -1,4 +1,3 @@
-//nolint:dupl // Test files naturally have similar patterns for different CLI commands
 package cmd_test
 
 import (
