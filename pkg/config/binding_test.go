@@ -18,18 +18,19 @@ func TestBindingFunctions(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
+		name           string
 		fieldSelectors []config.FieldSelector[v1alpha1.Cluster]
-		testFlags    func(t *testing.T, cmd *cobra.Command)
+		testFlags      func(t *testing.T, cmd *cobra.Command)
 	}{
 		{
 			name: "bool field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						// Use a dummy bool field for testing
 						ptr := new(bool)
 						*ptr = true
+
 						return ptr
 					},
 					true,
@@ -37,6 +38,7 @@ func TestBindingFunctions(t *testing.T) {
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				// Since we use a dummy field, just check the command doesn't crash
 				assert.NotNil(t, cmd.Flags())
 			},
@@ -45,16 +47,18 @@ func TestBindingFunctions(t *testing.T) {
 			name: "int field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						// Use a dummy int field for testing
 						ptr := new(int)
 						*ptr = 3
+
 						return ptr
 					},
 					3,
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				// Since we use a dummy field, just check the command doesn't crash
 				assert.NotNil(t, cmd.Flags())
 			},
@@ -63,15 +67,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "int32 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(int32)
 						*ptr = 8080
-						return ptr 
+
+						return ptr
 					},
 					int32(8080),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -80,15 +86,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "int64 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(int64)
 						*ptr = 9000
-						return ptr 
+
+						return ptr
 					},
 					int64(9000),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -97,15 +105,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "uint field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(uint)
 						*ptr = 100
-						return ptr 
+
+						return ptr
 					},
 					uint(100),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -114,15 +124,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "uint32 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(uint32)
 						*ptr = 3200
-						return ptr 
+
+						return ptr
 					},
 					uint32(3200),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -131,15 +143,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "uint64 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(uint64)
 						*ptr = 6400
-						return ptr 
+
+						return ptr
 					},
 					uint64(6400),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -148,15 +162,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "float32 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(float32)
 						*ptr = 3.14
-						return ptr 
+
+						return ptr
 					},
 					float32(3.14),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -165,15 +181,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "float64 field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(float64)
 						*ptr = 2.718
-						return ptr 
+
+						return ptr
 					},
 					float64(2.718),
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -182,15 +200,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "time.Duration field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(c *v1alpha1.Cluster) any {
 						ptr := new(time.Duration)
 						*ptr = 5 * time.Minute
-						return ptr 
+
+						return ptr
 					},
 					5*time.Minute,
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -199,13 +219,14 @@ func TestBindingFunctions(t *testing.T) {
 			name: "metav1.Duration field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
-						return &c.Spec.Connection.Timeout 
+					func(c *v1alpha1.Cluster) any {
+						return &c.Spec.Connection.Timeout
 					},
 					metav1.Duration{Duration: 10 * time.Minute},
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flag := cmd.Flags().Lookup("timeout")
 				require.NotNil(t, flag)
 			},
@@ -214,15 +235,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "string slice field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(c *v1alpha1.Cluster) any {
 						ptr := new([]string)
 						*ptr = []string{"tag1", "tag2"}
-						return ptr 
+
+						return ptr
 					},
 					[]string{"tag1", "tag2"},
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -231,15 +254,17 @@ func TestBindingFunctions(t *testing.T) {
 			name: "int slice field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
+					func(c *v1alpha1.Cluster) any {
 						ptr := new([]int)
 						*ptr = []int{8080, 9090}
-						return ptr 
+
+						return ptr
 					},
 					[]int{8080, 9090},
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flags := cmd.Flags()
 				assert.NotNil(t, flags)
 			},
@@ -248,13 +273,14 @@ func TestBindingFunctions(t *testing.T) {
 			name: "pflag.Value enum field binding",
 			fieldSelectors: []config.FieldSelector[v1alpha1.Cluster]{
 				config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { 
-						return &c.Spec.Distribution 
+					func(c *v1alpha1.Cluster) any {
+						return &c.Spec.Distribution
 					},
 					v1alpha1.DistributionKind,
 				),
 			},
 			testFlags: func(t *testing.T, cmd *cobra.Command) {
+				t.Helper()
 				flag := cmd.Flags().Lookup("distribution")
 				require.NotNil(t, flag)
 				assert.Equal(t, "Kind", flag.DefValue)
@@ -262,16 +288,16 @@ func TestBindingFunctions(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			cmd := createTestCobraCommand(
-				"Test command for "+tt.name,
-				tt.fieldSelectors...,
+				"Test command for "+testCase.name,
+				testCase.fieldSelectors...,
 			)
 
-			tt.testFlags(t, cmd)
+			testCase.testFlags(t, cmd)
 		})
 	}
 }
@@ -281,7 +307,7 @@ func TestSetPflagValueDefault(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
+		name          string
 		fieldSelector config.FieldSelector[v1alpha1.Cluster]
 		expectedValue string
 	}{
@@ -335,19 +361,19 @@ func TestSetPflagValueDefault(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			cmd := createTestCobraCommand(
-				"Test command for "+tt.name,
-				tt.fieldSelector,
+				"Test command for "+testCase.name,
+				testCase.fieldSelector,
 			)
 
 			// Get the flag and check its default value
 			flags := cmd.Flags()
 			flags.VisitAll(func(flag *pflag.Flag) {
-				assert.Equal(t, tt.expectedValue, flag.DefValue)
+				assert.Equal(t, testCase.expectedValue, flag.DefValue)
 			})
 		})
 	}
@@ -358,9 +384,9 @@ func TestGenerateShortName(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		flagName   string
-		expected   string
+		name     string
+		flagName string
+		expected string
 	}{
 		{
 			name:     "short name not generated for short flags",
@@ -384,26 +410,23 @@ func TestGenerateShortName(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// We can't test the internal function directly, but we can test the behavior
 			// by creating a command and checking if shortnames are assigned
-			var fieldSelector config.FieldSelector[v1alpha1.Cluster]
-			
-			// Create a dummy field selector for testing
-			fieldSelector = config.AddFlagFromField(
+			fieldSelector := config.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 				"test-value",
 			)
 
 			cmd := createTestCobraCommand("Test short name", fieldSelector)
-			
+
 			// Check if the flag has the expected short name behavior
 			flag := cmd.Flags().Lookup("name")
 			require.NotNil(t, flag)
-			
+
 			// For the 'name' flag (4 chars), it should have a shortname
 			assert.Equal(t, "n", flag.Shorthand)
 		})
@@ -433,7 +456,7 @@ func TestFieldPathFunctions(t *testing.T) {
 	)
 
 	cmdWithNil := createTestCobraCommand("Test nil field", nilFieldSelector)
-	
+
 	// Should not crash and should have no flags (except help)
 	assert.NotNil(t, cmdWithNil)
 }
@@ -484,10 +507,10 @@ func TestCamelToKebabConversion(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// We test this indirectly by creating field selectors and checking flag names
 			// Create a dummy struct field that would result in the input name
 			fieldSelector := config.AddFlagFromField(
@@ -496,7 +519,7 @@ func TestCamelToKebabConversion(t *testing.T) {
 			)
 
 			cmd := createTestCobraCommand("Test kebab conversion", fieldSelector)
-			
+
 			// The actual test is that no panics occur and flags are created
 			assert.NotNil(t, cmd.Flags())
 		})
@@ -504,9 +527,10 @@ func TestCamelToKebabConversion(t *testing.T) {
 }
 
 // TestViperFieldTypeHandling tests various field type handling in the configuration system.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 func TestViperFieldTypeHandling(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
-
 	setupTestEnvironment(t)
 
 	// Test with various field types
@@ -520,19 +544,21 @@ func TestViperFieldTypeHandling(t *testing.T) {
 			v1alpha1.DistributionKind,
 		),
 		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { 
+			func(c *v1alpha1.Cluster) any {
 				// Use a dummy bool field for testing
 				ptr := new(bool)
 				*ptr = true
+
 				return ptr
 			},
 			true,
 		),
 		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { 
+			func(c *v1alpha1.Cluster) any {
 				// Use a dummy int field for testing
 				ptr := new(int)
 				*ptr = 2
+
 				return ptr
 			},
 			2,
@@ -561,7 +587,7 @@ func TestInvalidFieldPaths(t *testing.T) {
 
 	// Test with field selector that returns invalid pointer
 	fieldSelector := config.AddFlagFromField(
-		func(c *v1alpha1.Cluster) any { 
+		func(c *v1alpha1.Cluster) any {
 			// Return a non-pointer value
 			return "not-a-pointer"
 		},
@@ -569,7 +595,7 @@ func TestInvalidFieldPaths(t *testing.T) {
 	)
 
 	cmd := createTestCobraCommand("Test invalid paths", fieldSelector)
-	
+
 	// Should not crash and should have minimal flags
 	assert.NotNil(t, cmd)
 }

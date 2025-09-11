@@ -54,7 +54,7 @@ func TestFieldSelectorCreation(t *testing.T) {
 		},
 		{
 			name: "AddFlagsFromFields empty",
-			fieldSelectors: config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+			fieldSelectors: config.AddFlagsFromFields(func(_ *v1alpha1.Cluster) []any {
 				return []any{}
 			}),
 			expectedCount: 0,
@@ -70,15 +70,15 @@ func TestFieldSelectorCreation(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.Len(t, tt.fieldSelectors, tt.expectedCount)
+			assert.Len(t, testCase.fieldSelectors, testCase.expectedCount)
 
-			if tt.expectedCount > 0 {
+			if testCase.expectedCount > 0 {
 				// Test that we can create a command with these selectors
-				cmd := createTestCobraCommand("Test command", tt.fieldSelectors...)
+				cmd := createTestCobraCommand("Test command", testCase.fieldSelectors...)
 				assert.NotNil(t, cmd)
 			}
 		})
@@ -88,7 +88,6 @@ func TestFieldSelectorCreation(t *testing.T) {
 // TestConvertValueToFieldType tests value conversion functionality.
 func TestConvertValueToFieldType(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
-
 	setupTestEnvironment(t)
 
 	tests := []struct {
@@ -170,17 +169,17 @@ func TestConvertValueToFieldType(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(tt.envVar, tt.envValue)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv(testCase.envVar, testCase.envValue)
 
-			manager := config.NewManager(tt.fieldSelector)
+			manager := config.NewManager(testCase.fieldSelector)
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
 			// Use reflection to check the actual field value
-			actualValue := getFieldValueBySelector(cluster, tt.fieldSelector)
-			assert.Equal(t, tt.expectedValue, actualValue)
+			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
+			assert.Equal(t, testCase.expectedValue, actualValue)
 		})
 	}
 }
@@ -188,7 +187,6 @@ func TestConvertValueToFieldType(t *testing.T) {
 // TestHandleMetav1Duration tests metav1.Duration handling with edge cases.
 func TestHandleMetav1Duration(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
-
 	setupTestEnvironment(t)
 
 	tests := []struct {
@@ -213,9 +211,9 @@ func TestHandleMetav1Duration(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("KSAIL_SPEC_CONNECTION_TIMEOUT", tt.envValue)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv("KSAIL_SPEC_CONNECTION_TIMEOUT", testCase.envValue)
 
 			fieldSelector := config.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
@@ -226,7 +224,7 @@ func TestHandleMetav1Duration(t *testing.T) {
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.expectedDur, cluster.Spec.Connection.Timeout.Duration)
+			assert.Equal(t, testCase.expectedDur, cluster.Spec.Connection.Timeout.Duration)
 		})
 	}
 }
@@ -234,7 +232,6 @@ func TestHandleMetav1Duration(t *testing.T) {
 // TestEnumDefaultValues tests enum default value handling.
 func TestEnumDefaultValues(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
-
 	setupTestEnvironment(t)
 
 	tests := []struct {
@@ -266,16 +263,16 @@ func TestEnumDefaultValues(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(tt.envVar, tt.envValue)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv(testCase.envVar, testCase.envValue)
 
-			manager := config.NewManager(tt.fieldSelector)
+			manager := config.NewManager(testCase.fieldSelector)
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			actualValue := getFieldValueBySelector(cluster, tt.fieldSelector)
-			assert.Equal(t, tt.expectedValue, actualValue)
+			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
+			assert.Equal(t, testCase.expectedValue, actualValue)
 		})
 	}
 }
@@ -316,17 +313,17 @@ func TestGetFieldByPath(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			// We can't call getFieldByPath directly, so we test this indirectly
 			// by creating field selectors and seeing if they work
-			if !tt.shouldBeNil {
+			if !testCase.shouldBeNil {
 				// Create a field selector that should work for valid paths
 				var fieldSelector config.FieldSelector[v1alpha1.Cluster]
-				
-				switch tt.path {
+
+				switch testCase.path {
 				case "metadata.name":
 					fieldSelector = config.AddFlagFromField(
 						func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
@@ -353,7 +350,6 @@ func TestGetFieldByPath(t *testing.T) {
 // TestDirectConversion tests direct type conversion functionality.
 func TestDirectConversion(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
-
 	setupTestEnvironment(t)
 
 	tests := []struct {
@@ -376,10 +372,11 @@ func TestDirectConversion(t *testing.T) {
 		{
 			name: "bool conversion",
 			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { 
+				func(_ *v1alpha1.Cluster) any {
 					// Use a dummy bool field for testing
 					ptr := new(bool)
 					*ptr = false
+
 					return ptr
 				},
 				false,
@@ -390,25 +387,28 @@ func TestDirectConversion(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(tt.envVar, tt.envValue)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv(testCase.envVar, testCase.envValue)
 
-			manager := config.NewManager(tt.fieldSelector)
+			manager := config.NewManager(testCase.fieldSelector)
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			actualValue := getFieldValueBySelector(cluster, tt.fieldSelector)
-			assert.Equal(t, tt.expectedValue, actualValue)
+			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
+			assert.Equal(t, testCase.expectedValue, actualValue)
 		})
 	}
 }
 
 // Helper function to get field value using the field selector.
-func getFieldValueBySelector(cluster *v1alpha1.Cluster, selector config.FieldSelector[v1alpha1.Cluster]) any {
+func getFieldValueBySelector(
+	cluster *v1alpha1.Cluster,
+	_ config.FieldSelector[v1alpha1.Cluster],
+) any {
 	// Since we can't access the internal selector function directly,
 	// we'll use known field mappings for common test cases
-	
+
 	// For the test cases we use, we can return the known field values
 	switch {
 	case cluster.Spec.Distribution != "":
