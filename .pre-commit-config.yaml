@@ -2,37 +2,20 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
+  # Official golangci-lint hook from golangci-lint repository
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.4.0
+    hooks:
+      - id: golangci-lint
+        args: [--new-from-rev, HEAD, --fix]
+
+  # Local hooks for repository-specific tools
   - repo: local
     hooks:
-    - id: golangci-lint-config-verify
-      name: golangci-lint-config-verify
-      description: Verifies the configuration file
-      entry: golangci-lint config verify
-      files: '\.golangci\.(?:yml|yaml|toml|json)'
-      language: golang
-      pass_filenames: false
-    - id: golangci-lint-fmt
-      name: golangci-lint-fmt
-      description: Fast linters runner for Go. Formats all files in the repo.
-      entry: golangci-lint fmt
-      types: [go]
-      language: golang
-      require_serial: true
-      pass_filenames: false
-    - id: golangci-lint
-      name: golangci-lint
-      description: Fast linters runner for Go. Note that only modified files are linted, so linters like 'unused' that need to scan all files won't work as expected.
-      entry: golangci-lint run --new-from-rev HEAD --fix
-      types: [go]
-      language: golang
-      language_version: "1.25.0"
-      additional_dependencies: [golangci-lint]
-      require_serial: true
-      pass_filenames: false
     - id: mockery
       name: Generate mocks with mockery
       entry: scripts/ensure-mockery.sh
-      language: script
+      language: system
       files: '\.go$'
       pass_filenames: false
     
