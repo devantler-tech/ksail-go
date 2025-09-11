@@ -8,6 +8,8 @@ repos:
     hooks:
       - id: golangci-lint
         args: [--new-from-rev, HEAD, --fix]
+        env:
+          GOTOOLCHAIN: local
 
   # Local hooks for repository-specific tools
   - repo: local
