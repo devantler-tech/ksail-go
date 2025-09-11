@@ -10,6 +10,7 @@ import (
 
 // CreateDefaultClusterMetadata creates a default metav1.ObjectMeta for testing cluster configurations.
 func CreateDefaultClusterMetadata(name string) metav1.ObjectMeta {
+	//nolint:exhaustruct
 	metadata := metav1.ObjectMeta{
 		Name:            name,
 		OwnerReferences: []metav1.OwnerReference{},
