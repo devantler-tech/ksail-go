@@ -25,6 +25,8 @@ repos:
       entry: golangci-lint run --new-from-rev HEAD --fix
       types: [go]
       language: golang
+      language_version: "1.25.0"
+      additional_dependencies: [golangci-lint]
       require_serial: true
       pass_filenames: false
     - id: mockery
