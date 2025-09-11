@@ -356,7 +356,7 @@ func TestManager_UnsignedIntegerTypes(t *testing.T) {
 				)
 			case "uint32":
 				fieldSelector = config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any {
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(uint32)
 						*ptr = 3200
 
