@@ -26,7 +26,10 @@ linters:
           - exhaustruct
       - path: ".*/testutils/.*\\.go$"
         linters:
-          - dupl
+          - exhaustruct
+      - path: "pkg/provisioner/containerengine/engine\\.go$"
+        linters:
+          - ireturn
   settings:
     wsl_v5:
       allow-first-in-block: true
@@ -44,6 +47,7 @@ linters:
             - github.com/devantler-tech
             - github.com/docker
             - github.com/fatih/color
+            - github.com/gkampitakis/go-snaps
             - github.com/k3d-io
             - github.com/mittwald/go-helm-client
             - github.com/rancher
