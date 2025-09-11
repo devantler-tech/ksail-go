@@ -12,10 +12,13 @@ import (
 )
 
 // TestFieldSelectorCreation tests field selector creation functions.
-func TestFieldSelectorCreation(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
+// getFieldSelectorCreationTestCases returns test cases for TestFieldSelectorCreation.
+func getFieldSelectorCreationTestCases() []struct {
+	name           string
+	fieldSelectors []config.FieldSelector[v1alpha1.Cluster]
+	expectedCount  int
+} {
+	return []struct {
 		name           string
 		fieldSelectors []config.FieldSelector[v1alpha1.Cluster]
 		expectedCount  int
@@ -69,6 +72,12 @@ func TestFieldSelectorCreation(t *testing.T) {
 			expectedCount: 0, // Should not create selector without default
 		},
 	}
+}
+
+func TestFieldSelectorCreation(t *testing.T) {
+	t.Parallel()
+
+	tests := getFieldSelectorCreationTestCases()
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -86,9 +95,22 @@ func TestFieldSelectorCreation(t *testing.T) {
 }
 
 // TestConvertValueToFieldType tests value conversion functionality.
+//
+//nolint:paralleltest
 func TestConvertValueToFieldType(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
+
+	// Test Duration conversions
+	testDurationConversions(t)
+
+	// Test enum conversions
+	testEnumConversions(t)
+}
+
+// testDurationConversions tests metav1.Duration conversion functionality.
+func testDurationConversions(t *testing.T) {
+	t.Helper()
 
 	tests := []struct {
 		name          string
@@ -107,66 +129,6 @@ func TestConvertValueToFieldType(t *testing.T) {
 			envValue:      "10m",
 			expectedValue: metav1.Duration{Duration: 10 * time.Minute},
 		},
-		{
-			name: "Distribution enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-				v1alpha1.DistributionKind,
-			),
-			envVar:        "KSAIL_SPEC_DISTRIBUTION",
-			envValue:      "K3d",
-			expectedValue: v1alpha1.DistributionK3d,
-		},
-		{
-			name: "CNI enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
-				v1alpha1.CNIDefault,
-			),
-			envVar:        "KSAIL_SPEC_CNI",
-			envValue:      "Cilium",
-			expectedValue: v1alpha1.CNICilium,
-		},
-		{
-			name: "CSI enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
-				v1alpha1.CSIDefault,
-			),
-			envVar:        "KSAIL_SPEC_CSI",
-			envValue:      "LocalPathStorage",
-			expectedValue: v1alpha1.CSILocalPathStorage,
-		},
-		{
-			name: "IngressController enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-				v1alpha1.IngressControllerDefault,
-			),
-			envVar:        "KSAIL_SPEC_INGRESSCONTROLLER",
-			envValue:      "Traefik",
-			expectedValue: v1alpha1.IngressControllerTraefik,
-		},
-		{
-			name: "GatewayController enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-				v1alpha1.GatewayControllerDefault,
-			),
-			envVar:        "KSAIL_SPEC_GATEWAYCONTROLLER",
-			envValue:      "Cilium",
-			expectedValue: v1alpha1.GatewayControllerCilium,
-		},
-		{
-			name: "ReconciliationTool enum from string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-				v1alpha1.ReconciliationToolKubectl,
-			),
-			envVar:        "KSAIL_SPEC_RECONCILIATIONTOOL",
-			envValue:      "Flux",
-			expectedValue: v1alpha1.ReconciliationToolFlux,
-		},
 	}
 
 	for _, testCase := range tests {
@@ -177,9 +139,45 @@ func TestConvertValueToFieldType(t *testing.T) {
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			// Use reflection to check the actual field value
 			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
 			assert.Equal(t, testCase.expectedValue, actualValue)
+		})
+	}
+}
+
+// testEnumConversions tests enum conversion functionality.
+func testEnumConversions(t *testing.T) {
+	t.Helper()
+
+	enumSelectors := createEnumFieldSelectors()
+	envVars := []string{
+		"KSAIL_SPEC_DISTRIBUTION",
+		"KSAIL_SPEC_CNI",
+		"KSAIL_SPEC_CSI",
+		"KSAIL_SPEC_INGRESSCONTROLLER",
+		"KSAIL_SPEC_GATEWAYCONTROLLER",
+		"KSAIL_SPEC_RECONCILIATIONTOOL",
+	}
+	envValues := []string{"K3d", "Cilium", "LocalPathStorage", "Traefik", "Cilium", "Flux"}
+	expectedValues := []any{
+		v1alpha1.DistributionK3d,
+		v1alpha1.CNICilium,
+		v1alpha1.CSILocalPathStorage,
+		v1alpha1.IngressControllerTraefik,
+		v1alpha1.GatewayControllerCilium,
+		v1alpha1.ReconciliationToolFlux,
+	}
+
+	for index, selector := range enumSelectors {
+		t.Run(selector.name+" from string", func(t *testing.T) {
+			t.Setenv(envVars[index], envValues[index])
+
+			manager := config.NewManager(selector.fieldSelector)
+			cluster, err := manager.LoadCluster()
+			require.NoError(t, err)
+
+			actualValue := getFieldValueBySelector(cluster, selector.fieldSelector)
+			assert.Equal(t, expectedValues[index], actualValue)
 		})
 	}
 }
@@ -277,11 +275,13 @@ func TestEnumDefaultValues(t *testing.T) {
 	}
 }
 
-// TestGetFieldByPath tests the field path resolution functionality.
-func TestGetFieldByPath(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
+// getFieldByPathTestCases returns test cases for TestGetFieldByPath.
+func getFieldByPathTestCases() []struct {
+	name        string
+	path        string
+	shouldBeNil bool
+} {
+	return []struct {
 		name        string
 		path        string
 		shouldBeNil bool
@@ -312,6 +312,13 @@ func TestGetFieldByPath(t *testing.T) {
 			shouldBeNil: true,
 		},
 	}
+}
+
+// TestGetFieldByPath tests the field path resolution functionality.
+func TestGetFieldByPath(t *testing.T) {
+	t.Parallel()
+
+	tests := getFieldByPathTestCases()
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {

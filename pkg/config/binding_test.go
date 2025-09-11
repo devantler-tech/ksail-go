@@ -191,13 +191,14 @@ func testSpecialTypeBindings(t *testing.T) {
 }
 
 // TestSetPflagValueDefault tests setting default values for pflag.Value types.
-func TestSetPflagValueDefault(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
+// createEnumFieldSelectors creates common enum field selectors for testing.
+func createEnumFieldSelectors() []struct {
+	name          string
+	fieldSelector config.FieldSelector[v1alpha1.Cluster]
+} {
+	return []struct {
 		name          string
 		fieldSelector config.FieldSelector[v1alpha1.Cluster]
-		expectedValue string
 	}{
 		{
 			name: "Distribution enum",
@@ -205,7 +206,6 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 				v1alpha1.DistributionK3d,
 			),
-			expectedValue: "K3d",
 		},
 		{
 			name: "CNI enum",
@@ -213,7 +213,6 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
 				v1alpha1.CNICilium,
 			),
-			expectedValue: "Cilium",
 		},
 		{
 			name: "CSI enum",
@@ -221,7 +220,6 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
 				v1alpha1.CSILocalPathStorage,
 			),
-			expectedValue: "LocalPathStorage",
 		},
 		{
 			name: "IngressController enum",
@@ -229,7 +227,6 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
 				v1alpha1.IngressControllerTraefik,
 			),
-			expectedValue: "Traefik",
 		},
 		{
 			name: "GatewayController enum",
@@ -237,7 +234,6 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
 				v1alpha1.GatewayControllerTraefik,
 			),
-			expectedValue: "Traefik",
 		},
 		{
 			name: "ReconciliationTool enum",
@@ -245,9 +241,44 @@ func TestSetPflagValueDefault(t *testing.T) {
 				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
 				v1alpha1.ReconciliationToolFlux,
 			),
-			expectedValue: "Flux",
 		},
 	}
+}
+
+// getSetPflagValueDefaultTestCases returns test cases for TestSetPflagValueDefault.
+func getSetPflagValueDefaultTestCases() []struct {
+	name          string
+	fieldSelector config.FieldSelector[v1alpha1.Cluster]
+	expectedValue string
+} {
+	enumSelectors := createEnumFieldSelectors()
+	expectedValues := []string{"K3d", "Cilium", "LocalPathStorage", "Traefik", "Traefik", "Flux"}
+
+	tests := make([]struct {
+		name          string
+		fieldSelector config.FieldSelector[v1alpha1.Cluster]
+		expectedValue string
+	}, len(enumSelectors))
+
+	for index, selector := range enumSelectors {
+		tests[index] = struct {
+			name          string
+			fieldSelector config.FieldSelector[v1alpha1.Cluster]
+			expectedValue string
+		}{
+			name:          selector.name,
+			fieldSelector: selector.fieldSelector,
+			expectedValue: expectedValues[index],
+		}
+	}
+
+	return tests
+}
+
+func TestSetPflagValueDefault(t *testing.T) {
+	t.Parallel()
+
+	tests := getSetPflagValueDefaultTestCases()
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -339,7 +370,7 @@ func TestFieldPathFunctions(t *testing.T) {
 
 	// Test with nil field selector (should be skipped)
 	nilFieldSelector := config.AddFlagFromField(
-		func(c *v1alpha1.Cluster) any { return nil },
+		func(_ *v1alpha1.Cluster) any { return nil },
 		"default",
 	)
 
@@ -432,7 +463,7 @@ func TestViperFieldTypeHandling(t *testing.T) {
 			v1alpha1.DistributionKind,
 		),
 		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any {
+			func(_ *v1alpha1.Cluster) any {
 				// Use a dummy bool field for testing
 				ptr := new(bool)
 				*ptr = true
@@ -442,7 +473,7 @@ func TestViperFieldTypeHandling(t *testing.T) {
 			true,
 		),
 		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any {
+			func(_ *v1alpha1.Cluster) any {
 				// Use a dummy int field for testing
 				ptr := new(int)
 				*ptr = 2
@@ -475,7 +506,7 @@ func TestInvalidFieldPaths(t *testing.T) {
 
 	// Test with field selector that returns invalid pointer
 	fieldSelector := config.AddFlagFromField(
-		func(c *v1alpha1.Cluster) any {
+		func(_ *v1alpha1.Cluster) any {
 			// Return a non-pointer value
 			return "not-a-pointer"
 		},

@@ -74,71 +74,58 @@ func TestManager_GetViper(t *testing.T) {
 }
 
 // TestConvertDefaultValueForViper tests conversion of default values for Viper storage.
+//
+//nolint:paralleltest,tparallel
 func TestConvertDefaultValueForViper(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 	setupTestEnvironment(t)
+
+	// Test enum to string conversions
+	testEnumToStringConversions(t)
+
+	// Test other type conversions
+	testOtherTypeConversions(t)
+}
+
+// testEnumToStringConversions tests enum to string conversions for Viper.
+func testEnumToStringConversions(t *testing.T) {
+	t.Helper()
+
+	enumSelectors := createEnumFieldSelectors()
+
+	for _, selector := range enumSelectors {
+		t.Run(selector.name+" to string", func(t *testing.T) {
+			t.Parallel()
+
+			manager := config.NewManager(selector.fieldSelector)
+			cluster, err := manager.LoadCluster()
+			require.NoError(t, err)
+
+			assert.NotNil(t, cluster)
+		})
+	}
+}
+
+// testOtherTypeConversions tests other type conversions for Viper.
+func testOtherTypeConversions(t *testing.T) {
+	t.Helper()
+
+	// Test basic types
+	testBasicTypeConversions(t)
+
+	// Test special types
+	testSpecialTypeConversions(t)
+}
+
+// testBasicTypeConversions tests basic type conversion handling.
+func testBasicTypeConversions(t *testing.T) {
+	t.Helper()
 
 	tests := []struct {
 		name          string
 		fieldSelector config.FieldSelector[v1alpha1.Cluster]
 		expectedType  string
 	}{
-		{
-			name: "Distribution enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-				v1alpha1.DistributionK3d,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "CNI enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
-				v1alpha1.CNICilium,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "CSI enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
-				v1alpha1.CSILocalPathStorage,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "IngressController enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-				v1alpha1.IngressControllerTraefik,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "GatewayController enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-				v1alpha1.GatewayControllerTraefik,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "ReconciliationTool enum to string",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-				v1alpha1.ReconciliationToolFlux,
-			),
-			expectedType: "string",
-		},
-		{
-			name: "metav1.Duration to time.Duration",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-				metav1.Duration{Duration: 5 * time.Minute},
-			),
-			expectedType: "duration",
-		},
 		{
 			name: "string remains string",
 			fieldSelector: config.AddFlagFromField(
@@ -177,15 +164,46 @@ func TestConvertDefaultValueForViper(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := config.NewManager(tt.fieldSelector)
+			manager := config.NewManager(testCase.fieldSelector)
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			// Test passes if no error occurs during conversion
+			assert.NotNil(t, cluster)
+		})
+	}
+}
+
+// testSpecialTypeConversions tests special type conversions like metav1.Duration.
+func testSpecialTypeConversions(t *testing.T) {
+	t.Helper()
+
+	tests := []struct {
+		name          string
+		fieldSelector config.FieldSelector[v1alpha1.Cluster]
+		expectedType  string
+	}{
+		{
+			name: "metav1.Duration to time.Duration",
+			fieldSelector: config.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+				metav1.Duration{Duration: 5 * time.Minute},
+			),
+			expectedType: "duration",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			manager := config.NewManager(testCase.fieldSelector)
+			cluster, err := manager.LoadCluster()
+			require.NoError(t, err)
+
 			assert.NotNil(t, cluster)
 		})
 	}
@@ -366,7 +384,7 @@ func TestManager_UnsignedIntegerTypes(t *testing.T) {
 				)
 			case "uint64":
 				fieldSelector = config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any {
+					func(_ *v1alpha1.Cluster) any {
 						ptr := new(uint64)
 						*ptr = 6400
 
@@ -413,7 +431,7 @@ func TestManager_EdgeCases(t *testing.T) {
 				setupTestEnvironment(t)
 
 				fieldSelector := config.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return nil },
+					func(_ *v1alpha1.Cluster) any { return nil },
 					"default",
 				)
 
@@ -474,7 +492,7 @@ func TestSetValueAtFieldPointer(t *testing.T) {
 		{
 			name: "field selector returning non-pointer",
 			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any {
+				func(_ *v1alpha1.Cluster) any {
 					// Return a non-pointer value
 					return "not-a-pointer"
 				},
