@@ -96,6 +96,7 @@
     "omitzero",
     "opencontainers",
     "pathutils",
+    "pflag",
     "pflags",
     "pipefail",
     "pkgname",
