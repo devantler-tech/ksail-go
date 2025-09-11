@@ -38,10 +38,10 @@ func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []strin
 
 	notify.Successln(cmd.OutOrStdout(),
 		"project initialized successfully")
-	notify.Activityln(cmd.OutOrStdout(),
-		"Distribution: "+string(cluster.Spec.Distribution))
-	notify.Activityln(cmd.OutOrStdout(),
-		"Source directory: "+cluster.Spec.SourceDirectory)
+	logClusterInfo(cmd, []ClusterInfoField{
+		{"Distribution", string(cluster.Spec.Distribution)},
+		{"Source directory", cluster.Spec.SourceDirectory},
+	})
 
 	return nil
 }

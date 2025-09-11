@@ -40,12 +40,11 @@ func handleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
-	notify.Activityln(cmd.OutOrStdout(),
-		"Reconciliation tool: "+string(cluster.Spec.ReconciliationTool))
-	notify.Activityln(cmd.OutOrStdout(),
-		"Source directory: "+cluster.Spec.SourceDirectory)
-	notify.Activityln(cmd.OutOrStdout(),
-		"Context: "+cluster.Spec.Connection.Context)
+	logClusterInfo(cmd, []ClusterInfoField{
+		{"Reconciliation tool", string(cluster.Spec.ReconciliationTool)},
+		{"Source directory", cluster.Spec.SourceDirectory},
+		{"Context", cluster.Spec.Connection.Context},
+	})
 
 	return nil
 }

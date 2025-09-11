@@ -30,6 +30,19 @@ func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
 	)
 }
 
+// ClusterInfoField represents a field to log from cluster information.
+type ClusterInfoField struct {
+	Label string
+	Value string
+}
+
+// logClusterInfo logs cluster information fields to the command output.
+func logClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
+	for _, field := range fields {
+		notify.Activityln(cmd.OutOrStdout(), field.Label+": "+field.Value)
+	}
+}
+
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,
@@ -45,8 +58,10 @@ func HandleSimpleClusterCommand(
 	}
 
 	notify.Successln(cmd.OutOrStdout(), successMessage)
-	notify.Activityln(cmd.OutOrStdout(), "Distribution: "+string(cluster.Spec.Distribution))
-	notify.Activityln(cmd.OutOrStdout(), "Context: "+cluster.Spec.Connection.Context)
+	logClusterInfo(cmd, []ClusterInfoField{
+		{"Distribution", string(cluster.Spec.Distribution)},
+		{"Context", cluster.Spec.Connection.Context},
+	})
 
 	return cluster, nil
 }

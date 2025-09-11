@@ -44,10 +44,10 @@ func handleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []str
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")
-	notify.Activityln(cmd.OutOrStdout(),
-		"Context: "+cluster.Spec.Connection.Context)
-	notify.Activityln(cmd.OutOrStdout(),
-		"Kubeconfig: "+cluster.Spec.Connection.Kubeconfig)
+	logClusterInfo(cmd, []ClusterInfoField{
+		{"Context", cluster.Spec.Connection.Context},
+		{"Kubeconfig", cluster.Spec.Connection.Kubeconfig},
+	})
 
 	return nil
 }
