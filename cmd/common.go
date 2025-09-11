@@ -43,6 +43,21 @@ func logClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 	}
 }
 
+// loadClusterWithErrorHandling provides common error handling pattern for loading cluster configuration.
+func loadClusterWithErrorHandling(
+	cmd *cobra.Command,
+	configManager *config.Manager,
+) (*v1alpha1.Cluster, error) {
+	cluster, err := configManager.LoadCluster()
+	if err != nil {
+		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+
+		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	return cluster, nil
+}
+
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,

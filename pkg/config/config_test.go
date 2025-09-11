@@ -15,6 +15,132 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// createTestFieldSelectors creates common field selectors for testing.
+func createTestFieldSelectors() []config.FieldSelector[v1alpha1.Cluster] {
+	return []config.FieldSelector[v1alpha1.Cluster]{
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			"~/.kube/config",
+		),
+	}
+}
+
+// createExtendedTestFieldSelectors creates field selectors with additional fields for testing.
+func createExtendedTestFieldSelectors() []config.FieldSelector[v1alpha1.Cluster] {
+	selectors := createTestFieldSelectors()
+
+	return append(selectors,
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			"kind.yaml",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+		),
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"kind-ksail-default",
+		),
+	)
+}
+
+// setupTestEnvironment creates a temp directory and changes to it.
+func setupTestEnvironment(t *testing.T) {
+	t.Helper()
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+}
+
+// createFieldSelectorsWithTimeout creates field selectors including timeout for config file testing.
+func createFieldSelectorsWithTimeout() []config.FieldSelector[v1alpha1.Cluster] {
+	selectors := createExtendedTestFieldSelectors()
+
+	return append(selectors,
+		config.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+			metav1.Duration{Duration: 5 * time.Minute},
+		),
+	)
+}
+
+// createConfigFileForTesting creates a ksail.yaml config file for testing.
+func createConfigFileForTesting(t *testing.T) {
+	t.Helper()
+
+	configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: config-test-cluster
+spec:
+  distribution: K3d
+  sourceDirectory: config-k8s
+  connection:
+    kubeconfig: /config/path/kubeconfig
+    context: config-context
+    timeout: 60s
+`
+	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+}
+
+// createMixedConfigFileForTesting creates a config file for mixed configuration testing.
+func createMixedConfigFileForTesting(t *testing.T) {
+	t.Helper()
+
+	configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: config-cluster
+spec:
+  distribution: K3d
+  sourceDirectory: config-k8s
+  connection:
+    kubeconfig: /config/path/kubeconfig
+    context: config-context
+`
+	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+}
+
+// executeCommandHelp executes a command with --help and returns the output.
+func executeCommandHelp(t *testing.T, cmd *cobra.Command) string {
+	t.Helper()
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--help"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	return out.String()
+}
+
+// createTestCobraCommand creates a test cobra command with the specified field selectors.
+func createTestCobraCommand(
+	description string,
+	fieldSelectors ...config.FieldSelector[v1alpha1.Cluster],
+) *cobra.Command {
+	return config.NewCobraCommand(
+		"test",
+		"Test command",
+		description,
+		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
+		fieldSelectors...,
+	)
+}
+
 // TestManager_LoadCluster_Defaults tests loading a cluster with field selectors providing defaults.
 //
 //nolint:paralleltest // This test modifies environment variables and cannot be run in parallel
@@ -32,36 +158,10 @@ func TestManager_LoadCluster_Defaults(t *testing.T) {
 	}
 
 	// Setup a temporary directory for testing
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	setupTestEnvironment(t)
 
 	// Load cluster with field selectors to provide defaults
-	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"ksail-default",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			v1alpha1.DistributionKind,
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			"kind.yaml",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-			"k8s",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			"~/.kube/config",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			"kind-ksail-default",
-		),
-	}
+	fieldSelectors := createExtendedTestFieldSelectors()
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
@@ -82,23 +182,9 @@ func TestManager_LoadCluster_EnvironmentVariables(t *testing.T) {
 	t.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/custom/path/kubeconfig")
 
 	// Setup a temporary directory for testing
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	setupTestEnvironment(t)
 
-	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"ksail-default",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			v1alpha1.DistributionKind,
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			"~/.kube/config",
-		),
-	}
+	fieldSelectors := createTestFieldSelectors()
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
@@ -122,51 +208,12 @@ func TestNewManager(t *testing.T) {
 //nolint:paralleltest // This test changes directories and cannot be run in parallel
 func TestManager_LoadCluster_ConfigFile(t *testing.T) {
 	// Setup a temporary directory for testing
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	setupTestEnvironment(t)
 
 	// Create a ksail.yaml config file
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-metadata:
-  name: config-test-cluster
-spec:
-  distribution: K3d
-  sourceDirectory: config-k8s
-  connection:
-    kubeconfig: /config/path/kubeconfig
-    context: config-context
-    timeout: 60s
-`
-	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
-	require.NoError(t, err)
+	createConfigFileForTesting(t)
 
-	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"ksail-default",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			v1alpha1.DistributionKind,
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-			"k8s",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			"~/.kube/config",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			"kind-ksail-default",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-			metav1.Duration{Duration: 5 * time.Minute},
-		),
-	}
+	fieldSelectors := createFieldSelectorsWithTimeout()
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
@@ -182,50 +229,16 @@ spec:
 
 func TestManager_LoadCluster_MixedConfiguration(t *testing.T) {
 	// Setup a temporary directory for testing
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	setupTestEnvironment(t)
 
 	// Create a ksail.yaml config file with some values
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-metadata:
-  name: config-cluster
-spec:
-  distribution: K3d
-  sourceDirectory: config-k8s
-  connection:
-    kubeconfig: /config/path/kubeconfig
-    context: config-context
-`
-	err := os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
-	require.NoError(t, err)
+	createMixedConfigFileForTesting(t)
 
 	// Set environment variables (should override config file)
 	t.Setenv("KSAIL_METADATA_NAME", "env-cluster")
 	t.Setenv("KSAIL_SPEC_CONNECTION_KUBECONFIG", "/env/path/kubeconfig")
 
-	fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"ksail-default",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			v1alpha1.DistributionKind,
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-			"k8s",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			"~/.kube/config",
-		),
-		config.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			"kind-ksail-default",
-		),
-	}
+	fieldSelectors := createExtendedTestFieldSelectors()
 	manager := config.NewManager(fieldSelectors...)
 	cluster, err := manager.LoadCluster()
 	require.NoError(t, err)
@@ -244,11 +257,8 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	t.Parallel()
 
 	// Create command with custom descriptions using AddFlagsFromFields
-	cmd := config.NewCobraCommand(
-		"test",
-		"Test command",
+	cmd := createTestCobraCommand(
 		"Test command with custom descriptions",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Choose your preferred Kubernetes distribution",
@@ -258,16 +268,7 @@ func TestNewCobraCommandWithDescriptions(t *testing.T) {
 	)
 
 	// Capture help output
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--help"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	helpOutput := out.String()
+	helpOutput := executeCommandHelp(t, cmd)
 
 	// Verify custom descriptions are used
 	if !strings.Contains(helpOutput, "Choose your preferred Kubernetes distribution") {
@@ -294,11 +295,8 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	t.Parallel()
 
 	// Create command without custom descriptions (using AddFlagsFromFields)
-	cmd := config.NewCobraCommand(
-		"test",
-		"Test command",
+	cmd := createTestCobraCommand(
 		"Test command with default descriptions",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind,
@@ -308,16 +306,7 @@ func TestNewCobraCommandWithoutDescriptions(t *testing.T) {
 	)
 
 	// Capture help output
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--help"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	helpOutput := out.String()
+	helpOutput := executeCommandHelp(t, cmd)
 
 	// Verify default descriptions are used (empty since no descriptions provided)
 	if !strings.Contains(helpOutput, "--distribution") {
@@ -335,11 +324,8 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 	t.Parallel()
 
 	// Create command with mixed field selectors
-	cmd := config.NewCobraCommand(
-		"test",
-		"Test command",
+	cmd := createTestCobraCommand(
 		"Test command with mixed descriptions",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			v1alpha1.DistributionKind, "Select Kubernetes distribution (Kind, K3d, EKS, Tind)"),
 		config.AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
@@ -347,16 +333,7 @@ func TestNewCobraCommandMixedDescriptions(t *testing.T) {
 	)
 
 	// Capture help output
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--help"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	helpOutput := out.String()
+	helpOutput := executeCommandHelp(t, cmd)
 
 	// Verify custom description is used for distribution
 	if !strings.Contains(helpOutput, "Select Kubernetes distribution (Kind, K3d, EKS, Tind)") {

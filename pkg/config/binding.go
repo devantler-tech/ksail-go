@@ -465,17 +465,27 @@ func bindMetav1DurationFlag(
 	}
 }
 
-// getFieldPath uses a combination of memory address and reflection to discover the field path.
-func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
-	// Get reflection info about the field pointer
+// getFieldReflectionInfo extracts common reflection information from a field pointer.
+func getFieldReflectionInfo(
+	fieldPtr any,
+) (uintptr, reflect.Type, bool) {
 	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr {
-		return ""
+		return 0, nil, false
 	}
 
-	// Get the address and type of the field
 	fieldAddr := fieldVal.Pointer()
 	fieldType := fieldVal.Type()
+
+	return fieldAddr, fieldType, true
+}
+
+// getFieldPath uses a combination of memory address and reflection to discover the field path.
+func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
+	fieldAddr, fieldType, valid := getFieldReflectionInfo(fieldPtr)
+	if !valid {
+		return ""
+	}
 
 	// Walk the cluster structure to find the field with this address and type
 	clusterVal := reflect.ValueOf(cluster).Elem()
@@ -496,15 +506,10 @@ func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
 
 // getFieldPathPreservingCase gets the field path while preserving original case for flag name generation.
 func getFieldPathPreservingCase(cluster *v1alpha1.Cluster, fieldPtr any) string {
-	// Get reflection info about the field pointer
-	fieldVal := reflect.ValueOf(fieldPtr)
-	if fieldVal.Kind() != reflect.Ptr {
+	fieldAddr, fieldType, valid := getFieldReflectionInfo(fieldPtr)
+	if !valid {
 		return ""
 	}
-
-	// Get the address and type of the field
-	fieldAddr := fieldVal.Pointer()
-	fieldType := fieldVal.Type()
 
 	// Walk the cluster structure to find the field with this address and type
 	clusterVal := reflect.ValueOf(cluster).Elem()

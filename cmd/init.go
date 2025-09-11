@@ -2,8 +2,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
@@ -28,12 +26,9 @@ func NewInitCmd() *cobra.Command {
 
 // handleInitRunE handles the init command.
 func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadCluster()
+	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+		return err
 	}
 
 	notify.Successln(cmd.OutOrStdout(),

@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -35,12 +34,9 @@ func NewStatusCmd() *cobra.Command {
 
 // handleStatusRunE handles the status command.
 func handleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadCluster()
+	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+		return err
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")

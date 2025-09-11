@@ -45,18 +45,9 @@ func TestInitCmd_Execute(t *testing.T) {
 func TestInitCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	cmd := cmd.NewInitCmd()
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--help"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		NewCommand: cmd.NewInitCmd,
+	})
 }
 
 func TestInitCmd_Flags(t *testing.T) {
