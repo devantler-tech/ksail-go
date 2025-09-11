@@ -15,8 +15,8 @@ func NewCluster() *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty, filled in later
-		Spec:     Spec{},              //nolint:exhaustruct // Intentionally empty, filled in later
+		Metadata: NewClusterMetadata(""),
+		Spec:     NewClusterSpec(),
 	}
 }
 
@@ -41,24 +41,24 @@ func NewClusterMetadata(name string) metav1.ObjectMeta {
 	}
 }
 
-// NewSpec creates a new Spec with default values.
-func NewSpec() Spec {
+// NewClusterSpec creates a new Spec with default values.
+func NewClusterSpec() Spec {
 	return Spec{
 		DistributionConfig: "",
 		SourceDirectory:    "",
-		Connection:         NewConnection(),
+		Connection:         NewClusterConnection(),
 		Distribution:       "",
 		CNI:                "",
 		CSI:                "",
 		IngressController:  "",
 		GatewayController:  "",
 		ReconciliationTool: "",
-		Options:            NewOptions(),
+		Options:            NewClusterOptions(),
 	}
 }
 
-// NewConnection creates a new Connection with default values.
-func NewConnection() Connection {
+// NewClusterConnection creates a new Connection with default values.
+func NewClusterConnection() Connection {
 	return Connection{
 		Kubeconfig: "",
 		Context:    "",
@@ -66,70 +66,70 @@ func NewConnection() Connection {
 	}
 }
 
-// NewOptions creates a new Options with default values.
-func NewOptions() Options {
+// NewClusterOptions creates a new Options with default values.
+func NewClusterOptions() Options {
 	return Options{
-		Kind:      NewOptionsKind(),
-		K3d:       NewOptionsK3d(),
-		Tind:      NewOptionsTind(),
-		EKS:       NewOptionsEKS(),
-		Cilium:    NewOptionsCilium(),
-		Kubectl:   NewOptionsKubectl(),
-		Flux:      NewOptionsFlux(),
-		ArgoCD:    NewOptionsArgoCD(),
-		Helm:      NewOptionsHelm(),
-		Kustomize: NewOptionsKustomize(),
+		Kind:      NewClusterOptionsKind(),
+		K3d:       NewClusterOptionsK3d(),
+		Tind:      NewClusterOptionsTind(),
+		EKS:       NewClusterOptionsEKS(),
+		Cilium:    NewClusterOptionsCilium(),
+		Kubectl:   NewClusterOptionsKubectl(),
+		Flux:      NewClusterOptionsFlux(),
+		ArgoCD:    NewClusterOptionsArgoCD(),
+		Helm:      NewClusterOptionsHelm(),
+		Kustomize: NewClusterOptionsKustomize(),
 	}
 }
 
-// NewOptionsKind creates a new OptionsKind with default values.
-func NewOptionsKind() OptionsKind {
+// NewClusterOptionsKind creates a new OptionsKind with default values.
+func NewClusterOptionsKind() OptionsKind {
 	return OptionsKind{}
 }
 
-// NewOptionsK3d creates a new OptionsK3d with default values.
-func NewOptionsK3d() OptionsK3d {
+// NewClusterOptionsK3d creates a new OptionsK3d with default values.
+func NewClusterOptionsK3d() OptionsK3d {
 	return OptionsK3d{}
 }
 
-// NewOptionsTind creates a new OptionsTind with default values.
-func NewOptionsTind() OptionsTind {
+// NewClusterOptionsTind creates a new OptionsTind with default values.
+func NewClusterOptionsTind() OptionsTind {
 	return OptionsTind{}
 }
 
-// NewOptionsEKS creates a new OptionsEKS with default values.
-func NewOptionsEKS() OptionsEKS {
+// NewClusterOptionsEKS creates a new OptionsEKS with default values.
+func NewClusterOptionsEKS() OptionsEKS {
 	return OptionsEKS{
 		AWSProfile: "",
 	}
 }
 
-// NewOptionsCilium creates a new OptionsCilium with default values.
-func NewOptionsCilium() OptionsCilium {
+// NewClusterOptionsCilium creates a new OptionsCilium with default values.
+func NewClusterOptionsCilium() OptionsCilium {
 	return OptionsCilium{}
 }
 
-// NewOptionsKubectl creates a new OptionsKubectl with default values.
-func NewOptionsKubectl() OptionsKubectl {
+// NewClusterOptionsKubectl creates a new OptionsKubectl with default values.
+func NewClusterOptionsKubectl() OptionsKubectl {
 	return OptionsKubectl{}
 }
 
-// NewOptionsFlux creates a new OptionsFlux with default values.
-func NewOptionsFlux() OptionsFlux {
+// NewClusterOptionsFlux creates a new OptionsFlux with default values.
+func NewClusterOptionsFlux() OptionsFlux {
 	return OptionsFlux{}
 }
 
-// NewOptionsArgoCD creates a new OptionsArgoCD with default values.
-func NewOptionsArgoCD() OptionsArgoCD {
+// NewClusterOptionsArgoCD creates a new OptionsArgoCD with default values.
+func NewClusterOptionsArgoCD() OptionsArgoCD {
 	return OptionsArgoCD{}
 }
 
-// NewOptionsHelm creates a new OptionsHelm with default values.
-func NewOptionsHelm() OptionsHelm {
+// NewClusterOptionsHelm creates a new OptionsHelm with default values.
+func NewClusterOptionsHelm() OptionsHelm {
 	return OptionsHelm{}
 }
 
-// NewOptionsKustomize creates a new OptionsKustomize with default values.
-func NewOptionsKustomize() OptionsKustomize {
+// NewClusterOptionsKustomize creates a new OptionsKustomize with default values.
+func NewClusterOptionsKustomize() OptionsKustomize {
 	return OptionsKustomize{}
 }

@@ -117,7 +117,7 @@ func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
 
 // createTestCluster creates a minimal test cluster configuration.
 func createTestCluster(name string) *v1alpha1.Cluster {
-	spec := v1alpha1.NewSpec()
+	spec := v1alpha1.NewClusterSpec()
 	spec.Distribution = v1alpha1.DistributionK3d
 
 	return &v1alpha1.Cluster{
