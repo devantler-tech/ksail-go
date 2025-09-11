@@ -48,19 +48,6 @@ type Cluster struct {
 	Spec     Spec              `json:"spec,omitzero"`
 }
 
-// NewCluster creates a new Cluster instance with minimal required structure.
-// All default values are now handled by the configuration system via field selectors.
-func NewCluster() *Cluster {
-	return &Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       Kind,
-			APIVersion: APIVersion,
-		},
-		Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty, filled in later
-		Spec:     Spec{},              //nolint:exhaustruct // Intentionally empty, filled in later
-	}
-}
-
 // Spec defines the desired state of a KSail cluster.
 type Spec struct {
 	DistributionConfig string             `json:"distributionConfig,omitzero"`
