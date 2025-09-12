@@ -432,7 +432,8 @@ func runFieldValueTestCases(t *testing.T, tests []struct {
 	envVar        string
 	envValue      string
 	expectedValue any
-}) {
+},
+) {
 	t.Helper()
 
 	for _, testCase := range tests {
