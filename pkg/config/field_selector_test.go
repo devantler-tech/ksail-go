@@ -279,14 +279,13 @@ func TestEnumDefaultValues(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.envValue)
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
-			assert.Equal(t, testCase.expectedValue, actualValue)
+			runFieldSelectorEnvTest(
+				t,
+				testCase.envVar,
+				testCase.envValue,
+				testCase.fieldSelector,
+				testCase.expectedValue,
+			)
 		})
 	}
 }
@@ -412,14 +411,13 @@ func TestDirectConversion(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.envValue)
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
-			assert.Equal(t, testCase.expectedValue, actualValue)
+			runFieldSelectorEnvTest(
+				t,
+				testCase.envVar,
+				testCase.envValue,
+				testCase.fieldSelector,
+				testCase.expectedValue,
+			)
 		})
 	}
 }
@@ -455,4 +453,22 @@ func getFieldValueBySelector(
 		// Return a placeholder that will make tests pass
 		return true
 	}
+}
+
+// runFieldSelectorEnvTest is a helper to reduce duplication in field selector environment variable tests.
+func runFieldSelectorEnvTest(
+	t *testing.T,
+	envVar, envValue string,
+	fieldSelector config.FieldSelector[v1alpha1.Cluster],
+	expectedValue any,
+) {
+	t.Helper()
+	t.Setenv(envVar, envValue)
+
+	manager := config.NewManager(fieldSelector)
+	cluster, err := manager.LoadCluster()
+	require.NoError(t, err)
+
+	actualValue := getFieldValueBySelector(cluster, fieldSelector)
+	assert.Equal(t, expectedValue, actualValue)
 }
