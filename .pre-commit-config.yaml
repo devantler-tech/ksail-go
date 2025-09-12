@@ -2,17 +2,15 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  # Official golangci-lint hook from golangci-lint repository
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v2.4.0
-    hooks:
-      - id: golangci-lint
-        args: [--new-from-rev, HEAD, --fix]
-        language_version: "1.25.0"
-
   # Local hooks for repository-specific tools
   - repo: local
     hooks:
+    - id: golangci-lint
+      name: golangci-lint
+      entry: golangci-lint run --new-from-rev HEAD --fix
+      language: system
+      files: '\.go$'
+      pass_filenames: false
     - id: mockery
       name: Generate mocks with mockery
       entry: scripts/ensure-mockery.sh
