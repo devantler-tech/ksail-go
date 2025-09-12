@@ -192,6 +192,8 @@ func testSpecialTypeConversions(t *testing.T) {
 }
 
 // TestManager_IntegerTypes tests various integer type handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestManager_IntegerTypes(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
@@ -257,6 +259,8 @@ func TestManager_FloatTypes(t *testing.T) {
 }
 
 // TestManager_SliceTypes tests slice type handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestManager_SliceTypes(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)

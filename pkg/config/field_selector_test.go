@@ -234,6 +234,8 @@ func TestHandleMetav1Duration(t *testing.T) {
 }
 
 // TestEnumDefaultValues tests enum default value handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 func TestEnumDefaultValues(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 	setupTestEnvironment(t)
@@ -350,6 +352,8 @@ func TestGetFieldByPath(t *testing.T) {
 }
 
 // TestDirectConversion tests direct type conversion functionality.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestDirectConversion(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
