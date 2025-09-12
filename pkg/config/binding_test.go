@@ -1535,7 +1535,7 @@ func testDirectBasicTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 	t.Run("bool_binding", func(t *testing.T) {
 		t.Helper()
 		config.BindStandardType(
-			cmd, manager, new(bool), "test-bool", "b", "Bool field", "testbool", true,
+			cmd, manager, new(bool), "test-bool", "b", "Bool field", "testBool", true,
 		)
 		flag := cmd.Flags().Lookup("test-bool")
 		require.NotNil(t, flag)
@@ -1644,7 +1644,7 @@ func testFloatBindings(t *testing.T, cmd *cobra.Command, manager *config.Manager
 					"test-float32",
 					"",
 					"Float32 field",
-					"testfloat32",
+					"testFloat32",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-float32")
@@ -1662,7 +1662,7 @@ func testFloatBindings(t *testing.T, cmd *cobra.Command, manager *config.Manager
 					"test-float64",
 					"",
 					"Float64 field",
-					"testfloat64",
+					"testFloat64",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-float64")
@@ -1693,7 +1693,7 @@ func testDurationBindings(t *testing.T, cmd *cobra.Command, manager *config.Mana
 					"test-duration",
 					"",
 					"Duration field",
-					"testduration",
+					"testDuration",
 					time.Minute,
 				)
 				flag := cmd.Flags().Lookup("test-duration")
@@ -1711,7 +1711,7 @@ func testDurationBindings(t *testing.T, cmd *cobra.Command, manager *config.Mana
 					"test-metav1-duration",
 					"",
 					"Metav1 Duration field",
-					"testmetav1duration",
+					"testMetav1Duration",
 					metav1.Duration{Duration: time.Minute * 5},
 				)
 				flag := cmd.Flags().Lookup("test-metav1-duration")
@@ -1742,7 +1742,7 @@ func testDirectSliceTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 					"test-string-slice",
 					"",
 					"String slice field",
-					"teststringslice",
+					"testStringSlice",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-string-slice")
@@ -1760,7 +1760,7 @@ func testDirectSliceTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 					"test-int-slice",
 					"",
 					"Int slice field",
-					"testintslice",
+					"testIntSlice",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-int-slice")
