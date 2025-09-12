@@ -1825,8 +1825,8 @@ func TestManagerViperIntegrationFunctions(t *testing.T) {
 			nil,
 			"Float32 test field",
 		)
-		
-		// Test case with float64 field  
+
+		// Test case with float64 field
 		float64Field := new(float64)
 		fieldSelector2 := config.AddFlagFromField(
 			func(_ *v1alpha1.Cluster) any { return float64Field },
@@ -1843,7 +1843,7 @@ func TestManagerViperIntegrationFunctions(t *testing.T) {
 
 	t.Run("slice_value_functions", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test both string slice and int slice paths in getSliceValueFromViper
 		stringSliceField := new([]string)
 		fieldSelector1 := config.AddFlagFromField(
@@ -1851,7 +1851,7 @@ func TestManagerViperIntegrationFunctions(t *testing.T) {
 			nil,
 			"String slice test field",
 		)
-		
+
 		intSliceField := new([]int)
 		fieldSelector2 := config.AddFlagFromField(
 			func(_ *v1alpha1.Cluster) any { return intSliceField },
@@ -1873,7 +1873,7 @@ func TestBindingShortNamePaths(t *testing.T) {
 
 	t.Run("shortname_generation_with_with_flags", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test shortname generation and conflict resolution
 		fieldSelectors := []config.FieldSelector[v1alpha1.Cluster]{
 			config.AddFlagFromField(
@@ -1883,7 +1883,7 @@ func TestBindingShortNamePaths(t *testing.T) {
 			),
 			config.AddFlagFromField(
 				func(_ *v1alpha1.Cluster) any { return new(string) },
-				"value2", 
+				"value2",
 				"Database field", // Should conflict with 'd' and get no shortname
 			),
 		}
@@ -1920,7 +1920,7 @@ func TestViperFallbackPath(t *testing.T) {
 
 	cmd := config.NewCobraCommand(
 		"test-viper-fallback",
-		"Test Viper fallback in bindPflagValue", 
+		"Test Viper fallback in bindPflagValue",
 		"Tests the else branch in bindPflagValue when defaultValue is nil",
 		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
 			return nil
