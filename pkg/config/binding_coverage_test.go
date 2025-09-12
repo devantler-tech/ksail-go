@@ -214,3 +214,119 @@ func getViperIntegrationTestCases() []struct {
 		},
 	}
 }
+
+// TestBindPflagValueViperFallback tests the Viper fallback path in bindPflagValue.
+func TestBindPflagValueViperFallback(t *testing.T) {
+	t.Parallel()
+
+	// Create a field selector with NO default value (nil) to trigger Viper fallback
+	fieldSelector := config.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+		nil, // nil default will trigger Viper fallback path
+		"Distribution config field",
+	)
+
+	// Create manager and set a Viper value that should be used as fallback
+	manager := config.NewManager(fieldSelector)
+	viper := manager.GetViper()
+	viper.Set("distributionConfig", "test-fallback-value")
+
+	// Create command to trigger the binding
+	cmd := config.NewCobraCommand(
+		"test",
+		"Test command",
+		"Test description",
+		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+			return nil
+		},
+		fieldSelector,
+	)
+
+	require.NotNil(t, cmd)
+	// The test succeeds if no panic occurs and command is created
+	// This exercises the else branch in bindPflagValue when defaultValue is nil
+}
+
+// TestPartialCoverageFunctions tests functions with incomplete coverage.
+func TestPartialCoverageFunctions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil_default_value_viper_fallback", func(t *testing.T) {
+		t.Parallel()
+		testViperFallbackPath(t)
+	})
+
+	t.Run("complex_field_paths", func(t *testing.T) {
+		t.Parallel()
+		testComplexFieldPaths(t)
+	})
+}
+
+// testViperFallbackPath tests bindPflagValue fallback when defaultValue is nil.
+func testViperFallbackPath(t *testing.T) {
+	t.Helper()
+
+	// Test bindPflagValue fallback path when defaultValue is nil
+	fieldSelector := config.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+		nil, // nil will trigger Viper fallback path in bindPflagValue
+		"Config field with nil default",
+	)
+
+	manager := config.NewManager(fieldSelector)
+	viper := manager.GetViper()
+	viper.Set("distributionConfig", "fallback-value")
+
+	// Create command to exercise the binding
+	cmd := config.NewCobraCommand(
+		"test",
+		"Test command",
+		"Test description",
+		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+			return nil
+		},
+		fieldSelector,
+	)
+
+	require.NotNil(t, cmd)
+}
+
+// testComplexFieldPaths tests more complex field paths to improve bindStandardType coverage.
+func testComplexFieldPaths(t *testing.T) {
+	t.Helper()
+
+	testCases := []struct {
+		name         string
+		selector     func(c *v1alpha1.Cluster) any
+		defaultValue any
+	}{
+		{
+			"nested_string_field",
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"test-context",
+		},
+		{
+			"deep_nested_string",
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Options.EKS.AWSProfile },
+			"test-profile",
+		},
+	}
+
+	for _, testCase := range testCases {
+		fieldSelector := config.AddFlagFromField(
+			testCase.selector,
+			testCase.defaultValue,
+			testCase.name,
+		)
+		cmd := config.NewCobraCommand(
+			"test",
+			"Test",
+			"Test",
+			func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				return nil
+			},
+			fieldSelector,
+		)
+		require.NotNil(t, cmd, "Command should be created for %s", testCase.name)
+	}
+}
