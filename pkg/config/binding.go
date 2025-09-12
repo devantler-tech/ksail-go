@@ -86,7 +86,7 @@ func bindSingleFieldSelector(
 			cmd, manager, pflagValue, flagName, shortName, description, fieldPath, defaultValue,
 		)
 	} else {
-		bindStandardType(
+		BindStandardType(
 			cmd, manager, fieldPtr, flagName, shortName, description, fieldPath, defaultValue,
 		)
 	}
@@ -146,8 +146,9 @@ func setPflagValueDefault(pflagValue pflag.Value, defaultValue any) {
 	}
 }
 
-// bindStandardType binds a standard type to the command using type detection.
-func bindStandardType(
+// BindStandardType binds a standard type to the command using type detection.
+// Made public for testing purposes.
+func BindStandardType(
 	cmd *cobra.Command,
 	manager *Manager,
 	fieldPtr any,
