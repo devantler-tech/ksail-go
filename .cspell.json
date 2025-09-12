@@ -151,6 +151,12 @@
     "localpathstorage",
     "LOCALPATHSTORAGE",
     "paralleltest",
-    "shortnames"
+    "shortnames",
+    "tparallel",
+    "INGRESSCONTROLLER",
+    "GATEWAYCONTROLLER", 
+    "RECONCILIATIONTOOL",
+    "STRINGSLICE",
+    "INTSLICE"
   ]
 }

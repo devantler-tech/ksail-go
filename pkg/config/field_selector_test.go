@@ -11,6 +11,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// runFieldValueTest is a helper to run tests that verify field values loaded from environment variables.
+func runFieldValueTest(
+	t *testing.T,
+	fieldSelector config.FieldSelector[v1alpha1.Cluster],
+	envVar, envValue string,
+	expectedValue any,
+) {
+	t.Helper()
+	t.Setenv(envVar, envValue)
+
+	manager := config.NewManager(fieldSelector)
+	cluster, err := manager.LoadCluster()
+	require.NoError(t, err)
+
+	actualValue := getFieldValueBySelector(cluster, fieldSelector)
+	assert.Equal(t, expectedValue, actualValue)
+}
+
 // TestFieldSelectorCreation tests field selector creation functions.
 // getFieldSelectorCreationTestCases returns test cases for TestFieldSelectorCreation.
 func getFieldSelectorCreationTestCases() []struct {
@@ -133,14 +151,13 @@ func testDurationConversions(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.envValue)
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
-			assert.Equal(t, testCase.expectedValue, actualValue)
+			runFieldValueTest(
+				t,
+				testCase.fieldSelector,
+				testCase.envVar,
+				testCase.envValue,
+				testCase.expectedValue,
+			)
 		})
 	}
 }
@@ -170,14 +187,13 @@ func testEnumConversions(t *testing.T) {
 
 	for index, selector := range enumSelectors {
 		t.Run(selector.name+" from string", func(t *testing.T) {
-			t.Setenv(envVars[index], envValues[index])
-
-			manager := config.NewManager(selector.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, selector.fieldSelector)
-			assert.Equal(t, expectedValues[index], actualValue)
+			runFieldValueTest(
+				t,
+				selector.fieldSelector,
+				envVars[index],
+				envValues[index],
+				expectedValues[index],
+			)
 		})
 	}
 }

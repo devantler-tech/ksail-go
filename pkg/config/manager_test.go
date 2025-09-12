@@ -181,32 +181,14 @@ func testBasicTypeConversions(t *testing.T) {
 func testSpecialTypeConversions(t *testing.T) {
 	t.Helper()
 
-	tests := []struct {
-		name          string
-		fieldSelector config.FieldSelector[v1alpha1.Cluster]
-		expectedType  string
-	}{
-		{
-			name: "metav1.Duration to time.Duration",
-			fieldSelector: config.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-				metav1.Duration{Duration: 5 * time.Minute},
-			),
-			expectedType: "duration",
-		},
-	}
+	manager := config.NewManager(config.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+		metav1.Duration{Duration: 5 * time.Minute},
+	))
+	cluster, err := manager.LoadCluster()
+	require.NoError(t, err)
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			assert.NotNil(t, cluster)
-		})
-	}
+	assert.NotNil(t, cluster)
 }
 
 // TestManager_IntegerTypes tests various integer type handling.
@@ -247,9 +229,6 @@ func TestManager_IntegerTypes(t *testing.T) {
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			// Check the specific field value
-			// Since we're using a dummy field, we can't check the actual value
-			// Just verify the cluster was loaded successfully
 			assert.NotNil(t, cluster)
 		})
 	}
@@ -333,7 +312,6 @@ func TestManager_SliceTypes(t *testing.T) {
 			cluster, err := manager.LoadCluster()
 			require.NoError(t, err)
 
-			// Test passes if no error occurs
 			assert.NotNil(t, cluster)
 		})
 	}
