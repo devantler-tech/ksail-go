@@ -1509,23 +1509,20 @@ func testBindStandardTypeUnknownType(t *testing.T) {
 }
 
 // TestDirectBindingFunctions tests binding functions directly to achieve 100% coverage.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because tests share the same Cobra command and flags
 func TestDirectBindingFunctions(t *testing.T) {
-	t.Parallel()
+	manager := config.NewManager()
+	cmd := &cobra.Command{
+		Use: "test",
+	}
 
-	t.Run("all_direct_binding_types", func(t *testing.T) {
-		t.Parallel()
-
-		manager := config.NewManager()
-		cmd := &cobra.Command{
-			Use: "test",
-		}
-
-		// Test all type binding functions directly in groups
-		testDirectBasicTypeBindings(t, cmd, manager)
-		testDirectIntegerTypeBindings(t, cmd, manager)
-		testDirectFloatAndDurationBindings(t, cmd, manager)
-		testDirectSliceTypeBindings(t, cmd, manager)
-	})
+	// Test all type binding functions directly in groups
+	// Note: Cannot use t.Parallel() as all tests use the same cmd object and would cause races
+	testDirectBasicTypeBindings(t, cmd, manager)
+	testDirectIntegerTypeBindings(t, cmd, manager)
+	testDirectFloatAndDurationBindings(t, cmd, manager)
+	testDirectSliceTypeBindings(t, cmd, manager)
 }
 
 // testDirectBasicTypeBindings tests bool and string type bindings.
@@ -1783,21 +1780,8 @@ func runDirectBindingTests(
 	t.Helper()
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Create a fresh command for each test
-			testCmd := &cobra.Command{Use: "test-" + testCase.name}
-
-			// Set up the manager with a clean Viper instance
-			testManager := config.NewManager()
-
-			// Use the fresh command and manager for this test
-			_ = testCmd
-			_ = testManager
-
-			testCase.testFunc(t)
-		})
+		// Note: Cannot use t.Parallel() here as tests share command state
+		t.Run(testCase.name, testCase.testFunc)
 	}
 }
 
