@@ -192,6 +192,8 @@ func testSpecialTypeConversions(t *testing.T) {
 }
 
 // TestManager_IntegerTypes tests various integer type handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestManager_IntegerTypes(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
@@ -223,13 +225,7 @@ func TestManager_IntegerTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(tt.envVar, tt.envValue)
-
-			manager := config.NewManager(tt.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			assert.NotNil(t, cluster)
+			runBasicManagerTest(t, tt.envVar, tt.envValue, tt.fieldSelector)
 		})
 	}
 }
@@ -263,6 +259,8 @@ func TestManager_FloatTypes(t *testing.T) {
 }
 
 // TestManager_SliceTypes tests slice type handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestManager_SliceTypes(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
@@ -306,13 +304,7 @@ func TestManager_SliceTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(tt.envVar, tt.envValue)
-
-			manager := config.NewManager(tt.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			assert.NotNil(t, cluster)
+			runBasicManagerTest(t, tt.envVar, tt.envValue, tt.fieldSelector)
 		})
 	}
 }
@@ -495,4 +487,19 @@ func TestSetValueAtFieldPointer(t *testing.T) {
 			}
 		})
 	}
+}
+
+// runBasicManagerTest is a helper to reduce duplication in simple manager tests.
+func runBasicManagerTest(
+	t *testing.T,
+	envVar, envValue string,
+	fieldSelector config.FieldSelector[v1alpha1.Cluster],
+) {
+	t.Helper()
+	t.Setenv(envVar, envValue)
+
+	manager := config.NewManager(fieldSelector)
+	cluster, err := manager.LoadCluster()
+	require.NoError(t, err)
+	assert.NotNil(t, cluster)
 }

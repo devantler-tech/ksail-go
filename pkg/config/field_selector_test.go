@@ -149,17 +149,7 @@ func testDurationConversions(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			runFieldValueTest(
-				t,
-				testCase.fieldSelector,
-				testCase.envVar,
-				testCase.envValue,
-				testCase.expectedValue,
-			)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // testEnumConversions tests enum conversion functionality.
@@ -244,6 +234,8 @@ func TestHandleMetav1Duration(t *testing.T) {
 }
 
 // TestEnumDefaultValues tests enum default value handling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because we use setupTestEnvironment and t.Setenv
 func TestEnumDefaultValues(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 	setupTestEnvironment(t)
@@ -277,18 +269,7 @@ func TestEnumDefaultValues(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.envValue)
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
-			assert.Equal(t, testCase.expectedValue, actualValue)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // getFieldByPathTestCases returns test cases for TestGetFieldByPath.
@@ -371,6 +352,8 @@ func TestGetFieldByPath(t *testing.T) {
 }
 
 // TestDirectConversion tests direct type conversion functionality.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestDirectConversion(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
@@ -410,18 +393,7 @@ func TestDirectConversion(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.envValue)
-
-			manager := config.NewManager(testCase.fieldSelector)
-			cluster, err := manager.LoadCluster()
-			require.NoError(t, err)
-
-			actualValue := getFieldValueBySelector(cluster, testCase.fieldSelector)
-			assert.Equal(t, testCase.expectedValue, actualValue)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // Helper function to get field value using the field selector.
@@ -454,5 +426,29 @@ func getFieldValueBySelector(
 		// For dummy fields, we can't retrieve the value
 		// Return a placeholder that will make tests pass
 		return true
+	}
+}
+
+// runFieldValueTestCases runs a common test pattern for field value tests.
+func runFieldValueTestCases(t *testing.T, tests []struct {
+	name          string
+	fieldSelector config.FieldSelector[v1alpha1.Cluster]
+	envVar        string
+	envValue      string
+	expectedValue any
+},
+) {
+	t.Helper()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			runFieldValueTest(
+				t,
+				testCase.fieldSelector,
+				testCase.envVar,
+				testCase.envValue,
+				testCase.expectedValue,
+			)
+		})
 	}
 }

@@ -1509,23 +1509,20 @@ func testBindStandardTypeUnknownType(t *testing.T) {
 }
 
 // TestDirectBindingFunctions tests binding functions directly to achieve 100% coverage.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because tests share the same Cobra command and flags
 func TestDirectBindingFunctions(t *testing.T) {
-	t.Parallel()
+	manager := config.NewManager()
+	cmd := &cobra.Command{
+		Use: "test",
+	}
 
-	t.Run("all_direct_binding_types", func(t *testing.T) {
-		t.Parallel()
-
-		manager := config.NewManager()
-		cmd := &cobra.Command{
-			Use: "test",
-		}
-
-		// Test all type binding functions directly in groups
-		testDirectBasicTypeBindings(t, cmd, manager)
-		testDirectIntegerTypeBindings(t, cmd, manager)
-		testDirectFloatAndDurationBindings(t, cmd, manager)
-		testDirectSliceTypeBindings(t, cmd, manager)
-	})
+	// Test all type binding functions directly in groups
+	// Note: Cannot use t.Parallel() as all tests use the same cmd object and would cause races
+	testDirectBasicTypeBindings(t, cmd, manager)
+	testDirectIntegerTypeBindings(t, cmd, manager)
+	testDirectFloatAndDurationBindings(t, cmd, manager)
+	testDirectSliceTypeBindings(t, cmd, manager)
 }
 
 // testDirectBasicTypeBindings tests bool and string type bindings.
@@ -1535,7 +1532,7 @@ func testDirectBasicTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 	t.Run("bool_binding", func(t *testing.T) {
 		t.Helper()
 		config.BindStandardType(
-			cmd, manager, new(bool), "test-bool", "b", "Bool field", "testbool", true,
+			cmd, manager, new(bool), "test-bool", "b", "Bool field", "testBool", true,
 		)
 		flag := cmd.Flags().Lookup("test-bool")
 		require.NotNil(t, flag)
@@ -1644,7 +1641,7 @@ func testFloatBindings(t *testing.T, cmd *cobra.Command, manager *config.Manager
 					"test-float32",
 					"",
 					"Float32 field",
-					"testfloat32",
+					"testFloat32",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-float32")
@@ -1662,7 +1659,7 @@ func testFloatBindings(t *testing.T, cmd *cobra.Command, manager *config.Manager
 					"test-float64",
 					"",
 					"Float64 field",
-					"testfloat64",
+					"testFloat64",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-float64")
@@ -1693,7 +1690,7 @@ func testDurationBindings(t *testing.T, cmd *cobra.Command, manager *config.Mana
 					"test-duration",
 					"",
 					"Duration field",
-					"testduration",
+					"testDuration",
 					time.Minute,
 				)
 				flag := cmd.Flags().Lookup("test-duration")
@@ -1711,7 +1708,7 @@ func testDurationBindings(t *testing.T, cmd *cobra.Command, manager *config.Mana
 					"test-metav1-duration",
 					"",
 					"Metav1 Duration field",
-					"testmetav1duration",
+					"testMetav1Duration",
 					metav1.Duration{Duration: time.Minute * 5},
 				)
 				flag := cmd.Flags().Lookup("test-metav1-duration")
@@ -1742,7 +1739,7 @@ func testDirectSliceTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 					"test-string-slice",
 					"",
 					"String slice field",
-					"teststringslice",
+					"testStringSlice",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-string-slice")
@@ -1760,7 +1757,7 @@ func testDirectSliceTypeBindings(t *testing.T, cmd *cobra.Command, manager *conf
 					"test-int-slice",
 					"",
 					"Int slice field",
-					"testintslice",
+					"testIntSlice",
 					nil,
 				)
 				flag := cmd.Flags().Lookup("test-int-slice")
@@ -1783,21 +1780,8 @@ func runDirectBindingTests(
 	t.Helper()
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Create a fresh command for each test
-			testCmd := &cobra.Command{Use: "test-" + testCase.name}
-
-			// Set up the manager with a clean Viper instance
-			testManager := config.NewManager()
-
-			// Use the fresh command and manager for this test
-			_ = testCmd
-			_ = testManager
-
-			testCase.testFunc(t)
-		})
+		// Note: Cannot use t.Parallel() here as tests share command state
+		t.Run(testCase.name, testCase.testFunc)
 	}
 }
 
