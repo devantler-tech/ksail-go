@@ -1,2 +1,4 @@
 APPLY_FIXES: all
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
+DISABLE_LINTERS: # golangci-lint disabled due to compatibility issues between mega-linter v8 and latest Go/golangci-lint versions
+  - GO_GOLANGCI_LINT
