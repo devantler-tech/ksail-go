@@ -149,17 +149,7 @@ func testDurationConversions(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			runFieldValueTest(
-				t,
-				testCase.fieldSelector,
-				testCase.envVar,
-				testCase.envValue,
-				testCase.expectedValue,
-			)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // testEnumConversions tests enum conversion functionality.
@@ -277,17 +267,7 @@ func TestEnumDefaultValues(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			runFieldValueTest(
-				t,
-				testCase.fieldSelector,
-				testCase.envVar,
-				testCase.envValue,
-				testCase.expectedValue,
-			)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // getFieldByPathTestCases returns test cases for TestGetFieldByPath.
@@ -409,17 +389,7 @@ func TestDirectConversion(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			runFieldValueTest(
-				t,
-				testCase.fieldSelector,
-				testCase.envVar,
-				testCase.envValue,
-				testCase.expectedValue,
-			)
-		})
-	}
+	runFieldValueTestCases(t, tests)
 }
 
 // Helper function to get field value using the field selector.
@@ -452,5 +422,28 @@ func getFieldValueBySelector(
 		// For dummy fields, we can't retrieve the value
 		// Return a placeholder that will make tests pass
 		return true
+	}
+}
+
+// runFieldValueTestCases runs a common test pattern for field value tests.
+func runFieldValueTestCases(t *testing.T, tests []struct {
+	name          string
+	fieldSelector config.FieldSelector[v1alpha1.Cluster]
+	envVar        string
+	envValue      string
+	expectedValue any
+}) {
+	t.Helper()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			runFieldValueTest(
+				t,
+				testCase.fieldSelector,
+				testCase.envVar,
+				testCase.envValue,
+				testCase.expectedValue,
+			)
+		})
 	}
 }
