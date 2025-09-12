@@ -43,8 +43,6 @@ func TestViperConfiguration(t *testing.T) {
 }
 
 // TestViperEnvironmentVariables tests environment variable handling.
-//
-//nolint:paralleltest // Cannot use t.Parallel() because we use setupTestEnvironment and t.Setenv
 func TestViperEnvironmentVariables(t *testing.T) {
 	// Note: Cannot use t.Parallel() because we use setupTestEnvironment which calls t.Chdir
 	// Test environment variable prefix and key replacement

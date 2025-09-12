@@ -189,8 +189,6 @@ func testEnumConversions(t *testing.T) {
 }
 
 // TestHandleMetav1Duration tests metav1.Duration handling with edge cases.
-//
-//nolint:paralleltest // Cannot use t.Parallel() because individual test cases use t.Setenv
 func TestHandleMetav1Duration(t *testing.T) {
 	// Note: Cannot use t.Parallel() because individual test cases use t.Setenv
 	setupTestEnvironment(t)
