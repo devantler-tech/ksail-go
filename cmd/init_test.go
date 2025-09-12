@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewInitCmd(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewInitCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'init', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Initialize a new KSail project" {
+	if cmd.Short != "Initialize a new project" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
@@ -38,13 +39,15 @@ func TestInitCmd_Execute(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
+	snaps.MatchSnapshot(t, out.String())
+}
 
-	expected := "✔ Project initialized successfully (stub implementation)\n"
+func TestInitCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		NewCommand: cmd.NewInitCmd,
+	})
 }
 
 func TestInitCmd_Flags(t *testing.T) {
@@ -58,7 +61,25 @@ func TestInitCmd_Flags(t *testing.T) {
 		t.Fatal("expected distribution flag to exist")
 	}
 
+	// Verify that CLI flags show appropriate defaults for better UX
+	// Distribution should show its default value
 	if distributionFlag.DefValue != "Kind" {
-		t.Fatalf("expected distribution default to be 'Kind', got %q", distributionFlag.DefValue)
+		t.Fatalf(
+			"expected distribution default to be 'Kind' for help display, got %q",
+			distributionFlag.DefValue,
+		)
+	}
+
+	sourceDirectoryFlag := cmd.Flags().Lookup("source-directory")
+	if sourceDirectoryFlag == nil {
+		t.Fatal("expected source-directory flag to exist")
+	}
+
+	// Source directory should show its default value
+	if sourceDirectoryFlag.DefValue != "k8s" {
+		t.Fatalf(
+			"expected source-directory default to be 'k8s' for help display, got %q",
+			sourceDirectoryFlag.DefValue,
+		)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewListCmd(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewListCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'list', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "List Kubernetes clusters" {
+	if cmd.Short != "List clusters" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
@@ -38,13 +39,7 @@ func TestListCmd_Execute_Default(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
-
-	expected := "✔ Listing running clusters (stub implementation)\n"
-
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestListCmd_Execute_All(t *testing.T) {
@@ -61,13 +56,15 @@ func TestListCmd_Execute_All(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
+	snaps.MatchSnapshot(t, out.String())
+}
 
-	expected := "✔ Listing all clusters (stub implementation)\n"
+func TestListCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		NewCommand: cmd.NewListCmd,
+	})
 }
 
 func TestListCmd_Flags(t *testing.T) {

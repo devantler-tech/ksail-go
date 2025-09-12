@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestNewUpCmd(t *testing.T) {
@@ -38,11 +39,13 @@ func TestUpCmd_Execute(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	got := out.String()
+	snaps.MatchSnapshot(t, out.String())
+}
 
-	expected := "✔ Cluster created and started successfully (stub implementation)\n"
+func TestUpCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		NewCommand: cmd.NewUpCmd,
+	})
 }

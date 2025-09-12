@@ -19,12 +19,12 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  down        Stop and remove the Kubernetes cluster
+  down        Destroy a cluster
   help        Help about any command
-  init        Initialize a new KSail project
-  list        List Kubernetes clusters
-  reconcile   Reconcile workloads in the Kubernetes cluster
-  start       Start a stopped Kubernetes cluster
+  init        Initialize a new project
+  list        List clusters
+  reconcile   Reconcile workloads in the cluster
+  start       Start a stopped cluster
   status      Show status of the Kubernetes cluster
   stop        Stop the Kubernetes cluster
   up          Start the Kubernetes cluster
@@ -34,5 +34,10 @@ Flags:
   -v, --version   version for ksail
 
 Use "ksail [command] --help" for more information about a command.
+
+---
+
+[TestExecute_ShowsVersion - 1]
+ksail version 1.2.3 (Built on 2025-08-17 from Git SHA abc123)
 
 ---

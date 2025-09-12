@@ -56,3 +56,9 @@ jobs:
 
       - name: Add Go bin to PATH
         run: echo "$HOME/go/bin" >> "$GITHUB_PATH"
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Install pre-commit hooks
+        run: pre-commit install

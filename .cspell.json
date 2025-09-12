@@ -96,6 +96,7 @@
     "omitzero",
     "opencontainers",
     "pathutils",
+    "pflag",
     "pflags",
     "pipefail",
     "pkgname",
@@ -146,6 +147,16 @@
     "gofumpt",
     "goimports",
     "golines",
-    "swaggo"
+    "swaggo",
+    "localpathstorage",
+    "LOCALPATHSTORAGE",
+    "paralleltest",
+    "shortnames",
+    "tparallel",
+    "INGRESSCONTROLLER",
+    "GATEWAYCONTROLLER", 
+    "RECONCILIATIONTOOL",
+    "STRINGSLICE",
+    "INTSLICE"
   ]
 }

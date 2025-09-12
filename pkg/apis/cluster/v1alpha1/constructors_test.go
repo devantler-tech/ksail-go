@@ -7,122 +7,42 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	clustertestutils "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestNewCluster(t *testing.T) {
+func TestClusterDirectCreation(t *testing.T) {
 	t.Parallel()
 
-	// Test with defaults
-	cluster := v1alpha1.NewCluster()
+	// Test direct cluster creation without constructors
+	cluster := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionK3d,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "/test",
+				Context:    "test-ctx",
+				Timeout:    metav1.Duration{Duration: time.Duration(10) * time.Minute},
+			},
+			CNI:                v1alpha1.CNICilium,
+			CSI:                v1alpha1.CSILocalPathStorage,
+			IngressController:  v1alpha1.IngressControllerTraefik,
+			GatewayController:  v1alpha1.GatewayControllerCilium,
+			ReconciliationTool: v1alpha1.ReconciliationToolFlux,
+		},
+	}
+
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
-	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
-
-	// Test with options - covers all WithSpec* functions
-	testTimeout := metav1.Duration{Duration: time.Duration(10) * time.Minute}
-	cluster = v1alpha1.NewCluster(
-		v1alpha1.WithMetadataName("test"),
-		v1alpha1.WithSpecDistribution(v1alpha1.DistributionK3d),
-		v1alpha1.WithSpecConnectionKubeconfig("/test"),
-		v1alpha1.WithSpecConnectionContext("test-ctx"),
-		v1alpha1.WithSpecConnectionTimeout(testTimeout),
-		v1alpha1.WithSpecCNI(v1alpha1.CNICilium),
-		v1alpha1.WithSpecCSI(v1alpha1.CSILocalPathStorage),
-		v1alpha1.WithSpecIngressController(v1alpha1.IngressControllerTraefik),
-		v1alpha1.WithSpecGatewayController(v1alpha1.GatewayControllerCilium),
-		v1alpha1.WithSpecReconciliationTool(v1alpha1.ReconciliationToolFlux),
-	)
 	assert.Equal(t, "test", cluster.Metadata.Name)
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
-}
-
-func TestSetDefaults(t *testing.T) {
-	t.Parallel()
-
-	// Test all defaults applied
-	cluster := createTestClusterWithDefaults()
-	cluster.SetDefaults()
-	assertDefaultValues(t, cluster)
-
-	// Test custom values preserved
-	cluster = createTestClusterWithCustomValues()
-	cluster.SetDefaults()
-	assertCustomValues(t, cluster)
-}
-
-func createTestClusterWithDefaults() *v1alpha1.Cluster {
-	return &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		Metadata: createDefaultObjectMeta(""),
-		Spec:     createDefaultSpec(),
-	}
-}
-
-func createTestClusterWithCustomValues() *v1alpha1.Cluster {
-	return &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		Metadata: createDefaultObjectMeta("custom"),
-		Spec:     createCustomSpec(),
-	}
-}
-
-func createDefaultObjectMeta(name string) metav1.ObjectMeta {
-	return clustertestutils.CreateDefaultClusterMetadata(name)
-}
-
-func createDefaultSpec() v1alpha1.Spec {
-	return clustertestutils.CreateDefaultSpec()
-}
-
-func createCustomSpec() v1alpha1.Spec {
-	return v1alpha1.Spec{
-		Distribution:       v1alpha1.DistributionK3d,
-		DistributionConfig: "",
-		SourceDirectory:    "",
-		Connection: v1alpha1.Connection{
-			Kubeconfig: "/custom",
-			Context:    "custom-ctx",
-			Timeout:    metav1.Duration{Duration: time.Duration(15) * time.Minute},
-		},
-		CNI:                "",
-		CSI:                "",
-		IngressController:  "",
-		GatewayController:  "",
-		ReconciliationTool: "",
-		Options:            createDefaultOptions(),
-	}
-}
-
-func createDefaultOptions() v1alpha1.Options {
-	return clustertestutils.CreateDefaultSpecOptions()
-}
-
-func assertDefaultValues(t *testing.T, cluster *v1alpha1.Cluster) {
-	t.Helper()
-	assert.Equal(t, "ksail-default", cluster.Metadata.Name)
-	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
-	assert.Equal(t, "k8s", cluster.Spec.SourceDirectory)
-	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
-	assert.Equal(t, "~/.kube/config", cluster.Spec.Connection.Kubeconfig)
-	assert.Equal(t, "kind-ksail-default", cluster.Spec.Connection.Context)
-	assert.Equal(t, time.Duration(5)*time.Minute, cluster.Spec.Connection.Timeout.Duration)
-}
-
-func assertCustomValues(t *testing.T, cluster *v1alpha1.Cluster) {
-	t.Helper()
-	assert.Equal(t, "custom", cluster.Metadata.Name)
-	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
-	assert.Equal(t, "/custom", cluster.Spec.Connection.Kubeconfig)
 }
 
 func TestDistribution_Set(t *testing.T) {
@@ -181,6 +101,119 @@ func TestReconciliationTool_Set(t *testing.T) {
 	)
 }
 
+func TestCNI_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"cilium", "Cilium"},
+		{"CILIUM", "Cilium"},
+	}
+	for _, validCase := range validCases {
+		var cni v1alpha1.CNI
+
+		require.NoError(t, cni.Set(validCase.input))
+	}
+
+	err := func() error {
+		var cni v1alpha1.CNI
+
+		return cni.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidCNI,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestCSI_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"localpathstorage", "LocalPathStorage"},
+		{"LOCALPATHSTORAGE", "LocalPathStorage"},
+	}
+	for _, validCase := range validCases {
+		var csi v1alpha1.CSI
+
+		require.NoError(t, csi.Set(validCase.input))
+	}
+
+	err := func() error {
+		var csi v1alpha1.CSI
+
+		return csi.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidCSI,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestIngressController_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"traefik", "Traefik"},
+		{"NONE", "None"},
+	}
+	for _, validCase := range validCases {
+		var ic v1alpha1.IngressController
+
+		require.NoError(t, ic.Set(validCase.input))
+	}
+
+	err := func() error {
+		var ic v1alpha1.IngressController
+
+		return ic.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidIngressController,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
+func TestGatewayController_Set(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Default", "Default"},
+		{"traefik", "Traefik"},
+		{"cilium", "Cilium"},
+		{"NONE", "None"},
+	}
+	for _, validCase := range validCases {
+		var gc v1alpha1.GatewayController
+
+		require.NoError(t, gc.Set(validCase.input))
+	}
+
+	err := func() error {
+		var gc v1alpha1.GatewayController
+
+		return gc.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidGatewayController,
+		"invalid",
+		"Set(invalid)",
+	)
+}
+
 func TestStringAndTypeMethods(t *testing.T) {
 	t.Parallel()
 
@@ -192,4 +225,20 @@ func TestStringAndTypeMethods(t *testing.T) {
 	tool := v1alpha1.ReconciliationToolKubectl
 	assert.Equal(t, "Kubectl", tool.String())
 	assert.Equal(t, "ReconciliationTool", tool.Type())
+
+	cni := v1alpha1.CNIDefault
+	assert.Equal(t, "Default", cni.String())
+	assert.Equal(t, "CNI", cni.Type())
+
+	csi := v1alpha1.CSIDefault
+	assert.Equal(t, "Default", csi.String())
+	assert.Equal(t, "CSI", csi.Type())
+
+	ic := v1alpha1.IngressControllerDefault
+	assert.Equal(t, "Default", ic.String())
+	assert.Equal(t, "IngressController", ic.Type())
+
+	gc := v1alpha1.GatewayControllerDefault
+	assert.Equal(t, "Default", gc.String())
+	assert.Equal(t, "GatewayController", gc.Type())
 }

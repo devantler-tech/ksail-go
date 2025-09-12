@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/factory"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -55,9 +55,30 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
+func TestExecute_ShowsVersion(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("1.2.3", "abc123", "2025-08-17")
+	root.SetOut(&out)
+	root.SetArgs([]string{"--version"})
+
+	_ = root.Execute()
+
+	snaps.MatchSnapshot(t, out.String())
+}
+
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
-	return factory.NewCobraCommand(use, "", "", runE)
+	return config.NewCobraCommand(
+		use,
+		"",
+		"",
+		func(cmd *cobra.Command, _ *config.Manager, args []string) error {
+			return runE(cmd, args)
+		},
+	)
 }
 
 func TestExecute_ReturnsError(t *testing.T) {

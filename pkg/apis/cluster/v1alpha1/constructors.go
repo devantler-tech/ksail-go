@@ -2,277 +2,123 @@
 package v1alpha1
 
 import (
-	"errors"
-	"fmt"
-	"strings"
-	"time"
-
 	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// --- Errors ---
-
-// ErrInvalidDistribution is returned when an invalid distribution is specified.
-var ErrInvalidDistribution = errors.New("invalid distribution")
-
-// ErrInvalidReconciliationTool is returned when an invalid reconciliation tool is specified.
-var ErrInvalidReconciliationTool = errors.New("invalid reconciliation tool")
-
-// ErrInvalidContainerEngine is returned when an invalid container engine is specified.
-var ErrInvalidContainerEngine = errors.New("invalid container engine")
-
-// --- Constructors ---
-
-// CreateDefaultMetadata creates a default metav1.ObjectMeta with the given name.
-func CreateDefaultMetadata(name string) metav1.ObjectMeta {
-	metadata := k8sutils.NewEmptyObjectMeta()
-	metadata.Name = name
-	metadata.OwnerReferences = []metav1.OwnerReference{}
-	metadata.Finalizers = []string{}
-	metadata.ManagedFields = []metav1.ManagedFieldsEntry{}
-
-	return metadata
-}
-
-// NewCluster creates a new KSail cluster with the given options.
-func NewCluster(options ...func(*Cluster)) *Cluster {
-	cluster := &Cluster{
+// NewCluster creates a new Cluster instance with minimal required structure.
+// All default values are now handled by the configuration system via field selectors.
+func NewCluster() *Cluster {
+	return &Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: k8sutils.NewEmptyObjectMeta(),
-		Spec: Spec{
-			Connection: Connection{
-				Kubeconfig: "",
-				Context:    "",
-				Timeout:    metav1.Duration{Duration: time.Duration(0)},
-			},
-			DistributionConfig: "",
-			SourceDirectory:    "",
-			Distribution:       "",
-			CNI:                "",
-			CSI:                "",
-			IngressController:  "",
-			GatewayController:  "",
-			ReconciliationTool: "",
-			Options: Options{
-				Kind:      OptionsKind{},
-				K3d:       OptionsK3d{},
-				Tind:      OptionsTind{},
-				EKS:       OptionsEKS{AWSProfile: ""},
-				Cilium:    OptionsCilium{},
-				Kubectl:   OptionsKubectl{},
-				Flux:      OptionsFlux{},
-				ArgoCD:    OptionsArgoCD{},
-				Helm:      OptionsHelm{},
-				Kustomize: OptionsKustomize{},
-			},
-		},
-	}
-	for _, opt := range options {
-		opt(cluster)
-	}
-
-	cluster.SetDefaults()
-
-	return cluster
-}
-
-// WithMetadataName sets the name of the cluster.
-func WithMetadataName(name string) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Metadata.Name = name
+		Metadata: NewClusterMetadata(""),
+		Spec:     NewClusterSpec(),
 	}
 }
 
-// WithSpecDistribution sets the distribution of the cluster.
-func WithSpecDistribution(distribution Distribution) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.Distribution = distribution
+// NewClusterMetadata creates a new metav1.ObjectMeta with the specified name and default values.
+func NewClusterMetadata(name string) metav1.ObjectMeta {
+	objectMeta := k8sutils.NewEmptyObjectMeta()
+	objectMeta.Name = name
+	objectMeta.OwnerReferences = []metav1.OwnerReference{}
+	objectMeta.Finalizers = []string{}
+	objectMeta.ManagedFields = []metav1.ManagedFieldsEntry{}
+
+	return objectMeta
+}
+
+// NewClusterSpec creates a new Spec with default values.
+func NewClusterSpec() Spec {
+	return Spec{
+		DistributionConfig: "",
+		SourceDirectory:    "",
+		Connection:         NewClusterConnection(),
+		Distribution:       "",
+		CNI:                "",
+		CSI:                "",
+		IngressController:  "",
+		GatewayController:  "",
+		ReconciliationTool: "",
+		Options:            NewClusterOptions(),
 	}
 }
 
-// WithSpecConnectionKubeconfig sets the kubeconfig for the cluster.
-func WithSpecConnectionKubeconfig(kubeconfig string) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.Connection.Kubeconfig = kubeconfig
+// NewClusterConnection creates a new Connection with default values.
+func NewClusterConnection() Connection {
+	return Connection{
+		Kubeconfig: "",
+		Context:    "",
+		Timeout:    metav1.Duration{Duration: 0},
 	}
 }
 
-// WithSpecConnectionContext sets the context for the cluster.
-func WithSpecConnectionContext(context string) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.Connection.Context = context
+// NewClusterOptions creates a new Options with default values.
+func NewClusterOptions() Options {
+	return Options{
+		Kind:      NewClusterOptionsKind(),
+		K3d:       NewClusterOptionsK3d(),
+		Tind:      NewClusterOptionsTind(),
+		EKS:       NewClusterOptionsEKS(),
+		Cilium:    NewClusterOptionsCilium(),
+		Kubectl:   NewClusterOptionsKubectl(),
+		Flux:      NewClusterOptionsFlux(),
+		ArgoCD:    NewClusterOptionsArgoCD(),
+		Helm:      NewClusterOptionsHelm(),
+		Kustomize: NewClusterOptionsKustomize(),
 	}
 }
 
-// WithSpecConnectionTimeout sets the timeout for the cluster.
-func WithSpecConnectionTimeout(timeout metav1.Duration) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.Connection.Timeout = timeout
+// NewClusterOptionsKind creates a new OptionsKind with default values.
+func NewClusterOptionsKind() OptionsKind {
+	return OptionsKind{}
+}
+
+// NewClusterOptionsK3d creates a new OptionsK3d with default values.
+func NewClusterOptionsK3d() OptionsK3d {
+	return OptionsK3d{}
+}
+
+// NewClusterOptionsTind creates a new OptionsTind with default values.
+func NewClusterOptionsTind() OptionsTind {
+	return OptionsTind{}
+}
+
+// NewClusterOptionsEKS creates a new OptionsEKS with default values.
+func NewClusterOptionsEKS() OptionsEKS {
+	return OptionsEKS{
+		AWSProfile: "",
 	}
 }
 
-// WithSpecCNI sets the CNI for the cluster.
-func WithSpecCNI(cni CNI) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.CNI = cni
-	}
+// NewClusterOptionsCilium creates a new OptionsCilium with default values.
+func NewClusterOptionsCilium() OptionsCilium {
+	return OptionsCilium{}
 }
 
-// WithSpecCSI sets the CSI implementation on the cluster spec.
-func WithSpecCSI(csi CSI) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.CSI = csi
-	}
+// NewClusterOptionsKubectl creates a new OptionsKubectl with default values.
+func NewClusterOptionsKubectl() OptionsKubectl {
+	return OptionsKubectl{}
 }
 
-// WithSpecIngressController sets the ingress controller on the cluster spec.
-func WithSpecIngressController(ingressController IngressController) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.IngressController = ingressController
-	}
+// NewClusterOptionsFlux creates a new OptionsFlux with default values.
+func NewClusterOptionsFlux() OptionsFlux {
+	return OptionsFlux{}
 }
 
-// WithSpecGatewayController sets the gateway controller on the cluster spec.
-func WithSpecGatewayController(gatewayController GatewayController) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.GatewayController = gatewayController
-	}
+// NewClusterOptionsArgoCD creates a new OptionsArgoCD with default values.
+func NewClusterOptionsArgoCD() OptionsArgoCD {
+	return OptionsArgoCD{}
 }
 
-// WithSpecReconciliationTool sets the deployment tool on the cluster spec.
-func WithSpecReconciliationTool(reconciliationTool ReconciliationTool) func(*Cluster) {
-	return func(c *Cluster) {
-		c.Spec.ReconciliationTool = reconciliationTool
-	}
+// NewClusterOptionsHelm creates a new OptionsHelm with default values.
+func NewClusterOptionsHelm() OptionsHelm {
+	return OptionsHelm{}
 }
 
-// --- Defaults ---
-
-// SetDefaults sets default values for the Cluster fields if they are not already set.
-func (c *Cluster) SetDefaults() {
-	c.setMetadataDefaults()
-	c.setSpecDefaults()
-	c.setSpecConnectionDefaults()
-}
-
-func (c *Cluster) setMetadataDefaults() {
-	if c.Metadata.Name == "" {
-		c.Metadata.Name = "ksail-default"
-	}
-}
-
-func (c *Cluster) setSpecDefaults() {
-	if c.Spec.DistributionConfig == "" {
-		c.Spec.DistributionConfig = "kind.yaml"
-	}
-
-	if c.Spec.SourceDirectory == "" {
-		c.Spec.SourceDirectory = "k8s"
-	}
-
-	if c.Spec.Distribution == "" {
-		c.Spec.Distribution = DistributionKind
-	}
-
-	if c.Spec.ReconciliationTool == "" {
-		c.Spec.ReconciliationTool = ReconciliationToolKubectl
-	}
-
-	if c.Spec.CNI == "" {
-		c.Spec.CNI = CNIDefault
-	}
-
-	if c.Spec.CSI == "" {
-		c.Spec.CSI = CSIDefault
-	}
-
-	if c.Spec.IngressController == "" {
-		c.Spec.IngressController = IngressControllerDefault
-	}
-
-	if c.Spec.GatewayController == "" {
-		c.Spec.GatewayController = GatewayControllerDefault
-	}
-}
-
-const defaultConnectionTimeoutMinutes = 5
-
-func (c *Cluster) setSpecConnectionDefaults() {
-	if c.Spec.Connection.Kubeconfig == "" {
-		c.Spec.Connection.Kubeconfig = "~/.kube/config"
-	}
-
-	if c.Spec.Connection.Context == "" {
-		c.Spec.Connection.Context = "kind-ksail-default"
-	}
-
-	if c.Spec.Connection.Timeout.Duration == 0 {
-		c.Spec.Connection.Timeout = metav1.Duration{
-			Duration: time.Duration(defaultConnectionTimeoutMinutes) * time.Minute,
-		}
-	}
-}
-
-// --- Getters and Setters ---
-
-// Set for Distribution.
-func (d *Distribution) Set(value string) error {
-	// Check against constant values with case-insensitive comparison
-	for _, dist := range validDistributions() {
-		if strings.EqualFold(value, string(dist)) {
-			*d = dist
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionTind)
-}
-
-// Set for ReconciliationTool.
-func (d *ReconciliationTool) Set(value string) error {
-	// Check against constant values with case-insensitive comparison
-	for _, tool := range validReconciliationTools() {
-		if strings.EqualFold(value, string(tool)) {
-			*d = tool
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidReconciliationTool,
-		value,
-		ReconciliationToolKubectl,
-		ReconciliationToolFlux,
-		ReconciliationToolArgoCD,
-	)
-}
-
-// -- pflags --
-
-// String returns the string representation of the Distribution.
-func (d *Distribution) String() string {
-	return string(*d)
-}
-
-// Type returns the type of the Distribution.
-func (d *Distribution) Type() string {
-	return "Distribution"
-}
-
-// String returns the string representation of the ReconciliationTool.
-func (d *ReconciliationTool) String() string {
-	return string(*d)
-}
-
-// Type returns the type of the ReconciliationTool.
-func (d *ReconciliationTool) Type() string {
-	return "ReconciliationTool"
+// NewClusterOptionsKustomize creates a new OptionsKustomize with default values.
+func NewClusterOptionsKustomize() OptionsKustomize {
+	return OptionsKustomize{}
 }

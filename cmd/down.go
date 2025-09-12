@@ -2,27 +2,31 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/factory"
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 )
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return factory.NewCobraCommand(
-		"down",
-		"Stop and remove the Kubernetes cluster",
-		`Stop and remove the Kubernetes cluster defined in the project configuration.`,
-		handleDownRunE,
-	)
-}
+	return NewSimpleClusterCommand(CommandConfig{
+		Use:   "down",
+		Short: "Destroy a cluster",
+		Long:  `Destroy a cluster.`,
+		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+			_, err := HandleSimpleClusterCommand(
+				cmd,
+				configManager,
+				"cluster destroyed successfully",
+			)
 
-// handleDownRunE handles the down command.
-func handleDownRunE(cmd *cobra.Command, _ []string) error {
-	notify.Successln(
-		cmd.OutOrStdout(),
-		"Cluster stopped and removed successfully (stub implementation)",
-	)
-
-	return nil
+			return err
+		},
+		FieldsFunc: func(c *v1alpha1.Cluster) []any {
+			return []any{
+				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to destroy",
+				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context of cluster to destroy",
+			}
+		},
+	})
 }

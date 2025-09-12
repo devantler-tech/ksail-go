@@ -1,7 +1,6 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -10,39 +9,28 @@ import (
 func TestNewStopCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd := cmd.NewStopCmd()
-
-	if cmd == nil {
-		t.Fatal("expected command to be created")
-	}
-
-	if cmd.Use != "stop" {
-		t.Fatalf("expected Use to be 'stop', got %q", cmd.Use)
-	}
-
-	if cmd.Short != "Stop the Kubernetes cluster" {
-		t.Fatalf("expected Short description, got %q", cmd.Short)
-	}
+	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+		CommandName:   "stop",
+		NewCommand:    cmd.NewStopCmd,
+		ExpectedUse:   "stop",
+		ExpectedShort: "Stop the Kubernetes cluster",
+	})
 }
 
 func TestStopCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+		CommandName: "stop",
+		NewCommand:  cmd.NewStopCmd,
+	})
+}
 
-	cmd := cmd.NewStopCmd()
-	cmd.SetOut(&out)
+func TestStopCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	got := out.String()
-
-	expected := "✔ Cluster stopped successfully (stub implementation)\n"
-
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		CommandName: "stop",
+		NewCommand:  cmd.NewStopCmd,
+	})
 }

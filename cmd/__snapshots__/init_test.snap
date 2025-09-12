@@ -1,0 +1,20 @@
+
+[TestInitCmd_Help - 1]
+Initialize a new project.
+
+Usage:
+  init [flags]
+
+Flags:
+  -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
+  -h, --help                        help for init
+  -s, --source-directory string     Directory containing workloads to deploy (default "k8s")
+
+---
+
+[TestInitCmd_Execute - 1]
+✔ project initialized successfully
+► Distribution: Kind
+► Source directory: k8s
+
+---

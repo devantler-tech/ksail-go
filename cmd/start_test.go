@@ -1,7 +1,6 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -10,39 +9,28 @@ import (
 func TestNewStartCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd := cmd.NewStartCmd()
-
-	if cmd == nil {
-		t.Fatal("expected command to be created")
-	}
-
-	if cmd.Use != "start" {
-		t.Fatalf("expected Use to be 'start', got %q", cmd.Use)
-	}
-
-	if cmd.Short != "Start a stopped Kubernetes cluster" {
-		t.Fatalf("expected Short description, got %q", cmd.Short)
-	}
+	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+		CommandName:   "start",
+		NewCommand:    cmd.NewStartCmd,
+		ExpectedUse:   "start",
+		ExpectedShort: "Start a stopped cluster",
+	})
 }
 
 func TestStartCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+		CommandName: "start",
+		NewCommand:  cmd.NewStartCmd,
+	})
+}
 
-	cmd := cmd.NewStartCmd()
-	cmd.SetOut(&out)
+func TestStartCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	got := out.String()
-
-	expected := "✔ Cluster started successfully (stub implementation)\n"
-
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		CommandName: "start",
+		NewCommand:  cmd.NewStartCmd,
+	})
 }

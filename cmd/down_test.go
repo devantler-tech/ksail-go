@@ -1,7 +1,6 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -10,39 +9,28 @@ import (
 func TestNewDownCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd := cmd.NewDownCmd()
-
-	if cmd == nil {
-		t.Fatal("expected command to be created")
-	}
-
-	if cmd.Use != "down" {
-		t.Fatalf("expected Use to be 'down', got %q", cmd.Use)
-	}
-
-	if cmd.Short != "Stop and remove the Kubernetes cluster" {
-		t.Fatalf("expected Short description, got %q", cmd.Short)
-	}
+	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+		CommandName:   "down",
+		NewCommand:    cmd.NewDownCmd,
+		ExpectedUse:   "down",
+		ExpectedShort: "Destroy a cluster",
+	})
 }
 
 func TestDownCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+		CommandName: "down",
+		NewCommand:  cmd.NewDownCmd,
+	})
+}
 
-	cmd := cmd.NewDownCmd()
-	cmd.SetOut(&out)
+func TestDownCmd_Help(t *testing.T) {
+	t.Parallel()
 
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	got := out.String()
-
-	expected := "✔ Cluster stopped and removed successfully (stub implementation)\n"
-
-	if got != expected {
-		t.Fatalf("expected output %q, got %q", expected, got)
-	}
+	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+		CommandName: "down",
+		NewCommand:  cmd.NewDownCmd,
+	})
 }
