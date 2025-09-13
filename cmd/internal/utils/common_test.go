@@ -76,7 +76,7 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadConfig().Return(nil, errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
@@ -113,7 +113,7 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadConfig().Return(nil, errConfigLoadFailed)
 
 	cluster, err := utils.LoadClusterWithErrorHandling(testCmd, mockManager)

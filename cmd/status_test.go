@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -70,7 +71,7 @@ func TestHandleStatusRunE_Error(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadConfig().Return(nil, testutils.ErrTestConfigLoadError)
 
 	err := cmd.HandleStatusRunE(testCmd, mockManager, []string{})

@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -130,7 +131,7 @@ func TestHandleListRunE_Error(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
 	// Create a real viper instance for the BindPFlag call
 	viperInstance := ksail.NewManager().GetViper()
 	mockManager.EXPECT().GetViper().Return(viperInstance).Once()

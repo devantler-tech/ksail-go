@@ -4,6 +4,14 @@ packages:
   github.com/devantler-tech/ksail-go:
     config:
       all: true
+  github.com/devantler-tech/ksail-go/pkg/config-manager:
+    config:
+      recursive: false
+      dir: pkg/config-manager
+      filename: mocks.go
+      pkgname: configmanager
+    interfaces:
+      ConfigManager:
   github.com/docker/docker/client:
     config:
       recursive: false
