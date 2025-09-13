@@ -40,7 +40,7 @@ func InitializeViper() *viper.Viper {
 }
 
 // bindEnvironmentVariables binds environment variables to their corresponding viper keys.
-func bindEnvironmentVariables(v *viper.Viper) {
+func bindEnvironmentVariables(viperInstance *viper.Viper) {
 	// Map common environment variables to their viper keys
 	envMapping := map[string]string{
 		"METADATA_NAME":              "metadata.name",
@@ -57,6 +57,6 @@ func bindEnvironmentVariables(v *viper.Viper) {
 	}
 
 	for envKey, viperKey := range envMapping {
-		v.BindEnv(viperKey, "KSAIL_"+envKey)
+		viperInstance.BindEnv(viperKey, "KSAIL_"+envKey)
 	}
 }

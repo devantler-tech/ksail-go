@@ -235,7 +235,7 @@ func TestNewCobraCommand(t *testing.T) {
 			t.Parallel()
 
 			var calledRunE bool
-			runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+			runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
 				calledRunE = true
 				require.NotNil(t, manager)
 				return nil

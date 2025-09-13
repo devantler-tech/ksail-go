@@ -113,7 +113,7 @@ spec:
 	tempDir := t.TempDir()
 	configFile := tempDir + "/ksail.yaml"
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o644)
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Change to the temporary directory so viper can find the config file
@@ -123,8 +123,7 @@ spec:
 		os.Chdir(oldWd)
 	}()
 
-	err = os.Chdir(tempDir)
-	require.NoError(t, err)
+	t.Chdir(tempDir)
 
 	// Initialize viper - it should read the config file
 	viperInstance := ksail.InitializeViper()
@@ -280,8 +279,8 @@ func TestInitializeViper_Idempotency(t *testing.T) {
 	assert.Equal(t, "value2", viper2.GetString("test2"))
 
 	// viper1 should not have test2, viper2 should not have test1
-	assert.Equal(t, "", viper1.GetString("test2"))
-	assert.Equal(t, "", viper2.GetString("test1"))
+	assert.Empty(t, viper1.GetString("test2"))
+	assert.Empty(t, viper2.GetString("test1"))
 }
 
 // TestInitializeViper_ConfigType tests that the config type is set correctly.

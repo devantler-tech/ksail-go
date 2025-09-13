@@ -10,6 +10,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Manager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
@@ -27,7 +28,11 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 	return &Manager{
 		viper:          InitializeViper(),
 		fieldSelectors: fieldSelectors,
-		Config:         &v1alpha1.Cluster{},
+		Config: &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{},
+			Metadata: metav1.ObjectMeta{},
+			Spec:     v1alpha1.Spec{},
+		},
 	}
 }
 
@@ -35,7 +40,11 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 // Returns the previously loaded config if already loaded.
 func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded and populated, return it
-	if m.Config != nil && !reflect.DeepEqual(m.Config, &v1alpha1.Cluster{}) {
+	if m.Config != nil && !reflect.DeepEqual(m.Config, &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{},
+		Metadata: metav1.ObjectMeta{},
+		Spec:     v1alpha1.Spec{},
+	}) {
 		return m.Config, nil
 	}
 
@@ -50,7 +59,8 @@ func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	m.viper.AddConfigPath("/etc/ksail")
 
 	// Read configuration file if it exists
-	if err := m.viper.ReadInConfig(); err != nil {
+	err := m.viper.ReadInConfig()
+	if err != nil {
 		// It's okay if config file doesn't exist, we'll use defaults and flags
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) {
@@ -64,7 +74,8 @@ func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	bindEnvironmentVariables(m.viper)
 
 	// Unmarshal into our cluster config
-	if err := m.viper.Unmarshal(m.Config); err != nil {
+	err = m.viper.Unmarshal(m.Config)
+	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 

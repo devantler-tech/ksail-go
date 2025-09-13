@@ -29,21 +29,25 @@ func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
 		fieldPointers := cfg.FieldsFunc(dummyCluster)
 
 		// Parse the flat array: field, defaultValue, description, field, defaultValue, description, ...
-		for i := 0; i < len(fieldPointers); i += 3 {
-			if i+2 >= len(fieldPointers) {
+		for idx := 0; idx < len(fieldPointers); idx += 3 {
+			if idx+2 >= len(fieldPointers) {
 				break // Not enough elements for a complete triplet
 			}
 
-			fieldPtr := fieldPointers[i]
-			defaultValue := fieldPointers[i+1]
-			description := fieldPointers[i+2].(string)
+			fieldPtr := fieldPointers[idx]
+			defaultValue := fieldPointers[idx+1]
+
+			description, ok := fieldPointers[idx+2].(string)
+			if !ok {
+				continue // Skip invalid description
+			}
 
 			// Create a field selector for this field
 			fieldSelectors = append(fieldSelectors, ksail.FieldSelector[v1alpha1.Cluster]{
-				Selector: func(ptr any) func(c *v1alpha1.Cluster) any {
+				Selector: func(_ any) func(c *v1alpha1.Cluster) any {
 					return func(c *v1alpha1.Cluster) any {
 						// Need to re-evaluate the field pointer using the actual cluster
-						return cfg.FieldsFunc(c)[i] // Return the same position in the array
+						return cfg.FieldsFunc(c)[idx] // Return the same position in the array
 					}
 				}(fieldPtr),
 				Description:  description,

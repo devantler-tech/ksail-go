@@ -76,7 +76,7 @@ func TestNewCobraCommand_WithFieldSelectors(t *testing.T) {
 	}
 
 	var receivedManager *ksail.Manager
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
 		receivedManager = manager
 		return nil
 	}
@@ -114,7 +114,7 @@ func TestNewCobraCommand_NoFieldSelectors(t *testing.T) {
 	t.Parallel()
 
 	var receivedManager *ksail.Manager
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
 		receivedManager = manager
 		return nil
 	}
@@ -205,7 +205,7 @@ func TestNewCobraCommand_AllFieldTypes(t *testing.T) {
 		),
 	}
 
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
 		return nil
 	}
 

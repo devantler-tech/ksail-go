@@ -3,5 +3,5 @@ package testutils
 
 import "errors"
 
-// Static test errors to comply with err113.
+// ErrTestConfigLoadError is a static test error to comply with err113.
 var ErrTestConfigLoadError = errors.New("test config load error")

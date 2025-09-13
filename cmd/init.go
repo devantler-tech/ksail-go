@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -54,14 +56,14 @@ func HandleInitRunE(
 ) error {
 	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	notify.Successln(cmd.OutOrStdout(),
 		"project initialized successfully")
 	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
-		{"Distribution", string(cluster.Spec.Distribution)},
-		{"Source directory", cluster.Spec.SourceDirectory},
+		{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
+		{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
 	})
 
 	return nil

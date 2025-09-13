@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -65,14 +67,14 @@ func HandleReconcileRunE(
 ) error {
 	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
 	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
-		{"Reconciliation tool", string(cluster.Spec.ReconciliationTool)},
-		{"Source directory", cluster.Spec.SourceDirectory},
-		{"Context", cluster.Spec.Connection.Context},
+		{Label: "Reconciliation tool", Value: string(cluster.Spec.ReconciliationTool)},
+		{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
+		{Label: "Context", Value: cluster.Spec.Connection.Context},
 	})
 
 	return nil

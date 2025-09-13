@@ -47,7 +47,7 @@ func NewUpCmd() *cobra.Command {
 		Use:   "up",
 		Short: "Start the Kubernetes cluster",
 		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,

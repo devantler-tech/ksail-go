@@ -329,7 +329,7 @@ func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
 		{
 			name: "Nil field selector",
 			fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
-				Selector: func(c *v1alpha1.Cluster) any { return nil },
+				Selector: func(_ *v1alpha1.Cluster) any { return nil },
 			},
 			expectSkip: true,
 		},

@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
@@ -64,13 +65,13 @@ func HandleStatusRunE(
 ) error {
 	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")
 	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
-		{"Context", cluster.Spec.Connection.Context},
-		{"Kubeconfig", cluster.Spec.Connection.Kubeconfig},
+		{Label: "Context", Value: cluster.Spec.Connection.Context},
+		{Label: "Kubeconfig", Value: cluster.Spec.Connection.Kubeconfig},
 	})
 
 	return nil

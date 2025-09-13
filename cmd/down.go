@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
@@ -32,13 +34,17 @@ func NewDownCmd() *cobra.Command {
 		Use:   "down",
 		Short: "Destroy a cluster",
 		Long:  `Destroy a cluster.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"cluster destroyed successfully",
 			)
-			return err
+			if err != nil {
+				return fmt.Errorf("failed to handle cluster command: %w", err)
+			}
+
+			return nil
 		},
 	}
 
