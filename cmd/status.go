@@ -4,6 +4,7 @@ package cmd
 import (
 	"time"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
@@ -35,13 +36,13 @@ func NewStatusCmd() *cobra.Command {
 // HandleStatusRunE handles the status command.
 // Exported for testing purposes.
 func HandleStatusRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
+	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")
-	logClusterInfo(cmd, []ClusterInfoField{
+	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
 		{"Context", cluster.Spec.Connection.Context},
 		{"Kubeconfig", cluster.Spec.Connection.Kubeconfig},
 	})

@@ -4,6 +4,7 @@ package cmd
 import (
 	"time"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
@@ -14,12 +15,12 @@ const defaultUpTimeout = 5 * time.Minute
 
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
-	return NewSimpleClusterCommand(CommandConfig{
+	return utils.NewSimpleClusterCommand(utils.CommandConfig{
 		Use:   "up",
 		Short: "Start the Kubernetes cluster",
 		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
 		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-			_, err := HandleSimpleClusterCommand(
+			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"Cluster created and started successfully (stub implementation)",

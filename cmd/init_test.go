@@ -1,10 +1,15 @@
 package cmd_test
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/internal/cmd/testutils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewInitCmd(t *testing.T) {
@@ -74,4 +79,42 @@ func TestInitCmd_Flags(t *testing.T) {
 			sourceDirectoryFlag.DefValue,
 		)
 	}
+}
+
+// TestHandleInitRunE_Success tests successful init command execution.
+func TestHandleInitRunE_Success(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	manager := config.NewManager()
+
+	err := cmd.HandleInitRunE(testCmd, manager, []string{})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ project initialized successfully")
+	assert.Contains(t, out.String(), "► Distribution:")
+	assert.Contains(t, out.String(), "► Source directory:")
+}
+
+// TestHandleInitRunE_Error tests init command with config load error.
+func TestHandleInitRunE_Error(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, testutils.ErrTestConfigLoadError)
+
+	err := cmd.HandleInitRunE(testCmd, mockManager, []string{})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "test config load error")
+	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
 }

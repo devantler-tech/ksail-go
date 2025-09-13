@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
@@ -27,14 +28,14 @@ func NewInitCmd() *cobra.Command {
 // HandleInitRunE handles the init command.
 // Exported for testing purposes.
 func HandleInitRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
+	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}
 
 	notify.Successln(cmd.OutOrStdout(),
 		"project initialized successfully")
-	logClusterInfo(cmd, []ClusterInfoField{
+	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
 		{"Distribution", string(cluster.Spec.Distribution)},
 		{"Source directory", cluster.Spec.SourceDirectory},
 	})

@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
@@ -30,13 +31,13 @@ defined in configuration files.`,
 // HandleReconcileRunE handles the reconcile command.
 // Exported for testing purposes.
 func HandleReconcileRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
+	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}
 
 	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
-	logClusterInfo(cmd, []ClusterInfoField{
+	utils.LogClusterInfo(cmd, []utils.ClusterInfoField{
 		{"Reconciliation tool", string(cluster.Spec.ReconciliationTool)},
 		{"Source directory", cluster.Spec.SourceDirectory},
 		{"Context", cluster.Spec.Connection.Context},

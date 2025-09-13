@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/internal/cmd/testutils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 

@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
@@ -9,12 +10,12 @@ import (
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	return NewSimpleClusterCommand(CommandConfig{
+	return utils.NewSimpleClusterCommand(utils.CommandConfig{
 		Use:   "start",
 		Short: "Start a stopped cluster",
 		Long:  `Start a previously stopped cluster.`,
 		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-			_, err := HandleSimpleClusterCommand(
+			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"Cluster started successfully (stub implementation)",

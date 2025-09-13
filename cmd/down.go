@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
@@ -9,12 +10,12 @@ import (
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return NewSimpleClusterCommand(CommandConfig{
+	return utils.NewSimpleClusterCommand(utils.CommandConfig{
 		Use:   "down",
 		Short: "Destroy a cluster",
 		Long:  `Destroy a cluster.`,
 		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
-			_, err := HandleSimpleClusterCommand(
+			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"cluster destroyed successfully",

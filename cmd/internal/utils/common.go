@@ -1,5 +1,5 @@
-// Package cmd provides the command-line interface for KSail.
-package cmd
+// Package utils provides common utilities for KSail commands.
+package utils
 
 import (
 	"fmt"
@@ -36,8 +36,8 @@ type ClusterInfoField struct {
 	Value string
 }
 
-// logClusterInfo logs cluster information fields to the command output.
-func logClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
+// LogClusterInfo logs cluster information fields to the command output.
+func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 	for _, field := range fields {
 		notify.Activityln(cmd.OutOrStdout(), field.Label+": "+field.Value)
 	}
@@ -74,7 +74,7 @@ func HandleSimpleClusterCommand(
 	}
 
 	notify.Successln(cmd.OutOrStdout(), successMessage)
-	logClusterInfo(cmd, []ClusterInfoField{
+	LogClusterInfo(cmd, []ClusterInfoField{
 		{"Distribution", string(cluster.Spec.Distribution)},
 		{"Context", cluster.Spec.Connection.Context},
 	})
