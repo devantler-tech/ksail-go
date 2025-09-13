@@ -1,6 +1,9 @@
 recursive: true
 
 packages:
+  github.com/devantler-tech/ksail-go:
+    config:
+      all: true
   github.com/docker/docker/client:
     config:
       recursive: false
