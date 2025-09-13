@@ -15,7 +15,7 @@ func NewReconcileCmd() *cobra.Command {
 		"Reconcile workloads in the cluster",
 		`Reconcile workloads in the cluster to match the desired state
 defined in configuration files.`,
-		handleReconcileRunE,
+		HandleReconcileRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.ReconciliationTool, v1alpha1.ReconciliationToolKubectl, "Tool to use for reconciling workloads",
@@ -27,9 +27,10 @@ defined in configuration files.`,
 	)
 }
 
-// handleReconcileRunE handles the reconcile command.
-func handleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
+// HandleReconcileRunE handles the reconcile command.
+// Exported for testing purposes.
+func HandleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}

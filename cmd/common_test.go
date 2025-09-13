@@ -3,7 +3,6 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -11,20 +10,14 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// mockConfigManager wraps a real config manager but can return errors for testing.
-type mockConfigManager struct {
-	*config.Manager
-	loadClusterError error
-}
-
-func (m *mockConfigManager) LoadCluster() (*v1alpha1.Cluster, error) {
-	if m.loadClusterError != nil {
-		return nil, m.loadClusterError
-	}
-	return m.Manager.LoadCluster()
-}
+// Static test errors to comply with err113.
+var (
+	errFailedToLoadConfig = errors.New("failed to load config")
+	errConfigLoadFailed   = errors.New("config load failed")
+)
 
 func TestNewSimpleClusterCommand(t *testing.T) {
 	t.Parallel()
@@ -33,7 +26,7 @@ func TestNewSimpleClusterCommand(t *testing.T) {
 		Use:   "test",
 		Short: "Test command",
 		Long:  "A test command for testing",
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, args []string) error {
+		RunEFunc: func(_ *cobra.Command, _ *config.Manager, _ []string) error {
 			return nil
 		},
 		FieldsFunc: func(c *v1alpha1.Cluster) []any {
@@ -67,7 +60,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	// Test the actual exported function
 	cluster, err := cmd.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cluster)
 	assert.Contains(t, out.String(), "✔ Test success message")
 	assert.Contains(t, out.String(), "► Distribution:")
@@ -83,12 +76,12 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 
 	// Create a config manager with error injection
 	manager := config.NewManager()
-	manager.SetTestErrorHook(errors.New("failed to load config"))
+	manager.SetTestErrorHook(errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
 	cluster, err := cmd.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cluster)
 	assert.Contains(t, err.Error(), "failed to load config")
 	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
@@ -98,25 +91,17 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
 
 	manager := config.NewManager()
 
-	// Test the pattern by creating a test function that mimics loadClusterWithErrorHandling
-	testLoadCluster := func() (*v1alpha1.Cluster, error) {
-		cluster, err := manager.LoadCluster()
-		if err != nil {
-			cmd.Printf("Failed to load cluster configuration: %s\n", err.Error())
-			return nil, err
-		}
-		return cluster, nil
-	}
+	cluster, err := cmd.LoadClusterWithErrorHandling(testCmd, manager)
 
-	cluster, err := testLoadCluster()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, cluster)
-	assert.Equal(t, "", out.String()) // No error output
+	assert.Empty(t, out.String()) // No error output
 }
 
 func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
@@ -128,18 +113,11 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 
 	// Create a config manager with error injection
 	manager := config.NewManager()
-	manager.SetTestErrorHook(errors.New("config load failed"))
+	manager.SetTestErrorHook(errConfigLoadFailed)
 
-	// Test the loadClusterWithErrorHandling pattern
-	// Since it's not exported, we simulate its logic here to get coverage
-	cluster, err := manager.LoadCluster()
-	if err != nil {
-		testCmd.Printf("✗ Failed to load cluster configuration: %s\n", err.Error())
-		// Wrap error like loadClusterWithErrorHandling does
-		err = fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
+	cluster, err := cmd.LoadClusterWithErrorHandling(testCmd, manager)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, cluster)
 	assert.Contains(t, err.Error(), "config load failed")
 	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
@@ -149,6 +127,7 @@ func TestLogClusterInfo(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
 

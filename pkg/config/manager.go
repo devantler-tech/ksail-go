@@ -35,6 +35,7 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 		viper:          viperInstance,
 		cluster:        nil,
 		fieldSelectors: fieldSelectors,
+		testErrorHook:  nil,
 	}
 }
 

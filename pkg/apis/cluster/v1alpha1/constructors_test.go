@@ -251,8 +251,8 @@ func TestNewCluster(t *testing.T) {
 	cluster := v1alpha1.NewCluster()
 
 	require.NotNil(t, cluster)
-	assert.Equal(t, v1alpha1.Kind, cluster.TypeMeta.Kind)
-	assert.Equal(t, v1alpha1.APIVersion, cluster.TypeMeta.APIVersion)
+	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
+	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
 	assert.NotNil(t, cluster.Metadata)
 	assert.NotNil(t, cluster.Spec)
 }
@@ -276,7 +276,7 @@ func TestNewClusterMetadata(t *testing.T) {
 
 		metadata := v1alpha1.NewClusterMetadata("")
 
-		assert.Equal(t, "", metadata.Name)
+		assert.Empty(t, metadata.Name)
 		assert.NotNil(t, metadata.OwnerReferences)
 		assert.NotNil(t, metadata.Finalizers)
 		assert.NotNil(t, metadata.ManagedFields)
@@ -288,8 +288,8 @@ func TestNewClusterSpec(t *testing.T) {
 
 	spec := v1alpha1.NewClusterSpec()
 
-	assert.Equal(t, "", spec.DistributionConfig)
-	assert.Equal(t, "", spec.SourceDirectory)
+	assert.Empty(t, spec.DistributionConfig)
+	assert.Empty(t, spec.SourceDirectory)
 	assert.NotNil(t, spec.Connection)
 	assert.Equal(t, v1alpha1.Distribution(""), spec.Distribution)
 	assert.Equal(t, v1alpha1.CNI(""), spec.CNI)
@@ -305,8 +305,8 @@ func TestNewClusterConnection(t *testing.T) {
 
 	connection := v1alpha1.NewClusterConnection()
 
-	assert.Equal(t, "", connection.Kubeconfig)
-	assert.Equal(t, "", connection.Context)
+	assert.Empty(t, connection.Kubeconfig)
+	assert.Empty(t, connection.Context)
 	assert.Equal(t, metav1.Duration{Duration: 0}, connection.Timeout)
 }
 
@@ -359,7 +359,7 @@ func TestNewClusterOptionsEKS(t *testing.T) {
 
 	options := v1alpha1.NewClusterOptionsEKS()
 
-	assert.Equal(t, "", options.AWSProfile)
+	assert.Empty(t, options.AWSProfile)
 }
 
 func TestNewClusterOptionsCilium(t *testing.T) {

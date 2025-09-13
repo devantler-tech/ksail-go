@@ -14,7 +14,7 @@ func NewInitCmd() *cobra.Command {
 		"init",
 		"Initialize a new project",
 		`Initialize a new project.`,
-		handleInitRunE,
+		HandleInitRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
@@ -24,9 +24,10 @@ func NewInitCmd() *cobra.Command {
 	)
 }
 
-// handleInitRunE handles the init command.
-func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
+// HandleInitRunE handles the init command.
+// Exported for testing purposes.
+func HandleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}

@@ -16,7 +16,7 @@ func NewListCmd() *cobra.Command {
 		"list",
 		"List clusters",
 		`List all Kubernetes clusters managed by KSail.`,
-		handleListRunE,
+		HandleListRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to list clusters for",
@@ -30,8 +30,9 @@ func NewListCmd() *cobra.Command {
 	return cmd
 }
 
-// handleListRunE handles the list command.
-func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+// HandleListRunE handles the list command.
+// Exported for testing purposes.
+func HandleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 

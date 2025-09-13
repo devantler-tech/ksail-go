@@ -19,7 +19,7 @@ func NewStatusCmd() *cobra.Command {
 		"status",
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
-		handleStatusRunE,
+		HandleStatusRunE,
 		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to check status for",
@@ -32,9 +32,10 @@ func NewStatusCmd() *cobra.Command {
 	)
 }
 
-// handleStatusRunE handles the status command.
-func handleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
+// HandleStatusRunE handles the status command.
+// Exported for testing purposes.
+func HandleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
 	}
