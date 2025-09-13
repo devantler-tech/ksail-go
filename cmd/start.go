@@ -4,7 +4,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -17,7 +17,7 @@ func NewStartCmd() *cobra.Command {
 		"Start a stopped cluster",
 		`Start a previously stopped cluster.`,
 		func(cmd *cobra.Command, manager *ksail.Manager, _ []string) error {
-			_, err := utils.HandleSimpleClusterCommand(
+			_, err := cmdhelpers.HandleSimpleClusterCommand(
 				cmd,
 				manager,
 				"Cluster started successfully (stub implementation)",

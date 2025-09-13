@@ -157,6 +157,14 @@
     "GATEWAYCONTROLLER",
     "RECONCILIATIONTOOL",
     "STRINGSLICE",
-    "INTSLICE"
+    "INTSLICE",
+    "configmanager",
+    "SOURCEDIRECTORY",
+    "sourcedirectory",
+    "funlen",
+    "gocognit",
+    "nestif",
+    "cyclop",
+    "cmdhelpers"
   ]
 }

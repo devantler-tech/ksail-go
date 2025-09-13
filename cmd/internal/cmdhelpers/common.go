@@ -1,8 +1,5 @@
-// Package utils provides common utilities for KSail commands.
-// Package utils provides common utilities for KSail commands.
-//
-//nolint:revive // The utils package name is descriptive and appropriate for internal utilities
-package utils
+// Package cmdhelpers provides common utilities for KSail command creation and handling.
+package cmdhelpers
 
 import (
 	"fmt"

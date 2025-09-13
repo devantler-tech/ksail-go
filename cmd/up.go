@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -50,7 +50,7 @@ func NewUpCmd() *cobra.Command {
 		Short: "Start the Kubernetes cluster",
 		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, err := utils.HandleSimpleClusterCommand(
+			_, err := cmdhelpers.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"Cluster created and started successfully (stub implementation)",

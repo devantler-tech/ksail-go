@@ -1,11 +1,11 @@
-package utils_test
+package cmdhelpers_test
 
 import (
 	"bytes"
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
@@ -23,7 +23,7 @@ var (
 func TestNewSimpleClusterCommand(t *testing.T) {
 	t.Parallel()
 
-	cfg := utils.CommandConfig{
+	cfg := cmdhelpers.CommandConfig{
 		Use:   "test",
 		Short: "Test command",
 		Long:  "A test command for testing",
@@ -37,7 +37,7 @@ func TestNewSimpleClusterCommand(t *testing.T) {
 		},
 	}
 
-	cmd := utils.NewSimpleClusterCommand(cfg)
+	cmd := cmdhelpers.NewSimpleClusterCommand(cfg)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "test", cmd.Use)
@@ -60,7 +60,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	manager := ksail.NewManager()
 
 	// Test the actual exported function
-	cluster, err := utils.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
+	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
 
 	require.NoError(t, err)
 	assert.NotNil(t, cluster)
@@ -82,7 +82,11 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	mockManager.EXPECT().LoadConfig().Return(nil, errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
-	cluster, err := utils.HandleSimpleClusterCommand(testCmd, mockManager, "Test success message")
+	cluster, err := cmdhelpers.HandleSimpleClusterCommand(
+		testCmd,
+		mockManager,
+		"Test success message",
+	)
 
 	require.Error(t, err)
 	assert.Nil(t, cluster)
@@ -100,7 +104,7 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 
 	manager := ksail.NewManager()
 
-	cluster, err := utils.LoadClusterWithErrorHandling(testCmd, manager)
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
 
 	require.NoError(t, err)
 	assert.NotNil(t, cluster)
@@ -119,7 +123,7 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadConfig().Return(nil, errConfigLoadFailed)
 
-	cluster, err := utils.LoadClusterWithErrorHandling(testCmd, mockManager)
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, mockManager)
 
 	require.Error(t, err)
 	assert.Nil(t, cluster)

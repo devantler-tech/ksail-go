@@ -1,7 +1,6 @@
 package ksail_test
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -138,10 +137,10 @@ func TestManager_addFlagFromField(t *testing.T) {
 	}
 }
 
-// TestManager_generateFlagName tests the generateFlagName method.
+// TestManager_GenerateFlagName tests the GenerateFlagName method.
 //
 //nolint:funlen // Comprehensive flag name generation test requires multiple test cases
-func TestManager_generateFlagName(t *testing.T) {
+func TestManager_GenerateFlagName(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewManager()
@@ -212,39 +211,15 @@ func TestManager_generateFlagName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Use reflection to access the private method
-			managerValue := reflect.ValueOf(manager)
-
-			method := managerValue.MethodByName("generateFlagName")
-			if !method.IsValid() {
-				// Try to find the unexported method using reflection on the struct
-				managerValue = reflect.ValueOf(manager).Elem()
-				for i := range managerValue.NumMethod() {
-					methodName := managerValue.Type().Method(i).Name
-					if methodName == "generateFlagName" {
-						method = managerValue.Method(i)
-
-						break
-					}
-				}
-			}
-
-			if !method.IsValid() {
-				t.Skip("generateFlagName method not accessible via reflection")
-
-				return
-			}
-
-			result := method.Call([]reflect.Value{reflect.ValueOf(testCase.fieldPtr)})
-			assert.Equal(t, testCase.expected, result[0].String())
+			// Call the public method directly
+			result := manager.GenerateFlagName(testCase.fieldPtr)
+			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
 
-// TestManager_generateShorthand tests the generateShorthand method.
-//
-//nolint:funlen // Comprehensive shorthand generation test requires multiple test cases
-func TestManager_generateShorthand(t *testing.T) {
+// TestManager_GenerateShorthand tests the GenerateShorthand method.
+func TestManager_GenerateShorthand(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewManager()
@@ -300,31 +275,9 @@ func TestManager_generateShorthand(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Use reflection to access the private method
-			managerValue := reflect.ValueOf(manager)
-
-			method := managerValue.MethodByName("generateShorthand")
-			if !method.IsValid() {
-				// Try to find the unexported method using reflection on the struct
-				managerValue = reflect.ValueOf(manager).Elem()
-				for i := range managerValue.NumMethod() {
-					methodName := managerValue.Type().Method(i).Name
-					if methodName == "generateShorthand" {
-						method = managerValue.Method(i)
-
-						break
-					}
-				}
-			}
-
-			if !method.IsValid() {
-				t.Skip("generateShorthand method not accessible via reflection")
-
-				return
-			}
-
-			result := method.Call([]reflect.Value{reflect.ValueOf(testCase.flagName)})
-			assert.Equal(t, testCase.expected, result[0].String())
+			// Call the public method directly
+			result := manager.GenerateShorthand(testCase.flagName)
+			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
