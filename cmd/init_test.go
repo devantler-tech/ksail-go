@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/internal/cmd/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
@@ -45,7 +46,7 @@ func TestInitCmd_Execute(t *testing.T) {
 func TestInitCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		NewCommand: cmd.NewInitCmd,
 	})
 }

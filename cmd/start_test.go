@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/internal/cmd/testutils"
 )
 
 func TestNewStartCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandCreation(t, testutils.SimpleCommandTestData{
 		CommandName:   "start",
 		NewCommand:    cmd.NewStartCmd,
 		ExpectedUse:   "start",
@@ -20,7 +21,7 @@ func TestNewStartCmd(t *testing.T) {
 func TestStartCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
 		CommandName: "start",
 		NewCommand:  cmd.NewStartCmd,
 	})
@@ -29,7 +30,7 @@ func TestStartCmd_Execute(t *testing.T) {
 func TestStartCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		CommandName: "start",
 		NewCommand:  cmd.NewStartCmd,
 	})

@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/internal/cmd/testutils"
 )
 
 func TestNewReconcileCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandCreation(t, testutils.SimpleCommandTestData{
 		CommandName:   "reconcile",
 		NewCommand:    cmd.NewReconcileCmd,
 		ExpectedUse:   "reconcile",
@@ -20,7 +21,7 @@ func TestNewReconcileCmd(t *testing.T) {
 func TestReconcileCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
 		CommandName: "reconcile",
 		NewCommand:  cmd.NewReconcileCmd,
 	})
@@ -29,7 +30,7 @@ func TestReconcileCmd_Execute(t *testing.T) {
 func TestReconcileCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		CommandName: "reconcile",
 		NewCommand:  cmd.NewReconcileCmd,
 	})

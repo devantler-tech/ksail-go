@@ -1,5 +1,5 @@
-// Package cmd provides testing helpers for command testing.
-package cmd
+// Package testutils provides testing helpers for command testing.
+package testutils
 
 import (
 	"bytes"
