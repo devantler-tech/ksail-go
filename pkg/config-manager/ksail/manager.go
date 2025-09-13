@@ -31,6 +31,9 @@ type Manager struct {
 // Verify that Manager implements the ConfigManager interface.
 var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*Manager)(nil)
 
+// SuggestionsMinimumDistance represents the minimum levenshtein distance for command suggestions.
+const SuggestionsMinimumDistance = 2
+
 // NewManager creates a new configuration manager with the specified field selectors.
 func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 	return &Manager{
@@ -38,6 +41,80 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 		fieldSelectors: fieldSelectors,
 		Config:         &v1alpha1.Cluster{},
 	}
+}
+
+// AddFlagFromField returns a type-safe field selector for the given field path.
+// This provides compile-time safety - if the struct changes, this will cause compilation errors.
+// Requires a default value as the second parameter, optionally accepts a description as the third parameter.
+//
+// Usage:
+//
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution }, v1alpha1.DistributionKind)
+//	AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+//		v1alpha1.DistributionKind, "Custom description")
+func AddFlagFromField(
+	selector func(*v1alpha1.Cluster) any,
+	defaultValue any,
+	description ...string,
+) FieldSelector[v1alpha1.Cluster] {
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     selector,
+		Description:  desc,
+		DefaultValue: defaultValue,
+	}
+}
+
+// NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding.
+// This is the only constructor provided for initializing CobraCommands.
+// The binding automatically handles CLI flags (priority 1), environment variables (priority 2),
+// configuration files (priority 3), and field selector defaults (priority 4).
+//
+// If fieldSelectors is provided, only those specific fields will be bound as CLI flags.
+// Field selectors must include default values and optionally descriptions.
+// If fieldSelectors is empty, no configuration flags will be added (no auto-discovery by default).
+//
+// Usage examples:
+//
+//	// No configuration flags (default behavior):
+//	NewCobraCommand("status", "Show status", "...", handleStatusRunE)
+//
+//	// Type-safe selective binding with defaults and descriptions:
+//	NewCobraCommand("init", "Initialize", "...", handleInitRunE,
+//	    AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+//	        v1alpha1.DistributionKind, "Kubernetes distribution to use"),
+//	    AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+//	        "k8s", "Directory containing workloads to deploy"))
+func NewCobraCommand(
+	use, short, long string,
+	runE func(*cobra.Command, *Manager, []string) error,
+	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
+) *cobra.Command {
+	manager := NewManager(fieldSelectors...)
+
+	// Create the base command
+	cmd := &cobra.Command{ //nolint:exhaustruct // Only setting needed fields
+		Use:   use,
+		Short: short,
+		Long:  long,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(cmd, manager, args)
+		},
+		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
+	}
+
+	// Auto-bind flags based on field selectors
+	if len(fieldSelectors) > 0 {
+		// Bind only the specified field selectors for CLI flags
+		manager.AddFlagsFromFields(cmd)
+	}
+	// No else clause - when no field selectors provided, no configuration flags are added
+
+	return cmd
 }
 
 // LoadConfig loads the configuration from files and environment variables.
@@ -71,6 +148,9 @@ func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	m.viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	m.viper.AutomaticEnv()
 
+	// Bind environment variables to proper viper keys
+	m.bindEnvironmentVariables()
+
 	// Unmarshal into our cluster config
 	if err := m.viper.Unmarshal(m.Config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
@@ -88,6 +168,28 @@ func (m *Manager) GetViper() *viper.Viper {
 func (m *Manager) AddFlagsFromFields(cmd *cobra.Command) {
 	for _, fieldSelector := range m.fieldSelectors {
 		m.addFlagFromField(cmd, fieldSelector)
+	}
+}
+
+// bindEnvironmentVariables binds environment variables to their corresponding viper keys.
+func (m *Manager) bindEnvironmentVariables() {
+	// Map common environment variables to their viper keys
+	envMapping := map[string]string{
+		"METADATA_NAME":              "metadata.name",
+		"SPEC_DISTRIBUTION":          "spec.distribution",
+		"SPEC_SOURCEDIRECTORY":       "spec.sourcedirectory",
+		"SPEC_CONNECTION_CONTEXT":    "spec.connection.context",
+		"SPEC_CONNECTION_KUBECONFIG": "spec.connection.kubeconfig",
+		"SPEC_CONNECTION_TIMEOUT":    "spec.connection.timeout",
+		"SPEC_CNI":                   "spec.cni",
+		"SPEC_CSI":                   "spec.csi",
+		"SPEC_INGRESSCONTROLLER":     "spec.ingresscontroller",
+		"SPEC_GATEWAYCONTROLLER":     "spec.gatewaycontroller",
+		"SPEC_RECONCILIATIONTOOL":    "spec.reconciliationtool",
+	}
+
+	for envKey, viperKey := range envMapping {
+		m.viper.BindEnv(viperKey, "KSAIL_"+envKey)
 	}
 }
 
