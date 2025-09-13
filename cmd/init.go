@@ -12,18 +12,37 @@ import (
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	return ksail.NewCobraCommand(
-		"init",
-		"Initialize a new project",
-		`Initialize a new project.`,
-		HandleInitRunE,
-		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
-				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
-			}
-		})...,
-	)
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to use",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			Description:  "Directory containing workloads to deploy",
+			DefaultValue: "k8s",
+		},
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize a new project",
+		Long:  `Initialize a new project.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return HandleInitRunE(cmd, configManager, args)
+		},
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
+
+	return cmd
 }
 
 // HandleInitRunE handles the init command.

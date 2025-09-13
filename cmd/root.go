@@ -18,13 +18,19 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := ksail.NewCobraCommand(
-		"ksail",
-		"SDK for operating and managing K8s clusters and workloads",
-		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
+	// Create configuration manager (no field selectors needed for root command)
+	configManager := ksail.NewManager()
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   "ksail",
+		Short: "SDK for operating and managing K8s clusters and workloads",
+		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
 			`from one simple command line tool.`,
-		handleRootRunE,
-	)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return handleRootRunE(cmd, configManager, args)
+		},
+	}
 
 	// Silence errors and usage
 	cmd.SilenceErrors = true

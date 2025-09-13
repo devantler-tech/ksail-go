@@ -4,30 +4,46 @@ package cmd
 import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	return utils.NewSimpleClusterCommand(utils.CommandConfig{
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to start",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context of cluster to start",
+			DefaultValue: "kind-ksail-default",
+		},
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start a stopped cluster",
 		Long:  `Start a previously stopped cluster.`,
-		RunEFunc: func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], _ []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
 				"Cluster started successfully (stub implementation)",
 			)
-
 			return err
 		},
-		FieldsFunc: func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to start",
-				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context of cluster to start",
-			}
-		},
-	})
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
+
+	return cmd
 }

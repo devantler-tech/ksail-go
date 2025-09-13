@@ -1,7 +1,6 @@
 recursive: true
 
 packages:
-
   github.com/docker/docker/client:
     config:
       recursive: false

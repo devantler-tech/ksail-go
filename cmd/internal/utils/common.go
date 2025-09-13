@@ -22,13 +22,53 @@ type CommandConfig struct {
 
 // NewSimpleClusterCommand creates a new command with common cluster management pattern.
 func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
-	return ksail.NewCobraCommand(
-		cfg.Use,
-		cfg.Short,
-		cfg.Long,
-		cfg.RunEFunc,
-		ksail.AddFlagsFromFields(cfg.FieldsFunc)...,
-	)
+	// Create field selectors if FieldsFunc is provided
+	var fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
+	if cfg.FieldsFunc != nil {
+		dummyCluster := &v1alpha1.Cluster{}
+		fieldPointers := cfg.FieldsFunc(dummyCluster)
+
+		// Parse the flat array: field, defaultValue, description, field, defaultValue, description, ...
+		for i := 0; i < len(fieldPointers); i += 3 {
+			if i+2 >= len(fieldPointers) {
+				break // Not enough elements for a complete triplet
+			}
+
+			fieldPtr := fieldPointers[i]
+			defaultValue := fieldPointers[i+1]
+			description := fieldPointers[i+2].(string)
+
+			// Create a field selector for this field
+			fieldSelectors = append(fieldSelectors, ksail.FieldSelector[v1alpha1.Cluster]{
+				Selector: func(ptr any) func(c *v1alpha1.Cluster) any {
+					return func(c *v1alpha1.Cluster) any {
+						// Need to re-evaluate the field pointer using the actual cluster
+						return cfg.FieldsFunc(c)[i] // Return the same position in the array
+					}
+				}(fieldPtr),
+				Description:  description,
+				DefaultValue: defaultValue,
+			})
+		}
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   cfg.Use,
+		Short: cfg.Short,
+		Long:  cfg.Long,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cfg.RunEFunc(cmd, configManager, args)
+		},
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
+
+	return cmd
 }
 
 // ClusterInfoField represents a field to log from cluster information.

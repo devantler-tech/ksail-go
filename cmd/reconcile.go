@@ -12,21 +12,48 @@ import (
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
-	return ksail.NewCobraCommand(
-		"reconcile",
-		"Reconcile workloads in the cluster",
-		`Reconcile workloads in the cluster to match the desired state
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+			Description:  "Tool to use for reconciling workloads",
+			DefaultValue: v1alpha1.ReconciliationToolKubectl,
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			Description:  "Directory containing workloads to reconcile",
+			DefaultValue: "k8s",
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context to reconcile workloads in",
+			DefaultValue: "kind-ksail-default",
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			Description:  "Path to kubeconfig file",
+			DefaultValue: "~/.kube/config",
+		},
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   "reconcile",
+		Short: "Reconcile workloads in the cluster",
+		Long: `Reconcile workloads in the cluster to match the desired state
 defined in configuration files.`,
-		HandleReconcileRunE,
-		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.ReconciliationTool, v1alpha1.ReconciliationToolKubectl, "Tool to use for reconciling workloads",
-				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to reconcile",
-				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to reconcile workloads in",
-				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
-			}
-		})...,
-	)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return HandleReconcileRunE(cmd, configManager, args)
+		},
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
+
+	return cmd
 }
 
 // HandleReconcileRunE handles the reconcile command.

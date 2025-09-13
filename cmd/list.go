@@ -13,17 +13,30 @@ import (
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	cmd := ksail.NewCobraCommand(
-		"list",
-		"List clusters",
-		`List all Kubernetes clusters managed by KSail.`,
-		HandleListRunE,
-		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to list clusters for",
-			}
-		})...,
-	)
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to list clusters for",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List clusters",
+		Long:  `List all Kubernetes clusters managed by KSail.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return HandleListRunE(cmd, configManager, args)
+		},
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
 
 	// Add the special --all flag manually since it's CLI-only
 	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
