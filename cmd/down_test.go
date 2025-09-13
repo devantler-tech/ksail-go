@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 )
 
 func TestNewDownCmd(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandCreation(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandCreation(t, testutils.SimpleCommandTestData{
 		CommandName:   "down",
 		NewCommand:    cmd.NewDownCmd,
 		ExpectedUse:   "down",
@@ -20,7 +21,7 @@ func TestNewDownCmd(t *testing.T) {
 func TestDownCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandExecution(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
 		CommandName: "down",
 		NewCommand:  cmd.NewDownCmd,
 	})
@@ -29,7 +30,7 @@ func TestDownCmd_Execute(t *testing.T) {
 func TestDownCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		CommandName: "down",
 		NewCommand:  cmd.NewDownCmd,
 	})

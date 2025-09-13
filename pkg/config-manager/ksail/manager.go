@@ -1,0 +1,85 @@
+// Package ksail provides configuration management for KSail v1alpha1.Cluster configurations.
+// This file contains the core Manager implementation.
+package ksail
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/spf13/viper"
+)
+
+// Manager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
+type Manager struct {
+	viper          *viper.Viper
+	fieldSelectors []FieldSelector[v1alpha1.Cluster]
+	Config         *v1alpha1.Cluster // Exposed config property as suggested
+}
+
+// Verify that Manager implements the ConfigManager interface.
+var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*Manager)(nil)
+
+// NewManager creates a new configuration manager with the specified field selectors.
+func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
+	return &Manager{
+		viper:          InitializeViper(),
+		fieldSelectors: fieldSelectors,
+		Config:         &v1alpha1.Cluster{},
+	}
+}
+
+// LoadConfig loads the configuration from files and environment variables.
+// Returns the previously loaded config if already loaded.
+func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
+	// If config is already loaded and populated, return it
+	if m.Config != nil && !reflect.DeepEqual(m.Config, &v1alpha1.Cluster{}) {
+		return m.Config, nil
+	}
+
+	// Initialize with defaults from field selectors
+	m.applyDefaults()
+
+	// Try to read from configuration files
+	m.viper.SetConfigName(DefaultConfigFileName)
+	m.viper.SetConfigType("yaml")
+	m.viper.AddConfigPath(".")
+	m.viper.AddConfigPath("$HOME/.config/ksail")
+	m.viper.AddConfigPath("/etc/ksail")
+
+	// Read configuration file if it exists
+	if err := m.viper.ReadInConfig(); err != nil {
+		// It's okay if config file doesn't exist, we'll use defaults and flags
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+	}
+
+	// Set environment variable prefix and bind environment variables
+	m.viper.SetEnvPrefix(EnvPrefix)
+	m.viper.AutomaticEnv()
+	bindEnvironmentVariables(m.viper)
+
+	// Unmarshal into our cluster config
+	if err := m.viper.Unmarshal(m.Config); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
+	}
+
+	return m.Config, nil
+}
+
+// GetViper returns the underlying Viper instance for flag binding.
+func (m *Manager) GetViper() *viper.Viper {
+	return m.viper
+}
+
+// applyDefaults applies default values from field selectors to the config.
+func (m *Manager) applyDefaults() {
+	for _, fieldSelector := range m.fieldSelectors {
+		fieldPtr := fieldSelector.Selector(m.Config)
+		if fieldPtr != nil {
+			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
+		}
+	}
+}

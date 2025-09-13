@@ -10,7 +10,7 @@
 # ==============================================================================
 
 # KSail binaries and configs
-ksail
+/ksail
 ksail-go
 k3d.yaml
 kind.yaml

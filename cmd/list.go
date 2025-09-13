@@ -6,23 +6,37 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	cmd := config.NewCobraCommand(
-		"list",
-		"List clusters",
-		`List all Kubernetes clusters managed by KSail.`,
-		handleListRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to list clusters for",
-			}
-		})...,
-	)
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to list clusters for",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+	}
+
+	// Create configuration manager with field selectors
+	configManager := ksail.NewManager(fieldSelectors...)
+
+	// Create the command
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List clusters",
+		Long:  `List all Kubernetes clusters managed by KSail.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return HandleListRunE(cmd, configManager, args)
+		},
+	}
+
+	// Add flags for the field selectors
+	configManager.AddFlagsFromFields(cmd)
 
 	// Add the special --all flag manually since it's CLI-only
 	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
@@ -30,13 +44,18 @@ func NewListCmd() *cobra.Command {
 	return cmd
 }
 
-// handleListRunE handles the list command.
-func handleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+// HandleListRunE handles the list command.
+// Exported for testing purposes.
+func HandleListRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 
 	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadCluster()
+	cluster, err := configManager.LoadConfig()
 	if err != nil {
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
 
