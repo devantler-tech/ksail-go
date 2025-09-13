@@ -110,6 +110,9 @@ func (m *Manager) addFlagFromField(
 // generateFlagName generates a user-friendly flag name from a field pointer.
 func (m *Manager) generateFlagName(fieldPtr any) string {
 	// Check which field this pointer references by comparing addresses
+	if fieldPtr == &m.Config.Metadata.Name {
+		return "name"
+	}
 	if fieldPtr == &m.Config.Spec.Distribution {
 		return "distribution"
 	}
