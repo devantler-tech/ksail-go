@@ -22,6 +22,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	configManager := ksail.NewManager()
 
 	// Create the command
+	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   "ksail",
 		Short: "SDK for operating and managing K8s clusters and workloads",

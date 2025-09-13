@@ -16,16 +16,19 @@ import (
 func TestNewCobraCommand_BasicFunctionality(t *testing.T) {
 	t.Parallel()
 
-	var runECalled bool
-	var receivedManager *ksail.Manager
-	var receivedCmd *cobra.Command
-	var receivedArgs []string
+	var (
+		runECalled      bool
+		receivedManager *ksail.Manager
+		receivedCmd     *cobra.Command
+		receivedArgs    []string
+	)
 
 	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
 		runECalled = true
 		receivedManager = manager
 		receivedCmd = cmd
 		receivedArgs = args
+
 		return nil
 	}
 
@@ -76,8 +79,10 @@ func TestNewCobraCommand_WithFieldSelectors(t *testing.T) {
 	}
 
 	var receivedManager *ksail.Manager
-	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
+
+	runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 		receivedManager = manager
+
 		return nil
 	}
 
@@ -114,8 +119,10 @@ func TestNewCobraCommand_NoFieldSelectors(t *testing.T) {
 	t.Parallel()
 
 	var receivedManager *ksail.Manager
-	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
+
+	runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 		receivedManager = manager
+
 		return nil
 	}
 
@@ -144,6 +151,8 @@ func TestNewCobraCommand_NoFieldSelectors(t *testing.T) {
 }
 
 // TestNewCobraCommand_AllFieldTypes tests NewCobraCommand with all supported field types.
+//
+//nolint:funlen // Testing all field types in cobra command requires comprehensive test cases
 func TestNewCobraCommand_AllFieldTypes(t *testing.T) {
 	t.Parallel()
 
@@ -205,7 +214,7 @@ func TestNewCobraCommand_AllFieldTypes(t *testing.T) {
 		),
 	}
 
-	runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
+	runE := func(_ *cobra.Command, _ *ksail.Manager, _ []string) error {
 		return nil
 	}
 
@@ -283,14 +292,14 @@ func TestNewCobraCommand_RunEErrorHandling(t *testing.T) {
 	}{
 		{
 			name: "Successful execution",
-			runE: func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+			runE: func(_ *cobra.Command, _ *ksail.Manager, _ []string) error {
 				return nil
 			},
 			expectError: false,
 		},
 		{
 			name: "Error in execution",
-			runE: func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+			runE: func(_ *cobra.Command, _ *ksail.Manager, _ []string) error {
 				return assert.AnError
 			},
 			expectError: true,
@@ -337,8 +346,10 @@ func TestNewCobraCommand_ManagerConfiguration(t *testing.T) {
 	}
 
 	var receivedManager *ksail.Manager
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+
+	runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 		receivedManager = manager
+
 		return nil
 	}
 
@@ -382,8 +393,10 @@ func TestNewCobraCommand_FlagBinding(t *testing.T) {
 	}
 
 	var receivedManager *ksail.Manager
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+
+	runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 		receivedManager = manager
+
 		return nil
 	}
 
@@ -396,7 +409,7 @@ func TestNewCobraCommand_FlagBinding(t *testing.T) {
 	)
 
 	// Set a flag value
-	cmd.Flags().Set("distribution", "K3d")
+	_ = cmd.Flags().Set("distribution", "K3d")
 
 	// Execute the command
 	err := cmd.RunE(cmd, []string{})
@@ -413,8 +426,10 @@ func TestNewCobraCommand_EmptyFieldSelectors(t *testing.T) {
 	t.Parallel()
 
 	var receivedManager *ksail.Manager
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+
+	runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 		receivedManager = manager
+
 		return nil
 	}
 

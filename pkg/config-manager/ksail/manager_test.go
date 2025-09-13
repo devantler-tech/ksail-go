@@ -18,12 +18,12 @@ import (
 func setupTestEnvironment(t *testing.T) {
 	t.Helper()
 	// Clean up any existing environment variables that might affect tests
-	os.Unsetenv("KSAIL_METADATA_NAME")
-	os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
-	os.Unsetenv("KSAIL_SPEC_SOURCEDIRECTORY")
-	os.Unsetenv("KSAIL_SPEC_CONNECTION_CONTEXT")
-	os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
-	os.Unsetenv("KSAIL_SPEC_CONNECTION_TIMEOUT")
+	_ = os.Unsetenv("KSAIL_METADATA_NAME")
+	_ = os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
+	_ = os.Unsetenv("KSAIL_SPEC_SOURCEDIRECTORY")
+	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_CONTEXT")
+	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
+	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_TIMEOUT")
 }
 
 // TestNewManager tests the NewManager constructor.
@@ -46,6 +46,8 @@ func TestNewManager(t *testing.T) {
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
+//
+//nolint:funlen // Comprehensive config loading test requires multiple test cases
 func TestManager_LoadConfig(t *testing.T) {
 	// Note: Cannot use t.Parallel() because subtests use setupTestEnvironment and t.Setenv
 	tests := []struct {
@@ -195,6 +197,8 @@ func TestAddFlagFromField(t *testing.T) {
 }
 
 // TestNewCobraCommand tests the NewCobraCommand function.
+//
+//nolint:funlen // Comprehensive cobra command test requires multiple test cases
 func TestNewCobraCommand(t *testing.T) {
 	t.Parallel()
 
@@ -235,9 +239,12 @@ func TestNewCobraCommand(t *testing.T) {
 			t.Parallel()
 
 			var calledRunE bool
-			runE := func(_ *cobra.Command, manager *ksail.Manager, args []string) error {
+
+			runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
 				calledRunE = true
+
 				require.NotNil(t, manager)
+
 				return nil
 			}
 
@@ -275,6 +282,8 @@ func TestNewCobraCommand(t *testing.T) {
 }
 
 // TestManager_AddFlagsFromFields tests the AddFlagsFromFields method.
+//
+//nolint:funlen // Comprehensive flag testing requires multiple test cases
 func TestManager_AddFlagsFromFields(t *testing.T) {
 	t.Parallel()
 
@@ -346,6 +355,7 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 
 			// Check that we don't have unexpected flags
 			actualFlags := []string{}
+
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 				actualFlags = append(actualFlags, flag.Name)
 			})
@@ -370,8 +380,16 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 
 	manager := ksail.NewManager(fieldSelectors...)
 
-	// Before loading, Config should be empty
-	assert.Equal(t, &v1alpha1.Cluster{}, manager.Config)
+	// Before loading, Config should be initialized with proper TypeMeta
+	expectedEmpty := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{},
+		Spec:     v1alpha1.Spec{},
+	}
+	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config
 	cluster, err := manager.LoadConfig()

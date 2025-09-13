@@ -32,6 +32,7 @@ func NewInitCmd() *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
+	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",

@@ -53,6 +53,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
@@ -72,6 +73,7 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
@@ -109,6 +111,7 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 

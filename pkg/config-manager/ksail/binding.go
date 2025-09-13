@@ -18,7 +18,9 @@ func (m *Manager) AddFlagsFromFields(cmd *cobra.Command) {
 	}
 }
 
-// addFlagFromField adds a CLI flag for a single field selector.
+// addFlagFromField adds a CLI flag for a specific field using type assertion and reflection.
+//
+//nolint:gocognit,nestif,cyclop,funlen // Complex type switching is necessary for type-safe flag binding
 func (m *Manager) addFlagFromField(
 	cmd *cobra.Command,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -33,7 +35,7 @@ func (m *Manager) addFlagFromField(
 
 	// Check if the field implements pflag.Value interface first (for enum types)
 	if pflagValue, isPflagValue := fieldPtr.(interface {
-		Set(string) error
+		Set(value string) error
 		String() string
 		Type() string
 	}); isPflagValue {
@@ -53,27 +55,33 @@ func (m *Manager) addFlagFromField(
 		switch ptr := fieldPtr.(type) {
 		case *string:
 			defaultStr := ""
+
 			if fieldSelector.DefaultValue != nil {
 				if str, ok := fieldSelector.DefaultValue.(string); ok {
 					defaultStr = str
 				}
 			}
+
 			cmd.Flags().StringVarP(ptr, flagName, shorthand, defaultStr, fieldSelector.Description)
 		case *bool:
 			defaultBool := false
+
 			if fieldSelector.DefaultValue != nil {
 				if b, ok := fieldSelector.DefaultValue.(bool); ok {
 					defaultBool = b
 				}
 			}
+
 			cmd.Flags().BoolVarP(ptr, flagName, shorthand, defaultBool, fieldSelector.Description)
 		case *int:
 			defaultInt := 0
+
 			if fieldSelector.DefaultValue != nil {
 				if i, ok := fieldSelector.DefaultValue.(int); ok {
 					defaultInt = i
 				}
 			}
+
 			cmd.Flags().IntVarP(ptr, flagName, shorthand, defaultInt, fieldSelector.Description)
 		case *metav1.Duration:
 			defaultDuration := time.Duration(0)
@@ -101,41 +109,54 @@ func (m *Manager) addFlagFromField(
 }
 
 // GenerateFlagName generates a user-friendly flag name from a field pointer.
+//
+//nolint:cyclop // Field mapping requires many conditional checks for type safety
 func (m *Manager) GenerateFlagName(fieldPtr any) string {
 	// Check which field this pointer references by comparing addresses
 	if fieldPtr == &m.Config.Metadata.Name {
 		return "name"
 	}
+
 	if fieldPtr == &m.Config.Spec.Distribution {
 		return "distribution"
 	}
+
 	if fieldPtr == &m.Config.Spec.DistributionConfig {
 		return "distribution-config"
 	}
+
 	if fieldPtr == &m.Config.Spec.SourceDirectory {
 		return "source-directory"
 	}
+
 	if fieldPtr == &m.Config.Spec.Connection.Context {
 		return "context"
 	}
+
 	if fieldPtr == &m.Config.Spec.Connection.Kubeconfig {
 		return "kubeconfig"
 	}
+
 	if fieldPtr == &m.Config.Spec.Connection.Timeout {
 		return "timeout"
 	}
+
 	if fieldPtr == &m.Config.Spec.ReconciliationTool {
 		return "reconciliation-tool"
 	}
+
 	if fieldPtr == &m.Config.Spec.CNI {
 		return "cni"
 	}
+
 	if fieldPtr == &m.Config.Spec.CSI {
 		return "csi"
 	}
+
 	if fieldPtr == &m.Config.Spec.IngressController {
 		return "ingress-controller"
 	}
+
 	if fieldPtr == &m.Config.Spec.GatewayController {
 		return "gateway-controller"
 	}
@@ -190,7 +211,7 @@ func setFieldValue(fieldPtr any, value any) {
 
 // setPflagValueDefault sets the default value for a pflag.Value.
 func (m *Manager) setPflagValueDefault(pflagValue interface {
-	Set(string) error
+	Set(value string) error
 	String() string
 	Type() string
 }, defaultValue any,

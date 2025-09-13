@@ -1,4 +1,7 @@
 // Package utils provides common utilities for KSail commands.
+// Package utils provides common utilities for KSail commands.
+//
+//nolint:revive // The utils package name is descriptive and appropriate for internal utilities
 package utils
 
 import (
@@ -9,6 +12,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CommandConfig holds the configuration for creating a command.
@@ -25,7 +29,14 @@ func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
 	// Create field selectors if FieldsFunc is provided
 	var fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
 	if cfg.FieldsFunc != nil {
-		dummyCluster := &v1alpha1.Cluster{}
+		dummyCluster := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       v1alpha1.Kind,
+				APIVersion: v1alpha1.APIVersion,
+			},
+			Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
+			Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
+		}
 		fieldPointers := cfg.FieldsFunc(dummyCluster)
 
 		// Parse the flat array: field, defaultValue, description, field, defaultValue, description, ...
@@ -60,6 +71,7 @@ func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
+	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   cfg.Use,
 		Short: cfg.Short,

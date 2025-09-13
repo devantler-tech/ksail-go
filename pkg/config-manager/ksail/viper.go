@@ -57,6 +57,6 @@ func bindEnvironmentVariables(viperInstance *viper.Viper) {
 	}
 
 	for envKey, viperKey := range envMapping {
-		viperInstance.BindEnv(viperKey, "KSAIL_"+envKey)
+		_ = viperInstance.BindEnv(viperKey, "KSAIL_"+envKey)
 	}
 }

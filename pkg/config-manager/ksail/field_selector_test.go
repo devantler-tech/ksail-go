@@ -36,6 +36,8 @@ func TestFieldSelector_StructureAndTypes(t *testing.T) {
 }
 
 // TestAddFlagFromField_Comprehensive tests AddFlagFromField with various scenarios.
+//
+//nolint:funlen // Comprehensive field selector test requires multiple test cases for coverage
 func TestAddFlagFromField_Comprehensive(t *testing.T) {
 	t.Parallel()
 
@@ -169,6 +171,8 @@ func TestAddFlagFromField_Comprehensive(t *testing.T) {
 }
 
 // TestAddFlagFromField_DifferentTypes tests AddFlagFromField with different value types.
+//
+//nolint:funlen // Testing different field types requires comprehensive test cases
 func TestAddFlagFromField_DifferentTypes(t *testing.T) {
 	t.Parallel()
 
@@ -244,6 +248,7 @@ func TestAddFlagFromField_DifferentTypes(t *testing.T) {
 			// Verify the type of the default value
 			if testCase.defaultValue != nil {
 				actualType := selector.DefaultValue
+
 				switch testCase.expectedType {
 				case "string":
 					_, ok := actualType.(string)
@@ -266,6 +271,8 @@ func TestAddFlagFromField_DifferentTypes(t *testing.T) {
 }
 
 // TestFieldSelector_CompileTimeSafety tests that field selectors provide compile-time safety.
+//
+//nolint:funlen // Testing compile-time safety requires multiple test cases
 func TestFieldSelector_CompileTimeSafety(t *testing.T) {
 	t.Parallel()
 

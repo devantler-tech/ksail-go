@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
@@ -43,6 +44,7 @@ func NewUpCmd() *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
+	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   "up",
 		Short: "Start the Kubernetes cluster",
@@ -53,7 +55,11 @@ func NewUpCmd() *cobra.Command {
 				configManager,
 				"Cluster created and started successfully (stub implementation)",
 			)
-			return err
+			if err != nil {
+				return fmt.Errorf("failed to handle cluster command: %w", err)
+			}
+
+			return nil
 		},
 	}
 

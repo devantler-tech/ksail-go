@@ -13,7 +13,6 @@ import (
 // TestInitializeViper tests the InitializeViper function.
 func TestInitializeViper(t *testing.T) {
 	// Cannot use t.Parallel() because test uses t.Setenv()
-
 	viperInstance := ksail.InitializeViper()
 
 	require.NotNil(t, viperInstance, "InitializeViper should return a non-nil viper instance")
@@ -29,14 +28,14 @@ func TestInitializeViper(t *testing.T) {
 	// Test environment prefix
 	// We can't directly access the env prefix, but we can test its behavior
 	t.Setenv("KSAIL_TEST_VALUE", "test-env-value")
-	viperInstance.BindEnv("test.value")
+
+	_ = viperInstance.BindEnv("test.value")
 	assert.Equal(t, "test-env-value", viperInstance.GetString("test.value"))
 }
 
 // TestInitializeViper_ConfigPaths tests that config paths are set correctly.
 func TestInitializeViper_ConfigPaths(t *testing.T) {
 	// Cannot use t.Parallel() because test uses t.Setenv()
-
 	viperInstance := ksail.InitializeViper()
 
 	// Test that we can set and get values (indicates viper is working)
@@ -45,14 +44,14 @@ func TestInitializeViper_ConfigPaths(t *testing.T) {
 
 	// Test that environment variables override defaults
 	t.Setenv("KSAIL_TEST_CONFIG", "env-value")
-	viperInstance.BindEnv("test.config")
+
+	_ = viperInstance.BindEnv("test.config")
 	assert.Equal(t, "env-value", viperInstance.GetString("test.config"))
 }
 
 // TestInitializeViper_EnvKeyReplacer tests environment key replacement.
 func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
-
 	viperInstance := ksail.InitializeViper()
 
 	// Test that dots and dashes in keys are replaced with underscores for env vars
@@ -88,7 +87,7 @@ func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 			t.Setenv(testCase.envVar, testCase.value)
 
 			// Bind the environment variable
-			viperInstance.BindEnv(testCase.key)
+			_ = viperInstance.BindEnv(testCase.key)
 
 			// Test that the value is retrieved correctly
 			assert.Equal(t, testCase.value, viperInstance.GetString(testCase.key))
@@ -97,8 +96,11 @@ func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 }
 
 // TestInitializeViper_ConfigFileReading tests configuration file reading behavior.
+//
+//nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
 func TestInitializeViper_ConfigFileReading(t *testing.T) {
-	// Cannot use t.Parallel() because test uses t.TempDir() and changes directories
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+	// which can conflict with parallel test execution
 
 	// Create a temporary config file
 	configContent := `
@@ -117,12 +119,6 @@ spec:
 	require.NoError(t, err)
 
 	// Change to the temporary directory so viper can find the config file
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() {
-		os.Chdir(oldWd)
-	}()
-
 	t.Chdir(tempDir)
 
 	// Initialize viper - it should read the config file
@@ -147,7 +143,6 @@ func TestViperConstants(t *testing.T) {
 // TestInitializeViper_EnvironmentVariableBinding tests automatic environment variable binding.
 func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
-
 	viperInstance := ksail.InitializeViper()
 
 	// Test various environment variable patterns
@@ -183,7 +178,7 @@ func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 			t.Setenv(testCase.envVar, testCase.value)
 
 			// Bind the environment variable
-			viperInstance.BindEnv(testCase.key)
+			_ = viperInstance.BindEnv(testCase.key)
 
 			// Test that the value is retrieved correctly
 			assert.Equal(t, testCase.value, viperInstance.GetString(testCase.key))
@@ -194,7 +189,6 @@ func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 // TestInitializeViper_EnvReplacerRules tests environment key replacer rules.
 func TestInitializeViper_EnvReplacerRules(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
-
 	viperInstance := ksail.InitializeViper()
 
 	// Test the key replacer rules by setting specific environment variables
@@ -245,7 +239,7 @@ func TestInitializeViper_EnvReplacerRules(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Setenv(testCase.envVar, testCase.value)
-			viperInstance.BindEnv(testCase.key)
+			_ = viperInstance.BindEnv(testCase.key)
 			assert.Equal(
 				t,
 				testCase.value,
@@ -320,6 +314,7 @@ func TestInitializeViper_ErrorHandling(t *testing.T) {
 
 	// Should be able to bind environment variables
 	t.Setenv("KSAIL_ERROR_TEST", "env-value")
-	viperInstance.BindEnv("error.test")
+
+	_ = viperInstance.BindEnv("error.test")
 	assert.Equal(t, "env-value", viperInstance.GetString("error.test"))
 }

@@ -15,6 +15,8 @@ import (
 )
 
 // TestManager_addFlagFromField tests the addFlagFromField method with different field types.
+//
+//nolint:funlen // Comprehensive test requires multiple test cases for coverage
 func TestManager_addFlagFromField(t *testing.T) {
 	t.Parallel()
 
@@ -137,6 +139,8 @@ func TestManager_addFlagFromField(t *testing.T) {
 }
 
 // TestManager_generateFlagName tests the generateFlagName method.
+//
+//nolint:funlen // Comprehensive flag name generation test requires multiple test cases
 func TestManager_generateFlagName(t *testing.T) {
 	t.Parallel()
 
@@ -210,14 +214,16 @@ func TestManager_generateFlagName(t *testing.T) {
 
 			// Use reflection to access the private method
 			managerValue := reflect.ValueOf(manager)
+
 			method := managerValue.MethodByName("generateFlagName")
 			if !method.IsValid() {
 				// Try to find the unexported method using reflection on the struct
 				managerValue = reflect.ValueOf(manager).Elem()
-				for i := 0; i < managerValue.NumMethod(); i++ {
+				for i := range managerValue.NumMethod() {
 					methodName := managerValue.Type().Method(i).Name
 					if methodName == "generateFlagName" {
 						method = managerValue.Method(i)
+
 						break
 					}
 				}
@@ -225,6 +231,7 @@ func TestManager_generateFlagName(t *testing.T) {
 
 			if !method.IsValid() {
 				t.Skip("generateFlagName method not accessible via reflection")
+
 				return
 			}
 
@@ -235,6 +242,8 @@ func TestManager_generateFlagName(t *testing.T) {
 }
 
 // TestManager_generateShorthand tests the generateShorthand method.
+//
+//nolint:funlen // Comprehensive shorthand generation test requires multiple test cases
 func TestManager_generateShorthand(t *testing.T) {
 	t.Parallel()
 
@@ -293,14 +302,16 @@ func TestManager_generateShorthand(t *testing.T) {
 
 			// Use reflection to access the private method
 			managerValue := reflect.ValueOf(manager)
+
 			method := managerValue.MethodByName("generateShorthand")
 			if !method.IsValid() {
 				// Try to find the unexported method using reflection on the struct
 				managerValue = reflect.ValueOf(manager).Elem()
-				for i := 0; i < managerValue.NumMethod(); i++ {
+				for i := range managerValue.NumMethod() {
 					methodName := managerValue.Type().Method(i).Name
 					if methodName == "generateShorthand" {
 						method = managerValue.Method(i)
+
 						break
 					}
 				}
@@ -308,6 +319,7 @@ func TestManager_generateShorthand(t *testing.T) {
 
 			if !method.IsValid() {
 				t.Skip("generateShorthand method not accessible via reflection")
+
 				return
 			}
 
@@ -365,6 +377,8 @@ func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_AllFieldTypes tests all supported field types.
+//
+//nolint:funlen // Testing all field types requires comprehensive test cases
 func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 	t.Parallel()
 
@@ -444,6 +458,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 
 			// Check flag type
 			var flagFound bool
+
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 				if flag.Value.Type() == testCase.expectedType {
 					flagFound = true

@@ -26,6 +26,7 @@ func NewListCmd() *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
+	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List clusters",

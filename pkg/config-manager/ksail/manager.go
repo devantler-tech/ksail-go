@@ -29,9 +29,12 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 		viper:          InitializeViper(),
 		fieldSelectors: fieldSelectors,
 		Config: &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{},
-			Metadata: metav1.ObjectMeta{},
-			Spec:     v1alpha1.Spec{},
+			TypeMeta: metav1.TypeMeta{
+				Kind:       v1alpha1.Kind,
+				APIVersion: v1alpha1.APIVersion,
+			},
+			Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
+			Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
 		},
 	}
 }
@@ -41,9 +44,12 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded and populated, return it
 	if m.Config != nil && !reflect.DeepEqual(m.Config, &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{},
-		Metadata: metav1.ObjectMeta{},
-		Spec:     v1alpha1.Spec{},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
+		Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
 	}) {
 		return m.Config, nil
 	}
