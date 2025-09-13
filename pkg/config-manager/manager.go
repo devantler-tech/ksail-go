@@ -10,11 +10,11 @@ import (
 //
 //go:generate mockery
 type ConfigManager[T any] interface {
-	// LoadCluster loads the cluster configuration from files and environment variables.
-	LoadCluster() (*T, error)
+	// LoadConfig loads the configuration from files and environment variables.
+	LoadConfig() (*T, error)
 
-	// GetCluster returns the currently loaded cluster configuration.
-	GetCluster() *T
+	// GetConfig returns the currently loaded configuration.
+	GetConfig() *T
 
 	// GetViper returns the underlying Viper instance for flag binding.
 	GetViper() *viper.Viper

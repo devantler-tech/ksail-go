@@ -72,7 +72,7 @@ func TestHandleReconcileRunE_Error(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
-	mockManager.EXPECT().LoadCluster().Return(nil, testutils.ErrTestConfigLoadError)
+	mockManager.EXPECT().LoadConfig().Return(nil, testutils.ErrTestConfigLoadError)
 
 	err := cmd.HandleReconcileRunE(testCmd, mockManager, []string{})
 

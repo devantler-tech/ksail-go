@@ -42,7 +42,7 @@ func HandleListRunE(
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 
 	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadCluster()
+	cluster, err := configManager.LoadConfig()
 	if err != nil {
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
 

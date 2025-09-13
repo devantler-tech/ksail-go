@@ -134,7 +134,7 @@ func TestHandleListRunE_Error(t *testing.T) {
 	// Create a real viper instance for the BindPFlag call
 	viperInstance := ksail.NewManager().GetViper()
 	mockManager.EXPECT().GetViper().Return(viperInstance).Once()
-	mockManager.EXPECT().LoadCluster().Return(nil, testutils.ErrTestConfigLoadError).Once()
+	mockManager.EXPECT().LoadConfig().Return(nil, testutils.ErrTestConfigLoadError).Once()
 
 	err := cmd.HandleListRunE(testCmd, mockManager, []string{})
 
