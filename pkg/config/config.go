@@ -53,7 +53,7 @@ import (
 //	        "k8s"))
 func NewCobraCommand(
 	use, short, long string,
-	runE func(*cobra.Command, *Manager, []string) error,
+	runE func(*cobra.Command, ConfigManager, []string) error,
 	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := NewManager(fieldSelectors...)

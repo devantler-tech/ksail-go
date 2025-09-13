@@ -13,7 +13,7 @@ func NewDownCmd() *cobra.Command {
 		Use:   "down",
 		Short: "Destroy a cluster",
 		Long:  `Destroy a cluster.`,
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 			_, err := HandleSimpleClusterCommand(
 				cmd,
 				configManager,

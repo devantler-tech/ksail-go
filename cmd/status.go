@@ -34,7 +34,7 @@ func NewStatusCmd() *cobra.Command {
 
 // HandleStatusRunE handles the status command.
 // Exported for testing purposes.
-func HandleStatusRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+func HandleStatusRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err

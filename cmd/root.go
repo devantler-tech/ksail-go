@@ -57,7 +57,7 @@ func Execute(cmd *cobra.Command) error {
 // --- internals ---
 
 // handleRootRunE handles the root command.
-func handleRootRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
+func handleRootRunE(cmd *cobra.Command, _ config.ConfigManager, _ []string) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())
 
 	// The err can safely be ignored, as it can never fail at runtime.

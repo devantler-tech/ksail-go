@@ -75,7 +75,7 @@ func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobr
 		use,
 		"",
 		"",
-		func(cmd *cobra.Command, _ *config.Manager, args []string) error {
+		func(cmd *cobra.Command, _ config.ConfigManager, args []string) error {
 			return runE(cmd, args)
 		},
 	)

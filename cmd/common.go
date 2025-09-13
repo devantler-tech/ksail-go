@@ -15,7 +15,7 @@ type CommandConfig struct {
 	Use        string
 	Short      string
 	Long       string
-	RunEFunc   func(cmd *cobra.Command, configManager *config.Manager, args []string) error
+	RunEFunc   func(cmd *cobra.Command, configManager config.ConfigManager, args []string) error
 	FieldsFunc func(c *v1alpha1.Cluster) []any
 }
 
@@ -47,7 +47,7 @@ func logClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 // Exported for testing purposes.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
-	configManager *config.Manager,
+	configManager config.ConfigManager,
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadCluster()
 	if err != nil {
@@ -62,7 +62,7 @@ func LoadClusterWithErrorHandling(
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,
-	configManager *config.Manager,
+	configManager config.ConfigManager,
 	successMessage string,
 ) (*v1alpha1.Cluster, error) {
 	// Load the full cluster configuration (Viper handles all precedence automatically)

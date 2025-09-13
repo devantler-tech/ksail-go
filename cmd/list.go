@@ -32,7 +32,7 @@ func NewListCmd() *cobra.Command {
 
 // HandleListRunE handles the list command.
 // Exported for testing purposes.
-func HandleListRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+func HandleListRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 

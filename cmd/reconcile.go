@@ -29,7 +29,7 @@ defined in configuration files.`,
 
 // HandleReconcileRunE handles the reconcile command.
 // Exported for testing purposes.
-func HandleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+func HandleReconcileRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err

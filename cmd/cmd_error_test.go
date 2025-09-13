@@ -43,10 +43,10 @@ func TestHandleInitRunE_Error(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errTestConfigLoadError)
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, errTestConfigLoadError)
 
-	err := cmd.HandleInitRunE(testCmd, manager, []string{})
+	err := cmd.HandleInitRunE(testCmd, mockManager, []string{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "test config load error")
@@ -105,10 +105,13 @@ func TestHandleListRunE_Error(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errTestConfigLoadError)
+	mockManager := config.NewMockConfigManager(t)
+	// Create a real viper instance for the BindPFlag call
+	viperInstance := config.NewManager().GetViper()
+	mockManager.EXPECT().GetViper().Return(viperInstance).Once()
+	mockManager.EXPECT().LoadCluster().Return(nil, errTestConfigLoadError).Once()
 
-	err := cmd.HandleListRunE(testCmd, manager, []string{})
+	err := cmd.HandleListRunE(testCmd, mockManager, []string{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "test config load error")
@@ -144,10 +147,10 @@ func TestHandleReconcileRunE_Error(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errTestConfigLoadError)
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, errTestConfigLoadError)
 
-	err := cmd.HandleReconcileRunE(testCmd, manager, []string{})
+	err := cmd.HandleReconcileRunE(testCmd, mockManager, []string{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "test config load error")
@@ -182,10 +185,10 @@ func TestHandleStatusRunE_Error(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errTestConfigLoadError)
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, errTestConfigLoadError)
 
-	err := cmd.HandleStatusRunE(testCmd, manager, []string{})
+	err := cmd.HandleStatusRunE(testCmd, mockManager, []string{})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "test config load error")

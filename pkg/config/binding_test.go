@@ -511,7 +511,7 @@ func testDurationTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -539,7 +539,7 @@ func testIntegerTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -615,7 +615,7 @@ func testUnsignedIntegerTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -719,7 +719,7 @@ func testFloatTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -763,7 +763,7 @@ func testBoolTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -819,7 +819,7 @@ func testSliceTypeBindings(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -863,7 +863,7 @@ func TestBindStandardTypeEdgeCases(t *testing.T) {
 				"test",
 				"Test command",
 				"Long description for test command",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				testCase.fieldSelectors...,
@@ -897,7 +897,7 @@ func TestBindingFunctionsCoverage(t *testing.T) {
 				"test",
 				"Test command",
 				"Test command description",
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				fieldSelector,
@@ -981,7 +981,7 @@ func TestBindStandardTypeFallback(t *testing.T) {
 		"test",
 		"Test command",
 		"Test command description",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		fieldSelector,
@@ -1098,7 +1098,7 @@ func TestBindPflagValueViperFallback(t *testing.T) {
 		"test",
 		"Test command",
 		"Test description",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		fieldSelector,
@@ -1144,7 +1144,7 @@ func testViperFallbackPath(t *testing.T) {
 		"test",
 		"Test command",
 		"Test description",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		fieldSelector,
@@ -1184,7 +1184,7 @@ func testComplexFieldPaths(t *testing.T) {
 			"test",
 			"Test",
 			"Test",
-			func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+			func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 				return nil
 			},
 			fieldSelector,
@@ -1355,7 +1355,7 @@ func runBindingTestCases(
 				"test-"+test.name,
 				"Test command for "+test.name,
 				"Tests binding functionality for "+test.name,
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				fieldSelector,
@@ -1416,7 +1416,7 @@ func TestViperFallbackCoverage(t *testing.T) {
 				"test-viper-"+test.name,
 				"Test Viper fallback for "+test.name,
 				"Tests Viper fallback functionality for "+test.name,
-				func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+				func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 					return nil
 				},
 				fieldSelector,
@@ -1467,7 +1467,7 @@ func testGenerateShortNameEdgeCases(t *testing.T) {
 			"test-short",
 			"Test shortname generation",
 			"Test description",
-			func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+			func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 				return nil
 			},
 			fieldSelector,
@@ -1498,7 +1498,7 @@ func testBindStandardTypeUnknownType(t *testing.T) {
 		"test-fallback",
 		"Test unknown type fallback",
 		"Tests bindStandardType fallback for unknown types",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		fieldSelector,
@@ -1876,7 +1876,7 @@ func TestBindingShortNamePaths(t *testing.T) {
 			"test-shortname",
 			"Test shortname conflicts",
 			"Tests shortname generation and conflict resolution",
-			func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+			func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 				return nil
 			},
 			fieldSelectors...,
@@ -1906,7 +1906,7 @@ func TestViperFallbackPath(t *testing.T) {
 		"test-viper-fallback",
 		"Test Viper fallback in bindPflagValue",
 		"Tests the else branch in bindPflagValue when defaultValue is nil",
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		fieldSelector,

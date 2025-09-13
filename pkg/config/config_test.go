@@ -136,7 +136,7 @@ func createTestCobraCommand(
 		"test",
 		"Test command",
 		description,
-		func(_ *cobra.Command, _ *config.Manager, _ []string) error { return nil },
+		func(_ *cobra.Command, _ config.ConfigManager, _ []string) error { return nil },
 		fieldSelectors...,
 	)
 }

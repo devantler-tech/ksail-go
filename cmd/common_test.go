@@ -26,7 +26,7 @@ func TestNewSimpleClusterCommand(t *testing.T) {
 		Use:   "test",
 		Short: "Test command",
 		Long:  "A test command for testing",
-		RunEFunc: func(_ *cobra.Command, _ *config.Manager, _ []string) error {
+		RunEFunc: func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
 			return nil
 		},
 		FieldsFunc: func(c *v1alpha1.Cluster) []any {
@@ -75,11 +75,11 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errFailedToLoadConfig)
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
-	cluster, err := cmd.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
+	cluster, err := cmd.HandleSimpleClusterCommand(testCmd, mockManager, "Test success message")
 
 	require.Error(t, err)
 	assert.Nil(t, cluster)
@@ -112,10 +112,10 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	manager := config.NewManager()
-	manager.SetTestErrorHook(errConfigLoadFailed)
+	mockManager := config.NewMockConfigManager(t)
+	mockManager.EXPECT().LoadCluster().Return(nil, errConfigLoadFailed)
 
-	cluster, err := cmd.LoadClusterWithErrorHandling(testCmd, manager)
+	cluster, err := cmd.LoadClusterWithErrorHandling(testCmd, mockManager)
 
 	require.Error(t, err)
 	assert.Nil(t, cluster)

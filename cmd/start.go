@@ -13,7 +13,7 @@ func NewStartCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start a stopped cluster",
 		Long:  `Start a previously stopped cluster.`,
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 			_, err := HandleSimpleClusterCommand(
 				cmd,
 				configManager,

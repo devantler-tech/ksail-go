@@ -13,7 +13,7 @@ func NewStopCmd() *cobra.Command {
 		Use:   "stop",
 		Short: "Stop the Kubernetes cluster",
 		Long:  `Stop the Kubernetes cluster without removing it.`,
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 			_, err := HandleSimpleClusterCommand(
 				cmd,
 				configManager,

@@ -26,7 +26,7 @@ func NewInitCmd() *cobra.Command {
 
 // HandleInitRunE handles the init command.
 // Exported for testing purposes.
-func HandleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
+func HandleInitRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
 	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err
