@@ -4,19 +4,9 @@ package config
 
 import (
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/spf13/viper"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 )
 
 // ConfigManager provides configuration management functionality.
-//
-//go:generate mockery
-type ConfigManager interface {
-	// LoadCluster loads the cluster configuration from files and environment variables.
-	LoadCluster() (*v1alpha1.Cluster, error)
-
-	// GetCluster returns the currently loaded cluster configuration.
-	GetCluster() *v1alpha1.Cluster
-
-	// GetViper returns the underlying Viper instance for flag binding.
-	GetViper() *viper.Viper
-}
+// This is a type alias for backward compatibility.
+type ConfigManager = configmanager.ConfigManager[v1alpha1.Cluster]

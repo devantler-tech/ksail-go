@@ -17,8 +17,8 @@ const (
 	SuggestionsMinimumDistance = 2
 )
 
-// initializeViper initializes a Viper instance with KSail configuration settings.
-func initializeViper() *viper.Viper {
+// InitializeViper initializes a Viper instance with KSail configuration settings.
+func InitializeViper() *viper.Viper {
 	viperInstance := viper.New()
 
 	// Set configuration file settings

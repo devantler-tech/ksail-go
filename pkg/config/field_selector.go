@@ -17,9 +17,9 @@ const defaultDurationTimeout = 5 * time.Minute
 // FieldSelector represents a type-safe field selector for auto-binding.
 // It provides compile-time safety by referencing actual struct fields.
 type FieldSelector[T any] struct {
-	selector     func(*T) any
-	description  string
-	defaultValue any
+	Selector     func(*T) any
+	Description  string
+	DefaultValue any
 }
 
 // AddFlagFromField returns a type-safe field selector for the given field path.
@@ -42,9 +42,9 @@ func AddFlagFromField[T any](
 	}
 
 	return FieldSelector[T]{
-		selector:     selector,
-		description:  desc,
-		defaultValue: defaultValue,
+		Selector:     selector,
+		Description:  desc,
+		DefaultValue: defaultValue,
 	}
 }
 
@@ -98,9 +98,9 @@ func AddFlagsFromFields(
 		}
 
 		selector := FieldSelector[v1alpha1.Cluster]{
-			selector:     createFieldSelectorFromPointer(fieldPtr, ref),
-			description:  description,
-			defaultValue: defaultValue,
+			Selector:     createFieldSelectorFromPointer(fieldPtr, ref),
+			Description:  description,
+			DefaultValue: defaultValue,
 		}
 
 		selectors = append(selectors, selector)
@@ -116,17 +116,17 @@ func createFieldSelectorFromPointer(
 ) func(*v1alpha1.Cluster) any {
 	return func(cluster *v1alpha1.Cluster) any {
 		// Use reflection to find the field path and return the corresponding field in the target cluster
-		fieldPath := getFieldPathFromPointer(fieldPtr, ref)
+		fieldPath := GetFieldPathFromPointer(fieldPtr, ref)
 		if fieldPath == "" {
 			return nil
 		}
 
-		return getFieldByPath(cluster, fieldPath)
+		return GetFieldByPath(cluster, fieldPath)
 	}
 }
 
-// getFieldPathFromPointer determines the field path from a pointer to a field in the reference cluster.
-func getFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
+// GetFieldPathFromPointer determines the field path from a pointer to a field in the reference cluster.
+func GetFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
 	// Get reflection info about the field pointer
 	fieldVal := reflect.ValueOf(fieldPtr)
 	if fieldVal.Kind() != reflect.Ptr {
@@ -153,8 +153,8 @@ func getFieldPathFromPointer(fieldPtr any, ref *v1alpha1.Cluster) string {
 	return strings.ToLower(originalPath)
 }
 
-// getFieldByPath returns a pointer to the field at the specified path in the cluster.
-func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
+// GetFieldByPath returns a pointer to the field at the specified path in the cluster.
+func GetFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 	// Split the path into components
 	parts := strings.Split(path, ".")
 
@@ -193,8 +193,8 @@ func getFieldByPath(cluster *v1alpha1.Cluster, path string) any {
 	return nil
 }
 
-// convertValueToFieldType converts a value from Viper to the appropriate field type.
-func convertValueToFieldType(value any, targetType reflect.Type) any {
+// ConvertValueToFieldType converts a value from Viper to the appropriate field type.
+func ConvertValueToFieldType(value any, targetType reflect.Type) any {
 	if value == nil {
 		return nil
 	}

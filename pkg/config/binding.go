@@ -37,7 +37,7 @@ func bindSingleFieldSelector(
 	usedShorthands map[string]bool,
 ) {
 	// Get the field reference from the selector
-	fieldPtr := fieldSelector.selector(dummy)
+	fieldPtr := fieldSelector.Selector(dummy)
 
 	// Handle special CLI-only flags that return nil
 	if fieldPtr == nil {
@@ -59,15 +59,15 @@ func bindSingleFieldSelector(
 	flagName := pathToFlagName(fieldPathWithCase)
 
 	// Use embedded description if provided, otherwise generate default
-	description := fieldSelector.description
+	description := fieldSelector.Description
 	if description == "" {
 		description = generateFieldDescription(fieldPathWithCase)
 	}
 
 	// Get default value from field selector or fallback to Viper
 	var defaultValue any
-	if fieldSelector.defaultValue != nil {
-		defaultValue = fieldSelector.defaultValue
+	if fieldSelector.DefaultValue != nil {
+		defaultValue = fieldSelector.DefaultValue
 	}
 
 	// Add shortname flag if appropriate and not conflicting
@@ -93,7 +93,7 @@ func bindSingleFieldSelector(
 
 	// Bind flag to the hierarchical path (for consistent config file access)
 	// This ensures CLI flags, environment variables, and config files all use the same key
-	_ = manager.viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
+	_ = manager.Viper.BindPFlag(fieldPath, cmd.Flags().Lookup(flagName))
 }
 
 // bindPflagValue binds a pflag.Value type to the command.
@@ -109,7 +109,7 @@ func bindPflagValue(
 		setPflagValueDefault(pflagValue, defaultValue)
 	} else {
 		// Fallback to Viper defaults
-		defaultVal := manager.viper.GetString(fieldPath)
+		defaultVal := manager.Viper.GetString(fieldPath)
 		if defaultVal != "" {
 			_ = pflagValue.Set(defaultVal)
 		}
@@ -257,7 +257,7 @@ func bindStringFlag(
 			defaultVal = str
 		}
 	} else {
-		defaultVal = manager.viper.GetString(fieldPath)
+		defaultVal = manager.Viper.GetString(fieldPath)
 	}
 
 	if shortName != "" {
@@ -280,7 +280,7 @@ func bindBoolFlag(
 			defaultVal = b
 		}
 	} else {
-		defaultVal = manager.viper.GetBool(fieldPath)
+		defaultVal = manager.Viper.GetBool(fieldPath)
 	}
 
 	if shortName != "" {
@@ -294,7 +294,7 @@ func bindBoolFlag(
 func bindIntFlag(
 	cmd *cobra.Command, manager *Manager, flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetInt(fieldPath)
+	defaultVal := manager.Viper.GetInt(fieldPath)
 	if shortName != "" {
 		cmd.Flags().IntP(flagName, shortName, defaultVal, description)
 	} else {
@@ -308,7 +308,7 @@ func bindInt32Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetInt32(fieldPath)
+	defaultVal := manager.Viper.GetInt32(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Int32P(flagName, shortName, defaultVal, description)
 	} else {
@@ -322,7 +322,7 @@ func bindInt64Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetInt64(fieldPath)
+	defaultVal := manager.Viper.GetInt64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Int64P(flagName, shortName, defaultVal, description)
 	} else {
@@ -336,7 +336,7 @@ func bindUintFlag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetUint(fieldPath)
+	defaultVal := manager.Viper.GetUint(fieldPath)
 	if shortName != "" {
 		cmd.Flags().UintP(flagName, shortName, defaultVal, description)
 	} else {
@@ -350,7 +350,7 @@ func bindUint32Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetUint32(fieldPath)
+	defaultVal := manager.Viper.GetUint32(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Uint32P(flagName, shortName, defaultVal, description)
 	} else {
@@ -364,7 +364,7 @@ func bindUint64Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetUint64(fieldPath)
+	defaultVal := manager.Viper.GetUint64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Uint64P(flagName, shortName, defaultVal, description)
 	} else {
@@ -378,7 +378,7 @@ func bindFloat32Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetFloat64(fieldPath) // Viper only has Float64
+	defaultVal := manager.Viper.GetFloat64(fieldPath) // Viper only has Float64
 	if shortName != "" {
 		cmd.Flags().Float32P(flagName, shortName, float32(defaultVal), description)
 	} else {
@@ -392,7 +392,7 @@ func bindFloat64Flag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetFloat64(fieldPath)
+	defaultVal := manager.Viper.GetFloat64(fieldPath)
 	if shortName != "" {
 		cmd.Flags().Float64P(flagName, shortName, defaultVal, description)
 	} else {
@@ -406,7 +406,7 @@ func bindDurationFlag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetDuration(fieldPath)
+	defaultVal := manager.Viper.GetDuration(fieldPath)
 	if shortName != "" {
 		cmd.Flags().DurationP(flagName, shortName, defaultVal, description)
 	} else {
@@ -420,7 +420,7 @@ func bindStringSliceFlag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetStringSlice(fieldPath)
+	defaultVal := manager.Viper.GetStringSlice(fieldPath)
 	if shortName != "" {
 		cmd.Flags().StringSliceP(flagName, shortName, defaultVal, description)
 	} else {
@@ -434,7 +434,7 @@ func bindIntSliceFlag(
 	manager *Manager,
 	flagName, shortName, description, fieldPath string,
 ) {
-	defaultVal := manager.viper.GetIntSlice(fieldPath)
+	defaultVal := manager.Viper.GetIntSlice(fieldPath)
 	if shortName != "" {
 		cmd.Flags().IntSliceP(flagName, shortName, defaultVal, description)
 	} else {
@@ -456,7 +456,7 @@ func bindMetav1DurationFlag(
 			defaultVal = metaDur.Duration
 		}
 	} else {
-		defaultVal = manager.viper.GetDuration(fieldPath)
+		defaultVal = manager.Viper.GetDuration(fieldPath)
 	}
 
 	if shortName != "" {
