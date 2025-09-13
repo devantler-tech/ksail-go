@@ -11,10 +11,8 @@ import (
 //go:generate mockery
 type ConfigManager[T any] interface {
 	// LoadConfig loads the configuration from files and environment variables.
+	// Returns the previously loaded config if already loaded.
 	LoadConfig() (*T, error)
-
-	// GetConfig returns the currently loaded configuration.
-	GetConfig() *T
 
 	// GetViper returns the underlying Viper instance for flag binding.
 	GetViper() *viper.Viper
