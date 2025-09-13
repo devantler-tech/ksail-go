@@ -6,7 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
@@ -15,18 +16,18 @@ type CommandConfig struct {
 	Use        string
 	Short      string
 	Long       string
-	RunEFunc   func(cmd *cobra.Command, configManager config.ConfigManager, args []string) error
+	RunEFunc   func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error
 	FieldsFunc func(c *v1alpha1.Cluster) []any
 }
 
 // NewSimpleClusterCommand creates a new command with common cluster management pattern.
 func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
-	return config.NewCobraCommand(
+	return ksail.NewCobraCommand(
 		cfg.Use,
 		cfg.Short,
 		cfg.Long,
 		cfg.RunEFunc,
-		config.AddFlagsFromFields(cfg.FieldsFunc)...,
+		ksail.AddFlagsFromFields(cfg.FieldsFunc)...,
 	)
 }
 
@@ -47,7 +48,7 @@ func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 // Exported for testing purposes.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
-	configManager config.ConfigManager,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadCluster()
 	if err != nil {
@@ -62,7 +63,7 @@ func LoadClusterWithErrorHandling(
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,
-	configManager config.ConfigManager,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	successMessage string,
 ) (*v1alpha1.Cluster, error) {
 	// Load the full cluster configuration (Viper handles all precedence automatically)

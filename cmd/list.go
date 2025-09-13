@@ -6,18 +6,19 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
-	cmd := config.NewCobraCommand(
+	cmd := ksail.NewCobraCommand(
 		"list",
 		"List clusters",
 		`List all Kubernetes clusters managed by KSail.`,
 		HandleListRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to list clusters for",
 			}
@@ -32,7 +33,11 @@ func NewListCmd() *cobra.Command {
 
 // HandleListRunE handles the list command.
 // Exported for testing purposes.
-func HandleListRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
+func HandleListRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
 

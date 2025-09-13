@@ -6,7 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +51,7 @@ func TestHandleReconcileRunE_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
+	manager := ksail.NewManager()
 
 	err := cmd.HandleReconcileRunE(testCmd, manager, []string{})
 
@@ -70,7 +71,7 @@ func TestHandleReconcileRunE_Error(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	mockManager := config.NewMockConfigManager(t)
+	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadCluster().Return(nil, testutils.ErrTestConfigLoadError)
 
 	err := cmd.HandleReconcileRunE(testCmd, mockManager, []string{})

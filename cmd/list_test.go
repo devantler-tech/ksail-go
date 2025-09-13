@@ -6,7 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +89,7 @@ func TestHandleListRunE_Success(t *testing.T) {
 	// Add the --all flag to the command like the real command would have
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := config.NewManager()
+	manager := ksail.NewManager()
 
 	err := cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -110,7 +111,7 @@ func TestHandleListRunE_AllFlag(t *testing.T) {
 	err := testCmd.Flags().Set("all", "true")
 	require.NoError(t, err)
 
-	manager := config.NewManager()
+	manager := ksail.NewManager()
 
 	err = cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -129,9 +130,9 @@ func TestHandleListRunE_Error(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	mockManager := config.NewMockConfigManager(t)
+	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
 	// Create a real viper instance for the BindPFlag call
-	viperInstance := config.NewManager().GetViper()
+	viperInstance := ksail.NewManager().GetViper()
 	mockManager.EXPECT().GetViper().Return(viperInstance).Once()
 	mockManager.EXPECT().LoadCluster().Return(nil, testutils.ErrTestConfigLoadError).Once()
 

@@ -7,7 +7,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ func TestNewSimpleClusterCommand(t *testing.T) {
 		Use:   "test",
 		Short: "Test command",
 		Long:  "A test command for testing",
-		RunEFunc: func(_ *cobra.Command, _ config.ConfigManager, _ []string) error {
+		RunEFunc: func(_ *cobra.Command, _ configmanager.ConfigManager[v1alpha1.Cluster], _ []string) error {
 			return nil
 		},
 		FieldsFunc: func(c *v1alpha1.Cluster) []any {
@@ -55,7 +56,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
+	manager := ksail.NewManager()
 
 	// Test the actual exported function
 	cluster, err := utils.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
@@ -75,7 +76,7 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	mockManager := config.NewMockConfigManager(t)
+	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadCluster().Return(nil, errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
@@ -95,7 +96,7 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := config.NewManager()
+	manager := ksail.NewManager()
 
 	cluster, err := utils.LoadClusterWithErrorHandling(testCmd, manager)
 
@@ -112,7 +113,7 @@ func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	testCmd.SetOut(&out)
 
 	// Create a config manager with error injection
-	mockManager := config.NewMockConfigManager(t)
+	mockManager := ksail.NewMockConfigManager[v1alpha1.Cluster](t)
 	mockManager.EXPECT().LoadCluster().Return(nil, errConfigLoadFailed)
 
 	cluster, err := utils.LoadClusterWithErrorHandling(testCmd, mockManager)

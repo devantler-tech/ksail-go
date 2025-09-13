@@ -5,18 +5,19 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	return ksail.NewCobraCommand(
 		"init",
 		"Initialize a new project",
 		`Initialize a new project.`,
 		HandleInitRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
 				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
@@ -27,7 +28,11 @@ func NewInitCmd() *cobra.Command {
 
 // HandleInitRunE handles the init command.
 // Exported for testing purposes.
-func HandleInitRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
+func HandleInitRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
 	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err

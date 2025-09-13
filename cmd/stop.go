@@ -4,7 +4,7 @@ package cmd
 import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ func NewStopCmd() *cobra.Command {
 		Use:   "stop",
 		Short: "Stop the Kubernetes cluster",
 		Long:  `Stop the Kubernetes cluster without removing it.`,
-		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
+		RunEFunc: func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], _ []string) error {
 			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,

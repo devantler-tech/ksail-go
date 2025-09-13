@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -71,11 +73,11 @@ func TestExecute_ShowsVersion(t *testing.T) {
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
-	return config.NewCobraCommand(
+	return ksail.NewCobraCommand(
 		use,
 		"",
 		"",
-		func(cmd *cobra.Command, _ config.ConfigManager, args []string) error {
+		func(cmd *cobra.Command, _ configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
 			return runE(cmd, args)
 		},
 	)

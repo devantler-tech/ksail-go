@@ -7,7 +7,8 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,12 +17,12 @@ const defaultStatusTimeout = 5 * time.Minute
 
 // NewStatusCmd creates and returns the status command.
 func NewStatusCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	return ksail.NewCobraCommand(
 		"status",
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
 		HandleStatusRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
+		ksail.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
 			return []any{
 				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to check status for",
 				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
@@ -35,7 +36,11 @@ func NewStatusCmd() *cobra.Command {
 
 // HandleStatusRunE handles the status command.
 // Exported for testing purposes.
-func HandleStatusRunE(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
+func HandleStatusRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
 	cluster, err := utils.LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return err

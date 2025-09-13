@@ -6,7 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,7 +19,7 @@ func NewUpCmd() *cobra.Command {
 		Use:   "up",
 		Short: "Start the Kubernetes cluster",
 		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
-		RunEFunc: func(cmd *cobra.Command, configManager config.ConfigManager, _ []string) error {
+		RunEFunc: func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], _ []string) error {
 			_, err := utils.HandleSimpleClusterCommand(
 				cmd,
 				configManager,
