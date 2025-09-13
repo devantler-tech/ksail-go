@@ -16,6 +16,8 @@ type Manager struct {
 	viper          *viper.Viper
 	cluster        *v1alpha1.Cluster
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
+	// testErrorHook is used for testing error scenarios - if set, LoadCluster will return this error
+	testErrorHook error
 }
 
 // NewManager creates a new configuration manager.
@@ -38,6 +40,11 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 
 // LoadCluster loads the cluster configuration from files and environment variables.
 func (m *Manager) LoadCluster() (*v1alpha1.Cluster, error) {
+	// Test hook for error scenarios
+	if m.testErrorHook != nil {
+		return nil, m.testErrorHook
+	}
+
 	// Start with a minimal cluster structure
 	cluster := v1alpha1.NewCluster()
 
@@ -66,6 +73,11 @@ func (m *Manager) GetCluster() *v1alpha1.Cluster {
 // GetViper returns the underlying Viper instance for flag binding.
 func (m *Manager) GetViper() *viper.Viper {
 	return m.viper
+}
+
+// SetTestErrorHook sets an error that LoadCluster will return - for testing only.
+func (m *Manager) SetTestErrorHook(err error) {
+	m.testErrorHook = err
 }
 
 // setViperDefaultsFromFieldSelectors sets Viper defaults for only the fields specified by field selectors.
