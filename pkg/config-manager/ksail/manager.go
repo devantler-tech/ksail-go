@@ -3,6 +3,7 @@
 package ksail
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -51,7 +52,8 @@ func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// Read configuration file if it exists
 	if err := m.viper.ReadInConfig(); err != nil {
 		// It's okay if config file doesn't exist, we'll use defaults and flags
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 	}

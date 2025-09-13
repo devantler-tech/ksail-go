@@ -3,9 +3,7 @@
 package ksail
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -30,85 +28,80 @@ func (m *Manager) addFlagFromField(
 		return
 	}
 
-	flagName := m.generateFlagName(fieldPtr)
-	shorthand := m.generateShorthand(flagName)
+	flagName := m.GenerateFlagName(fieldPtr)
+	shorthand := m.GenerateShorthand(flagName)
 
-	switch ptr := fieldPtr.(type) {
-	case *v1alpha1.Distribution:
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, string(fieldSelector.DefaultValue.(v1alpha1.Distribution)), fieldSelector.Description)
-	case *v1alpha1.ReconciliationTool:
-		defaultTool := ""
+	// Check if the field implements pflag.Value interface first (for enum types)
+	if pflagValue, isPflagValue := fieldPtr.(interface {
+		Set(string) error
+		String() string
+		Type() string
+	}); isPflagValue {
+		// Set default value if provided
 		if fieldSelector.DefaultValue != nil {
-			defaultTool = string(fieldSelector.DefaultValue.(v1alpha1.ReconciliationTool))
+			m.setPflagValueDefault(pflagValue, fieldSelector.DefaultValue)
 		}
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, defaultTool, fieldSelector.Description)
-	case *v1alpha1.CNI:
-		defaultCNI := ""
-		if fieldSelector.DefaultValue != nil {
-			defaultCNI = string(fieldSelector.DefaultValue.(v1alpha1.CNI))
+
+		// Use VarP for pflag.Value types to preserve type information
+		if shorthand != "" {
+			cmd.Flags().VarP(pflagValue, flagName, shorthand, fieldSelector.Description)
+		} else {
+			cmd.Flags().Var(pflagValue, flagName, fieldSelector.Description)
 		}
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, defaultCNI, fieldSelector.Description)
-	case *v1alpha1.CSI:
-		defaultCSI := ""
-		if fieldSelector.DefaultValue != nil {
-			defaultCSI = string(fieldSelector.DefaultValue.(v1alpha1.CSI))
-		}
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, defaultCSI, fieldSelector.Description)
-	case *v1alpha1.IngressController:
-		defaultIngress := ""
-		if fieldSelector.DefaultValue != nil {
-			defaultIngress = string(fieldSelector.DefaultValue.(v1alpha1.IngressController))
-		}
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, defaultIngress, fieldSelector.Description)
-	case *v1alpha1.GatewayController:
-		defaultGateway := ""
-		if fieldSelector.DefaultValue != nil {
-			defaultGateway = string(fieldSelector.DefaultValue.(v1alpha1.GatewayController))
-		}
-		cmd.Flags().StringVarP((*string)(ptr), flagName, shorthand, defaultGateway, fieldSelector.Description)
-	case *string:
-		defaultStr := ""
-		if fieldSelector.DefaultValue != nil {
-			defaultStr = fieldSelector.DefaultValue.(string)
-		}
-		cmd.Flags().StringVarP(ptr, flagName, shorthand, defaultStr, fieldSelector.Description)
-	case *bool:
-		defaultBool := false
-		if fieldSelector.DefaultValue != nil {
-			defaultBool = fieldSelector.DefaultValue.(bool)
-		}
-		cmd.Flags().BoolVarP(ptr, flagName, shorthand, defaultBool, fieldSelector.Description)
-	case *int:
-		defaultInt := 0
-		if fieldSelector.DefaultValue != nil {
-			defaultInt = fieldSelector.DefaultValue.(int)
-		}
-		cmd.Flags().IntVarP(ptr, flagName, shorthand, defaultInt, fieldSelector.Description)
-	case *metav1.Duration:
-		defaultDuration := time.Duration(0)
-		if fieldSelector.DefaultValue != nil {
-			if dur, ok := fieldSelector.DefaultValue.(metav1.Duration); ok {
-				defaultDuration = dur.Duration
+	} else {
+		// Handle standard types that don't implement pflag.Value
+		switch ptr := fieldPtr.(type) {
+		case *string:
+			defaultStr := ""
+			if fieldSelector.DefaultValue != nil {
+				if str, ok := fieldSelector.DefaultValue.(string); ok {
+					defaultStr = str
+				}
 			}
+			cmd.Flags().StringVarP(ptr, flagName, shorthand, defaultStr, fieldSelector.Description)
+		case *bool:
+			defaultBool := false
+			if fieldSelector.DefaultValue != nil {
+				if b, ok := fieldSelector.DefaultValue.(bool); ok {
+					defaultBool = b
+				}
+			}
+			cmd.Flags().BoolVarP(ptr, flagName, shorthand, defaultBool, fieldSelector.Description)
+		case *int:
+			defaultInt := 0
+			if fieldSelector.DefaultValue != nil {
+				if i, ok := fieldSelector.DefaultValue.(int); ok {
+					defaultInt = i
+				}
+			}
+			cmd.Flags().IntVarP(ptr, flagName, shorthand, defaultInt, fieldSelector.Description)
+		case *metav1.Duration:
+			defaultDuration := time.Duration(0)
+			if fieldSelector.DefaultValue != nil {
+				if dur, ok := fieldSelector.DefaultValue.(metav1.Duration); ok {
+					defaultDuration = dur.Duration
+				}
+			}
+
+			cmd.Flags().DurationVarP(&ptr.Duration, flagName, shorthand, defaultDuration, fieldSelector.Description)
+		case *time.Duration:
+			defaultDuration := time.Duration(0)
+			if fieldSelector.DefaultValue != nil {
+				if dur, ok := fieldSelector.DefaultValue.(time.Duration); ok {
+					defaultDuration = dur
+				}
+			}
+
+			cmd.Flags().DurationVarP(ptr, flagName, shorthand, defaultDuration, fieldSelector.Description)
 		}
-		cmd.Flags().DurationVarP(&ptr.Duration, flagName, shorthand, defaultDuration, fieldSelector.Description)
-	case *time.Duration:
-		defaultDuration := time.Duration(0)
-		if fieldSelector.DefaultValue != nil {
-			defaultDuration = fieldSelector.DefaultValue.(time.Duration)
-		}
-		cmd.Flags().DurationVarP(ptr, flagName, shorthand, defaultDuration, fieldSelector.Description)
 	}
 
-	// Bind the flag to viper
-	if err := m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName)); err != nil {
-		// Log error but don't fail - this is not critical
-		fmt.Printf("Warning: failed to bind flag %s to viper: %v\n", flagName, err)
-	}
+	// Bind the flag to viper (ignoring error for non-critical binding)
+	_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
 }
 
-// generateFlagName generates a user-friendly flag name from a field pointer.
-func (m *Manager) generateFlagName(fieldPtr any) string {
+// GenerateFlagName generates a user-friendly flag name from a field pointer.
+func (m *Manager) GenerateFlagName(fieldPtr any) string {
 	// Check which field this pointer references by comparing addresses
 	if fieldPtr == &m.Config.Metadata.Name {
 		return "name"
@@ -147,57 +140,12 @@ func (m *Manager) generateFlagName(fieldPtr any) string {
 		return "gateway-controller"
 	}
 
-	// Fallback to field name detection for other fields
-	fieldName := m.getFieldNameFromPointer(fieldPtr, m.Config)
-	return strings.ToLower(fieldName)
+	// For unknown fields, return a simple fallback
+	return "unknown"
 }
 
-// getFieldNameFromPointer finds the field name for a given pointer.
-func (m *Manager) getFieldNameFromPointer(fieldPtr any, rootStruct any) string {
-	return m.findFieldName(reflect.ValueOf(fieldPtr), reflect.ValueOf(rootStruct))
-}
-
-// findFieldName recursively finds the field name for a pointer.
-func (m *Manager) findFieldName(targetPtr, current reflect.Value) string {
-	if current.Kind() == reflect.Ptr {
-		if current.IsNil() {
-			return ""
-		}
-		current = current.Elem()
-	}
-
-	if current.Kind() != reflect.Struct {
-		return ""
-	}
-
-	typ := current.Type()
-	for i := 0; i < current.NumField(); i++ {
-		field := current.Field(i)
-		fieldType := typ.Field(i)
-
-		if !field.CanAddr() {
-			continue
-		}
-
-		fieldAddr := field.Addr()
-		if fieldAddr.Pointer() == targetPtr.Pointer() {
-			return fieldType.Name
-		}
-
-		// Recurse into nested structs
-		if field.Kind() == reflect.Struct ||
-			(field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct) {
-			if result := m.findFieldName(targetPtr, field); result != "" {
-				return result
-			}
-		}
-	}
-
-	return ""
-}
-
-// generateShorthand generates a shorthand flag from the flag name.
-func (m *Manager) generateShorthand(flagName string) string {
+// GenerateShorthand generates a shorthand flag from the flag name.
+func (m *Manager) GenerateShorthand(flagName string) string {
 	switch flagName {
 	case "distribution":
 		return "d"
@@ -219,58 +167,6 @@ func (m *Manager) generateShorthand(flagName string) string {
 	}
 }
 
-// getFieldPath returns the JSON path of a field pointer within a struct.
-func (m *Manager) getFieldPath(fieldPtr any, rootStruct any) string {
-	return m.findFieldPath(reflect.ValueOf(fieldPtr), reflect.ValueOf(rootStruct), "")
-}
-
-// findFieldPath recursively finds the path to a field pointer.
-func (m *Manager) findFieldPath(targetPtr, current reflect.Value, currentPath string) string {
-	if current.Kind() == reflect.Ptr {
-		if current.IsNil() {
-			return ""
-		}
-		current = current.Elem()
-	}
-
-	if current.Kind() != reflect.Struct {
-		return ""
-	}
-
-	typ := current.Type()
-	for i := 0; i < current.NumField(); i++ {
-		field := current.Field(i)
-		fieldType := typ.Field(i)
-
-		if !field.CanAddr() {
-			continue
-		}
-
-		fieldAddr := field.Addr()
-		if fieldAddr.Pointer() == targetPtr.Pointer() {
-			fieldName := fieldType.Name
-			if currentPath == "" {
-				return fieldName
-			}
-			return currentPath + "." + fieldName
-		}
-
-		// Recurse into nested structs
-		if field.Kind() == reflect.Struct ||
-			(field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct) {
-			newPath := fieldType.Name
-			if currentPath != "" {
-				newPath = currentPath + "." + newPath
-			}
-			if result := m.findFieldPath(targetPtr, field, newPath); result != "" {
-				return result
-			}
-		}
-	}
-
-	return ""
-}
-
 // setFieldValue sets a field value using reflection.
 func setFieldValue(fieldPtr any, value any) {
 	if fieldPtr == nil || value == nil {
@@ -289,5 +185,33 @@ func setFieldValue(fieldPtr any, value any) {
 		fieldVal.Set(valueVal)
 	} else if fieldVal.Type().ConvertibleTo(valueVal.Type()) {
 		fieldVal.Set(valueVal.Convert(fieldVal.Type()))
+	}
+}
+
+// setPflagValueDefault sets the default value for a pflag.Value.
+func (m *Manager) setPflagValueDefault(pflagValue interface {
+	Set(string) error
+	String() string
+	Type() string
+}, defaultValue any,
+) {
+	// Convert custom types to string for pflag.Value.Set()
+	switch val := defaultValue.(type) {
+	case v1alpha1.Distribution:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.ReconciliationTool:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.CNI:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.CSI:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.IngressController:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.GatewayController:
+		_ = pflagValue.Set(string(val))
+	default:
+		if str, ok := val.(string); ok {
+			_ = pflagValue.Set(str)
+		}
 	}
 }

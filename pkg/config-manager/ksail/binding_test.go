@@ -32,7 +32,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"Kubernetes distribution",
 			),
 			expectedFlag: "distribution",
-			expectedType: "string",
+			expectedType: "Distribution",
 		},
 		{
 			name: "SourceDirectory field",
@@ -72,7 +72,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"Reconciliation tool",
 			),
 			expectedFlag: "reconciliation-tool",
-			expectedType: "string",
+			expectedType: "ReconciliationTool",
 		},
 		{
 			name: "CNI field",
@@ -82,7 +82,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"CNI plugin",
 			),
 			expectedFlag: "cni",
-			expectedType: "string",
+			expectedType: "CNI",
 		},
 		{
 			name: "CSI field",
@@ -92,7 +92,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"CSI driver",
 			),
 			expectedFlag: "csi",
-			expectedType: "string",
+			expectedType: "CSI",
 		},
 		{
 			name: "IngressController field",
@@ -102,7 +102,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"Ingress controller",
 			),
 			expectedFlag: "ingress-controller",
-			expectedType: "string",
+			expectedType: "IngressController",
 		},
 		{
 			name: "GatewayController field",
@@ -112,7 +112,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 				"Gateway controller",
 			),
 			expectedFlag: "gateway-controller",
-			expectedType: "string",
+			expectedType: "GatewayController",
 		},
 	}
 
@@ -381,7 +381,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 				DefaultValue: nil,
 				Description:  "Tool with nil default",
 			},
-			expectedType: "string",
+			expectedType: "ReconciliationTool",
 		},
 		{
 			name: "CNI with nil default",
@@ -390,7 +390,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 				DefaultValue: nil,
 				Description:  "CNI with nil default",
 			},
-			expectedType: "string",
+			expectedType: "CNI",
 		},
 		{
 			name: "CSI with nil default",
@@ -399,7 +399,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 				DefaultValue: nil,
 				Description:  "CSI with nil default",
 			},
-			expectedType: "string",
+			expectedType: "CSI",
 		},
 		{
 			name: "IngressController with nil default",
@@ -408,7 +408,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 				DefaultValue: nil,
 				Description:  "Ingress with nil default",
 			},
-			expectedType: "string",
+			expectedType: "IngressController",
 		},
 		{
 			name: "GatewayController with nil default",
@@ -417,7 +417,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 				DefaultValue: nil,
 				Description:  "Gateway with nil default",
 			},
-			expectedType: "string",
+			expectedType: "GatewayController",
 		},
 		{
 			name: "String field with nil default",
