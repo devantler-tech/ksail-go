@@ -2,7 +2,7 @@
 // github.com/vektra/mockery
 // template: testify
 
-package ksail
+package configmanager
 
 import (
 	"github.com/spf13/viper"
