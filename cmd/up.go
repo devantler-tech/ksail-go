@@ -18,16 +18,8 @@ const defaultUpTimeout = 5 * time.Minute
 func NewUpCmd() *cobra.Command {
 	// Create field selectors
 	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			Description:  "Configuration file for the distribution",
-			DefaultValue: "kind.yaml",
-		},
+		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context to use",

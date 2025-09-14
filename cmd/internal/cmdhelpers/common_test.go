@@ -20,6 +20,29 @@ var (
 	errConfigLoadFailed   = errors.New("config load failed")
 )
 
+// setupTestCommand creates a test command with output buffer for testing.
+func setupTestCommand() (*cobra.Command, *bytes.Buffer) {
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	return testCmd, &out
+}
+
+// setupMockManagerWithError creates a mock config manager that returns the specified error.
+func setupMockManagerWithError(
+	t *testing.T,
+	err error,
+) *configmanager.MockConfigManager[v1alpha1.Cluster] {
+	t.Helper()
+
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager.EXPECT().LoadConfig().Return(nil, err)
+
+	return mockManager
+}
+
 func TestNewSimpleClusterCommand(t *testing.T) {
 	t.Parallel()
 
@@ -72,14 +95,8 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	// Create a config manager with error injection
-	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
-	mockManager.EXPECT().LoadConfig().Return(nil, errFailedToLoadConfig)
+	testCmd, out := setupTestCommand()
+	mockManager := setupMockManagerWithError(t, errFailedToLoadConfig)
 
 	// Test the actual exported function with error injection
 	cluster, err := cmdhelpers.HandleSimpleClusterCommand(
@@ -114,14 +131,8 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	// Create a config manager with error injection
-	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
-	mockManager.EXPECT().LoadConfig().Return(nil, errConfigLoadFailed)
+	testCmd, out := setupTestCommand()
+	mockManager := setupMockManagerWithError(t, errConfigLoadFailed)
 
 	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, mockManager)
 
@@ -154,4 +165,86 @@ func TestLogClusterInfo(t *testing.T) {
 
 	assert.Contains(t, out.String(), "► Distribution: Kind")
 	assert.Contains(t, out.String(), "► Context: kind-ksail-default")
+}
+
+func TestStandardDistributionFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	description := "Kubernetes distribution to use"
+	selector := cmdhelpers.StandardDistributionFieldSelector(description)
+
+	assert.Equal(t, description, selector.Description)
+	assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.Distribution, result)
+}
+
+func TestStandardSourceDirectoryFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := cmdhelpers.StandardSourceDirectoryFieldSelector()
+
+	assert.Equal(t, "Directory containing workloads to deploy", selector.Description)
+	assert.Equal(t, "k8s", selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.SourceDirectory, result)
+}
+
+func TestStandardDistributionConfigFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := cmdhelpers.StandardDistributionConfigFieldSelector()
+
+	assert.Equal(t, "Configuration file for the distribution", selector.Description)
+	assert.Equal(t, "kind.yaml", selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.DistributionConfig, result)
+}
+
+func TestStandardClusterCommandRunE_Success(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	manager := ksail.NewManager()
+	successMessage := "Test command executed successfully"
+
+	// Get the run function
+	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
+
+	// Execute the function
+	err := runFunc(testCmd, manager, []string{})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ "+successMessage)
+}
+
+func TestStandardClusterCommandRunE_Error(t *testing.T) {
+	t.Parallel()
+
+	testCmd, _ := setupTestCommand()
+	mockManager := setupMockManagerWithError(t, errFailedToLoadConfig)
+	successMessage := "Test command executed successfully"
+
+	// Get the run function
+	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
+
+	// Execute the function
+	err := runFunc(testCmd, mockManager, []string{})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to handle cluster command")
+	assert.Contains(t, err.Error(), "failed to load config")
 }

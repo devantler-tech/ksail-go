@@ -6,9 +6,35 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// envTestCase represents a test case for environment variable binding.
+type envTestCase struct {
+	name     string
+	key      string
+	envVar   string
+	value    string
+	testDesc string // Optional description field
+}
+
+// runEnvBindingTest is a helper function to test environment variable binding.
+func runEnvBindingTest(t *testing.T, viperInstance *viper.Viper, testCase envTestCase) {
+	t.Helper()
+
+	t.Run(testCase.name, func(t *testing.T) {
+		// Set environment variable
+		t.Setenv(testCase.envVar, testCase.value)
+
+		// Bind the environment variable
+		_ = viperInstance.BindEnv(testCase.key)
+
+		// Test that the value is retrieved correctly
+		assert.Equal(t, testCase.value, viperInstance.GetString(testCase.key))
+	})
+}
 
 // TestInitializeViper tests the InitializeViper function.
 func TestInitializeViper(t *testing.T) {
@@ -50,17 +76,14 @@ func TestInitializeViper_ConfigPaths(t *testing.T) {
 }
 
 // TestInitializeViper_EnvKeyReplacer tests environment key replacement.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
 func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
 	// Test that dots and dashes in keys are replaced with underscores for env vars
-	tests := []struct {
-		name   string
-		key    string
-		envVar string
-		value  string
-	}{
+	tests := []envTestCase{
 		{
 			name:   "Dot replacement",
 			key:    "spec.distribution",
@@ -82,16 +105,7 @@ func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			// Set environment variable
-			t.Setenv(testCase.envVar, testCase.value)
-
-			// Bind the environment variable
-			_ = viperInstance.BindEnv(testCase.key)
-
-			// Test that the value is retrieved correctly
-			assert.Equal(t, testCase.value, viperInstance.GetString(testCase.key))
-		})
+		runEnvBindingTest(t, viperInstance, testCase)
 	}
 }
 
@@ -141,17 +155,14 @@ func TestViperConstants(t *testing.T) {
 }
 
 // TestInitializeViper_EnvironmentVariableBinding tests automatic environment variable binding.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
 func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
 	// Test various environment variable patterns
-	tests := []struct {
-		name   string
-		envVar string
-		key    string
-		value  string
-	}{
+	tests := []envTestCase{
 		{
 			name:   "Simple environment variable",
 			envVar: "KSAIL_TEST_SIMPLE",
@@ -173,32 +184,19 @@ func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			// Set environment variable
-			t.Setenv(testCase.envVar, testCase.value)
-
-			// Bind the environment variable
-			_ = viperInstance.BindEnv(testCase.key)
-
-			// Test that the value is retrieved correctly
-			assert.Equal(t, testCase.value, viperInstance.GetString(testCase.key))
-		})
+		runEnvBindingTest(t, viperInstance, testCase)
 	}
 }
 
 // TestInitializeViper_EnvReplacerRules tests environment key replacer rules.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
 func TestInitializeViper_EnvReplacerRules(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
 	// Test the key replacer rules by setting specific environment variables
-	tests := []struct {
-		name     string
-		key      string
-		envVar   string
-		value    string
-		testDesc string
-	}{
+	tests := []envTestCase{
 		{
 			name:     "Period to underscore",
 			key:      "metadata.name",
@@ -237,16 +235,7 @@ func TestInitializeViper_EnvReplacerRules(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Setenv(testCase.envVar, testCase.value)
-			_ = viperInstance.BindEnv(testCase.key)
-			assert.Equal(
-				t,
-				testCase.value,
-				viperInstance.GetString(testCase.key),
-				testCase.testDesc,
-			)
-		})
+		runEnvBindingTest(t, viperInstance, testCase)
 	}
 }
 

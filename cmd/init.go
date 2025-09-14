@@ -16,16 +16,8 @@ import (
 func NewInitCmd() *cobra.Command {
 	// Create field selectors
 	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-			Description:  "Directory containing workloads to deploy",
-			DefaultValue: "k8s",
-		},
+		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardSourceDirectoryFieldSelector(),
 	}
 
 	// Create configuration manager with field selectors

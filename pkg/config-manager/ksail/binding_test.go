@@ -13,6 +13,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// setupFlagBindingTest creates a command for testing flag binding.
+func setupFlagBindingTest(
+	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
+) *cobra.Command {
+	manager := ksail.NewManager(fieldSelectors...)
+	cmd := &cobra.Command{Use: "test"}
+	manager.AddFlagsFromFields(cmd)
+
+	return cmd
+}
+
 // TestManager_addFlagFromField tests the addFlagFromField method with different field types.
 //
 //nolint:funlen // Comprehensive test requires multiple test cases for coverage
@@ -121,10 +132,7 @@ func TestManager_addFlagFromField(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := ksail.NewManager(testCase.fieldSelector)
-			cmd := &cobra.Command{Use: "test"}
-
-			manager.AddFlagsFromFields(cmd)
+			cmd := setupFlagBindingTest(testCase.fieldSelector)
 
 			// Check that the flag was added
 			flag := cmd.Flags().Lookup(testCase.expectedFlag)
@@ -313,10 +321,7 @@ func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := ksail.NewManager(testCase.fieldSelector)
-			cmd := &cobra.Command{Use: "test"}
-
-			manager.AddFlagsFromFields(cmd)
+			cmd := setupFlagBindingTest(testCase.fieldSelector)
 
 			if testCase.expectSkip {
 				// Should have no flags when selector returns nil
@@ -401,10 +406,7 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := ksail.NewManager(testCase.fieldSelector)
-			cmd := &cobra.Command{Use: "test"}
-
-			manager.AddFlagsFromFields(cmd)
+			cmd := setupFlagBindingTest(testCase.fieldSelector)
 
 			// Should have one flag
 			assert.True(t, cmd.Flags().HasFlags())

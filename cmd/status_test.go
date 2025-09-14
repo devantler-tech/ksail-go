@@ -6,8 +6,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -66,17 +64,5 @@ func TestHandleStatusRunE_Success(t *testing.T) {
 func TestHandleStatusRunE_Error(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
-	mockManager.EXPECT().LoadConfig().Return(nil, testutils.ErrTestConfigLoadError)
-
-	err := cmd.HandleStatusRunE(testCmd, mockManager, []string{})
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "test config load error")
-	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
+	testutils.TestRunEError(t, cmd.HandleStatusRunE)
 }

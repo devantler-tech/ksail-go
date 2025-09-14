@@ -26,6 +26,46 @@ func setupTestEnvironment(t *testing.T) {
 	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_TIMEOUT")
 }
 
+// createStandardFieldSelectors creates a common set of field selectors used in multiple tests.
+func createStandardFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
+	return []ksail.FieldSelector[v1alpha1.Cluster]{
+		ksail.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+			"Kubernetes distribution",
+		),
+		ksail.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+			"Source directory",
+		),
+		ksail.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			"",
+			"Kubernetes context",
+		),
+		ksail.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+			metav1.Duration{Duration: 5 * time.Minute},
+			"Connection timeout",
+		),
+	}
+}
+
+// createFieldSelectorsWithName creates field selectors including name field.
+func createFieldSelectorsWithName() []ksail.FieldSelector[v1alpha1.Cluster] {
+	selectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		ksail.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			"ksail-default",
+			"Name of the cluster",
+		),
+	}
+	selectors = append(selectors, createStandardFieldSelectors()...)
+
+	return selectors
+}
+
 // TestNewManager tests the NewManager constructor.
 func TestNewManager(t *testing.T) {
 	t.Parallel()
@@ -46,8 +86,6 @@ func TestNewManager(t *testing.T) {
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
-//
-//nolint:funlen // Comprehensive config loading test requires multiple test cases
 func TestManager_LoadConfig(t *testing.T) {
 	// Note: Cannot use t.Parallel() because subtests use setupTestEnvironment and t.Setenv
 	tests := []struct {
@@ -92,28 +130,7 @@ func TestManager_LoadConfig(t *testing.T) {
 				t.Setenv(key, value)
 			}
 
-			fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-					"ksail-default",
-					"Name of the cluster",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-					v1alpha1.DistributionKind,
-					"Kubernetes distribution",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-					"k8s",
-					"Source directory for workloads",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-					"",
-					"Kubernetes context",
-				),
-			}
+			fieldSelectors := createFieldSelectorsWithName()
 
 			manager := ksail.NewManager(fieldSelectors...)
 
@@ -282,8 +299,6 @@ func TestNewCobraCommand(t *testing.T) {
 }
 
 // TestManager_AddFlagsFromFields tests the AddFlagsFromFields method.
-//
-//nolint:funlen // Comprehensive flag testing requires multiple test cases
 func TestManager_AddFlagsFromFields(t *testing.T) {
 	t.Parallel()
 
@@ -309,30 +324,9 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 			expectedFlags: []string{"distribution"},
 		},
 		{
-			name: "AddFlagsFromFields with multiple selectors",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-					v1alpha1.DistributionKind,
-					"Kubernetes distribution",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-					"k8s",
-					"Source directory",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-					"",
-					"Kubernetes context",
-				),
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-					metav1.Duration{Duration: 5 * time.Minute},
-					"Connection timeout",
-				),
-			},
-			expectedFlags: []string{"distribution", "source-directory", "context", "timeout"},
+			name:           "AddFlagsFromFields with multiple selectors",
+			fieldSelectors: createStandardFieldSelectors(),
+			expectedFlags:  []string{"distribution", "source-directory", "context", "timeout"},
 		},
 	}
 

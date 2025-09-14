@@ -119,12 +119,10 @@ func HandleSimpleClusterCommand(
 	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	successMessage string,
 ) (*v1alpha1.Cluster, error) {
-	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadConfig()
+	// Load the full cluster configuration using common error handling
+	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-
-		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+		return nil, err
 	}
 
 	notify.Successln(cmd.OutOrStdout(), successMessage)
@@ -134,4 +132,50 @@ func HandleSimpleClusterCommand(
 	})
 
 	return cluster, nil
+}
+
+// StandardClusterCommandRunE creates a standard run function for cluster commands.
+// It handles the common pattern of calling HandleSimpleClusterCommand with a success message.
+func StandardClusterCommandRunE(
+	successMessage string,
+) func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
+	return func(
+		cmd *cobra.Command,
+		manager configmanager.ConfigManager[v1alpha1.Cluster],
+		_ []string,
+	) error {
+		_, err := HandleSimpleClusterCommand(cmd, manager, successMessage)
+		if err != nil {
+			return fmt.Errorf("failed to handle cluster command: %w", err)
+		}
+
+		return nil
+	}
+}
+
+// StandardDistributionFieldSelector creates a standard field selector for distribution.
+func StandardDistributionFieldSelector(description string) ksail.FieldSelector[v1alpha1.Cluster] {
+	return ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+		Description:  description,
+		DefaultValue: v1alpha1.DistributionKind,
+	}
+}
+
+// StandardSourceDirectoryFieldSelector creates a standard field selector for source directory.
+func StandardSourceDirectoryFieldSelector() ksail.FieldSelector[v1alpha1.Cluster] {
+	return ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+		Description:  "Directory containing workloads to deploy",
+		DefaultValue: "k8s",
+	}
+}
+
+// StandardDistributionConfigFieldSelector creates a standard field selector for distribution config.
+func StandardDistributionConfigFieldSelector() ksail.FieldSelector[v1alpha1.Cluster] {
+	return ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+		Description:  "Configuration file for the distribution",
+		DefaultValue: "kind.yaml",
+	}
 }
