@@ -242,3 +242,176 @@ func TestStringAndTypeMethods(t *testing.T) {
 	assert.Equal(t, "Default", gc.String())
 	assert.Equal(t, "GatewayController", gc.Type())
 }
+
+// Tests for constructor functions
+
+func TestNewCluster(t *testing.T) {
+	t.Parallel()
+
+	cluster := v1alpha1.NewCluster()
+
+	require.NotNil(t, cluster)
+	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
+	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
+	assert.NotNil(t, cluster.Metadata)
+	assert.NotNil(t, cluster.Spec)
+}
+
+func TestNewClusterMetadata(t *testing.T) {
+	t.Parallel()
+
+	t.Run("with_name", func(t *testing.T) {
+		t.Parallel()
+
+		metadata := v1alpha1.NewClusterMetadata("test-cluster")
+
+		assert.Equal(t, "test-cluster", metadata.Name)
+		assert.NotNil(t, metadata.OwnerReferences)
+		assert.NotNil(t, metadata.Finalizers)
+		assert.NotNil(t, metadata.ManagedFields)
+	})
+
+	t.Run("with_empty_name", func(t *testing.T) {
+		t.Parallel()
+
+		metadata := v1alpha1.NewClusterMetadata("")
+
+		assert.Empty(t, metadata.Name)
+		assert.NotNil(t, metadata.OwnerReferences)
+		assert.NotNil(t, metadata.Finalizers)
+		assert.NotNil(t, metadata.ManagedFields)
+	})
+}
+
+func TestNewClusterSpec(t *testing.T) {
+	t.Parallel()
+
+	spec := v1alpha1.NewClusterSpec()
+
+	assert.Empty(t, spec.DistributionConfig)
+	assert.Empty(t, spec.SourceDirectory)
+	assert.NotNil(t, spec.Connection)
+	assert.Equal(t, v1alpha1.Distribution(""), spec.Distribution)
+	assert.Equal(t, v1alpha1.CNI(""), spec.CNI)
+	assert.Equal(t, v1alpha1.CSI(""), spec.CSI)
+	assert.Equal(t, v1alpha1.IngressController(""), spec.IngressController)
+	assert.Equal(t, v1alpha1.GatewayController(""), spec.GatewayController)
+	assert.Equal(t, v1alpha1.ReconciliationTool(""), spec.ReconciliationTool)
+	assert.NotNil(t, spec.Options)
+}
+
+func TestNewClusterConnection(t *testing.T) {
+	t.Parallel()
+
+	connection := v1alpha1.NewClusterConnection()
+
+	assert.Empty(t, connection.Kubeconfig)
+	assert.Empty(t, connection.Context)
+	assert.Equal(t, metav1.Duration{Duration: 0}, connection.Timeout)
+}
+
+func TestNewClusterOptions(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptions()
+
+	assert.NotNil(t, options.Kind)
+	assert.NotNil(t, options.K3d)
+	assert.NotNil(t, options.Tind)
+	assert.NotNil(t, options.EKS)
+	assert.NotNil(t, options.Cilium)
+	assert.NotNil(t, options.Kubectl)
+	assert.NotNil(t, options.Flux)
+	assert.NotNil(t, options.ArgoCD)
+	assert.NotNil(t, options.Helm)
+	assert.NotNil(t, options.Kustomize)
+}
+
+func TestNewClusterOptionsKind(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsKind()
+
+	// OptionsKind is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsK3d(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsK3d()
+
+	// OptionsK3d is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsTind(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsTind()
+
+	// OptionsTind is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsEKS(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsEKS()
+
+	assert.Empty(t, options.AWSProfile)
+}
+
+func TestNewClusterOptionsCilium(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsCilium()
+
+	// OptionsCilium is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsKubectl(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsKubectl()
+
+	// OptionsKubectl is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsFlux(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsFlux()
+
+	// OptionsFlux is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsArgoCD(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsArgoCD()
+
+	// OptionsArgoCD is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsHelm(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsHelm()
+
+	// OptionsHelm is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsKustomize(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsKustomize()
+
+	// OptionsKustomize is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}

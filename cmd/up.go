@@ -2,10 +2,13 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -14,28 +17,41 @@ const defaultUpTimeout = 5 * time.Minute
 
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
-	return NewSimpleClusterCommand(CommandConfig{
-		Use:   "up",
-		Short: "Start the Kubernetes cluster",
-		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-			_, err := HandleSimpleClusterCommand(
-				cmd,
-				configManager,
-				"Cluster created and started successfully (stub implementation)",
-			)
+	return cmdhelpers.NewCobraCommand(
+		"up",
+		"Start the Kubernetes cluster",
+		`Start the Kubernetes cluster defined in the project configuration.`,
+		HandleUpRunE,
+		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
+		ksail.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context to use",
+			DefaultValue: "kind-ksail-default",
+		},
+		ksail.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+			Description:  "Timeout for cluster operations",
+			DefaultValue: metav1.Duration{Duration: defaultUpTimeout},
+		},
+	)
+}
 
-			return err
-		},
-		FieldsFunc: func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
-				&c.Spec.DistributionConfig, "kind.yaml", "Configuration file for the distribution",
-				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to use",
-				&c.Spec.Connection.Timeout,
-				metav1.Duration{Duration: defaultUpTimeout},
-				"Timeout for cluster operations",
-			}
-		},
-	})
+// HandleUpRunE handles the up command.
+// Exported for testing purposes.
+func HandleUpRunE(
+	cmd *cobra.Command,
+	manager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
+	_, err := cmdhelpers.HandleSimpleClusterCommand(
+		cmd,
+		manager,
+		"Cluster created and started successfully (stub implementation)",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to handle cluster command: %w", err)
+	}
+
+	return nil
 }

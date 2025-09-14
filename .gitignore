@@ -10,7 +10,7 @@
 # ==============================================================================
 
 # KSail binaries and configs
-ksail
+/ksail
 ksail-go
 k3d.yaml
 kind.yaml
@@ -44,7 +44,7 @@ __MACOSX/
 
 # Go test coverage reports
 coverage*.out
-coverage.html
+*coverage.html
 
 # megalinter output
 megalinter_output.log

@@ -2,41 +2,54 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"fmt"
+
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardSourceDirectoryFieldSelector(),
+	}
+
+	// Use the common command creation helper
+	return cmdhelpers.NewCobraCommand(
 		"init",
 		"Initialize a new project",
-		`Initialize a new project.`,
-		handleInitRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to use",
-				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to deploy",
-			}
-		})...,
+		"Initialize a new project.",
+		HandleInitRunE,
+		fieldSelectors...,
 	)
 }
 
-// handleInitRunE handles the init command.
-func handleInitRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
+// HandleInitRunE handles the init command.
+// Exported for testing purposes.
+func HandleInitRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
+		cmd,
+		configManager,
+		"project initialized successfully",
+		func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
+			return []cmdhelpers.ClusterInfoField{
+				{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
+				{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
+			}
+		},
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute init command: %w", err)
 	}
-
-	notify.Successln(cmd.OutOrStdout(),
-		"project initialized successfully")
-	logClusterInfo(cmd, []ClusterInfoField{
-		{"Distribution", string(cluster.Spec.Distribution)},
-		{"Source directory", cluster.Spec.SourceDirectory},
-	})
 
 	return nil
 }

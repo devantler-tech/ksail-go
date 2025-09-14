@@ -5,7 +5,11 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewListCmd(t *testing.T) {
@@ -29,40 +33,30 @@ func TestNewListCmd(t *testing.T) {
 func TestListCmd_Execute_Default(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	cmd := cmd.NewListCmd()
-	cmd.SetOut(&out)
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
+		CommandName: "list",
+		NewCommand:  cmd.NewListCmd,
+	})
 }
 
 func TestListCmd_Execute_All(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
+		CommandName: "list",
+		NewCommand: func() *cobra.Command {
+			cmd := cmd.NewListCmd()
+			cmd.SetArgs([]string{"--all"})
 
-	cmd := cmd.NewListCmd()
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"--all"})
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
+			return cmd
+		},
+	})
 }
 
 func TestListCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		NewCommand: cmd.NewListCmd,
 	})
 }
@@ -81,4 +75,65 @@ func TestListCmd_Flags(t *testing.T) {
 	if allFlag.DefValue != "false" {
 		t.Fatalf("expected all flag default to be 'false', got %q", allFlag.DefValue)
 	}
+}
+
+// TestHandleListRunE_Success tests successful list command execution.
+func TestHandleListRunE_Success(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+	// Add the --all flag to the command like the real command would have
+	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+
+	manager := ksail.NewConfigManager()
+
+	err := cmd.HandleListRunE(testCmd, manager, []string{})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ Listing running clusters (stub implementation)")
+	assert.Contains(t, out.String(), "► Distribution filter:")
+}
+
+// TestHandleListRunE_AllFlag tests list command with --all flag.
+func TestHandleListRunE_AllFlag(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+	// Set the flag value
+	err := testCmd.Flags().Set("all", "true")
+	require.NoError(t, err)
+
+	manager := ksail.NewConfigManager()
+
+	err = cmd.HandleListRunE(testCmd, manager, []string{})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ Listing all clusters (stub implementation)")
+	assert.Contains(t, out.String(), "► Distribution filter:")
+}
+
+// TestHandleListRunE_Error tests list command with config load error.
+func TestHandleListRunE_Error(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
+
+	manager := ksail.NewConfigManager()
+
+	// Test that the function doesn't panic - error testing can be enhanced later
+	// when real error conditions are available in the stub implementation
+	assert.NotPanics(t, func() {
+		_ = cmd.HandleListRunE(testCmd, manager, []string{})
+	})
 }

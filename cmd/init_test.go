@@ -5,7 +5,11 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewInitCmd(t *testing.T) {
@@ -29,23 +33,16 @@ func TestNewInitCmd(t *testing.T) {
 func TestInitCmd_Execute(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	cmd := cmd.NewInitCmd()
-	cmd.SetOut(&out)
-
-	err := cmd.Execute()
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
+	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
+		CommandName: "init",
+		NewCommand:  cmd.NewInitCmd,
+	})
 }
 
 func TestInitCmd_Help(t *testing.T) {
 	t.Parallel()
 
-	cmd.TestSimpleCommandHelp(t, cmd.SimpleCommandTestData{
+	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
 		NewCommand: cmd.NewInitCmd,
 	})
 }
@@ -82,4 +79,30 @@ func TestInitCmd_Flags(t *testing.T) {
 			sourceDirectoryFlag.DefValue,
 		)
 	}
+}
+
+// TestHandleInitRunE_Success tests successful init command execution.
+func TestHandleInitRunE_Success(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	manager := ksail.NewConfigManager()
+
+	err := cmd.HandleInitRunE(testCmd, manager, []string{})
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ project initialized successfully")
+	assert.Contains(t, out.String(), "► Distribution:")
+	assert.Contains(t, out.String(), "► Source directory:")
+}
+
+// TestHandleInitRunE_Error tests init command with config load error.
+func TestHandleInitRunE_Error(t *testing.T) {
+	t.Parallel()
+
+	testutils.TestRunEError(t, cmd.HandleInitRunE)
 }

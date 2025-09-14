@@ -4,19 +4,17 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/cobra"
 )
 
-// contextKey is an unexported type for keys defined in this package.
-// type contextKey string
-
-// const servicesContextKey contextKey = "services"
-
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	cmd := config.NewCobraCommand(
+	// Create the command using the helper (no field selectors needed for root command)
+	cmd := cmdhelpers.NewCobraCommand(
 		"ksail",
 		"SDK for operating and managing K8s clusters and workloads",
 		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
@@ -57,7 +55,11 @@ func Execute(cmd *cobra.Command) error {
 // --- internals ---
 
 // handleRootRunE handles the root command.
-func handleRootRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
+func handleRootRunE(
+	cmd *cobra.Command,
+	_ configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())
 
 	// The err can safely be ignored, as it can never fail at runtime.
@@ -65,23 +67,3 @@ func handleRootRunE(cmd *cobra.Command, _ *config.Manager, _ []string) error {
 
 	return nil
 }
-
-// initializeServices creates and returns initialized services for CLI commands.
-// func initializeServices() *di.Services {
-// 	configLoader := loader.NewKSailConfigLoader()
-// 	ksailConfig, _ := configLoader.Load()
-// 	inputs.SetInputsOrFallback(&ksailConfig)
-
-// 	services, _ := di.InitServices(&ksailConfig)
-
-// 	return services
-// }
-
-// getServicesFromContext retrieves the services from the command context.
-// func getServicesFromContext(cmd *cobra.Command) (*di.Services, error) {
-// 	services, ok := cmd.Context().Value(servicesContextKey).(*di.Services)
-// 	if !ok {
-// 		return nil, ErrInvalidServicesType
-// 	}
-// 	return services, nil
-// }

@@ -1,12 +1,16 @@
-// Package cmd provides testing helpers for command testing.
-package cmd
+// Package testutils provides testing helpers for command testing.
+package testutils
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // SimpleCommandTestData holds test data for simple command testing.
@@ -69,4 +73,25 @@ func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	}
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+// TestRunEError tests command RunE error handling with common pattern.
+func TestRunEError(
+	t *testing.T,
+	runEFunc func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error,
+) {
+	t.Helper()
+
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
+	mockManager.EXPECT().LoadConfig().Return(nil, ErrTestConfigLoadError)
+
+	err := runEFunc(testCmd, mockManager, []string{})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "test config load error")
 }

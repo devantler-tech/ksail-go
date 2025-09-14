@@ -2,31 +2,29 @@
 package cmd
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return NewSimpleClusterCommand(CommandConfig{
-		Use:   "down",
-		Short: "Destroy a cluster",
-		Long:  `Destroy a cluster.`,
-		RunEFunc: func(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-			_, err := HandleSimpleClusterCommand(
-				cmd,
-				configManager,
+	return cmdhelpers.NewCobraCommand(
+		"down",
+		"Destroy a cluster",
+		`Destroy a cluster.`,
+		func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
+			return cmdhelpers.StandardClusterCommandRunE(
 				"cluster destroyed successfully",
-			)
-
-			return err
+			)(cmd, manager, args)
 		},
-		FieldsFunc: func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Kubernetes distribution to destroy",
-				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context of cluster to destroy",
-			}
+		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to destroy"),
+		ksail.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context of cluster to destroy",
+			DefaultValue: "kind-ksail-default",
 		},
-	})
+	)
 }

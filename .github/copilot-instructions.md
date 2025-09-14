@@ -14,7 +14,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Download dependencies**: `go mod download` (completes in ~0.03 seconds when cached, up to 30 seconds on first run)
 - **Build the application**: `go build -o ksail .` -- takes ~0.77 seconds when dependencies cached. Set timeout to 60+ seconds for safety.
 - **Install mega-linter-runner**: For comprehensive linting (primary linting tool): Install per [mega-linter docs](https://megalinter.io/latest/mega-linter-runner/#installation)
-  - **CRITICAL**: Always use `mega-linter-runner -f go -e GOTOOLCHAIN=auto` for linting as specified in CONTRIBUTING.md
+  - **CRITICAL**: Always use `mega-linter-runner -f go` for linting as specified in CONTRIBUTING.md
   - This is the primary linting tool used in CI and should be used locally for consistency
 
 ### Additional Development Tools (Optional)
@@ -200,6 +200,15 @@ Always reference these instructions first and fallback to search or bash command
 - **CLI Testing**: Test command execution and help output
 - **Mock Testing**: pkg/provisioner/cluster uses mocks for Docker API testing
 - **Current Coverage**: CLI structure, UI components, and cluster provisioning logic
+
+### Coverage Expectations
+
+- **testutils packages**: Should NOT have code coverage as they are test utility packages
+  - `cmd/internal/testutils/`: Test utilities for command testing (no coverage expected)
+  - `internal/testutils/`: Shared test utilities (no coverage expected)
+  - `pkg/*/testutils/`: Package-specific test utilities (no coverage expected)
+- **Production code**: Should have high test coverage with proper unit tests
+- **Focus coverage efforts**: On actual implementation code, not test helper utilities
 
 ## Troubleshooting
 

@@ -2,44 +2,74 @@
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"fmt"
+
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
-	return config.NewCobraCommand(
+	// Create field selectors
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+			Description:  "Tool to use for reconciling workloads",
+			DefaultValue: v1alpha1.ReconciliationToolKubectl,
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			Description:  "Directory containing workloads to reconcile",
+			DefaultValue: "k8s",
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context to reconcile workloads in",
+			DefaultValue: "kind-ksail-default",
+		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+			Description:  "Path to kubeconfig file",
+			DefaultValue: "~/.kube/config",
+		},
+	}
+
+	// Create the command using the helper
+	return cmdhelpers.NewCobraCommand(
 		"reconcile",
 		"Reconcile workloads in the cluster",
 		`Reconcile workloads in the cluster to match the desired state
 defined in configuration files.`,
-		handleReconcileRunE,
-		config.AddFlagsFromFields(func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.ReconciliationTool, v1alpha1.ReconciliationToolKubectl, "Tool to use for reconciling workloads",
-				&c.Spec.SourceDirectory, "k8s", "Directory containing workloads to reconcile",
-				&c.Spec.Connection.Context, "kind-ksail-default", "Kubernetes context to reconcile workloads in",
-				&c.Spec.Connection.Kubeconfig, "~/.kube/config", "Path to kubeconfig file",
-			}
-		})...,
+		HandleReconcileRunE,
+		fieldSelectors...,
 	)
 }
 
-// handleReconcileRunE handles the reconcile command.
-func handleReconcileRunE(cmd *cobra.Command, configManager *config.Manager, _ []string) error {
-	cluster, err := loadClusterWithErrorHandling(cmd, configManager)
+// HandleReconcileRunE handles the reconcile command.
+// Exported for testing purposes.
+func HandleReconcileRunE(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	_ []string,
+) error {
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
+		cmd,
+		configManager,
+		"Workloads reconciled successfully (stub implementation)",
+		func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
+			return []cmdhelpers.ClusterInfoField{
+				{Label: "Reconciliation tool", Value: string(cluster.Spec.ReconciliationTool)},
+				{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
+				{Label: "Context", Value: cluster.Spec.Connection.Context},
+			}
+		},
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to execute reconcile command: %w", err)
 	}
-
-	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
-	logClusterInfo(cmd, []ClusterInfoField{
-		{"Reconciliation tool", string(cluster.Spec.ReconciliationTool)},
-		{"Source directory", cluster.Spec.SourceDirectory},
-		{"Context", cluster.Spec.Connection.Context},
-	})
 
 	return nil
 }
