@@ -450,6 +450,39 @@ func TestManager_SetFieldValueEdgeCases(t *testing.T) {
 				assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
 			},
 		},
+		{
+			name: "SetFieldValue with non-pointer field",
+			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
+				{
+					Selector:     func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
+					DefaultValue: "should-not-set",
+					Description:  "Test non-pointer field",
+				},
+			},
+			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
+				t.Helper()
+				// Non-pointer field should remain empty
+				assert.Empty(t, cluster.Metadata.Name)
+			},
+		},
+		{
+			name: "SetFieldValue with convertible types",
+			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
+				{
+					Selector: func(c *v1alpha1.Cluster) any {
+						// Use the timeout field which accepts time.Duration
+						return &c.Spec.Connection.Timeout.Duration
+					},
+					DefaultValue: int64(5000000000), // 5 seconds as nanoseconds
+					Description:  "Test convertible types",
+				},
+			},
+			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
+				t.Helper()
+				// Converted value should be set
+				assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
+			},
+		},
 	}
 
 	for _, testCase := range tests {
