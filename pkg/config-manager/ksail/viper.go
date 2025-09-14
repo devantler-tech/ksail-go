@@ -33,8 +33,7 @@ func InitializeViper() *viper.Viper {
 	viperInstance.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viperInstance.AutomaticEnv()
 
-	// Read configuration file (optional)
-	_ = viperInstance.ReadInConfig() // Ignore errors for missing config files
+	// Don't read configuration file here - let LoadConfig handle it explicitly
 
 	return viperInstance
 }

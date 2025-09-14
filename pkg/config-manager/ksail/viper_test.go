@@ -109,7 +109,8 @@ func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 	}
 }
 
-// TestInitializeViper_ConfigFileReading tests configuration file reading behavior.
+// TestInitializeViper_ConfigFileReading tests that InitializeViper sets up viper correctly
+// but doesn't automatically read config files (that's handled by LoadConfig).
 //
 //nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
 func TestInitializeViper_ConfigFileReading(t *testing.T) {
@@ -135,10 +136,20 @@ spec:
 	// Change to the temporary directory so viper can find the config file
 	t.Chdir(tempDir)
 
-	// Initialize viper - it should read the config file
+	// Initialize viper - it should NOT automatically read the config file anymore
 	viperInstance := ksail.InitializeViper()
 
-	// Test that values from the config file are loaded
+	// Test that values from the config file are NOT automatically loaded
+	// (LoadConfig method should handle file reading)
+	assert.Empty(t, viperInstance.GetString("metadata.name"))
+	assert.Empty(t, viperInstance.GetString("spec.distribution"))
+	assert.Empty(t, viperInstance.GetString("spec.sourceDirectory"))
+
+	// But manual ReadInConfig should still work
+	err = viperInstance.ReadInConfig()
+	require.NoError(t, err)
+
+	// Now the values should be loaded
 	assert.Equal(t, "test-cluster-from-file", viperInstance.GetString("metadata.name"))
 	assert.Equal(t, "K3d", viperInstance.GetString("spec.distribution"))
 	assert.Equal(t, "k8s-from-file", viperInstance.GetString("spec.sourceDirectory"))
