@@ -11,8 +11,6 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
-	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/spf13/viper"
 )
 
@@ -21,8 +19,7 @@ type ConfigManager struct {
 	viper          *viper.Viper
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
-	marshaller     marshaller.Marshaller[v1alpha1.Cluster]
-	configLoaded   bool // Track if config has been actually loaded from file/env
+	configLoaded   bool              // Track if config has been actually loaded
 }
 
 // Verify that Manager implements the ConfigManager interface.
@@ -34,7 +31,6 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 		viper:          InitializeViper(),
 		fieldSelectors: fieldSelectors,
 		Config:         v1alpha1.NewCluster(),
-		marshaller:     yamlmarshaller.NewMarshaller[v1alpha1.Cluster](),
 		configLoaded:   false,
 	}
 }
@@ -52,34 +48,12 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// Initialize with defaults from field selectors
 	m.applyDefaults()
 
-	// First try to find config file with directory traversal (like the custom loader)
-	configPath, found := m.findConfigFile()
-	if found {
-		data, err := os.ReadFile(configPath)
-		if err != nil {
-			return nil, fmt.Errorf("read ksail config: %w", err)
-		}
-		cfg := v1alpha1.Cluster{}
-		if err := m.marshaller.Unmarshal(data, &cfg); err != nil {
-			return nil, fmt.Errorf("unmarshal ksail config: %w", err)
-		}
-		notify.Activityf(os.Stdout, "'%s' found", configPath)
-		notify.Successln(os.Stdout, "config loaded")
-		fmt.Println()
-		m.Config = &cfg
-		m.configLoaded = true
-		return m.Config, nil
-	}
-
-	// Fallback to Viper-based loading for compatibility
-	notify.Activityln(os.Stdout, "'./ksail.yaml' not found, trying additional paths")
+	// Add all parent directories to Viper's search paths for directory traversal
+	m.addParentDirectoriesToConfigPaths()
 
 	// Try to read from configuration files using Viper
 	m.viper.SetConfigName(DefaultConfigFileName)
 	m.viper.SetConfigType("yaml")
-	m.viper.AddConfigPath(".")
-	m.viper.AddConfigPath("$HOME/.config/ksail")
-	m.viper.AddConfigPath("/etc/ksail")
 
 	// Read configuration file if it exists
 	err := m.viper.ReadInConfig()
@@ -99,7 +73,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	m.viper.AutomaticEnv()
 	bindEnvironmentVariables(m.viper)
 
-	// Unmarshal into our cluster config
+	// Unmarshal into our cluster config using Viper
 	err = m.viper.Unmarshal(m.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
@@ -126,25 +100,42 @@ func (m *ConfigManager) applyDefaults() {
 	}
 }
 
-// findConfigFile searches for ksail.yaml file starting from the current directory
-// and walking up the directory tree until found or reaching the root.
-// Returns the path to the config file and whether it was found.
-func (m *ConfigManager) findConfigFile() (string, bool) {
+// addParentDirectoriesToConfigPaths adds all parent directories to Viper's config search paths
+// starting from the current directory and walking up the directory tree.
+// This enables directory traversal functionality similar to how Git finds .git directories.
+func (m *ConfigManager) addParentDirectoriesToConfigPaths() {
 	// Get absolute path of current directory
 	currentDir, err := filepath.Abs(".")
 	if err != nil {
-		return "", false
+		// If we can't get current dir, the default paths in InitializeViper should suffice
+		return
 	}
 
+	// Track which directories we've added to avoid duplicates
+	addedPaths := make(map[string]bool)
+
+	// Get existing config paths from Viper
+	// (This is not directly exposed, but we can add our paths safely since Viper handles duplicates)
+
+	// Walk up the directory tree and add each directory to Viper's search paths
+	// but only if a ksail.yaml file actually exists in that directory
 	for dir := currentDir; ; dir = filepath.Dir(dir) {
 		configPath := filepath.Join(dir, "ksail.yaml")
 		if _, err := os.Stat(configPath); err == nil {
-			return configPath, true
+			// Only add the directory to search path if ksail.yaml exists there
+			// and we haven't added it already
+			if !addedPaths[dir] {
+				m.viper.AddConfigPath(dir)
+				addedPaths[dir] = true
+			}
 		}
+
+		// Check if we've reached the root directory
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			break
 		}
 	}
-	return "", false
+
+	// Note: Standard system paths are already added in InitializeViper()
 }
