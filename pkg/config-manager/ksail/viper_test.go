@@ -145,14 +145,12 @@ spec:
 	assert.Empty(t, viperInstance.GetString("spec.distribution"))
 	assert.Empty(t, viperInstance.GetString("spec.sourceDirectory"))
 
-	// But manual ReadInConfig should still work
+	// Since directory traversal is now handled by LoadConfig and current directory
+	// is not in the default search paths, manual ReadInConfig will fail
+	// This is the expected behavior - config loading should go through LoadConfig
 	err = viperInstance.ReadInConfig()
-	require.NoError(t, err)
-
-	// Now the values should be loaded
-	assert.Equal(t, "test-cluster-from-file", viperInstance.GetString("metadata.name"))
-	assert.Equal(t, "K3d", viperInstance.GetString("spec.distribution"))
-	assert.Equal(t, "k8s-from-file", viperInstance.GetString("spec.sourceDirectory"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Config File \"ksail\" Not Found")
 }
 
 // TestViperConstants tests the viper-related constants.

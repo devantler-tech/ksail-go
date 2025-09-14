@@ -3,6 +3,8 @@
 package ksail
 
 import (
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -25,8 +27,11 @@ func InitializeViper() *viper.Viper {
 	viperInstance.SetConfigName(DefaultConfigFileName)
 	viperInstance.SetConfigType("yaml")
 
-	// Add default config paths - these will be supplemented by LoadConfig's directory traversal
-	viperInstance.AddConfigPath("$HOME/.config/ksail")
+	// Add default config paths - directory traversal in LoadConfig handles current directory
+	// Get user home directory using os/user instead of $HOME
+	if usr, err := user.Current(); err == nil {
+		viperInstance.AddConfigPath(filepath.Join(usr.HomeDir, ".ksail"))
+	}
 	viperInstance.AddConfigPath("/etc/ksail")
 
 	// Set environment variable settings
