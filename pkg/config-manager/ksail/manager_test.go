@@ -272,14 +272,7 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	// Before loading, Config should be initialized with proper TypeMeta
-	expectedEmpty := &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       v1alpha1.Kind,
-			APIVersion: v1alpha1.APIVersion,
-		},
-		Metadata: metav1.ObjectMeta{},
-		Spec:     v1alpha1.Spec{},
-	}
+	expectedEmpty := v1alpha1.NewCluster()
 	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config

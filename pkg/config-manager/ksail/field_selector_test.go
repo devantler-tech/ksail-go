@@ -429,12 +429,7 @@ func TestFieldSelector_MetadataFields(t *testing.T) {
 func TestFieldSelector_SpecBasicFields(t *testing.T) {
 	t.Parallel()
 
-	cluster := &v1alpha1.Cluster{}
-
-	specBasicSelectors := []struct {
-		name     string
-		selector func(*v1alpha1.Cluster) any
-	}{
+	specBasicSelectors := []fieldSelectorTestCase{
 		{
 			name:     "Spec.Distribution",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -453,13 +448,7 @@ func TestFieldSelector_SpecBasicFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range specBasicSelectors {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFieldSelector(t, cluster, testCase.selector, testCase.name)
-		})
-	}
+	runFieldSelectorTests(t, specBasicSelectors)
 }
 
 // TestFieldSelector_ConnectionFields tests compile-time safety for connection field selectors.
@@ -499,12 +488,7 @@ func TestFieldSelector_ConnectionFields(t *testing.T) {
 func TestFieldSelector_NetworkingFields(t *testing.T) {
 	t.Parallel()
 
-	cluster := &v1alpha1.Cluster{}
-
-	networkingSelectors := []struct {
-		name     string
-		selector func(*v1alpha1.Cluster) any
-	}{
+	networkingSelectors := []fieldSelectorTestCase{
 		{
 			name:     "Spec.CNI",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
@@ -523,7 +507,22 @@ func TestFieldSelector_NetworkingFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range networkingSelectors {
+	runFieldSelectorTests(t, networkingSelectors)
+}
+
+// fieldSelectorTestCase represents a test case for field selector functionality.
+type fieldSelectorTestCase struct {
+	name     string
+	selector func(*v1alpha1.Cluster) any
+}
+
+// runFieldSelectorTests runs a series of field selector tests.
+func runFieldSelectorTests(t *testing.T, testCases []fieldSelectorTestCase) {
+	t.Helper()
+
+	cluster := v1alpha1.NewCluster()
+
+	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 

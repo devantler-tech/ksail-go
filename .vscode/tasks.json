@@ -51,9 +51,7 @@
       "type": "shell",
       "label": "go: fmt",
       "command": "golangci-lint",
-      "args": [
-        "fmt"
-      ],
+      "args": ["fmt"],
       "presentation": {
         "echo": true,
         "reveal": "silent",
@@ -62,9 +60,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "problemMatcher": [
-        "$go"
-      ],
+      "problemMatcher": ["$go"],
       "options": {
         "cwd": "${workspaceFolder}"
       },

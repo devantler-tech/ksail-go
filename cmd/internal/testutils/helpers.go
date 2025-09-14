@@ -84,52 +84,7 @@ func TestRunEError(
 
 	var out bytes.Buffer
 
-	testCmd := &cobra.Command{
-		Use:                    "",
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  "",
-		GroupID:                "",
-		Long:                   "",
-		Example:                "",
-		ValidArgs:              nil,
-		ValidArgsFunction:      nil,
-		Args:                   nil,
-		ArgAliases:             nil,
-		BashCompletionFunction: "",
-		Deprecated:             "",
-		Annotations:            nil,
-		Version:                "",
-		PersistentPreRun:       nil,
-		PersistentPreRunE:      nil,
-		PreRun:                 nil,
-		PreRunE:                nil,
-		Run:                    nil,
-		RunE:                   nil,
-		PostRun:                nil,
-		PostRunE:               nil,
-		PersistentPostRun:      nil,
-		PersistentPostRunE:     nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:         false,
-			DisableNoDescFlag:         false,
-			DisableDescriptions:       false,
-			HiddenDefaultCmd:          false,
-			DefaultShellCompDirective: nil,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: 0,
-	}
+	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
 	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
