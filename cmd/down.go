@@ -10,7 +10,7 @@ import (
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return ksail.NewCobraCommand(
+	return cmdhelpers.NewCobraCommand(
 		"down",
 		"Destroy a cluster",
 		`Destroy a cluster.`,

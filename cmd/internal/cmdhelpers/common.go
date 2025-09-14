@@ -9,85 +9,115 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// CommandConfig holds the configuration for creating a command.
-type CommandConfig struct {
-	Use        string
-	Short      string
-	Long       string
-	RunEFunc   func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error
-	FieldsFunc func(c *v1alpha1.Cluster) []any
-}
-
-// NewSimpleClusterCommand creates a new command with common cluster management pattern.
-func NewSimpleClusterCommand(cfg CommandConfig) *cobra.Command {
-	// Create field selectors if FieldsFunc is provided
-	var fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
-	if cfg.FieldsFunc != nil {
-		dummyCluster := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       v1alpha1.Kind,
-				APIVersion: v1alpha1.APIVersion,
-			},
-			Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
-			Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
-		}
-		fieldPointers := cfg.FieldsFunc(dummyCluster)
-
-		// Parse the flat array: field, defaultValue, description, field, defaultValue, description, ...
-		for idx := 0; idx < len(fieldPointers); idx += 3 {
-			if idx+2 >= len(fieldPointers) {
-				break // Not enough elements for a complete triplet
-			}
-
-			fieldPtr := fieldPointers[idx]
-			defaultValue := fieldPointers[idx+1]
-
-			description, ok := fieldPointers[idx+2].(string)
-			if !ok {
-				continue // Skip invalid description
-			}
-
-			// Create a field selector for this field
-			fieldSelectors = append(fieldSelectors, ksail.FieldSelector[v1alpha1.Cluster]{
-				Selector: func(_ any) func(c *v1alpha1.Cluster) any {
-					return func(c *v1alpha1.Cluster) any {
-						// Need to re-evaluate the field pointer using the actual cluster
-						return cfg.FieldsFunc(c)[idx] // Return the same position in the array
-					}
-				}(fieldPtr),
-				Description:  description,
-				DefaultValue: defaultValue,
-			})
-		}
-	}
-
-	// Create configuration manager with field selectors
-	configManager := ksail.NewManager(fieldSelectors...)
-
-	// Create the command
-	//nolint:exhaustruct // Cobra commands intentionally use only required fields
-	cmd := &cobra.Command{
-		Use:   cfg.Use,
-		Short: cfg.Short,
-		Long:  cfg.Long,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return cfg.RunEFunc(cmd, configManager, args)
-		},
-	}
-
-	// Add flags for the field selectors
-	configManager.AddFlagsFromFields(cmd)
-
-	return cmd
-}
 
 // ClusterInfoField represents a field to log from cluster information.
 type ClusterInfoField struct {
 	Label string
 	Value string
+}
+
+// SuggestionsMinimumDistance is the minimum distance for command suggestions.
+const SuggestionsMinimumDistance = 2
+
+// NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding
+// for v1alpha1.Cluster configurations. This constructor provides a unified approach to
+// CLI command creation with integrated configuration management.
+//
+// The configuration binding follows a priority hierarchy:
+//
+//  1. CLI flags (highest priority)
+//  2. Environment variables
+//  3. Configuration files (ksail.yaml)
+//  4. Field selector defaults (lowest priority)
+//
+// Parameters:
+//   - use: The command name and usage pattern
+//   - short: Brief description shown in command list
+//   - long: Detailed description shown in help
+//   - runE: Command execution function with access to configuration manager
+//   - fieldSelectors: Optional field selectors to expose as CLI flags
+//
+// When fieldSelectors are provided, only those specific fields are bound as CLI flags
+// with type-safe validation and automatic help generation. When no fieldSelectors are
+// provided, the command runs without configuration flags (suitable for status commands).
+//
+// Usage examples:
+//
+//	// Command without configuration flags:
+//	NewCobraCommand("status", "Show cluster status", "...", handleStatusRunE)
+//
+//	// Command with type-safe configuration flags:
+//	NewCobraCommand("init", "Initialize cluster", "...", handleInitRunE,
+//	    AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+//	        v1alpha1.DistributionKind, "Kubernetes distribution to use"),
+//	    AddFlagFromField(func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+//	        "k8s", "Directory containing workloads to deploy"))
+func NewCobraCommand(
+	use, short, long string,
+	runE func(*cobra.Command, *ksail.Manager, []string) error,
+	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
+) *cobra.Command {
+	manager := ksail.NewManager(fieldSelectors...)
+
+	// Create the base command
+	cmd := &cobra.Command{
+		Use:                    use,
+		Aliases:                nil,
+		SuggestFor:             nil,
+		Short:                  short,
+		GroupID:                "",
+		Long:                   long,
+		Example:                "",
+		ValidArgs:              nil,
+		ValidArgsFunction:      nil,
+		Args:                   nil,
+		ArgAliases:             nil,
+		BashCompletionFunction: "",
+		Deprecated:             "",
+		Annotations:            nil,
+		Version:                "",
+		PersistentPreRun:       nil,
+		PersistentPreRunE:      nil,
+		PreRun:                 nil,
+		PreRunE:                nil,
+		Run:                    nil,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runE(cmd, manager, args)
+		},
+		PostRun:            nil,
+		PostRunE:           nil,
+		PersistentPostRun:  nil,
+		PersistentPostRunE: nil,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: false,
+		},
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd:         false,
+			DisableNoDescFlag:         false,
+			DisableDescriptions:       false,
+			HiddenDefaultCmd:          false,
+			DefaultShellCompDirective: nil,
+		},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
+	}
+
+	// Auto-bind flags based on field selectors
+	if len(fieldSelectors) > 0 {
+		// Bind only the specified field selectors for CLI flags
+		manager.AddFlagsFromFields(cmd)
+	}
+	// No else clause - when no field selectors provided, no configuration flags are added
+
+	return cmd
 }
 
 // LogClusterInfo logs cluster information fields to the command output.

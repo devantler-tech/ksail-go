@@ -10,7 +10,7 @@ import (
 
 // NewStopCmd creates and returns the stop command.
 func NewStopCmd() *cobra.Command {
-	return ksail.NewCobraCommand(
+	return cmdhelpers.NewCobraCommand(
 		"stop",
 		"Stop the Kubernetes cluster",
 		`Stop the Kubernetes cluster without removing it.`,

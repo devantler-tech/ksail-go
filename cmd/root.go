@@ -22,7 +22,6 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	configManager := ksail.NewManager()
 
 	// Create the command
-	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
 		Use:   "ksail",
 		Short: "SDK for operating and managing K8s clusters and workloads",
@@ -31,6 +30,44 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return handleRootRunE(cmd, configManager, args)
 		},
+		Aliases:                nil,
+		SuggestFor:             nil,
+		GroupID:                "",
+		Example:                "",
+		ValidArgs:              nil,
+		ValidArgsFunction:      nil,
+		Args:                   nil,
+		ArgAliases:             nil,
+		BashCompletionFunction: "",
+		Deprecated:             "",
+		Annotations:            nil,
+		Version:                "",
+		PersistentPreRun:       nil,
+		PersistentPreRunE:      nil,
+		PreRun:                 nil,
+		PreRunE:                nil,
+		Run:                    nil,
+		PostRun:                nil,
+		PostRunE:               nil,
+		PersistentPostRun:      nil,
+		PersistentPostRunE:     nil,
+		FParseErrWhitelist:     cobra.FParseErrWhitelist{UnknownFlags: false},
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd:         false,
+			DisableNoDescFlag:         false,
+			DisableDescriptions:       false,
+			HiddenDefaultCmd:          false,
+			DefaultShellCompDirective: nil,
+		},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: 0,
 	}
 
 	// Silence errors and usage

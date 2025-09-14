@@ -24,14 +24,53 @@ func NewInitCmd() *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
-	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize a new project",
-		Long:  `Initialize a new project.`,
+		Use:                    "init",
+		Aliases:                nil,
+		SuggestFor:             nil,
+		Short:                  "Initialize a new project",
+		GroupID:                "",
+		Long:                   `Initialize a new project.`,
+		Example:                "",
+		ValidArgs:              nil,
+		ValidArgsFunction:      nil,
+		Args:                   nil,
+		ArgAliases:             nil,
+		BashCompletionFunction: "",
+		Deprecated:             "",
+		Annotations:            nil,
+		Version:                "",
+		PersistentPreRun:       nil,
+		PersistentPreRunE:      nil,
+		PreRun:                 nil,
+		PreRunE:                nil,
+		Run:                    nil,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return HandleInitRunE(cmd, configManager, args)
 		},
+		PostRun:            nil,
+		PostRunE:           nil,
+		PersistentPostRun:  nil,
+		PersistentPostRunE: nil,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: false,
+		},
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd:         false,
+			DisableNoDescFlag:         false,
+			DisableDescriptions:       false,
+			HiddenDefaultCmd:          false,
+			DefaultShellCompDirective: nil,
+		},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: 0,
 	}
 
 	// Add flags for the field selectors

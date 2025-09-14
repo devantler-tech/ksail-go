@@ -43,35 +43,6 @@ func setupMockManagerWithError(
 	return mockManager
 }
 
-func TestNewSimpleClusterCommand(t *testing.T) {
-	t.Parallel()
-
-	cfg := cmdhelpers.CommandConfig{
-		Use:   "test",
-		Short: "Test command",
-		Long:  "A test command for testing",
-		RunEFunc: func(_ *cobra.Command, _ configmanager.ConfigManager[v1alpha1.Cluster], _ []string) error {
-			return nil
-		},
-		FieldsFunc: func(c *v1alpha1.Cluster) []any {
-			return []any{
-				&c.Spec.Distribution, v1alpha1.DistributionKind, "Test distribution flag",
-			}
-		},
-	}
-
-	cmd := cmdhelpers.NewSimpleClusterCommand(cfg)
-
-	assert.NotNil(t, cmd)
-	assert.Equal(t, "test", cmd.Use)
-	assert.Equal(t, "Test command", cmd.Short)
-	assert.Equal(t, "A test command for testing", cmd.Long)
-
-	// Check that the command has the expected flags
-	distributionFlag := cmd.Flags().Lookup("distribution")
-	assert.NotNil(t, distributionFlag)
-}
-
 func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	t.Parallel()
 
@@ -247,4 +218,48 @@ func TestStandardClusterCommandRunE_Error(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to handle cluster command")
 	assert.Contains(t, err.Error(), "failed to load config")
+}
+
+// TestNewCobraCommand tests the NewCobraCommand function.
+func TestNewCobraCommand(t *testing.T) {
+	t.Parallel()
+
+	var (
+		runECalled      bool
+		receivedManager *ksail.Manager
+		receivedCmd     *cobra.Command
+		receivedArgs    []string
+	)
+
+	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+		runECalled = true
+		receivedManager = manager
+		receivedCmd = cmd
+		receivedArgs = args
+
+		return nil
+	}
+
+	cmd := cmdhelpers.NewCobraCommand(
+		"test",
+		"Test command",
+		"This is a test command",
+		runE,
+	)
+
+	require.NotNil(t, cmd)
+	assert.Equal(t, "test", cmd.Use)
+	assert.Equal(t, "Test command", cmd.Short)
+	assert.Equal(t, "This is a test command", cmd.Long)
+	assert.Equal(t, cmdhelpers.SuggestionsMinimumDistance, cmd.SuggestionsMinimumDistance)
+
+	// Test RunE function
+	testArgs := []string{"arg1", "arg2"}
+	err := cmd.RunE(cmd, testArgs)
+
+	require.NoError(t, err)
+	assert.True(t, runECalled)
+	assert.NotNil(t, receivedManager)
+	assert.Equal(t, cmd, receivedCmd)
+	assert.Equal(t, testArgs, receivedArgs)
 }

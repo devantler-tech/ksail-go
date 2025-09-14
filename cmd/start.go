@@ -10,7 +10,7 @@ import (
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	return ksail.NewCobraCommand(
+	return cmdhelpers.NewCobraCommand(
 		"start",
 		"Start a stopped cluster",
 		`Start a previously stopped cluster.`,

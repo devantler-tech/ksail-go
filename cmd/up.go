@@ -16,47 +16,41 @@ const defaultUpTimeout = 5 * time.Minute
 
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
-	// Create field selectors
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+	return cmdhelpers.NewCobraCommand(
+		"up",
+		"Start the Kubernetes cluster",
+		`Start the Kubernetes cluster defined in the project configuration.`,
+		HandleUpRunE,
 		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
-		{
+		ksail.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context to use",
 			DefaultValue: "kind-ksail-default",
 		},
-		{
+		ksail.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 			Description:  "Timeout for cluster operations",
 			DefaultValue: metav1.Duration{Duration: defaultUpTimeout},
 		},
+	)
+}
+
+// HandleUpRunE handles the up command.
+// Exported for testing purposes.
+func HandleUpRunE(
+	cmd *cobra.Command,
+	manager *ksail.Manager,
+	_ []string,
+) error {
+	_, err := cmdhelpers.HandleSimpleClusterCommand(
+		cmd,
+		manager,
+		"Cluster created and started successfully (stub implementation)",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to handle cluster command: %w", err)
 	}
 
-	// Create configuration manager with field selectors
-	configManager := ksail.NewManager(fieldSelectors...)
-
-	// Create the command
-	//nolint:exhaustruct // Cobra commands intentionally use only required fields
-	cmd := &cobra.Command{
-		Use:   "up",
-		Short: "Start the Kubernetes cluster",
-		Long:  `Start the Kubernetes cluster defined in the project configuration.`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, err := cmdhelpers.HandleSimpleClusterCommand(
-				cmd,
-				configManager,
-				"Cluster created and started successfully (stub implementation)",
-			)
-			if err != nil {
-				return fmt.Errorf("failed to handle cluster command: %w", err)
-			}
-
-			return nil
-		},
-	}
-
-	// Add flags for the field selectors
-	configManager.AddFlagsFromFields(cmd)
-
-	return cmd
+	return nil
 }

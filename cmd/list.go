@@ -26,14 +26,53 @@ func NewListCmd() *cobra.Command {
 	configManager := ksail.NewManager(fieldSelectors...)
 
 	// Create the command
-	//nolint:exhaustruct // Cobra commands intentionally use only required fields
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List clusters",
-		Long:  `List all Kubernetes clusters managed by KSail.`,
+		Use:                    "list",
+		Aliases:                nil,
+		SuggestFor:             nil,
+		Short:                  "List clusters",
+		GroupID:                "",
+		Long:                   `List all Kubernetes clusters managed by KSail.`,
+		Example:                "",
+		ValidArgs:              nil,
+		ValidArgsFunction:      nil,
+		Args:                   nil,
+		ArgAliases:             nil,
+		BashCompletionFunction: "",
+		Deprecated:             "",
+		Annotations:            nil,
+		Version:                "",
+		PersistentPreRun:       nil,
+		PersistentPreRunE:      nil,
+		PreRun:                 nil,
+		PreRunE:                nil,
+		Run:                    nil,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return HandleListRunE(cmd, configManager, args)
 		},
+		PostRun:            nil,
+		PostRunE:           nil,
+		PersistentPostRun:  nil,
+		PersistentPostRunE: nil,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: false,
+		},
+		CompletionOptions: cobra.CompletionOptions{
+			DisableDefaultCmd:         false,
+			DisableNoDescFlag:         false,
+			DisableDescriptions:       false,
+			HiddenDefaultCmd:          false,
+			DefaultShellCompDirective: nil,
+		},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: 0,
 	}
 
 	// Add flags for the field selectors
