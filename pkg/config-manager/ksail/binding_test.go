@@ -460,13 +460,7 @@ func TestManager_addFlagFromField_EnumTypesWithNilDefault(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFieldTypeWithNilDefault(t, testCase.fieldSelector, testCase.expectedType)
-		})
-	}
+	runNilDefaultTestCases(t, tests)
 }
 
 // TestManager_addFlagFromField_ControllerTypesWithNilDefault tests controller field types with nil defaults.
@@ -498,13 +492,7 @@ func TestManager_addFlagFromField_ControllerTypesWithNilDefault(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFieldTypeWithNilDefault(t, testCase.fieldSelector, testCase.expectedType)
-		})
-	}
+	runNilDefaultTestCases(t, tests)
 }
 
 // TestManager_addFlagFromField_BasicTypesWithNilDefault tests basic field types with nil defaults.
@@ -527,6 +515,18 @@ func TestManager_addFlagFromField_BasicTypesWithNilDefault(t *testing.T) {
 		},
 	}
 
+	runNilDefaultTestCases(t, tests)
+}
+
+// runNilDefaultTestCases is a helper function to run nil default test cases with common loop pattern.
+func runNilDefaultTestCases(t *testing.T, tests []struct {
+	name          string
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	expectedType  string
+},
+) {
+	t.Helper()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
@@ -545,19 +545,7 @@ func testFieldTypeWithNilDefault(
 	t.Helper()
 
 	cmd := setupFlagBindingTest(fieldSelector)
-
-	// Should have one flag
-	assert.True(t, cmd.Flags().HasFlags())
-
-	// Check flag type
-	var flagFound bool
-
-	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		if flag.Value.Type() == expectedType {
-			flagFound = true
-		}
-	})
-	assert.True(t, flagFound, "Expected flag type %s not found", expectedType)
+	assertFlagTypeExists(t, cmd, expectedType)
 }
 
 // TestManager_addFlagFromField_TimeDuration tests time.Duration field type.
@@ -572,6 +560,12 @@ func TestManager_addFlagFromField_TimeDuration(t *testing.T) {
 	}
 
 	cmd := setupFlagBindingTest(fieldSelector)
+	assertFlagTypeExists(t, cmd, "duration")
+}
+
+// assertFlagTypeExists is a helper function to check if a flag of expected type exists.
+func assertFlagTypeExists(t *testing.T, cmd *cobra.Command, expectedType string) {
+	t.Helper()
 
 	// Should have one flag
 	assert.True(t, cmd.Flags().HasFlags())
@@ -580,11 +574,11 @@ func TestManager_addFlagFromField_TimeDuration(t *testing.T) {
 	var flagFound bool
 
 	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-		if flag.Value.Type() == "duration" {
+		if flag.Value.Type() == expectedType {
 			flagFound = true
 		}
 	})
-	assert.True(t, flagFound, "Expected duration flag not found")
+	assert.True(t, flagFound, "Expected flag type %s not found", expectedType)
 }
 
 // TestManager_addFlagFromField_EmptyShorthand tests pflag.Value with empty shorthand.

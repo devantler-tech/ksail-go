@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -34,7 +36,7 @@ func HandleInitRunE(
 	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
-	return cmdhelpers.ExecuteCommandWithClusterInfo(
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
 		cmd,
 		configManager,
 		"project initialized successfully",
@@ -45,4 +47,9 @@ func HandleInitRunE(
 			}
 		},
 	)
+	if err != nil {
+		return fmt.Errorf("failed to execute init command: %w", err)
+	}
+
+	return nil
 }

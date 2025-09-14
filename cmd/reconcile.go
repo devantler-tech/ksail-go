@@ -2,6 +2,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -53,7 +55,7 @@ func HandleReconcileRunE(
 	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
-	return cmdhelpers.ExecuteCommandWithClusterInfo(
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
 		cmd,
 		configManager,
 		"Workloads reconciled successfully (stub implementation)",
@@ -65,4 +67,9 @@ func HandleReconcileRunE(
 			}
 		},
 	)
+	if err != nil {
+		return fmt.Errorf("failed to execute reconcile command: %w", err)
+	}
+
+	return nil
 }

@@ -258,13 +258,7 @@ func TestAddFlagFromField_BasicTypes(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testAddFlagFromFieldType(t, testCase.defaultValue, testCase.expectedType)
-		})
-	}
+	runTypeTestCases(t, tests)
 }
 
 // TestAddFlagFromField_EnumTypes tests AddFlagFromField with enum value types.
@@ -307,6 +301,18 @@ func TestAddFlagFromField_EnumTypes(t *testing.T) {
 			expectedType: "v1alpha1.GatewayController",
 		},
 	}
+
+	runTypeTestCases(t, tests)
+}
+
+// runTypeTestCases is a helper function to run type test cases with common loop pattern.
+func runTypeTestCases(t *testing.T, tests []struct {
+	name         string
+	defaultValue any
+	expectedType string
+},
+) {
+	t.Helper()
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {

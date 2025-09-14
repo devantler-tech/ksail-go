@@ -226,12 +226,12 @@ func TestNewCobraCommand(t *testing.T) {
 
 	var (
 		runECalled      bool
-		receivedManager *ksail.ConfigManager
+		receivedManager configmanager.ConfigManager[v1alpha1.Cluster]
 		receivedCmd     *cobra.Command
 		receivedArgs    []string
 	)
 
-	runE := func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
+	runE := func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
 		runECalled = true
 		receivedManager = manager
 		receivedCmd = cmd
