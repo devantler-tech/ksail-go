@@ -20,7 +20,7 @@ func (m *Manager) AddFlagsFromFields(cmd *cobra.Command) {
 
 // addFlagFromField adds a CLI flag for a specific field using type assertion and reflection.
 //
-//nolint:gocognit,nestif,cyclop,funlen // Complex type switching is necessary for type-safe flag binding
+//nolint:nestif,cyclop // Complex type switching is necessary for type-safe flag binding
 func (m *Manager) addFlagFromField(
 	cmd *cobra.Command,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -63,26 +63,6 @@ func (m *Manager) addFlagFromField(
 			}
 
 			cmd.Flags().StringVarP(ptr, flagName, shorthand, defaultStr, fieldSelector.Description)
-		case *bool:
-			defaultBool := false
-
-			if fieldSelector.DefaultValue != nil {
-				if b, ok := fieldSelector.DefaultValue.(bool); ok {
-					defaultBool = b
-				}
-			}
-
-			cmd.Flags().BoolVarP(ptr, flagName, shorthand, defaultBool, fieldSelector.Description)
-		case *int:
-			defaultInt := 0
-
-			if fieldSelector.DefaultValue != nil {
-				if i, ok := fieldSelector.DefaultValue.(int); ok {
-					defaultInt = i
-				}
-			}
-
-			cmd.Flags().IntVarP(ptr, flagName, shorthand, defaultInt, fieldSelector.Description)
 		case *metav1.Duration:
 			defaultDuration := time.Duration(0)
 			if fieldSelector.DefaultValue != nil {
@@ -92,15 +72,6 @@ func (m *Manager) addFlagFromField(
 			}
 
 			cmd.Flags().DurationVarP(&ptr.Duration, flagName, shorthand, defaultDuration, fieldSelector.Description)
-		case *time.Duration:
-			defaultDuration := time.Duration(0)
-			if fieldSelector.DefaultValue != nil {
-				if dur, ok := fieldSelector.DefaultValue.(time.Duration); ok {
-					defaultDuration = dur
-				}
-			}
-
-			cmd.Flags().DurationVarP(ptr, flagName, shorthand, defaultDuration, fieldSelector.Description)
 		}
 	}
 

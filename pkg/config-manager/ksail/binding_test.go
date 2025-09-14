@@ -423,3 +423,157 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 		})
 	}
 }
+
+// TestManager_addFlagFromField_TimeDuration tests time.Duration field type.
+func TestManager_addFlagFromField_TimeDuration(t *testing.T) {
+	t.Parallel()
+
+	// Test with metav1.Duration which has a time.Duration field
+	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+		DefaultValue: metav1.Duration{Duration: 5 * time.Minute},
+		Description:  "Test timeout duration",
+	}
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have one flag
+	assert.True(t, cmd.Flags().HasFlags())
+
+	// Check flag type
+	var flagFound bool
+
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Value.Type() == "duration" {
+			flagFound = true
+		}
+	})
+	assert.True(t, flagFound, "Expected duration flag not found")
+}
+
+// TestManager_addFlagFromField_EmptyShorthand tests pflag.Value with empty shorthand.
+func TestManager_addFlagFromField_EmptyShorthand(t *testing.T) {
+	t.Parallel()
+
+	// Use distribution-config which should have empty shorthand according to GenerateShorthand tests
+	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+		DefaultValue: nil,
+		Description:  "Distribution configuration",
+	}
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have one flag with no shorthand
+	assert.True(t, cmd.Flags().HasFlags())
+
+	var flagFoundWithoutShorthand bool
+
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Name == "distribution-config" && flag.Shorthand == "" {
+			flagFoundWithoutShorthand = true
+		}
+	})
+	assert.True(t, flagFoundWithoutShorthand, "Expected flag without shorthand not found")
+}
+
+// testPflagValue is a custom type implementing pflag.Value for testing the default case.
+type testPflagValue struct {
+	value string
+}
+
+const testPflagValueType = "testPflagValue"
+
+func (v *testPflagValue) Set(val string) error {
+	v.value = val
+
+	return nil
+}
+
+func (v *testPflagValue) String() string {
+	return v.value
+}
+
+func (v *testPflagValue) Type() string {
+	return testPflagValueType
+}
+
+// TestManager_setPflagValueDefault_StringDefaultValue tests the default case in setPflagValueDefault.
+func TestManager_setPflagValueDefault_StringDefaultValue(t *testing.T) {
+	t.Parallel()
+
+	var testValue testPflagValue
+
+	// Test with custom type using string default value
+	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector: func(_ *v1alpha1.Cluster) any {
+			return &testValue
+		},
+		DefaultValue: "test-string-value",
+		Description:  "Test string default",
+	}
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have one flag
+	assert.True(t, cmd.Flags().HasFlags())
+
+	// The custom type should be handled by the default case
+	var flagFound bool
+
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Value.Type() == testPflagValueType && flag.Value.String() == "test-string-value" {
+			flagFound = true
+		}
+	})
+	assert.True(t, flagFound, "Expected custom flag with string default not found")
+}
+
+// TestManager_addFlagFromField_NilFieldPtr tests early return when fieldPtr is nil.
+func TestManager_addFlagFromField_NilFieldPtr(t *testing.T) {
+	t.Parallel()
+
+	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector: func(_ *v1alpha1.Cluster) any {
+			return nil // Return nil to trigger early return
+		},
+		DefaultValue: "test",
+		Description:  "Test nil field pointer",
+	}
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have no flags since fieldPtr is nil
+	assert.False(t, cmd.Flags().HasFlags())
+}
+
+// TestManager_addFlagFromField_NonConvertiblePflagDefaultValue tests pflag.Value with non-string default.
+func TestManager_addFlagFromField_NonConvertiblePflagDefaultValue(t *testing.T) {
+	t.Parallel()
+
+	var testValue testPflagValue
+
+	// Test with custom type using non-string/non-enum default value
+	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
+		Selector: func(_ *v1alpha1.Cluster) any {
+			return &testValue
+		},
+		DefaultValue: 123, // int value should not be handled by any case in setPflagValueDefault
+		Description:  "Test non-convertible default",
+	}
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have one flag, but the default won't be set since it's not a known type
+	assert.True(t, cmd.Flags().HasFlags())
+
+	// The custom type should still be created but with empty default
+	var flagFound bool
+
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Value.Type() == testPflagValueType {
+			flagFound = true
+		}
+	})
+	assert.True(t, flagFound, "Expected custom flag not found")
+}

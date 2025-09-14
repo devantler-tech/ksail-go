@@ -393,3 +393,75 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	assert.Equal(t, cluster, manager.Config)
 	assert.Equal(t, "test-cluster", manager.Config.Metadata.Name)
 }
+
+// TestManager_SetFieldValueEdgeCases tests setFieldValue function edge cases through LoadConfig.
+//
+//nolint:funlen // Comprehensive test requires multiple test cases
+func TestManager_SetFieldValueEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
+		verifyFunc     func(*testing.T, *v1alpha1.Cluster)
+	}{
+		{
+			name: "SetFieldValue with nil default value",
+			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
+				{
+					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+					DefaultValue: nil, // nil value should be handled gracefully
+					Description:  "Test nil default",
+				},
+			},
+			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
+				t.Helper()
+				// When default is nil, field should remain empty
+				assert.Empty(t, cluster.Metadata.Name)
+			},
+		},
+		{
+			name: "SetFieldValue with non-convertible types",
+			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
+				{
+					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+					DefaultValue: 123, // int cannot be converted to string
+					Description:  "Test non-convertible type",
+				},
+			},
+			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
+				t.Helper()
+				// When type is not convertible, field should remain empty
+				assert.Empty(t, cluster.Metadata.Name)
+			},
+		},
+		{
+			name: "SetFieldValue with directly assignable types",
+			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
+				{
+					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+					DefaultValue: "direct-assignment",
+					Description:  "Test direct assignment",
+				},
+			},
+			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
+				t.Helper()
+				// Direct string assignment should work
+				assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			manager := ksail.NewManager(testCase.fieldSelectors...)
+
+			cluster, err := manager.LoadConfig()
+			require.NoError(t, err)
+
+			testCase.verifyFunc(t, cluster)
+		})
+	}
+}
