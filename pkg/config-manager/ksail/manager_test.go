@@ -65,7 +65,7 @@ func TestNewManager(t *testing.T) {
 		),
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
@@ -116,7 +116,7 @@ func TestManager_LoadConfig(t *testing.T) {
 
 			fieldSelectors := createFieldSelectorsWithName()
 
-			manager := ksail.NewManager(fieldSelectors...)
+			manager := ksail.NewConfigManager(fieldSelectors...)
 
 			cluster, err := manager.LoadConfig()
 
@@ -140,7 +140,7 @@ func TestManager_LoadConfig(t *testing.T) {
 func TestManager_GetViper(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 	viper := manager.GetViper()
 
 	require.NotNil(t, viper)
@@ -233,7 +233,7 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := ksail.NewManager(testCase.fieldSelectors...)
+			manager := ksail.NewConfigManager(testCase.fieldSelectors...)
 			cmd := &cobra.Command{
 				Use: "test",
 			}
@@ -269,7 +269,7 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 		),
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := &v1alpha1.Cluster{
@@ -303,7 +303,7 @@ func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
 		},
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -324,7 +324,7 @@ func TestManager_SetFieldValueWithNonConvertibleTypes(t *testing.T) {
 		},
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -345,7 +345,7 @@ func TestManager_SetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 		},
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -366,7 +366,7 @@ func TestManager_SetFieldValueWithNonPointerField(t *testing.T) {
 		},
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -390,7 +390,7 @@ func TestManager_SetFieldValueWithConvertibleTypes(t *testing.T) {
 		},
 	}
 
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)

@@ -71,6 +71,7 @@
     "GOTOOLCHAIN",
     "GOPATH",
     "hardis",
+    "Crds",
     "helmclient",
     "ioutils",
     "kindgenerator",

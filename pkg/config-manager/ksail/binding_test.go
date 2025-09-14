@@ -17,7 +17,7 @@ import (
 func setupFlagBindingTest(
 	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 	cmd := &cobra.Command{Use: "test"}
 	manager.AddFlagsFromFields(cmd)
 
@@ -190,7 +190,7 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	tests := []struct {
 		name     string
@@ -232,7 +232,7 @@ func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	tests := []struct {
 		name     string
@@ -269,7 +269,7 @@ func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
 func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	tests := []struct {
 		name     string
@@ -308,7 +308,12 @@ func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
 }
 
 // testFlagNameGeneration is a helper function to test flag name generation.
-func testFlagNameGeneration(t *testing.T, manager *ksail.Manager, fieldPtr any, expected string) {
+func testFlagNameGeneration(
+	t *testing.T,
+	manager *ksail.ConfigManager,
+	fieldPtr any,
+	expected string,
+) {
 	t.Helper()
 
 	result := manager.GenerateFlagName(fieldPtr)
@@ -319,7 +324,7 @@ func testFlagNameGeneration(t *testing.T, manager *ksail.Manager, fieldPtr any, 
 func TestManager_GenerateShorthand(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	tests := []struct {
 		name     string

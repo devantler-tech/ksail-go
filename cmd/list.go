@@ -4,9 +4,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -22,61 +22,14 @@ func NewListCmd() *cobra.Command {
 		},
 	}
 
-	// Create configuration manager with field selectors
-	configManager := ksail.NewManager(fieldSelectors...)
-
-	// Create the command
-	cmd := &cobra.Command{
-		Use:                    "list",
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  "List clusters",
-		GroupID:                "",
-		Long:                   `List all Kubernetes clusters managed by KSail.`,
-		Example:                "",
-		ValidArgs:              nil,
-		ValidArgsFunction:      nil,
-		Args:                   nil,
-		ArgAliases:             nil,
-		BashCompletionFunction: "",
-		Deprecated:             "",
-		Annotations:            nil,
-		Version:                "",
-		PersistentPreRun:       nil,
-		PersistentPreRunE:      nil,
-		PreRun:                 nil,
-		PreRunE:                nil,
-		Run:                    nil,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return HandleListRunE(cmd, configManager, args)
-		},
-		PostRun:            nil,
-		PostRunE:           nil,
-		PersistentPostRun:  nil,
-		PersistentPostRunE: nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:         false,
-			DisableNoDescFlag:         false,
-			DisableDescriptions:       false,
-			HiddenDefaultCmd:          false,
-			DefaultShellCompDirective: nil,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: 0,
-	}
-
-	// Add flags for the field selectors
-	configManager.AddFlagsFromFields(cmd)
+	// Create the command using the helper
+	cmd := cmdhelpers.NewCobraCommand(
+		"list",
+		"List clusters",
+		`List all Kubernetes clusters managed by KSail.`,
+		HandleListRunE,
+		fieldSelectors...,
+	)
 
 	// Add the special --all flag manually since it's CLI-only
 	cmd.Flags().Bool("all", false, "List all clusters including stopped ones")
@@ -88,7 +41,7 @@ func NewListCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleListRunE(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager *ksail.ConfigManager,
 	_ []string,
 ) error {
 	// Bind the --all flag manually since it's added after command creation

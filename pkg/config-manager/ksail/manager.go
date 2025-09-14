@@ -14,19 +14,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Manager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
-type Manager struct {
+// ConfigManager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
+type ConfigManager struct {
 	viper          *viper.Viper
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
 }
 
 // Verify that Manager implements the ConfigManager interface.
-var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*Manager)(nil)
+var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
 
-// NewManager creates a new configuration manager with the specified field selectors.
-func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
-	return &Manager{
+// NewConfigManager creates a new configuration manager with the specified field selectors.
+func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *ConfigManager {
+	return &ConfigManager{
 		viper:          InitializeViper(),
 		fieldSelectors: fieldSelectors,
 		Config: &v1alpha1.Cluster{
@@ -90,7 +90,7 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 
 // LoadConfig loads the configuration from files and environment variables.
 // Returns the previously loaded config if already loaded.
-func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
+func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded and populated, return it
 	if m.Config != nil && !isEmptyCluster(m.Config) {
 		return m.Config, nil
@@ -193,12 +193,12 @@ func isEmptyCluster(config *v1alpha1.Cluster) bool {
 }
 
 // GetViper returns the underlying Viper instance for flag binding.
-func (m *Manager) GetViper() *viper.Viper {
+func (m *ConfigManager) GetViper() *viper.Viper {
 	return m.viper
 }
 
 // applyDefaults applies default values from field selectors to the config.
-func (m *Manager) applyDefaults() {
+func (m *ConfigManager) applyDefaults() {
 	for _, fieldSelector := range m.fieldSelectors {
 		fieldPtr := fieldSelector.Selector(m.Config)
 		if fieldPtr != nil {

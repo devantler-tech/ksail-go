@@ -14,7 +14,7 @@ func NewStopCmd() *cobra.Command {
 		"stop",
 		"Stop the Kubernetes cluster",
 		`Stop the Kubernetes cluster without removing it.`,
-		func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+		func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
 				"Cluster stopped successfully (stub implementation)",
 			)(cmd, manager, args)

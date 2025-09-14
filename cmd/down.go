@@ -14,7 +14,7 @@ func NewDownCmd() *cobra.Command {
 		"down",
 		"Destroy a cluster",
 		`Destroy a cluster.`,
-		func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+		func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
 				"cluster destroyed successfully",
 			)(cmd, manager, args)

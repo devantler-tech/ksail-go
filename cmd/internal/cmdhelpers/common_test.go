@@ -51,7 +51,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	// Test the actual exported function
 	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
@@ -90,7 +90,7 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
 
@@ -189,7 +189,7 @@ func TestStandardClusterCommandRunE_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 	successMessage := "Test command executed successfully"
 
 	// Get the run function
@@ -226,12 +226,12 @@ func TestNewCobraCommand(t *testing.T) {
 
 	var (
 		runECalled      bool
-		receivedManager *ksail.Manager
+		receivedManager *ksail.ConfigManager
 		receivedCmd     *cobra.Command
 		receivedArgs    []string
 	)
 
-	runE := func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+	runE := func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
 		runECalled = true
 		receivedManager = manager
 		receivedCmd = cmd

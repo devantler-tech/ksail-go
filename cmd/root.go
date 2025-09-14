@@ -4,9 +4,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -18,57 +17,14 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	// Create configuration manager (no field selectors needed for root command)
-	configManager := ksail.NewManager()
-
-	// Create the command
-	cmd := &cobra.Command{
-		Use:   "ksail",
-		Short: "SDK for operating and managing K8s clusters and workloads",
-		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
+	// Create the command using the helper (no field selectors needed for root command)
+	cmd := cmdhelpers.NewCobraCommand(
+		"ksail",
+		"SDK for operating and managing K8s clusters and workloads",
+		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
 			`from one simple command line tool.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return handleRootRunE(cmd, configManager, args)
-		},
-		Aliases:                nil,
-		SuggestFor:             nil,
-		GroupID:                "",
-		Example:                "",
-		ValidArgs:              nil,
-		ValidArgsFunction:      nil,
-		Args:                   nil,
-		ArgAliases:             nil,
-		BashCompletionFunction: "",
-		Deprecated:             "",
-		Annotations:            nil,
-		Version:                "",
-		PersistentPreRun:       nil,
-		PersistentPreRunE:      nil,
-		PreRun:                 nil,
-		PreRunE:                nil,
-		Run:                    nil,
-		PostRun:                nil,
-		PostRunE:               nil,
-		PersistentPostRun:      nil,
-		PersistentPostRunE:     nil,
-		FParseErrWhitelist:     cobra.FParseErrWhitelist{UnknownFlags: false},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:         false,
-			DisableNoDescFlag:         false,
-			DisableDescriptions:       false,
-			HiddenDefaultCmd:          false,
-			DefaultShellCompDirective: nil,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
-		SuggestionsMinimumDistance: 0,
-	}
+		handleRootRunE,
+	)
 
 	// Silence errors and usage
 	cmd.SilenceErrors = true
@@ -105,7 +61,7 @@ func Execute(cmd *cobra.Command) error {
 // handleRootRunE handles the root command.
 func handleRootRunE(
 	cmd *cobra.Command,
-	_ configmanager.ConfigManager[v1alpha1.Cluster],
+	_ *ksail.ConfigManager,
 	_ []string,
 ) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())

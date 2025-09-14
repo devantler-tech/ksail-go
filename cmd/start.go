@@ -14,7 +14,7 @@ func NewStartCmd() *cobra.Command {
 		"start",
 		"Start a stopped cluster",
 		`Start a previously stopped cluster.`,
-		func(cmd *cobra.Command, manager *ksail.Manager, args []string) error {
+		func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
 				"Cluster started successfully (stub implementation)",
 			)(cmd, manager, args)

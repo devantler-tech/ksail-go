@@ -55,10 +55,10 @@ const SuggestionsMinimumDistance = 2
 //	        "k8s", "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
-	runE func(*cobra.Command, *ksail.Manager, []string) error,
+	runE func(*cobra.Command, *ksail.ConfigManager, []string) error,
 	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := ksail.NewManager(fieldSelectors...)
+	manager := ksail.NewConfigManager(fieldSelectors...)
 
 	// Create the base command
 	cmd := &cobra.Command{

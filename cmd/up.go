@@ -40,7 +40,7 @@ func NewUpCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleUpRunE(
 	cmd *cobra.Command,
-	manager *ksail.Manager,
+	manager *ksail.ConfigManager,
 	_ []string,
 ) error {
 	_, err := cmdhelpers.HandleSimpleClusterCommand(

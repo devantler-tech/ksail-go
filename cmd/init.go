@@ -21,7 +21,7 @@ func NewInitCmd() *cobra.Command {
 	}
 
 	// Create configuration manager with field selectors
-	configManager := ksail.NewManager(fieldSelectors...)
+	configManager := ksail.NewConfigManager(fieldSelectors...)
 
 	// Create the command
 	cmd := &cobra.Command{

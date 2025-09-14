@@ -12,14 +12,14 @@ import (
 )
 
 // AddFlagsFromFields adds CLI flags for all configured field selectors.
-func (m *Manager) AddFlagsFromFields(cmd *cobra.Command) {
+func (m *ConfigManager) AddFlagsFromFields(cmd *cobra.Command) {
 	for _, fieldSelector := range m.fieldSelectors {
 		m.addFlagFromField(cmd, fieldSelector)
 	}
 }
 
 // addFlagFromField adds a CLI flag for a specific field using type assertion and reflection.
-func (m *Manager) addFlagFromField(
+func (m *ConfigManager) addFlagFromField(
 	cmd *cobra.Command,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
 ) {
@@ -42,7 +42,7 @@ func (m *Manager) addFlagFromField(
 }
 
 // handlePflagValue handles fields that implement the pflag.Value interface.
-func (m *Manager) handlePflagValue(
+func (m *ConfigManager) handlePflagValue(
 	cmd *cobra.Command,
 	fieldPtr any,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -74,7 +74,7 @@ func (m *Manager) handlePflagValue(
 }
 
 // handleStandardTypes handles standard Go types for flag binding.
-func (m *Manager) handleStandardTypes(
+func (m *ConfigManager) handleStandardTypes(
 	cmd *cobra.Command,
 	fieldPtr any,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -89,7 +89,7 @@ func (m *Manager) handleStandardTypes(
 }
 
 // handleStringFlag handles string type flags.
-func (m *Manager) handleStringFlag(
+func (m *ConfigManager) handleStringFlag(
 	cmd *cobra.Command,
 	ptr *string,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -107,7 +107,7 @@ func (m *Manager) handleStringFlag(
 }
 
 // handleDurationFlag handles metav1.Duration type flags.
-func (m *Manager) handleDurationFlag(
+func (m *ConfigManager) handleDurationFlag(
 	cmd *cobra.Command,
 	ptr *metav1.Duration,
 	fieldSelector FieldSelector[v1alpha1.Cluster],
@@ -132,7 +132,7 @@ func (m *Manager) handleDurationFlag(
 
 // fieldMappings is a map for efficient field-to-flag-name lookup.
 // We initialize this map once and reuse it for better performance.
-func (m *Manager) getFieldMappings() map[any]string {
+func (m *ConfigManager) getFieldMappings() map[any]string {
 	return map[any]string{
 		&m.Config.Metadata.Name:              "name",
 		&m.Config.Spec.Distribution:          "distribution",
@@ -150,7 +150,7 @@ func (m *Manager) getFieldMappings() map[any]string {
 }
 
 // GenerateFlagName generates a user-friendly flag name from a field pointer.
-func (m *Manager) GenerateFlagName(fieldPtr any) string {
+func (m *ConfigManager) GenerateFlagName(fieldPtr any) string {
 	fieldMappings := m.getFieldMappings()
 	if flagName, exists := fieldMappings[fieldPtr]; exists {
 		return flagName
@@ -160,7 +160,7 @@ func (m *Manager) GenerateFlagName(fieldPtr any) string {
 }
 
 // GenerateShorthand generates a shorthand flag from the flag name.
-func (m *Manager) GenerateShorthand(flagName string) string {
+func (m *ConfigManager) GenerateShorthand(flagName string) string {
 	switch flagName {
 	case "distribution":
 		return "d"
@@ -204,7 +204,7 @@ func setFieldValue(fieldPtr any, value any) {
 }
 
 // setPflagValueDefault sets the default value for a pflag.Value.
-func (m *Manager) setPflagValueDefault(pflagValue interface {
+func (m *ConfigManager) setPflagValueDefault(pflagValue interface {
 	Set(value string) error
 	String() string
 	Type() string

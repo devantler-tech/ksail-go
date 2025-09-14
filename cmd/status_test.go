@@ -50,7 +50,7 @@ func TestHandleStatusRunE_Success(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewManager()
+	manager := ksail.NewConfigManager()
 
 	err := cmd.HandleStatusRunE(testCmd, manager, []string{})
 
