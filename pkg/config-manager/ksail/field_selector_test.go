@@ -9,6 +9,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testCase represents a test case structure for AddFlagFromField tests.
+type testCase struct {
+	name         string
+	selector     func(*v1alpha1.Cluster) any
+	defaultValue any
+	description  []string
+	expectedDesc string
+}
+
+// runAddFlagFromFieldTests is a helper function to run multiple test cases.
+func runAddFlagFromFieldTests(t *testing.T, tests []testCase) {
+	t.Helper()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testAddFlagFromFieldScenario(
+				t,
+				testCase.selector,
+				testCase.defaultValue,
+				testCase.description,
+				testCase.expectedDesc,
+			)
+		})
+	}
+}
+
 // TestFieldSelector_StructureAndTypes tests the FieldSelector struct and types.
 func TestFieldSelector_StructureAndTypes(t *testing.T) {
 	t.Parallel()
@@ -39,13 +67,7 @@ func TestFieldSelector_StructureAndTypes(t *testing.T) {
 func TestAddFlagFromField_MetadataAndBasicFields(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		selector     func(*v1alpha1.Cluster) any
-		defaultValue any
-		description  []string
-		expectedDesc string
-	}{
+	tests := []testCase{
 		{
 			name:         "Metadata.Name field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
@@ -76,32 +98,14 @@ func TestAddFlagFromField_MetadataAndBasicFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testAddFlagFromFieldScenario(
-				t,
-				testCase.selector,
-				testCase.defaultValue,
-				testCase.description,
-				testCase.expectedDesc,
-			)
-		})
-	}
+	runAddFlagFromFieldTests(t, tests)
 }
 
 // TestAddFlagFromField_ConnectionFields tests AddFlagFromField with connection fields.
 func TestAddFlagFromField_ConnectionFields(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		selector     func(*v1alpha1.Cluster) any
-		defaultValue any
-		description  []string
-		expectedDesc string
-	}{
+	tests := []testCase{
 		{
 			name:         "Spec.Connection.Context field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
@@ -118,32 +122,14 @@ func TestAddFlagFromField_ConnectionFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testAddFlagFromFieldScenario(
-				t,
-				testCase.selector,
-				testCase.defaultValue,
-				testCase.description,
-				testCase.expectedDesc,
-			)
-		})
-	}
+	runAddFlagFromFieldTests(t, tests)
 }
 
 // TestAddFlagFromField_NetworkingComponents tests AddFlagFromField with networking components.
 func TestAddFlagFromField_NetworkingComponents(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		selector     func(*v1alpha1.Cluster) any
-		defaultValue any
-		description  []string
-		expectedDesc string
-	}{
+	tests := []testCase{
 		{
 			name:         "Spec.CNI field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
@@ -174,32 +160,14 @@ func TestAddFlagFromField_NetworkingComponents(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testAddFlagFromFieldScenario(
-				t,
-				testCase.selector,
-				testCase.defaultValue,
-				testCase.description,
-				testCase.expectedDesc,
-			)
-		})
-	}
+	runAddFlagFromFieldTests(t, tests)
 }
 
 // TestAddFlagFromField_DescriptionHandling tests AddFlagFromField with various description scenarios.
 func TestAddFlagFromField_DescriptionHandling(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		selector     func(*v1alpha1.Cluster) any
-		defaultValue any
-		description  []string
-		expectedDesc string
-	}{
+	tests := []testCase{
 		{
 			name:         "No description provided",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
@@ -218,7 +186,7 @@ func TestAddFlagFromField_DescriptionHandling(t *testing.T) {
 			name:         "Multiple descriptions (takes first)",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 			defaultValue: "test",
-			description:  []string{"First description", "Second description", "Third description"},
+			description:  []string{"First description", "Second description"},
 			expectedDesc: "First description",
 		},
 		{
@@ -230,19 +198,7 @@ func TestAddFlagFromField_DescriptionHandling(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testAddFlagFromFieldScenario(
-				t,
-				testCase.selector,
-				testCase.defaultValue,
-				testCase.description,
-				testCase.expectedDesc,
-			)
-		})
-	}
+	runAddFlagFromFieldTests(t, tests)
 }
 
 // testAddFlagFromFieldScenario is a helper function to test AddFlagFromField scenarios.

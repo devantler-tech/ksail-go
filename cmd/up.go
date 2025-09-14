@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +41,7 @@ func NewUpCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleUpRunE(
 	cmd *cobra.Command,
-	manager *ksail.ConfigManager,
+	manager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
 	_, err := cmdhelpers.HandleSimpleClusterCommand(

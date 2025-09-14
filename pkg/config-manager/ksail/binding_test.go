@@ -13,6 +13,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// flagNameTestCase represents a test case for flag name generation.
+type flagNameTestCase struct {
+	name     string
+	fieldPtr any
+	expected string
+}
+
+// runFlagNameGenerationTests is a helper function to run multiple flag name generation test cases.
+func runFlagNameGenerationTests(
+	t *testing.T,
+	manager *ksail.ConfigManager,
+	tests []flagNameTestCase,
+) {
+	t.Helper()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
+		})
+	}
+}
+
 // setupFlagBindingTest creates a command for testing flag binding.
 func setupFlagBindingTest(
 	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
@@ -192,11 +216,7 @@ func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 
 	manager := ksail.NewConfigManager()
 
-	tests := []struct {
-		name     string
-		fieldPtr any
-		expected string
-	}{
+	tests := []flagNameTestCase{
 		{
 			name:     "Distribution field",
 			fieldPtr: &manager.Config.Spec.Distribution,
@@ -219,13 +239,7 @@ func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
-		})
-	}
+	runFlagNameGenerationTests(t, manager, tests)
 }
 
 // TestManager_GenerateFlagName_ConnectionFields tests flag name generation for connection fields.
@@ -234,11 +248,7 @@ func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
 
 	manager := ksail.NewConfigManager()
 
-	tests := []struct {
-		name     string
-		fieldPtr any
-		expected string
-	}{
+	tests := []flagNameTestCase{
 		{
 			name:     "Context field",
 			fieldPtr: &manager.Config.Spec.Connection.Context,
@@ -256,13 +266,7 @@ func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
-		})
-	}
+	runFlagNameGenerationTests(t, manager, tests)
 }
 
 // TestManager_GenerateFlagName_NetworkingFields tests flag name generation for networking fields.
@@ -271,11 +275,7 @@ func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
 
 	manager := ksail.NewConfigManager()
 
-	tests := []struct {
-		name     string
-		fieldPtr any
-		expected string
-	}{
+	tests := []flagNameTestCase{
 		{
 			name:     "CNI field",
 			fieldPtr: &manager.Config.Spec.CNI,
@@ -298,13 +298,7 @@ func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
-		})
-	}
+	runFlagNameGenerationTests(t, manager, tests)
 }
 
 // testFlagNameGeneration is a helper function to test flag name generation.

@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +45,7 @@ func NewStatusCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleStatusRunE(
 	cmd *cobra.Command,
-	manager *ksail.ConfigManager,
+	manager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
 	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)

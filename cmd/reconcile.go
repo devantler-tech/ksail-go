@@ -2,11 +2,9 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -52,20 +50,19 @@ defined in configuration files.`,
 // Exported for testing purposes.
 func HandleReconcileRunE(
 	cmd *cobra.Command,
-	configManager *ksail.ConfigManager,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, configManager)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	notify.Successln(cmd.OutOrStdout(), "Workloads reconciled successfully (stub implementation)")
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
-		{Label: "Reconciliation tool", Value: string(cluster.Spec.ReconciliationTool)},
-		{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
-		{Label: "Context", Value: cluster.Spec.Connection.Context},
-	})
-
-	return nil
+	return cmdhelpers.ExecuteCommandWithClusterInfo(
+		cmd,
+		configManager,
+		"Workloads reconciled successfully (stub implementation)",
+		func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
+			return []cmdhelpers.ClusterInfoField{
+				{Label: "Reconciliation tool", Value: string(cluster.Spec.ReconciliationTool)},
+				{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
+				{Label: "Context", Value: cluster.Spec.Connection.Context},
+			}
+		},
+	)
 }

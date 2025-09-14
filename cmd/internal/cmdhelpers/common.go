@@ -55,7 +55,7 @@ const SuggestionsMinimumDistance = 2
 //	        "k8s", "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
-	runE func(*cobra.Command, *ksail.ConfigManager, []string) error,
+	runE func(*cobra.Command, configmanager.ConfigManager[v1alpha1.Cluster], []string) error,
 	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := ksail.NewConfigManager(fieldSelectors...)
@@ -208,4 +208,22 @@ func StandardDistributionConfigFieldSelector() ksail.FieldSelector[v1alpha1.Clus
 		Description:  "Configuration file for the distribution",
 		DefaultValue: "kind.yaml",
 	}
+}
+
+// ExecuteCommandWithClusterInfo loads cluster configuration and executes a command with cluster info logging.
+func ExecuteCommandWithClusterInfo(
+	cmd *cobra.Command,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	successMessage string,
+	infoFieldsFunc func(*v1alpha1.Cluster) []ClusterInfoField,
+) error {
+	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
+	if err != nil {
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	notify.Successln(cmd.OutOrStdout(), successMessage)
+	LogClusterInfo(cmd, infoFieldsFunc(cluster))
+
+	return nil
 }

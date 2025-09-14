@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -41,7 +42,7 @@ func NewListCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleListRunE(
 	cmd *cobra.Command,
-	configManager *ksail.ConfigManager,
+	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
 	// Bind the --all flag manually since it's added after command creation

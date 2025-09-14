@@ -4,6 +4,7 @@ package cmd
 import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,7 @@ func NewDownCmd() *cobra.Command {
 		"down",
 		"Destroy a cluster",
 		`Destroy a cluster.`,
-		func(cmd *cobra.Command, manager *ksail.ConfigManager, args []string) error {
+		func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
 				"cluster destroyed successfully",
 			)(cmd, manager, args)

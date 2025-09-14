@@ -53,17 +53,22 @@ func createFieldSelectorsWithName() []ksail.FieldSelector[v1alpha1.Cluster] {
 	return selectors
 }
 
-// TestNewManager tests the NewManager constructor.
-func TestNewManager(t *testing.T) {
-	t.Parallel()
-
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+// createTestClusterFieldSelectors creates field selectors for test cases with "test-cluster" name.
+func createTestClusterFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
+	return []ksail.FieldSelector[v1alpha1.Cluster]{
 		ksail.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 			"test-cluster",
 			"Name of the cluster",
 		),
 	}
+}
+
+// TestNewManager tests the NewManager constructor.
+func TestNewManager(t *testing.T) {
+	t.Parallel()
+
+	fieldSelectors := createTestClusterFieldSelectors()
 
 	manager := ksail.NewConfigManager(fieldSelectors...)
 
@@ -261,13 +266,7 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		ksail.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"test-cluster",
-			"Name of the cluster",
-		),
-	}
+	fieldSelectors := createTestClusterFieldSelectors()
 
 	manager := ksail.NewConfigManager(fieldSelectors...)
 
@@ -284,15 +283,21 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	assert.Equal(t, "test-cluster", manager.Config.Metadata.Name)
 }
 
-// TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
-func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
-	t.Parallel()
+// testFieldValueSetting is a helper function for testing field value setting scenarios.
+func testFieldValueSetting(
+	t *testing.T,
+	selector func(*v1alpha1.Cluster) any,
+	defaultValue any,
+	description string,
+	assertFunc func(*testing.T, *v1alpha1.Cluster),
+) {
+	t.Helper()
 
 	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
 		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			DefaultValue: nil, // nil value should be handled gracefully
-			Description:  "Test nil default",
+			Selector:     selector,
+			DefaultValue: defaultValue,
+			Description:  description,
 		},
 	}
 
@@ -301,93 +306,93 @@ func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
 
-	// When default is nil, field should remain empty
-	assert.Empty(t, cluster.Metadata.Name)
+	assertFunc(t, cluster)
+}
+
+// TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
+func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
+	t.Parallel()
+
+	testFieldValueSetting(
+		t,
+		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		nil, // nil value should be handled gracefully
+		"Test nil default",
+		func(t *testing.T, cluster *v1alpha1.Cluster) {
+			t.Helper()
+			// When default is nil, field should remain empty
+			assert.Empty(t, cluster.Metadata.Name)
+		},
+	)
 }
 
 // TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
 func TestManager_SetFieldValueWithNonConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			DefaultValue: 123, // int cannot be converted to string
-			Description:  "Test non-convertible type",
+	testFieldValueSetting(
+		t,
+		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		123, // int cannot be converted to string
+		"Test non-convertible type",
+		func(t *testing.T, cluster *v1alpha1.Cluster) {
+			t.Helper()
+			// When type is not convertible, field should remain empty
+			assert.Empty(t, cluster.Metadata.Name)
 		},
-	}
-
-	manager := ksail.NewConfigManager(fieldSelectors...)
-
-	cluster, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	// When type is not convertible, field should remain empty
-	assert.Empty(t, cluster.Metadata.Name)
+	)
 }
 
 // TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
 func TestManager_SetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			DefaultValue: "direct-assignment",
-			Description:  "Test direct assignment",
+	testFieldValueSetting(
+		t,
+		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		"direct-assignment",
+		"Test direct assignment",
+		func(t *testing.T, cluster *v1alpha1.Cluster) {
+			t.Helper()
+			// Direct string assignment should work
+			assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
 		},
-	}
-
-	manager := ksail.NewConfigManager(fieldSelectors...)
-
-	cluster, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	// Direct string assignment should work
-	assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
+	)
 }
 
 // TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
 func TestManager_SetFieldValueWithNonPointerField(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector:     func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
-			DefaultValue: "should-not-set",
-			Description:  "Test non-pointer field",
+	testFieldValueSetting(
+		t,
+		func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
+		"should-not-set",
+		"Test non-pointer field",
+		func(t *testing.T, cluster *v1alpha1.Cluster) {
+			t.Helper()
+			// Non-pointer field should remain empty
+			assert.Empty(t, cluster.Metadata.Name)
 		},
-	}
-
-	manager := ksail.NewConfigManager(fieldSelectors...)
-
-	cluster, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	// Non-pointer field should remain empty
-	assert.Empty(t, cluster.Metadata.Name)
+	)
 }
 
 // TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
 func TestManager_SetFieldValueWithConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		{
-			Selector: func(c *v1alpha1.Cluster) any {
-				// Use the timeout field which accepts time.Duration
-				return &c.Spec.Connection.Timeout.Duration
-			},
-			DefaultValue: int64(5000000000), // 5 seconds as nanoseconds
-			Description:  "Test convertible types",
+	testFieldValueSetting(
+		t,
+		func(c *v1alpha1.Cluster) any {
+			// Use the timeout field which accepts time.Duration
+			return &c.Spec.Connection.Timeout.Duration
 		},
-	}
-
-	manager := ksail.NewConfigManager(fieldSelectors...)
-
-	cluster, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	// Converted value should be set
-	assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
+		int64(5000000000), // 5 seconds as nanoseconds
+		"Test convertible types",
+		func(t *testing.T, cluster *v1alpha1.Cluster) {
+			t.Helper()
+			// Converted value should be set
+			assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
+		},
+	)
 }
