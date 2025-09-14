@@ -217,7 +217,7 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 - **Snapshot Testing**: **CRITICAL FOR CLI COMMANDS** - Uses go-snaps for output validation in cmd/ directory
   - All CLI command tests in `cmd/*_test.go` use `snaps.MatchSnapshot(t, output)` for consistent output validation
   - Snapshot files stored in `cmd/__snapshots__/` directory (e.g., `root_test.snap`, `init_test.snap`)
-  - **TestMain function required**: Each cmd test file needs `snaps.Clean(main, snaps.CleanOpts{Sort: true})` in TestMain
+  - **TestMain function required**: Each cmd test file needs `snaps.Clean(m, snaps.CleanOpts{Sort: true})` in TestMain
   - **Regenerate snapshots**: Run tests with `UPDATE_SNAPSHOTS=true go test ./cmd/...` to update expected output
   - **Essential for CLI changes**: Any changes to command output, help text, or error messages require snapshot updates
 - **CLI Testing**: Test command execution and help output
