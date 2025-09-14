@@ -35,10 +35,8 @@ func TestFieldSelector_StructureAndTypes(t *testing.T) {
 	assert.Equal(t, &cluster.Metadata.Name, namePtr)
 }
 
-// TestAddFlagFromField_Comprehensive tests AddFlagFromField with various scenarios.
-//
-//nolint:funlen // Comprehensive field selector test requires multiple test cases for coverage
-func TestAddFlagFromField_Comprehensive(t *testing.T) {
+// TestAddFlagFromField_MetadataAndBasicFields tests AddFlagFromField with metadata and basic spec fields.
+func TestAddFlagFromField_MetadataAndBasicFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -70,6 +68,41 @@ func TestAddFlagFromField_Comprehensive(t *testing.T) {
 			expectedDesc: "Source directory",
 		},
 		{
+			name:         "Spec.ReconciliationTool field",
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+			defaultValue: v1alpha1.ReconciliationToolFlux,
+			description:  []string{"Reconciliation tool"},
+			expectedDesc: "Reconciliation tool",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testAddFlagFromFieldScenario(
+				t,
+				testCase.selector,
+				testCase.defaultValue,
+				testCase.description,
+				testCase.expectedDesc,
+			)
+		})
+	}
+}
+
+// TestAddFlagFromField_ConnectionFields tests AddFlagFromField with connection fields.
+func TestAddFlagFromField_ConnectionFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		selector     func(*v1alpha1.Cluster) any
+		defaultValue any
+		description  []string
+		expectedDesc string
+	}{
+		{
 			name:         "Spec.Connection.Context field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			defaultValue: "my-context",
@@ -83,13 +116,34 @@ func TestAddFlagFromField_Comprehensive(t *testing.T) {
 			description:  []string{"Kubeconfig path"},
 			expectedDesc: "Kubeconfig path",
 		},
-		{
-			name:         "Spec.ReconciliationTool field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-			defaultValue: v1alpha1.ReconciliationToolFlux,
-			description:  []string{"Reconciliation tool"},
-			expectedDesc: "Reconciliation tool",
-		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testAddFlagFromFieldScenario(
+				t,
+				testCase.selector,
+				testCase.defaultValue,
+				testCase.description,
+				testCase.expectedDesc,
+			)
+		})
+	}
+}
+
+// TestAddFlagFromField_NetworkingComponents tests AddFlagFromField with networking components.
+func TestAddFlagFromField_NetworkingComponents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		selector     func(*v1alpha1.Cluster) any
+		defaultValue any
+		description  []string
+		expectedDesc string
+	}{
 		{
 			name:         "Spec.CNI field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
@@ -118,6 +172,34 @@ func TestAddFlagFromField_Comprehensive(t *testing.T) {
 			description:  []string{"Gateway controller"},
 			expectedDesc: "Gateway controller",
 		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testAddFlagFromFieldScenario(
+				t,
+				testCase.selector,
+				testCase.defaultValue,
+				testCase.description,
+				testCase.expectedDesc,
+			)
+		})
+	}
+}
+
+// TestAddFlagFromField_DescriptionHandling tests AddFlagFromField with various description scenarios.
+func TestAddFlagFromField_DescriptionHandling(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		selector     func(*v1alpha1.Cluster) any
+		defaultValue any
+		description  []string
+		expectedDesc string
+	}{
 		{
 			name:         "No description provided",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
@@ -152,28 +234,45 @@ func TestAddFlagFromField_Comprehensive(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			selector := ksail.AddFlagFromField(
+			testAddFlagFromFieldScenario(
+				t,
 				testCase.selector,
 				testCase.defaultValue,
-				testCase.description...,
+				testCase.description,
+				testCase.expectedDesc,
 			)
-
-			require.NotNil(t, selector.Selector)
-			assert.Equal(t, testCase.expectedDesc, selector.Description)
-			assert.Equal(t, testCase.defaultValue, selector.DefaultValue)
-
-			// Test that the selector function works correctly
-			cluster := &v1alpha1.Cluster{}
-			result := selector.Selector(cluster)
-			require.NotNil(t, result, "Selector should return a non-nil pointer")
 		})
 	}
 }
 
-// TestAddFlagFromField_DifferentTypes tests AddFlagFromField with different value types.
-//
-//nolint:funlen // Testing different field types requires comprehensive test cases
-func TestAddFlagFromField_DifferentTypes(t *testing.T) {
+// testAddFlagFromFieldScenario is a helper function to test AddFlagFromField scenarios.
+func testAddFlagFromFieldScenario(
+	t *testing.T,
+	selector func(*v1alpha1.Cluster) any,
+	defaultValue any,
+	description []string,
+	expectedDesc string,
+) {
+	t.Helper()
+
+	fieldSelector := ksail.AddFlagFromField(
+		selector,
+		defaultValue,
+		description...,
+	)
+
+	require.NotNil(t, fieldSelector.Selector)
+	assert.Equal(t, expectedDesc, fieldSelector.Description)
+	assert.Equal(t, defaultValue, fieldSelector.DefaultValue)
+
+	// Test that the selector function works correctly
+	cluster := &v1alpha1.Cluster{}
+	result := fieldSelector.Selector(cluster)
+	require.NotNil(t, result, "Selector should return a non-nil pointer")
+}
+
+// TestAddFlagFromField_BasicTypes tests AddFlagFromField with basic value types.
+func TestAddFlagFromField_BasicTypes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -186,6 +285,41 @@ func TestAddFlagFromField_DifferentTypes(t *testing.T) {
 			defaultValue: "test-string",
 			expectedType: "string",
 		},
+		{
+			name:         "Boolean default",
+			defaultValue: true,
+			expectedType: "bool",
+		},
+		{
+			name:         "Integer default",
+			defaultValue: 42,
+			expectedType: "int",
+		},
+		{
+			name:         "Nil default",
+			defaultValue: nil,
+			expectedType: "<nil>",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testAddFlagFromFieldType(t, testCase.defaultValue, testCase.expectedType)
+		})
+	}
+}
+
+// TestAddFlagFromField_EnumTypes tests AddFlagFromField with enum value types.
+func TestAddFlagFromField_EnumTypes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		defaultValue any
+		expectedType string
+	}{
 		{
 			name:         "Distribution enum",
 			defaultValue: v1alpha1.DistributionKind,
@@ -216,73 +350,59 @@ func TestAddFlagFromField_DifferentTypes(t *testing.T) {
 			defaultValue: v1alpha1.GatewayControllerTraefik,
 			expectedType: "v1alpha1.GatewayController",
 		},
-		{
-			name:         "Boolean default",
-			defaultValue: true,
-			expectedType: "bool",
-		},
-		{
-			name:         "Integer default",
-			defaultValue: 42,
-			expectedType: "int",
-		},
-		{
-			name:         "Nil default",
-			defaultValue: nil,
-			expectedType: "<nil>",
-		},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			selector := ksail.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-				testCase.defaultValue,
-				"Test description",
-			)
-
-			assert.Equal(t, testCase.defaultValue, selector.DefaultValue)
-
-			// Verify the type of the default value
-			if testCase.defaultValue != nil {
-				actualType := selector.DefaultValue
-
-				switch testCase.expectedType {
-				case "string":
-					_, ok := actualType.(string)
-					assert.True(t, ok, "Expected string type")
-				case "bool":
-					_, ok := actualType.(bool)
-					assert.True(t, ok, "Expected bool type")
-				case "int":
-					_, ok := actualType.(int)
-					assert.True(t, ok, "Expected int type")
-				default:
-					// For enum types, check that it's not nil
-					assert.NotNil(t, actualType, "Expected non-nil value for enum type")
-				}
-			} else {
-				assert.Nil(t, selector.DefaultValue, "Expected nil default value")
-			}
+			testAddFlagFromFieldType(t, testCase.defaultValue, testCase.expectedType)
 		})
 	}
 }
 
-// TestFieldSelector_CompileTimeSafety tests that field selectors provide compile-time safety.
-//
-//nolint:funlen // Testing compile-time safety requires multiple test cases
-func TestFieldSelector_CompileTimeSafety(t *testing.T) {
-	t.Parallel()
+// testAddFlagFromFieldType is a helper function to test AddFlagFromField with different types.
+func testAddFlagFromFieldType(t *testing.T, defaultValue any, expectedType string) {
+	t.Helper()
 
-	// This test verifies that field selectors are type-safe at compile time
-	// If the struct changes, these should cause compilation errors
+	selector := ksail.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		defaultValue,
+		"Test description",
+	)
+
+	assert.Equal(t, defaultValue, selector.DefaultValue)
+
+	// Verify the type of the default value
+	if defaultValue != nil {
+		actualType := selector.DefaultValue
+
+		switch expectedType {
+		case "string":
+			_, ok := actualType.(string)
+			assert.True(t, ok, "Expected string type")
+		case "bool":
+			_, ok := actualType.(bool)
+			assert.True(t, ok, "Expected bool type")
+		case "int":
+			_, ok := actualType.(int)
+			assert.True(t, ok, "Expected int type")
+		default:
+			// For enum types, check that it's not nil
+			assert.NotNil(t, actualType, "Expected non-nil value for enum type")
+		}
+	} else {
+		assert.Nil(t, selector.DefaultValue, "Expected nil default value")
+	}
+}
+
+// TestFieldSelector_MetadataFields tests compile-time safety for metadata field selectors.
+func TestFieldSelector_MetadataFields(t *testing.T) {
+	t.Parallel()
 
 	cluster := &v1alpha1.Cluster{}
 
-	// Test various field selectors for compilation errors
-	selectors := []struct {
+	metadataSelectors := []struct {
 		name     string
 		selector func(*v1alpha1.Cluster) any
 	}{
@@ -294,6 +414,27 @@ func TestFieldSelector_CompileTimeSafety(t *testing.T) {
 			name:     "Metadata.Namespace",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Metadata.Namespace },
 		},
+	}
+
+	for _, testCase := range metadataSelectors {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFieldSelector(t, cluster, testCase.selector, testCase.name)
+		})
+	}
+}
+
+// TestFieldSelector_SpecBasicFields tests compile-time safety for basic spec field selectors.
+func TestFieldSelector_SpecBasicFields(t *testing.T) {
+	t.Parallel()
+
+	cluster := &v1alpha1.Cluster{}
+
+	specBasicSelectors := []struct {
+		name     string
+		selector func(*v1alpha1.Cluster) any
+	}{
 		{
 			name:     "Spec.Distribution",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -307,6 +448,31 @@ func TestFieldSelector_CompileTimeSafety(t *testing.T) {
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 		},
 		{
+			name:     "Spec.ReconciliationTool",
+			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+		},
+	}
+
+	for _, testCase := range specBasicSelectors {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFieldSelector(t, cluster, testCase.selector, testCase.name)
+		})
+	}
+}
+
+// TestFieldSelector_ConnectionFields tests compile-time safety for connection field selectors.
+func TestFieldSelector_ConnectionFields(t *testing.T) {
+	t.Parallel()
+
+	cluster := &v1alpha1.Cluster{}
+
+	connectionSelectors := []struct {
+		name     string
+		selector func(*v1alpha1.Cluster) any
+	}{
+		{
 			name:     "Spec.Connection.Context",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 		},
@@ -318,10 +484,27 @@ func TestFieldSelector_CompileTimeSafety(t *testing.T) {
 			name:     "Spec.Connection.Timeout",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 		},
-		{
-			name:     "Spec.ReconciliationTool",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-		},
+	}
+
+	for _, testCase := range connectionSelectors {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFieldSelector(t, cluster, testCase.selector, testCase.name)
+		})
+	}
+}
+
+// TestFieldSelector_NetworkingFields tests compile-time safety for networking field selectors.
+func TestFieldSelector_NetworkingFields(t *testing.T) {
+	t.Parallel()
+
+	cluster := &v1alpha1.Cluster{}
+
+	networkingSelectors := []struct {
+		name     string
+		selector func(*v1alpha1.Cluster) any
+	}{
 		{
 			name:     "Spec.CNI",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
@@ -340,24 +523,36 @@ func TestFieldSelector_CompileTimeSafety(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range selectors {
+	for _, testCase := range networkingSelectors {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Test that the selector compiles and returns a non-nil pointer
-			result := testCase.selector(cluster)
-			require.NotNil(t, result, "Selector %s should return non-nil pointer", testCase.name)
-
-			// Create a field selector using AddFlagFromField
-			fieldSelector := ksail.AddFlagFromField(
-				testCase.selector,
-				"default-value",
-				"Test description",
-			)
-
-			require.NotNil(t, fieldSelector.Selector)
-			assert.Equal(t, "Test description", fieldSelector.Description)
-			assert.Equal(t, "default-value", fieldSelector.DefaultValue)
+			testFieldSelector(t, cluster, testCase.selector, testCase.name)
 		})
 	}
+}
+
+// testFieldSelector is a helper function to test field selector functionality.
+func testFieldSelector(
+	t *testing.T,
+	cluster *v1alpha1.Cluster,
+	selector func(*v1alpha1.Cluster) any,
+	name string,
+) {
+	t.Helper()
+
+	// Test that the selector compiles and returns a non-nil pointer
+	result := selector(cluster)
+	require.NotNil(t, result, "Selector %s should return non-nil pointer", name)
+
+	// Create a field selector using AddFlagFromField
+	fieldSelector := ksail.AddFlagFromField(
+		selector,
+		"default-value",
+		"Test description",
+	)
+
+	require.NotNil(t, fieldSelector.Selector)
+	assert.Equal(t, "Test description", fieldSelector.Description)
+	assert.Equal(t, "default-value", fieldSelector.DefaultValue)
 }

@@ -24,10 +24,8 @@ func setupFlagBindingTest(
 	return cmd
 }
 
-// TestManager_addFlagFromField tests the addFlagFromField method with different field types.
-//
-//nolint:funlen // Comprehensive test requires multiple test cases for coverage
-func TestManager_addFlagFromField(t *testing.T) {
+// TestManager_addFlagFromField_BasicFields tests basic field selectors.
+func TestManager_addFlagFromField_BasicFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -57,6 +55,31 @@ func TestManager_addFlagFromField(t *testing.T) {
 			expectedType: "string",
 		},
 		{
+			name: "ReconciliationTool field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+				v1alpha1.ReconciliationToolFlux,
+				"Reconciliation tool",
+			),
+			expectedFlag: "reconciliation-tool",
+			expectedType: "ReconciliationTool",
+		},
+	}
+
+	testAddFlagFromFieldCases(t, tests)
+}
+
+// TestManager_addFlagFromField_ConnectionFields tests connection-related field selectors.
+func TestManager_addFlagFromField_ConnectionFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedFlag  string
+		expectedType  string
+	}{
+		{
 			name: "Context field",
 			fieldSelector: ksail.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
@@ -76,16 +99,21 @@ func TestManager_addFlagFromField(t *testing.T) {
 			expectedFlag: "timeout",
 			expectedType: "duration",
 		},
-		{
-			name: "ReconciliationTool field",
-			fieldSelector: ksail.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-				v1alpha1.ReconciliationToolFlux,
-				"Reconciliation tool",
-			),
-			expectedFlag: "reconciliation-tool",
-			expectedType: "ReconciliationTool",
-		},
+	}
+
+	testAddFlagFromFieldCases(t, tests)
+}
+
+// TestManager_addFlagFromField_NetworkingFields tests networking-related field selectors.
+func TestManager_addFlagFromField_NetworkingFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedFlag  string
+		expectedType  string
+	}{
 		{
 			name: "CNI field",
 			fieldSelector: ksail.AddFlagFromField(
@@ -128,6 +156,19 @@ func TestManager_addFlagFromField(t *testing.T) {
 		},
 	}
 
+	testAddFlagFromFieldCases(t, tests)
+}
+
+// testAddFlagFromFieldCases is a helper function to test field selector functionality.
+func testAddFlagFromFieldCases(t *testing.T, tests []struct {
+	name          string
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	expectedFlag  string
+	expectedType  string
+},
+) {
+	t.Helper()
+
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
@@ -145,10 +186,8 @@ func TestManager_addFlagFromField(t *testing.T) {
 	}
 }
 
-// TestManager_GenerateFlagName tests the GenerateFlagName method.
-//
-//nolint:funlen // Comprehensive flag name generation test requires multiple test cases
-func TestManager_GenerateFlagName(t *testing.T) {
+// TestManager_GenerateFlagName_BasicFields tests flag name generation for basic spec fields.
+func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewManager()
@@ -174,6 +213,33 @@ func TestManager_GenerateFlagName(t *testing.T) {
 			expected: "source-directory",
 		},
 		{
+			name:     "ReconciliationTool field",
+			fieldPtr: &manager.Config.Spec.ReconciliationTool,
+			expected: "reconciliation-tool",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
+		})
+	}
+}
+
+// TestManager_GenerateFlagName_ConnectionFields tests flag name generation for connection fields.
+func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
+	t.Parallel()
+
+	manager := ksail.NewManager()
+
+	tests := []struct {
+		name     string
+		fieldPtr any
+		expected string
+	}{
+		{
 			name:     "Context field",
 			fieldPtr: &manager.Config.Spec.Connection.Context,
 			expected: "context",
@@ -188,11 +254,28 @@ func TestManager_GenerateFlagName(t *testing.T) {
 			fieldPtr: &manager.Config.Spec.Connection.Timeout,
 			expected: "timeout",
 		},
-		{
-			name:     "ReconciliationTool field",
-			fieldPtr: &manager.Config.Spec.ReconciliationTool,
-			expected: "reconciliation-tool",
-		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
+		})
+	}
+}
+
+// TestManager_GenerateFlagName_NetworkingFields tests flag name generation for networking fields.
+func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
+	t.Parallel()
+
+	manager := ksail.NewManager()
+
+	tests := []struct {
+		name     string
+		fieldPtr any
+		expected string
+	}{
 		{
 			name:     "CNI field",
 			fieldPtr: &manager.Config.Spec.CNI,
@@ -219,11 +302,17 @@ func TestManager_GenerateFlagName(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Call the public method directly
-			result := manager.GenerateFlagName(testCase.fieldPtr)
-			assert.Equal(t, testCase.expected, result)
+			testFlagNameGeneration(t, manager, testCase.fieldPtr, testCase.expected)
 		})
 	}
+}
+
+// testFlagNameGeneration is a helper function to test flag name generation.
+func testFlagNameGeneration(t *testing.T, manager *ksail.Manager, fieldPtr any, expected string) {
+	t.Helper()
+
+	result := manager.GenerateFlagName(fieldPtr)
+	assert.Equal(t, expected, result)
 }
 
 // TestManager_GenerateShorthand tests the GenerateShorthand method.
@@ -334,13 +423,10 @@ func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
 	}
 }
 
-// TestManager_addFlagFromField_AllFieldTypes tests all supported field types.
-//
-//nolint:funlen // Testing all field types requires comprehensive test cases
-func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
+// TestManager_addFlagFromField_EnumTypesWithNilDefault tests enum field types with nil defaults.
+func TestManager_addFlagFromField_EnumTypesWithNilDefault(t *testing.T) {
 	t.Parallel()
 
-	// Test all field types with nil default values to test conditional logic
 	tests := []struct {
 		name          string
 		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
@@ -373,6 +459,26 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 			},
 			expectedType: "CSI",
 		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFieldTypeWithNilDefault(t, testCase.fieldSelector, testCase.expectedType)
+		})
+	}
+}
+
+// TestManager_addFlagFromField_ControllerTypesWithNilDefault tests controller field types with nil defaults.
+func TestManager_addFlagFromField_ControllerTypesWithNilDefault(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedType  string
+	}{
 		{
 			name: "IngressController with nil default",
 			fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
@@ -391,6 +497,26 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 			},
 			expectedType: "GatewayController",
 		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			testFieldTypeWithNilDefault(t, testCase.fieldSelector, testCase.expectedType)
+		})
+	}
+}
+
+// TestManager_addFlagFromField_BasicTypesWithNilDefault tests basic field types with nil defaults.
+func TestManager_addFlagFromField_BasicTypesWithNilDefault(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedType  string
+	}{
 		{
 			name: "String field with nil default",
 			fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
@@ -406,22 +532,33 @@ func TestManager_addFlagFromField_AllFieldTypes(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			cmd := setupFlagBindingTest(testCase.fieldSelector)
-
-			// Should have one flag
-			assert.True(t, cmd.Flags().HasFlags())
-
-			// Check flag type
-			var flagFound bool
-
-			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-				if flag.Value.Type() == testCase.expectedType {
-					flagFound = true
-				}
-			})
-			assert.True(t, flagFound, "Expected flag type %s not found", testCase.expectedType)
+			testFieldTypeWithNilDefault(t, testCase.fieldSelector, testCase.expectedType)
 		})
 	}
+}
+
+// testFieldTypeWithNilDefault is a helper function to test field types with nil defaults.
+func testFieldTypeWithNilDefault(
+	t *testing.T,
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster],
+	expectedType string,
+) {
+	t.Helper()
+
+	cmd := setupFlagBindingTest(fieldSelector)
+
+	// Should have one flag
+	assert.True(t, cmd.Flags().HasFlags())
+
+	// Check flag type
+	var flagFound bool
+
+	cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		if flag.Value.Type() == expectedType {
+			flagFound = true
+		}
+	})
+	assert.True(t, flagFound, "Expected flag type %s not found", expectedType)
 }
 
 // TestManager_addFlagFromField_TimeDuration tests time.Duration field type.

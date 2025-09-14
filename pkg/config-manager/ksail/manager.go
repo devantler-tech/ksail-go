@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -33,8 +34,56 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 				Kind:       v1alpha1.Kind,
 				APIVersion: v1alpha1.APIVersion,
 			},
-			Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
-			Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
+			Metadata: metav1.ObjectMeta{
+				Name:            "",
+				GenerateName:    "",
+				Namespace:       "",
+				SelfLink:        "",
+				UID:             "",
+				ResourceVersion: "",
+				Generation:      0,
+				CreationTimestamp: metav1.Time{
+					Time: time.Time{},
+				},
+				DeletionTimestamp:          nil,
+				DeletionGracePeriodSeconds: nil,
+				Labels:                     nil,
+				Annotations:                nil,
+				OwnerReferences:            nil,
+				Finalizers:                 nil,
+				ManagedFields:              nil,
+			},
+			Spec: v1alpha1.Spec{
+				DistributionConfig: "",
+				SourceDirectory:    "",
+				Connection: v1alpha1.Connection{
+					Kubeconfig: "",
+					Context:    "",
+					Timeout: metav1.Duration{
+						Duration: 0,
+					},
+				},
+				Distribution:       "",
+				CNI:                "",
+				CSI:                "",
+				IngressController:  "",
+				GatewayController:  "",
+				ReconciliationTool: "",
+				Options: v1alpha1.Options{
+					Kind: v1alpha1.OptionsKind{},
+					K3d:  v1alpha1.OptionsK3d{},
+					Tind: v1alpha1.OptionsTind{},
+					EKS: v1alpha1.OptionsEKS{
+						AWSProfile: "",
+					},
+					Cilium:    v1alpha1.OptionsCilium{},
+					Kubectl:   v1alpha1.OptionsKubectl{},
+					Flux:      v1alpha1.OptionsFlux{},
+					ArgoCD:    v1alpha1.OptionsArgoCD{},
+					Helm:      v1alpha1.OptionsHelm{},
+					Kustomize: v1alpha1.OptionsKustomize{},
+				},
+			},
 		},
 	}
 }
@@ -43,14 +92,7 @@ func NewManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Manager {
 // Returns the previously loaded config if already loaded.
 func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded and populated, return it
-	if m.Config != nil && !reflect.DeepEqual(m.Config, &v1alpha1.Cluster{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       v1alpha1.Kind,
-			APIVersion: v1alpha1.APIVersion,
-		},
-		Metadata: metav1.ObjectMeta{}, //nolint:exhaustruct // Intentionally empty for default initialization
-		Spec:     v1alpha1.Spec{},     //nolint:exhaustruct // Intentionally empty for default initialization
-	}) {
+	if m.Config != nil && !isEmptyCluster(m.Config) {
 		return m.Config, nil
 	}
 
@@ -86,6 +128,68 @@ func (m *Manager) LoadConfig() (*v1alpha1.Cluster, error) {
 	}
 
 	return m.Config, nil
+}
+
+// isEmptyCluster checks if the cluster configuration is empty/default.
+func isEmptyCluster(config *v1alpha1.Cluster) bool {
+	emptyCluster := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.Kind,
+			APIVersion: v1alpha1.APIVersion,
+		},
+		Metadata: metav1.ObjectMeta{
+			Name:            "",
+			GenerateName:    "",
+			Namespace:       "",
+			SelfLink:        "",
+			UID:             "",
+			ResourceVersion: "",
+			Generation:      0,
+			CreationTimestamp: metav1.Time{
+				Time: time.Time{},
+			},
+			DeletionTimestamp:          nil,
+			DeletionGracePeriodSeconds: nil,
+			Labels:                     nil,
+			Annotations:                nil,
+			OwnerReferences:            nil,
+			Finalizers:                 nil,
+			ManagedFields:              nil,
+		},
+		Spec: v1alpha1.Spec{
+			DistributionConfig: "",
+			SourceDirectory:    "",
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "",
+				Context:    "",
+				Timeout: metav1.Duration{
+					Duration: 0,
+				},
+			},
+			Distribution:       "",
+			CNI:                "",
+			CSI:                "",
+			IngressController:  "",
+			GatewayController:  "",
+			ReconciliationTool: "",
+			Options: v1alpha1.Options{
+				Kind: v1alpha1.OptionsKind{},
+				K3d:  v1alpha1.OptionsK3d{},
+				Tind: v1alpha1.OptionsTind{},
+				EKS: v1alpha1.OptionsEKS{
+					AWSProfile: "",
+				},
+				Cilium:    v1alpha1.OptionsCilium{},
+				Kubectl:   v1alpha1.OptionsKubectl{},
+				Flux:      v1alpha1.OptionsFlux{},
+				ArgoCD:    v1alpha1.OptionsArgoCD{},
+				Helm:      v1alpha1.OptionsHelm{},
+				Kustomize: v1alpha1.OptionsKustomize{},
+			},
+		},
+	}
+
+	return reflect.DeepEqual(config, emptyCluster)
 }
 
 // GetViper returns the underlying Viper instance for flag binding.

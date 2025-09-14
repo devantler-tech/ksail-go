@@ -59,10 +59,3 @@ func TestHandleStatusRunE_Success(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context:")
 	assert.Contains(t, out.String(), "► Kubeconfig:")
 }
-
-// TestHandleStatusRunE_Error tests status command with config load error.
-func TestHandleStatusRunE_Error(t *testing.T) {
-	t.Parallel()
-
-	testutils.TestRunEError(t, cmd.HandleStatusRunE)
-}

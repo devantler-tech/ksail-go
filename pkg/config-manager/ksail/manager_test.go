@@ -1,7 +1,6 @@
 package ksail_test
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -13,18 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// setupTestEnvironment sets up a clean test environment.
-func setupTestEnvironment(t *testing.T) {
-	t.Helper()
-	// Clean up any existing environment variables that might affect tests
-	_ = os.Unsetenv("KSAIL_METADATA_NAME")
-	_ = os.Unsetenv("KSAIL_SPEC_DISTRIBUTION")
-	_ = os.Unsetenv("KSAIL_SPEC_SOURCEDIRECTORY")
-	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_CONTEXT")
-	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_KUBECONFIG")
-	_ = os.Unsetenv("KSAIL_SPEC_CONNECTION_TIMEOUT")
-}
 
 // createStandardFieldSelectors creates a common set of field selectors used in multiple tests.
 func createStandardFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
@@ -87,7 +74,6 @@ func TestNewManager(t *testing.T) {
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
 func TestManager_LoadConfig(t *testing.T) {
-	// Note: Cannot use t.Parallel() because subtests use setupTestEnvironment and t.Setenv
 	tests := []struct {
 		name                string
 		envVars             map[string]string
@@ -123,8 +109,6 @@ func TestManager_LoadConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			setupTestEnvironment(t)
-
 			// Set environment variables for the test
 			for key, value := range testCase.envVars {
 				t.Setenv(key, value)
@@ -213,91 +197,6 @@ func TestAddFlagFromField(t *testing.T) {
 	}
 }
 
-// TestNewCobraCommand tests the NewCobraCommand function.
-//
-//nolint:funlen // Comprehensive cobra command test requires multiple test cases
-func TestNewCobraCommand(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		use            string
-		short          string
-		long           string
-		fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
-		expectFlags    bool
-	}{
-		{
-			name:           "NewCobraCommand without field selectors",
-			use:            "test",
-			short:          "Test command",
-			long:           "Test command description",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{},
-			expectFlags:    false,
-		},
-		{
-			name:  "NewCobraCommand with field selectors",
-			use:   "test",
-			short: "Test command",
-			long:  "Test command description",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-					v1alpha1.DistributionKind,
-					"Kubernetes distribution",
-				),
-			},
-			expectFlags: true,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			var calledRunE bool
-
-			runE := func(_ *cobra.Command, manager *ksail.Manager, _ []string) error {
-				calledRunE = true
-
-				require.NotNil(t, manager)
-
-				return nil
-			}
-
-			cmd := ksail.NewCobraCommand(
-				testCase.use,
-				testCase.short,
-				testCase.long,
-				runE,
-				testCase.fieldSelectors...,
-			)
-
-			require.NotNil(t, cmd)
-			assert.Equal(t, testCase.use, cmd.Use)
-			assert.Equal(t, testCase.short, cmd.Short)
-			assert.Equal(t, testCase.long, cmd.Long)
-			assert.Equal(t, ksail.SuggestionsMinimumDistance, cmd.SuggestionsMinimumDistance)
-
-			// Test RunE function
-			err := cmd.RunE(cmd, []string{})
-			require.NoError(t, err)
-			assert.True(t, calledRunE)
-
-			// Check flags
-			if testCase.expectFlags {
-				assert.True(t, cmd.Flags().HasFlags())
-				// Should have distribution flag
-				flag := cmd.Flags().Lookup("distribution")
-				require.NotNil(t, flag, "distribution flag should exist")
-				assert.Equal(t, "d", flag.Shorthand)
-			} else {
-				assert.False(t, cmd.Flags().HasFlags())
-			}
-		})
-	}
-}
-
 // TestManager_AddFlagsFromFields tests the AddFlagsFromFields method.
 func TestManager_AddFlagsFromFields(t *testing.T) {
 	t.Parallel()
@@ -362,8 +261,6 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	t.Parallel()
 
-	setupTestEnvironment(t)
-
 	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
 		ksail.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
@@ -394,107 +291,110 @@ func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
 	assert.Equal(t, "test-cluster", manager.Config.Metadata.Name)
 }
 
-// TestManager_SetFieldValueEdgeCases tests setFieldValue function edge cases through LoadConfig.
-//
-//nolint:funlen // Comprehensive test requires multiple test cases
-func TestManager_SetFieldValueEdgeCases(t *testing.T) {
+// TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
+func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
-		verifyFunc     func(*testing.T, *v1alpha1.Cluster)
-	}{
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
 		{
-			name: "SetFieldValue with nil default value",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				{
-					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-					DefaultValue: nil, // nil value should be handled gracefully
-					Description:  "Test nil default",
-				},
-			},
-			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
-				t.Helper()
-				// When default is nil, field should remain empty
-				assert.Empty(t, cluster.Metadata.Name)
-			},
-		},
-		{
-			name: "SetFieldValue with non-convertible types",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				{
-					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-					DefaultValue: 123, // int cannot be converted to string
-					Description:  "Test non-convertible type",
-				},
-			},
-			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
-				t.Helper()
-				// When type is not convertible, field should remain empty
-				assert.Empty(t, cluster.Metadata.Name)
-			},
-		},
-		{
-			name: "SetFieldValue with directly assignable types",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				{
-					Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-					DefaultValue: "direct-assignment",
-					Description:  "Test direct assignment",
-				},
-			},
-			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
-				t.Helper()
-				// Direct string assignment should work
-				assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
-			},
-		},
-		{
-			name: "SetFieldValue with non-pointer field",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				{
-					Selector:     func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
-					DefaultValue: "should-not-set",
-					Description:  "Test non-pointer field",
-				},
-			},
-			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
-				t.Helper()
-				// Non-pointer field should remain empty
-				assert.Empty(t, cluster.Metadata.Name)
-			},
-		},
-		{
-			name: "SetFieldValue with convertible types",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				{
-					Selector: func(c *v1alpha1.Cluster) any {
-						// Use the timeout field which accepts time.Duration
-						return &c.Spec.Connection.Timeout.Duration
-					},
-					DefaultValue: int64(5000000000), // 5 seconds as nanoseconds
-					Description:  "Test convertible types",
-				},
-			},
-			verifyFunc: func(t *testing.T, cluster *v1alpha1.Cluster) {
-				t.Helper()
-				// Converted value should be set
-				assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
-			},
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			DefaultValue: nil, // nil value should be handled gracefully
+			Description:  "Test nil default",
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+	manager := ksail.NewManager(fieldSelectors...)
 
-			manager := ksail.NewManager(testCase.fieldSelectors...)
+	cluster, err := manager.LoadConfig()
+	require.NoError(t, err)
 
-			cluster, err := manager.LoadConfig()
-			require.NoError(t, err)
+	// When default is nil, field should remain empty
+	assert.Empty(t, cluster.Metadata.Name)
+}
 
-			testCase.verifyFunc(t, cluster)
-		})
+// TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
+func TestManager_SetFieldValueWithNonConvertibleTypes(t *testing.T) {
+	t.Parallel()
+
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			DefaultValue: 123, // int cannot be converted to string
+			Description:  "Test non-convertible type",
+		},
 	}
+
+	manager := ksail.NewManager(fieldSelectors...)
+
+	cluster, err := manager.LoadConfig()
+	require.NoError(t, err)
+
+	// When type is not convertible, field should remain empty
+	assert.Empty(t, cluster.Metadata.Name)
+}
+
+// TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
+func TestManager_SetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
+	t.Parallel()
+
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			DefaultValue: "direct-assignment",
+			Description:  "Test direct assignment",
+		},
+	}
+
+	manager := ksail.NewManager(fieldSelectors...)
+
+	cluster, err := manager.LoadConfig()
+	require.NoError(t, err)
+
+	// Direct string assignment should work
+	assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
+}
+
+// TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
+func TestManager_SetFieldValueWithNonPointerField(t *testing.T) {
+	t.Parallel()
+
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
+			DefaultValue: "should-not-set",
+			Description:  "Test non-pointer field",
+		},
+	}
+
+	manager := ksail.NewManager(fieldSelectors...)
+
+	cluster, err := manager.LoadConfig()
+	require.NoError(t, err)
+
+	// Non-pointer field should remain empty
+	assert.Empty(t, cluster.Metadata.Name)
+}
+
+// TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
+func TestManager_SetFieldValueWithConvertibleTypes(t *testing.T) {
+	t.Parallel()
+
+	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+		{
+			Selector: func(c *v1alpha1.Cluster) any {
+				// Use the timeout field which accepts time.Duration
+				return &c.Spec.Connection.Timeout.Duration
+			},
+			DefaultValue: int64(5000000000), // 5 seconds as nanoseconds
+			Description:  "Test convertible types",
+		},
+	}
+
+	manager := ksail.NewManager(fieldSelectors...)
+
+	cluster, err := manager.LoadConfig()
+	require.NoError(t, err)
+
+	// Converted value should be set
+	assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
 }

@@ -25,9 +25,9 @@ linters:
         linters:
           - exhaustruct
 
-      - path: "pkg/provisioner/containerengine/engine\\.go$"
+      - path: ".*/testutils/.*\\.go$"
         linters:
-          - ireturn
+          - exhaustruct
   settings:
     wsl_v5:
       allow-first-in-block: true
