@@ -26,7 +26,6 @@ func InitializeViper() *viper.Viper {
 	viperInstance.SetConfigType("yaml")
 
 	// Add default config paths - these will be supplemented by LoadConfig's directory traversal
-	viperInstance.AddConfigPath(".")
 	viperInstance.AddConfigPath("$HOME/.config/ksail")
 	viperInstance.AddConfigPath("/etc/ksail")
 
