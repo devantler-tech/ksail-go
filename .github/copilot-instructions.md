@@ -6,6 +6,15 @@ KSail is a Go-based CLI tool for managing local Kubernetes clusters and workload
 
 Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
 
+## GitHub Copilot Agent Configuration
+
+This repository follows [Best practices for Copilot coding agent in your repository](https://gh.io/copilot-coding-agent-tips) with the following specific considerations:
+
+### Context Files and Documentation
+- **Primary Instructions**: This `.github/copilot-instructions.md` file provides comprehensive repository context
+- **Allowed Modifications**: Copilot agents may add or rewrite context files according to best practices if specific code areas need more explicit instructions
+- **Context Principle**: Provide explicit context rather than relying on inference to ensure consistent behavior across different agents
+
 ## Working Effectively
 
 ### Bootstrap and Build
@@ -24,8 +33,11 @@ Always reference these instructions first and fallback to search or bash command
   - **Current Environment**: Available at `/home/runner/go/bin/mockery` - takes ~1.7 seconds to run
 - **golangci-lint**: Alternative linting tool: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
   - **NOTE**: Project primarily uses mega-linter, but golangci-lint may be used as fallback
-  - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m54s to run
-  - Use `~/go/bin/golangci-lint run` if using this tool
+  - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m54s to run when clean
+  - **Performance Notes**: 
+    - Takes longer when issues are present (proportional to number of violations)
+    - Use `~/go/bin/golangci-lint run --fast-only` for quick feedback on fast linters only
+    - Full run recommended before commits: `~/go/bin/golangci-lint run`
 
 ### Required Dependencies
 
@@ -125,6 +137,7 @@ Always reference these instructions first and fallback to search or bash command
 - **Focus**: Ensure new code doesn't introduce additional violations in enabled linters
 - **Network Issues**: Mega-linter includes link checking which may timeout on external URLs (not a code quality issue)
 - **Performance**: For faster iteration during development, use `~/go/bin/golangci-lint run` for Go-specific linting (~1m54s)
+- **Quick feedback**: Use `~/go/bin/golangci-lint run --fast-only` for rapid iteration on fast linters only
 
 ## Codebase Navigation
 
@@ -184,6 +197,11 @@ Always reference these instructions first and fallback to search or bash command
 3. **Always** test basic CLI: `./ksail --help`
 4. **Always** run linter: `mega-linter-runner -f go` (primary, CI-consistent) and optionally `~/go/bin/golangci-lint run` (Go-specific)
 5. **Always** ensure tests pass before committing
+6. **Pre-commit hooks**: Be aware that pre-commit hooks are installed and will run automatically
+   - Hooks include golangci-lint formatting and mockery generation
+   - **Important**: Commits may take longer due to hook execution - wait for completion
+   - **Cannot assume immediate success**: Hooks may fail and prevent commit - check for errors
+   - See `.pre-commit-config.yaml` for configured hooks
 
 ### Adding New Features
 
@@ -196,7 +214,12 @@ Always reference these instructions first and fallback to search or bash command
 ### Testing Strategies
 
 - **Unit Tests**: Located in `*_test.go` files alongside source
-- **Snapshot Testing**: Uses go-snaps for output validation
+- **Snapshot Testing**: **CRITICAL FOR CLI COMMANDS** - Uses go-snaps for output validation in cmd/ directory
+  - All CLI command tests in `cmd/*_test.go` use `snaps.MatchSnapshot(t, output)` for consistent output validation
+  - Snapshot files stored in `cmd/__snapshots__/` directory (e.g., `root_test.snap`, `init_test.snap`)
+  - **TestMain function required**: Each cmd test file needs `snaps.Clean(main, snaps.CleanOpts{Sort: true})` in TestMain
+  - **Regenerate snapshots**: Run tests with `UPDATE_SNAPSHOTS=true go test ./cmd/...` to update expected output
+  - **Essential for CLI changes**: Any changes to command output, help text, or error messages require snapshot updates
 - **CLI Testing**: Test command execution and help output
 - **Mock Testing**: pkg/provisioner/cluster uses mocks for Docker API testing
 - **Current Coverage**: CLI structure, UI components, and cluster provisioning logic
