@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -25,13 +26,22 @@ type ConfigManager struct {
 var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
 
 // NewConfigManager creates a new configuration manager with the specified field selectors.
+// Initializes Viper with all configuration including paths and environment handling.
 func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *ConfigManager {
-	return &ConfigManager{
-		viper:          InitializeViper(),
+	viperInstance := InitializeViper()
+	config := v1alpha1.NewCluster()
+
+	manager := &ConfigManager{
+		viper:          viperInstance,
 		fieldSelectors: fieldSelectors,
-		Config:         v1alpha1.NewCluster(),
+		Config:         config,
 		configLoaded:   false,
 	}
+
+	// Setup directory traversal during construction
+	addParentDirectoriesToViperPaths(viperInstance)
+
+	return manager
 }
 
 // LoadConfig loads the configuration from files and environment variables.
@@ -45,22 +55,35 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 	notify.Activityln(os.Stdout, "Loading KSail config")
 
-	// Step 1: Apply defaults (lowest priority)
-	m.applyDefaults()
-
-	// Step 2: Setup configuration paths including directory traversal
-	m.setupConfigurationPaths()
-
-	// Step 3: Load configuration files (higher priority than defaults)
-	err := m.loadConfigurationFiles()
+	// Use native Viper API to read configuration
+	// All paths and environment handling are already configured in constructor
+	err := m.viper.ReadInConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load configuration files: %w", err)
+		// It's okay if config file doesn't exist, we'll use defaults and environment/flags
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+
+		notify.Activityln(os.Stdout, "using default configuration")
+	} else {
+		notify.Activityf(os.Stdout, "'%s' found", m.viper.ConfigFileUsed())
 	}
 
-	// Step 4: Apply final configuration with proper precedence
-	err = m.finalizeConfiguration()
+	// Unmarshal configuration using Viper's native precedence handling
+	// Viper will handle: config files < environment variables < flags
+	err = m.viper.Unmarshal(m.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to finalize configuration: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
+	}
+
+	// Apply field selector defaults only for fields that are still empty
+	// This ensures defaults are applied with the lowest precedence
+	for _, fieldSelector := range m.fieldSelectors {
+		fieldPtr := fieldSelector.Selector(m.Config)
+		if fieldPtr != nil && isFieldEmpty(fieldPtr) {
+			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
+		}
 	}
 
 	notify.Successln(os.Stdout, "config loaded")
@@ -70,56 +93,48 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	return m.Config, nil
 }
 
+// getViperKeyFromFieldPtr converts a field pointer to its corresponding Viper configuration key.
+// Returns empty string if the field is not mapped.
+func (m *ConfigManager) getViperKeyFromFieldPtr(fieldPtr any) string {
+	// Map field pointers to their Viper configuration keys
+	fieldToViperKey := map[any]string{
+		&m.Config.Metadata.Name:              "metadata.name",
+		&m.Config.Spec.Distribution:          "spec.distribution",
+		&m.Config.Spec.DistributionConfig:    "spec.distributionconfig",
+		&m.Config.Spec.SourceDirectory:       "spec.sourcedirectory",
+		&m.Config.Spec.Connection.Context:    "spec.connection.context",
+		&m.Config.Spec.Connection.Kubeconfig: "spec.connection.kubeconfig",
+		&m.Config.Spec.Connection.Timeout:    "spec.connection.timeout",
+		&m.Config.Spec.ReconciliationTool:    "spec.reconciliationtool",
+		&m.Config.Spec.CNI:                   "spec.cni",
+		&m.Config.Spec.CSI:                   "spec.csi",
+		&m.Config.Spec.IngressController:     "spec.ingresscontroller",
+		&m.Config.Spec.GatewayController:     "spec.gatewaycontroller",
+	}
+
+	if viperKey, exists := fieldToViperKey[fieldPtr]; exists {
+		return viperKey
+	}
+
+	return ""
+}
+
+// isFieldEmpty checks if a field pointer points to an empty/zero value.
+func isFieldEmpty(fieldPtr any) bool {
+	if fieldPtr == nil {
+		return true
+	}
+
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr || fieldVal.IsNil() {
+		return true
+	}
+
+	fieldVal = fieldVal.Elem()
+	return fieldVal.IsZero()
+}
+
 // GetViper returns the underlying Viper instance for flag binding.
 func (m *ConfigManager) GetViper() *viper.Viper {
 	return m.viper
-}
-
-// applyDefaults applies default values from field selectors to the configuration.
-// This establishes the baseline configuration values (lowest priority).
-func (m *ConfigManager) applyDefaults() {
-	for _, fieldSelector := range m.fieldSelectors {
-		fieldPtr := fieldSelector.Selector(m.Config)
-		if fieldPtr != nil {
-			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
-		}
-	}
-}
-
-// setupConfigurationPaths configures Viper to search parent directories for config files.
-// This enables directory traversal functionality for config discovery.
-func (m *ConfigManager) setupConfigurationPaths() {
-	addParentDirectoriesToViperPaths(m.viper)
-}
-
-// loadConfigurationFiles attempts to read configuration files and provides user feedback.
-// This handles the config file layer in the priority chain.
-func (m *ConfigManager) loadConfigurationFiles() error {
-	err := m.viper.ReadInConfig()
-	if err != nil {
-		// It's okay if config file doesn't exist, we'll use defaults and environment/flags
-		var configFileNotFoundError viper.ConfigFileNotFoundError
-		if !errors.As(err, &configFileNotFoundError) {
-			return fmt.Errorf("failed to read config file: %w", err)
-		}
-
-		notify.Activityln(os.Stdout, "using default configuration")
-	} else {
-		notify.Activityf(os.Stdout, "'%s' found", m.viper.ConfigFileUsed())
-	}
-
-	return nil
-}
-
-// finalizeConfiguration completes the configuration loading process.
-// This unmarshal the final configuration with proper precedence handling.
-func (m *ConfigManager) finalizeConfiguration() error {
-	// Unmarshal into our cluster config using Viper's precedence system
-	// Viper will automatically handle: defaults < config files < environment variables < flags
-	err := m.viper.Unmarshal(m.Config)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal configuration: %w", err)
-	}
-
-	return nil
 }

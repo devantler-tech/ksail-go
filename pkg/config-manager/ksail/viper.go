@@ -56,38 +56,19 @@ func configureViperPaths(viperInstance *viper.Viper) {
 }
 
 // configureViperEnvironment sets up environment variable handling for Viper.
-// Uses AutomaticEnv() for automatic environment variable binding with proper transformations.
+// Uses AutomaticEnv() for automatic environment variable binding with explicit binding for nested fields.
 func configureViperEnvironment(viperInstance *viper.Viper) {
 	viperInstance.SetEnvPrefix(EnvPrefix)
 	viperInstance.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viperInstance.AutomaticEnv()
 
-	// Explicitly bind key environment variables for better discoverability
-	// AutomaticEnv will handle these automatically, but explicit binding helps with documentation
-	bindKnownEnvironmentVariables(viperInstance)
-}
-
-// bindKnownEnvironmentVariables explicitly binds known environment variables.
-// This is complementary to AutomaticEnv() and helps with IDE autocompletion and documentation.
-func bindKnownEnvironmentVariables(viperInstance *viper.Viper) {
-	// Map common environment variables to their viper keys
-	envMapping := map[string]string{
-		"metadata.name":              "KSAIL_METADATA_NAME",
-		"spec.distribution":          "KSAIL_SPEC_DISTRIBUTION",
-		"spec.sourcedirectory":       "KSAIL_SPEC_SOURCEDIRECTORY",
-		"spec.connection.context":    "KSAIL_SPEC_CONNECTION_CONTEXT",
-		"spec.connection.kubeconfig": "KSAIL_SPEC_CONNECTION_KUBECONFIG",
-		"spec.connection.timeout":    "KSAIL_SPEC_CONNECTION_TIMEOUT",
-		"spec.cni":                   "KSAIL_SPEC_CNI",
-		"spec.csi":                   "KSAIL_SPEC_CSI",
-		"spec.ingresscontroller":     "KSAIL_SPEC_INGRESSCONTROLLER",
-		"spec.gatewaycontroller":     "KSAIL_SPEC_GATEWAYCONTROLLER",
-		"spec.reconciliationtool":    "KSAIL_SPEC_RECONCILIATIONTOOL",
-	}
-
-	for viperKey, envVar := range envMapping {
-		_ = viperInstance.BindEnv(viperKey, envVar)
-	}
+	// Explicitly bind nested environment variables for better compatibility
+	_ = viperInstance.BindEnv("metadata.name", "KSAIL_METADATA_NAME")
+	_ = viperInstance.BindEnv("spec.distribution", "KSAIL_SPEC_DISTRIBUTION")
+	_ = viperInstance.BindEnv("spec.sourcedirectory", "KSAIL_SPEC_SOURCEDIRECTORY")
+	_ = viperInstance.BindEnv("spec.connection.context", "KSAIL_SPEC_CONNECTION_CONTEXT")
+	_ = viperInstance.BindEnv("spec.connection.kubeconfig", "KSAIL_SPEC_CONNECTION_KUBECONFIG")
+	_ = viperInstance.BindEnv("spec.connection.timeout", "KSAIL_SPEC_CONNECTION_TIMEOUT")
 }
 
 // addParentDirectoriesToViperPaths adds parent directories containing ksail.yaml to Viper's search paths.
