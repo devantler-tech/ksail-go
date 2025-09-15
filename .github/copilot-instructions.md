@@ -12,6 +12,7 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 
 ### Context Files and Documentation
 - **Primary Instructions**: This `.github/copilot-instructions.md` file provides comprehensive repository context
+- **Package Documentation**: README.md files throughout the repository provide detailed package-specific documentation and serve as the primary source for understanding individual components
 - **Allowed Modifications**: Copilot agents may add or rewrite context files according to best practices if specific code areas need more explicit instructions
 - **Context Principle**: Provide explicit context rather than relying on inference to ensure consistent behavior across different agents
 

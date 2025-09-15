@@ -1,4 +1,4 @@
-# kustomization
+# pkg/io/generator/kustomization
 
 This package provides Kustomization file generators for KSail.
 
@@ -30,4 +30,4 @@ This generator is used when KSail needs to create Kustomization configurations f
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

@@ -1,4 +1,4 @@
-# kind
+# pkg/io/generator/kind
 
 This package provides Kind-specific resource generators for KSail.
 
@@ -30,4 +30,4 @@ This generator is used when KSail needs to create resources specifically for Kin
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

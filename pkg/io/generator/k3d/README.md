@@ -1,4 +1,4 @@
-# k3d
+# pkg/io/generator/k3d
 
 This package provides K3d-specific resource generators for KSail.
 
@@ -30,4 +30,4 @@ This generator is used when KSail needs to create resources specifically for K3d
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)
