@@ -414,3 +414,44 @@ func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
 		assert.True(t, errors.As(err, &configFileNotFoundError) || err == nil)
 	}
 }
+
+// TestAddParentDirectoriesToViperPaths_ErrorHandling tests error handling in directory traversal.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
+func TestAddParentDirectoriesToViperPaths_ErrorHandling(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Save original directory for restoration
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	// Change to a directory that doesn't exist to trigger the error path
+	// We'll create and remove a temp directory, then try to chdir to it
+	tempDir := t.TempDir()
+	subDir := tempDir + "/removed"
+
+	err = os.Mkdir(subDir, 0o750)
+	require.NoError(t, err)
+
+	// Change to the subdirectory
+	err = os.Chdir(subDir)
+	require.NoError(t, err)
+
+	// Remove the current directory while we're in it
+	// This should make filepath.Abs(".") return an error
+	err = os.Remove(subDir)
+	require.NoError(t, err)
+
+	// Now InitializeViper should hit the error path in addParentDirectoriesToViperPaths
+	viperInstance := ksail.InitializeViper()
+
+	// The function should not panic and should return a valid instance
+	require.NotNil(t, viperInstance)
+
+	// Should still be able to use viper for basic operations
+	viperInstance.SetDefault("test.error", "default-value")
+	assert.Equal(t, "default-value", viperInstance.GetString("test.error"))
+}

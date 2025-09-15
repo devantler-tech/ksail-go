@@ -483,3 +483,59 @@ spec:
 	// Verify config was loaded properly (this exercises the "else" branch in readConfigurationFile)
 	assert.Equal(t, "test-config-found", cluster.Metadata.Name)
 }
+
+// TestManager_isFieldEmpty_EdgeCases tests edge cases for isFieldEmpty function.
+func TestManager_isFieldEmpty_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		fieldPtr any
+		expected bool
+	}{
+		{
+			name:     "Nil field pointer",
+			fieldPtr: nil,
+			expected: true,
+		},
+		{
+			name:     "Non-pointer field",
+			fieldPtr: "direct-value",
+			expected: true,
+		},
+		{
+			name:     "Nil pointer field",
+			fieldPtr: (*string)(nil),
+			expected: true,
+		},
+		{
+			name:     "Valid pointer to empty string",
+			fieldPtr: func() *string { s := ""; return &s }(),
+			expected: true,
+		},
+		{
+			name:     "Valid pointer to non-empty string",
+			fieldPtr: func() *string { s := "value"; return &s }(),
+			expected: false,
+		},
+		{
+			name:     "Valid pointer to zero int",
+			fieldPtr: func() *int { i := 0; return &i }(),
+			expected: true,
+		},
+		{
+			name:     "Valid pointer to non-zero int",
+			fieldPtr: func() *int { i := 42; return &i }(),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := ksail.IsFieldEmptyForTesting(tt.fieldPtr)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

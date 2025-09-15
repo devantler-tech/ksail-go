@@ -105,3 +105,8 @@ func isFieldEmpty(fieldPtr any) bool {
 
 	return fieldVal.IsZero()
 }
+
+// IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
+func IsFieldEmptyForTesting(fieldPtr any) bool {
+	return isFieldEmpty(fieldPtr)
+}
