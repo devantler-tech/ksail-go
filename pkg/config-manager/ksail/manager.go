@@ -90,32 +90,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	return m.Config, nil
 }
 
-// getViperKeyFromFieldPtr converts a field pointer to its corresponding Viper configuration key.
-// Returns empty string if the field is not mapped.
-func (m *ConfigManager) getViperKeyFromFieldPtr(fieldPtr any) string {
-	// Map field pointers to their Viper configuration keys
-	fieldToViperKey := map[any]string{
-		&m.Config.Metadata.Name:              "metadata.name",
-		&m.Config.Spec.Distribution:          "spec.distribution",
-		&m.Config.Spec.DistributionConfig:    "spec.distributionconfig",
-		&m.Config.Spec.SourceDirectory:       "spec.sourcedirectory",
-		&m.Config.Spec.Connection.Context:    "spec.connection.context",
-		&m.Config.Spec.Connection.Kubeconfig: "spec.connection.kubeconfig",
-		&m.Config.Spec.Connection.Timeout:    "spec.connection.timeout",
-		&m.Config.Spec.ReconciliationTool:    "spec.reconciliationtool",
-		&m.Config.Spec.CNI:                   "spec.cni",
-		&m.Config.Spec.CSI:                   "spec.csi",
-		&m.Config.Spec.IngressController:     "spec.ingresscontroller",
-		&m.Config.Spec.GatewayController:     "spec.gatewaycontroller",
-	}
-
-	if viperKey, exists := fieldToViperKey[fieldPtr]; exists {
-		return viperKey
-	}
-
-	return ""
-}
-
 // isFieldEmpty checks if a field pointer points to an empty/zero value.
 func isFieldEmpty(fieldPtr any) bool {
 	if fieldPtr == nil {
@@ -128,6 +102,7 @@ func isFieldEmpty(fieldPtr any) bool {
 	}
 
 	fieldVal = fieldVal.Elem()
+
 	return fieldVal.IsZero()
 }
 
