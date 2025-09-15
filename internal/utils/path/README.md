@@ -1,4 +1,4 @@
-# utils/path
+# internal/utils/path
 
 This package provides path utilities for KSail's internal use.
 

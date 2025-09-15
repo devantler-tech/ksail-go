@@ -1,4 +1,4 @@
-# k3d
+# pkg/io/generator/k3d
 
 This package provides K3d-specific resource generators for KSail.
 

@@ -1,4 +1,4 @@
-# utils
+# internal/utils
 
 This directory contains internal utility packages for KSail.
 

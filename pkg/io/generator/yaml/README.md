@@ -1,4 +1,4 @@
-# yaml
+# pkg/io/generator/yaml
 
 This package provides generic YAML resource generators for KSail.
 

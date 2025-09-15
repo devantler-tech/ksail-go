@@ -1,4 +1,4 @@
-# yaml
+# pkg/io/marshaller/yaml
 
 This package provides YAML marshalling and unmarshalling utilities for KSail.
 

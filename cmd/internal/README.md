@@ -1,4 +1,4 @@
-# internal
+# cmd/internal
 
 This directory contains internal packages for KSail's CLI commands.
 

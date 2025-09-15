@@ -1,4 +1,4 @@
-# cluster
+# pkg/provisioner/cluster
 
 This package provides core cluster provisioning implementations for KSail.
 
@@ -39,9 +39,9 @@ type ClusterProvisioner interface {
 
 ## Subpackages
 
-- `eks/` - Amazon EKS cluster provisioning
-- `k3d/` - K3d cluster provisioning
-- `kind/` - Kind cluster provisioning
+- **[eks/](./eks/README.md)** - Amazon EKS cluster provisioning
+- **[k3d/](./k3d/README.md)** - K3d cluster provisioning
+- **[kind/](./kind/README.md)** - Kind cluster provisioning
 
 ## Usage
 

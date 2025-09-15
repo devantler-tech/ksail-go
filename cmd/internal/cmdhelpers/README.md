@@ -1,4 +1,4 @@
-# internal/cmdhelpers
+# cmd/internal/cmdhelpers
 
 This package provides helper utilities for KSail's CLI commands.
 

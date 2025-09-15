@@ -1,4 +1,4 @@
-# k3d
+# pkg/provisioner/cluster/k3d
 
 This package provides K3d cluster provisioning for KSail.
 

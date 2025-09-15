@@ -1,4 +1,4 @@
-# cluster
+# pkg/apis/cluster
 
 This directory contains cluster-related API definitions for KSail.
 

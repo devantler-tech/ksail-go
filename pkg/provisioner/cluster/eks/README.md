@@ -1,4 +1,4 @@
-# eks
+# pkg/provisioner/cluster/eks
 
 This package provides Amazon EKS cluster provisioning for KSail.
 

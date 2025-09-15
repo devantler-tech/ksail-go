@@ -1,4 +1,4 @@
-# provisioner
+# pkg/provisioner
 
 This package provides cluster provisioning functionality for KSail.
 
@@ -15,8 +15,8 @@ Contains the core provisioning logic and interfaces for managing Kubernetes clus
 
 ## Subpackages
 
-- `cluster/` - Core cluster provisioning implementations
-- `containerengine/` - Container engine management and abstraction
+- **[cluster/](./cluster/README.md)** - Core cluster provisioning implementations
+- **[containerengine/](./containerengine/README.md)** - Container engine management and abstraction
 
 ## Usage
 

@@ -1,4 +1,4 @@
-# ui/asciiart
+# cmd/ui/asciiart
 
 This package provides ASCII art functionality for KSail's CLI interface.
 

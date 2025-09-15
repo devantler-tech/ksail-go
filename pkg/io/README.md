@@ -1,4 +1,4 @@
-# io
+# pkg/io
 
 This package provides utilities for input and output operations in KSail.
 
@@ -22,8 +22,8 @@ The package includes `ErrPathOutsideBase` error to indicate when a file path is 
 
 ## Subpackages
 
-- `generator/` - Resource generation utilities
-- `marshaller/` - Data marshalling utilities
+- **[generator/](./generator/README.md)** - Resource generation utilities
+- **[marshaller/](./marshaller/README.md)** - Data marshalling utilities
 
 ## Usage
 

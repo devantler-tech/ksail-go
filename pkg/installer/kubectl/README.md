@@ -1,4 +1,4 @@
-# kubectl
+# pkg/installer/kubectl
 
 This package provides a kubectl installer implementation for KSail.
 

@@ -1,4 +1,4 @@
-# ui/notify
+# cmd/ui/notify
 
 This package provides notification utilities for KSail's CLI interface.
 

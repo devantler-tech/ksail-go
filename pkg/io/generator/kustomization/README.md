@@ -1,4 +1,4 @@
-# kustomization
+# pkg/io/generator/kustomization
 
 This package provides Kustomization file generators for KSail.
 

@@ -1,4 +1,4 @@
-# utils/k8s
+# internal/utils/k8s
 
 This package provides Kubernetes utilities for KSail's internal use.
 

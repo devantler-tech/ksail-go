@@ -1,4 +1,4 @@
-# installer
+# pkg/installer
 
 This package provides functionality for installing and uninstalling components in KSail.
 
@@ -26,8 +26,8 @@ type Installer interface {
 
 ## Subpackages
 
-- `flux/` - Flux installer implementation
-- `kubectl/` - Kubectl installer implementation
+- **[flux/](./flux/README.md)** - Flux installer implementation
+- **[kubectl/](./kubectl/README.md)** - Kubectl installer implementation
 
 ## Usage
 

@@ -1,4 +1,4 @@
-# ksail
+# pkg/config-manager/ksail
 
 This package provides KSail-specific configuration management implementation.
 

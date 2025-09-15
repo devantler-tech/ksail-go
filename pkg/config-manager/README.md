@@ -1,4 +1,4 @@
-# config-manager
+# pkg/config-manager
 
 This package provides centralized configuration management using Viper for KSail.
 
@@ -36,7 +36,7 @@ viper := manager.GetViper()
 
 ## Subpackages
 
-- `ksail/` - KSail-specific configuration implementation
+- **[ksail/](./ksail/README.md)** - KSail-specific configuration implementation
 
 ---
 

@@ -1,4 +1,4 @@
-# flux
+# pkg/installer/flux
 
 This package provides a Flux installer implementation for KSail.
 

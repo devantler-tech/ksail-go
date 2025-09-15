@@ -1,4 +1,4 @@
-# kind
+# pkg/io/generator/kind
 
 This package provides Kind-specific resource generators for KSail.
 

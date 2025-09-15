@@ -1,4 +1,4 @@
-# ui
+# cmd/ui
 
 This directory contains user interface utilities for KSail's CLI.
 

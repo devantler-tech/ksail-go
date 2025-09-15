@@ -1,4 +1,4 @@
-# kind
+# pkg/provisioner/cluster/kind
 
 This package provides Kind cluster provisioning for KSail.
 

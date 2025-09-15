@@ -1,4 +1,4 @@
-# apis
+# pkg/apis
 
 This directory contains Kubernetes API definitions for KSail.
 
