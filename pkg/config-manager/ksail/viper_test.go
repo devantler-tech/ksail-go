@@ -421,24 +421,15 @@ func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
 func TestAddParentDirectoriesToViperPaths_ErrorHandling(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
 
-	// Save original directory for restoration
-	originalDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-
-	// Change to a directory that doesn't exist to trigger the error path
-	// We'll create and remove a temp directory, then try to chdir to it
+	// Create a temp directory and subdirectory
 	tempDir := t.TempDir()
 	subDir := tempDir + "/removed"
 
-	err = os.Mkdir(subDir, 0o750)
+	err := os.Mkdir(subDir, 0o750)
 	require.NoError(t, err)
 
 	// Change to the subdirectory
-	err = os.Chdir(subDir)
-	require.NoError(t, err)
+	t.Chdir(subDir)
 
 	// Remove the current directory while we're in it
 	// This should make filepath.Abs(".") return an error
