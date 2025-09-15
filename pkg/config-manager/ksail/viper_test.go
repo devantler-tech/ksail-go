@@ -332,7 +332,7 @@ func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
 	level2 := level1 + "/level2"
 	level3 := level2 + "/level3"
 
-	err := os.MkdirAll(level3, 0o755)
+	err := os.MkdirAll(level3, 0o750)
 	require.NoError(t, err)
 
 	// Create config files at different levels
@@ -366,7 +366,7 @@ func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
 	} else {
 		// If it failed, it should be a ConfigFileNotFoundError, not a panic or other error
 		var configFileNotFoundError viper.ConfigFileNotFoundError
-		assert.True(t, errors.As(err, &configFileNotFoundError),
+		assert.ErrorAs(t, err, &configFileNotFoundError,
 			"Should be ConfigFileNotFoundError if config not found")
 	}
 }

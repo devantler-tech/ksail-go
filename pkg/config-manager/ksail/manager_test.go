@@ -1,7 +1,6 @@
 package ksail_test
 
 import (
-	"errors"
 	"os"
 	"testing"
 	"time"
@@ -401,6 +400,8 @@ func TestManager_SetFieldValueWithConvertibleTypes(t *testing.T) {
 }
 
 // TestManager_readConfigurationFile_ErrorHandling tests error handling in readConfigurationFile.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestManager_readConfigurationFile_ErrorHandling(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
 
@@ -438,7 +439,7 @@ invalid yaml content
 		assert.Contains(t, err.Error(), "failed to read config file")
 		// Also ensure it's not a ConfigFileNotFoundError
 		var configFileNotFoundError viper.ConfigFileNotFoundError
-		assert.False(t, errors.As(err, &configFileNotFoundError),
+		assert.NotErrorAs(t, err, &configFileNotFoundError,
 			"Should not be ConfigFileNotFoundError")
 	} else {
 		t.Logf("No error occurred, cluster: %+v", cluster)
@@ -448,6 +449,8 @@ invalid yaml content
 }
 
 // TestManager_readConfigurationFile_ConfigFound tests successful config file reading.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestManager_readConfigurationFile_ConfigFound(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
 
