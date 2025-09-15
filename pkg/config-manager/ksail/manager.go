@@ -38,9 +38,6 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 		configLoaded:   false,
 	}
 
-	// Setup directory traversal during construction
-	addParentDirectoriesToViperPaths(viperInstance)
-
 	return manager
 }
 

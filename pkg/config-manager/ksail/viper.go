@@ -32,6 +32,9 @@ func InitializeViper() *viper.Viper {
 	// Add standard configuration paths
 	configureViperPaths(viperInstance)
 
+	// Setup directory traversal for parent directories
+	addParentDirectoriesToViperPaths(viperInstance)
+
 	// Setup environment variable handling (higher precedence than config files)
 	configureViperEnvironment(viperInstance)
 
