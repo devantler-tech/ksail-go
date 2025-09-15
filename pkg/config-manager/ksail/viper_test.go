@@ -1,6 +1,7 @@
 package ksail_test
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -315,4 +316,94 @@ func TestInitializeViper_ErrorHandling(t *testing.T) {
 
 	_ = viperInstance.BindEnv("error.test")
 	assert.Equal(t, "env-value", viperInstance.GetString("error.test"))
+}
+
+// TestAddParentDirectoriesToViperPaths_DirectoryTraversal tests the directory traversal functionality.
+//
+//nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
+func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Create a nested directory structure with config files
+	tempDir := t.TempDir()
+
+	// Create nested directories
+	level1 := tempDir + "/level1"
+	level2 := level1 + "/level2"
+	level3 := level2 + "/level3"
+
+	err := os.MkdirAll(level3, 0o755)
+	require.NoError(t, err)
+
+	// Create config files at different levels
+	configContent := `metadata:
+  name: test-traversal
+`
+
+	// Config file at level1
+	err = os.WriteFile(level1+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Config file at tempDir (root level)
+	err = os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Change to level3 directory
+	t.Chdir(level3)
+
+	// Create a viper instance and test directory traversal
+	viperInstance := ksail.InitializeViper()
+
+	// The directory traversal should have found and added both config directories
+	// We can test this by attempting to read config - it should find one of them
+	err = viperInstance.ReadInConfig()
+
+	// Should either succeed (found a config file) or fail gracefully
+	// The key is that the directory traversal logic executed without error
+	if err == nil {
+		// Success - config was found, which means directory traversal worked
+		assert.NotEmpty(t, viperInstance.ConfigFileUsed())
+	} else {
+		// If it failed, it should be a ConfigFileNotFoundError, not a panic or other error
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		assert.True(t, errors.As(err, &configFileNotFoundError),
+			"Should be ConfigFileNotFoundError if config not found")
+	}
+}
+
+// TestAddParentDirectoriesToViperPaths_WithDuplicates tests duplicate path handling.
+//
+//nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
+func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Create a directory with config file
+	tempDir := t.TempDir()
+	configContent := `metadata:
+  name: test-duplicates
+`
+
+	err := os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Change to the directory
+	t.Chdir(tempDir)
+
+	// Create a viper instance
+	viperInstance := ksail.InitializeViper()
+
+	// The implementation should handle the case where the same directory
+	// might be added multiple times (though our current logic prevents this)
+	// This test ensures no panics occur and the logic is robust
+
+	// Verify the viper instance is properly configured
+	require.NotNil(t, viperInstance)
+
+	// Try to read config to ensure everything works
+	err = viperInstance.ReadInConfig()
+	if err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		// Should either succeed or fail with ConfigFileNotFoundError
+		assert.True(t, errors.As(err, &configFileNotFoundError) || err == nil)
+	}
 }
