@@ -30,4 +30,4 @@ This generator is used when KSail needs to create Kustomization configurations f
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

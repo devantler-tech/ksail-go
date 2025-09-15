@@ -36,4 +36,4 @@ This installer is typically used when setting up GitOps workflows for Kubernetes
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

@@ -40,4 +40,4 @@ viper := manager.GetViper()
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

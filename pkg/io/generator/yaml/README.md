@@ -30,4 +30,4 @@ This generator is used when KSail needs to create generic YAML configurations th
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

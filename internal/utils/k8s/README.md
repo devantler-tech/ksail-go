@@ -28,4 +28,4 @@ import "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

@@ -31,4 +31,4 @@ The provisioner package provides a unified approach to managing Kubernetes clust
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

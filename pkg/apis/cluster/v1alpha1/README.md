@@ -18,4 +18,4 @@ The types defined here are used for marshalling and unmarshalling cluster config
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

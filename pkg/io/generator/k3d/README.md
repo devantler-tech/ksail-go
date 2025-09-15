@@ -30,4 +30,4 @@ This generator is used when KSail needs to create resources specifically for K3d
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

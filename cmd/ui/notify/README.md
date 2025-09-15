@@ -33,4 +33,4 @@ This package ensures consistent and visually clear communication between KSail a
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

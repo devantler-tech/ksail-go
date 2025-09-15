@@ -28,4 +28,4 @@ import "github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)
