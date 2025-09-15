@@ -44,9 +44,16 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 	notify.Activityln(os.Stdout, "Loading KSail config")
 
-	// Delegate initialization steps to specialized methods
-	m.initializeDefaults()
-	m.setupDirectoryTraversal()
+	// Apply default values from field selectors to the config
+	for _, fieldSelector := range m.fieldSelectors {
+		fieldPtr := fieldSelector.Selector(m.Config)
+		if fieldPtr != nil {
+			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
+		}
+	}
+
+	// Configure Viper to search parent directories for config files
+	addParentDirectoriesToViperPaths(m.viper)
 
 	// Try to read configuration file using Viper
 	config, err := m.readConfigurationFile()
@@ -55,9 +62,13 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	}
 
 	// Complete the environment setup and unmarshal configuration
-	err = m.finalizeConfiguration()
+	// Bind environment variables to complete the configuration
+	bindEnvironmentVariables(m.viper)
+
+	// Unmarshal into our cluster config using Viper
+	err = m.viper.Unmarshal(m.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to finalize configuration: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
 	notify.Successln(os.Stdout, "config loaded")
@@ -70,21 +81,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 // GetViper returns the underlying Viper instance for flag binding.
 func (m *ConfigManager) GetViper() *viper.Viper {
 	return m.viper
-}
-
-// initializeDefaults applies default values from field selectors to the config.
-func (m *ConfigManager) initializeDefaults() {
-	for _, fieldSelector := range m.fieldSelectors {
-		fieldPtr := fieldSelector.Selector(m.Config)
-		if fieldPtr != nil {
-			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
-		}
-	}
-}
-
-// setupDirectoryTraversal configures Viper to search parent directories for config files.
-func (m *ConfigManager) setupDirectoryTraversal() {
-	addParentDirectoriesToViperPaths(m.viper)
 }
 
 // readConfigurationFile attempts to read the configuration file and provides user feedback.
@@ -103,18 +99,4 @@ func (m *ConfigManager) readConfigurationFile() (*v1alpha1.Cluster, error) {
 	}
 
 	return m.Config, nil
-}
-
-// finalizeConfiguration completes the environment setup and unmarshals the configuration.
-func (m *ConfigManager) finalizeConfiguration() error {
-	// Bind environment variables to complete the configuration
-	bindEnvironmentVariables(m.viper)
-
-	// Unmarshal into our cluster config using Viper
-	err := m.viper.Unmarshal(m.Config)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal configuration: %w", err)
-	}
-
-	return nil
 }
