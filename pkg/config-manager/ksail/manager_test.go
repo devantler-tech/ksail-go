@@ -76,7 +76,7 @@ func TestNewManager(t *testing.T) {
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
-	assert.NotNil(t, manager.GetViper())
+	assert.NotNil(t, manager.Viper)
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
@@ -143,18 +143,18 @@ func TestManager_LoadConfig(t *testing.T) {
 	}
 }
 
-// TestManager_GetViper tests the GetViper method.
-func TestManager_GetViper(t *testing.T) {
+// TestManager_Viper tests the exported Viper field.
+func TestManager_Viper(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
-	viper := manager.GetViper()
+	viperInstance := manager.Viper
 
-	require.NotNil(t, viper)
+	require.NotNil(t, viperInstance)
 
 	// Test that it's properly configured by setting and getting a value
-	viper.SetDefault("test.key", "test-value")
-	assert.Equal(t, "test-value", viper.GetString("test.key"))
+	viperInstance.SetDefault("test.key", "test-value")
+	assert.Equal(t, "test-value", viperInstance.GetString("test.key"))
 }
 
 // TestAddFlagFromField tests the AddFlagFromField function.

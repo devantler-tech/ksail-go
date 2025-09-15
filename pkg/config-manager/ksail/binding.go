@@ -38,7 +38,7 @@ func (m *ConfigManager) addFlagFromField(
 	}
 
 	// Bind the flag to viper (ignoring error for non-critical binding)
-	_ = m.viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
+	_ = m.Viper.BindPFlag(flagName, cmd.Flags().Lookup(flagName))
 }
 
 // handlePflagValue handles fields that implement the pflag.Value interface.

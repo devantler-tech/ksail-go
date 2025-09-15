@@ -16,7 +16,7 @@ import (
 
 // ConfigManager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
-	viper          *viper.Viper
+	Viper          *viper.Viper
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
 	configLoaded   bool              // Track if config has been actually loaded
@@ -32,7 +32,7 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 	config := v1alpha1.NewCluster()
 
 	manager := &ConfigManager{
-		viper:          viperInstance,
+		Viper:          viperInstance,
 		fieldSelectors: fieldSelectors,
 		Config:         config,
 		configLoaded:   false,
@@ -54,7 +54,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 	// Use native Viper API to read configuration
 	// All paths and environment handling are already configured in constructor
-	err := m.viper.ReadInConfig()
+	err := m.Viper.ReadInConfig()
 	if err != nil {
 		// It's okay if config file doesn't exist, we'll use defaults and environment/flags
 		var configFileNotFoundError viper.ConfigFileNotFoundError
@@ -64,12 +64,12 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 		notify.Activityln(os.Stdout, "using default configuration")
 	} else {
-		notify.Activityf(os.Stdout, "'%s' found", m.viper.ConfigFileUsed())
+		notify.Activityf(os.Stdout, "'%s' found", m.Viper.ConfigFileUsed())
 	}
 
 	// Unmarshal configuration using Viper's native precedence handling
 	// Viper will handle: config files < environment variables < flags
-	err = m.viper.Unmarshal(m.Config)
+	err = m.Viper.Unmarshal(m.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
@@ -104,9 +104,4 @@ func isFieldEmpty(fieldPtr any) bool {
 	fieldVal = fieldVal.Elem()
 
 	return fieldVal.IsZero()
-}
-
-// GetViper returns the underlying Viper instance for flag binding.
-func (m *ConfigManager) GetViper() *viper.Viper {
-	return m.viper
 }
