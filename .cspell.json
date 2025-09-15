@@ -180,6 +180,11 @@
     "dgimyus",
     "nums",
     "oldstyle",
-    "extralight"
+    "extralight",
+    "Subpackages",
+    "unmarshalling",
+    "Unmarshalling",
+    "Unmarshal",
+    "unmarshal"
   ]
 }
