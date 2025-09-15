@@ -1,4 +1,4 @@
-# flux
+# pkg/installer/flux
 
 This package provides a Flux installer implementation for KSail.
 
@@ -36,4 +36,4 @@ This installer is typically used when setting up GitOps workflows for Kubernetes
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

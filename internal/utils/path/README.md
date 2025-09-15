@@ -1,4 +1,4 @@
-# utils/path
+# internal/utils/path
 
 This package provides path utilities for KSail's internal use.
 
@@ -28,4 +28,4 @@ import "github.com/devantler-tech/ksail-go/internal/utils/path"
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

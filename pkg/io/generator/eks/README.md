@@ -1,4 +1,4 @@
-# eks
+# pkg/io/generator/eks
 
 This package provides Amazon EKS-specific resource generators for KSail.
 
@@ -30,4 +30,4 @@ This generator is used when KSail needs to create resources specifically for Ama
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

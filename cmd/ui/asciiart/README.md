@@ -1,4 +1,4 @@
-# ui/asciiart
+# cmd/ui/asciiart
 
 This package provides ASCII art functionality for KSail's CLI interface.
 
@@ -27,4 +27,4 @@ This package is used by KSail's CLI commands to provide a more engaging and visu
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

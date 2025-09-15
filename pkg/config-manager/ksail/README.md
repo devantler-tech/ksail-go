@@ -1,4 +1,4 @@
-# ksail
+# pkg/config-manager/ksail
 
 This package provides KSail-specific configuration management implementation.
 
@@ -23,4 +23,4 @@ This package contains the concrete implementation of configuration management ta
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

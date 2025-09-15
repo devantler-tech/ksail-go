@@ -1,4 +1,4 @@
-# yaml
+# pkg/io/marshaller/yaml
 
 This package provides YAML marshalling and unmarshalling utilities for KSail.
 
@@ -38,4 +38,4 @@ This package is essential for KSail's interaction with Kubernetes resources and 
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

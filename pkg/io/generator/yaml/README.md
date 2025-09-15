@@ -1,4 +1,4 @@
-# yaml
+# pkg/io/generator/yaml
 
 This package provides generic YAML resource generators for KSail.
 
@@ -30,4 +30,4 @@ This generator is used when KSail needs to create generic YAML configurations th
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

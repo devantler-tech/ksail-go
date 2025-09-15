@@ -1,4 +1,4 @@
-# ui/notify
+# cmd/ui/notify
 
 This package provides notification utilities for KSail's CLI interface.
 
@@ -33,4 +33,4 @@ This package ensures consistent and visually clear communication between KSail a
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

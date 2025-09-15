@@ -1,4 +1,4 @@
-# cluster/v1alpha1
+# pkg/apis/cluster/v1alpha1
 
 This package contains Kubernetes API definitions for cluster resources version v1alpha1.
 
@@ -18,4 +18,4 @@ The types defined here are used for marshalling and unmarshalling cluster config
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

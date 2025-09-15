@@ -1,4 +1,4 @@
-# kind
+# pkg/provisioner/cluster/kind
 
 This package provides Kind cluster provisioning for KSail.
 
@@ -45,4 +45,4 @@ This provisioner is excellent for local development and testing scenarios where 
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

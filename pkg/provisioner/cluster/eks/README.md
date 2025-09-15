@@ -1,4 +1,4 @@
-# eks
+# pkg/provisioner/cluster/eks
 
 This package provides Amazon EKS cluster provisioning for KSail.
 
@@ -40,4 +40,4 @@ This provisioner is used when KSail needs to manage production-ready Kubernetes 
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

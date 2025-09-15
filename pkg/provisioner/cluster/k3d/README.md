@@ -1,4 +1,4 @@
-# k3d
+# pkg/provisioner/cluster/k3d
 
 This package provides K3d cluster provisioning for KSail.
 
@@ -44,4 +44,4 @@ This provisioner is ideal for local development workflows where quick, lightweig
 
 ---
 
-[⬅️ Go Back](../../../../README.md)
+[⬅️ Go Back](../README.md)

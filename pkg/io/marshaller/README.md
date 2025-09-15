@@ -1,4 +1,4 @@
-# marshaller
+# pkg/io/marshaller
 
 This package provides data marshalling utilities for KSail.
 
@@ -15,7 +15,7 @@ Provides utilities for marshalling and unmarshalling data to and from various fo
 
 ## Subpackages
 
-- `yaml/` - YAML marshalling and unmarshalling utilities
+- **[pkg/io/marshaller/yaml/](./yaml/README.md)** - YAML marshalling and unmarshalling utilities
 
 ## Usage
 
@@ -30,4 +30,4 @@ The marshaller package provides a consistent interface for data serialization ac
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

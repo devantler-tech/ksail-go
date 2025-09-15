@@ -1,4 +1,4 @@
-# utils/k8s
+# internal/utils/k8s
 
 This package provides Kubernetes utilities for KSail's internal use.
 
@@ -28,4 +28,4 @@ import "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

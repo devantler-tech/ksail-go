@@ -1,4 +1,4 @@
-# internal/cmdhelpers
+# cmd/internal/cmdhelpers
 
 This package provides helper utilities for KSail's CLI commands.
 
@@ -28,4 +28,4 @@ import "github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 
 ---
 
-[⬅️ Go Back](../../README.md)
+[⬅️ Go Back](../README.md)

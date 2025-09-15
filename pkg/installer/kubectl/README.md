@@ -1,4 +1,4 @@
-# kubectl
+# pkg/installer/kubectl
 
 This package provides a kubectl installer implementation for KSail.
 
@@ -36,4 +36,4 @@ This installer is essential for ensuring kubectl availability when working with 
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)

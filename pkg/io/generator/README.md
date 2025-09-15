@@ -1,4 +1,4 @@
-# generator
+# pkg/io/generator
 
 This package provides resource generation utilities for KSail.
 
@@ -14,11 +14,11 @@ Contains utilities for generating Kubernetes resources and configuration files f
 
 ## Subpackages
 
-- `eks/` - Amazon EKS-specific resource generators
-- `k3d/` - K3d-specific resource generators  
-- `kind/` - Kind-specific resource generators
-- `kustomization/` - Kustomization file generators
-- `yaml/` - Generic YAML resource generators
+- **[pkg/io/generator/eks/](./eks/README.md)** - Amazon EKS-specific resource generators
+- **[pkg/io/generator/k3d/](./k3d/README.md)** - K3d-specific resource generators  
+- **[pkg/io/generator/kind/](./kind/README.md)** - Kind-specific resource generators
+- **[pkg/io/generator/kustomization/](./kustomization/README.md)** - Kustomization file generators
+- **[pkg/io/generator/yaml/](./yaml/README.md)** - Generic YAML resource generators
 
 ## Usage
 
@@ -33,4 +33,4 @@ Each subpackage provides specialized generators for their respective target plat
 
 ---
 
-[⬅️ Go Back](../../../README.md)
+[⬅️ Go Back](../README.md)
