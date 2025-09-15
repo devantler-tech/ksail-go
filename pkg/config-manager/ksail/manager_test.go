@@ -484,6 +484,25 @@ spec:
 	assert.Equal(t, "test-config-found", cluster.Metadata.Name)
 }
 
+// runIsFieldEmptyTestCases is a helper function to run test cases for isFieldEmpty function.
+func runIsFieldEmptyTestCases(t *testing.T, tests []struct {
+	name     string
+	fieldPtr any
+	expected bool
+},
+) {
+	t.Helper()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := ksail.IsFieldEmptyForTesting(tt.fieldPtr)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 // TestManager_isFieldEmpty_NilAndInvalidCases tests nil and invalid cases for isFieldEmpty function.
 func TestManager_isFieldEmpty_NilAndInvalidCases(t *testing.T) {
 	t.Parallel()
@@ -510,14 +529,7 @@ func TestManager_isFieldEmpty_NilAndInvalidCases(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := ksail.IsFieldEmptyForTesting(tt.fieldPtr)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+	runIsFieldEmptyTestCases(t, tests)
 }
 
 // TestManager_isFieldEmpty_ValidPointerCases tests valid pointer cases for isFieldEmpty function.
@@ -567,12 +579,5 @@ func TestManager_isFieldEmpty_ValidPointerCases(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := ksail.IsFieldEmptyForTesting(tt.fieldPtr)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+	runIsFieldEmptyTestCases(t, tests)
 }
