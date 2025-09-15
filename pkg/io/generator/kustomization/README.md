@@ -27,3 +27,7 @@ if err != nil {
 ```
 
 This generator is used when KSail needs to create Kustomization configurations for managing Kubernetes resources in a declarative and composable way.
+
+---
+
+[⬅️ Go Back](../../../../README.md)

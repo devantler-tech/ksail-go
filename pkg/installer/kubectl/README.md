@@ -33,3 +33,7 @@ if err := kubectlInstaller.Uninstall(ctx); err != nil {
 ```
 
 This installer is essential for ensuring kubectl availability when working with Kubernetes clusters through KSail.
+
+---
+
+[⬅️ Go Back](../../../README.md)

@@ -33,3 +33,7 @@ if err := fluxInstaller.Uninstall(ctx); err != nil {
 ```
 
 This installer is typically used when setting up GitOps workflows for Kubernetes cluster management with KSail.
+
+---
+
+[⬅️ Go Back](../../../README.md)

@@ -27,3 +27,7 @@ if err != nil {
 ```
 
 This generator is used when KSail needs to create generic YAML configurations that are not tied to a specific Kubernetes distribution or platform.
+
+---
+
+[⬅️ Go Back](../../../../README.md)

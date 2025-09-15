@@ -48,3 +48,7 @@ if err := installer.Uninstall(ctx); err != nil {
     log.Fatal(err)
 }
 ```
+
+---
+
+[⬅️ Go Back](../../README.md)

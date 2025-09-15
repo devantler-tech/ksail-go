@@ -45,6 +45,23 @@ ksail --help
 
 ## Documentation
 
+## Structure
+
+The KSail Go project is organized into several main packages:
+
+- **[cmd/](./cmd/README.md)** - Command-line interface implementation using Cobra framework
+- **[pkg/](./pkg/)** - Core business logic packages:
+  - **[apis/](./pkg/apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions
+  - **[config-manager/](./pkg/config-manager/README.md)** - Configuration management utilities
+  - **[installer/](./pkg/installer/README.md)** - Component installation utilities
+  - **[io/](./pkg/io/README.md)** - Safe file I/O operations with security features
+  - **[provisioner/](./pkg/provisioner/README.md)** - Cluster provisioning and lifecycle management
+- **[internal/](./internal/)** - Internal utility packages:
+  - **[utils/k8s/](./internal/utils/k8s/README.md)** - Kubernetes utilities
+  - **[utils/path/](./internal/utils/path/README.md)** - Path utilities
+
+Each package contains detailed documentation about its purpose, features, and usage examples.
+
 ## Related Projects
 
 ## Presentations
