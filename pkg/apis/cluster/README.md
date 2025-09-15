@@ -15,7 +15,7 @@ Contains the Kubernetes API definitions and custom resource types specifically r
 
 ## Versions
 
-- **[v1alpha1/](./v1alpha1/README.md)** - Alpha version of cluster APIs (development/testing)
+- **[pkg/apis/cluster/v1alpha1/](./v1alpha1/README.md)** - Alpha version of cluster APIs (development/testing)
 
 ## Usage
 

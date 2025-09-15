@@ -15,11 +15,11 @@ The `pkg/` directory houses all the main functionality packages that implement K
 
 ## Packages
 
-- **[apis/](./apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions and custom resource types
-- **[config-manager/](./config-manager/README.md)** - Configuration management utilities for handling KSail and application configs
-- **[installer/](./installer/README.md)** - Component installation utilities (kubectl, Flux, etc.)
-- **[io/](./io/README.md)** - Safe file I/O operations with security features and resource generation
-- **[provisioner/](./provisioner/README.md)** - Cluster provisioning and lifecycle management across different Kubernetes distributions
+- **[pkg/apis/](./apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions and custom resource types
+- **[pkg/config-manager/](./config-manager/README.md)** - Configuration management utilities for handling KSail and application configs
+- **[pkg/installer/](./installer/README.md)** - Component installation utilities (kubectl, Flux, etc.)
+- **[pkg/io/](./io/README.md)** - Safe file I/O operations with security features and resource generation
+- **[pkg/provisioner/](./provisioner/README.md)** - Cluster provisioning and lifecycle management across different Kubernetes distributions
 
 ## Architecture
 

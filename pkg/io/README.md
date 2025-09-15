@@ -22,8 +22,8 @@ The package includes `ErrPathOutsideBase` error to indicate when a file path is 
 
 ## Subpackages
 
-- **[generator/](./generator/README.md)** - Resource generation utilities
-- **[marshaller/](./marshaller/README.md)** - Data marshalling utilities
+- **[pkg/io/generator/](./generator/README.md)** - Resource generation utilities
+- **[pkg/io/marshaller/](./marshaller/README.md)** - Data marshalling utilities
 
 ## Usage
 

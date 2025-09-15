@@ -14,7 +14,7 @@ Houses internal packages that provide common functionality shared across differe
 
 ## Packages
 
-- **[utils/](./utils/README.md)** - General utility functions and helpers
+- **[internal/utils/](./utils/README.md)** - General utility functions and helpers
 
 ## Usage
 

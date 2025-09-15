@@ -26,8 +26,8 @@ type Installer interface {
 
 ## Subpackages
 
-- **[flux/](./flux/README.md)** - Flux installer implementation
-- **[kubectl/](./kubectl/README.md)** - Kubectl installer implementation
+- **[pkg/installer/flux/](./flux/README.md)** - Flux installer implementation
+- **[pkg/installer/kubectl/](./kubectl/README.md)** - Kubectl installer implementation
 
 ## Usage
 

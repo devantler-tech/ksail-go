@@ -39,9 +39,9 @@ type ClusterProvisioner interface {
 
 ## Subpackages
 
-- **[eks/](./eks/README.md)** - Amazon EKS cluster provisioning
-- **[k3d/](./k3d/README.md)** - K3d cluster provisioning
-- **[kind/](./kind/README.md)** - Kind cluster provisioning
+- **[pkg/provisioner/cluster/eks/](./eks/README.md)** - Amazon EKS cluster provisioning
+- **[pkg/provisioner/cluster/k3d/](./k3d/README.md)** - K3d cluster provisioning
+- **[pkg/provisioner/cluster/kind/](./kind/README.md)** - Kind cluster provisioning
 
 ## Usage
 

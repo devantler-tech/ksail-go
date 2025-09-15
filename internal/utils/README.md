@@ -15,8 +15,8 @@ Provides common utility functions and helpers that are used across different KSa
 
 ## Packages
 
-- **[k8s/](./k8s/README.md)** - Kubernetes utilities and helper functions
-- **[path/](./path/README.md)** - Path utilities for file system operations
+- **[internal/utils/k8s/](./k8s/README.md)** - Kubernetes utilities and helper functions
+- **[internal/utils/path/](./path/README.md)** - Path utilities for file system operations
 
 ## Usage
 

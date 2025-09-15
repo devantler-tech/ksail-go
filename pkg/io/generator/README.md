@@ -14,11 +14,11 @@ Contains utilities for generating Kubernetes resources and configuration files f
 
 ## Subpackages
 
-- **[eks/](./eks/README.md)** - Amazon EKS-specific resource generators
-- **[k3d/](./k3d/README.md)** - K3d-specific resource generators  
-- **[kind/](./kind/README.md)** - Kind-specific resource generators
-- **[kustomization/](./kustomization/README.md)** - Kustomization file generators
-- **[yaml/](./yaml/README.md)** - Generic YAML resource generators
+- **[pkg/io/generator/eks/](./eks/README.md)** - Amazon EKS-specific resource generators
+- **[pkg/io/generator/k3d/](./k3d/README.md)** - K3d-specific resource generators  
+- **[pkg/io/generator/kind/](./kind/README.md)** - Kind-specific resource generators
+- **[pkg/io/generator/kustomization/](./kustomization/README.md)** - Kustomization file generators
+- **[pkg/io/generator/yaml/](./yaml/README.md)** - Generic YAML resource generators
 
 ## Usage
 

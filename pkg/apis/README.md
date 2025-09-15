@@ -15,7 +15,7 @@ Houses the Kubernetes API definitions, custom resource types, and related schema
 
 ## Structure
 
-- **[cluster/](./cluster/README.md)** - Cluster-related API definitions organized by version
+- **[pkg/apis/cluster/](./cluster/README.md)** - Cluster-related API definitions organized by version
 
 ## Usage
 

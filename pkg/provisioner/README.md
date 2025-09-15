@@ -15,8 +15,8 @@ Contains the core provisioning logic and interfaces for managing Kubernetes clus
 
 ## Subpackages
 
-- **[cluster/](./cluster/README.md)** - Core cluster provisioning implementations
-- **[containerengine/](./containerengine/README.md)** - Container engine management and abstraction
+- **[pkg/provisioner/cluster/](./cluster/README.md)** - Core cluster provisioning implementations
+- **[pkg/provisioner/containerengine/](./containerengine/README.md)** - Container engine management and abstraction
 
 ## Usage
 

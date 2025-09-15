@@ -15,8 +15,8 @@ Provides UI components and utilities for enhancing the command-line user experie
 
 ## Packages
 
-- **[asciiart/](./asciiart/README.md)** - ASCII art and visual elements for CLI branding
-- **[notify/](./notify/README.md)** - User notification and messaging utilities with colored output
+- **[cmd/ui/asciiart/](./asciiart/README.md)** - ASCII art and visual elements for CLI branding
+- **[cmd/ui/notify/](./notify/README.md)** - User notification and messaging utilities with colored output
 
 ## Usage
 

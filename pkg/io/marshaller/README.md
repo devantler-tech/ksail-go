@@ -15,7 +15,7 @@ Provides utilities for marshalling and unmarshalling data to and from various fo
 
 ## Subpackages
 
-- **[yaml/](./yaml/README.md)** - YAML marshalling and unmarshalling utilities
+- **[pkg/io/marshaller/yaml/](./yaml/README.md)** - YAML marshalling and unmarshalling utilities
 
 ## Usage
 

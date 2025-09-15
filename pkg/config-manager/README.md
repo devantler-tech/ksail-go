@@ -36,7 +36,7 @@ viper := manager.GetViper()
 
 ## Subpackages
 
-- **[ksail/](./ksail/README.md)** - KSail-specific configuration implementation
+- **[pkg/config-manager/ksail/](./ksail/README.md)** - KSail-specific configuration implementation
 
 ---
 
