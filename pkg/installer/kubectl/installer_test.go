@@ -105,7 +105,7 @@ func expectApplySetNotFound(dynClient *kubectlinstaller.MockResourceInterface) {
 // expectApplySetCreateSuccess sets up expectation for successful ApplySet creation.
 func expectApplySetCreateSuccess(dynClient *kubectlinstaller.MockResourceInterface) {
 	dynClient.EXPECT().Create(mock.Anything, mock.Anything, mock.Anything).
-		Return(&unstructured.Unstructured{Object: map[string]interface{}{}}, nil).
+		Return(&unstructured.Unstructured{Object: map[string]any{}}, nil).
 		Times(1)
 }
 
@@ -135,8 +135,8 @@ func createEstablishedCRD() *apiextensionsv1.CustomResourceDefinition {
 // createExistingApplySet creates an existing ApplySet object for testing.
 func createExistingApplySet() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"metadata": map[string]interface{}{
+		Object: map[string]any{
+			"metadata": map[string]any{
 				"name":            "ksail",
 				"resourceVersion": "applyset-version-456",
 			},

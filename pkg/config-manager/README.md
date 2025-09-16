@@ -5,6 +5,7 @@ This package provides centralized configuration management using Viper for KSail
 ## Purpose
 
 Provides a generic, type-safe configuration management interface that handles:
+
 - Loading configuration from files and environment variables
 - Providing access to the underlying Viper instance for flag binding
 - Type-safe configuration handling through Go generics

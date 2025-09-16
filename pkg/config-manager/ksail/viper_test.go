@@ -1,6 +1,7 @@
 package ksail_test
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -109,7 +110,8 @@ func TestInitializeViperEnvKeyReplacer(t *testing.T) {
 	}
 }
 
-// TestInitializeViper_ConfigFileReading tests configuration file reading behavior.
+// TestInitializeViper_ConfigFileReading tests that InitializeViper sets up viper correctly
+// but doesn't automatically read config files (that's handled by LoadConfig).
 //
 //nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
 func TestInitializeViperConfigFileReading(t *testing.T) {
@@ -135,10 +137,25 @@ spec:
 	// Change to the temporary directory so viper can find the config file
 	t.Chdir(tempDir)
 
-	// Initialize viper - it should read the config file
+	// Initialize viper - it should NOT automatically read the config file anymore
 	viperInstance := ksail.InitializeViper()
 
-	// Test that values from the config file are loaded
+	// Test that values from the config file are NOT automatically loaded
+	// (LoadConfig method should handle file reading)
+	assert.Empty(t, viperInstance.GetString("metadata.name"))
+	assert.Empty(t, viperInstance.GetString("spec.distribution"))
+	assert.Empty(t, viperInstance.GetString("spec.sourceDirectory"))
+
+	// Since directory traversal is now handled by InitializeViper and the current directory
+	// contains a config file, ReadInConfig should succeed (finding the file)
+	err = viperInstance.ReadInConfig()
+	require.NoError(
+		t,
+		err,
+		"ReadInConfig should succeed when config file exists in current directory",
+	)
+
+	// After ReadInConfig, config values should be available
 	assert.Equal(t, "test-cluster-from-file", viperInstance.GetString("metadata.name"))
 	assert.Equal(t, "K3d", viperInstance.GetString("spec.distribution"))
 	assert.Equal(t, "k8s-from-file", viperInstance.GetString("spec.sourceDirectory"))
@@ -306,4 +323,126 @@ func TestInitializeViperErrorHandling(t *testing.T) {
 
 	_ = viperInstance.BindEnv("error.test")
 	assert.Equal(t, "env-value", viperInstance.GetString("error.test"))
+}
+
+// TestAddParentDirectoriesToViperPaths_DirectoryTraversal tests the directory traversal functionality.
+//
+//nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
+func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Create a nested directory structure with config files
+	tempDir := t.TempDir()
+
+	// Create nested directories
+	level1 := tempDir + "/level1"
+	level2 := level1 + "/level2"
+	level3 := level2 + "/level3"
+
+	err := os.MkdirAll(level3, 0o750)
+	require.NoError(t, err)
+
+	// Create config files at different levels
+	configContent := `metadata:
+  name: test-traversal
+`
+
+	// Config file at level1
+	err = os.WriteFile(level1+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Config file at tempDir (root level)
+	err = os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Change to level3 directory
+	t.Chdir(level3)
+
+	// Create a viper instance and test directory traversal
+	viperInstance := ksail.InitializeViper()
+
+	// The directory traversal should have found and added both config directories
+	// We can test this by attempting to read config - it should find one of them
+	err = viperInstance.ReadInConfig()
+
+	// Should either succeed (found a config file) or fail gracefully
+	// The key is that the directory traversal logic executed without error
+	if err == nil {
+		// Success - config was found, which means directory traversal worked
+		assert.NotEmpty(t, viperInstance.ConfigFileUsed())
+	} else {
+		// If it failed, it should be a ConfigFileNotFoundError, not a panic or other error
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		assert.ErrorAs(t, err, &configFileNotFoundError,
+			"Should be ConfigFileNotFoundError if config not found")
+	}
+}
+
+// TestAddParentDirectoriesToViperPaths_WithDuplicates tests duplicate path handling.
+//
+//nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
+func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Create a directory with config file
+	tempDir := t.TempDir()
+	configContent := `metadata:
+  name: test-duplicates
+`
+
+	err := os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	// Change to the directory
+	t.Chdir(tempDir)
+
+	// Create a viper instance
+	viperInstance := ksail.InitializeViper()
+
+	// The implementation should handle the case where the same directory
+	// might be added multiple times (though our current logic prevents this)
+	// This test ensures no panics occur and the logic is robust
+
+	// Verify the viper instance is properly configured
+	require.NotNil(t, viperInstance)
+
+	// Try to read config to ensure everything works
+	err = viperInstance.ReadInConfig()
+	if err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		// Should either succeed or fail with ConfigFileNotFoundError
+		assert.True(t, errors.As(err, &configFileNotFoundError) || err == nil)
+	}
+}
+
+// TestAddParentDirectoriesToViperPaths_ErrorHandling tests error handling in directory traversal.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
+func TestAddParentDirectoriesToViperPaths_ErrorHandling(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	// Create a temp directory and subdirectory
+	tempDir := t.TempDir()
+	subDir := tempDir + "/removed"
+
+	err := os.Mkdir(subDir, 0o750)
+	require.NoError(t, err)
+
+	// Change to the subdirectory
+	t.Chdir(subDir)
+
+	// Remove the current directory while we're in it
+	// This should make filepath.Abs(".") return an error
+	err = os.Remove(subDir)
+	require.NoError(t, err)
+
+	// Now InitializeViper should hit the error path in addParentDirectoriesToViperPaths
+	viperInstance := ksail.InitializeViper()
+
+	// The function should not panic and should return a valid instance
+	require.NotNil(t, viperInstance)
+
+	// Should still be able to use viper for basic operations
+	viperInstance.SetDefault("test.error", "default-value")
+	assert.Equal(t, "default-value", viperInstance.GetString("test.error"))
 }

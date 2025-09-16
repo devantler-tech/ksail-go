@@ -5,7 +5,6 @@
 package configmanager
 
 import (
-	"github.com/spf13/viper"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -34,52 +33,6 @@ type MockConfigManager_Expecter[T any] struct {
 
 func (_m *MockConfigManager[T]) EXPECT() *MockConfigManager_Expecter[T] {
 	return &MockConfigManager_Expecter[T]{mock: &_m.Mock}
-}
-
-// GetViper provides a mock function for the type MockConfigManager
-func (_mock *MockConfigManager[T]) GetViper() *viper.Viper {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetViper")
-	}
-
-	var r0 *viper.Viper
-	if returnFunc, ok := ret.Get(0).(func() *viper.Viper); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*viper.Viper)
-		}
-	}
-	return r0
-}
-
-// MockConfigManager_GetViper_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetViper'
-type MockConfigManager_GetViper_Call[T any] struct {
-	*mock.Call
-}
-
-// GetViper is a helper method to define mock.On call
-func (_e *MockConfigManager_Expecter[T]) GetViper() *MockConfigManager_GetViper_Call[T] {
-	return &MockConfigManager_GetViper_Call[T]{Call: _e.mock.On("GetViper")}
-}
-
-func (_c *MockConfigManager_GetViper_Call[T]) Run(run func()) *MockConfigManager_GetViper_Call[T] {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockConfigManager_GetViper_Call[T]) Return(viper1 *viper.Viper) *MockConfigManager_GetViper_Call[T] {
-	_c.Call.Return(viper1)
-	return _c
-}
-
-func (_c *MockConfigManager_GetViper_Call[T]) RunAndReturn(run func() *viper.Viper) *MockConfigManager_GetViper_Call[T] {
-	_c.Call.Return(run)
-	return _c
 }
 
 // LoadConfig provides a mock function for the type MockConfigManager

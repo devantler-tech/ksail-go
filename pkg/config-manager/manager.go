@@ -2,10 +2,6 @@
 // This file contains the interfaces for configuration management.
 package configmanager
 
-import (
-	"github.com/spf13/viper"
-)
-
 // ConfigManager provides configuration management functionality.
 //
 //go:generate mockery
@@ -13,7 +9,4 @@ type ConfigManager[T any] interface {
 	// LoadConfig loads the configuration from files and environment variables.
 	// Returns the previously loaded config if already loaded.
 	LoadConfig() (*T, error)
-
-	// GetViper returns the underlying Viper instance for flag binding.
-	GetViper() *viper.Viper
 }

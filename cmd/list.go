@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
@@ -11,6 +12,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
+
+// ErrInvalidConfigManagerType is returned when config manager type assertion fails.
+var ErrInvalidConfigManagerType = errors.New("invalid config manager type")
 
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
@@ -45,8 +49,14 @@ func HandleListRunE(
 	configManager configmanager.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
+	// Type assert to concrete type to access exported Viper field
+	ksailManager, ok := configManager.(*ksail.ConfigManager)
+	if !ok {
+		return ErrInvalidConfigManagerType
+	}
+
 	// Bind the --all flag manually since it's added after command creation
-	_ = configManager.GetViper().BindPFlag("all", cmd.Flags().Lookup("all"))
+	_ = ksailManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
 	// Load the full cluster configuration (Viper handles all precedence automatically)
 	cluster, err := configManager.LoadConfig()
@@ -56,7 +66,7 @@ func HandleListRunE(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	all := configManager.GetViper().GetBool("all")
+	all := ksailManager.Viper.GetBool("all")
 	if all {
 		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
 	} else {

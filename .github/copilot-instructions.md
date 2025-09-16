@@ -11,6 +11,7 @@ Always reference these instructions first and fallback to search or bash command
 This repository follows [Best practices for Copilot coding agent in your repository](https://gh.io/copilot-coding-agent-tips) with the following specific considerations:
 
 ### Context Files and Documentation
+
 - **Primary Instructions**: This `.github/copilot-instructions.md` file provides comprehensive repository context
 - **Package Documentation**: README.md files throughout the repository provide detailed package-specific documentation and serve as the primary source for understanding individual components
 - **Allowed Modifications**: Copilot agents may add or rewrite context files according to best practices if specific code areas need more explicit instructions
@@ -35,7 +36,7 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 - **golangci-lint**: Alternative linting tool: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest`
   - **NOTE**: Project primarily uses mega-linter, but golangci-lint may be used as fallback
   - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m54s to run when clean
-  - **Performance Notes**: 
+  - **Performance Notes**:
     - Takes longer when issues are present (proportional to number of violations)
     - Use `~/go/bin/golangci-lint run --fast-only` for quick feedback on fast linters only
     - Full run recommended before commits: `~/go/bin/golangci-lint run`
