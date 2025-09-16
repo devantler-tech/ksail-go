@@ -446,3 +446,27 @@ func TestAddParentDirectoriesToViperPaths_ErrorHandling(t *testing.T) {
 	viperInstance.SetDefault("test.error", "default-value")
 	assert.Equal(t, "default-value", viperInstance.GetString("test.error"))
 }
+
+// TestDebugLogging tests the debug logging functionality.
+func TestDebugLogging(t *testing.T) {
+	// Cannot use t.Parallel() because test uses t.Setenv()
+
+	// Test that debug logging is disabled by default
+	assert.False(t, ksail.IsDebugEnabledForTesting(),
+		"Debug should be disabled by default")
+
+	// Test that debug logging is enabled when KSAIL_DEBUG is set
+	t.Setenv("KSAIL_DEBUG", "1")
+	assert.True(t, ksail.IsDebugEnabledForTesting(),
+		"Debug should be enabled when KSAIL_DEBUG is set")
+
+	// Test with empty value (should still be enabled)
+	t.Setenv("KSAIL_DEBUG", "")
+	assert.False(t, ksail.IsDebugEnabledForTesting(),
+		"Debug should be disabled when KSAIL_DEBUG is empty")
+
+	// Test with any non-empty value
+	t.Setenv("KSAIL_DEBUG", "true")
+	assert.True(t, ksail.IsDebugEnabledForTesting(),
+		"Debug should be enabled with any non-empty value")
+}
