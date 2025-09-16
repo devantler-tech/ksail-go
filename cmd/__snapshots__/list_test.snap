@@ -1,17 +1,17 @@
 
-[TestListCmd_Execute_All - 1]
+[TestListCmdExecuteAll - 1]
 ✔ Listing all clusters (stub implementation)
 ► Distribution filter: Kind
 
 ---
 
-[TestListCmd_Execute_Default - 1]
+[TestListCmdExecuteDefault - 1]
 ✔ Listing running clusters (stub implementation)
 ► Distribution filter: Kind
 
 ---
 
-[TestListCmd_Help - 1]
+[TestListCmdHelp - 1]
 List all Kubernetes clusters managed by KSail.
 
 Usage:

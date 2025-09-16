@@ -1,4 +1,4 @@
-[TestDownCmd_Help - 1]
+[TestDownCmdHelp - 1]
 Destroy a cluster.
 
 Usage:
@@ -11,7 +11,7 @@ Flags:
 
 ---
 
-[TestDownCmd_Execute - 1]
+[TestDownCmdExecute - 1]
 ✔ cluster destroyed successfully
 ► Distribution: Kind
 ► Context: kind-ksail-default

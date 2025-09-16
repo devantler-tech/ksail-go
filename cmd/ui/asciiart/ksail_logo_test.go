@@ -23,7 +23,7 @@ func TestPrintKSailLogo(t *testing.T) {
 // to maximize code coverage achievable through the public interface only.
 // Note: Due to //go:embed, some internal edge cases cannot be tested without
 // modifying the source file and rebuilding (see scripts/test_edge_cases.sh).
-func TestPrintKSailLogo_Comprehensive(t *testing.T) {
+func TestPrintKSailLogoComprehensive(t *testing.T) {
 	t.Parallel()
 
 	t.Run("produces_non_empty_output", testNonEmptyOutput)
@@ -149,7 +149,7 @@ func testOutputFormat(t *testing.T) {
 
 // TestPrintKSailLogo_Writers tests the function with various io.Writer implementations
 // to ensure the public API works correctly with different output destinations.
-func TestPrintKSailLogo_Writers(t *testing.T) {
+func TestPrintKSailLogoWriters(t *testing.T) {
 	t.Parallel()
 
 	// Test with different writer scenarios
@@ -211,7 +211,7 @@ func TestPrintKSailLogo_Writers(t *testing.T) {
 // TestPrintKSailLogo_BoundsHandling tests that the function handles lines
 // of various lengths without panicking, demonstrating the robustness of
 // the bounds checking implementation.
-func TestPrintKSailLogo_BoundsHandling(t *testing.T) {
+func TestPrintKSailLogoBoundsHandling(t *testing.T) {
 	t.Parallel()
 
 	var writer bytes.Buffer
@@ -242,7 +242,7 @@ func TestPrintKSailLogo_BoundsHandling(t *testing.T) {
 
 // TestPrintKSailLogo_EdgeCases tests edge cases in the color processing functions
 // by using specially crafted logo content that exercises all code paths.
-func TestPrintKSailLogo_EdgeCases(t *testing.T) {
+func TestPrintKSailLogoEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	testCases := createEdgeCaseTestData()

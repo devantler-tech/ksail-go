@@ -27,7 +27,7 @@ func TestMain(main *testing.M) {
 	os.Exit(exitCode)
 }
 
-func TestNewRootCmd_VersionFormatting(t *testing.T) {
+func TestNewRootCmdVersionFormatting(t *testing.T) {
 	t.Parallel()
 
 	version := "1.2.3"
@@ -41,7 +41,7 @@ func TestNewRootCmd_VersionFormatting(t *testing.T) {
 	}
 }
 
-func TestExecute_ShowsHelp(t *testing.T) {
+func TestExecuteShowsHelp(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -54,7 +54,7 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
-func TestExecute_ShowsVersion(t *testing.T) {
+func TestExecuteShowsVersion(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -76,7 +76,7 @@ func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobr
 	}
 }
 
-func TestExecute_ReturnsError(t *testing.T) {
+func TestExecuteReturnsError(t *testing.T) {
 	t.Parallel()
 
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
@@ -126,7 +126,7 @@ func TestExecuteSuccess(t *testing.T) {
 	}
 }
 
-func TestExecute_WrapperSuccess(t *testing.T) {
+func TestExecuteWrapperSuccess(t *testing.T) {
 	t.Parallel()
 
 	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
@@ -143,7 +143,7 @@ func TestExecute_WrapperSuccess(t *testing.T) {
 	}
 }
 
-func TestExecute_WrapperError(t *testing.T) {
+func TestExecuteWrapperError(t *testing.T) {
 	t.Parallel()
 
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {

@@ -60,7 +60,7 @@ func TestInitializeViper(t *testing.T) {
 }
 
 // TestInitializeViper_ConfigPaths tests that config paths are set correctly.
-func TestInitializeViper_ConfigPaths(t *testing.T) {
+func TestInitializeViperConfigPaths(t *testing.T) {
 	// Cannot use t.Parallel() because test uses t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
@@ -78,7 +78,7 @@ func TestInitializeViper_ConfigPaths(t *testing.T) {
 // TestInitializeViper_EnvKeyReplacer tests environment key replacement.
 //
 //nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
-func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
+func TestInitializeViperEnvKeyReplacer(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
@@ -112,7 +112,7 @@ func TestInitializeViper_EnvKeyReplacer(t *testing.T) {
 // TestInitializeViper_ConfigFileReading tests configuration file reading behavior.
 //
 //nolint:paralleltest // Cannot run in parallel due to directory changes via t.Chdir()
-func TestInitializeViper_ConfigFileReading(t *testing.T) {
+func TestInitializeViperConfigFileReading(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
 	// which can conflict with parallel test execution
 
@@ -157,7 +157,7 @@ func TestViperConstants(t *testing.T) {
 // TestInitializeViper_EnvironmentVariableBinding tests automatic environment variable binding.
 //
 //nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
-func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
+func TestInitializeViperEnvironmentVariableBinding(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
@@ -191,7 +191,7 @@ func TestInitializeViper_EnvironmentVariableBinding(t *testing.T) {
 // TestInitializeViper_EnvReplacerRules tests environment key replacer rules.
 //
 //nolint:paralleltest // Cannot use t.Parallel() because subtests use t.Setenv()
-func TestInitializeViper_EnvReplacerRules(t *testing.T) {
+func TestInitializeViperEnvReplacerRules(t *testing.T) {
 	// Cannot use t.Parallel() because subtests use t.Setenv()
 	viperInstance := ksail.InitializeViper()
 
@@ -240,7 +240,7 @@ func TestInitializeViper_EnvReplacerRules(t *testing.T) {
 }
 
 // TestInitializeViper_Idempotency tests that multiple calls to InitializeViper work correctly.
-func TestInitializeViper_Idempotency(t *testing.T) {
+func TestInitializeViperIdempotency(t *testing.T) {
 	t.Parallel()
 
 	// Call InitializeViper multiple times
@@ -267,7 +267,7 @@ func TestInitializeViper_Idempotency(t *testing.T) {
 }
 
 // TestInitializeViper_ConfigType tests that the config type is set correctly.
-func TestInitializeViper_ConfigType(t *testing.T) {
+func TestInitializeViperConfigType(t *testing.T) {
 	t.Parallel()
 
 	viperInstance := ksail.InitializeViper()
@@ -288,7 +288,7 @@ test:
 }
 
 // TestInitializeViper_ErrorHandling tests error handling behavior.
-func TestInitializeViper_ErrorHandling(t *testing.T) {
+func TestInitializeViperErrorHandling(t *testing.T) {
 	// Cannot use t.Parallel() because test uses t.Setenv()
 
 	// This test verifies that InitializeViper handles missing config files gracefully

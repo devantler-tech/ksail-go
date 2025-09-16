@@ -43,7 +43,7 @@ func setupMockManagerWithError(
 	return mockManager
 }
 
-func TestHandleSimpleClusterCommand_Success(t *testing.T) {
+func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -63,7 +63,7 @@ func TestHandleSimpleClusterCommand_Success(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context:")
 }
 
-func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
+func TestHandleSimpleClusterCommandLoadError(t *testing.T) {
 	t.Parallel()
 
 	testCmd, out := setupTestCommand()
@@ -82,7 +82,7 @@ func TestHandleSimpleClusterCommand_LoadError(t *testing.T) {
 	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
 }
 
-func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
+func TestLoadClusterWithErrorHandlingSuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -99,7 +99,7 @@ func TestLoadClusterWithErrorHandling_Success(t *testing.T) {
 	assert.Empty(t, out.String()) // No error output
 }
 
-func TestLoadClusterWithErrorHandling_LoadError(t *testing.T) {
+func TestLoadClusterWithErrorHandlingLoadError(t *testing.T) {
 	t.Parallel()
 
 	testCmd, out := setupTestCommand()
@@ -181,7 +181,7 @@ func TestStandardDistributionConfigFieldSelector(t *testing.T) {
 	assert.Equal(t, &cluster.Spec.DistributionConfig, result)
 }
 
-func TestStandardClusterCommandRunE_Success(t *testing.T) {
+func TestStandardClusterCommandRunESuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -202,7 +202,7 @@ func TestStandardClusterCommandRunE_Success(t *testing.T) {
 	assert.Contains(t, out.String(), "✔ "+successMessage)
 }
 
-func TestStandardClusterCommandRunE_Error(t *testing.T) {
+func TestStandardClusterCommandRunEError(t *testing.T) {
 	t.Parallel()
 
 	testCmd, _ := setupTestCommand()

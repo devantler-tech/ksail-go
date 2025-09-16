@@ -24,7 +24,7 @@ func TestNewFluxInstaller(t *testing.T) {
 	assert.NotNil(t, installer)
 }
 
-func TestFluxInstaller_Install_Success(t *testing.T) {
+func TestFluxInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
@@ -42,7 +42,7 @@ func TestFluxInstaller_Install_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFluxInstaller_Install_Error(t *testing.T) {
+func TestFluxInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
@@ -61,7 +61,7 @@ func TestFluxInstaller_Install_Error(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to install Flux operator")
 }
 
-func TestFluxInstaller_Uninstall_Success(t *testing.T) {
+func TestFluxInstallerUninstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
@@ -79,7 +79,7 @@ func TestFluxInstaller_Uninstall_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFluxInstaller_Uninstall_Error(t *testing.T) {
+func TestFluxInstallerUninstallError(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)

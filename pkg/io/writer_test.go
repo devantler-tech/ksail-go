@@ -19,7 +19,7 @@ const (
 	originalContent = "original content"
 )
 
-func TestTryWrite_WithBuffer(t *testing.T) {
+func TestTryWriteWithBuffer(t *testing.T) {
 	t.Parallel()
 
 	content := "test content for buffer"
@@ -32,7 +32,7 @@ func TestTryWrite_WithBuffer(t *testing.T) {
 	assert.Equal(t, content, buffer.String(), "buffer content")
 }
 
-func TestTryWrite_WithStringWriter(t *testing.T) {
+func TestTryWriteWithStringWriter(t *testing.T) {
 	t.Parallel()
 
 	content := "test content for string writer"
@@ -45,7 +45,7 @@ func TestTryWrite_WithStringWriter(t *testing.T) {
 	assert.Equal(t, content, stringBuilder.String(), "string builder content")
 }
 
-func TestTryWrite_WithFailingWriter(t *testing.T) {
+func TestTryWriteWithFailingWriter(t *testing.T) {
 	t.Parallel()
 
 	content := testContent
@@ -65,7 +65,7 @@ func (f *failingWriter) Write([]byte) (int, error) {
 	return 0, io.ErrUnexpectedEOF
 }
 
-func TestTryWriteFile_EmptyOutput(t *testing.T) {
+func TestTryWriteFileEmptyOutput(t *testing.T) {
 	t.Parallel()
 
 	content := testContent
@@ -76,7 +76,7 @@ func TestTryWriteFile_EmptyOutput(t *testing.T) {
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
-func TestTryWriteFile_NewFile(t *testing.T) {
+func TestTryWriteFileNewFile(t *testing.T) {
 	t.Parallel()
 
 	content := "new file content"
@@ -94,7 +94,7 @@ func TestTryWriteFile_NewFile(t *testing.T) {
 	assert.Equal(t, content, string(writtenContent), "written file content")
 }
 
-func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
+func TestTryWriteFileExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	newContent := "new content"
@@ -121,7 +121,7 @@ func TestTryWriteFile_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
+func TestTryWriteFileExistingFileForce(t *testing.T) {
 	t.Parallel()
 
 	newContent := "new content forced"
@@ -143,7 +143,7 @@ func TestTryWriteFile_ExistingFile_Force(t *testing.T) {
 	assert.Equal(t, newContent, string(writtenContent), "file content (should be overwritten)")
 }
 
-func TestTryWriteFile_StatError(t *testing.T) {
+func TestTryWriteFileStatError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for stat error test"
@@ -162,7 +162,7 @@ func TestTryWriteFile_StatError(t *testing.T) {
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
-func TestTryWriteFile_WriteError(t *testing.T) {
+func TestTryWriteFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for write error test"
@@ -182,7 +182,7 @@ func TestTryWriteFile_WriteError(t *testing.T) {
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
-func TestGetWriter_Quiet(t *testing.T) {
+func TestGetWriterQuiet(t *testing.T) {
 	t.Parallel()
 
 	writer := ioutils.GetWriter(true)
@@ -192,7 +192,7 @@ func TestGetWriter_Quiet(t *testing.T) {
 	}
 }
 
-func TestTryWriteFile_FileWriteError(t *testing.T) {
+func TestTryWriteFileFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for file write error test"
@@ -210,7 +210,7 @@ func TestTryWriteFile_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "TryWriteFile() result on error")
 }
 
-func TestWriteFileSafe_EmptyBasePath(t *testing.T) {
+func TestWriteFileSafeEmptyBasePath(t *testing.T) {
 	t.Parallel()
 
 	content := testContent
@@ -227,7 +227,7 @@ func TestWriteFileSafe_EmptyBasePath(t *testing.T) {
 	)
 }
 
-func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
+func TestWriteFileSafeEmptyFilePath(t *testing.T) {
 	t.Parallel()
 
 	content := testContent
@@ -244,7 +244,7 @@ func TestWriteFileSafe_EmptyFilePath(t *testing.T) {
 	)
 }
 
-func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
+func TestWriteFileSafePathOutsideBase(t *testing.T) {
 	t.Parallel()
 
 	content := testContent
@@ -262,7 +262,7 @@ func TestWriteFileSafe_PathOutsideBase(t *testing.T) {
 	)
 }
 
-func TestWriteFileSafe_NewFile(t *testing.T) {
+func TestWriteFileSafeNewFile(t *testing.T) {
 	t.Parallel()
 
 	content := "new file content via WriteFileSafe"
@@ -279,7 +279,7 @@ func TestWriteFileSafe_NewFile(t *testing.T) {
 	assert.Equal(t, content, string(writtenContent), "file content")
 }
 
-func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
+func TestWriteFileSafeExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	newContent := "new content"
@@ -305,7 +305,7 @@ func TestWriteFileSafe_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
+func TestWriteFileSafeExistingFileForce(t *testing.T) {
 	t.Parallel()
 
 	newContent := "new content forced"
@@ -326,7 +326,7 @@ func TestWriteFileSafe_ExistingFile_Force(t *testing.T) {
 	assert.Equal(t, newContent, string(writtenContent), "file content should be overwritten")
 }
 
-func TestWriteFileSafe_StatError(t *testing.T) {
+func TestWriteFileSafeStatError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for stat error test"
@@ -344,7 +344,7 @@ func TestWriteFileSafe_StatError(t *testing.T) {
 	testutils.AssertErrContains(t, err, "failed to check file", "WriteFileSafe stat failure")
 }
 
-func TestWriteFileSafe_DirectoryCreationError(t *testing.T) {
+func TestWriteFileSafeDirectoryCreationError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for directory creation error test"
@@ -372,7 +372,7 @@ func TestWriteFileSafe_DirectoryCreationError(t *testing.T) {
 	)
 }
 
-func TestWriteFileSafe_FileWriteError(t *testing.T) {
+func TestWriteFileSafeFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	content := "content for file write error test"
@@ -389,7 +389,7 @@ func TestWriteFileSafe_FileWriteError(t *testing.T) {
 	testutils.AssertErrContains(t, err, "failed to write file", "WriteFileSafe file write failure")
 }
 
-func TestGetWriter_NotQuiet(t *testing.T) {
+func TestGetWriterNotQuiet(t *testing.T) {
 	t.Parallel()
 
 	writer := ioutils.GetWriter(false)

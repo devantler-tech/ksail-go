@@ -49,7 +49,7 @@ func setupFlagBindingTest(
 }
 
 // TestManager_addFlagFromField_BasicFields tests basic field selectors.
-func TestManager_addFlagFromField_BasicFields(t *testing.T) {
+func TestManageraddFlagFromFieldBasicFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -94,7 +94,7 @@ func TestManager_addFlagFromField_BasicFields(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_ConnectionFields tests connection-related field selectors.
-func TestManager_addFlagFromField_ConnectionFields(t *testing.T) {
+func TestManageraddFlagFromFieldConnectionFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -129,7 +129,7 @@ func TestManager_addFlagFromField_ConnectionFields(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_NetworkingFields tests networking-related field selectors.
-func TestManager_addFlagFromField_NetworkingFields(t *testing.T) {
+func TestManageraddFlagFromFieldNetworkingFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -211,7 +211,7 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 }
 
 // TestManager_GenerateFlagName_BasicFields tests flag name generation for basic spec fields.
-func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
+func TestManagerGenerateFlagNameBasicFields(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -243,7 +243,7 @@ func TestManager_GenerateFlagName_BasicFields(t *testing.T) {
 }
 
 // TestManager_GenerateFlagName_ConnectionFields tests flag name generation for connection fields.
-func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
+func TestManagerGenerateFlagNameConnectionFields(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -270,7 +270,7 @@ func TestManager_GenerateFlagName_ConnectionFields(t *testing.T) {
 }
 
 // TestManager_GenerateFlagName_NetworkingFields tests flag name generation for networking fields.
-func TestManager_GenerateFlagName_NetworkingFields(t *testing.T) {
+func TestManagerGenerateFlagNameNetworkingFields(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -315,7 +315,7 @@ func testFlagNameGeneration(
 }
 
 // TestManager_GenerateShorthand tests the GenerateShorthand method.
-func TestManager_GenerateShorthand(t *testing.T) {
+func TestManagerGenerateShorthand(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -379,7 +379,7 @@ func TestManager_GenerateShorthand(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_ErrorPaths tests error handling in addFlagFromField.
-func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
+func TestManageraddFlagFromFieldErrorPaths(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -423,7 +423,7 @@ func TestManager_addFlagFromField_ErrorPaths(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_EnumTypesWithNilDefault tests enum field types with nil defaults.
-func TestManager_addFlagFromField_EnumTypesWithNilDefault(t *testing.T) {
+func TestManageraddFlagFromFieldEnumTypesWithNilDefault(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -464,7 +464,7 @@ func TestManager_addFlagFromField_EnumTypesWithNilDefault(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_ControllerTypesWithNilDefault tests controller field types with nil defaults.
-func TestManager_addFlagFromField_ControllerTypesWithNilDefault(t *testing.T) {
+func TestManageraddFlagFromFieldControllerTypesWithNilDefault(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -496,7 +496,7 @@ func TestManager_addFlagFromField_ControllerTypesWithNilDefault(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_BasicTypesWithNilDefault tests basic field types with nil defaults.
-func TestManager_addFlagFromField_BasicTypesWithNilDefault(t *testing.T) {
+func TestManageraddFlagFromFieldBasicTypesWithNilDefault(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -549,7 +549,7 @@ func testFieldTypeWithNilDefault(
 }
 
 // TestManager_addFlagFromField_TimeDuration tests time.Duration field type.
-func TestManager_addFlagFromField_TimeDuration(t *testing.T) {
+func TestManageraddFlagFromFieldTimeDuration(t *testing.T) {
 	t.Parallel()
 
 	// Test with metav1.Duration which has a time.Duration field
@@ -582,7 +582,7 @@ func assertFlagTypeExists(t *testing.T, cmd *cobra.Command, expectedType string)
 }
 
 // TestManager_addFlagFromField_EmptyShorthand tests pflag.Value with empty shorthand.
-func TestManager_addFlagFromField_EmptyShorthand(t *testing.T) {
+func TestManageraddFlagFromFieldEmptyShorthand(t *testing.T) {
 	t.Parallel()
 
 	// Use distribution-config which should have empty shorthand according to GenerateShorthand tests
@@ -629,7 +629,7 @@ func (v *testPflagValue) Type() string {
 }
 
 // TestManager_setPflagValueDefault_StringDefaultValue tests the default case in setPflagValueDefault.
-func TestManager_setPflagValueDefault_StringDefaultValue(t *testing.T) {
+func TestManagersetPflagValueDefaultStringDefaultValue(t *testing.T) {
 	t.Parallel()
 
 	var testValue testPflagValue
@@ -660,7 +660,7 @@ func TestManager_setPflagValueDefault_StringDefaultValue(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_NilFieldPtr tests early return when fieldPtr is nil.
-func TestManager_addFlagFromField_NilFieldPtr(t *testing.T) {
+func TestManageraddFlagFromFieldNilFieldPtr(t *testing.T) {
 	t.Parallel()
 
 	fieldSelector := ksail.FieldSelector[v1alpha1.Cluster]{
@@ -678,7 +678,7 @@ func TestManager_addFlagFromField_NilFieldPtr(t *testing.T) {
 }
 
 // TestManager_addFlagFromField_NonConvertiblePflagDefaultValue tests pflag.Value with non-string default.
-func TestManager_addFlagFromField_NonConvertiblePflagDefaultValue(t *testing.T) {
+func TestManageraddFlagFromFieldNonConvertiblePflagDefaultValue(t *testing.T) {
 	t.Parallel()
 
 	var testValue testPflagValue

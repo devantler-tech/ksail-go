@@ -15,7 +15,7 @@ import (
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
-func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
+func TestKustomizationGeneratorGenerateWithoutFile(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
@@ -31,7 +31,7 @@ func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
 	assertKustomizationYAML(t, result)
 }
 
-func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
+func TestKustomizationGeneratorGenerateWithFile(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("file-cluster")
@@ -52,7 +52,7 @@ func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
-func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestKustomizationGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-no-force")
@@ -70,7 +70,7 @@ func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestKustomizationGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-with-force")
@@ -88,7 +88,7 @@ func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
+func TestKustomizationGeneratorGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("error-cluster")
@@ -104,7 +104,7 @@ func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_MarshalError(t *testing.T) {
+func TestKustomizationGeneratorGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

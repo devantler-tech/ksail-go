@@ -12,7 +12,7 @@ import (
 )
 
 // Tests are intentionally minimal and explicit to keep coverage high and behavior clear.
-func TestReadFileSafe_NormalRead(t *testing.T) {
+func TestReadFileSafeNormalRead(t *testing.T) {
 	t.Parallel()
 
 	base := t.TempDir()
@@ -27,7 +27,7 @@ func TestReadFileSafe_NormalRead(t *testing.T) {
 	assert.Equal(t, string(want), string(got), "content")
 }
 
-func TestReadFileSafe_OutsideBase(t *testing.T) {
+func TestReadFileSafeOutsideBase(t *testing.T) {
 	t.Parallel()
 
 	base := t.TempDir()
@@ -46,7 +46,7 @@ func TestReadFileSafe_OutsideBase(t *testing.T) {
 	)
 }
 
-func TestReadFileSafe_TraversalAttempt(t *testing.T) {
+func TestReadFileSafeTraversalAttempt(t *testing.T) {
 	t.Parallel()
 
 	base := t.TempDir()
@@ -68,7 +68,7 @@ func TestReadFileSafe_TraversalAttempt(t *testing.T) {
 	)
 }
 
-func TestReadFileSafe_MissingFileInsideBase(t *testing.T) {
+func TestReadFileSafeMissingFileInsideBase(t *testing.T) {
 	t.Parallel()
 
 	base := t.TempDir()

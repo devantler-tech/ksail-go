@@ -30,7 +30,7 @@ func TestNewInitCmd(t *testing.T) {
 	}
 }
 
-func TestInitCmd_Execute(t *testing.T) {
+func TestInitCmdExecute(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -39,7 +39,7 @@ func TestInitCmd_Execute(t *testing.T) {
 	})
 }
 
-func TestInitCmd_Help(t *testing.T) {
+func TestInitCmdHelp(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
@@ -47,7 +47,7 @@ func TestInitCmd_Help(t *testing.T) {
 	})
 }
 
-func TestInitCmd_Flags(t *testing.T) {
+func TestInitCmdFlags(t *testing.T) {
 	t.Parallel()
 
 	cmd := cmd.NewInitCmd()
@@ -82,7 +82,7 @@ func TestInitCmd_Flags(t *testing.T) {
 }
 
 // TestHandleInitRunE_Success tests successful init command execution.
-func TestHandleInitRunE_Success(t *testing.T) {
+func TestHandleInitRunESuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -101,7 +101,7 @@ func TestHandleInitRunE_Success(t *testing.T) {
 }
 
 // TestHandleInitRunE_Error tests init command with config load error.
-func TestHandleInitRunE_Error(t *testing.T) {
+func TestHandleInitRunEError(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestRunEError(t, cmd.HandleInitRunE)

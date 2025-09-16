@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
+func TestKindGeneratorGenerateWithoutFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -29,7 +29,7 @@ func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
 	assertKindYAML(t, result, "test-cluster")
 }
 
-func TestKindGenerator_Generate_WithFile(t *testing.T) {
+func TestKindGeneratorGenerateWithFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -50,7 +50,7 @@ func TestKindGenerator_Generate_WithFile(t *testing.T) {
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
-func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestKindGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -68,7 +68,7 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestKindGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -86,7 +86,7 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
+func TestKindGeneratorGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -102,7 +102,7 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_MarshalError(t *testing.T) {
+func TestKindGeneratorGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

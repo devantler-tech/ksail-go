@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
+func TestK3dGeneratorGenerateWithoutFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -31,7 +31,7 @@ func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
 	assertK3dYAML(t, result, "test-cluster")
 }
 
-func TestK3dGenerator_Generate_WithFile(t *testing.T) {
+func TestK3dGeneratorGenerateWithFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -52,7 +52,7 @@ func TestK3dGenerator_Generate_WithFile(t *testing.T) {
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
-func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestK3dGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -70,7 +70,7 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestK3dGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -88,7 +88,7 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
+func TestK3dGeneratorGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -104,7 +104,7 @@ func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
+func TestK3dGeneratorGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

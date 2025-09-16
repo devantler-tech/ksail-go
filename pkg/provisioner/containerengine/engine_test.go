@@ -122,7 +122,7 @@ func assertDockerEngineSuccess(
 	assertSuccessfulEngineCreation(t, engine, err, "Docker", mockClient)
 }
 
-func TestContainerEngine_CheckReady(t *testing.T) {
+func TestContainerEngineCheckReady(t *testing.T) {
 	t.Parallel()
 
 	tests := createContainerEngineTestCases()
@@ -245,7 +245,7 @@ func runNameTestCase(t *testing.T, testCase nameTestCase) {
 	assert.Equal(t, testCase.expectedName, engine.GetName())
 }
 
-func TestContainerEngine_Name(t *testing.T) {
+func TestContainerEngineName(t *testing.T) {
 	t.Parallel()
 
 	tests := createNameTestCases()
@@ -258,7 +258,7 @@ func TestContainerEngine_Name(t *testing.T) {
 	}
 }
 
-func TestContainerEngine_GetClient(t *testing.T) {
+func TestContainerEngineGetClient(t *testing.T) {
 	t.Parallel()
 	mockClient := provisioner.NewMockAPIClient(t)
 	engine, err := containerengine.NewContainerEngine(mockClient)
@@ -267,7 +267,7 @@ func TestContainerEngine_GetClient(t *testing.T) {
 	assert.Equal(t, mockClient, engine.Client)
 }
 
-func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
+func TestNewContainerEngineWithInjectedClient(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -284,7 +284,7 @@ func TestNewContainerEngine_WithInjectedClient(t *testing.T) {
 	assert.Equal(t, mockClient, engine.Client)
 }
 
-func TestNewContainerEngine_WithNilClient(t *testing.T) {
+func TestNewContainerEngineWithNilClient(t *testing.T) {
 	t.Parallel()
 
 	// Act
@@ -296,7 +296,7 @@ func TestNewContainerEngine_WithNilClient(t *testing.T) {
 	assert.Contains(t, err.Error(), "apiClient cannot be nil")
 }
 
-func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
+func TestNewContainerEngineWithAvailableEngine(t *testing.T) {
 	t.Parallel()
 	// Test with actual environment - this tests the real functionality
 	// Use GetAutoDetectedClient for auto-detection since NewContainerEngine no longer does auto-detection
@@ -312,7 +312,7 @@ func TestNewContainerEngine_WithAvailableEngine(t *testing.T) {
 	}
 }
 
-func TestNewContainerEngine_APISignature(t *testing.T) {
+func TestNewContainerEngineAPISignature(t *testing.T) {
 	t.Parallel()
 
 	t.Run("dependency injection mode", func(t *testing.T) {
@@ -393,7 +393,7 @@ func TestGetAutoDetectedClient(t *testing.T) {
 }
 
 // Test scenarios that might not be easily testable with real clients.
-func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
+func TestGetAutoDetectedClientNoEngineAvailable(t *testing.T) {
 	t.Parallel()
 
 	// This test documents the expected behavior when no engine is available
@@ -410,7 +410,7 @@ func TestGetAutoDetectedClient_NoEngineAvailable(t *testing.T) {
 	assertAutoDetectionResult(t, engine, err)
 }
 
-func TestGetAutoDetectedClient_DockerSuccess(t *testing.T) {
+func TestGetAutoDetectedClientDockerSuccess(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -450,7 +450,7 @@ func createTestOverrides(dockerClient client.APIClient, dockerErr error,
 	}
 }
 
-func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
+func TestGetAutoDetectedClientFallbackScenarios(t *testing.T) {
 	t.Parallel()
 
 	t.Run("DockerNotReady_PodmanUserSuccess", func(t *testing.T) {
@@ -512,7 +512,7 @@ func TestGetAutoDetectedClient_FallbackScenarios(t *testing.T) {
 	})
 }
 
-func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
+func TestGetAutoDetectedClientAllClientsFail(t *testing.T) {
 	t.Parallel()
 
 	overrides := createTestOverrides(
@@ -529,7 +529,7 @@ func TestGetAutoDetectedClient_AllClientsFail(t *testing.T) {
 	assert.Nil(t, engine)
 }
 
-func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
+func TestGetAutoDetectedClientAllClientsCreateButNotReady(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -560,7 +560,7 @@ func TestGetAutoDetectedClient_AllClientsCreateButNotReady(t *testing.T) {
 	assert.Nil(t, engine)
 }
 
-func TestGetAutoDetectedClient_PartialClientCreators(t *testing.T) {
+func TestGetAutoDetectedClientPartialClientCreators(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
@@ -639,7 +639,7 @@ func runEdgeCaseTest(t *testing.T, testCase edgeCaseTest) {
 	}
 }
 
-func TestDetectEngineType_EdgeCases(t *testing.T) {
+func TestDetectEngineTypeEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	testCases := getEdgeCasesTestData()
@@ -652,7 +652,7 @@ func TestDetectEngineType_EdgeCases(t *testing.T) {
 	}
 }
 
-func TestGetAutoDetectedClient_WithEmptyOverrides(t *testing.T) {
+func TestGetAutoDetectedClientWithEmptyOverrides(t *testing.T) {
 	t.Parallel()
 
 	// Test with empty map - should use default client creators
@@ -665,7 +665,7 @@ func TestGetAutoDetectedClient_WithEmptyOverrides(t *testing.T) {
 	assertAutoDetectionResult(t, engine, err)
 }
 
-func TestGetAutoDetectedClient_WithNilOverrides(t *testing.T) {
+func TestGetAutoDetectedClientWithNilOverrides(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil overrides - should use default client creators
@@ -709,7 +709,7 @@ func TestContainsHelper(t *testing.T) {
 	}
 }
 
-func TestTryCreateEngine_NewContainerEngineFailure(t *testing.T) {
+func TestTryCreateEngineNewContainerEngineFailure(t *testing.T) {
 	t.Parallel()
 
 	// This test covers the edge case where a client creator returns a nil client
@@ -731,7 +731,7 @@ func TestTryCreateEngine_NewContainerEngineFailure(t *testing.T) {
 	assert.Nil(t, engine)
 }
 
-func TestClientCreation_AllScenarios(t *testing.T) {
+func TestClientCreationAllScenarios(t *testing.T) {
 	t.Parallel()
 
 	// Test all client creation functions

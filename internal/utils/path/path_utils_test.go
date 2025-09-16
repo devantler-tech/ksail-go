@@ -8,7 +8,7 @@ import (
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 )
 
-func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
+func TestExpandHomePathExpandsHomePrefix(t *testing.T) {
 	t.Parallel()
 
 	usr, err := user.Current()
@@ -30,7 +30,7 @@ func TestExpandPath_ExpandsHomePrefix(t *testing.T) {
 	}
 }
 
-func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
+func TestExpandHomePathReturnsUnchangedWhenNoTilde(t *testing.T) {
 	t.Parallel()
 
 	cases := []string{
@@ -50,7 +50,7 @@ func TestExpandPath_ReturnsUnchangedWhenNoTilde(t *testing.T) {
 	}
 }
 
-func TestExpandPath_TildeOnlyUnchanged(t *testing.T) {
+func TestExpandHomePathTildeOnlyUnchanged(t *testing.T) {
 	t.Parallel()
 
 	input := "~" // No trailing slash, function should leave unchanged

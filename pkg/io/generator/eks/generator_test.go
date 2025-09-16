@@ -14,7 +14,7 @@ import (
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
+func TestEKSGeneratorGenerateWithoutFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -30,7 +30,7 @@ func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
 	assertEKSYAML(t, result, "test-cluster")
 }
 
-func TestEKSGenerator_Generate_WithFile(t *testing.T) {
+func TestEKSGeneratorGenerateWithFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -51,7 +51,7 @@ func TestEKSGenerator_Generate_WithFile(t *testing.T) {
 	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
-func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestEKSGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -69,7 +69,7 @@ func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestEKSGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -87,7 +87,7 @@ func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
+func TestEKSGeneratorGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -107,7 +107,7 @@ func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
+func TestEKSGeneratorGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert
@@ -118,7 +118,7 @@ func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
+func TestEKSGeneratorGenerateWithCustomOptions(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -139,7 +139,7 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 	assert.Contains(t, result, "\"1.25\"", "YAML should contain custom Kubernetes version")
 }
 
-func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
+func TestEKSGeneratorGenerateDefaultValues(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()

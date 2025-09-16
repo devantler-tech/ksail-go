@@ -1,4 +1,4 @@
-[TestReconcileCmd_Help - 1]
+[TestReconcileCmdHelp - 1]
 Reconcile workloads in the cluster to match the desired state
 defined in configuration files.
 
@@ -14,7 +14,7 @@ Flags:
 
 ---
 
-[TestReconcileCmd_Execute - 1]
+[TestReconcileCmdExecute - 1]
 ✔ Workloads reconciled successfully (stub implementation)
 ► Reconciliation tool: Kubectl
 ► Source directory: k8s
