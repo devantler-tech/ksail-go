@@ -199,11 +199,6 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 3. **Always** test basic CLI: `./ksail --help`
 4. **Always** run linter: `mega-linter-runner -f go` (primary, CI-consistent) and optionally `~/go/bin/golangci-lint run` (Go-specific)
 5. **Always** ensure tests pass before committing
-6. **Pre-commit hooks**: Be aware that pre-commit hooks are installed and will run automatically
-   - Hooks include golangci-lint formatting and mockery generation
-   - **Important**: Commits may take longer due to hook execution - wait for completion
-   - **Cannot assume immediate success**: Hooks may fail and prevent commit - check for errors
-   - See `.pre-commit-config.yaml` for configured hooks
 
 ### Adding New Features
 
