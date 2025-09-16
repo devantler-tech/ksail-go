@@ -3,7 +3,6 @@
 package ksail
 
 import (
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -53,9 +52,7 @@ func configureViperPaths(viperInstance *viper.Viper) {
 	// Get user home directory using os/user instead of $HOME
 	usr, err := user.Current()
 	if err != nil {
-		if isDebugEnabled() {
-			log.Printf("DEBUG: config-manager: failed to get user home directory: %v", err)
-		}
+		// do nothing
 	} else {
 		viperInstance.AddConfigPath(filepath.Join(usr.HomeDir, ".ksail"))
 	}
@@ -85,10 +82,6 @@ func addParentDirectoriesToViperPaths(viperInstance *viper.Viper) {
 	// Get absolute path of current directory
 	currentDir, err := filepath.Abs(".")
 	if err != nil {
-		if isDebugEnabled() {
-			log.Printf("DEBUG: config-manager: failed to get current directory for traversal: %v",
-				err)
-		}
 		// If we can't get current dir, the default paths should suffice
 		return
 	}
@@ -117,14 +110,4 @@ func addParentDirectoriesToViperPaths(viperInstance *viper.Viper) {
 			break
 		}
 	}
-}
-
-// isDebugEnabled checks if debug logging is enabled via KSAIL_DEBUG environment variable.
-func isDebugEnabled() bool {
-	return os.Getenv("KSAIL_DEBUG") != ""
-}
-
-// IsDebugEnabledForTesting exports the debug check function for testing purposes.
-func IsDebugEnabledForTesting() bool {
-	return isDebugEnabled()
 }

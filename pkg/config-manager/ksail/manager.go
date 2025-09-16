@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// ConfigManager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
+// ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
 	Viper          *viper.Viper
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
@@ -22,7 +22,8 @@ type ConfigManager struct {
 	configLoaded   bool              // Track if config has been actually loaded
 }
 
-// Verify that Manager implements the ConfigManager interface.
+// Compile-time interface compliance verification.
+// This ensures ConfigManager properly implements configmanager.ConfigManager[v1alpha1.Cluster].
 var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
 
 // NewConfigManager creates a new configuration manager with the specified field selectors.
