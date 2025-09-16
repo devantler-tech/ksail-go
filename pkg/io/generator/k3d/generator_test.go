@@ -15,41 +15,62 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestK3dGeneratorGenerateWithoutFile(t *testing.T) {
+func TestK3dGeneratorGenerate(t *testing.T) {
 	t.Parallel()
 
-	gen := generator.NewK3dGenerator()
-	cluster := createTestCluster("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
+	tests := []struct {
+		name        string
+		clusterName string
+		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
+		expectError bool
+	}{
+		{
+			name:        "without file",
+			clusterName: "test-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				return "", false, ""
+			},
+			expectError: false,
+		},
+		{
+			name:        "with file",
+			clusterName: "file-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				tempDir := t.TempDir()
+				outputPath := filepath.Join(tempDir, "k3d-config.yaml")
+				return outputPath, true, tempDir
+			},
+			expectError: false,
+		},
 	}
 
-	result, err := gen.Generate(cluster, opts)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "test-cluster")
-}
+			gen := generator.NewK3dGenerator()
+			cluster := createTestCluster(test.clusterName)
+			output, verifyFile, tempDir := test.setupOutput(t)
+			opts := yamlgenerator.Options{
+				Output: output,
+				Force:  false,
+			}
 
-func TestK3dGeneratorGenerateWithFile(t *testing.T) {
-	t.Parallel()
+			result, err := gen.Generate(cluster, opts)
 
-	gen := generator.NewK3dGenerator()
-	cluster := createTestCluster("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "k3d-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "Generate should succeed")
+				assertK3dYAML(t, result, test.clusterName)
+
+				if verifyFile {
+					// Verify file was written
+					testutils.AssertFileEquals(t, tempDir, output, result)
+				}
+			}
+		})
 	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestK3dGeneratorGenerateExistingFileNoForce(t *testing.T) {

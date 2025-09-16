@@ -15,41 +15,62 @@ import (
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
-func TestKustomizationGeneratorGenerateWithoutFile(t *testing.T) {
+func TestKustomizationGeneratorGenerate(t *testing.T) {
 	t.Parallel()
 
-	cluster := createTestCluster("test-cluster")
-	gen := generator.NewKustomizationGenerator(cluster)
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
+	tests := []struct {
+		name        string
+		clusterName string
+		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
+		expectError bool
+	}{
+		{
+			name:        "without file",
+			clusterName: "test-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				return "", false, ""
+			},
+			expectError: false,
+		},
+		{
+			name:        "with file",
+			clusterName: "file-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				tempDir := t.TempDir()
+				outputPath := filepath.Join(tempDir, "kustomization.yaml")
+				return outputPath, true, tempDir
+			},
+			expectError: false,
+		},
 	}
 
-	result, err := gen.Generate(cluster, opts)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "Generate should succeed")
-	assertKustomizationYAML(t, result)
-}
+			cluster := createTestCluster(test.clusterName)
+			gen := generator.NewKustomizationGenerator(cluster)
+			output, verifyFile, tempDir := test.setupOutput(t)
+			opts := yamlgenerator.Options{
+				Output: output,
+				Force:  false,
+			}
 
-func TestKustomizationGeneratorGenerateWithFile(t *testing.T) {
-	t.Parallel()
+			result, err := gen.Generate(cluster, opts)
 
-	cluster := createTestCluster("file-cluster")
-	gen := generator.NewKustomizationGenerator(cluster)
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "kustomization.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "Generate should succeed")
+				assertKustomizationYAML(t, result)
+
+				if verifyFile {
+					// Verify file was written
+					testutils.AssertFileEquals(t, tempDir, output, result)
+				}
+			}
+		})
 	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertKustomizationYAML(t, result)
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestKustomizationGeneratorGenerateExistingFileNoForce(t *testing.T) {

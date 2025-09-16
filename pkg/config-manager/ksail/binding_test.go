@@ -211,94 +211,92 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 }
 
 // TestManager_GenerateFlagName_BasicFields tests flag name generation for basic spec fields.
-func TestManagerGenerateFlagNameBasicFields(t *testing.T) {
+func TestManagerGenerateFlagName(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
 
-	tests := []flagNameTestCase{
-		{
-			name:     "Distribution field",
-			fieldPtr: &manager.Config.Spec.Distribution,
-			expected: "distribution",
-		},
-		{
-			name:     "DistributionConfig field",
-			fieldPtr: &manager.Config.Spec.DistributionConfig,
-			expected: "distribution-config",
-		},
-		{
-			name:     "SourceDirectory field",
-			fieldPtr: &manager.Config.Spec.SourceDirectory,
-			expected: "source-directory",
-		},
-		{
-			name:     "ReconciliationTool field",
-			fieldPtr: &manager.Config.Spec.ReconciliationTool,
-			expected: "reconciliation-tool",
-		},
-	}
+	t.Run("basic fields", func(t *testing.T) {
+		t.Parallel()
 
-	runFlagNameGenerationTests(t, manager, tests)
-}
+		tests := []flagNameTestCase{
+			{
+				name:     "Distribution field",
+				fieldPtr: &manager.Config.Spec.Distribution,
+				expected: "distribution",
+			},
+			{
+				name:     "DistributionConfig field",
+				fieldPtr: &manager.Config.Spec.DistributionConfig,
+				expected: "distribution-config",
+			},
+			{
+				name:     "SourceDirectory field",
+				fieldPtr: &manager.Config.Spec.SourceDirectory,
+				expected: "source-directory",
+			},
+			{
+				name:     "ReconciliationTool field",
+				fieldPtr: &manager.Config.Spec.ReconciliationTool,
+				expected: "reconciliation-tool",
+			},
+		}
 
-// TestManager_GenerateFlagName_ConnectionFields tests flag name generation for connection fields.
-func TestManagerGenerateFlagNameConnectionFields(t *testing.T) {
-	t.Parallel()
+		runFlagNameGenerationTests(t, manager, tests)
+	})
 
-	manager := ksail.NewConfigManager()
+	t.Run("connection fields", func(t *testing.T) {
+		t.Parallel()
 
-	tests := []flagNameTestCase{
-		{
-			name:     "Context field",
-			fieldPtr: &manager.Config.Spec.Connection.Context,
-			expected: "context",
-		},
-		{
-			name:     "Kubeconfig field",
-			fieldPtr: &manager.Config.Spec.Connection.Kubeconfig,
-			expected: "kubeconfig",
-		},
-		{
-			name:     "Timeout field",
-			fieldPtr: &manager.Config.Spec.Connection.Timeout,
-			expected: "timeout",
-		},
-	}
+		tests := []flagNameTestCase{
+			{
+				name:     "Context field",
+				fieldPtr: &manager.Config.Spec.Connection.Context,
+				expected: "context",
+			},
+			{
+				name:     "Kubeconfig field",
+				fieldPtr: &manager.Config.Spec.Connection.Kubeconfig,
+				expected: "kubeconfig",
+			},
+			{
+				name:     "Timeout field",
+				fieldPtr: &manager.Config.Spec.Connection.Timeout,
+				expected: "timeout",
+			},
+		}
 
-	runFlagNameGenerationTests(t, manager, tests)
-}
+		runFlagNameGenerationTests(t, manager, tests)
+	})
 
-// TestManager_GenerateFlagName_NetworkingFields tests flag name generation for networking fields.
-func TestManagerGenerateFlagNameNetworkingFields(t *testing.T) {
-	t.Parallel()
+	t.Run("networking fields", func(t *testing.T) {
+		t.Parallel()
 
-	manager := ksail.NewConfigManager()
+		tests := []flagNameTestCase{
+			{
+				name:     "CNI field",
+				fieldPtr: &manager.Config.Spec.CNI,
+				expected: "cni",
+			},
+			{
+				name:     "CSI field",
+				fieldPtr: &manager.Config.Spec.CSI,
+				expected: "csi",
+			},
+			{
+				name:     "IngressController field",
+				fieldPtr: &manager.Config.Spec.IngressController,
+				expected: "ingress-controller",
+			},
+			{
+				name:     "GatewayController field",
+				fieldPtr: &manager.Config.Spec.GatewayController,
+				expected: "gateway-controller",
+			},
+		}
 
-	tests := []flagNameTestCase{
-		{
-			name:     "CNI field",
-			fieldPtr: &manager.Config.Spec.CNI,
-			expected: "cni",
-		},
-		{
-			name:     "CSI field",
-			fieldPtr: &manager.Config.Spec.CSI,
-			expected: "csi",
-		},
-		{
-			name:     "IngressController field",
-			fieldPtr: &manager.Config.Spec.IngressController,
-			expected: "ingress-controller",
-		},
-		{
-			name:     "GatewayController field",
-			fieldPtr: &manager.Config.Spec.GatewayController,
-			expected: "gateway-controller",
-		},
-	}
-
-	runFlagNameGenerationTests(t, manager, tests)
+		runFlagNameGenerationTests(t, manager, tests)
+	})
 }
 
 // testFlagNameGeneration is a helper function to test flag name generation.
