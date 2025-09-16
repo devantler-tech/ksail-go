@@ -43,17 +43,17 @@ func TestExpandHomePath(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, err := pathutils.ExpandHomePath(tt.input)
+			got, err := pathutils.ExpandHomePath(testCase.input)
 			if err != nil {
 				t.Fatalf("ExpandHomePath returned error: %v", err)
 			}
 
-			if got != tt.expected {
-				t.Fatalf("ExpandHomePath(%q) = %q, want %q", tt.input, got, tt.expected)
+			if got != testCase.expected {
+				t.Fatalf("ExpandHomePath(%q) = %q, want %q", testCase.input, got, testCase.expected)
 			}
 		})
 	}

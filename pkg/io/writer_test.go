@@ -107,7 +107,7 @@ func TestTryWriteFile(t *testing.T) {
 	}{
 		{
 			name: "empty output",
-			setupTest: func(t *testing.T) (string, string, bool) {
+			setupTest: func(_ *testing.T) (string, string, bool) {
 				return testContent, "", false
 			},
 			expectError:        true,
@@ -116,13 +116,14 @@ func TestTryWriteFile(t *testing.T) {
 		{
 			name: "new file",
 			setupTest: func(t *testing.T) (string, string, bool) {
+				t.Helper()
 				content := "new file content"
 				tempDir := t.TempDir()
 				outputPath := filepath.Join(tempDir, "test.txt")
 				return content, outputPath, false
 			},
 			expectError: false,
-			verifyResult: func(t *testing.T, tempDir, outputPath, content, result string) {
+			verifyResult: func(t *testing.T, tempDir, outputPath, content, _ string) {
 				// Verify file was written
 				writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 				require.NoError(t, err, "ReadFile()")
@@ -143,7 +144,7 @@ func TestTryWriteFile(t *testing.T) {
 				return newContent, outputPath, false
 			},
 			expectError: false,
-			verifyResult: func(t *testing.T, tempDir, outputPath, content, result string) {
+			verifyResult: func(t *testing.T, tempDir, outputPath, _, _ string) {
 				// Verify file was NOT overwritten
 				writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 				require.NoError(t, err, "ReadFile()")
@@ -169,7 +170,7 @@ func TestTryWriteFile(t *testing.T) {
 				return newContent, outputPath, true
 			},
 			expectError: false,
-			verifyResult: func(t *testing.T, tempDir, outputPath, content, result string) {
+			verifyResult: func(t *testing.T, tempDir, outputPath, content, _ string) {
 				// Verify file was overwritten
 				writtenContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
 				require.NoError(t, err, "ReadFile()")
@@ -200,7 +201,7 @@ func TestTryWriteFile(t *testing.T) {
 		},
 		{
 			name: "write error",
-			setupTest: func(t *testing.T) (string, string, bool) {
+			setupTest: func(_ *testing.T) (string, string, bool) {
 				content := "content for write error test"
 				// Use a path that cannot be written to (directory that doesn't exist)
 				invalidPath := "/invalid/nonexistent/deeply/nested/path/file.txt"
@@ -237,6 +238,7 @@ func TestTryWriteFile(t *testing.T) {
 			if test.expectError {
 				require.Error(t, err, "TryWriteFile()")
 				assert.Empty(t, result, "TryWriteFile() result on error")
+
 				if test.expectedErrMessage != "" {
 					testutils.AssertErrContains(
 						t,
@@ -291,7 +293,7 @@ func TestWriteFileSafe(t *testing.T) {
 	}{
 		{
 			name: "empty base path",
-			setupTest: func(t *testing.T) (string, string, string, bool) {
+			setupTest: func(_ *testing.T) (string, string, string, bool) {
 				return testContent, "", "/some/path/file.txt", false
 			},
 			expectError:   true,
@@ -346,7 +348,7 @@ func TestWriteFileSafe(t *testing.T) {
 				return newContent, basePath, filePath, false
 			},
 			expectError: false,
-			verifyResult: func(t *testing.T, basePath, filePath, content string) {
+			verifyResult: func(t *testing.T, basePath, filePath, _ string) {
 				// Verify file was NOT overwritten
 				writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
 				require.NoError(t, err, "ReadFile")
@@ -445,6 +447,7 @@ func TestWriteFileSafe(t *testing.T) {
 
 			if test.expectError {
 				require.Error(t, err, "WriteFileSafe")
+
 				if test.expectedError != nil {
 					testutils.AssertErrWrappedContains(
 						t,
@@ -454,11 +457,13 @@ func TestWriteFileSafe(t *testing.T) {
 						"WriteFileSafe",
 					)
 				}
+
 				if test.expectedErrMessage != "" {
 					testutils.AssertErrContains(t, err, test.expectedErrMessage, "WriteFileSafe")
 				}
 			} else {
 				require.NoError(t, err, "WriteFileSafe")
+
 				if test.verifyResult != nil {
 					test.verifyResult(t, basePath, filePath, content)
 				}

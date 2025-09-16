@@ -26,7 +26,7 @@ func TestGenerate(t *testing.T) {
 		{
 			name:        "without file",
 			clusterName: "test-cluster",
-			setupOutput: func(t *testing.T) (string, bool, string) {
+			setupOutput: func(_ *testing.T) (string, bool, string) {
 				return "", false, ""
 			},
 			expectError: false,
@@ -35,8 +35,10 @@ func TestGenerate(t *testing.T) {
 			name:        "with file",
 			clusterName: "file-cluster",
 			setupOutput: func(t *testing.T) (string, bool, string) {
+				t.Helper()
 				tempDir := t.TempDir()
 				outputPath := filepath.Join(tempDir, "eks-config.yaml")
+
 				return outputPath, true, tempDir
 			},
 			expectError: false,

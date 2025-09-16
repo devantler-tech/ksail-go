@@ -30,6 +30,7 @@ func TestPrintKSailLogo(t *testing.T) {
 	// Test snapshot first
 	t.Run("snapshot", func(t *testing.T) {
 		t.Parallel()
+
 		var writer bytes.Buffer
 		asciiart.PrintKSailLogo(&writer)
 		snaps.MatchSnapshot(t, writer.String())
