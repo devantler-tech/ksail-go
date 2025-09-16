@@ -226,6 +226,51 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 - **Mock Testing**: pkg/provisioner/cluster uses mocks for Docker API testing
 - **Current Coverage**: CLI structure, UI components, and cluster provisioning logic
 
+### Test Naming Conventions and Structure
+
+**CRITICAL NAMING REQUIREMENTS**: Follow strict Go community naming conventions for all test functions:
+
+#### Test Function Naming Rules
+- **Primary Pattern**: `func TestXxx(t *testing.T)` where `Xxx` is the **method/function/constructor name only**
+- **NEVER include struct names**: `TestManagerLoadConfig` ❌ → `TestLoadConfig` ✅
+- **NEVER include explanations**: `TestLoadConfigWithValidInput` ❌ → `TestLoadConfig` ✅ (use subtests instead)
+- **Method names only**: For `type Manager struct` with `func (m *Manager) LoadConfig()`, test should be `TestLoadConfig`
+- **Constructor pattern**: For `func NewManager()`, test should be `TestNewManager`
+
+#### One Test Per Method/Function Rule
+- **Preferred**: Single test function per method/function/constructor using table-driven tests or `t.Run` subtests
+- **Example structure**:
+  ```go
+  func TestLoadConfig(t *testing.T) {
+      testCases := []struct {
+          name string
+          // test case fields
+      }{
+          {name: "valid config", /* ... */},
+          {name: "invalid config", /* ... */},
+          {name: "missing config", /* ... */},
+      }
+      
+      for _, tc := range testCases {
+          t.Run(tc.name, func(t *testing.T) {
+              // test implementation
+          })
+      }
+  }
+  ```
+
+#### Multiple Test Functions (Only When Necessary)
+- **Alternative pattern**: `func TestXxxYyyYyyYyy(t *testing.T)` where `YyyYyyYyy` specifies what the specific test is testing
+- **Use sparingly**: Only when table-driven tests are not suitable
+- **Examples**: `TestLoadConfigErrorHandling`, `TestLoadConfigValidation`
+
+#### Test Organization Principles
+- **One test per method**: Strive for single test function per method under test
+- **Use t.Run for scenarios**: Multiple test scenarios should use `t.Run` subtests within single test function
+- **Table-driven preferred**: Use table-driven tests for multiple input/output combinations
+- **No struct prefixes**: Never include struct/type names in test function names
+- **Focus on behavior**: Test function names should reflect the method being tested, not the implementation details
+
 ### Coverage Expectations
 
 - **testutils packages**: Should NOT have code coverage as they are test utility packages
