@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install golangci-lin
+      - name: Install golangci-lint
         run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$HOME/go/bin" latest
 
       - name: Install mega-linter-runner
@@ -56,9 +56,3 @@ jobs:
 
       - name: Add Go bin to PATH
         run: echo "$HOME/go/bin" >> "$GITHUB_PATH"
-
-      - name: Install pre-commit
-        run: pip install pre-commit
-
-      - name: Install pre-commit hooks
-        run: pre-commit install
