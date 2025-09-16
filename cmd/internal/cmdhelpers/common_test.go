@@ -148,7 +148,8 @@ func runLoadClusterTest(t *testing.T, testCase struct {
 	expectError    bool
 	expectedErrMsg string
 	expectedOutput string
-}) {
+},
+) {
 	t.Helper()
 
 	testCmd, out := testCase.setupCommand()
