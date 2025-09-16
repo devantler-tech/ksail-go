@@ -13,41 +13,62 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-func TestKindGeneratorGenerateWithoutFile(t *testing.T) {
+func TestKindGeneratorGenerate(t *testing.T) {
 	t.Parallel()
 
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
+	tests := []struct {
+		name        string
+		clusterName string
+		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
+		expectError bool
+	}{
+		{
+			name:        "without file",
+			clusterName: "test-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				return "", false, ""
+			},
+			expectError: false,
+		},
+		{
+			name:        "with file",
+			clusterName: "file-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				tempDir := t.TempDir()
+				outputPath := filepath.Join(tempDir, "kind-config.yaml")
+				return outputPath, true, tempDir
+			},
+			expectError: false,
+		},
 	}
 
-	result, err := gen.Generate(cluster, opts)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "test-cluster")
-}
+			gen := generator.NewKindGenerator()
+			cluster := createTestCluster(test.clusterName)
+			output, verifyFile, tempDir := test.setupOutput(t)
+			opts := yamlgenerator.Options{
+				Output: output,
+				Force:  false,
+			}
 
-func TestKindGeneratorGenerateWithFile(t *testing.T) {
-	t.Parallel()
+			result, err := gen.Generate(cluster, opts)
 
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "kind-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "Generate should succeed")
+				assertKindYAML(t, result, test.clusterName)
+
+				if verifyFile {
+					// Verify file was written
+					testutils.AssertFileEquals(t, tempDir, output, result)
+				}
+			}
+		})
 	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestKindGeneratorGenerateExistingFileNoForce(t *testing.T) {
