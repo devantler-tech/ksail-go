@@ -1,4 +1,5 @@
 [![codecov](https://codecov.io/gh/devantler-tech/ksail-go/graph/badge.svg?token=HSUfhaiXwq)](https://codecov.io/gh/devantler-tech/ksail-go)
+[![CI - Go](https://github.com/devantler-tech/ksail-go/actions/workflows/required/devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml/badge.svg)](https://github.com/devantler-tech/ksail-go/actions/workflows/required/devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml)
 
 # ksail
 
