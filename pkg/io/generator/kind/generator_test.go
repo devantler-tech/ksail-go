@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-func TestKindGeneratorGenerate(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -71,7 +71,7 @@ func TestKindGeneratorGenerate(t *testing.T) {
 	}
 }
 
-func TestKindGeneratorGenerateExistingFileNoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -89,7 +89,7 @@ func TestKindGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	)
 }
 
-func TestKindGeneratorGenerateExistingFileWithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -107,7 +107,7 @@ func TestKindGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	)
 }
 
-func TestKindGeneratorGenerateFileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -123,7 +123,7 @@ func TestKindGeneratorGenerateFileWriteError(t *testing.T) {
 	)
 }
 
-func TestKindGeneratorGenerateMarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

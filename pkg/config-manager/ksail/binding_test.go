@@ -211,7 +211,7 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 }
 
 // TestManager_GenerateFlagName_BasicFields tests flag name generation for basic spec fields.
-func TestManagerGenerateFlagName(t *testing.T) {
+func TestGenerateFlagName(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -313,7 +313,7 @@ func testFlagNameGeneration(
 }
 
 // TestManager_GenerateShorthand tests the GenerateShorthand method.
-func TestManagerGenerateShorthand(t *testing.T) {
+func TestGenerateShorthand(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()

@@ -80,7 +80,7 @@ func TestNewManager(t *testing.T) {
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
-func TestManagerLoadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name                string
 		envVars             map[string]string
@@ -144,7 +144,7 @@ func TestManagerLoadConfig(t *testing.T) {
 }
 
 // TestManagerViper tests the exported Viper field.
-func TestManagerViper(t *testing.T) {
+func TestViper(t *testing.T) {
 	t.Parallel()
 
 	manager := ksail.NewConfigManager()
@@ -205,7 +205,7 @@ func TestAddFlagFromField(t *testing.T) {
 }
 
 // TestManager_AddFlagsFromFields tests the AddFlagsFromFields method.
-func TestManagerAddFlagsFromFields(t *testing.T) {
+func TestAddFlagsFromFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -265,7 +265,7 @@ func TestManagerAddFlagsFromFields(t *testing.T) {
 }
 
 // TestManager_LoadConfig_ConfigProperty tests that the Config property is properly exposed.
-func TestManagerLoadConfigConfigProperty(t *testing.T) {
+func TestLoadConfigConfigProperty(t *testing.T) {
 	t.Parallel()
 
 	fieldSelectors := createTestClusterFieldSelectors()
@@ -312,7 +312,7 @@ func testFieldValueSetting(
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
-func TestManagerSetFieldValueWithNilDefault(t *testing.T) {
+func TestSetFieldValueWithNilDefault(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -329,7 +329,7 @@ func TestManagerSetFieldValueWithNilDefault(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
-func TestManagerSetFieldValueWithNonConvertibleTypes(t *testing.T) {
+func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -346,7 +346,7 @@ func TestManagerSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
-func TestManagerSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
+func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -363,7 +363,7 @@ func TestManagerSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
-func TestManagerSetFieldValueWithNonPointerField(t *testing.T) {
+func TestSetFieldValueWithNonPointerField(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -380,7 +380,7 @@ func TestManagerSetFieldValueWithNonPointerField(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
-func TestManagerSetFieldValueWithConvertibleTypes(t *testing.T) {
+func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(

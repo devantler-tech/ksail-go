@@ -15,7 +15,7 @@ import (
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
-func TestKustomizationGeneratorGenerate(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -73,7 +73,7 @@ func TestKustomizationGeneratorGenerate(t *testing.T) {
 	}
 }
 
-func TestKustomizationGeneratorGenerateExistingFileNoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-no-force")
@@ -91,7 +91,7 @@ func TestKustomizationGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGeneratorGenerateExistingFileWithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-with-force")
@@ -109,7 +109,7 @@ func TestKustomizationGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGeneratorGenerateFileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("error-cluster")
@@ -125,7 +125,7 @@ func TestKustomizationGeneratorGenerateFileWriteError(t *testing.T) {
 	)
 }
 
-func TestKustomizationGeneratorGenerateMarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

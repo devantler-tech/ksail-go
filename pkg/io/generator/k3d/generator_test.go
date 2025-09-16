@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestK3dGeneratorGenerate(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -73,7 +73,7 @@ func TestK3dGeneratorGenerate(t *testing.T) {
 	}
 }
 
-func TestK3dGeneratorGenerateExistingFileNoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -91,7 +91,7 @@ func TestK3dGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	)
 }
 
-func TestK3dGeneratorGenerateExistingFileWithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -109,7 +109,7 @@ func TestK3dGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	)
 }
 
-func TestK3dGeneratorGenerateFileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -125,7 +125,7 @@ func TestK3dGeneratorGenerateFileWriteError(t *testing.T) {
 	)
 }
 
-func TestK3dGeneratorGenerateMarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

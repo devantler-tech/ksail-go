@@ -14,7 +14,7 @@ import (
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-func TestEKSGeneratorGenerate(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -72,7 +72,7 @@ func TestEKSGeneratorGenerate(t *testing.T) {
 	}
 }
 
-func TestEKSGeneratorGenerateExistingFileNoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -90,7 +90,7 @@ func TestEKSGeneratorGenerateExistingFileNoForce(t *testing.T) {
 	)
 }
 
-func TestEKSGeneratorGenerateExistingFileWithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -108,7 +108,7 @@ func TestEKSGeneratorGenerateExistingFileWithForce(t *testing.T) {
 	)
 }
 
-func TestEKSGeneratorGenerateFileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -128,7 +128,7 @@ func TestEKSGeneratorGenerateFileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-func TestEKSGeneratorGenerateMarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert
@@ -139,7 +139,7 @@ func TestEKSGeneratorGenerateMarshalError(t *testing.T) {
 	)
 }
 
-func TestEKSGeneratorGenerateWithCustomOptions(t *testing.T) {
+func TestGenerateWithCustomOptions(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -160,7 +160,7 @@ func TestEKSGeneratorGenerateWithCustomOptions(t *testing.T) {
 	assert.Contains(t, result, "\"1.25\"", "YAML should contain custom Kubernetes version")
 }
 
-func TestEKSGeneratorGenerateDefaultValues(t *testing.T) {
+func TestGenerateDefaultValues(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
