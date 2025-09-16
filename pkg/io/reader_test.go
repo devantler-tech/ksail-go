@@ -12,69 +12,83 @@ import (
 )
 
 // Tests are intentionally minimal and explicit to keep coverage high and behavior clear.
-func TestReadFileSafeNormalRead(t *testing.T) {
+func TestReadFileSafe(t *testing.T) {
 	t.Parallel()
 
-	base := t.TempDir()
-	filePath := filepath.Join(base, "file.txt")
-	want := []byte("hello safe")
-	err := os.WriteFile(filePath, want, 0o600)
-	require.NoError(t, err, "WriteFile setup")
+	tests := []struct {
+		name           string
+		setup          func(t *testing.T) (base, filePath string)
+		expectError    bool
+		expectedError  error
+		expectedResult string
+	}{
+		{
+			name: "normal read",
+			setup: func(t *testing.T) (string, string) {
+				base := t.TempDir()
+				filePath := filepath.Join(base, "file.txt")
+				err := os.WriteFile(filePath, []byte("hello safe"), 0o600)
+				require.NoError(t, err, "WriteFile setup")
+				return base, filePath
+			},
+			expectError:    false,
+			expectedResult: "hello safe",
+		},
+		{
+			name: "outside base",
+			setup: func(t *testing.T) (string, string) {
+				base := t.TempDir()
+				outside := filepath.Join(os.TempDir(), "outside-test-file.txt")
+				err := os.WriteFile(outside, []byte("nope"), 0o600)
+				require.NoError(t, err, "WriteFile setup")
+				return base, outside
+			},
+			expectError:   true,
+			expectedError: ioutils.ErrPathOutsideBase,
+		},
+		{
+			name: "traversal attempt",
+			setup: func(t *testing.T) (string, string) {
+				base := t.TempDir()
+				parent := filepath.Join(base, "..", "traversal.txt")
+				absParent, _ := filepath.Abs(parent)
+				err := os.WriteFile(absParent, []byte("traversal"), 0o600)
+				require.NoError(t, err, "WriteFile setup parent")
+				attempt := filepath.Join(base, "..", "traversal.txt")
+				return base, attempt
+			},
+			expectError:   true,
+			expectedError: ioutils.ErrPathOutsideBase,
+		},
+		{
+			name: "missing file inside base",
+			setup: func(t *testing.T) (string, string) {
+				base := t.TempDir()
+				missing := filepath.Join(base, "missing.txt")
+				return base, missing
+			},
+			expectError: true,
+		},
+	}
 
-	got, err := ioutils.ReadFileSafe(base, filePath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "ReadFileSafe")
-	assert.Equal(t, string(want), string(got), "content")
-}
+			base, filePath := tt.setup(t)
+			got, err := ioutils.ReadFileSafe(base, filePath)
 
-func TestReadFileSafeOutsideBase(t *testing.T) {
-	t.Parallel()
-
-	base := t.TempDir()
-	outside := filepath.Join(os.TempDir(), "outside-test-file.txt")
-	err := os.WriteFile(outside, []byte("nope"), 0o600)
-	require.NoError(t, err, "WriteFile setup")
-
-	_, err = ioutils.ReadFileSafe(base, outside)
-
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrPathOutsideBase,
-		"",
-		"ReadFileSafe outside base",
-	)
-}
-
-func TestReadFileSafeTraversalAttempt(t *testing.T) {
-	t.Parallel()
-
-	base := t.TempDir()
-	parent := filepath.Join(base, "..", "traversal.txt")
-	absParent, _ := filepath.Abs(parent)
-	err := os.WriteFile(absParent, []byte("traversal"), 0o600)
-	require.NoError(t, err, "WriteFile setup parent")
-
-	attempt := filepath.Join(base, "..", "traversal.txt")
-
-	_, err = ioutils.ReadFileSafe(base, attempt)
-
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrPathOutsideBase,
-		"",
-		"ReadFileSafe traversal",
-	)
-}
-
-func TestReadFileSafeMissingFileInsideBase(t *testing.T) {
-	t.Parallel()
-
-	base := t.TempDir()
-	missing := filepath.Join(base, "missing.txt")
-
-	_, err := ioutils.ReadFileSafe(base, missing)
-
-	testutils.AssertErrContains(t, err, "failed to read file", "ReadFileSafe missing file")
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.expectedError != nil {
+					testutils.AssertErrWrappedContains(t, err, tt.expectedError, "", "ReadFileSafe")
+				} else {
+					testutils.AssertErrContains(t, err, "failed to read file", "ReadFileSafe")
+				}
+			} else {
+				require.NoError(t, err, "ReadFileSafe")
+				assert.Equal(t, tt.expectedResult, string(got), "content")
+			}
+		})
+	}
 }

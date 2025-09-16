@@ -8,7 +8,7 @@ import (
 	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
 )
 
-func TestExpandHomePathExpandsHomePrefix(t *testing.T) {
+func TestExpandHomePath(t *testing.T) {
 	t.Parallel()
 
 	usr, err := user.Current()
@@ -16,51 +16,45 @@ func TestExpandHomePathExpandsHomePrefix(t *testing.T) {
 		t.Fatalf("failed to get current user: %v", err)
 	}
 
-	input := "~/some/nested/dir"
-
-	got, err := pathutils.ExpandHomePath(input)
-	if err != nil {
-		t.Fatalf("ExpandHomePath returned error: %v", err)
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "expands home prefix",
+			input:    "~/some/nested/dir",
+			expected: filepath.Join(usr.HomeDir, "some", "nested", "dir"),
+		},
+		{
+			name:     "returns unchanged when no tilde - relative path",
+			input:    filepath.Join("var", "tmp"),
+			expected: filepath.Join("var", "tmp"),
+		},
+		{
+			name:     "returns unchanged when no tilde - absolute path",
+			input:    filepath.Join(string(filepath.Separator), "tmp", "file"),
+			expected: filepath.Join(string(filepath.Separator), "tmp", "file"),
+		},
+		{
+			name:     "tilde only unchanged",
+			input:    "~",
+			expected: "~",
+		},
 	}
 
-	want := filepath.Join(usr.HomeDir, "some", "nested", "dir")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	if got != want {
-		t.Fatalf("ExpandHomePath(%q) = %q, want %q", input, got, want)
-	}
-}
+			got, err := pathutils.ExpandHomePath(tt.input)
+			if err != nil {
+				t.Fatalf("ExpandHomePath returned error: %v", err)
+			}
 
-func TestExpandHomePathReturnsUnchangedWhenNoTilde(t *testing.T) {
-	t.Parallel()
-
-	cases := []string{
-		filepath.Join("var", "tmp"),                              // relative path
-		filepath.Join(string(filepath.Separator), "tmp", "file"), // absolute path
-	}
-
-	for _, inputPath := range cases {
-		got, err := pathutils.ExpandHomePath(inputPath)
-		if err != nil {
-			t.Fatalf("ExpandHomePath returned error for %q: %v", inputPath, err)
-		}
-
-		if got != inputPath {
-			t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", inputPath, got)
-		}
-	}
-}
-
-func TestExpandHomePathTildeOnlyUnchanged(t *testing.T) {
-	t.Parallel()
-
-	input := "~" // No trailing slash, function should leave unchanged
-
-	got, err := pathutils.ExpandHomePath(input)
-	if err != nil {
-		t.Fatalf("ExpandHomePath returned error: %v", err)
-	}
-
-	if got != input {
-		t.Fatalf("ExpandHomePath(%q) = %q, want unchanged", input, got)
+			if got != tt.expected {
+				t.Fatalf("ExpandHomePath(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
 	}
 }
