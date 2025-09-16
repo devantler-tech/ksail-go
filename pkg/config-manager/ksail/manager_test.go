@@ -76,7 +76,13 @@ func TestNewManager(t *testing.T) {
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
-	assert.NotNil(t, manager.Viper)
+
+	// Test Viper field is properly initialized
+	require.NotNil(t, manager.Viper)
+
+	// Test that Viper is properly configured by setting and getting a value
+	manager.Viper.SetDefault("test.key", "test-value")
+	assert.Equal(t, "test-value", manager.Viper.GetString("test.key"))
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
@@ -143,22 +149,8 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-// TestManagerViper tests the exported Viper field.
-func TestViper(t *testing.T) {
-	t.Parallel()
-
-	manager := ksail.NewConfigManager()
-	viperInstance := manager.Viper
-
-	require.NotNil(t, viperInstance)
-
-	// Test that it's properly configured by setting and getting a value
-	viperInstance.SetDefault("test.key", "test-value")
-	assert.Equal(t, "test-value", viperInstance.GetString("test.key"))
-}
-
-// TestAddFlagFromField tests the AddFlagFromField function.
-func TestAddFlagFromField(t *testing.T) {
+// TestAddFlagFromFieldHelper tests the AddFlagFromField helper function.
+func TestAddFlagFromFieldHelper(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
