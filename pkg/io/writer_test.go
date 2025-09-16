@@ -281,16 +281,14 @@ func TestGetWriterNotQuiet(t *testing.T) {
 	}
 }
 
-func TestWriteFileSafe(t *testing.T) {
+func TestWriteFileSafeErrors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name               string
-		setupTest          func(t *testing.T) (content, basePath, filePath string, force bool)
-		expectError        bool
-		expectedError      error
-		expectedErrMessage string
-		verifyResult       func(t *testing.T, basePath, filePath, content string)
+		name          string
+		setupTest     func(t *testing.T) (content, basePath, filePath string, force bool)
+		expectError   bool
+		expectedError error
 	}{
 		{
 			name: "empty base path",
