@@ -87,7 +87,8 @@ func runTryWriteTest(t *testing.T, test struct {
 	expectError     bool
 	expectedResult  string
 	expectedContent string
-}) {
+},
+) {
 	t.Helper()
 
 	writer := test.setupWriter()
