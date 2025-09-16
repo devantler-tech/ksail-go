@@ -120,6 +120,7 @@ func TestTryWriteFile(t *testing.T) {
 				content := "new file content"
 				tempDir := t.TempDir()
 				outputPath := filepath.Join(tempDir, "test.txt")
+
 				return content, outputPath, false
 			},
 			expectError: false,

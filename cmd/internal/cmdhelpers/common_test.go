@@ -112,6 +112,7 @@ func TestLoadClusterWithErrorHandling(t *testing.T) {
 			name: "load error",
 			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
 				t.Helper()
+
 				return setupMockManagerWithError(t, errConfigLoadFailed)
 			},
 			setupCommand:   setupTestCommand,
@@ -246,6 +247,7 @@ func TestStandardClusterCommandRunE(t *testing.T) {
 			name: "error",
 			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
 				t.Helper()
+
 				return setupMockManagerWithError(t, errFailedToLoadConfig)
 			},
 			setupCommand: func() *cobra.Command {

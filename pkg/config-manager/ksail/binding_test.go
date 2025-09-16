@@ -48,51 +48,58 @@ func setupFlagBindingTest(
 }
 
 // TestAddFlagFromField tests the addFlagFromField method with various field types and scenarios.
+// getBasicFieldTests returns test cases for basic field testing.
+func getBasicFieldTests() []struct {
+	name          string
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	expectedFlag  string
+	expectedType  string
+} {
+	return []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedFlag  string
+		expectedType  string
+	}{
+		{
+			name: "Distribution field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+				v1alpha1.DistributionKind,
+				"Kubernetes distribution",
+			),
+			expectedFlag: "distribution",
+			expectedType: "Distribution",
+		},
+		{
+			name: "SourceDirectory field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+				"k8s",
+				"Source directory",
+			),
+			expectedFlag: "source-directory",
+			expectedType: "string",
+		},
+		{
+			name: "ReconciliationTool field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+				v1alpha1.ReconciliationToolFlux,
+				"Reconciliation tool",
+			),
+			expectedFlag: "reconciliation-tool",
+			expectedType: "ReconciliationTool",
+		},
+	}
+}
+
 func TestAddFlagFromField(t *testing.T) {
 	t.Parallel()
 
 	t.Run("basic fields", func(t *testing.T) {
 		t.Parallel()
-
-		tests := []struct {
-			name          string
-			fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
-			expectedFlag  string
-			expectedType  string
-		}{
-			{
-				name: "Distribution field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-					v1alpha1.DistributionKind,
-					"Kubernetes distribution",
-				),
-				expectedFlag: "distribution",
-				expectedType: "Distribution",
-			},
-			{
-				name: "SourceDirectory field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-					"k8s",
-					"Source directory",
-				),
-				expectedFlag: "source-directory",
-				expectedType: "string",
-			},
-			{
-				name: "ReconciliationTool field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-					v1alpha1.ReconciliationToolFlux,
-					"Reconciliation tool",
-				),
-				expectedFlag: "reconciliation-tool",
-				expectedType: "ReconciliationTool",
-			},
-		}
-
-		testAddFlagFromFieldCases(t, tests)
+		testAddFlagFromFieldCases(t, getBasicFieldTests())
 	})
 
 	t.Run("connection fields", func(t *testing.T) {
