@@ -172,7 +172,6 @@ func runLoadClusterTest(t *testing.T, testCase struct {
 		}
 	}
 }
-}
 
 func TestLogClusterInfo(t *testing.T) {
 	t.Parallel()
