@@ -22,7 +22,25 @@ const (
 func TestTryWrite(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	tests := getTryWriteTests()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			runTryWriteTest(t, test)
+		})
+	}
+}
+
+func getTryWriteTests() []struct {
+	name            string
+	content         string
+	setupWriter     func() io.Writer
+	expectError     bool
+	expectedResult  string
+	expectedContent string
+} {
+	return []struct {
 		name            string
 		content         string
 		setupWriter     func() io.Writer
@@ -60,31 +78,36 @@ func TestTryWrite(t *testing.T) {
 			expectedResult: "",
 		},
 	}
+}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+func runTryWriteTest(t *testing.T, test struct {
+	name            string
+	content         string
+	setupWriter     func() io.Writer
+	expectError     bool
+	expectedResult  string
+	expectedContent string
+}) {
+	t.Helper()
 
-			writer := test.setupWriter()
-			result, err := ioutils.TryWrite(test.content, writer)
+	writer := test.setupWriter()
+	result, err := ioutils.TryWrite(test.content, writer)
 
-			if test.expectError {
-				require.Error(t, err, "TryWrite()")
-				assert.Contains(t, err.Error(), "failed to write content", "error message")
-				assert.Empty(t, result, "TryWrite() result on error")
-			} else {
-				require.NoError(t, err, "TryWrite()")
-				assert.Equal(t, test.expectedResult, result, "TryWrite() result")
+	if test.expectError {
+		require.Error(t, err, "TryWrite()")
+		assert.Contains(t, err.Error(), "failed to write content", "error message")
+		assert.Empty(t, result, "TryWrite() result on error")
+	} else {
+		require.NoError(t, err, "TryWrite()")
+		assert.Equal(t, test.expectedResult, result, "TryWrite() result")
 
-				// Check writer content based on type
-				switch w := writer.(type) {
-				case *bytes.Buffer:
-					assert.Equal(t, test.expectedContent, w.String(), "buffer content")
-				case *strings.Builder:
-					assert.Equal(t, test.expectedContent, w.String(), "string builder content")
-				}
-			}
-		})
+		// Check writer content based on type
+		switch w := writer.(type) {
+		case *bytes.Buffer:
+			assert.Equal(t, test.expectedContent, w.String(), "buffer content")
+		case *strings.Builder:
+			assert.Equal(t, test.expectedContent, w.String(), "string builder content")
+		}
 	}
 }
 
@@ -206,6 +229,7 @@ func TestTryWriteFile(t *testing.T) {
 				content := "content for write error test"
 				// Use a path that cannot be written to (directory that doesn't exist)
 				invalidPath := "/invalid/nonexistent/deeply/nested/path/file.txt"
+
 				return content, invalidPath, false
 			},
 			expectError:        true,
@@ -302,6 +326,7 @@ func TestWriteFileSafeErrors(t *testing.T) {
 			name: "empty file path",
 			setupTest: func(t *testing.T) (string, string, string, bool) {
 				basePath := t.TempDir()
+
 				return testContent, basePath, "", false
 			},
 			expectError:   true,
@@ -312,6 +337,7 @@ func TestWriteFileSafeErrors(t *testing.T) {
 			setupTest: func(t *testing.T) (string, string, string, bool) {
 				basePath := t.TempDir()
 				outsidePath := "/tmp/outside.txt" // Path clearly outside basePath
+
 				return testContent, basePath, outsidePath, false
 			},
 			expectError:   true,

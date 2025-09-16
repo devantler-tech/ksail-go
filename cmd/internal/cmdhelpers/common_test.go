@@ -85,7 +85,25 @@ func TestHandleSimpleClusterCommandLoadError(t *testing.T) {
 func TestLoadClusterWithErrorHandling(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	tests := getLoadClusterTests()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runLoadClusterTest(t, testCase)
+		})
+	}
+}
+
+func getLoadClusterTests() []struct {
+	name           string
+	setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+	setupCommand   func() (*cobra.Command, *bytes.Buffer)
+	expectError    bool
+	expectedErrMsg string
+	expectedOutput string
+} {
+	return []struct {
 		name           string
 		setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
 		setupCommand   func() (*cobra.Command, *bytes.Buffer)
@@ -121,33 +139,39 @@ func TestLoadClusterWithErrorHandling(t *testing.T) {
 			expectedOutput: "✗ Failed to load cluster configuration:",
 		},
 	}
+}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+func runLoadClusterTest(t *testing.T, testCase struct {
+	name           string
+	setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+	setupCommand   func() (*cobra.Command, *bytes.Buffer)
+	expectError    bool
+	expectedErrMsg string
+	expectedOutput string
+}) {
+	t.Helper()
 
-			testCmd, out := testCase.setupCommand()
-			manager := testCase.setupManager(t)
+	testCmd, out := testCase.setupCommand()
+	manager := testCase.setupManager(t)
 
-			cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
 
-			if testCase.expectError {
-				require.Error(t, err)
-				assert.Nil(t, cluster)
-				assert.Contains(t, err.Error(), testCase.expectedErrMsg)
-				assert.Contains(t, out.String(), testCase.expectedOutput)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, cluster)
+	if testCase.expectError {
+		require.Error(t, err)
+		assert.Nil(t, cluster)
+		assert.Contains(t, err.Error(), testCase.expectedErrMsg)
+		assert.Contains(t, out.String(), testCase.expectedOutput)
+	} else {
+		require.NoError(t, err)
+		assert.NotNil(t, cluster)
 
-				if testCase.expectedOutput != "" {
-					assert.Contains(t, out.String(), testCase.expectedOutput)
-				} else {
-					assert.Empty(t, out.String())
-				}
-			}
-		})
+		if testCase.expectedOutput != "" {
+			assert.Contains(t, out.String(), testCase.expectedOutput)
+		} else {
+			assert.Empty(t, out.String())
+		}
 	}
+}
 }
 
 func TestLogClusterInfo(t *testing.T) {
