@@ -14,41 +14,62 @@ import (
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-func TestEKSGeneratorGenerateWithoutFile(t *testing.T) {
+func TestEKSGeneratorGenerate(t *testing.T) {
 	t.Parallel()
 
-	gen := generator.NewEKSGenerator()
-	cfg := createTestClusterConfig("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
+	tests := []struct {
+		name        string
+		clusterName string
+		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
+		expectError bool
+	}{
+		{
+			name:        "without file",
+			clusterName: "test-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				return "", false, ""
+			},
+			expectError: false,
+		},
+		{
+			name:        "with file",
+			clusterName: "file-cluster",
+			setupOutput: func(t *testing.T) (string, bool, string) {
+				tempDir := t.TempDir()
+				outputPath := filepath.Join(tempDir, "eks-config.yaml")
+				return outputPath, true, tempDir
+			},
+			expectError: false,
+		},
 	}
 
-	result, err := gen.Generate(cfg, opts)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "Generate should succeed")
-	assertEKSYAML(t, result, "test-cluster")
-}
+			gen := generator.NewEKSGenerator()
+			cfg := createTestClusterConfig(test.clusterName)
+			output, verifyFile, tempDir := test.setupOutput(t)
+			opts := yamlgenerator.Options{
+				Output: output,
+				Force:  false,
+			}
 
-func TestEKSGeneratorGenerateWithFile(t *testing.T) {
-	t.Parallel()
+			result, err := gen.Generate(cfg, opts)
 
-	gen := generator.NewEKSGenerator()
-	cfg := createTestClusterConfig("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "eks-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
+			if test.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "Generate should succeed")
+				assertEKSYAML(t, result, test.clusterName)
+
+				if verifyFile {
+					// Verify file was written
+					testutils.AssertFileEquals(t, tempDir, output, result)
+				}
+			}
+		})
 	}
-
-	result, err := gen.Generate(cfg, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertEKSYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
 }
 
 func TestEKSGeneratorGenerateExistingFileNoForce(t *testing.T) {

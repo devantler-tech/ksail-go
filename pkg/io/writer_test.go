@@ -278,181 +278,191 @@ func TestGetWriterNotQuiet(t *testing.T) {
 	}
 }
 
-func TestWriteFileSafeEmptyBasePath(t *testing.T) {
+func TestWriteFileSafe(t *testing.T) {
 	t.Parallel()
 
-	content := testContent
-	filePath := "/some/path/file.txt"
+	tests := []struct {
+		name               string
+		setupTest          func(t *testing.T) (content, basePath, filePath string, force bool)
+		expectError        bool
+		expectedError      error
+		expectedErrMessage string
+		verifyResult       func(t *testing.T, basePath, filePath, content string)
+	}{
+		{
+			name: "empty base path",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				return testContent, "", "/some/path/file.txt", false
+			},
+			expectError:   true,
+			expectedError: ioutils.ErrBasePath,
+		},
+		{
+			name: "empty file path",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				basePath := t.TempDir()
+				return testContent, basePath, "", false
+			},
+			expectError:   true,
+			expectedError: ioutils.ErrEmptyOutputPath,
+		},
+		{
+			name: "path outside base",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				basePath := t.TempDir()
+				outsidePath := "/tmp/outside.txt" // Path clearly outside basePath
+				return testContent, basePath, outsidePath, false
+			},
+			expectError:   true,
+			expectedError: ioutils.ErrPathOutsideBase,
+		},
+		{
+			name: "new file",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				content := "new file content via WriteFileSafe"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "newfile.txt")
+				return content, basePath, filePath, false
+			},
+			expectError: false,
+			verifyResult: func(t *testing.T, basePath, filePath, content string) {
+				// Verify file was written
+				writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
+				require.NoError(t, err, "ReadFile")
+				assert.Equal(t, content, string(writtenContent), "file content")
+			},
+		},
+		{
+			name: "existing file no force",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				newContent := "new content"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "existing.txt")
 
-	err := ioutils.WriteFileSafe(content, "", filePath, false)
+				// Create existing file
+				err := os.WriteFile(filePath, []byte(originalContent), 0o600)
+				require.NoError(t, err, "WriteFile setup")
 
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrBasePath,
-		"",
-		"WriteFileSafe empty base path",
-	)
-}
+				return newContent, basePath, filePath, false
+			},
+			expectError: false,
+			verifyResult: func(t *testing.T, basePath, filePath, content string) {
+				// Verify file was NOT overwritten
+				writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
+				require.NoError(t, err, "ReadFile")
+				assert.Equal(
+					t,
+					originalContent,
+					string(writtenContent),
+					"file content should not be overwritten",
+				)
+			},
+		},
+		{
+			name: "existing file force",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				newContent := "new content forced"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "existing-force.txt")
 
-func TestWriteFileSafeEmptyFilePath(t *testing.T) {
-	t.Parallel()
+				// Create existing file
+				err := os.WriteFile(filePath, []byte(originalContent), 0o600)
+				require.NoError(t, err, "WriteFile setup")
 
-	content := testContent
-	basePath := t.TempDir()
+				return newContent, basePath, filePath, true
+			},
+			expectError: false,
+			verifyResult: func(t *testing.T, basePath, filePath, content string) {
+				// Verify file was overwritten
+				writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
+				require.NoError(t, err, "ReadFile")
+				assert.Equal(
+					t,
+					content,
+					string(writtenContent),
+					"file content should be overwritten",
+				)
+			},
+		},
+		{
+			name: "stat error",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				content := "content for stat error test"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "restricted", "file.txt")
 
-	err := ioutils.WriteFileSafe(content, basePath, "", false)
+				// Create a directory with no permissions to simulate stat error
+				restrictedDir := filepath.Join(basePath, "restricted")
+				err := os.Mkdir(restrictedDir, 0o000)
+				require.NoError(t, err, "Mkdir setup")
 
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrEmptyOutputPath,
-		"",
-		"WriteFileSafe empty file path",
-	)
-}
+				return content, basePath, filePath, false
+			},
+			expectError:        true,
+			expectedErrMessage: "failed to check file",
+		},
+		{
+			name: "directory creation error",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				content := "content for directory creation error test"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "subdir", "file.txt")
 
-func TestWriteFileSafePathOutsideBase(t *testing.T) {
-	t.Parallel()
+				// Create a file with the same name as the directory we want to create
+				subdirPath := filepath.Join(basePath, "subdir")
+				err := os.WriteFile(subdirPath, []byte("blocking file"), 0o600)
+				require.NoError(t, err, "WriteFile setup to block directory creation")
 
-	content := testContent
-	basePath := t.TempDir()
-	outsidePath := "/tmp/outside.txt" // Path clearly outside basePath
+				return content, basePath, filePath, true // Use force=true to skip stat check
+			},
+			expectError:        true,
+			expectedErrMessage: "failed to create directory",
+		},
+		{
+			name: "file write error",
+			setupTest: func(t *testing.T) (string, string, string, bool) {
+				content := "content for file write error test"
+				basePath := t.TempDir()
+				filePath := filepath.Join(basePath, "readonly.txt")
 
-	err := ioutils.WriteFileSafe(content, basePath, outsidePath, false)
+				// Create a file with no write permissions to cause write failure
+				err := os.WriteFile(filePath, []byte("existing"), 0o000) // No write permissions
+				require.NoError(t, err, "WriteFile setup")
 
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrPathOutsideBase,
-		"",
-		"WriteFileSafe path outside base",
-	)
-}
+				return content, basePath, filePath, true // force=true to skip stat check
+			},
+			expectError:        true,
+			expectedErrMessage: "failed to write file",
+		},
+	}
 
-func TestWriteFileSafeNewFile(t *testing.T) {
-	t.Parallel()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	content := "new file content via WriteFileSafe"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "newfile.txt")
+			content, basePath, filePath, force := test.setupTest(t)
+			err := ioutils.WriteFileSafe(content, basePath, filePath, force)
 
-	err := ioutils.WriteFileSafe(content, basePath, filePath, false)
-
-	require.NoError(t, err, "WriteFileSafe")
-
-	// Verify file was written
-	writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
-	require.NoError(t, err, "ReadFile")
-	assert.Equal(t, content, string(writtenContent), "file content")
-}
-
-func TestWriteFileSafeExistingFileNoForce(t *testing.T) {
-	t.Parallel()
-
-	newContent := "new content"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "existing.txt")
-
-	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
-	require.NoError(t, err, "WriteFile setup")
-
-	err = ioutils.WriteFileSafe(newContent, basePath, filePath, false)
-
-	require.NoError(t, err, "WriteFileSafe")
-
-	// Verify file was NOT overwritten
-	writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
-	require.NoError(t, err, "ReadFile")
-	assert.Equal(
-		t,
-		originalContent,
-		string(writtenContent),
-		"file content should not be overwritten",
-	)
-}
-
-func TestWriteFileSafeExistingFileForce(t *testing.T) {
-	t.Parallel()
-
-	newContent := "new content forced"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "existing-force.txt")
-
-	// Create existing file
-	err := os.WriteFile(filePath, []byte(originalContent), 0o600)
-	require.NoError(t, err, "WriteFile setup")
-
-	err = ioutils.WriteFileSafe(newContent, basePath, filePath, true)
-
-	require.NoError(t, err, "WriteFileSafe")
-
-	// Verify file was overwritten
-	writtenContent, err := ioutils.ReadFileSafe(basePath, filePath)
-	require.NoError(t, err, "ReadFile")
-	assert.Equal(t, newContent, string(writtenContent), "file content should be overwritten")
-}
-
-func TestWriteFileSafeStatError(t *testing.T) {
-	t.Parallel()
-
-	content := "content for stat error test"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "restricted", "file.txt")
-
-	// Create a directory with no permissions to simulate stat error
-	restrictedDir := filepath.Join(basePath, "restricted")
-	err := os.Mkdir(restrictedDir, 0o000)
-	require.NoError(t, err, "Mkdir setup")
-
-	err = ioutils.WriteFileSafe(content, basePath, filePath, false)
-
-	// Assert - expect error containing specific message
-	testutils.AssertErrContains(t, err, "failed to check file", "WriteFileSafe stat failure")
-}
-
-func TestWriteFileSafeDirectoryCreationError(t *testing.T) {
-	t.Parallel()
-
-	content := "content for directory creation error test"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "subdir", "file.txt")
-
-	// Create a file with the same name as the directory we want to create
-	subdirPath := filepath.Join(basePath, "subdir")
-	err := os.WriteFile(subdirPath, []byte("blocking file"), 0o600)
-	require.NoError(t, err, "WriteFile setup to block directory creation")
-
-	err = ioutils.WriteFileSafe(
-		content,
-		basePath,
-		filePath,
-		true,
-	) // Use force=true to skip stat check
-
-	// Assert - expect error containing specific message about directory creation failure
-	testutils.AssertErrContains(
-		t,
-		err,
-		"failed to create directory",
-		"WriteFileSafe directory creation failure",
-	)
-}
-
-func TestWriteFileSafeFileWriteError(t *testing.T) {
-	t.Parallel()
-
-	content := "content for file write error test"
-	basePath := t.TempDir()
-	filePath := filepath.Join(basePath, "readonly.txt")
-
-	// Create a file with no write permissions to cause write failure
-	err := os.WriteFile(filePath, []byte("existing"), 0o000) // No write permissions
-	require.NoError(t, err, "WriteFile setup")
-
-	err = ioutils.WriteFileSafe(content, basePath, filePath, true) // force=true to skip stat check
-
-	// Assert - expect error containing specific message about file write failure
-	testutils.AssertErrContains(t, err, "failed to write file", "WriteFileSafe file write failure")
+			if test.expectError {
+				require.Error(t, err, "WriteFileSafe")
+				if test.expectedError != nil {
+					testutils.AssertErrWrappedContains(
+						t,
+						err,
+						test.expectedError,
+						"",
+						"WriteFileSafe",
+					)
+				}
+				if test.expectedErrMessage != "" {
+					testutils.AssertErrContains(t, err, test.expectedErrMessage, "WriteFileSafe")
+				}
+			} else {
+				require.NoError(t, err, "WriteFileSafe")
+				if test.verifyResult != nil {
+					test.verifyResult(t, basePath, filePath, content)
+				}
+			}
+		})
+	}
 }
