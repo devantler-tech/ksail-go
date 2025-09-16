@@ -51,9 +51,7 @@ func configureViperFileSettings(v *viper.Viper) {
 func configureViperPaths(viperInstance *viper.Viper) {
 	// Get user home directory using os/user instead of $HOME
 	usr, err := user.Current()
-	if err != nil {
-		// do nothing
-	} else {
+	if err == nil {
 		viperInstance.AddConfigPath(filepath.Join(usr.HomeDir, ".ksail"))
 	}
 
