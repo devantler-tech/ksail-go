@@ -2,6 +2,7 @@ package asciiart_test
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
@@ -9,22 +10,30 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
+func TestMain(main *testing.M) {
+	exitCode := main.Run()
+
+	cleaned, err := snaps.Clean(main, snaps.CleanOpts{Sort: true})
+	if err != nil {
+		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	_ = cleaned
+
+	os.Exit(exitCode)
+}
+
 func TestPrintKSailLogo(t *testing.T) {
 	t.Parallel()
 
-	var writer bytes.Buffer
-
-	asciiart.PrintKSailLogo(&writer)
-
-	snaps.MatchSnapshot(t, writer.String())
-}
-
-// TestPrintKSailLogo_Comprehensive provides comprehensive testing of the public API
-// to maximize code coverage achievable through the public interface only.
-// Note: Due to //go:embed, some internal edge cases cannot be tested without
-// modifying the source file and rebuilding (see scripts/test_edge_cases.sh).
-func TestPrintKSailLogoComprehensive(t *testing.T) {
-	t.Parallel()
+	// Test snapshot first
+	t.Run("snapshot", func(t *testing.T) {
+		t.Parallel()
+		var writer bytes.Buffer
+		asciiart.PrintKSailLogo(&writer)
+		snaps.MatchSnapshot(t, writer.String())
+	})
 
 	t.Run("produces_non_empty_output", testNonEmptyOutput)
 	t.Run("contains_ascii_art_elements", testASCIIElements)
