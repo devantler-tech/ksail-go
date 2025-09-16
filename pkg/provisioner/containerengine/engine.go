@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/docker/docker/client"
@@ -106,9 +107,7 @@ func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEng
 
 	// Apply overrides for testing
 	if len(overrides) > 0 && overrides[0] != nil {
-		for key, creator := range overrides[0] {
-			creators[key] = creator
-		}
+		maps.Copy(creators, overrides[0])
 	}
 
 	ctx := context.Background()

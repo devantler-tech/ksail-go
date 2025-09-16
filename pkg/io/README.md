@@ -16,6 +16,7 @@ Provides safe and secure file I/O operations with built-in protection against pa
 ## Security
 
 The package includes `ErrPathOutsideBase` error to indicate when a file path is outside the specified base directory, providing protection against:
+
 - Path traversal attacks (e.g., `../../../etc/passwd`)
 - Symlink attacks
 - Accidental access to system files

@@ -5,92 +5,109 @@ package ksail
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 
+	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/viper"
 )
 
-// ConfigManager implements the ConfigManager interface for KSail v1alpha1.Cluster configurations.
+// ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
-	viper          *viper.Viper
+	Viper          *viper.Viper
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
+	configLoaded   bool              // Track if config has been actually loaded
 }
 
-// Verify that Manager implements the ConfigManager interface.
+// Compile-time interface compliance verification.
+// This ensures ConfigManager properly implements configmanager.ConfigManager[v1alpha1.Cluster].
 var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
 
 // NewConfigManager creates a new configuration manager with the specified field selectors.
+// Initializes Viper with all configuration including paths and environment handling.
 func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *ConfigManager {
-	return &ConfigManager{
-		viper:          InitializeViper(),
+	viperInstance := InitializeViper()
+	config := v1alpha1.NewCluster()
+
+	manager := &ConfigManager{
+		Viper:          viperInstance,
 		fieldSelectors: fieldSelectors,
-		Config:         v1alpha1.NewCluster(),
+		Config:         config,
+		configLoaded:   false,
 	}
+
+	return manager
 }
 
 // LoadConfig loads the configuration from files and environment variables.
 // Returns the previously loaded config if already loaded.
+// Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
-	// If config is already loaded and populated, return it
-	if m.Config != nil && !isEmptyCluster(m.Config) {
+	// If config is already loaded, return it
+	if m.configLoaded {
 		return m.Config, nil
 	}
 
-	// Initialize with defaults from field selectors
-	m.applyDefaults()
+	notify.Activityln(os.Stdout, "Loading KSail config")
 
-	// Try to read from configuration files
-	m.viper.SetConfigName(DefaultConfigFileName)
-	m.viper.SetConfigType("yaml")
-	m.viper.AddConfigPath(".")
-	m.viper.AddConfigPath("$HOME/.config/ksail")
-	m.viper.AddConfigPath("/etc/ksail")
-
-	// Read configuration file if it exists
-	err := m.viper.ReadInConfig()
+	// Use native Viper API to read configuration
+	// All paths and environment handling are already configured in constructor
+	err := m.Viper.ReadInConfig()
 	if err != nil {
-		// It's okay if config file doesn't exist, we'll use defaults and flags
+		// It's okay if config file doesn't exist, we'll use defaults and environment/flags
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
+
+		notify.Activityln(os.Stdout, "using default configuration")
+	} else {
+		notify.Activityf(os.Stdout, "'%s' found", m.Viper.ConfigFileUsed())
 	}
 
-	// Set environment variable prefix and bind environment variables
-	m.viper.SetEnvPrefix(EnvPrefix)
-	m.viper.AutomaticEnv()
-	bindEnvironmentVariables(m.viper)
-
-	// Unmarshal into our cluster config
-	err = m.viper.Unmarshal(m.Config)
+	// Unmarshal configuration using Viper's native precedence handling
+	// Viper will handle: config files < environment variables < flags
+	err = m.Viper.Unmarshal(m.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	return m.Config, nil
-}
-
-// isEmptyCluster checks if the cluster configuration is empty/default.
-func isEmptyCluster(config *v1alpha1.Cluster) bool {
-	emptyCluster := v1alpha1.NewCluster()
-
-	return reflect.DeepEqual(config, emptyCluster)
-}
-
-// GetViper returns the underlying Viper instance for flag binding.
-func (m *ConfigManager) GetViper() *viper.Viper {
-	return m.viper
-}
-
-// applyDefaults applies default values from field selectors to the config.
-func (m *ConfigManager) applyDefaults() {
+	// Apply field selector defaults only for fields that are still empty
+	// This ensures defaults are applied with the lowest precedence
 	for _, fieldSelector := range m.fieldSelectors {
 		fieldPtr := fieldSelector.Selector(m.Config)
-		if fieldPtr != nil {
+		if fieldPtr != nil && isFieldEmpty(fieldPtr) {
 			setFieldValue(fieldPtr, fieldSelector.DefaultValue)
 		}
 	}
+
+	notify.Successln(os.Stdout, "config loaded")
+
+	m.configLoaded = true
+
+	return m.Config, nil
+}
+
+// isFieldEmpty checks if a field pointer points to an empty/zero value.
+func isFieldEmpty(fieldPtr any) bool {
+	if fieldPtr == nil {
+		return true
+	}
+
+	fieldVal := reflect.ValueOf(fieldPtr)
+	if fieldVal.Kind() != reflect.Ptr || fieldVal.IsNil() {
+		return true
+	}
+
+	fieldVal = fieldVal.Elem()
+
+	return fieldVal.IsZero()
+}
+
+// IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
+func IsFieldEmptyForTesting(fieldPtr any) bool {
+	return isFieldEmpty(fieldPtr)
 }
