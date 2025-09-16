@@ -82,35 +82,70 @@ func TestHandleSimpleClusterCommandLoadError(t *testing.T) {
 	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
 }
 
-func TestLoadClusterWithErrorHandlingSuccess(t *testing.T) {
+func TestLoadClusterWithErrorHandling(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	tests := []struct {
+		name           string
+		setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+		setupCommand   func() (*cobra.Command, *bytes.Buffer)
+		expectError    bool
+		expectedErrMsg string
+		expectedOutput string
+	}{
+		{
+			name: "success",
+			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+				return ksail.NewConfigManager()
+			},
+			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
+				var out bytes.Buffer
+				cmd := &cobra.Command{}
+				cmd.SetOut(&out)
+				return cmd, &out
+			},
+			expectError:    false,
+			expectedOutput: "", // No error output
+		},
+		{
+			name: "load error",
+			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+				return setupMockManagerWithError(t, errConfigLoadFailed)
+			},
+			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
+				return setupTestCommand()
+			},
+			expectError:    true,
+			expectedErrMsg: "config load failed",
+			expectedOutput: "✗ Failed to load cluster configuration:",
+		},
+	}
 
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	manager := ksail.NewConfigManager()
+			testCmd, out := tt.setupCommand()
+			manager := tt.setupManager(t)
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
+			cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
 
-	require.NoError(t, err)
-	assert.NotNil(t, cluster)
-	assert.Empty(t, out.String()) // No error output
-}
-
-func TestLoadClusterWithErrorHandlingLoadError(t *testing.T) {
-	t.Parallel()
-
-	testCmd, out := setupTestCommand()
-	mockManager := setupMockManagerWithError(t, errConfigLoadFailed)
-
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, mockManager)
-
-	require.Error(t, err)
-	assert.Nil(t, cluster)
-	assert.Contains(t, err.Error(), "config load failed")
-	assert.Contains(t, out.String(), "✗ Failed to load cluster configuration:")
+			if tt.expectError {
+				require.Error(t, err)
+				assert.Nil(t, cluster)
+				assert.Contains(t, err.Error(), tt.expectedErrMsg)
+				assert.Contains(t, out.String(), tt.expectedOutput)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, cluster)
+				if tt.expectedOutput != "" {
+					assert.Contains(t, out.String(), tt.expectedOutput)
+				} else {
+					assert.Empty(t, out.String())
+				}
+			}
+		})
+	}
 }
 
 func TestLogClusterInfo(t *testing.T) {
@@ -181,43 +216,71 @@ func TestStandardDistributionConfigFieldSelector(t *testing.T) {
 	assert.Equal(t, &cluster.Spec.DistributionConfig, result)
 }
 
-func TestStandardClusterCommandRunESuccess(t *testing.T) {
+func TestStandardClusterCommandRunE(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	tests := []struct {
+		name           string
+		setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+		setupCommand   func() *cobra.Command
+		expectError    bool
+		expectedOutput string
+		expectedErrMsg []string
+	}{
+		{
+			name: "success",
+			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+				return ksail.NewConfigManager()
+			},
+			setupCommand: func() *cobra.Command {
+				cmd := &cobra.Command{}
+				cmd.SetOut(&bytes.Buffer{})
+				return cmd
+			},
+			expectError:    false,
+			expectedOutput: "✔ Test command executed successfully",
+		},
+		{
+			name: "error",
+			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+				return setupMockManagerWithError(t, errFailedToLoadConfig)
+			},
+			setupCommand: func() *cobra.Command {
+				cmd, _ := setupTestCommand()
+				return cmd
+			},
+			expectError:    true,
+			expectedErrMsg: []string{"failed to handle cluster command", "failed to load config"},
+		},
+	}
 
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	manager := ksail.NewConfigManager()
-	successMessage := "Test command executed successfully"
+			var out bytes.Buffer
+			testCmd := tt.setupCommand()
+			testCmd.SetOut(&out)
+			manager := tt.setupManager(t)
+			successMessage := "Test command executed successfully"
 
-	// Get the run function
-	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
+			// Get the run function
+			runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
 
-	// Execute the function
-	err := runFunc(testCmd, manager, []string{})
+			// Execute the function
+			err := runFunc(testCmd, manager, []string{})
 
-	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ "+successMessage)
-}
-
-func TestStandardClusterCommandRunEError(t *testing.T) {
-	t.Parallel()
-
-	testCmd, _ := setupTestCommand()
-	mockManager := setupMockManagerWithError(t, errFailedToLoadConfig)
-	successMessage := "Test command executed successfully"
-
-	// Get the run function
-	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
-
-	// Execute the function
-	err := runFunc(testCmd, mockManager, []string{})
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to handle cluster command")
-	assert.Contains(t, err.Error(), "failed to load config")
+			if tt.expectError {
+				require.Error(t, err)
+				for _, expectedMsg := range tt.expectedErrMsg {
+					assert.Contains(t, err.Error(), expectedMsg)
+				}
+			} else {
+				require.NoError(t, err)
+				assert.Contains(t, out.String(), tt.expectedOutput)
+			}
+		})
+	}
 }
 
 // TestNewCobraCommand tests the NewCobraCommand function.

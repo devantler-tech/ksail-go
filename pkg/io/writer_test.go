@@ -19,43 +19,73 @@ const (
 	originalContent = "original content"
 )
 
-func TestTryWriteWithBuffer(t *testing.T) {
+func TestTryWrite(t *testing.T) {
 	t.Parallel()
 
-	content := "test content for buffer"
-	buffer := &bytes.Buffer{}
+	tests := []struct {
+		name            string
+		content         string
+		setupWriter     func() io.Writer
+		expectError     bool
+		expectedResult  string
+		expectedContent string
+	}{
+		{
+			name:    "with buffer",
+			content: "test content for buffer",
+			setupWriter: func() io.Writer {
+				return &bytes.Buffer{}
+			},
+			expectError:     false,
+			expectedResult:  "test content for buffer",
+			expectedContent: "test content for buffer",
+		},
+		{
+			name:    "with string writer",
+			content: "test content for string writer",
+			setupWriter: func() io.Writer {
+				return &strings.Builder{}
+			},
+			expectError:     false,
+			expectedResult:  "test content for string writer",
+			expectedContent: "test content for string writer",
+		},
+		{
+			name:    "with failing writer",
+			content: testContent,
+			setupWriter: func() io.Writer {
+				return &failingWriter{}
+			},
+			expectError:    true,
+			expectedResult: "",
+		},
+	}
 
-	result, err := ioutils.TryWrite(content, buffer)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, content, result, "TryWrite() result")
-	assert.Equal(t, content, buffer.String(), "buffer content")
-}
+			writer := test.setupWriter()
+			result, err := ioutils.TryWrite(test.content, writer)
 
-func TestTryWriteWithStringWriter(t *testing.T) {
-	t.Parallel()
+			if test.expectError {
+				require.Error(t, err, "TryWrite()")
+				assert.Contains(t, err.Error(), "failed to write content", "error message")
+				assert.Empty(t, result, "TryWrite() result on error")
+			} else {
+				require.NoError(t, err, "TryWrite()")
+				assert.Equal(t, test.expectedResult, result, "TryWrite() result")
 
-	content := "test content for string writer"
-	stringBuilder := &strings.Builder{}
-
-	result, err := ioutils.TryWrite(content, stringBuilder)
-
-	require.NoError(t, err, "TryWrite()")
-	assert.Equal(t, content, result, "TryWrite() result")
-	assert.Equal(t, content, stringBuilder.String(), "string builder content")
-}
-
-func TestTryWriteWithFailingWriter(t *testing.T) {
-	t.Parallel()
-
-	content := testContent
-	failingWriter := &failingWriter{}
-
-	result, err := ioutils.TryWrite(content, failingWriter)
-
-	require.Error(t, err, "TryWrite()")
-	assert.Contains(t, err.Error(), "failed to write content", "error message")
-	assert.Empty(t, result, "TryWrite() result on error")
+				// Check writer content based on type
+				switch w := writer.(type) {
+				case *bytes.Buffer:
+					assert.Equal(t, test.expectedContent, w.String(), "buffer content")
+				case *strings.Builder:
+					assert.Equal(t, test.expectedContent, w.String(), "string builder content")
+				}
+			}
+		})
+	}
 }
 
 // failingWriter always returns an error on Write.
