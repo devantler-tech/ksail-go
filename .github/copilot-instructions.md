@@ -259,10 +259,6 @@ This repository follows [Best practices for Copilot coding agent in your reposit
   }
   ```
 
-#### Multiple Test Functions (Only When Necessary)
-- **Alternative pattern**: `func TestXxxYyyYyyYyy(t *testing.T)` where `YyyYyyYyy` specifies what the specific test is testing
-- **Use sparingly**: Only when table-driven tests are not suitable
-- **Examples**: `TestLoadConfigErrorHandling`, `TestLoadConfigValidation`
 
 #### Test Organization Principles
 - **One test per method**: Strive for single test function per method under test
