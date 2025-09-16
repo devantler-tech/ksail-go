@@ -113,7 +113,7 @@ func getLoadClusterTests() []struct {
 	}{
 		{
 			name: "success",
-			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+			setupManager: func(_ *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
 				return ksail.NewConfigManager()
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
@@ -255,7 +255,7 @@ func TestStandardClusterCommandRunE(t *testing.T) {
 	}{
 		{
 			name: "success",
-			setupManager: func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
+			setupManager: func(_ *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
 				return ksail.NewConfigManager()
 			},
 			setupCommand: func() *cobra.Command {

@@ -352,6 +352,7 @@ func TestWriteFileSafeErrors(t *testing.T) {
 				content := "new file content via WriteFileSafe"
 				basePath := t.TempDir()
 				filePath := filepath.Join(basePath, "newfile.txt")
+
 				return content, basePath, filePath, false
 			},
 			expectError: false,

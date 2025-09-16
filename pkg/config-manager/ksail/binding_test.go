@@ -26,6 +26,7 @@ func runFlagNameGenerationTests(
 	tests []flagNameTestCase,
 ) {
 	t.Helper()
+	t.Helper()
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
