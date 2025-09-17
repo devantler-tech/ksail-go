@@ -40,16 +40,20 @@ These tools are required for basic development workflow:
 
 1. **Go 1.24.0+**: Verify with `go version` (project requires 1.24.0+ per go.mod, current runtime is 1.25.1)
 2. **mega-linter-runner**: For primary linting (REQUIRED for CI consistency)
+
    ```bash
    # Install per: https://megalinter.io/latest/mega-linter-runner/#installation
    npm install mega-linter-runner --global
    # OR use npx: npx mega-linter-runner -f go
    ```
+
 3. **golangci-lint**: Go-specific linting and fast feedback
+
    ```bash
    # Install: 
    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest
    ```
+
    - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m16s to run when clean
    - **Usage**: `~/go/bin/golangci-lint run` for full check, `~/go/bin/golangci-lint run --fast-only` for quick feedback
 
@@ -68,10 +72,12 @@ These tools are required for basic development workflow:
 These tools enhance the development experience but are not required for basic functionality:
 
 - **mockery**: For generating test mocks
+
   ```bash
   # Install per: https://vektra.github.io/mockery/v3.5/installation/
   go install github.com/vektra/mockery/v3@latest
   ```
+
   - Configuration in `.mockery.yml` - run `mockery` to regenerate mocks (~1.3s)
   - **Current Environment**: Available at `/home/runner/go/bin/mockery`
   - **When to use**: Required when interface definitions change
@@ -87,19 +93,23 @@ These are available in the current environment but not required for current stub
 ### Core Development Commands
 
 **Test execution** (ALWAYS run before making changes):
+
 ```bash
 go test -v ./...                    # ~37 seconds - ALL tests must pass
 ```
 
 **Mock generation** (when interfaces change):
+
 ```bash
 mockery                             # ~1.3 seconds - regenerates all mocks
 ```
 
 **Primary linting** (REQUIRED for CI consistency):
+
 ```bash
 mega-linter-runner -f go            # ~11-12 minutes - comprehensive scanning
 ```
+
 - **CRITICAL**: This is the main linting tool specified in CONTRIBUTING.md
 - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
 - **Auto-fixes** formatting and style issues
@@ -107,6 +117,7 @@ mega-linter-runner -f go            # ~11-12 minutes - comprehensive scanning
 - **Expected timeouts**: Link checking and security scanning take time - this is normal
 
 **Fast Go-specific linting** (optional for quick feedback):
+
 ```bash
 ~/go/bin/golangci-lint run          # ~1m16s - Go-specific checks only
 ~/go/bin/golangci-lint run --fast-only  # Quick feedback on fast linters
@@ -115,12 +126,14 @@ mega-linter-runner -f go            # ~11-12 minutes - comprehensive scanning
 ### Application Usage (Current State)
 
 **Basic CLI testing:**
+
 ```bash
 ./ksail --help                      # Shows basic usage and available commands
 ./ksail --version                   # Shows dev version info
 ```
 
 **Available Commands** (all implemented as working stubs):
+
 - `init` - Initialize a new project with distribution selection
 - `up` - Start the Kubernetes cluster (stub)
 - `down` - Destroy a cluster (stub)  
@@ -131,6 +144,7 @@ mega-linter-runner -f go            # ~11-12 minutes - comprehensive scanning
 - `reconcile` - Reconcile workloads in the cluster (stub)
 
 **Example workflow:**
+
 ```bash
 ./ksail init --distribution Kind    # Initialize project
 ./ksail up                          # Start cluster (stub)
@@ -144,6 +158,7 @@ mega-linter-runner -f go            # ~11-12 minutes - comprehensive scanning
 ### CRITICAL: Always test complete workflows after making changes
 
 **Before starting any development work:**
+
 1. Ensure you're in repository root (contains `go.mod`)
 2. Run `go test -v ./...` to verify current state
 3. Run `go build -o ksail .` to ensure clean build
@@ -175,6 +190,7 @@ mega-linter-runner -f go            # Full lint: ~11-12 minutes (CI-consistent)
 ```
 
 **If any step fails:**
+
 - **Tests fail**: Fix failing tests before proceeding
 - **Build fails**: Check Go version, run `go mod tidy`, retry
 - **CLI fails**: Check for compilation errors, missing dependencies
@@ -183,6 +199,7 @@ mega-linter-runner -f go            # Full lint: ~11-12 minutes (CI-consistent)
 ### Comprehensive Testing Scenarios
 
 **1. Build Validation**
+
 ```bash
 go build -o ksail .                 # Must complete without errors
 ./ksail --help                      # Must show usage
@@ -190,6 +207,7 @@ go build -o ksail .                 # Must complete without errors
 ```
 
 **2. Command Testing** (All commands work as stubs)
+
 ```bash
 # Test all command help outputs
 ./ksail init --help
@@ -208,6 +226,7 @@ go build -o ksail .                 # Must complete without errors
 ```
 
 **3. Mock Generation Testing** (when interfaces change)
+
 ```bash
 mockery                             # Must complete without errors (~1.3s)
 go test -v ./...                    # Verify mocks work with tests
@@ -219,22 +238,23 @@ go test -v ./...                    # Verify mocks work with tests
 
 **CRITICAL**: Always set appropriate timeouts to prevent premature cancellation.
 
-| Command | Time | Timeout | Notes |
-|---------|------|---------|--------|
-| `go mod download` | ~0.03s cached, up to 30s first run | 60s | Dependency download |
-| `go build -o ksail .` | ~0.5s first time, ~0.1s cached | 60s | Build application |
-| `go test -v ./...` | ~37s | 120s | Full test suite |
-| `mockery` | ~1.3s | 60s | Mock generation |
-| `~/go/bin/golangci-lint run` | ~1m16s | 120s | Go-specific linting |
-| `mega-linter-runner -f go` | ~11-12 minutes | 1200s | Full lint + security scan |
+| Command                      | Time                               | Timeout | Notes                     |
+|------------------------------|------------------------------------|---------|---------------------------|
+| `go mod download`            | ~0.03s cached, up to 30s first run | 60s     | Dependency download       |
+| `go build -o ksail .`        | ~0.5s first time, ~0.1s cached     | 60s     | Build application         |
+| `go test -v ./...`           | ~37s                               | 120s    | Full test suite           |
+| `mockery`                    | ~1.3s                              | 60s     | Mock generation           |
+| `~/go/bin/golangci-lint run` | ~1m16s                             | 120s    | Go-specific linting       |
+| `mega-linter-runner -f go`   | ~11-12 minutes                     | 1200s   | Full lint + security scan |
 
 **NEVER CANCEL**: All commands may take longer on different systems. Always wait for completion.
 
 ### Working Directory Requirements
 
-**ALL commands assume you are in the repository root** (directory containing `go.mod`). 
+**ALL commands assume you are in the repository root** (directory containing `go.mod`).
 
 If commands fail with "go.mod not found" or similar:
+
 ```bash
 cd /path/to/ksail-go                # Navigate to repository root
 pwd                                 # Should show path ending in 'ksail-go'
@@ -245,21 +265,23 @@ ls go.mod                           # Should exist
 
 **Common failures and solutions:**
 
-| Error | Likely Cause | Solution |
-|-------|--------------|----------|
-| "go.mod not found" | Wrong directory | `cd` to repository root |
-| "Go version too old" | Go < 1.24.0 | Update Go to 1.24.0+ |
-| Tests fail | Code changes broke tests | Fix failing tests before proceeding |
-| Build fails | Missing dependencies | Run `go mod tidy` then retry |
-| Linter fails | Code quality issues | Review output, fix violations |
-| mega-linter network timeouts | External link checking | Normal - not a code quality issue |
+| Error                        | Likely Cause             | Solution                            |
+|------------------------------|--------------------------|-------------------------------------|
+| "go.mod not found"           | Wrong directory          | `cd` to repository root             |
+| "Go version too old"         | Go < 1.24.0              | Update Go to 1.24.0+                |
+| Tests fail                   | Code changes broke tests | Fix failing tests before proceeding |
+| Build fails                  | Missing dependencies     | Run `go mod tidy` then retry        |
+| Linter fails                 | Code quality issues      | Review output, fix violations       |
+| mega-linter network timeouts | External link checking   | Normal - not a code quality issue   |
 
 ### Linting Strategy and Expectations
 
 **Primary Linting** (REQUIRED for CI consistency):
+
 ```bash
 mega-linter-runner -f go            # ~11-12 minutes
 ```
+
 - Configuration in `.mega-linter.yml` with `APPLY_FIXES: all`
 - **Auto-fixes** formatting and style issues automatically
 - **Network timeouts expected**: Link checking may fail on external URLs (not a code quality issue)
@@ -267,15 +289,18 @@ mega-linter-runner -f go            # ~11-12 minutes
 - **Current state**: Passes successfully (golangci-lint disabled in mega-linter config)
 
 **Supplementary Go Linting** (optional for faster feedback):
+
 ```bash
 ~/go/bin/golangci-lint run          # ~1m16s - shows 0 issues
 ~/go/bin/golangci-lint run --fast-only  # Quick feedback
 ```
+
 - Configuration in `.golangci.yml` with comprehensive rules
 - **Current state**: Clean codebase, 0 issues
 - **When to use**: During development for quick Go-specific feedback
 
 **Linting Expectations:**
+
 - **CI requirement**: Must use `mega-linter-runner -f go` for CI consistency per CONTRIBUTING.md
 - **New code**: Should not introduce additional violations in enabled linters
 - **Network failures**: Mega-linter link checking failures are not code quality issues
@@ -337,6 +362,7 @@ mega-linter-runner -f go            # ~11-12 minutes
 **ALWAYS follow this sequence when making code changes:**
 
 1. **Validate current state**
+
    ```bash
    go test -v ./...                 # Must pass before starting
    ```
@@ -346,22 +372,26 @@ mega-linter-runner -f go            # ~11-12 minutes
    - Follow existing patterns (see [Codebase Navigation](#codebase-navigation))
 
 3. **Generate mocks** (if interfaces changed)
+
    ```bash
    mockery                          # Regenerate mocks (~1.3s)
    ```
 
 4. **Test changes**
+
    ```bash
    go test -v ./...                 # Must pass before proceeding
    ```
 
 5. **Build verification**
+
    ```bash
    go build -o ksail .              # Must build successfully
    ./ksail --help                   # Basic functionality check
    ```
 
 6. **Lint** (choose based on available time)
+
    ```bash
    # Full lint (CI-consistent):
    mega-linter-runner -f go         # ~11-12 minutes
@@ -371,6 +401,7 @@ mega-linter-runner -f go            # ~11-12 minutes
    ```
 
 7. **Final validation**
+
    ```bash
    # Test complete CLI workflow
    ./ksail init --distribution Kind
@@ -457,20 +488,21 @@ mega-linter-runner -f go            # ~11-12 minutes
 
 ### Common Issues and Solutions
 
-| Problem | Symptoms | Solution |
-|---------|----------|----------|
-| **Wrong directory** | "go.mod not found" | `cd` to repository root (contains go.mod) |
-| **Old Go version** | "Go directive...requires Go 1.24" | Update Go to 1.24.0+ |
-| **Missing dependencies** | Build/import errors | Run `go mod download` then `go mod tidy` |
-| **Test failures** | `go test` shows failures | Fix failing tests before proceeding with changes |
-| **Mock outdated** | Interface-related test failures | Run `mockery` to regenerate mocks |
-| **Linter fails** | mega-linter or golangci-lint errors | Review linter output, fix code quality issues |
-| **Network timeouts** | mega-linter link checking fails | Normal behavior - not a code quality issue |
-| **CLI build issues** | `./ksail` command not found | Run `go build -o ksail .` to rebuild |
+| Problem                  | Symptoms                            | Solution                                         |
+|--------------------------|-------------------------------------|--------------------------------------------------|
+| **Wrong directory**      | "go.mod not found"                  | `cd` to repository root (contains go.mod)        |
+| **Old Go version**       | "Go directive...requires Go 1.24"   | Update Go to 1.24.0+                             |
+| **Missing dependencies** | Build/import errors                 | Run `go mod download` then `go mod tidy`         |
+| **Test failures**        | `go test` shows failures            | Fix failing tests before proceeding with changes |
+| **Mock outdated**        | Interface-related test failures     | Run `mockery` to regenerate mocks                |
+| **Linter fails**         | mega-linter or golangci-lint errors | Review linter output, fix code quality issues    |
+| **Network timeouts**     | mega-linter link checking fails     | Normal behavior - not a code quality issue       |
+| **CLI build issues**     | `./ksail` command not found         | Run `go build -o ksail .` to rebuild             |
 
 ### Debugging Steps
 
 **If build fails:**
+
 ```bash
 go version                          # Check Go version (need 1.24.0+)
 go mod download                     # Ensure dependencies available
@@ -479,6 +511,7 @@ go build -o ksail .                 # Retry build
 ```
 
 **If tests fail:**
+
 ```bash
 go test -v ./...                    # See detailed failure output
 mockery                             # Regenerate mocks if interface changed
@@ -487,6 +520,7 @@ UPDATE_SNAPSHOTS=true go test ./cmd/...  # Update snapshots if CLI output change
 ```
 
 **If CLI doesn't work:**
+
 ```bash
 ls -la ksail                        # Check if binary exists
 ./ksail --help                      # Test basic functionality

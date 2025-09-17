@@ -80,6 +80,7 @@ type ConfigManager[T any] interface {
 ## Testing
 
 The package includes comprehensive tests covering:
+
 - File loading with valid configurations
 - Default behavior when file doesn't exist
 - Error handling for invalid YAML
@@ -87,6 +88,7 @@ The package includes comprehensive tests covering:
 - TypeMeta completion
 
 Run tests with:
+
 ```bash
 go test ./pkg/config-manager/kind/...
 ```

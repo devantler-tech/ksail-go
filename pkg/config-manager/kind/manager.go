@@ -70,6 +70,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	}
 
 	// Read file contents
+	//nolint:gosec // configPath is resolved through our own path resolution logic
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
@@ -119,6 +120,7 @@ func (m *ConfigManager) resolveConfigPath() (string, error) {
 	// Traverse up the directory tree looking for the config file
 	for {
 		candidatePath := filepath.Join(currentDir, m.configPath)
+
 		_, err := os.Stat(candidatePath)
 		if err == nil {
 			return candidatePath, nil
