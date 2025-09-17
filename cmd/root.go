@@ -4,9 +4,9 @@ package cmd
 import (
 	"fmt"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
 

@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

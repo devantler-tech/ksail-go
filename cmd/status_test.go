@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

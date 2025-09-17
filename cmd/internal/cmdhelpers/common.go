@@ -4,9 +4,9 @@ package cmdhelpers
 import (
 	"fmt"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
 
@@ -183,7 +183,9 @@ func StandardClusterCommandRunE(
 }
 
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
-func StandardDistributionFieldSelector(description string) configmanager.FieldSelector[v1alpha1.Cluster] {
+func StandardDistributionFieldSelector(
+	description string,
+) configmanager.FieldSelector[v1alpha1.Cluster] {
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		Description:  description,
