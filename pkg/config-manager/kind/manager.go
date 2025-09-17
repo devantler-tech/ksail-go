@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -24,6 +25,64 @@ type ConfigManager struct {
 // Compile-time interface compliance verification.
 // This ensures ConfigManager properly implements configmanager.ConfigManager[v1alpha4.Cluster].
 var _ configmanager.ConfigManager[v1alpha4.Cluster] = (*ConfigManager)(nil)
+
+// newKindCluster creates a new v1alpha4.Cluster with all required fields properly initialized.
+// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
+func newKindCluster() *v1alpha4.Cluster {
+	return &v1alpha4.Cluster{
+		TypeMeta: v1alpha4.TypeMeta{
+			APIVersion: "kind.x-k8s.io/v1alpha4",
+			Kind:       "Cluster",
+		},
+		Name:  "",
+		Nodes: nil,
+		Networking: v1alpha4.Networking{
+			IPFamily:          "",
+			APIServerPort:     0,
+			APIServerAddress:  "",
+			PodSubnet:         "",
+			ServiceSubnet:     "",
+			DisableDefaultCNI: false,
+			KubeProxyMode:     "",
+			DNSSearch:         nil,
+		},
+		FeatureGates:                    nil,
+		RuntimeConfig:                   nil,
+		KubeadmConfigPatches:            nil,
+		KubeadmConfigPatchesJSON6902:    nil,
+		ContainerdConfigPatches:         nil,
+		ContainerdConfigPatchesJSON6902: nil,
+	}
+}
+
+// newEmptyKindCluster creates a new empty v1alpha4.Cluster for unmarshaling.
+// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
+func newEmptyKindCluster() *v1alpha4.Cluster {
+	return &v1alpha4.Cluster{
+		TypeMeta: v1alpha4.TypeMeta{
+			APIVersion: "",
+			Kind:       "",
+		},
+		Name:  "",
+		Nodes: nil,
+		Networking: v1alpha4.Networking{
+			IPFamily:          "",
+			APIServerPort:     0,
+			APIServerAddress:  "",
+			PodSubnet:         "",
+			ServiceSubnet:     "",
+			DisableDefaultCNI: false,
+			KubeProxyMode:     "",
+			DNSSearch:         nil,
+		},
+		FeatureGates:                    nil,
+		RuntimeConfig:                   nil,
+		KubeadmConfigPatches:            nil,
+		KubeadmConfigPatchesJSON6902:    nil,
+		ContainerdConfigPatches:         nil,
+		ContainerdConfigPatchesJSON6902: nil,
+	}
+}
 
 // NewConfigManager creates a new configuration manager for Kind cluster configurations.
 // configPath specifies the path to the Kind configuration file to load.
@@ -55,13 +114,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
 		// File doesn't exist, return default configuration
-		//nolint:exhaustruct // Kind defaults are applied via SetDefaultsCluster
-		m.config = &v1alpha4.Cluster{
-			TypeMeta: v1alpha4.TypeMeta{
-				APIVersion: "kind.x-k8s.io/v1alpha4",
-				Kind:       "Cluster",
-			},
-		}
+		m.config = newKindCluster()
 		// Apply Kind defaults
 		v1alpha4.SetDefaultsCluster(m.config)
 		m.configLoaded = true
@@ -69,16 +122,17 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 		return m.config, nil
 	}
 
-	// Read file contents
-	//nolint:gosec // configPath is resolved through our own path resolution logic
-	data, err := os.ReadFile(configPath)
+	// Read file contents safely
+	// Since we've resolved the path through traversal, we use the directory containing the file as the base
+	baseDir := filepath.Dir(configPath)
+
+	data, err := io.ReadFileSafe(baseDir, configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
 	}
 
 	// Parse YAML into Kind cluster config
-	//nolint:exhaustruct // Kind defaults are applied via SetDefaultsCluster
-	m.config = &v1alpha4.Cluster{}
+	m.config = newEmptyKindCluster()
 
 	err = m.marshaller.Unmarshal(data, &m.config)
 	if err != nil {
