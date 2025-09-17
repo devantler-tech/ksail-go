@@ -21,20 +21,22 @@ func TestNewConfigManager(t *testing.T) {
 }
 
 // TestLoadConfig tests the LoadConfig method with different scenarios.
-//
-// TestLoadConfig tests the LoadConfig method with different scenarios.
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	t.Run("basic scenarios", testLoadConfigBasicScenarios)
 	t.Run("caching", testLoadConfigCaching)
-	t.Run("path traversal", testLoadConfigPathTraversal)
 	t.Run("file read error", testLoadConfigFileReadError)
 	t.Run("resolve config path error", testLoadConfigResolvePathError)
 	t.Run("os stat error", testLoadConfigOsStatError)
-	t.Run("path traversal exhaustive", testLoadConfigPathTraversalExhaustive)
 	t.Run("missing api version", testLoadConfigMissingAPIVersion)
 	t.Run("missing kind", testLoadConfigMissingKind)
+}
+
+// TestLoadConfigWithChdir tests LoadConfig functionality that requires changing directories.
+func TestLoadConfigWithChdir(t *testing.T) {
+	t.Run("path traversal", testLoadConfigPathTraversal)
+	t.Run("path traversal exhaustive", testLoadConfigPathTraversalExhaustive)
 }
 
 // testLoadConfigBasicScenarios tests basic configuration loading scenarios.
@@ -67,8 +69,6 @@ func testLoadConfigBasicScenarios(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
 			tempDir := t.TempDir()
 			configPath := filepath.Join(tempDir, "config.yaml")
 
@@ -115,8 +115,6 @@ func testLoadConfigCaching(t *testing.T) {
 
 // testLoadConfigPathTraversal tests path traversal functionality.
 func testLoadConfigPathTraversal(t *testing.T) {
-	t.Parallel()
-
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "kind-config.yaml")
 	subDir := filepath.Join(tempDir, "subdir")
@@ -127,15 +125,7 @@ func testLoadConfigPathTraversal(t *testing.T) {
 	err = os.WriteFile(configPath, []byte(configContent), 0o600)
 	require.NoError(t, err)
 
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		//nolint:usetesting // t.Chdir not available in all Go versions
-		err := os.Chdir(oldDir)
-		require.NoError(t, err)
-	})
-	//nolint:usetesting // t.Chdir not available in all Go versions
-	err = os.Chdir(subDir)
+	t.Chdir(subDir)
 	require.NoError(t, err)
 
 	manager := kind.NewConfigManager("kind-config.yaml")
@@ -270,8 +260,6 @@ nodes:
 
 // testLoadConfigPathTraversalExhaustive tests path traversal until root directory.
 func testLoadConfigPathTraversalExhaustive(t *testing.T) {
-	t.Parallel()
-
 	// Create a deeply nested directory structure without the config file
 	// This will test the case where path traversal reaches the root directory
 	tempDir := t.TempDir()
@@ -280,15 +268,7 @@ func testLoadConfigPathTraversalExhaustive(t *testing.T) {
 	require.NoError(t, err)
 
 	// Change to the deep directory
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		//nolint:usetesting // t.Chdir not available in all Go versions
-		err := os.Chdir(oldDir)
-		require.NoError(t, err)
-	})
-	//nolint:usetesting // t.Chdir not available in all Go versions
-	err = os.Chdir(deepDir)
+	t.Chdir(deepDir)
 	require.NoError(t, err)
 
 	// Test with a relative path that doesn't exist anywhere in the hierarchy
