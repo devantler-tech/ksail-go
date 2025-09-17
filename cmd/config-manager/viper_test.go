@@ -348,11 +348,11 @@ func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
 `
 
 	// Config file at level1
-	err = os.WriteFile(level1+"/configmanager.yaml", []byte(configContent), 0o600)
+	err = os.WriteFile(level1+"/ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Config file at tempDir (root level)
-	err = os.WriteFile(tempDir+"/configmanager.yaml", []byte(configContent), 0o600)
+	err = os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Change to level3 directory
@@ -390,7 +390,7 @@ func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
   name: test-duplicates
 `
 
-	err := os.WriteFile(tempDir+"/configmanager.yaml", []byte(configContent), 0o600)
+	err := os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Change to the directory

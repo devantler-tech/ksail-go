@@ -27,7 +27,7 @@ const SuggestionsMinimumDistance = 2
 //
 //  1. CLI flags (highest priority)
 //  2. Environment variables
-//  3. Configuration files (configmanager.yaml)
+//  3. Configuration files (ksail.yaml)
 //  4. Field selector defaults (lowest priority)
 //
 // Parameters:
