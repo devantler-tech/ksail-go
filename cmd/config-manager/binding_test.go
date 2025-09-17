@@ -1,11 +1,11 @@
-package ksail_test
+package configmanager_test
 
 import (
 	"testing"
 	"time"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ type flagNameTestCase struct {
 // runFlagNameGenerationTests is a helper function to run multiple flag name generation test cases.
 func runFlagNameGenerationTests(
 	t *testing.T,
-	manager *ksail.ConfigManager,
+	manager *configmanager.ConfigManager,
 	tests []flagNameTestCase,
 ) {
 	t.Helper()
@@ -39,9 +39,9 @@ func runFlagNameGenerationTests(
 
 // setupFlagBindingTest creates a command for testing flag binding.
 func setupFlagBindingTest(
-	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 	cmd := &cobra.Command{Use: "test"}
 	manager.AddFlagsFromFields(cmd)
 
@@ -52,19 +52,19 @@ func setupFlagBindingTest(
 // getBasicFieldTests returns test cases for basic field testing.
 func getBasicFieldTests() []struct {
 	name          string
-	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 	expectedFlag  string
 	expectedType  string
 } {
 	return []struct {
 		name          string
-		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 		expectedFlag  string
 		expectedType  string
 	}{
 		{
 			name: "Distribution field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 				v1alpha1.DistributionKind,
 				"Kubernetes distribution",
@@ -74,7 +74,7 @@ func getBasicFieldTests() []struct {
 		},
 		{
 			name: "SourceDirectory field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 				"k8s",
 				"Source directory",
@@ -84,7 +84,7 @@ func getBasicFieldTests() []struct {
 		},
 		{
 			name: "ReconciliationTool field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
 				v1alpha1.ReconciliationToolFlux,
 				"Reconciliation tool",
@@ -122,19 +122,19 @@ func TestAddFlagFromField(t *testing.T) {
 // getConnectionFieldTests returns test cases for connection field testing.
 func getConnectionFieldTests() []struct {
 	name          string
-	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 	expectedFlag  string
 	expectedType  string
 } {
 	return []struct {
 		name          string
-		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 		expectedFlag  string
 		expectedType  string
 	}{
 		{
 			name: "Context field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 				"",
 				"Kubernetes context",
@@ -144,7 +144,7 @@ func getConnectionFieldTests() []struct {
 		},
 		{
 			name: "Timeout field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 				metav1.Duration{Duration: 5 * time.Minute},
 				"Connection timeout",
@@ -158,19 +158,19 @@ func getConnectionFieldTests() []struct {
 // getNetworkingFieldTests returns test cases for networking field testing.
 func getNetworkingFieldTests() []struct {
 	name          string
-	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 	expectedFlag  string
 	expectedType  string
 } {
 	return []struct {
 		name          string
-		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 		expectedFlag  string
 		expectedType  string
 	}{
 		{
 			name: "CNI field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
 				v1alpha1.CNICilium,
 				"CNI plugin",
@@ -180,7 +180,7 @@ func getNetworkingFieldTests() []struct {
 		},
 		{
 			name: "CSI field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
 				v1alpha1.CSILocalPathStorage,
 				"CSI driver",
@@ -190,7 +190,7 @@ func getNetworkingFieldTests() []struct {
 		},
 		{
 			name: "IngressController field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
 				v1alpha1.IngressControllerTraefik,
 				"Ingress controller",
@@ -200,7 +200,7 @@ func getNetworkingFieldTests() []struct {
 		},
 		{
 			name: "GatewayController field",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
 				v1alpha1.GatewayControllerTraefik,
 				"Gateway controller",
@@ -217,19 +217,19 @@ func testAddFlagFromFieldErrorHandling(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 		expectSkip    bool
 	}{
 		{
 			name: "Nil field selector",
-			fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
+			fieldSelector: configmanager.FieldSelector[v1alpha1.Cluster]{
 				Selector: func(_ *v1alpha1.Cluster) any { return nil },
 			},
 			expectSkip: true,
 		},
 		{
 			name: "Valid field selector",
-			fieldSelector: ksail.AddFlagFromField(
+			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 				"test",
 				"Test field",
@@ -258,7 +258,7 @@ func testAddFlagFromFieldErrorHandling(t *testing.T) {
 // testAddFlagFromFieldCases is a helper function to test field selector functionality.
 func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 	name          string
-	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
 	expectedFlag  string
 	expectedType  string
 },
@@ -286,7 +286,7 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 func TestGenerateFlagName(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	tests := []flagNameTestCase{
 		{"Distribution field", &manager.Config.Spec.Distribution, "distribution"},
@@ -324,7 +324,7 @@ func TestGenerateFlagName(t *testing.T) {
 // testFlagNameGeneration is a helper function to test flag name generation.
 func testFlagNameGeneration(
 	t *testing.T,
-	manager *ksail.ConfigManager,
+	manager *configmanager.ConfigManager,
 	fieldPtr any,
 	expected string,
 ) {
@@ -338,7 +338,7 @@ func testFlagNameGeneration(
 func TestGenerateShorthand(t *testing.T) {
 	t.Parallel()
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	tests := []struct {
 		name     string

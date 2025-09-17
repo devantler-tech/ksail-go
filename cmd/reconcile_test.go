@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestHandleReconcileRunESuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	err := cmd.HandleReconcileRunE(testCmd, manager, []string{})
 
@@ -70,7 +70,7 @@ func TestHandleReconcileRunEError(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	// Test that the function doesn't panic - error testing can be enhanced later
 	assert.NotPanics(t, func() {

@@ -1,18 +1,18 @@
-# pkg/config-manager/ksail
+# cmd/config-manager
 
 This package provides KSail-specific configuration management implementation.
 
 ## Purpose
 
-Implements the `ConfigManager` interface specifically for KSail configuration, handling the loading and management of KSail-specific settings and preferences.
+Implements the `ConfigManager` interface specifically for KSail configuration, handling the loading and management of KSail-specific settings and preferences. This package was moved from `pkg/config-manager/ksail` to avoid circular dependencies with `cmd/ui/notify`.
 
 ## Usage
 
 ```go
-import "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+import configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 
 // Use KSail-specific configuration manager
-manager := ksail.NewConfigManager()
+manager := configmanager.NewConfigManager()
 config, err := manager.LoadConfig()
 if err != nil {
     log.Fatal(err)

@@ -35,9 +35,13 @@ if err != nil {
 viper := manager.GetViper()
 ```
 
-## Subpackages
+## Implementation
 
-- **[pkg/config-manager/ksail/](./ksail/README.md)** - KSail-specific configuration implementation
+The KSail-specific configuration implementation has been moved to `cmd/config-manager` to avoid circular dependencies. This package now contains only the generic interface definition.
+
+## Related Packages
+
+- **[cmd/config-manager/](../../cmd/config-manager/README.md)** - KSail-specific configuration implementation
 
 ---
 

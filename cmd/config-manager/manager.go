@@ -1,6 +1,6 @@
-// Package ksail provides configuration management for KSail v1alpha1.Cluster configurations.
+// Package configmanager provides configuration management for KSail v1alpha1.Cluster configurations.
 // This file contains the core Manager implementation.
-package ksail
+package configmanager
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/viper"
 )
 
@@ -23,8 +23,8 @@ type ConfigManager struct {
 }
 
 // Compile-time interface compliance verification.
-// This ensures ConfigManager properly implements configmanager.ConfigManager[v1alpha1.Cluster].
-var _ configmanager.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
+// This ensures ConfigManager properly implements configmanagerinterface.ConfigManager[v1alpha1.Cluster].
+var _ configmanagerinterface.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(nil)
 
 // NewConfigManager creates a new configuration manager with the specified field selectors.
 // Initializes Viper with all configuration including paths and environment handling.
