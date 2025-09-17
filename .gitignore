@@ -46,6 +46,9 @@ __MACOSX/
 coverage*.out
 *coverage.html
 
+# Go test binaries
+*.test
+
 # megalinter output
 megalinter_output.log
 tmp/
