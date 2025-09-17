@@ -129,7 +129,7 @@ spec:
 
 	// Create a temporary directory and file
 	tempDir := t.TempDir()
-	configFile := tempDir + "/configmanager.yaml"
+	configFile := tempDir + "/ksail.yaml"
 
 	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
