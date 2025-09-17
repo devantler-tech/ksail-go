@@ -105,134 +105,154 @@ func TestAddFlagFromField(t *testing.T) {
 
 	t.Run("connection fields", func(t *testing.T) {
 		t.Parallel()
-
-		tests := []struct {
-			name          string
-			fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
-			expectedFlag  string
-			expectedType  string
-		}{
-			{
-				name: "Context field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-					"",
-					"Kubernetes context",
-				),
-				expectedFlag: "context",
-				expectedType: "string",
-			},
-			{
-				name: "Timeout field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
-					metav1.Duration{Duration: 5 * time.Minute},
-					"Connection timeout",
-				),
-				expectedFlag: "timeout",
-				expectedType: "duration",
-			},
-		}
-
-		testAddFlagFromFieldCases(t, tests)
+		testAddFlagFromFieldCases(t, getConnectionFieldTests())
 	})
 
 	t.Run("networking fields", func(t *testing.T) {
 		t.Parallel()
-
-		tests := []struct {
-			name          string
-			fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
-			expectedFlag  string
-			expectedType  string
-		}{
-			{
-				name: "CNI field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
-					v1alpha1.CNICilium,
-					"CNI plugin",
-				),
-				expectedFlag: "cni",
-				expectedType: "CNI",
-			},
-			{
-				name: "CSI field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
-					v1alpha1.CSILocalPathStorage,
-					"CSI driver",
-				),
-				expectedFlag: "csi",
-				expectedType: "CSI",
-			},
-			{
-				name: "IngressController field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-					v1alpha1.IngressControllerTraefik,
-					"Ingress controller",
-				),
-				expectedFlag: "ingress-controller",
-				expectedType: "IngressController",
-			},
-			{
-				name: "GatewayController field",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-					v1alpha1.GatewayControllerTraefik,
-					"Gateway controller",
-				),
-				expectedFlag: "gateway-controller",
-				expectedType: "GatewayController",
-			},
-		}
-
-		testAddFlagFromFieldCases(t, tests)
+		testAddFlagFromFieldCases(t, getNetworkingFieldTests())
 	})
 
 	t.Run("error handling", func(t *testing.T) {
 		t.Parallel()
-
-		tests := []struct {
-			name          string
-			fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
-			expectSkip    bool
-		}{
-			{
-				name: "Nil field selector",
-				fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
-					Selector: func(_ *v1alpha1.Cluster) any { return nil },
-				},
-				expectSkip: true,
-			},
-			{
-				name: "Valid field selector",
-				fieldSelector: ksail.AddFlagFromField(
-					func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-					"test",
-					"Test field",
-				),
-				expectSkip: false,
-			},
-		}
-
-		for _, testCase := range tests {
-			t.Run(testCase.name, func(t *testing.T) {
-				t.Parallel()
-
-				cmd := setupFlagBindingTest(testCase.fieldSelector)
-
-				if testCase.expectSkip {
-					// Should have no flags when selector returns nil
-					assert.False(t, cmd.Flags().HasFlags())
-				} else {
-					// Should have flags when selector is valid
-					assert.True(t, cmd.Flags().HasFlags())
-				}
-			})
-		}
+		testAddFlagFromFieldErrorHandling(t)
 	})
+}
+
+// getConnectionFieldTests returns test cases for connection field testing.
+func getConnectionFieldTests() []struct {
+	name          string
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	expectedFlag  string
+	expectedType  string
+} {
+	return []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedFlag  string
+		expectedType  string
+	}{
+		{
+			name: "Context field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+				"",
+				"Kubernetes context",
+			),
+			expectedFlag: "context",
+			expectedType: "string",
+		},
+		{
+			name: "Timeout field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
+				metav1.Duration{Duration: 5 * time.Minute},
+				"Connection timeout",
+			),
+			expectedFlag: "timeout",
+			expectedType: "duration",
+		},
+	}
+}
+
+// getNetworkingFieldTests returns test cases for networking field testing.
+func getNetworkingFieldTests() []struct {
+	name          string
+	fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+	expectedFlag  string
+	expectedType  string
+} {
+	return []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectedFlag  string
+		expectedType  string
+	}{
+		{
+			name: "CNI field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
+				v1alpha1.CNICilium,
+				"CNI plugin",
+			),
+			expectedFlag: "cni",
+			expectedType: "CNI",
+		},
+		{
+			name: "CSI field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
+				v1alpha1.CSILocalPathStorage,
+				"CSI driver",
+			),
+			expectedFlag: "csi",
+			expectedType: "CSI",
+		},
+		{
+			name: "IngressController field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
+				v1alpha1.IngressControllerTraefik,
+				"Ingress controller",
+			),
+			expectedFlag: "ingress-controller",
+			expectedType: "IngressController",
+		},
+		{
+			name: "GatewayController field",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
+				v1alpha1.GatewayControllerTraefik,
+				"Gateway controller",
+			),
+			expectedFlag: "gateway-controller",
+			expectedType: "GatewayController",
+		},
+	}
+}
+
+// testAddFlagFromFieldErrorHandling tests error handling scenarios for AddFlagFromField.
+func testAddFlagFromFieldErrorHandling(t *testing.T) {
+	t.Helper()
+
+	tests := []struct {
+		name          string
+		fieldSelector ksail.FieldSelector[v1alpha1.Cluster]
+		expectSkip    bool
+	}{
+		{
+			name: "Nil field selector",
+			fieldSelector: ksail.FieldSelector[v1alpha1.Cluster]{
+				Selector: func(_ *v1alpha1.Cluster) any { return nil },
+			},
+			expectSkip: true,
+		},
+		{
+			name: "Valid field selector",
+			fieldSelector: ksail.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+				"test",
+				"Test field",
+			),
+			expectSkip: false,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			cmd := setupFlagBindingTest(testCase.fieldSelector)
+
+			if testCase.expectSkip {
+				// Should have no flags when selector returns nil
+				assert.False(t, cmd.Flags().HasFlags())
+			} else {
+				// Should have flags when selector is valid
+				assert.True(t, cmd.Flags().HasFlags())
+			}
+		})
+	}
 }
 
 // testAddFlagFromFieldCases is a helper function to test field selector functionality.
@@ -268,87 +288,37 @@ func TestGenerateFlagName(t *testing.T) {
 
 	manager := ksail.NewConfigManager()
 
-	t.Run("basic fields", func(t *testing.T) {
-		t.Parallel()
+	tests := []flagNameTestCase{
+		{"Distribution field", &manager.Config.Spec.Distribution, "distribution"},
+		{
+			"DistributionConfig field",
+			&manager.Config.Spec.DistributionConfig,
+			"distribution-config",
+		},
+		{"SourceDirectory field", &manager.Config.Spec.SourceDirectory, "source-directory"},
+		{
+			"ReconciliationTool field",
+			&manager.Config.Spec.ReconciliationTool,
+			"reconciliation-tool",
+		},
+		{"Context field", &manager.Config.Spec.Connection.Context, "context"},
+		{"Kubeconfig field", &manager.Config.Spec.Connection.Kubeconfig, "kubeconfig"},
+		{"Timeout field", &manager.Config.Spec.Connection.Timeout, "timeout"},
+		{"CNI field", &manager.Config.Spec.CNI, "cni"},
+		{"CSI field", &manager.Config.Spec.CSI, "csi"},
+		{
+			"IngressController field",
+			&manager.Config.Spec.IngressController,
+			"ingress-controller",
+		},
+		{
+			"GatewayController field",
+			&manager.Config.Spec.GatewayController,
+			"gateway-controller",
+		},
+	}
 
-		tests := []flagNameTestCase{
-			{
-				name:     "Distribution field",
-				fieldPtr: &manager.Config.Spec.Distribution,
-				expected: "distribution",
-			},
-			{
-				name:     "DistributionConfig field",
-				fieldPtr: &manager.Config.Spec.DistributionConfig,
-				expected: "distribution-config",
-			},
-			{
-				name:     "SourceDirectory field",
-				fieldPtr: &manager.Config.Spec.SourceDirectory,
-				expected: "source-directory",
-			},
-			{
-				name:     "ReconciliationTool field",
-				fieldPtr: &manager.Config.Spec.ReconciliationTool,
-				expected: "reconciliation-tool",
-			},
-		}
-
-		runFlagNameGenerationTests(t, manager, tests)
-	})
-
-	t.Run("connection fields", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []flagNameTestCase{
-			{
-				name:     "Context field",
-				fieldPtr: &manager.Config.Spec.Connection.Context,
-				expected: "context",
-			},
-			{
-				name:     "Kubeconfig field",
-				fieldPtr: &manager.Config.Spec.Connection.Kubeconfig,
-				expected: "kubeconfig",
-			},
-			{
-				name:     "Timeout field",
-				fieldPtr: &manager.Config.Spec.Connection.Timeout,
-				expected: "timeout",
-			},
-		}
-
-		runFlagNameGenerationTests(t, manager, tests)
-	})
-
-	t.Run("networking fields", func(t *testing.T) {
-		t.Parallel()
-
-		tests := []flagNameTestCase{
-			{
-				name:     "CNI field",
-				fieldPtr: &manager.Config.Spec.CNI,
-				expected: "cni",
-			},
-			{
-				name:     "CSI field",
-				fieldPtr: &manager.Config.Spec.CSI,
-				expected: "csi",
-			},
-			{
-				name:     "IngressController field",
-				fieldPtr: &manager.Config.Spec.IngressController,
-				expected: "ingress-controller",
-			},
-			{
-				name:     "GatewayController field",
-				fieldPtr: &manager.Config.Spec.GatewayController,
-				expected: "gateway-controller",
-			},
-		}
-
-		runFlagNameGenerationTests(t, manager, tests)
-	})
+	runFlagNameGenerationTests(t, manager, tests)
 }
 
 // testFlagNameGeneration is a helper function to test flag name generation.

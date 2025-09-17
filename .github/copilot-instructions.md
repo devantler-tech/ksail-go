@@ -231,6 +231,7 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 **CRITICAL NAMING REQUIREMENTS**: Follow strict Go community naming conventions for all test functions:
 
 #### Test Function Naming Rules
+
 - **Primary Pattern**: `func TestXxx(t *testing.T)` where `Xxx` is the **method/function/constructor name only**
 - **NEVER include struct names**: `TestManagerLoadConfig` ❌ → `TestLoadConfig` ✅
 - **NEVER include explanations**: `TestLoadConfigWithValidInput` ❌ → `TestLoadConfig` ✅ (use subtests instead)
@@ -238,8 +239,10 @@ This repository follows [Best practices for Copilot coding agent in your reposit
 - **Constructor pattern**: For `func NewManager()`, test should be `TestNewManager`
 
 #### One Test Per Method/Function Rule
+
 - **Preferred**: Single test function per method/function/constructor using table-driven tests or `t.Run` subtests
 - **Example structure**:
+
   ```go
   func TestLoadConfig(t *testing.T) {
       testCases := []struct {
@@ -259,8 +262,8 @@ This repository follows [Best practices for Copilot coding agent in your reposit
   }
   ```
 
-
 #### Test Organization Principles
+
 - **One test per method**: Strive for single test function per method under test
 - **Use t.Run for scenarios**: Multiple test scenarios should use `t.Run` subtests within single test function
 - **Table-driven preferred**: Use table-driven tests for multiple input/output combinations

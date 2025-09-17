@@ -1,10 +1,8 @@
 package eksgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -17,61 +15,20 @@ import (
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name        string
-		clusterName string
-		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
-		expectError bool
-	}{
-		{
-			name:        "without file",
-			clusterName: "test-cluster",
-			setupOutput: func(_ *testing.T) (string, bool, string) {
-				return "", false, ""
-			},
-			expectError: false,
+	gen := generator.NewEKSGenerator()
+	tests := generatortestutils.GetStandardGenerateTestCases("eks-config.yaml")
+
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		createTestClusterConfig,
+		gen,
+		func(t *testing.T, result, clusterName string) {
+			t.Helper()
+			assertEKSYAML(t, result, clusterName)
 		},
-		{
-			name:        "with file",
-			clusterName: "file-cluster",
-			setupOutput: func(t *testing.T) (string, bool, string) {
-				t.Helper()
-				tempDir := t.TempDir()
-				outputPath := filepath.Join(tempDir, "eks-config.yaml")
-
-				return outputPath, true, tempDir
-			},
-			expectError: false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			gen := generator.NewEKSGenerator()
-			cfg := createTestClusterConfig(test.clusterName)
-			output, verifyFile, tempDir := test.setupOutput(t)
-			opts := yamlgenerator.Options{
-				Output: output,
-				Force:  false,
-			}
-
-			result, err := gen.Generate(cfg, opts)
-
-			if test.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err, "Generate should succeed")
-				assertEKSYAML(t, result, test.clusterName)
-
-				if verifyFile {
-					// Verify file was written
-					testutils.AssertFileEquals(t, tempDir, output, result)
-				}
-			}
-		})
-	}
+		"eks-config.yaml",
+	)
 }
 
 func TestGenerateExistingFileNoForce(t *testing.T) {

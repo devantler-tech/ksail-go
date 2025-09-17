@@ -1,14 +1,11 @@
 package kustomizationgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,61 +15,23 @@ import (
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name        string
-		clusterName string
-		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
-		expectError bool
-	}{
-		{
-			name:        "without file",
-			clusterName: "test-cluster",
-			setupOutput: func(_ *testing.T) (string, bool, string) {
-				return "", false, ""
-			},
-			expectError: false,
+	tests := generatortestutils.GetStandardGenerateTestCases("kustomization.yaml")
+
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		func(name string) *v1alpha1.Cluster {
+			cluster := createTestCluster(name)
+
+			return cluster
 		},
-		{
-			name:        "with file",
-			clusterName: "file-cluster",
-			setupOutput: func(t *testing.T) (string, bool, string) {
-				t.Helper()
-				tempDir := t.TempDir()
-				outputPath := filepath.Join(tempDir, "kustomization.yaml")
-
-				return outputPath, true, tempDir
-			},
-			expectError: false,
+		generator.NewKustomizationGenerator(createTestCluster("default")),
+		func(t *testing.T, result, _ string) {
+			t.Helper()
+			assertKustomizationYAML(t, result)
 		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			cluster := createTestCluster(test.clusterName)
-			gen := generator.NewKustomizationGenerator(cluster)
-			output, verifyFile, tempDir := test.setupOutput(t)
-			opts := yamlgenerator.Options{
-				Output: output,
-				Force:  false,
-			}
-
-			result, err := gen.Generate(cluster, opts)
-
-			if test.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err, "Generate should succeed")
-				assertKustomizationYAML(t, result)
-
-				if verifyFile {
-					// Verify file was written
-					testutils.AssertFileEquals(t, tempDir, output, result)
-				}
-			}
-		})
-	}
+		"kustomization.yaml",
+	)
 }
 
 func TestGenerateExistingFileNoForce(t *testing.T) {

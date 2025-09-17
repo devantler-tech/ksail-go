@@ -245,7 +245,25 @@ func TestStandardDistributionConfigFieldSelector(t *testing.T) {
 func TestStandardClusterCommandRunE(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	tests := getStandardClusterCommandRunETests()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runStandardClusterCommandRunETest(t, testCase)
+		})
+	}
+}
+
+func getStandardClusterCommandRunETests() []struct {
+	name           string
+	setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+	setupCommand   func() *cobra.Command
+	expectError    bool
+	expectedOutput string
+	expectedErrMsg []string
+} {
+	return []struct {
 		name           string
 		setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
 		setupCommand   func() *cobra.Command
@@ -283,36 +301,42 @@ func TestStandardClusterCommandRunE(t *testing.T) {
 			expectedErrMsg: []string{"failed to handle cluster command", "failed to load config"},
 		},
 	}
+}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+func runStandardClusterCommandRunETest(t *testing.T, testCase struct {
+	name           string
+	setupManager   func(t *testing.T) configmanager.ConfigManager[v1alpha1.Cluster]
+	setupCommand   func() *cobra.Command
+	expectError    bool
+	expectedOutput string
+	expectedErrMsg []string
+},
+) {
+	t.Helper()
 
-			var out bytes.Buffer
+	var out bytes.Buffer
 
-			testCmd := testCase.setupCommand()
-			testCmd.SetOut(&out)
+	testCmd := testCase.setupCommand()
+	testCmd.SetOut(&out)
 
-			manager := testCase.setupManager(t)
-			successMessage := "Test command executed successfully"
+	manager := testCase.setupManager(t)
+	successMessage := "Test command executed successfully"
 
-			// Get the run function
-			runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
+	// Get the run function
+	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
 
-			// Execute the function
-			err := runFunc(testCmd, manager, []string{})
+	// Execute the function
+	err := runFunc(testCmd, manager, []string{})
 
-			if testCase.expectError {
-				require.Error(t, err)
+	if testCase.expectError {
+		require.Error(t, err)
 
-				for _, expectedMsg := range testCase.expectedErrMsg {
-					assert.Contains(t, err.Error(), expectedMsg)
-				}
-			} else {
-				require.NoError(t, err)
-				assert.Contains(t, out.String(), testCase.expectedOutput)
-			}
-		})
+		for _, expectedMsg := range testCase.expectedErrMsg {
+			assert.Contains(t, err.Error(), expectedMsg)
+		}
+	} else {
+		require.NoError(t, err)
+		assert.Contains(t, out.String(), testCase.expectedOutput)
 	}
 }
 

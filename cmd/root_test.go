@@ -3,10 +3,10 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -14,17 +14,7 @@ import (
 var errRootTest = errors.New("boom")
 
 func TestMain(main *testing.M) {
-	exitCode := main.Run()
-
-	cleaned, err := snaps.Clean(main, snaps.CleanOpts{Sort: true})
-	if err != nil {
-		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
-		os.Exit(1)
-	}
-
-	_ = cleaned
-
-	os.Exit(exitCode)
+	testutils.RunTestMainWithSnapshotCleanup(main)
 }
 
 func TestNewRootCmdVersionFormatting(t *testing.T) {

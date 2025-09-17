@@ -1,76 +1,28 @@
 package kindgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name        string
-		clusterName string
-		setupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
-		expectError bool
-	}{
-		{
-			name:        "without file",
-			clusterName: "test-cluster",
-			setupOutput: func(_ *testing.T) (string, bool, string) {
-				return "", false, ""
-			},
-			expectError: false,
-		},
-		{
-			name:        "with file",
-			clusterName: "file-cluster",
-			setupOutput: func(t *testing.T) (string, bool, string) {
-				t.Helper()
-				tempDir := t.TempDir()
-				outputPath := filepath.Join(tempDir, "kind-config.yaml")
+	gen := generator.NewKindGenerator()
+	tests := generatortestutils.GetStandardGenerateTestCases("kind-config.yaml")
 
-				return outputPath, true, tempDir
-			},
-			expectError: false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			gen := generator.NewKindGenerator()
-			cluster := createTestCluster(test.clusterName)
-			output, verifyFile, tempDir := test.setupOutput(t)
-			opts := yamlgenerator.Options{
-				Output: output,
-				Force:  false,
-			}
-
-			result, err := gen.Generate(cluster, opts)
-
-			if test.expectError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err, "Generate should succeed")
-				assertKindYAML(t, result, test.clusterName)
-
-				if verifyFile {
-					// Verify file was written
-					testutils.AssertFileEquals(t, tempDir, output, result)
-				}
-			}
-		})
-	}
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		createTestCluster,
+		gen,
+		assertKindYAML,
+		"kind-config.yaml",
+	)
 }
 
 func TestGenerateExistingFileNoForce(t *testing.T) {
