@@ -6,7 +6,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +51,7 @@ defined in configuration files.`,
 // Exported for testing purposes.
 func HandleReconcileRunE(
 	cmd *cobra.Command,
-	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
 	err := cmdhelpers.ExecuteCommandWithClusterInfo(

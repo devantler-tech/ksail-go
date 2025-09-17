@@ -6,7 +6,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
@@ -55,7 +54,7 @@ const SuggestionsMinimumDistance = 2
 //	        "k8s", "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
-	runE func(*cobra.Command, configmanagerinterface.ConfigManager[v1alpha1.Cluster], []string) error,
+	runE func(*cobra.Command, *configmanager.ConfigManager, []string) error,
 	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
 	manager := configmanager.NewConfigManager(fieldSelectors...)
@@ -131,7 +130,7 @@ func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 // Exported for testing purposes.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
-	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
@@ -146,7 +145,7 @@ func LoadClusterWithErrorHandling(
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,
-	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 	successMessage string,
 ) (*v1alpha1.Cluster, error) {
 	// Load the full cluster configuration using common error handling
@@ -168,10 +167,10 @@ func HandleSimpleClusterCommand(
 // It handles the common pattern of calling HandleSimpleClusterCommand with a success message.
 func StandardClusterCommandRunE(
 	successMessage string,
-) func(cmd *cobra.Command, manager configmanagerinterface.ConfigManager[v1alpha1.Cluster], args []string) error {
+) func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
 	return func(
 		cmd *cobra.Command,
-		manager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
+		manager *configmanager.ConfigManager,
 		_ []string,
 	) error {
 		_, err := HandleSimpleClusterCommand(cmd, manager, successMessage)
@@ -213,7 +212,7 @@ func StandardDistributionConfigFieldSelector() configmanager.FieldSelector[v1alp
 // ExecuteCommandWithClusterInfo loads cluster configuration and executes a command with cluster info logging.
 func ExecuteCommandWithClusterInfo(
 	cmd *cobra.Command,
-	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 	successMessage string,
 	infoFieldsFunc func(*v1alpha1.Cluster) []ClusterInfoField,
 ) error {
