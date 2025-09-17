@@ -5,6 +5,7 @@ package kind
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
@@ -44,8 +45,14 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 		return m.config, nil
 	}
 
+	// Resolve the config path (traverse up from current dir if relative)
+	configPath, err := m.resolveConfigPath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve config path: %w", err)
+	}
+
 	// Check if config file exists
-	_, err := os.Stat(m.configPath)
+	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
 		// File doesn't exist, return default configuration
 		//nolint:exhaustruct // Kind defaults are applied via SetDefaultsCluster
@@ -63,9 +70,9 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	}
 
 	// Read file contents
-	data, err := os.ReadFile(m.configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", m.configPath, err)
+		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
 	}
 
 	// Parse YAML into Kind cluster config
@@ -74,7 +81,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 
 	err = m.marshaller.Unmarshal(data, &m.config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Kind config from %s: %w", m.configPath, err)
+		return nil, fmt.Errorf("failed to unmarshal Kind config from %s: %w", configPath, err)
 	}
 
 	// Ensure APIVersion and Kind are set
@@ -92,4 +99,42 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	m.configLoaded = true
 
 	return m.config, nil
+}
+
+// resolveConfigPath resolves the configuration file path.
+// For absolute paths, returns the path as-is.
+// For relative paths or filenames, traverses up from current directory to find the file.
+func (m *ConfigManager) resolveConfigPath() (string, error) {
+	// If absolute path, return as-is
+	if filepath.IsAbs(m.configPath) {
+		return m.configPath, nil
+	}
+
+	// For relative paths, start from current directory and traverse up
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	// Traverse up the directory tree looking for the config file
+	for {
+		candidatePath := filepath.Join(currentDir, m.configPath)
+		_, err := os.Stat(candidatePath)
+		if err == nil {
+			return candidatePath, nil
+		}
+
+		// Move up one directory
+		parentDir := filepath.Dir(currentDir)
+		// Stop if we've reached the root directory
+		if parentDir == currentDir {
+			break
+		}
+
+		currentDir = parentDir
+	}
+
+	// If not found during traversal, return the original relative path
+	// This allows the caller to handle the file-not-found case appropriately
+	return m.configPath, nil
 }

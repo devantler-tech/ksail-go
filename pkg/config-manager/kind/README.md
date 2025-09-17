@@ -1,6 +1,6 @@
 # pkg/config-manager/kind
 
-This package provides configuration management for Kind cluster configurations without Viper dependency.
+This package provides configuration management for Kind cluster configurations.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Implements file-based configuration loading for Kind clusters using the `sigs.k8
 
 - **File-based Loading**: Load Kind cluster configurations from YAML files
 - **Default Configuration**: Returns sensible defaults when configuration file doesn't exist
-- **No Viper Dependency**: Simple file-based approach without external configuration management
+- **Path Traversal**: For relative paths, searches up the directory tree to find configuration files
 - **Caching**: Loads configuration once and caches for subsequent calls
 - **Kind Defaults**: Automatically applies Kind's built-in defaults via `v1alpha4.SetDefaultsCluster`
 - **TypeMeta Completion**: Ensures proper APIVersion and Kind fields are set
@@ -60,6 +60,8 @@ nodes:
 
 ## Behavior
 
+- **Absolute Paths**: Uses the path directly to look for the configuration file
+- **Relative Paths**: Starts from current directory and traverses up the tree looking for the file
 - **File Exists**: Loads and parses the YAML file, applies Kind defaults
 - **File Missing**: Returns a default Kind cluster configuration with one control-plane node
 - **Invalid YAML**: Returns an error with details about the parsing failure

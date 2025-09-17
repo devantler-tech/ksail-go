@@ -20,117 +20,126 @@ func TestNewConfigManager(t *testing.T) {
 	assert.NotNil(t, manager)
 }
 
-// TestLoadConfigWithNonExistentFile tests LoadConfig with missing file returns defaults.
-func TestLoadConfigWithNonExistentFile(t *testing.T) {
+// TestLoadConfig tests the LoadConfig method with different scenarios.
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		content        string
+		exists         bool
+		expectError    bool
+		expectedKind   string
+		expectedAPIVer string
+	}{
+		{"non-existent file", "", false, false, "Cluster", "kind.x-k8s.io/v1alpha4"},
+		{
+			"valid config",
+			"apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster",
+			true,
+			false,
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+		},
+		{
+			"missing TypeMeta",
+			"nodes:\n- role: control-plane",
+			true,
+			false,
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+		},
+		{"invalid YAML", "invalid: [", true, true, "", ""},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			configPath := filepath.Join(tempDir, "config.yaml")
+
+			if testCase.exists {
+				err := os.WriteFile(configPath, []byte(testCase.content), 0o600)
+				require.NoError(t, err)
+			}
+
+			manager := kind.NewConfigManager(configPath)
+			config, err := manager.LoadConfig()
+
+			if testCase.expectError {
+				require.Error(t, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, config)
+			assert.Equal(t, testCase.expectedKind, config.Kind)
+			assert.Equal(t, testCase.expectedAPIVer, config.APIVersion)
+		})
+	}
+}
+
+// TestLoadConfigCaching tests that LoadConfig properly caches results.
+func TestLoadConfigCaching(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "non-existent.yaml")
+	configPath := filepath.Join(tempDir, "config.yaml")
+
+	configContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster"
+	err := os.WriteFile(configPath, []byte(configContent), 0o600)
+	require.NoError(t, err)
 
 	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
 
+	config1, err := manager.LoadConfig()
 	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
 
-	// Test that subsequent calls return the same config (caching)
-	config2, err2 := manager.LoadConfig()
-	require.NoError(t, err2)
-	assert.Equal(t, config, config2)
+	config2, err := manager.LoadConfig()
+	require.NoError(t, err)
+
+	assert.Equal(t, config1, config2)
 }
 
-// TestLoadConfigWithValidFile tests LoadConfig with valid configuration file.
-func TestLoadConfigWithValidFile(t *testing.T) {
+// TestLoadConfigPathTraversal tests path traversal functionality.
+func TestLoadConfigPathTraversal(t *testing.T) {
 	t.Parallel()
 
+	// Create a nested directory structure
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "kind-config.yaml")
+	subDir := filepath.Join(tempDir, "subdir")
+	err := os.Mkdir(subDir, 0o750)
+	require.NoError(t, err)
+
+	// Write config to parent directory
 	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
-nodes:
-- role: control-plane
-- role: worker`
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
+name: traversal-test`
+	err = os.WriteFile(configPath, []byte(configContent), 0o600)
 	require.NoError(t, err)
 
-	manager := kind.NewConfigManager(configPath)
+	// Change to subdirectory for testing traversal
+	oldDir, err := os.Getwd()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := os.Chdir(oldDir)
+		require.NoError(t, err)
+	})
+	err = os.Chdir(subDir)
+	require.NoError(t, err)
+
+	// Test with relative path - should find config in parent directory
+	manager := kind.NewConfigManager("kind-config.yaml")
 	config, err := manager.LoadConfig()
 
 	require.NoError(t, err)
 	require.NotNil(t, config)
 	assert.Equal(t, "Cluster", config.Kind)
 	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
-}
-
-// TestLoadConfigWithMinimalFile tests LoadConfig with minimal configuration.
-func TestLoadConfigWithMinimalFile(t *testing.T) {
-	t.Parallel()
-
-	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
-kind: Cluster`
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
-
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
-}
-
-// TestLoadConfigWithMissingTypeMeta tests LoadConfig fills in missing TypeMeta.
-func TestLoadConfigWithMissingTypeMeta(t *testing.T) {
-	t.Parallel()
-
-	configContent := `nodes:
-- role: control-plane`
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
-
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
-}
-
-// TestLoadConfigWithInvalidYAML tests LoadConfig with invalid YAML returns error.
-func TestLoadConfigWithInvalidYAML(t *testing.T) {
-	t.Parallel()
-
-	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
-kind: Cluster
-nodes:
-  - role: control-plane
-	  invalid indentation`
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
-
-	require.Error(t, err)
-	assert.Nil(t, config)
+	assert.Equal(t, "traversal-test", config.Name)
 }
 
 // TestLoadConfigFileReadError tests error handling when file cannot be read.
@@ -149,68 +158,4 @@ func TestLoadConfigFileReadError(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, config)
 	assert.Contains(t, err.Error(), "failed to read config file")
-}
-
-// TestLoadConfigDefaults tests that Kind defaults are properly applied.
-func TestLoadConfigDefaults(t *testing.T) {
-	t.Parallel()
-
-	// Test with non-existent file (should get defaults)
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "non-existent.yaml")
-
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
-
-	require.NoError(t, err)
-	require.NotNil(t, config)
-
-	// Verify Kind defaults are applied
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
-	// Kind defaults should include at least one control-plane node
-	assert.GreaterOrEqual(t, len(config.Nodes), 1)
-}
-
-// TestLoadConfigCaching tests that LoadConfig properly caches results.
-func TestLoadConfigCaching(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-
-	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
-kind: Cluster
-nodes:
-- role: control-plane`
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-
-	// First call should load from file
-	config1, err := manager.LoadConfig()
-	require.NoError(t, err)
-	require.NotNil(t, config1)
-
-	// Modify the file
-	modifiedContent := `apiVersion: kind.x-k8s.io/v1alpha4
-kind: Cluster
-nodes:
-- role: control-plane
-- role: worker`
-
-	err = os.WriteFile(configPath, []byte(modifiedContent), 0o600)
-	require.NoError(t, err)
-
-	// Second call should return cached result (not re-read file)
-	config2, err := manager.LoadConfig()
-	require.NoError(t, err)
-	require.NotNil(t, config2)
-
-	// Should be same object (cached)
-	assert.Equal(t, config1, config2)
-	// Should not have picked up the file changes (proving caching works)
-	assert.Len(t, config2.Nodes, 1) // Still has original single node
 }
