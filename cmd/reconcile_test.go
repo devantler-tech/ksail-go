@@ -23,7 +23,7 @@ func TestNewReconcileCmd(t *testing.T) {
 	})
 }
 
-func TestReconcileCmd_Execute(t *testing.T) {
+func TestReconcileCmdExecute(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -32,7 +32,7 @@ func TestReconcileCmd_Execute(t *testing.T) {
 	})
 }
 
-func TestReconcileCmd_Help(t *testing.T) {
+func TestReconcileCmdHelp(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
@@ -42,7 +42,7 @@ func TestReconcileCmd_Help(t *testing.T) {
 }
 
 // TestHandleReconcileRunE_Success tests successful reconcile command execution.
-func TestHandleReconcileRunE_Success(t *testing.T) {
+func TestHandleReconcileRunESuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -62,7 +62,7 @@ func TestHandleReconcileRunE_Success(t *testing.T) {
 }
 
 // TestHandleReconcileRunE_Error tests reconcile command with config load error.
-func TestHandleReconcileRunE_Error(t *testing.T) {
+func TestHandleReconcileRunEError(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer

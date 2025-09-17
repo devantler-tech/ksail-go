@@ -1,58 +1,40 @@
 package kustomizationgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
-func TestKustomizationGenerator_Generate_WithoutFile(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
-	cluster := createTestCluster("test-cluster")
-	gen := generator.NewKustomizationGenerator(cluster)
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
+	tests := generatortestutils.GetStandardGenerateTestCases("kustomization.yaml")
 
-	result, err := gen.Generate(cluster, opts)
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		func(name string) *v1alpha1.Cluster {
+			cluster := createTestCluster(name)
 
-	require.NoError(t, err, "Generate should succeed")
-	assertKustomizationYAML(t, result)
+			return cluster
+		},
+		generator.NewKustomizationGenerator(createTestCluster("default")),
+		func(t *testing.T, result, _ string) {
+			t.Helper()
+			assertKustomizationYAML(t, result)
+		},
+		"kustomization.yaml",
+	)
 }
 
-func TestKustomizationGenerator_Generate_WithFile(t *testing.T) {
-	t.Parallel()
-
-	cluster := createTestCluster("file-cluster")
-	gen := generator.NewKustomizationGenerator(cluster)
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "kustomization.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertKustomizationYAML(t, result)
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
-}
-
-func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-no-force")
@@ -70,7 +52,7 @@ func TestKustomizationGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("existing-with-force")
@@ -88,7 +70,7 @@ func TestKustomizationGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("error-cluster")
@@ -104,7 +86,7 @@ func TestKustomizationGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestKustomizationGenerator_Generate_MarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

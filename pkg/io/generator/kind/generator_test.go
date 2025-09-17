@@ -1,56 +1,31 @@
 package kindgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-func TestKindGenerator_Generate_WithoutFile(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
+	tests := generatortestutils.GetStandardGenerateTestCases("kind-config.yaml")
 
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "test-cluster")
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		createTestCluster,
+		gen,
+		assertKindYAML,
+		"kind-config.yaml",
+	)
 }
 
-func TestKindGenerator_Generate_WithFile(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "kind-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertKindYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
-}
-
-func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -68,7 +43,7 @@ func TestKindGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -86,7 +61,7 @@ func TestKindGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
@@ -102,7 +77,7 @@ func TestKindGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestKindGenerator_Generate_MarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

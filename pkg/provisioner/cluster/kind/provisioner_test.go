@@ -26,7 +26,7 @@ func setupKindProvisioner(
 	return provisioner, provider
 }
 
-func TestCreate_Success(t *testing.T) {
+func TestCreateSuccess(t *testing.T) {
 	t.Parallel()
 	clustertestutils.RunCreateSuccessTest(
 		t,
@@ -40,7 +40,7 @@ func TestCreate_Success(t *testing.T) {
 	)
 }
 
-func TestCreate_Error_CreateFailed(t *testing.T) {
+func TestCreateErrorCreateFailed(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).
@@ -57,7 +57,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 	)
 }
 
-func TestDelete_Success(t *testing.T) {
+func TestDeleteSuccess(t *testing.T) {
 	t.Parallel()
 	// order doesn't matter for copy detection; reusing the same helper
 	cases := clustertestutils.DefaultDeleteCases()
@@ -83,7 +83,7 @@ func TestDelete_Success(t *testing.T) {
 	)
 }
 
-func TestDelete_Error_DeleteFailed(t *testing.T) {
+func TestDeleteErrorDeleteFailed(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("Delete", "bad", mock.Anything).Return(clustertestutils.ErrDeleteClusterFailed)
@@ -99,7 +99,7 @@ func TestDelete_Error_DeleteFailed(t *testing.T) {
 	)
 }
 
-func TestExists_Success_False(t *testing.T) {
+func TestExistsSuccessFalse(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"x", "y"}, nil)
@@ -114,7 +114,7 @@ func TestExists_Success_False(t *testing.T) {
 	}
 }
 
-func TestExists_Success_True(t *testing.T) {
+func TestExistsSuccessTrue(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"x", "cfg-name"}, nil)
@@ -129,7 +129,7 @@ func TestExists_Success_True(t *testing.T) {
 	}
 }
 
-func TestExists_Error_ListFailed(t *testing.T) {
+func TestExistsErrorListFailed(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
@@ -144,7 +144,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		"failed to list kind clusters", "Exists()")
 }
 
-func TestList_Success(t *testing.T) {
+func TestListSuccess(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return([]string{"a", "b"}, nil)
@@ -155,7 +155,7 @@ func TestList_Success(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, got, "List()")
 }
 
-func TestList_Error_ListFailed(t *testing.T) {
+func TestListErrorListFailed(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
@@ -166,14 +166,14 @@ func TestList_Error_ListFailed(t *testing.T) {
 		"failed to list kind clusters", "List()")
 }
 
-func TestStart_Error_ClusterNotFound(t *testing.T) {
+func TestStartErrorClusterNotFound(t *testing.T) {
 	t.Parallel()
 	runClusterNotFoundTest(t, "Start", func(p *kindprovisioner.KindClusterProvisioner) error {
 		return p.Start(context.Background(), "")
 	})
 }
 
-func TestStart_Error_NoNodesFound(t *testing.T) {
+func TestStartErrorNoNodesFound(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStartClusterFailed)
@@ -184,7 +184,7 @@ func TestStart_Error_NoNodesFound(t *testing.T) {
 	}
 }
 
-func TestStart_Success(t *testing.T) {
+func TestStartSuccess(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, client := newProvisionerForTest(t)
 
@@ -199,7 +199,7 @@ func TestStart_Success(t *testing.T) {
 	}
 }
 
-func TestStart_Error_DockerStartFailed(t *testing.T) {
+func TestStartErrorDockerStartFailed(t *testing.T) {
 	t.Parallel()
 	runDockerOperationFailureTest(
 		t,
@@ -213,14 +213,14 @@ func TestStart_Error_DockerStartFailed(t *testing.T) {
 	)
 }
 
-func TestStop_Error_ClusterNotFound(t *testing.T) {
+func TestStopErrorClusterNotFound(t *testing.T) {
 	t.Parallel()
 	runClusterNotFoundTest(t, "Stop", func(p *kindprovisioner.KindClusterProvisioner) error {
 		return p.Stop(context.Background(), "")
 	})
 }
 
-func TestStop_Error_NoNodesFound(t *testing.T) {
+func TestStopErrorNoNodesFound(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStopClusterFailed)
@@ -231,7 +231,7 @@ func TestStop_Error_NoNodesFound(t *testing.T) {
 	}
 }
 
-func TestStop_Error_DockerStopFailed(t *testing.T) {
+func TestStopErrorDockerStopFailed(t *testing.T) {
 	t.Parallel()
 	runDockerOperationFailureTest(
 		t,
@@ -245,7 +245,7 @@ func TestStop_Error_DockerStopFailed(t *testing.T) {
 	)
 }
 
-func TestStop_Success(t *testing.T) {
+func TestStopSuccess(t *testing.T) {
 	t.Parallel()
 	provisioner, provider, client := newProvisionerForTest(t)
 

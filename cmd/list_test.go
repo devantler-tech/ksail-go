@@ -31,7 +31,7 @@ func TestNewListCmd(t *testing.T) {
 	}
 }
 
-func TestListCmd_Execute_Default(t *testing.T) {
+func TestListCmdExecuteDefault(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -40,7 +40,7 @@ func TestListCmd_Execute_Default(t *testing.T) {
 	})
 }
 
-func TestListCmd_Execute_All(t *testing.T) {
+func TestListCmdExecuteAll(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -54,7 +54,7 @@ func TestListCmd_Execute_All(t *testing.T) {
 	})
 }
 
-func TestListCmd_Help(t *testing.T) {
+func TestListCmdHelp(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
@@ -62,7 +62,7 @@ func TestListCmd_Help(t *testing.T) {
 	})
 }
 
-func TestListCmd_Flags(t *testing.T) {
+func TestListCmdFlags(t *testing.T) {
 	t.Parallel()
 
 	cmd := cmd.NewListCmd()
@@ -79,7 +79,7 @@ func TestListCmd_Flags(t *testing.T) {
 }
 
 // TestHandleListRunE_Success tests successful list command execution.
-func TestHandleListRunE_Success(t *testing.T) {
+func TestHandleListRunESuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -99,7 +99,7 @@ func TestHandleListRunE_Success(t *testing.T) {
 }
 
 // TestHandleListRunE_AllFlag tests list command with --all flag.
-func TestHandleListRunE_AllFlag(t *testing.T) {
+func TestHandleListRunEAllFlag(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -121,7 +121,7 @@ func TestHandleListRunE_AllFlag(t *testing.T) {
 }
 
 // TestHandleListRunE_Error tests list command with config load error.
-func TestHandleListRunE_Error(t *testing.T) {
+func TestHandleListRunEError(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer

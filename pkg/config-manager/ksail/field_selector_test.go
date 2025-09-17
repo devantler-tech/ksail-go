@@ -38,7 +38,7 @@ func runAddFlagFromFieldTests(t *testing.T, tests []testCase) {
 }
 
 // TestFieldSelector_StructureAndTypes tests the FieldSelector struct and types.
-func TestFieldSelector_StructureAndTypes(t *testing.T) {
+func TestFieldSelectorStructureAndTypes(t *testing.T) {
 	t.Parallel()
 
 	// Test that FieldSelector has the expected structure
@@ -64,7 +64,7 @@ func TestFieldSelector_StructureAndTypes(t *testing.T) {
 }
 
 // TestAddFlagFromField_MetadataAndBasicFields tests AddFlagFromField with metadata and basic spec fields.
-func TestAddFlagFromField_MetadataAndBasicFields(t *testing.T) {
+func TestAddFlagFromFieldMetadataAndBasicFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
@@ -102,7 +102,7 @@ func TestAddFlagFromField_MetadataAndBasicFields(t *testing.T) {
 }
 
 // TestAddFlagFromField_ConnectionFields tests AddFlagFromField with connection fields.
-func TestAddFlagFromField_ConnectionFields(t *testing.T) {
+func TestAddFlagFromFieldConnectionFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
@@ -126,7 +126,7 @@ func TestAddFlagFromField_ConnectionFields(t *testing.T) {
 }
 
 // TestAddFlagFromField_NetworkingComponents tests AddFlagFromField with networking components.
-func TestAddFlagFromField_NetworkingComponents(t *testing.T) {
+func TestAddFlagFromFieldNetworkingComponents(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
@@ -164,7 +164,7 @@ func TestAddFlagFromField_NetworkingComponents(t *testing.T) {
 }
 
 // TestAddFlagFromField_DescriptionHandling tests AddFlagFromField with various description scenarios.
-func TestAddFlagFromField_DescriptionHandling(t *testing.T) {
+func TestAddFlagFromFieldDescriptionHandling(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
@@ -228,7 +228,7 @@ func testAddFlagFromFieldScenario(
 }
 
 // TestAddFlagFromField_BasicTypes tests AddFlagFromField with basic value types.
-func TestAddFlagFromField_BasicTypes(t *testing.T) {
+func TestAddFlagFromFieldBasicTypes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -262,7 +262,7 @@ func TestAddFlagFromField_BasicTypes(t *testing.T) {
 }
 
 // TestAddFlagFromField_EnumTypes tests AddFlagFromField with enum value types.
-func TestAddFlagFromField_EnumTypes(t *testing.T) {
+func TestAddFlagFromFieldEnumTypes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -359,7 +359,7 @@ func testAddFlagFromFieldType(t *testing.T, defaultValue any, expectedType strin
 }
 
 // TestFieldSelector_MetadataFields tests compile-time safety for metadata field selectors.
-func TestFieldSelector_MetadataFields(t *testing.T) {
+func TestFieldSelectorMetadataFields(t *testing.T) {
 	t.Parallel()
 
 	cluster := &v1alpha1.Cluster{}
@@ -388,7 +388,7 @@ func TestFieldSelector_MetadataFields(t *testing.T) {
 }
 
 // TestFieldSelector_SpecBasicFields tests compile-time safety for basic spec field selectors.
-func TestFieldSelector_SpecBasicFields(t *testing.T) {
+func TestFieldSelectorSpecBasicFields(t *testing.T) {
 	t.Parallel()
 
 	specBasicSelectors := []fieldSelectorTestCase{
@@ -414,7 +414,7 @@ func TestFieldSelector_SpecBasicFields(t *testing.T) {
 }
 
 // TestFieldSelector_ConnectionFields tests compile-time safety for connection field selectors.
-func TestFieldSelector_ConnectionFields(t *testing.T) {
+func TestFieldSelectorConnectionFields(t *testing.T) {
 	t.Parallel()
 
 	cluster := &v1alpha1.Cluster{}
@@ -447,7 +447,7 @@ func TestFieldSelector_ConnectionFields(t *testing.T) {
 }
 
 // TestFieldSelector_NetworkingFields tests compile-time safety for networking field selectors.
-func TestFieldSelector_NetworkingFields(t *testing.T) {
+func TestFieldSelectorNetworkingFields(t *testing.T) {
 	t.Parallel()
 
 	networkingSelectors := []fieldSelectorTestCase{

@@ -189,7 +189,7 @@ func (ew errorWriter) Write(_ []byte) (int, error) {
 	return 0, fmt.Errorf("%w", errMockWrite)
 }
 
-func TestHandleNotifyError_WithError(t *testing.T) {
+func TestHandleNotifyErrorWithError(t *testing.T) {
 	t.Parallel()
 
 	// We'll capture stderr to verify the error handling

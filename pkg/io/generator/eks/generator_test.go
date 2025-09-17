@@ -1,10 +1,8 @@
 package eksgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -14,44 +12,26 @@ import (
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-func TestEKSGenerator_Generate_WithoutFile(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
-	cfg := createTestClusterConfig("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
+	tests := generatortestutils.GetStandardGenerateTestCases("eks-config.yaml")
 
-	result, err := gen.Generate(cfg, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertEKSYAML(t, result, "test-cluster")
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		createTestClusterConfig,
+		gen,
+		func(t *testing.T, result, clusterName string) {
+			t.Helper()
+			assertEKSYAML(t, result, clusterName)
+		},
+		"eks-config.yaml",
+	)
 }
 
-func TestEKSGenerator_Generate_WithFile(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewEKSGenerator()
-	cfg := createTestClusterConfig("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "eks-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	result, err := gen.Generate(cfg, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertEKSYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
-}
-
-func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -69,7 +49,7 @@ func TestEKSGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -87,7 +67,7 @@ func TestEKSGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -107,7 +87,7 @@ func TestEKSGenerator_Generate_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert
@@ -118,7 +98,7 @@ func TestEKSGenerator_Generate_MarshalError(t *testing.T) {
 	)
 }
 
-func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
+func TestGenerateWithCustomOptions(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
@@ -139,7 +119,7 @@ func TestEKSGenerator_Generate_WithCustomOptions(t *testing.T) {
 	assert.Contains(t, result, "\"1.25\"", "YAML should contain custom Kubernetes version")
 }
 
-func TestEKSGenerator_Generate_DefaultValues(t *testing.T) {
+func TestGenerateDefaultValues(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()

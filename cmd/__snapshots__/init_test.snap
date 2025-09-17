@@ -1,5 +1,5 @@
 
-[TestInitCmd_Help - 1]
+[TestInitCmdHelp - 1]
 Initialize a new project.
 
 Usage:
@@ -12,7 +12,7 @@ Flags:
 
 ---
 
-[TestInitCmd_Execute - 1]
+[TestInitCmdExecute - 1]
 ✔ project initialized successfully
 ► Distribution: Kind
 ► Source directory: k8s

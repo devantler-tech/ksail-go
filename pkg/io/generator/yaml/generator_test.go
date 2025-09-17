@@ -18,7 +18,7 @@ type TestModel struct {
 	Enabled bool   `yaml:"enabled"`
 }
 
-func TestYAMLGenerator_Generate_WithoutFile(t *testing.T) {
+func TestGenerateWithoutFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewYAMLGenerator[TestModel]()
@@ -34,7 +34,7 @@ func TestYAMLGenerator_Generate_WithoutFile(t *testing.T) {
 	assertYAMLContent(t, result, model)
 }
 
-func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
+func TestGenerateWithFile(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewYAMLGenerator[TestModel]()
@@ -52,7 +52,7 @@ func TestYAMLGenerator_Generate_WithFile(t *testing.T) {
 	verifyFileContent(t, tempDir, outputPath, result)
 }
 
-func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
@@ -69,7 +69,7 @@ func TestYAMLGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	verifyFileContent(t, tempDir, outputPath, existingContent) // File should not be overwritten
 }
 
-func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen, model, tempDir, outputPath, existingContent, opts := setupExistingFileTest(
@@ -91,7 +91,7 @@ func TestYAMLGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
 }
 
-func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewYAMLGenerator[TestModel]()
@@ -117,7 +117,7 @@ func TestYAMLGenerator_Generate_FileWriteError(t *testing.T) {
 	assert.Empty(t, result, "Result should be empty on error")
 }
 
-func TestYAMLGenerator_Generate_MarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Arrange - Create a generator with a model that can't be marshalled

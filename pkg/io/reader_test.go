@@ -12,69 +12,61 @@ import (
 )
 
 // Tests are intentionally minimal and explicit to keep coverage high and behavior clear.
-func TestReadFileSafe_NormalRead(t *testing.T) {
+func TestReadFileSafe(t *testing.T) {
 	t.Parallel()
 
-	base := t.TempDir()
-	filePath := filepath.Join(base, "file.txt")
-	want := []byte("hello safe")
-	err := os.WriteFile(filePath, want, 0o600)
-	require.NoError(t, err, "WriteFile setup")
+	t.Run("normal read", func(t *testing.T) {
+		t.Parallel()
 
-	got, err := ioutils.ReadFileSafe(base, filePath)
+		base := t.TempDir()
+		filePath := filepath.Join(base, "file.txt")
+		want := "hello safe"
+		err := os.WriteFile(filePath, []byte(want), 0o600)
+		require.NoError(t, err, "WriteFile setup")
 
-	require.NoError(t, err, "ReadFileSafe")
-	assert.Equal(t, string(want), string(got), "content")
-}
+		got, err := ioutils.ReadFileSafe(base, filePath)
 
-func TestReadFileSafe_OutsideBase(t *testing.T) {
-	t.Parallel()
+		require.NoError(t, err, "ReadFileSafe")
+		assert.Equal(t, want, string(got), "content")
+	})
 
-	base := t.TempDir()
-	outside := filepath.Join(os.TempDir(), "outside-test-file.txt")
-	err := os.WriteFile(outside, []byte("nope"), 0o600)
-	require.NoError(t, err, "WriteFile setup")
+	t.Run("outside base", func(t *testing.T) {
+		t.Parallel()
 
-	_, err = ioutils.ReadFileSafe(base, outside)
+		base := t.TempDir()
+		outside := filepath.Join(os.TempDir(), "outside-test-file.txt")
+		err := os.WriteFile(outside, []byte("nope"), 0o600)
+		require.NoError(t, err, "WriteFile setup")
 
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrPathOutsideBase,
-		"",
-		"ReadFileSafe outside base",
-	)
-}
+		_, err = ioutils.ReadFileSafe(base, outside)
 
-func TestReadFileSafe_TraversalAttempt(t *testing.T) {
-	t.Parallel()
+		testutils.AssertErrWrappedContains(t, err, ioutils.ErrPathOutsideBase, "", "ReadFileSafe")
+	})
 
-	base := t.TempDir()
-	parent := filepath.Join(base, "..", "traversal.txt")
-	absParent, _ := filepath.Abs(parent)
-	err := os.WriteFile(absParent, []byte("traversal"), 0o600)
-	require.NoError(t, err, "WriteFile setup parent")
+	t.Run("traversal attempt", func(t *testing.T) {
+		t.Parallel()
 
-	attempt := filepath.Join(base, "..", "traversal.txt")
+		base := t.TempDir()
+		parent := filepath.Join(base, "..", "traversal.txt")
+		absParent, _ := filepath.Abs(parent)
+		err := os.WriteFile(absParent, []byte("traversal"), 0o600)
+		require.NoError(t, err, "WriteFile setup parent")
 
-	_, err = ioutils.ReadFileSafe(base, attempt)
+		attempt := filepath.Join(base, "..", "traversal.txt")
 
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		ioutils.ErrPathOutsideBase,
-		"",
-		"ReadFileSafe traversal",
-	)
-}
+		_, err = ioutils.ReadFileSafe(base, attempt)
 
-func TestReadFileSafe_MissingFileInsideBase(t *testing.T) {
-	t.Parallel()
+		testutils.AssertErrWrappedContains(t, err, ioutils.ErrPathOutsideBase, "", "ReadFileSafe")
+	})
 
-	base := t.TempDir()
-	missing := filepath.Join(base, "missing.txt")
+	t.Run("missing file inside base", func(t *testing.T) {
+		t.Parallel()
 
-	_, err := ioutils.ReadFileSafe(base, missing)
+		base := t.TempDir()
+		missing := filepath.Join(base, "missing.txt")
 
-	testutils.AssertErrContains(t, err, "failed to read file", "ReadFileSafe missing file")
+		_, err := ioutils.ReadFileSafe(base, missing)
+
+		testutils.AssertErrContains(t, err, "failed to read file", "ReadFileSafe")
+	})
 }

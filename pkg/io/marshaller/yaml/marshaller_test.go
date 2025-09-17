@@ -23,7 +23,7 @@ type bad struct {
 	F func()
 }
 
-func TestMarshal_Success(t *testing.T) {
+func TestMarshalSuccess(t *testing.T) {
 	t.Parallel()
 
 	mar := yamlmarshaller.NewMarshaller[sample]()
@@ -46,7 +46,7 @@ func TestMarshal_Success(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestMarshalString_Success(t *testing.T) {
+func TestMarshalStringSuccess(t *testing.T) {
 	t.Parallel()
 
 	mar := yamlmarshaller.NewMarshaller[sample]()
@@ -65,7 +65,7 @@ func TestMarshalString_Success(t *testing.T) {
 	testutils.AssertStringContains(t, out, "- dev", "- test")
 }
 
-func TestUnmarshal_Success(t *testing.T) {
+func TestUnmarshalSuccess(t *testing.T) {
 	t.Parallel()
 
 	mar := yamlmarshaller.NewMarshaller[sample]()
@@ -90,7 +90,7 @@ func TestUnmarshal_Success(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestUnmarshalString_Success(t *testing.T) {
+func TestUnmarshalStringSuccess(t *testing.T) {
 	t.Parallel()
 
 	mar := yamlmarshaller.NewMarshaller[sample]()
@@ -114,7 +114,7 @@ func TestUnmarshalString_Success(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestMarshal_Error_UnsupportedType(t *testing.T) {
+func TestMarshalErrorUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	// Arrange: a type that cannot be marshaled (contains a func field)
@@ -132,7 +132,7 @@ func TestMarshal_Error_UnsupportedType(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to marshal YAML")
 }
 
-func TestUnmarshal_Error_UnsupportedType(t *testing.T) {
+func TestUnmarshalErrorUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	assertBadUnmarshalError(t, func(mar marshaller.Marshaller[bad], model *bad) error {
@@ -140,7 +140,7 @@ func TestUnmarshal_Error_UnsupportedType(t *testing.T) {
 	})
 }
 
-func TestUnmarshalString_Error_UnsupportedType(t *testing.T) {
+func TestUnmarshalStringErrorUnsupportedType(t *testing.T) {
 	t.Parallel()
 
 	assertBadUnmarshalError(t, func(mar marshaller.Marshaller[bad], model *bad) error {

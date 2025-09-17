@@ -45,7 +45,7 @@ func TestClusterDirectCreation(t *testing.T) {
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 }
 
-func TestDistribution_Set(t *testing.T) {
+func TestDistributionSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
@@ -73,7 +73,7 @@ func TestDistribution_Set(t *testing.T) {
 	)
 }
 
-func TestReconciliationTool_Set(t *testing.T) {
+func TestReconciliationToolSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
@@ -101,7 +101,7 @@ func TestReconciliationTool_Set(t *testing.T) {
 	)
 }
 
-func TestCNI_Set(t *testing.T) {
+func TestCNISet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
@@ -129,7 +129,7 @@ func TestCNI_Set(t *testing.T) {
 	)
 }
 
-func TestCSI_Set(t *testing.T) {
+func TestCSISet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
@@ -157,7 +157,7 @@ func TestCSI_Set(t *testing.T) {
 	)
 }
 
-func TestIngressController_Set(t *testing.T) {
+func TestIngressControllerSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
@@ -185,7 +185,7 @@ func TestIngressController_Set(t *testing.T) {
 	)
 }
 
-func TestGatewayController_Set(t *testing.T) {
+func TestGatewayControllerSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{

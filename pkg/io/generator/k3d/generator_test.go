@@ -1,58 +1,33 @@
 package k3dgenerator_test
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestK3dGenerator_Generate_WithoutFile(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
-	cluster := createTestCluster("test-cluster")
-	opts := yamlgenerator.Options{
-		Output: "",
-		Force:  false,
-	}
+	tests := generatortestutils.GetStandardGenerateTestCases("k3d-config.yaml")
 
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "test-cluster")
+	generatortestutils.TestGenerateCommon(
+		t,
+		tests,
+		createTestCluster,
+		gen,
+		assertK3dYAML,
+		"k3d-config.yaml",
+	)
 }
 
-func TestK3dGenerator_Generate_WithFile(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewK3dGenerator()
-	cluster := createTestCluster("file-cluster")
-	tempDir := t.TempDir()
-	outputPath := filepath.Join(tempDir, "k3d-config.yaml")
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  false,
-	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertK3dYAML(t, result, "file-cluster")
-
-	// Verify file was written
-	testutils.AssertFileEquals(t, tempDir, outputPath, result)
-}
-
-func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
+func TestGenerateExistingFileNoForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -70,7 +45,7 @@ func TestK3dGenerator_Generate_ExistingFile_NoForce(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
+func TestGenerateExistingFileWithForce(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -88,7 +63,7 @@ func TestK3dGenerator_Generate_ExistingFile_WithForce(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
+func TestGenerateFileWriteError(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewK3dGenerator()
@@ -104,7 +79,7 @@ func TestK3dGenerator_Generate_FileWriteError(t *testing.T) {
 	)
 }
 
-func TestK3dGenerator_Generate_MarshalError(t *testing.T) {
+func TestGenerateMarshalError(t *testing.T) {
 	t.Parallel()
 
 	// Act & Assert

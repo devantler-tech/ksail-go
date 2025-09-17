@@ -18,7 +18,7 @@ func TestNewStartCmd(t *testing.T) {
 	})
 }
 
-func TestStartCmd_Execute(t *testing.T) {
+func TestStartCmdExecute(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -27,7 +27,7 @@ func TestStartCmd_Execute(t *testing.T) {
 	})
 }
 
-func TestStartCmd_Help(t *testing.T) {
+func TestStartCmdHelp(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{

@@ -288,7 +288,7 @@ func TestNewKubectlInstaller(t *testing.T) {
 	assert.NotNil(t, installer)
 }
 
-func TestKubectlInstaller_Install_Success(t *testing.T) {
+func TestKubectlInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -305,7 +305,7 @@ func TestKubectlInstaller_Install_Success(t *testing.T) {
 	runInstallTestExpectingSuccess(t, installer)
 }
 
-func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
+func TestKubectlInstallerInstallErrorCRDCreation(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -319,7 +319,7 @@ func TestKubectlInstaller_Install_Error_CRDCreation(t *testing.T) {
 	runInstallTestExpectingError(t, installer, "failed to create CRD")
 }
 
-func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
+func TestKubectlInstallerInstallCRDEstablishmentTimeout(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -360,7 +360,7 @@ func TestKubectlInstaller_Install_CRDEstablishmentTimeout(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to wait for CRD to be established")
 }
 
-func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
+func TestKubectlInstallerInstallApplySetCRCreateError(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -381,7 +381,7 @@ func TestKubectlInstaller_Install_ApplySetCRCreateError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to create ApplySet CR")
 }
 
-func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
+func TestKubectlInstallerUninstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -399,7 +399,7 @@ func TestKubectlInstaller_Uninstall_Success(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestKubectlInstaller_Install_CRDGetError(t *testing.T) {
+func TestKubectlInstallerInstallCRDGetError(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -413,7 +413,7 @@ func TestKubectlInstaller_Install_CRDGetError(t *testing.T) {
 	runInstallTestExpectingError(t, installer, "failed to check CRD existence")
 }
 
-func TestKubectlInstaller_Install_ApplySetGetError(t *testing.T) {
+func TestKubectlInstallerInstallApplySetGetError(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -430,7 +430,7 @@ func TestKubectlInstaller_Install_ApplySetGetError(t *testing.T) {
 	runInstallTestExpectingError(t, installer, "failed to get ApplySet CR")
 }
 
-func TestKubectlInstaller_EmbeddedCRAsset(t *testing.T) {
+func TestKubectlInstallerEmbeddedCRAsset(t *testing.T) {
 	t.Parallel()
 
 	// Test that the embedded CR YAML can be unmarshaled properly
@@ -480,7 +480,7 @@ func createDefaultGroupResource() schema.GroupResource {
 }
 
 // Test to cover the waitForCRDEstablished error path when Get fails.
-func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
+func TestKubectlInstallerWaitForCRDEstablishedGetErrorDirect(t *testing.T) {
 	t.Parallel()
 
 	// Create a simple test that only targets the CRD establishment error path
@@ -505,7 +505,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_GetError_Direct(t *testing.T) {
 }
 
 // Test to cover the NamesAccepted false condition in waitForCRDEstablished.
-func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testing.T) {
+func TestKubectlInstallerWaitForCRDEstablishedNamesNotAcceptedDirect(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -529,7 +529,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_NamesNotAccepted_Direct(t *testi
 }
 
 // Test to cover the CRD update path (AlreadyExists -> Update) which triggers createDefaultUpdateOptions.
-func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
+func TestKubectlInstallerApplyCRDUpdatePathSuccess(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -562,7 +562,7 @@ func TestKubectlInstaller_ApplyCRD_UpdatePath_Success(t *testing.T) {
 }
 
 // Test to cover the ApplySet CR update path.
-func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
+func TestKubectlInstallerApplyApplySetCRUpdatePathSuccess(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -588,7 +588,7 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdatePath_Success(t *testing.T) {
 }
 
 // Test to cover Get error in CRD update path.
-func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
+func TestKubectlInstallerApplyCRDGetErrorInUpdate(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -610,7 +610,7 @@ func TestKubectlInstaller_ApplyCRD_GetErrorInUpdate(t *testing.T) {
 }
 
 // Test to cover Update error in CRD update path.
-func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
+func TestKubectlInstallerApplyCRDUpdateError(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -636,7 +636,7 @@ func TestKubectlInstaller_ApplyCRD_UpdateError(t *testing.T) {
 }
 
 // Test to cover Get error in ApplySet CR update path.
-func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
+func TestKubectlInstallerApplyApplySetCRGetErrorInUpdate(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -661,7 +661,7 @@ func TestKubectlInstaller_ApplyApplySetCR_GetErrorInUpdate(t *testing.T) {
 }
 
 // Test to cover Update error in ApplySet CR update path.
-func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
+func TestKubectlInstallerApplyApplySetCRUpdateError(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -689,7 +689,7 @@ func TestKubectlInstaller_ApplyApplySetCR_UpdateError(t *testing.T) {
 }
 
 // Test to cover the Create failure path that's not AlreadyExists.
-func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
+func TestKubectlInstallerApplyCRDCreateFailure(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -708,7 +708,7 @@ func TestKubectlInstaller_ApplyCRD_CreateFailure(t *testing.T) {
 }
 
 // Test to cover the Create failure path in ApplySet CR that's not AlreadyExists.
-func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
+func TestKubectlInstallerApplyApplySetCRCreateFailure(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -730,7 +730,7 @@ func TestKubectlInstaller_ApplyApplySetCR_CreateFailure(t *testing.T) {
 }
 
 // Test to cover NotFound during CRD establishment polling.
-func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing.T) {
+func TestKubectlInstallerWaitForCRDEstablishedNotFoundDuringPolling(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -756,7 +756,7 @@ func TestKubectlInstaller_WaitForCRDEstablished_NotFoundDuringPolling(t *testing
 }
 
 // Test to cover the successful Create path in applyCRD (no AlreadyExists).
-func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
+func TestKubectlInstallerApplyCRDCreateSuccessDirect(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)
@@ -782,7 +782,7 @@ func TestKubectlInstaller_ApplyCRD_CreateSuccess_Direct(t *testing.T) {
 }
 
 // Test to cover the successful Create path in applyApplySetCR (no AlreadyExists).
-func TestKubectlInstaller_ApplyApplySetCR_CreateSuccess_Direct(t *testing.T) {
+func TestKubectlInstallerApplyApplySetCRCreateSuccessDirect(t *testing.T) {
 	t.Parallel()
 
 	apiExtClient, dynClient := testSetup(t)

@@ -23,7 +23,7 @@ func TestNewStatusCmd(t *testing.T) {
 	})
 }
 
-func TestStatusCmd_Execute(t *testing.T) {
+func TestStatusCmdExecute(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
@@ -32,7 +32,7 @@ func TestStatusCmd_Execute(t *testing.T) {
 	})
 }
 
-func TestStatusCmd_Help(t *testing.T) {
+func TestStatusCmdHelp(t *testing.T) {
 	t.Parallel()
 
 	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
@@ -42,7 +42,7 @@ func TestStatusCmd_Help(t *testing.T) {
 }
 
 // TestHandleStatusRunE_Success tests successful status command execution.
-func TestHandleStatusRunE_Success(t *testing.T) {
+func TestHandleStatusRunESuccess(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer

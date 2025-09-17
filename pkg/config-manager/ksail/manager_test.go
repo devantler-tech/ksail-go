@@ -76,11 +76,17 @@ func TestNewManager(t *testing.T) {
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
-	assert.NotNil(t, manager.Viper)
+
+	// Test Viper field is properly initialized
+	require.NotNil(t, manager.Viper)
+
+	// Test that Viper is properly configured by setting and getting a value
+	manager.Viper.SetDefault("test.key", "test-value")
+	assert.Equal(t, "test-value", manager.Viper.GetString("test.key"))
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
-func TestManager_LoadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name                string
 		envVars             map[string]string
@@ -143,22 +149,8 @@ func TestManager_LoadConfig(t *testing.T) {
 	}
 }
 
-// TestManager_Viper tests the exported Viper field.
-func TestManager_Viper(t *testing.T) {
-	t.Parallel()
-
-	manager := ksail.NewConfigManager()
-	viperInstance := manager.Viper
-
-	require.NotNil(t, viperInstance)
-
-	// Test that it's properly configured by setting and getting a value
-	viperInstance.SetDefault("test.key", "test-value")
-	assert.Equal(t, "test-value", viperInstance.GetString("test.key"))
-}
-
-// TestAddFlagFromField tests the AddFlagFromField function.
-func TestAddFlagFromField(t *testing.T) {
+// TestAddFlagFromFieldHelper tests the AddFlagFromField helper function.
+func TestAddFlagFromFieldHelper(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -205,7 +197,7 @@ func TestAddFlagFromField(t *testing.T) {
 }
 
 // TestManager_AddFlagsFromFields tests the AddFlagsFromFields method.
-func TestManager_AddFlagsFromFields(t *testing.T) {
+func TestAddFlagsFromFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -265,7 +257,7 @@ func TestManager_AddFlagsFromFields(t *testing.T) {
 }
 
 // TestManager_LoadConfig_ConfigProperty tests that the Config property is properly exposed.
-func TestManager_LoadConfig_ConfigProperty(t *testing.T) {
+func TestLoadConfigConfigProperty(t *testing.T) {
 	t.Parallel()
 
 	fieldSelectors := createTestClusterFieldSelectors()
@@ -312,7 +304,7 @@ func testFieldValueSetting(
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
-func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
+func TestSetFieldValueWithNilDefault(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -329,7 +321,7 @@ func TestManager_SetFieldValueWithNilDefault(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
-func TestManager_SetFieldValueWithNonConvertibleTypes(t *testing.T) {
+func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -346,7 +338,7 @@ func TestManager_SetFieldValueWithNonConvertibleTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
-func TestManager_SetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
+func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -363,7 +355,7 @@ func TestManager_SetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
-func TestManager_SetFieldValueWithNonPointerField(t *testing.T) {
+func TestSetFieldValueWithNonPointerField(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(
@@ -380,7 +372,7 @@ func TestManager_SetFieldValueWithNonPointerField(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
-func TestManager_SetFieldValueWithConvertibleTypes(t *testing.T) {
+func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
 	t.Parallel()
 
 	testFieldValueSetting(

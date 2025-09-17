@@ -27,7 +27,7 @@ func setupEKSProvisioner(
 	return provisioner, clusterCreator
 }
 
-func TestCreate_Success(t *testing.T) {
+func TestCreateSuccess(t *testing.T) {
 	t.Parallel()
 	clustertestutils.RunCreateSuccessTest(
 		t,
@@ -43,7 +43,7 @@ func TestCreate_Success(t *testing.T) {
 	)
 }
 
-func TestCreate_Error_CreateFailed(t *testing.T) {
+func TestCreateErrorCreateFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -63,7 +63,7 @@ func TestCreate_Error_CreateFailed(t *testing.T) {
 		"failed to create EKS cluster", "Create()")
 }
 
-func TestDelete_Success(t *testing.T) {
+func TestDeleteSuccess(t *testing.T) {
 	t.Parallel()
 
 	cases := clustertestutils.DefaultDeleteCases()
@@ -91,7 +91,7 @@ func TestDelete_Success(t *testing.T) {
 	)
 }
 
-func TestDelete_Error_CreateFailed(t *testing.T) {
+func TestDeleteErrorCreateFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -110,7 +110,7 @@ func TestDelete_Error_CreateFailed(t *testing.T) {
 		"failed to delete EKS cluster", "Delete()")
 }
 
-func TestStart_Success(t *testing.T) {
+func TestStartSuccess(t *testing.T) {
 	t.Parallel()
 	runNodeScalingTest(
 		t,
@@ -122,7 +122,7 @@ func TestStart_Success(t *testing.T) {
 	)
 }
 
-func TestStart_Error_ClusterNotFound(t *testing.T) {
+func TestStartErrorClusterNotFound(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _ := setupProvisionerWithEmptyClusterList(t)
@@ -132,7 +132,7 @@ func TestStart_Error_ClusterNotFound(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrClusterNotFound)
 }
 
-func TestStart_Success_WithMinSizeZero(t *testing.T) {
+func TestStartSuccessWithMinSizeZero(t *testing.T) {
 	t.Parallel()
 
 	// Create a test config with MinSize = 0
@@ -151,7 +151,7 @@ func TestStart_Success_WithMinSizeZero(t *testing.T) {
 	assert.Equal(t, desiredCapacity, *clusterConfig.NodeGroups[0].MinSize)
 }
 
-func TestStart_Error_ScaleFailed(t *testing.T) {
+func TestStartErrorScaleFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _ := setupScalingErrorTest(t, true)
@@ -162,7 +162,7 @@ func TestStart_Error_ScaleFailed(t *testing.T) {
 		"failed to scale node group", "Start()")
 }
 
-func TestStop_Success(t *testing.T) {
+func TestStopSuccess(t *testing.T) {
 	t.Parallel()
 	runNodeScalingTest(
 		t,
@@ -174,7 +174,7 @@ func TestStop_Success(t *testing.T) {
 	)
 }
 
-func TestStop_Error_ClusterNotFound(t *testing.T) {
+func TestStopErrorClusterNotFound(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _ := setupProvisionerWithEmptyClusterList(t)
@@ -184,7 +184,7 @@ func TestStop_Error_ClusterNotFound(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrClusterNotFound)
 }
 
-func TestStop_Success_WithNilScalingConfig(t *testing.T) {
+func TestStopSuccessWithNilScalingConfig(t *testing.T) {
 	t.Parallel()
 
 	// Create a test config with nil ScalingConfig
@@ -202,7 +202,7 @@ func TestStop_Success_WithNilScalingConfig(t *testing.T) {
 	assert.Equal(t, 0, *clusterConfig.NodeGroups[0].MinSize)
 }
 
-func TestStop_Error_ScaleFailed(t *testing.T) {
+func TestStopErrorScaleFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _ := setupScalingErrorTest(t, true)
@@ -213,7 +213,7 @@ func TestStop_Error_ScaleFailed(t *testing.T) {
 		"failed to scale down node group", "Stop()")
 }
 
-func TestEnsureClusterExists_Error_ExistsCallFailed(t *testing.T) {
+func TestEnsureClusterExistsErrorExistsCallFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -233,7 +233,7 @@ func TestEnsureClusterExists_Error_ExistsCallFailed(t *testing.T) {
 		"failed to check if cluster exists", "Start()")
 }
 
-func TestSetupNodeGroupManager_Error_SetupClusterOperationFailed(t *testing.T) {
+func TestSetupNodeGroupManagerErrorSetupClusterOperationFailed(t *testing.T) {
 	t.Parallel()
 
 	// Test the setupClusterOperation failure in setupNodeGroupManager by
@@ -273,7 +273,7 @@ func TestSetupNodeGroupManager_Error_SetupClusterOperationFailed(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrEmptyClusterName)
 }
 
-func TestList_Success(t *testing.T) {
+func TestListSuccess(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -295,7 +295,7 @@ func TestList_Success(t *testing.T) {
 	assert.Equal(t, []string{"cluster1", "cluster2"}, clusters)
 }
 
-func TestList_Error_GetClustersFailed(t *testing.T) {
+func TestListErrorGetClustersFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -315,7 +315,7 @@ func TestList_Error_GetClustersFailed(t *testing.T) {
 		"failed to list EKS clusters", "List()")
 }
 
-func TestExists_Success_True(t *testing.T) {
+func TestExistsSuccessTrue(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -334,7 +334,7 @@ func TestExists_Success_True(t *testing.T) {
 	assert.True(t, exists)
 }
 
-func TestExists_Success_False(t *testing.T) {
+func TestExistsSuccessFalse(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _ := setupProvisionerWithEmptyClusterList(t)
@@ -345,7 +345,7 @@ func TestExists_Success_False(t *testing.T) {
 	assert.False(t, exists)
 }
 
-func TestExists_Error_ListFailed(t *testing.T) {
+func TestExistsErrorListFailed(t *testing.T) {
 	t.Parallel()
 
 	provisioner, clusterActions, clusterLister, clusterCreator, nodeGroupManager := newProvisionerForTest(
@@ -365,7 +365,7 @@ func TestExists_Error_ListFailed(t *testing.T) {
 		"failed to list clusters", "Exists()")
 }
 
-func TestCreate_Error_InvalidClusterConfig(t *testing.T) {
+func TestCreateErrorInvalidClusterConfig(t *testing.T) {
 	t.Parallel()
 
 	provisioner := createProvisionerWithInvalidConfig(t)
@@ -375,7 +375,7 @@ func TestCreate_Error_InvalidClusterConfig(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrInvalidClusterConfig)
 }
 
-func TestCreate_Error_NilMetadata(t *testing.T) {
+func TestCreateErrorNilMetadata(t *testing.T) {
 	t.Parallel()
 
 	provisioner := createProvisionerWithNilMetadata(t)
@@ -385,7 +385,7 @@ func TestCreate_Error_NilMetadata(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrInvalidClusterConfig)
 }
 
-func TestCreate_Error_EmptyClusterName(t *testing.T) {
+func TestCreateErrorEmptyClusterName(t *testing.T) {
 	t.Parallel()
 
 	provisioner := createProvisionerWithEmptyName(t)
@@ -395,7 +395,7 @@ func TestCreate_Error_EmptyClusterName(t *testing.T) {
 	assert.ErrorIs(t, err, eksprovisioner.ErrEmptyClusterName)
 }
 
-func TestDelete_Error_InvalidClusterConfig(t *testing.T) {
+func TestDeleteErrorInvalidClusterConfig(t *testing.T) {
 	t.Parallel()
 
 	provisioner := createProvisionerWithInvalidConfig(t)

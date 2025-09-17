@@ -1,4 +1,4 @@
-[TestStatusCmd_Help - 1]
+[TestStatusCmdHelp - 1]
 Show the current status of the Kubernetes cluster.
 
 Usage:
@@ -12,7 +12,7 @@ Flags:
 
 ---
 
-[TestStatusCmd_Execute - 1]
+[TestStatusCmdExecute - 1]
 ✔ Cluster status: Running (stub implementation)
 ► Context: kind-ksail-default
 ► Kubeconfig: ~/.kube/config

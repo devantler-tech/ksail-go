@@ -3,10 +3,10 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -14,20 +14,10 @@ import (
 var errRootTest = errors.New("boom")
 
 func TestMain(main *testing.M) {
-	exitCode := main.Run()
-
-	cleaned, err := snaps.Clean(main, snaps.CleanOpts{Sort: true})
-	if err != nil {
-		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
-		os.Exit(1)
-	}
-
-	_ = cleaned
-
-	os.Exit(exitCode)
+	testutils.RunTestMainWithSnapshotCleanup(main)
 }
 
-func TestNewRootCmd_VersionFormatting(t *testing.T) {
+func TestNewRootCmdVersionFormatting(t *testing.T) {
 	t.Parallel()
 
 	version := "1.2.3"
@@ -41,7 +31,7 @@ func TestNewRootCmd_VersionFormatting(t *testing.T) {
 	}
 }
 
-func TestExecute_ShowsHelp(t *testing.T) {
+func TestExecuteShowsHelp(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -54,7 +44,7 @@ func TestExecute_ShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
-func TestExecute_ShowsVersion(t *testing.T) {
+func TestExecuteShowsVersion(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
@@ -76,7 +66,7 @@ func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobr
 	}
 }
 
-func TestExecute_ReturnsError(t *testing.T) {
+func TestExecuteReturnsError(t *testing.T) {
 	t.Parallel()
 
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
@@ -126,7 +116,7 @@ func TestExecuteSuccess(t *testing.T) {
 	}
 }
 
-func TestExecute_WrapperSuccess(t *testing.T) {
+func TestExecuteWrapperSuccess(t *testing.T) {
 	t.Parallel()
 
 	succeeding := newTestCommand("ok", func(_ *cobra.Command, _ []string) error {
@@ -143,7 +133,7 @@ func TestExecute_WrapperSuccess(t *testing.T) {
 	}
 }
 
-func TestExecute_WrapperError(t *testing.T) {
+func TestExecuteWrapperError(t *testing.T) {
 	t.Parallel()
 
 	failing := newTestCommand("fail", func(_ *cobra.Command, _ []string) error {
