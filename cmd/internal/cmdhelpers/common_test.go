@@ -7,8 +7,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +51,7 @@ func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	// Test the actual exported function
 	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
@@ -114,7 +114,7 @@ func getLoadClusterTests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
-				return ksail.NewConfigManager()
+				return configmanager.NewConfigManager()
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
 				var out bytes.Buffer
@@ -274,7 +274,7 @@ func getStandardClusterCommandRunETests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) configmanager.ConfigManager[v1alpha1.Cluster] {
-				return ksail.NewConfigManager()
+				return configmanager.NewConfigManager()
 			},
 			setupCommand: func() *cobra.Command {
 				cmd := &cobra.Command{}
@@ -351,7 +351,7 @@ func TestNewCobraCommand(t *testing.T) {
 		receivedArgs    []string
 	)
 
-	runE := func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
+	runE := func(cmd *cobra.Command, manager configmanagerinterface.ConfigManager[v1alpha1.Cluster], args []string) error {
 		runECalled = true
 		receivedManager = manager
 		receivedCmd = cmd

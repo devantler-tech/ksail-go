@@ -6,8 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ const SuggestionsMinimumDistance = 2
 //
 //  1. CLI flags (highest priority)
 //  2. Environment variables
-//  3. Configuration files (ksail.yaml)
+//  3. Configuration files (configmanager.yaml)
 //  4. Field selector defaults (lowest priority)
 //
 // Parameters:
@@ -55,10 +55,10 @@ const SuggestionsMinimumDistance = 2
 //	        "k8s", "Directory containing workloads to deploy"))
 func NewCobraCommand(
 	use, short, long string,
-	runE func(*cobra.Command, configmanager.ConfigManager[v1alpha1.Cluster], []string) error,
-	fieldSelectors ...ksail.FieldSelector[v1alpha1.Cluster],
+	runE func(*cobra.Command, configmanagerinterface.ConfigManager[v1alpha1.Cluster], []string) error,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	// Create the base command
 	cmd := &cobra.Command{
@@ -131,7 +131,7 @@ func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
 // Exported for testing purposes.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
@@ -146,7 +146,7 @@ func LoadClusterWithErrorHandling(
 // HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
 func HandleSimpleClusterCommand(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
 	successMessage string,
 ) (*v1alpha1.Cluster, error) {
 	// Load the full cluster configuration using common error handling
@@ -168,10 +168,10 @@ func HandleSimpleClusterCommand(
 // It handles the common pattern of calling HandleSimpleClusterCommand with a success message.
 func StandardClusterCommandRunE(
 	successMessage string,
-) func(cmd *cobra.Command, manager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error {
+) func(cmd *cobra.Command, manager configmanagerinterface.ConfigManager[v1alpha1.Cluster], args []string) error {
 	return func(
 		cmd *cobra.Command,
-		manager configmanager.ConfigManager[v1alpha1.Cluster],
+		manager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
 		_ []string,
 	) error {
 		_, err := HandleSimpleClusterCommand(cmd, manager, successMessage)
@@ -184,8 +184,8 @@ func StandardClusterCommandRunE(
 }
 
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
-func StandardDistributionFieldSelector(description string) ksail.FieldSelector[v1alpha1.Cluster] {
-	return ksail.FieldSelector[v1alpha1.Cluster]{
+func StandardDistributionFieldSelector(description string) configmanager.FieldSelector[v1alpha1.Cluster] {
+	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		Description:  description,
 		DefaultValue: v1alpha1.DistributionKind,
@@ -193,8 +193,8 @@ func StandardDistributionFieldSelector(description string) ksail.FieldSelector[v
 }
 
 // StandardSourceDirectoryFieldSelector creates a standard field selector for source directory.
-func StandardSourceDirectoryFieldSelector() ksail.FieldSelector[v1alpha1.Cluster] {
-	return ksail.FieldSelector[v1alpha1.Cluster]{
+func StandardSourceDirectoryFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
+	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 		Description:  "Directory containing workloads to deploy",
 		DefaultValue: "k8s",
@@ -202,8 +202,8 @@ func StandardSourceDirectoryFieldSelector() ksail.FieldSelector[v1alpha1.Cluster
 }
 
 // StandardDistributionConfigFieldSelector creates a standard field selector for distribution config.
-func StandardDistributionConfigFieldSelector() ksail.FieldSelector[v1alpha1.Cluster] {
-	return ksail.FieldSelector[v1alpha1.Cluster]{
+func StandardDistributionConfigFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
+	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
 		Description:  "Configuration file for the distribution",
 		DefaultValue: "kind.yaml",
@@ -213,7 +213,7 @@ func StandardDistributionConfigFieldSelector() ksail.FieldSelector[v1alpha1.Clus
 // ExecuteCommandWithClusterInfo loads cluster configuration and executes a command with cluster info logging.
 func ExecuteCommandWithClusterInfo(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
 	successMessage string,
 	infoFieldsFunc func(*v1alpha1.Cluster) []ClusterInfoField,
 ) error {

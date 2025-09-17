@@ -8,8 +8,8 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +19,7 @@ var ErrInvalidConfigManagerType = errors.New("invalid config manager type")
 // NewListCmd creates and returns the list command.
 func NewListCmd() *cobra.Command {
 	// Create field selectors
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			Description:  "Kubernetes distribution to list clusters for",
@@ -46,11 +46,11 @@ func NewListCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleListRunE(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager configmanagerinterface.ConfigManager[v1alpha1.Cluster],
 	_ []string,
 ) error {
 	// Type assert to concrete type to access exported Viper field
-	ksailManager, ok := configManager.(*ksail.ConfigManager)
+	ksailManager, ok := configManager.(*configmanager.ConfigManager)
 	if !ok {
 		return ErrInvalidConfigManagerType
 	}

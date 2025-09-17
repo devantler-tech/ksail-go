@@ -7,7 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +89,7 @@ func TestHandleListRunESuccess(t *testing.T) {
 	// Add the --all flag to the command like the real command would have
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	err := cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -111,7 +111,7 @@ func TestHandleListRunEAllFlag(t *testing.T) {
 	err := testCmd.Flags().Set("all", "true")
 	require.NoError(t, err)
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	err = cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -130,7 +130,7 @@ func TestHandleListRunEError(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	// Test that the function doesn't panic - error testing can be enhanced later
 	// when real error conditions are available in the stub implementation
@@ -149,7 +149,7 @@ func TestHandleListRunE_InvalidConfigManager(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	// Create a mock config manager that is not a *ksail.ConfigManager
+	// Create a mock config manager that is not a *configmanager.ConfigManager
 	mockManager := &invalidConfigManager{}
 
 	err := cmd.HandleListRunE(testCmd, mockManager, []string{})
@@ -159,7 +159,7 @@ func TestHandleListRunE_InvalidConfigManager(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid config manager type")
 }
 
-// invalidConfigManager is a mock implementation that doesn't match *ksail.ConfigManager.
+// invalidConfigManager is a mock implementation that doesn't match *configmanager.ConfigManager.
 type invalidConfigManager struct{}
 
 func (m *invalidConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestHandleStatusRunESuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := ksail.NewConfigManager()
+	manager := configmanager.NewConfigManager()
 
 	err := cmd.HandleStatusRunE(testCmd, manager, []string{})
 
