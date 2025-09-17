@@ -219,50 +219,49 @@ nodes:
 	assert.Equal(t, config, config2)
 }
 
-// testLoadConfigMissingAPIVersion tests the case where APIVersion is missing from config.
-func testLoadConfigMissingAPIVersion(t *testing.T) {
-	t.Parallel()
+// testConfigWithMissingFields tests loading configurations with missing TypeMeta fields.
+func testConfigWithMissingFields(t *testing.T, filename, content, testName string) {
+	t.Helper()
 
 	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "no-api-version.yaml")
+	configPath := filepath.Join(tempDir, filename)
 
-	// Create config without APIVersion
-	configContent := `kind: Cluster
-nodes:
-- role: control-plane`
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
+	err := os.WriteFile(configPath, []byte(content), 0o600)
 	require.NoError(t, err)
 
 	manager := kind.NewConfigManager(configPath)
 	config, err := manager.LoadConfig()
 
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion) // Should be set
+	require.NoError(t, err, "LoadConfig should succeed for %s", testName)
+	require.NotNil(t, config, "Config should not be nil for %s", testName)
+	assert.Equal(t, "Cluster", config.Kind, "Kind should be set for %s", testName)
+	assert.Equal(
+		t,
+		"kind.x-k8s.io/v1alpha4",
+		config.APIVersion,
+		"APIVersion should be set for %s",
+		testName,
+	)
+}
+
+// testLoadConfigMissingAPIVersion tests the case where APIVersion is missing from config.
+func testLoadConfigMissingAPIVersion(t *testing.T) {
+	t.Parallel()
+
+	configContent := `kind: Cluster
+nodes:
+- role: control-plane`
+
+	testConfigWithMissingFields(t, "no-api-version.yaml", configContent, "missing APIVersion")
 }
 
 // testLoadConfigMissingKind tests the case where Kind is missing from config.
 func testLoadConfigMissingKind(t *testing.T) {
 	t.Parallel()
 
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "no-kind.yaml")
-
-	// Create config without Kind
 	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane`
 
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
-
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind) // Should be set
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
+	testConfigWithMissingFields(t, "no-kind.yaml", configContent, "missing Kind")
 }
