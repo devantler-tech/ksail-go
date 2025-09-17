@@ -45,6 +45,13 @@ These tools are required for basic development workflow:
    npm install mega-linter-runner --global
    # OR use npx: npx mega-linter-runner -f go
    ```
+3. **golangci-lint**: Go-specific linting and fast feedback
+   ```bash
+   # Install: 
+   curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest
+   ```
+   - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m16s to run when clean
+   - **Usage**: `~/go/bin/golangci-lint run` for full check, `~/go/bin/golangci-lint run --fast-only` for quick feedback
 
 ### Bootstrap and Build
 
@@ -68,15 +75,6 @@ These tools enhance the development experience but are not required for basic fu
   - Configuration in `.mockery.yml` - run `mockery` to regenerate mocks (~1.3s)
   - **Current Environment**: Available at `/home/runner/go/bin/mockery`
   - **When to use**: Required when interface definitions change
-
-- **golangci-lint**: Alternative/supplementary Go linting
-  ```bash
-  # Install: 
-  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/go/bin latest
-  ```
-  - **NOTE**: Project primarily uses mega-linter, but golangci-lint provides faster Go-specific feedback
-  - **Current Environment**: Available at `~/go/bin/golangci-lint` - takes ~1m16s to run when clean
-  - **Usage**: `~/go/bin/golangci-lint run` for full check, `~/go/bin/golangci-lint run --fast-only` for quick feedback
 
 ### System Dependencies (For Future Functionality)
 
