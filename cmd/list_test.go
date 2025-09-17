@@ -7,7 +7,6 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -139,31 +138,5 @@ func TestHandleListRunEError(t *testing.T) {
 	})
 }
 
-// TestHandleListRunE_InvalidConfigManager tests type assertion failure in HandleListRunE.
-func TestHandleListRunE_InvalidConfigManager(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
-
-	// Create a mock config manager that is not a *configmanager.ConfigManager
-	mockManager := &invalidConfigManager{}
-
-	err := cmd.HandleListRunE(testCmd, mockManager, []string{})
-
-	// Should return error due to type assertion failure
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid config manager type")
-}
-
-// invalidConfigManager is a mock implementation that doesn't match *configmanager.ConfigManager.
-type invalidConfigManager struct{}
-
-func (m *invalidConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
-	return v1alpha1.NewCluster(), nil
-}
-
-func (m *invalidConfigManager) AddFlagsFromFields(*cobra.Command) {}
+// Type assertion test removed since we now use concrete types directly
+// This eliminates the need for type assertion validation
