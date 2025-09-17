@@ -519,4 +519,4 @@ ls -la ksail                        # Check if binary exists
 
 ---
 
-**Last Updated**: Based on current repository state as of Go 1.25.1, CLI stub implementation. Validated on GitHub Actions environment with Docker 28.0.4, Kind v0.30.0, kubectl v1.34.0. All timings measured and commands tested to ensure accuracy of instructions. Updated with comprehensive validation of all commands and current golangci-lint status (0 issues). Build times updated based on real measurements: ~0.5s first time, ~0.1s when cached.
+**Last Updated**: Based on current repository state as of Go 1.25.1, CLI stub implementation. Validated on GitHub Actions environment with Docker 28.0.4, Kind v0.30.0, kubectl v1.34.0. All timings measured and commands tested to ensure accuracy of instructions. Updated to include comprehensive validation of all commands and current golangci-lint status (0 issues). Build times updated based on real measurements: ~0.5s first time, ~0.1s when cached.
