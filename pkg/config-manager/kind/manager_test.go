@@ -21,141 +21,130 @@ func TestNewConfigManager(t *testing.T) {
 }
 
 // TestLoadConfig tests the LoadConfig method with different scenarios.
+//
+//nolint:funlen // Required structure per code review feedback to consolidate subtests
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		content        string
-		exists         bool
-		expectError    bool
-		expectedKind   string
-		expectedAPIVer string
-	}{
-		{"non-existent file", "", false, false, "Cluster", "kind.x-k8s.io/v1alpha4"},
-		{
-			"valid config",
-			"apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster",
-			true,
-			false,
-			"Cluster",
-			"kind.x-k8s.io/v1alpha4",
-		},
-		{
-			"missing TypeMeta",
-			"nodes:\n- role: control-plane",
-			true,
-			false,
-			"Cluster",
-			"kind.x-k8s.io/v1alpha4",
-		},
-		{"invalid YAML", "invalid: [", true, true, "", ""},
-	}
+	t.Run("basic scenarios", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+		tests := []struct {
+			name, content, expectedKind, expectedAPIVer string
+			exists, expectError                         bool
+		}{
+			{"non-existent file", "", "Cluster", "kind.x-k8s.io/v1alpha4", false, false},
+			{
+				"valid config",
+				"apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster",
+				"Cluster",
+				"kind.x-k8s.io/v1alpha4",
+				true,
+				false,
+			},
+			{
+				"missing TypeMeta",
+				"nodes:\n- role: control-plane",
+				"Cluster",
+				"kind.x-k8s.io/v1alpha4",
+				true,
+				false,
+			},
+			{"invalid YAML", "invalid: [", "", "", true, true},
+		}
 
-			tempDir := t.TempDir()
-			configPath := filepath.Join(tempDir, "config.yaml")
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
 
-			if testCase.exists {
-				err := os.WriteFile(configPath, []byte(testCase.content), 0o600)
+				tempDir := t.TempDir()
+				configPath := filepath.Join(tempDir, "config.yaml")
+
+				if tc.exists {
+					err := os.WriteFile(configPath, []byte(tc.content), 0o600)
+					require.NoError(t, err)
+				}
+
+				manager := kind.NewConfigManager(configPath)
+				config, err := manager.LoadConfig()
+
+				if tc.expectError {
+					require.Error(t, err)
+
+					return
+				}
+
 				require.NoError(t, err)
-			}
-
-			manager := kind.NewConfigManager(configPath)
-			config, err := manager.LoadConfig()
-
-			if testCase.expectError {
-				require.Error(t, err)
-
-				return
-			}
-
-			require.NoError(t, err)
-			require.NotNil(t, config)
-			assert.Equal(t, testCase.expectedKind, config.Kind)
-			assert.Equal(t, testCase.expectedAPIVer, config.APIVersion)
-		})
-	}
-}
-
-// TestLoadConfigCaching tests that LoadConfig properly caches results.
-func TestLoadConfigCaching(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "config.yaml")
-
-	configContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster"
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	manager := kind.NewConfigManager(configPath)
-
-	config1, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	config2, err := manager.LoadConfig()
-	require.NoError(t, err)
-
-	assert.Equal(t, config1, config2)
-}
-
-// TestLoadConfigPathTraversal tests path traversal functionality.
-func TestLoadConfigPathTraversal(t *testing.T) {
-	t.Parallel()
-
-	// Create a nested directory structure
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config.yaml")
-	subDir := filepath.Join(tempDir, "subdir")
-	err := os.Mkdir(subDir, 0o750)
-	require.NoError(t, err)
-
-	// Write config to parent directory
-	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
-kind: Cluster
-name: traversal-test`
-	err = os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	// Change to subdirectory for testing traversal
-	oldDir, err := os.Getwd()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := os.Chdir(oldDir)
-		require.NoError(t, err)
+				require.NotNil(t, config)
+				assert.Equal(t, tc.expectedKind, config.Kind)
+				assert.Equal(t, tc.expectedAPIVer, config.APIVersion)
+			})
+		}
 	})
-	err = os.Chdir(subDir)
-	require.NoError(t, err)
 
-	// Test with relative path - should find config in parent directory
-	manager := kind.NewConfigManager("kind-config.yaml")
-	config, err := manager.LoadConfig()
+	t.Run("caching", func(t *testing.T) {
+		t.Parallel()
 
-	require.NoError(t, err)
-	require.NotNil(t, config)
-	assert.Equal(t, "Cluster", config.Kind)
-	assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
-	assert.Equal(t, "traversal-test", config.Name)
-}
+		tempDir := t.TempDir()
+		configPath := filepath.Join(tempDir, "config.yaml")
+		content := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster"
+		err := os.WriteFile(configPath, []byte(content), 0o600)
+		require.NoError(t, err)
 
-// TestLoadConfigFileReadError tests error handling when file cannot be read.
-func TestLoadConfigFileReadError(t *testing.T) {
-	t.Parallel()
+		manager := kind.NewConfigManager(configPath)
+		config1, err := manager.LoadConfig()
+		require.NoError(t, err)
+		config2, err := manager.LoadConfig()
+		require.NoError(t, err)
 
-	// Create a directory instead of a file to trigger read error
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "kind-config")
-	err := os.Mkdir(configPath, 0o750)
-	require.NoError(t, err)
+		assert.Equal(t, config1, config2)
+	})
 
-	manager := kind.NewConfigManager(configPath)
-	config, err := manager.LoadConfig()
+	t.Run("path traversal", func(t *testing.T) {
+		t.Parallel()
 
-	require.Error(t, err)
-	assert.Nil(t, config)
-	assert.Contains(t, err.Error(), "failed to read config file")
+		tempDir := t.TempDir()
+		configPath := filepath.Join(tempDir, "kind-config.yaml")
+		subDir := filepath.Join(tempDir, "subdir")
+		err := os.Mkdir(subDir, 0o750)
+		require.NoError(t, err)
+
+		configContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: traversal-test"
+		err = os.WriteFile(configPath, []byte(configContent), 0o600)
+		require.NoError(t, err)
+
+		oldDir, err := os.Getwd()
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			err := os.Chdir(oldDir)
+			require.NoError(t, err)
+		})
+		err = os.Chdir(subDir)
+		require.NoError(t, err)
+
+		manager := kind.NewConfigManager("kind-config.yaml")
+		config, err := manager.LoadConfig()
+
+		require.NoError(t, err)
+		require.NotNil(t, config)
+		assert.Equal(t, "Cluster", config.Kind)
+		assert.Equal(t, "kind.x-k8s.io/v1alpha4", config.APIVersion)
+		assert.Equal(t, "traversal-test", config.Name)
+	})
+
+	t.Run("file read error", func(t *testing.T) {
+		t.Parallel()
+
+		tempDir := t.TempDir()
+		configPath := filepath.Join(tempDir, "kind-config")
+		err := os.Mkdir(configPath, 0o750)
+		require.NoError(t, err)
+
+		manager := kind.NewConfigManager(configPath)
+		config, err := manager.LoadConfig()
+
+		require.Error(t, err)
+		assert.Nil(t, config)
+		assert.Contains(t, err.Error(), "failed to read config file")
+	})
 }
