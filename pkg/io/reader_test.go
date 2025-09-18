@@ -71,7 +71,7 @@ func TestReadFileSafe(t *testing.T) {
 	})
 }
 
-func TestResolveConfigPath(t *testing.T) {
+func TestFindFile(t *testing.T) {
 	t.Parallel()
 
 	t.Run("absolute path", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestResolveConfigPath(t *testing.T) {
 		err := os.WriteFile(absolutePath, []byte("test"), 0o600)
 		require.NoError(t, err)
 
-		resolved, err := ioutils.ResolveConfigPath(absolutePath)
+		resolved, err := ioutils.FindFile(absolutePath)
 
 		require.NoError(t, err)
 		assert.Equal(t, absolutePath, resolved)
@@ -106,7 +106,7 @@ func TestResolveConfigPath(t *testing.T) {
 		err = os.WriteFile(configFile, []byte("test"), 0o600)
 		require.NoError(t, err)
 
-		resolved, err := ioutils.ResolveConfigPath(configFile)
+		resolved, err := ioutils.FindFile(configFile)
 
 		require.NoError(t, err)
 		expectedPath := filepath.Join(tempDir, configFile)
@@ -137,7 +137,7 @@ func TestResolveConfigPath(t *testing.T) {
 			_ = os.Chdir(originalDir)
 		}()
 
-		resolved, err := ioutils.ResolveConfigPath(configFile)
+		resolved, err := ioutils.FindFile(configFile)
 
 		require.NoError(t, err)
 		assert.Equal(t, configPath, resolved)
@@ -157,7 +157,7 @@ func TestResolveConfigPath(t *testing.T) {
 
 		configFile := "non-existent-config.yaml"
 
-		resolved, err := ioutils.ResolveConfigPath(configFile)
+		resolved, err := ioutils.FindFile(configFile)
 
 		require.NoError(t, err)
 		// Should return original path when not found
@@ -188,7 +188,7 @@ func TestResolveConfigPath(t *testing.T) {
 			_ = os.Chdir(originalDir)
 		}()
 
-		resolved, err := ioutils.ResolveConfigPath(configFile)
+		resolved, err := ioutils.FindFile(configFile)
 
 		require.NoError(t, err)
 		assert.Equal(t, configPath, resolved)

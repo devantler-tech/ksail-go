@@ -30,14 +30,14 @@ func ReadFileSafe(basePath, filePath string) ([]byte, error) {
 	return data, nil
 }
 
-// ResolveConfigPath resolves a configuration file path with directory traversal.
+// FindFile resolves a file path with directory traversal.
 // For absolute paths, returns the path as-is.
 // For relative paths, traverses up from the current directory to find the file.
 // Returns the resolved absolute path if found, or the original path if not found.
-func ResolveConfigPath(configPath string) (string, error) {
+func FindFile(filePath string) (string, error) {
 	// If absolute path, return as-is
-	if filepath.IsAbs(configPath) {
-		return configPath, nil
+	if filepath.IsAbs(filePath) {
+		return filePath, nil
 	}
 
 	// For relative paths, start from current directory and traverse up
@@ -46,9 +46,9 @@ func ResolveConfigPath(configPath string) (string, error) {
 		return "", fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	// Traverse up the directory tree looking for the config file
+	// Traverse up the directory tree looking for the file
 	for {
-		candidatePath := filepath.Join(currentDir, configPath)
+		candidatePath := filepath.Join(currentDir, filePath)
 
 		_, err := os.Stat(candidatePath)
 		if err == nil {
@@ -67,5 +67,5 @@ func ResolveConfigPath(configPath string) (string, error) {
 
 	// If not found during traversal, return the original relative path
 	// This allows the caller to handle the file-not-found case appropriately
-	return configPath, nil
+	return filePath, nil
 }

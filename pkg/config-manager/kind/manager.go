@@ -89,7 +89,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	}
 
 	// Resolve the config path (traverse up from current dir if relative)
-	configPath, err := io.ResolveConfigPath(m.configPath)
+	configPath, err := io.FindFile(m.configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve config path: %w", err)
 	}
