@@ -78,7 +78,11 @@ nodes:
 		},
 	}
 
-	testutils.RunConfigManagerTests(t, func(configPath string) testutils.ConfigManagerTestInterface[v1alpha4.Cluster] {
-		return kind.NewConfigManager(configPath)
-	}, scenarios)
+	testutils.RunConfigManagerTests(
+		t,
+		func(configPath string) testutils.ConfigManagerTestInterface[v1alpha4.Cluster] {
+			return kind.NewConfigManager(configPath)
+		},
+		scenarios,
+	)
 }

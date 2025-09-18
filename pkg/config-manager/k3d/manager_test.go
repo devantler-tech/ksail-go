@@ -79,7 +79,11 @@ servers: 3`,
 		},
 	}
 
-	testutils.RunConfigManagerTests(t, func(configPath string) testutils.ConfigManagerTestInterface[v1alpha5.SimpleConfig] {
-		return k3d.NewConfigManager(configPath)
-	}, scenarios)
+	testutils.RunConfigManagerTests(
+		t,
+		func(configPath string) testutils.ConfigManagerTestInterface[v1alpha5.SimpleConfig] {
+			return k3d.NewConfigManager(configPath)
+		},
+		scenarios,
+	)
 }
