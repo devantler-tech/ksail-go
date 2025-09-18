@@ -123,15 +123,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Ensure APIVersion and Kind are set for loaded files that might be missing them
-	if config.APIVersion == "" {
-		config.APIVersion = "k3d.io/v1alpha5"
-	}
-
-	if config.Kind == "" {
-		config.Kind = "Simple"
-	}
-
 	m.config = config
 	m.configLoaded = true
 

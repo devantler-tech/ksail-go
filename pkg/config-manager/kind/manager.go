@@ -89,15 +89,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Ensure APIVersion and Kind are set for loaded files that might be missing them
-	if config.APIVersion == "" {
-		config.APIVersion = "kind.x-k8s.io/v1alpha4"
-	}
-
-	if config.Kind == "" {
-		config.Kind = "Cluster"
-	}
-
 	// Apply Kind defaults to the loaded config
 	v1alpha4.SetDefaultsCluster(config)
 
