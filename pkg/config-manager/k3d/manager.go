@@ -56,18 +56,6 @@ func NewK3dSimpleConfig(name, apiVersion, kind string) *v1alpha5.SimpleConfig {
 	}
 }
 
-// newK3dSimpleConfig creates a new v1alpha5.SimpleConfig with all required fields properly initialized.
-// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
-func newK3dSimpleConfig() *v1alpha5.SimpleConfig {
-	return NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
-}
-
-// newEmptyK3dSimpleConfig creates a new empty v1alpha5.SimpleConfig for unmarshaling.
-// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
-func newEmptyK3dSimpleConfig() *v1alpha5.SimpleConfig {
-	return NewK3dSimpleConfig("", "", "")
-}
-
 // NewConfigManager creates a new configuration manager for K3d cluster configurations.
 // configPath specifies the path to the K3d configuration file to load.
 func NewConfigManager(configPath string) *ConfigManager {
@@ -98,7 +86,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
 		// File doesn't exist, return default configuration
-		m.config = newK3dSimpleConfig()
+		m.config = NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
 		m.configLoaded = true
 
 		return m.config, nil
@@ -114,7 +102,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	}
 
 	// Parse YAML into K3d cluster config
-	m.config = newEmptyK3dSimpleConfig()
+	m.config = NewK3dSimpleConfig("", "", "")
 
 	err = m.marshaller.Unmarshal(data, &m.config)
 	if err != nil {
