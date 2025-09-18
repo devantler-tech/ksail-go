@@ -139,5 +139,3 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 
 	return m.config, nil
 }
-
-

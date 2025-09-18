@@ -134,5 +134,3 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 
 	return m.config, nil
 }
-
-
