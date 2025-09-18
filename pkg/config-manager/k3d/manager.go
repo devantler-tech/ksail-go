@@ -4,11 +4,9 @@ package k3d
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -112,48 +110,32 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 		return m.config, nil
 	}
 
-	// Resolve the config path (traverse up from current dir if relative)
-	configPath, err := io.FindFile(m.configPath)
+	config, err := helpers.LoadConfigFromFile(
+		m.configPath,
+		func() *v1alpha5.SimpleConfig {
+			return NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
+		},
+		func() *v1alpha5.SimpleConfig {
+			return NewK3dSimpleConfig("", "", "")
+		},
+		func(config *v1alpha5.SimpleConfig) *v1alpha5.SimpleConfig {
+			// Ensure APIVersion and Kind are set
+			if config.APIVersion == "" {
+				config.APIVersion = "k3d.io/v1alpha5"
+			}
+
+			if config.Kind == "" {
+				config.Kind = "Simple"
+			}
+			return config
+		},
+	)
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve config path: %w", err)
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Check if config file exists
-	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
-		// File doesn't exist, return default configuration
-		m.config = NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
-		m.configLoaded = true
-
-		return m.config, nil
-	}
-
-	// Read file contents safely
-	// Since we've resolved the path through traversal, we use the directory containing the file as the base
-	baseDir := filepath.Dir(configPath)
-
-	data, err := io.ReadFileSafe(baseDir, configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
-	}
-
-	// Parse YAML into K3d cluster config
-	m.config = NewK3dSimpleConfig("", "", "")
-
-	err = m.marshaller.Unmarshal(data, &m.config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal K3d config from %s: %w", configPath, err)
-	}
-
-	// Ensure APIVersion and Kind are set
-	if m.config.APIVersion == "" {
-		m.config.APIVersion = "k3d.io/v1alpha5"
-	}
-
-	if m.config.Kind == "" {
-		m.config.Kind = "Simple"
-	}
-
+	m.config = config
 	m.configLoaded = true
 
 	return m.config, nil

@@ -4,11 +4,9 @@ package kind
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -88,53 +86,35 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 		return m.config, nil
 	}
 
-	// Resolve the config path (traverse up from current dir if relative)
-	configPath, err := io.FindFile(m.configPath)
+	config, err := helpers.LoadConfigFromFile(
+		m.configPath,
+		func() *v1alpha4.Cluster {
+			config := newKindCluster()
+			// Apply Kind defaults
+			v1alpha4.SetDefaultsCluster(config)
+			return config
+		},
+		newEmptyKindCluster,
+		func(config *v1alpha4.Cluster) *v1alpha4.Cluster {
+			// Ensure APIVersion and Kind are set
+			if config.APIVersion == "" {
+				config.APIVersion = "kind.x-k8s.io/v1alpha4"
+			}
+
+			if config.Kind == "" {
+				config.Kind = "Cluster"
+			}
+			// Apply Kind defaults
+			v1alpha4.SetDefaultsCluster(config)
+			return config
+		},
+	)
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve config path: %w", err)
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Check if config file exists
-	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
-		// File doesn't exist, return default configuration
-		m.config = newKindCluster()
-		// Apply Kind defaults
-		v1alpha4.SetDefaultsCluster(m.config)
-		m.configLoaded = true
-
-		return m.config, nil
-	}
-
-	// Read file contents safely
-	// Since we've resolved the path through traversal, we use the directory containing the file as the base
-	baseDir := filepath.Dir(configPath)
-
-	data, err := io.ReadFileSafe(baseDir, configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", configPath, err)
-	}
-
-	// Parse YAML into Kind cluster config
-	m.config = newEmptyKindCluster()
-
-	err = m.marshaller.Unmarshal(data, &m.config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Kind config from %s: %w", configPath, err)
-	}
-
-	// Ensure APIVersion and Kind are set
-	if m.config.APIVersion == "" {
-		m.config.APIVersion = "kind.x-k8s.io/v1alpha4"
-	}
-
-	if m.config.Kind == "" {
-		m.config.Kind = "Cluster"
-	}
-
-	// Apply Kind defaults
-	v1alpha4.SetDefaultsCluster(m.config)
-
+	m.config = config
 	m.configLoaded = true
 
 	return m.config, nil
