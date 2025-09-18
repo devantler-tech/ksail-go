@@ -82,7 +82,7 @@ metadata:
 			tmpDir := t.TempDir()
 			configFile := filepath.Join(tmpDir, "config.yaml")
 
-			err := os.WriteFile(configFile, []byte(tc.configYAML), 0644)
+			err := os.WriteFile(configFile, []byte(tc.configYAML), 0o644)
 			if err != nil {
 				t.Fatalf("Failed to write test config file: %v", err)
 			}
@@ -159,14 +159,13 @@ clusterToken: custom-token
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "complex-config.yaml")
 
-	err := os.WriteFile(configFile, []byte(complexConfig), 0644)
+	err := os.WriteFile(configFile, []byte(complexConfig), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write complex config file: %v", err)
 	}
 
 	manager := NewConfigManager(configFile)
 	config, err := manager.LoadConfig()
-
 	if err != nil {
 		t.Fatalf("Failed to load complex config: %v", err)
 	}
@@ -209,14 +208,13 @@ agents: 0
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "type-test.yaml")
 
-	err := os.WriteFile(configFile, []byte(simpleConfig), 0644)
+	err := os.WriteFile(configFile, []byte(simpleConfig), 0o644)
 	if err != nil {
 		t.Fatalf("Failed to write type test config file: %v", err)
 	}
 
 	manager := NewConfigManager(configFile)
 	config, err := manager.LoadConfig()
-
 	if err != nil {
 		t.Fatalf("Failed to load config: %v", err)
 	}
