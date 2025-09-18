@@ -4,10 +4,9 @@ package cmd
 import (
 	"fmt"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +56,7 @@ func Execute(cmd *cobra.Command) error {
 // handleRootRunE handles the root command.
 func handleRootRunE(
 	cmd *cobra.Command,
-	_ configmanager.ConfigManager[v1alpha1.Cluster],
+	_ *configmanager.ConfigManager,
 	_ []string,
 ) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())

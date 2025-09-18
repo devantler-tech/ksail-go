@@ -3,6 +3,7 @@ package kindgenerator_test
 import (
 	"testing"
 
+	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	"github.com/stretchr/testify/assert"
@@ -90,30 +91,7 @@ func TestGenerateMarshalError(t *testing.T) {
 
 // createTestCluster creates a minimal test cluster configuration.
 func createTestCluster(name string) *v1alpha4.Cluster {
-	cluster := &v1alpha4.Cluster{
-		TypeMeta: v1alpha4.TypeMeta{
-			APIVersion: "",
-			Kind:       "",
-		},
-		Name:  name,
-		Nodes: nil,
-		Networking: v1alpha4.Networking{
-			IPFamily:          "",
-			APIServerPort:     0,
-			APIServerAddress:  "",
-			PodSubnet:         "",
-			ServiceSubnet:     "",
-			DisableDefaultCNI: false,
-			KubeProxyMode:     "",
-			DNSSearch:         nil,
-		},
-		FeatureGates:                    nil,
-		RuntimeConfig:                   nil,
-		KubeadmConfigPatches:            nil,
-		KubeadmConfigPatchesJSON6902:    nil,
-		ContainerdConfigPatches:         nil,
-		ContainerdConfigPatchesJSON6902: nil,
-	}
+	cluster := kindconfig.NewKindCluster(name, "", "")
 
 	// Add a minimal control plane node to ensure kind processes the cluster correctly
 	var node v1alpha4.Node

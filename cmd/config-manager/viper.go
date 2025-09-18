@@ -1,6 +1,6 @@
-// Package ksail provides configuration management for KSail v1alpha1.Cluster configurations.
+// Package configmanager provides configuration management for KSail v1alpha1.Cluster configurations.
 // This file contains Viper initialization and configuration utilities.
-package ksail
+package configmanager
 
 import (
 	"os"

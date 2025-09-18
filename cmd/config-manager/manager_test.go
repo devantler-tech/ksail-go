@@ -1,12 +1,12 @@
-package ksail_test
+package configmanager_test
 
 import (
 	"os"
 	"testing"
 	"time"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -16,24 +16,24 @@ import (
 )
 
 // createStandardFieldSelectors creates a common set of field selectors used in multiple tests.
-func createStandardFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
-	return []ksail.FieldSelector[v1alpha1.Cluster]{
-		ksail.AddFlagFromField(
+func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
+	return []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			v1alpha1.DistributionKind,
 			"Kubernetes distribution",
 		),
-		ksail.AddFlagFromField(
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 			"k8s",
 			"Source directory",
 		),
-		ksail.AddFlagFromField(
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			"",
 			"Kubernetes context",
 		),
-		ksail.AddFlagFromField(
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 			metav1.Duration{Duration: 5 * time.Minute},
 			"Connection timeout",
@@ -42,9 +42,9 @@ func createStandardFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
 }
 
 // createFieldSelectorsWithName creates field selectors including name field.
-func createFieldSelectorsWithName() []ksail.FieldSelector[v1alpha1.Cluster] {
-	selectors := []ksail.FieldSelector[v1alpha1.Cluster]{
-		ksail.AddFlagFromField(
+func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Cluster] {
+	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 			"ksail-default",
 			"Name of the cluster",
@@ -56,9 +56,9 @@ func createFieldSelectorsWithName() []ksail.FieldSelector[v1alpha1.Cluster] {
 }
 
 // createTestClusterFieldSelectors creates field selectors for test cases with "test-cluster" name.
-func createTestClusterFieldSelectors() []ksail.FieldSelector[v1alpha1.Cluster] {
-	return []ksail.FieldSelector[v1alpha1.Cluster]{
-		ksail.AddFlagFromField(
+func createTestClusterFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
+	return []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 			"test-cluster",
 			"Name of the cluster",
@@ -72,7 +72,7 @@ func TestNewManager(t *testing.T) {
 
 	fieldSelectors := createTestClusterFieldSelectors()
 
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
@@ -129,7 +129,7 @@ func TestLoadConfig(t *testing.T) {
 
 			fieldSelectors := createFieldSelectorsWithName()
 
-			manager := ksail.NewConfigManager(fieldSelectors...)
+			manager := configmanager.NewConfigManager(fieldSelectors...)
 
 			cluster, err := manager.LoadConfig()
 
@@ -183,7 +183,7 @@ func TestAddFlagFromFieldHelper(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			selector := ksail.AddFlagFromField(
+			selector := configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 				testCase.defaultValue,
 				testCase.description...,
@@ -202,18 +202,18 @@ func TestAddFlagsFromFields(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		fieldSelectors []ksail.FieldSelector[v1alpha1.Cluster]
+		fieldSelectors []configmanager.FieldSelector[v1alpha1.Cluster]
 		expectedFlags  []string
 	}{
 		{
 			name:           "AddFlagsFromFields with no selectors",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{},
+			fieldSelectors: []configmanager.FieldSelector[v1alpha1.Cluster]{},
 			expectedFlags:  []string{},
 		},
 		{
 			name: "AddFlagsFromFields with distribution selector",
-			fieldSelectors: []ksail.FieldSelector[v1alpha1.Cluster]{
-				ksail.AddFlagFromField(
+			fieldSelectors: []configmanager.FieldSelector[v1alpha1.Cluster]{
+				configmanager.AddFlagFromField(
 					func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 					v1alpha1.DistributionKind,
 					"Kubernetes distribution",
@@ -232,7 +232,7 @@ func TestAddFlagsFromFields(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := ksail.NewConfigManager(testCase.fieldSelectors...)
+			manager := configmanager.NewConfigManager(testCase.fieldSelectors...)
 			cmd := &cobra.Command{
 				Use: "test",
 			}
@@ -262,7 +262,7 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 
 	fieldSelectors := createTestClusterFieldSelectors()
 
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := v1alpha1.NewCluster()
@@ -287,7 +287,7 @@ func testFieldValueSetting(
 ) {
 	t.Helper()
 
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		{
 			Selector:     selector,
 			DefaultValue: defaultValue,
@@ -295,7 +295,7 @@ func testFieldValueSetting(
 		},
 	}
 
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -419,7 +419,7 @@ invalid yaml content
 
 	// Create a manager
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
 	cluster, err := manager.LoadConfig()
@@ -466,7 +466,7 @@ spec:
 
 	// Create manager and load config
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := ksail.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -489,7 +489,7 @@ func runIsFieldEmptyTestCases(t *testing.T, tests []struct {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := ksail.IsFieldEmptyForTesting(tt.fieldPtr)
+			result := configmanager.IsFieldEmptyForTesting(tt.fieldPtr)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

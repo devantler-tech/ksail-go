@@ -4,17 +4,16 @@ package cmd
 import (
 	"fmt"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewReconcileCmd creates and returns the reconcile command.
 func NewReconcileCmd() *cobra.Command {
 	// Create field selectors
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
 			Description:  "Tool to use for reconciling workloads",
@@ -52,7 +51,7 @@ defined in configuration files.`,
 // Exported for testing purposes.
 func HandleReconcileRunE(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
 	err := cmdhelpers.ExecuteCommandWithClusterInfo(

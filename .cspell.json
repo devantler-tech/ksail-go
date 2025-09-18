@@ -81,6 +81,7 @@
     "Kubeadm",
     "Kubeconfig",
     "kubeconfig",
+    "kubelet",
     "kubectlinstaller",
     "Kustomization",
     "kustomization",

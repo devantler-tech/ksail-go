@@ -1,10 +1,10 @@
-package ksail_test
+package configmanager_test
 
 import (
 	"testing"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestFieldSelectorStructureAndTypes(t *testing.T) {
 	t.Parallel()
 
 	// Test that FieldSelector has the expected structure
-	selector := ksail.FieldSelector[v1alpha1.Cluster]{
+	selector := configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 		Description:  "Test description",
 		DefaultValue: "test-value",
@@ -211,7 +211,7 @@ func testAddFlagFromFieldScenario(
 ) {
 	t.Helper()
 
-	fieldSelector := ksail.AddFlagFromField(
+	fieldSelector := configmanager.AddFlagFromField(
 		selector,
 		defaultValue,
 		description...,
@@ -327,7 +327,7 @@ func runTypeTestCases(t *testing.T, tests []struct {
 func testAddFlagFromFieldType(t *testing.T, defaultValue any, expectedType string) {
 	t.Helper()
 
-	selector := ksail.AddFlagFromField(
+	selector := configmanager.AddFlagFromField(
 		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
 		defaultValue,
 		"Test description",
@@ -507,7 +507,7 @@ func testFieldSelector(
 	require.NotNil(t, result, "Selector %s should return non-nil pointer", name)
 
 	// Create a field selector using AddFlagFromField
-	fieldSelector := ksail.AddFlagFromField(
+	fieldSelector := configmanager.AddFlagFromField(
 		selector,
 		"default-value",
 		"Test description",

@@ -4,17 +4,16 @@ package cmd
 import (
 	"fmt"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
 	// Create field selectors
-	fieldSelectors := []ksail.FieldSelector[v1alpha1.Cluster]{
+	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
 		cmdhelpers.StandardSourceDirectoryFieldSelector(),
 	}
@@ -33,7 +32,7 @@ func NewInitCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleInitRunE(
 	cmd *cobra.Command,
-	configManager configmanager.ConfigManager[v1alpha1.Cluster],
+	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
 	err := cmdhelpers.ExecuteCommandWithClusterInfo(
