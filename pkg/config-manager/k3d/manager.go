@@ -127,6 +127,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 			if config.Kind == "" {
 				config.Kind = "Simple"
 			}
+
 			return config
 		},
 	)

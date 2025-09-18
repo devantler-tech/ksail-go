@@ -92,6 +92,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 			config := newKindCluster()
 			// Apply Kind defaults
 			v1alpha4.SetDefaultsCluster(config)
+
 			return config
 		},
 		newEmptyKindCluster,
@@ -106,6 +107,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 			}
 			// Apply Kind defaults
 			v1alpha4.SetDefaultsCluster(config)
+
 			return config
 		},
 	)

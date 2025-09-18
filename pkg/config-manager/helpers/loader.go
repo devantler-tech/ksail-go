@@ -10,6 +10,17 @@ import (
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 )
 
+// LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
+// This function eliminates duplication between different config managers.
+//
+// Parameters:
+//   - configPath: The path to the configuration file
+//   - createDefault: Function to create a default configuration when file doesn't exist
+//   - createEmpty: Function to create an empty configuration for unmarshaling
+//   - setDefaults: Function to set default APIVersion and Kind if missing
+//
+// Returns the loaded configuration or an error.
+//
 //nolint:ireturn // Generic function must return interface type
 func LoadConfigFromFile[T any](
 	configPath string,
