@@ -26,15 +26,16 @@ type ConfigManager struct {
 // This ensures ConfigManager properly implements configmanager.ConfigManager[v1alpha4.Cluster].
 var _ configmanager.ConfigManager[v1alpha4.Cluster] = (*ConfigManager)(nil)
 
-// newKindClusterWithTypeMeta creates a new v1alpha4.Cluster with specified TypeMeta values.
-// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
-func newKindClusterWithTypeMeta(apiVersion, kind string) *v1alpha4.Cluster {
+// NewKindCluster creates a new v1alpha4.Cluster with the specified name and TypeMeta.
+// This function provides a canonical way to create Kind clusters with proper field initialization.
+// Use empty string for name to create a cluster without a specific name.
+func NewKindCluster(name, apiVersion, kind string) *v1alpha4.Cluster {
 	return &v1alpha4.Cluster{
 		TypeMeta: v1alpha4.TypeMeta{
 			APIVersion: apiVersion,
 			Kind:       kind,
 		},
-		Name:  "",
+		Name:  name,
 		Nodes: nil,
 		Networking: v1alpha4.Networking{
 			IPFamily:          "",
@@ -58,13 +59,13 @@ func newKindClusterWithTypeMeta(apiVersion, kind string) *v1alpha4.Cluster {
 // newKindCluster creates a new v1alpha4.Cluster with all required fields properly initialized.
 // This satisfies exhaustruct requirements by providing explicit values for all struct fields.
 func newKindCluster() *v1alpha4.Cluster {
-	return newKindClusterWithTypeMeta("kind.x-k8s.io/v1alpha4", "Cluster")
+	return NewKindCluster("", "kind.x-k8s.io/v1alpha4", "Cluster")
 }
 
 // newEmptyKindCluster creates a new empty v1alpha4.Cluster for unmarshaling.
 // This satisfies exhaustruct requirements by providing explicit values for all struct fields.
 func newEmptyKindCluster() *v1alpha4.Cluster {
-	return newKindClusterWithTypeMeta("", "")
+	return NewKindCluster("", "", "")
 }
 
 // NewConfigManager creates a new configuration manager for Kind cluster configurations.
