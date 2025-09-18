@@ -3,6 +3,7 @@ package kind_test
 import (
 	"testing"
 
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	"github.com/stretchr/testify/assert"
@@ -80,7 +81,7 @@ nodes:
 
 	testutils.RunConfigManagerTests(
 		t,
-		func(configPath string) testutils.ConfigManagerTestInterface[v1alpha4.Cluster] {
+		func(configPath string) configmanager.ConfigManager[v1alpha4.Cluster] {
 			return kind.NewConfigManager(configPath)
 		},
 		scenarios,

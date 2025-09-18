@@ -54,18 +54,6 @@ func NewKindCluster(name, apiVersion, kind string) *v1alpha4.Cluster {
 	}
 }
 
-// newKindCluster creates a new v1alpha4.Cluster with all required fields properly initialized.
-// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
-func newKindCluster() *v1alpha4.Cluster {
-	return NewKindCluster("", "kind.x-k8s.io/v1alpha4", "Cluster")
-}
-
-// newEmptyKindCluster creates a new empty v1alpha4.Cluster for unmarshaling.
-// This satisfies exhaustruct requirements by providing explicit values for all struct fields.
-func newEmptyKindCluster() *v1alpha4.Cluster {
-	return NewKindCluster("", "", "")
-}
-
 // NewConfigManager creates a new configuration manager for Kind cluster configurations.
 // configPath specifies the path to the Kind configuration file to load.
 func NewConfigManager(configPath string) *ConfigManager {
@@ -89,22 +77,8 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	config, err := helpers.LoadConfigFromFile(
 		m.configPath,
 		func() *v1alpha4.Cluster {
-			config := newKindCluster()
-			// Apply Kind defaults
-			v1alpha4.SetDefaultsCluster(config)
-
-			return config
-		},
-		newEmptyKindCluster,
-		func(config *v1alpha4.Cluster) *v1alpha4.Cluster {
-			// Ensure APIVersion and Kind are set
-			if config.APIVersion == "" {
-				config.APIVersion = "kind.x-k8s.io/v1alpha4"
-			}
-
-			if config.Kind == "" {
-				config.Kind = "Cluster"
-			}
+			// Create default with proper APIVersion and Kind
+			config := NewKindCluster("", "kind.x-k8s.io/v1alpha4", "Cluster")
 			// Apply Kind defaults
 			v1alpha4.SetDefaultsCluster(config)
 
@@ -114,6 +88,18 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+
+	// Ensure APIVersion and Kind are set for loaded files that might be missing them
+	if config.APIVersion == "" {
+		config.APIVersion = "kind.x-k8s.io/v1alpha4"
+	}
+
+	if config.Kind == "" {
+		config.Kind = "Cluster"
+	}
+
+	// Apply Kind defaults to the loaded config
+	v1alpha4.SetDefaultsCluster(config)
 
 	m.config = config
 	m.configLoaded = true

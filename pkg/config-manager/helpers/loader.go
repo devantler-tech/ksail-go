@@ -15,9 +15,7 @@ import (
 //
 // Parameters:
 //   - configPath: The path to the configuration file
-//   - createDefault: Function to create a default configuration when file doesn't exist
-//   - createEmpty: Function to create an empty configuration for unmarshaling
-//   - setDefaults: Function to set default APIVersion and Kind if missing
+//   - createDefault: Function to create a default configuration
 //
 // Returns the loaded configuration or an error.
 //
@@ -25,8 +23,6 @@ import (
 func LoadConfigFromFile[T any](
 	configPath string,
 	createDefault func() T,
-	createEmpty func() T,
-	setDefaults func(T) T,
 ) (T, error) {
 	// Resolve the config path (traverse up from current dir if relative)
 	resolvedPath, err := io.FindFile(configPath)
@@ -54,8 +50,8 @@ func LoadConfigFromFile[T any](
 		return zero, fmt.Errorf("failed to read config file %s: %w", resolvedPath, err)
 	}
 
-	// Parse YAML into config
-	config := createEmpty()
+	// Parse YAML into the default config (which will overwrite defaults with file values)
+	config := createDefault()
 	marshaller := yamlmarshaller.YAMLMarshaller[T]{}
 
 	err = marshaller.Unmarshal(data, &config)
@@ -64,9 +60,6 @@ func LoadConfigFromFile[T any](
 
 		return zero, fmt.Errorf("failed to unmarshal config from %s: %w", resolvedPath, err)
 	}
-
-	// Apply defaults
-	config = setDefaults(config)
 
 	return config, nil
 }

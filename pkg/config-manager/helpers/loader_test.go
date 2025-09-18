@@ -21,29 +21,6 @@ func createDefaultConfig() *testConfig {
 	return &testConfig{Name: "default", APIVersion: "test/v1", Kind: "TestCluster"}
 }
 
-// createEmptyConfig creates an empty test configuration.
-func createEmptyConfig() *testConfig {
-	return &testConfig{}
-}
-
-// applyDefaults applies default values to a test configuration.
-func applyDefaults(config *testConfig) *testConfig {
-	if config.APIVersion == "" {
-		config.APIVersion = "test/v1"
-	}
-
-	if config.Kind == "" {
-		config.Kind = "TestCluster"
-	}
-
-	return config
-}
-
-// identityDefaults returns the config as-is (no changes).
-func identityDefaults(config *testConfig) *testConfig {
-	return config
-}
-
 func TestLoadConfigFromFile(t *testing.T) {
 	t.Parallel()
 
@@ -64,8 +41,6 @@ func testLoadConfigFileExists(t *testing.T) {
 	config, err := helpers.LoadConfigFromFile(
 		configPath,
 		createDefaultConfig,
-		createEmptyConfig,
-		applyDefaults,
 	)
 
 	require.NoError(t, err)
@@ -83,8 +58,6 @@ func testLoadConfigFileNotExists(t *testing.T) {
 	config, err := helpers.LoadConfigFromFile(
 		configPath,
 		createDefaultConfig,
-		createEmptyConfig,
-		identityDefaults,
 	)
 
 	require.NoError(t, err)
@@ -103,9 +76,7 @@ func testLoadConfigInvalidYAML(t *testing.T) {
 
 	_, err = helpers.LoadConfigFromFile(
 		configPath,
-		createEmptyConfig,
-		createEmptyConfig,
-		identityDefaults,
+		createDefaultConfig,
 	)
 
 	require.Error(t, err)

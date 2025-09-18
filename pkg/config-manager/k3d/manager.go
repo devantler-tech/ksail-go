@@ -113,26 +113,23 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	config, err := helpers.LoadConfigFromFile(
 		m.configPath,
 		func() *v1alpha5.SimpleConfig {
-			return NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
-		},
-		func() *v1alpha5.SimpleConfig {
-			return NewK3dSimpleConfig("", "", "")
-		},
-		func(config *v1alpha5.SimpleConfig) *v1alpha5.SimpleConfig {
-			// Ensure APIVersion and Kind are set
-			if config.APIVersion == "" {
-				config.APIVersion = "k3d.io/v1alpha5"
-			}
-
-			if config.Kind == "" {
-				config.Kind = "Simple"
-			}
+			// Create default with proper APIVersion and Kind
+			config := NewK3dSimpleConfig("", "k3d.io/v1alpha5", "Simple")
 
 			return config
 		},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Ensure APIVersion and Kind are set for loaded files that might be missing them
+	if config.APIVersion == "" {
+		config.APIVersion = "k3d.io/v1alpha5"
+	}
+
+	if config.Kind == "" {
+		config.Kind = "Simple"
 	}
 
 	m.config = config

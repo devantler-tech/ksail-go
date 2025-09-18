@@ -6,16 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const testFilePermissions = 0o600
-
-// ConfigManagerTestInterface defines the interface that config managers must implement for generic testing.
-type ConfigManagerTestInterface[T any] interface {
-	LoadConfig() (*T, error)
-}
 
 // TestScenario represents a test scenario for config managers.
 type TestScenario[T any] struct {
@@ -33,7 +29,7 @@ type TestScenario[T any] struct {
 // RunConfigManagerTests runs a comprehensive test suite for config managers.
 func RunConfigManagerTests[T any](
 	t *testing.T,
-	newManager func(configPath string) ConfigManagerTestInterface[T],
+	newManager func(configPath string) configmanager.ConfigManager[T],
 	scenarios []TestScenario[T],
 ) {
 	t.Helper()
@@ -49,7 +45,7 @@ func RunConfigManagerTests[T any](
 // testLoadConfigBasicScenarios tests basic config loading scenarios.
 func testLoadConfigBasicScenarios[T any](
 	t *testing.T,
-	newManager func(configPath string) ConfigManagerTestInterface[T],
+	newManager func(configPath string) configmanager.ConfigManager[T],
 	scenarios []TestScenario[T],
 ) {
 	t.Helper()
@@ -106,7 +102,7 @@ func setupTestConfigPath[T any](t *testing.T, scenario TestScenario[T]) string {
 // testLoadConfigCaching tests that configuration caching works correctly.
 func testLoadConfigCaching[T any](
 	t *testing.T,
-	newManager func(configPath string) ConfigManagerTestInterface[T],
+	newManager func(configPath string) configmanager.ConfigManager[T],
 	scenario TestScenario[T],
 ) {
 	t.Helper()
