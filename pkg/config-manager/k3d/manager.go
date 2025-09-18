@@ -89,7 +89,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	}
 
 	// Resolve the config path (traverse up from current dir if relative)
-	configPath, err := m.resolveConfigPath()
+	configPath, err := io.ResolveConfigPath(m.configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve config path: %w", err)
 	}
@@ -135,41 +135,4 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	return m.config, nil
 }
 
-// resolveConfigPath resolves the configuration file path.
-// For absolute paths, returns the path as-is.
-// For relative paths or filenames, traverses up from current directory to find the file.
-func (m *ConfigManager) resolveConfigPath() (string, error) {
-	// If absolute path, return as-is
-	if filepath.IsAbs(m.configPath) {
-		return m.configPath, nil
-	}
 
-	// For relative paths, start from current directory and traverse up
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	// Traverse up the directory tree looking for the config file
-	for {
-		candidatePath := filepath.Join(currentDir, m.configPath)
-
-		_, err := os.Stat(candidatePath)
-		if err == nil {
-			return candidatePath, nil
-		}
-
-		// Move up one directory
-		parentDir := filepath.Dir(currentDir)
-		// Stop if we've reached the root directory
-		if parentDir == currentDir {
-			break
-		}
-
-		currentDir = parentDir
-	}
-
-	// If not found during traversal, return the original relative path
-	// This allows the caller to handle the file-not-found case appropriately
-	return m.configPath, nil
-}
