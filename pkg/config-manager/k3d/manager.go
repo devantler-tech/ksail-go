@@ -130,7 +130,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 			return config
 		},
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}

@@ -109,7 +109,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 			return config
 		},
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
