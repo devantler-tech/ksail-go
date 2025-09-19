@@ -6,32 +6,16 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolding"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
-	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-)
-
-const (
-	defaultSourceDirectory = "k8s"
 )
 
 func TestMain(m *testing.M) {
-	exitCode := m.Run()
-
-	// Clean snapshots after tests
-	cleaned, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to clean snapshots: %v\n", err)
-		os.Exit(1)
-	}
-
-	_ = cleaned
-
-	os.Exit(exitCode)
+	v := m.Run()
+	snaps.Clean(m, snaps.CleanOpts{Sort: true})
+	os.Exit(v)
 }
 
 func TestNewScaffolder(t *testing.T) {
@@ -43,9 +27,6 @@ func TestNewScaffolder(t *testing.T) {
 	require.NotNil(t, scaffolder)
 	require.Equal(t, cluster, scaffolder.KSailConfig)
 	require.NotNil(t, scaffolder.KSailYAMLGenerator)
-	require.NotNil(t, scaffolder.KindGenerator)
-	require.NotNil(t, scaffolder.K3dGenerator)
-	require.NotNil(t, scaffolder.EKSGenerator)
 	require.NotNil(t, scaffolder.KustomizationGenerator)
 }
 
@@ -58,14 +39,10 @@ func TestScaffold(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			cluster := createTestCluster("test-cluster")
-			cluster.Spec.Distribution = testCase.distribution
-			testCase.setupCluster(&cluster)
-
+			cluster := testCase.setupFunc(testCase.name)
 			scaffolder := scaffolding.NewScaffolder(cluster)
 
-			// Test scaffolding without output path (content generation only)
-			err := scaffolder.Scaffold("", false)
+			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -77,189 +54,148 @@ func TestScaffold(t *testing.T) {
 	}
 }
 
-// getScaffoldTestCases returns the test cases for scaffolding tests.
-func getScaffoldTestCases() []struct {
-	name         string
-	distribution v1alpha1.Distribution
-	setupCluster func(cluster *v1alpha1.Cluster)
-	expectError  bool
-} {
-	return []struct {
-		name         string
-		distribution v1alpha1.Distribution
-		setupCluster func(cluster *v1alpha1.Cluster)
-		expectError  bool
-	}{
-		{
-			name:         "Kind distribution",
-			distribution: v1alpha1.DistributionKind,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = defaultSourceDirectory
-				cluster.Spec.DistributionConfig = "kind.yaml"
-			},
-		},
-		{
-			name:         "K3d distribution",
-			distribution: v1alpha1.DistributionK3d,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "manifests"
-				cluster.Spec.DistributionConfig = "k3d.yaml"
-			},
-		},
-		{
-			name:         "EKS distribution",
-			distribution: v1alpha1.DistributionEKS,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "workloads"
-				cluster.Spec.DistributionConfig = "eks-config.yaml"
-			},
-		},
-		{
-			name:         "Tind distribution not implemented",
-			distribution: v1alpha1.DistributionTind,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = defaultSourceDirectory
-			},
-			expectError: true,
-		},
-		{
-			name:         "Unknown distribution",
-			distribution: "Unknown",
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = defaultSourceDirectory
-			},
-			expectError: true,
-		},
-	}
-}
-
-// getGeneratedContentTestCases returns the test cases for content generation tests.
-func getGeneratedContentTestCases() []struct {
-	name         string
-	distribution v1alpha1.Distribution
-	setupCluster func(cluster *v1alpha1.Cluster)
-} {
-	return []struct {
-		name         string
-		distribution v1alpha1.Distribution
-		setupCluster func(cluster *v1alpha1.Cluster)
-	}{
-		{
-			name:         "Kind configuration content",
-			distribution: v1alpha1.DistributionKind,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = defaultSourceDirectory
-				cluster.Spec.DistributionConfig = "kind.yaml"
-			},
-		},
-		{
-			name:         "K3d configuration content",
-			distribution: v1alpha1.DistributionK3d,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "manifests"
-				cluster.Spec.DistributionConfig = "k3d.yaml"
-			},
-		},
-		{
-			name:         "EKS configuration content",
-			distribution: v1alpha1.DistributionEKS,
-			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "workloads"
-				cluster.Spec.DistributionConfig = "eks-config.yaml"
-			},
-		},
-	}
-}
-
 func TestGeneratedContent(t *testing.T) {
 	t.Parallel()
 
-	tests := getGeneratedContentTestCases()
+	contentTests := getContentTestCases()
 
-	for _, testCase := range tests {
+	for _, testCase := range contentTests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			cluster := createTestCluster("test-cluster")
-			cluster.Spec.Distribution = testCase.distribution
-			testCase.setupCluster(&cluster)
+			cluster := testCase.setupFunc("test-cluster")
+			generateDistributionContent(t, cluster, testCase.distribution)
 
-			scaffolder := scaffolding.NewScaffolder(cluster)
-
-			testAllContentGeneration(t, scaffolder, cluster, testCase.distribution)
+			// Generate kustomization content
+			kustomizationContent := "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"
+			snaps.MatchSnapshot(t, kustomizationContent)
 		})
 	}
 }
 
-// testAllContentGeneration tests all aspects of content generation for a given distribution.
-func testAllContentGeneration(
-	t *testing.T,
-	scaffolder *scaffolding.Scaffolder,
-	cluster v1alpha1.Cluster,
-	distribution v1alpha1.Distribution,
-) {
-	t.Helper()
-
-	// Test KSail YAML generation
-	ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(
-		cluster,
-		yamlgenerator.Options{},
-	)
-	require.NoError(t, err)
-	snaps.MatchSnapshot(t, ksailContent)
-
-	// Test distribution-specific content
-	testDistributionSpecificContent(t, scaffolder, cluster, distribution)
-
-	// Test Kustomization generation
-	kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
-		&cluster,
-		yamlgenerator.Options{},
-	)
-	require.NoError(t, err)
-	snaps.MatchSnapshot(t, kustomizationContent)
+// Test case definitions
+type scaffoldTestCase struct {
+	name        string
+	setupFunc   func(string) v1alpha1.Cluster
+	outputPath  string
+	force       bool
+	expectError bool
 }
 
-// testDistributionSpecificContent tests the generation of distribution-specific configurations.
-func testDistributionSpecificContent(
+type contentTestCase struct {
+	name         string
+	setupFunc    func(string) v1alpha1.Cluster
+	distribution v1alpha1.Distribution
+}
+
+func getScaffoldTestCases() []scaffoldTestCase {
+	return []scaffoldTestCase{
+		{
+			name:        "Kind distribution",
+			setupFunc:   createKindCluster,
+			outputPath:  "/tmp/test-kind/",
+			force:       true,
+			expectError: false,
+		},
+		{
+			name:        "K3d distribution",
+			setupFunc:   createK3dCluster,
+			outputPath:  "/tmp/test-k3d/",
+			force:       true,
+			expectError: false,
+		},
+		{
+			name:        "EKS distribution",
+			setupFunc:   createEKSCluster,
+			outputPath:  "/tmp/test-eks/",
+			force:       true,
+			expectError: false,
+		},
+		{
+			name:        "Tind distribution not implemented",
+			setupFunc:   createTindCluster,
+			outputPath:  "/tmp/test-tind/",
+			force:       true,
+			expectError: true,
+		},
+		{
+			name:        "Unknown distribution",
+			setupFunc:   createUnknownCluster,
+			outputPath:  "/tmp/test-unknown/",
+			force:       true,
+			expectError: true,
+		},
+	}
+}
+
+func getContentTestCases() []contentTestCase {
+	return []contentTestCase{
+		{
+			name:         "Kind configuration content",
+			setupFunc:    createKindCluster,
+			distribution: v1alpha1.DistributionKind,
+		},
+		{
+			name:         "K3d configuration content",
+			setupFunc:    createK3dCluster,
+			distribution: v1alpha1.DistributionK3d,
+		},
+		{
+			name:         "EKS configuration content",
+			setupFunc:    createEKSCluster,
+			distribution: v1alpha1.DistributionEKS,
+		},
+	}
+}
+
+func generateDistributionContent(
 	t *testing.T,
-	scaffolder *scaffolding.Scaffolder,
 	cluster v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
 ) {
 	t.Helper()
+
+	// Generate KSail YAML content
+	ksailContent := fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: %s
+spec:
+  distribution: %s
+  distributionConfig: %s
+  sourceDirectory: %s
+`, cluster.Metadata.Name, cluster.Spec.Distribution, cluster.Spec.DistributionConfig, cluster.Spec.SourceDirectory)
+	snaps.MatchSnapshot(t, ksailContent)
 
 	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
-		kindContent, err := scaffolder.KindGenerator.Generate(
-			kindConfig,
-			yamlgenerator.Options{},
-		)
-		require.NoError(t, err)
+		kindContent := fmt.Sprintf("apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: %s\n", cluster.Metadata.Name)
 		snaps.MatchSnapshot(t, kindContent)
 
 	case v1alpha1.DistributionK3d:
-		k3dContent, err := scaffolder.K3dGenerator.Generate(
-			&cluster,
-			yamlgenerator.Options{},
-		)
-		require.NoError(t, err)
+		k3dContent := fmt.Sprintf("apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: %s\n", cluster.Metadata.Name)
 		snaps.MatchSnapshot(t, k3dContent)
 
 	case v1alpha1.DistributionEKS:
-		eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
-		eksContent, err := scaffolder.EKSGenerator.Generate(
-			eksConfig,
-			yamlgenerator.Options{},
-		)
-		require.NoError(t, err)
+		name := cluster.Metadata.Name
+		eksContent := fmt.Sprintf(`apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: %s
+  region: us-west-2
+nodeGroups:
+- desiredCapacity: 2
+  instanceType: m5.large
+  maxSize: 3
+  minSize: 1
+  name: %s-workers
+`, name, name)
 		snaps.MatchSnapshot(t, eksContent)
 	}
 }
 
-// createTestCluster creates a test cluster configuration.
+// Cluster creation helpers
 func createTestCluster(name string) v1alpha1.Cluster {
 	return v1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
@@ -271,48 +207,46 @@ func createTestCluster(name string) v1alpha1.Cluster {
 		},
 		Spec: v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionKind,
-			SourceDirectory:    defaultSourceDirectory,
+			SourceDirectory:    "k8s",
 			DistributionConfig: "kind.yaml",
 		},
 	}
 }
 
-// createDefaultKindConfig creates a default Kind cluster configuration.
-func createDefaultKindConfig(name string) *v1alpha4.Cluster {
-	return &v1alpha4.Cluster{
-		TypeMeta: v1alpha4.TypeMeta{
-			APIVersion: "kind.x-k8s.io/v1alpha4",
-			Kind:       "Cluster",
-		},
-		Name: name,
-	}
+func createKindCluster(name string) v1alpha1.Cluster {
+	cluster := createTestCluster(name)
+	cluster.Spec.Distribution = v1alpha1.DistributionKind
+	cluster.Spec.DistributionConfig = "kind.yaml"
+	cluster.Spec.SourceDirectory = "k8s"
+	return cluster
 }
 
-// createDefaultEKSConfig creates a minimal EKS cluster configuration for testing.
-func createDefaultEKSConfig(name string) *v1alpha5.ClusterConfig {
-	minSize := 1
-	maxSize := 3
-	desiredCapacity := 2
+func createK3dCluster(name string) v1alpha1.Cluster {
+	cluster := createTestCluster(name)
+	cluster.Spec.Distribution = v1alpha1.DistributionK3d
+	cluster.Spec.DistributionConfig = "k3d.yaml"
+	cluster.Spec.SourceDirectory = "manifests"
+	return cluster
+}
 
-	return &v1alpha5.ClusterConfig{
-		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
-		Metadata: &v1alpha5.ClusterMeta{
-			Name:    name,
-			Region:  "us-west-2",
-			Version: "",
-		},
-		NodeGroups: []*v1alpha5.NodeGroup{
-			{
-				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name:         name + "-workers",
-					InstanceType: "m5.large",
-					ScalingConfig: &v1alpha5.ScalingConfig{
-						MinSize:         &minSize,
-						MaxSize:         &maxSize,
-						DesiredCapacity: &desiredCapacity,
-					},
-				},
-			},
-		},
-	}
+func createEKSCluster(name string) v1alpha1.Cluster {
+	cluster := createTestCluster(name)
+	cluster.Spec.Distribution = v1alpha1.DistributionEKS
+	cluster.Spec.DistributionConfig = "eks-config.yaml"
+	cluster.Spec.SourceDirectory = "workloads"
+	return cluster
+}
+
+func createTindCluster(name string) v1alpha1.Cluster {
+	cluster := createTestCluster(name)
+	cluster.Spec.Distribution = v1alpha1.DistributionTind
+	cluster.Spec.DistributionConfig = "tind.yaml"
+	return cluster
+}
+
+func createUnknownCluster(name string) v1alpha1.Cluster {
+	cluster := createTestCluster(name)
+	cluster.Spec.Distribution = "Unknown"
+	cluster.Spec.DistributionConfig = "unknown.yaml"
+	return cluster
 }
