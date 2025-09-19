@@ -38,7 +38,15 @@ func RunConfigManagerTests[T any](
 		testLoadConfigBasicScenarios(t, newManager, scenarios)
 	})
 	t.Run("caching", func(t *testing.T) {
-		testLoadConfigCaching(t, newManager, scenarios[0]) // Use first valid scenario
+		var validScenario *TestScenario[T]
+		for i := range scenarios {
+			if !scenarios[i].ShouldError {
+				validScenario = &scenarios[i]
+				break
+			}
+		}
+		require.NotNil(t, validScenario, "No valid scenario found for caching test")
+		testLoadConfigCaching(t, newManager, *validScenario)
 	})
 }
 
