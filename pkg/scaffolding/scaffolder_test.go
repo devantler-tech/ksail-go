@@ -4,11 +4,14 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolding"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
+	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 const (
@@ -24,13 +27,14 @@ func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
-	scaffolder, err := scaffolding.NewScaffolder(cluster)
+	scaffolder := scaffolding.NewScaffolder(cluster)
 
-	require.NoError(t, err)
 	require.NotNil(t, scaffolder)
 	require.Equal(t, cluster, scaffolder.KSailConfig)
 	require.NotNil(t, scaffolder.KSailYAMLGenerator)
-	require.NotNil(t, scaffolder.DistributionGenerator)
+	require.NotNil(t, scaffolder.KindGenerator)
+	require.NotNil(t, scaffolder.K3dGenerator)
+	require.NotNil(t, scaffolder.EKSGenerator)
 	require.NotNil(t, scaffolder.KustomizationGenerator)
 }
 
@@ -47,17 +51,15 @@ func TestScaffold(t *testing.T) {
 			cluster.Spec.Distribution = testCase.distribution
 			testCase.setupCluster(&cluster)
 
-			scaffolder, err := scaffolding.NewScaffolder(cluster)
+			scaffolder := scaffolding.NewScaffolder(cluster)
+
+			// Test scaffolding without output path (content generation only)
+			err := scaffolder.Scaffold("", false)
 
 			if testCase.expectError {
 				require.Error(t, err)
 				snaps.MatchSnapshot(t, err.Error())
 			} else {
-				require.NoError(t, err)
-				require.NotNil(t, scaffolder)
-
-				// Test scaffolding without output path (content generation only)
-				err = scaffolder.Scaffold("", false)
 				require.NoError(t, err)
 			}
 		})
@@ -165,8 +167,7 @@ func TestGeneratedContent(t *testing.T) {
 			cluster.Spec.Distribution = testCase.distribution
 			testCase.setupCluster(&cluster)
 
-			scaffolder, err := scaffolding.NewScaffolder(cluster)
-			require.NoError(t, err)
+			scaffolder := scaffolding.NewScaffolder(cluster)
 
 			testAllContentGeneration(t, scaffolder, cluster, testCase.distribution)
 		})
@@ -207,14 +208,38 @@ func testDistributionSpecificContent(
 	t *testing.T,
 	scaffolder *scaffolding.Scaffolder,
 	cluster v1alpha1.Cluster,
-	_ v1alpha1.Distribution,
+	distribution v1alpha1.Distribution,
 ) {
 	t.Helper()
 
-	// Test distribution-specific content using the unified DistributionGenerator
-	distContent, err := scaffolder.DistributionGenerator.Generate(&cluster, yamlgenerator.Options{})
-	require.NoError(t, err)
-	snaps.MatchSnapshot(t, distContent)
+	//nolint:exhaustive // We only test supported distributions here
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
+		kindContent, err := scaffolder.KindGenerator.Generate(
+			kindConfig,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, kindContent)
+
+	case v1alpha1.DistributionK3d:
+		k3dContent, err := scaffolder.K3dGenerator.Generate(
+			&cluster,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, k3dContent)
+
+	case v1alpha1.DistributionEKS:
+		eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
+		eksContent, err := scaffolder.EKSGenerator.Generate(
+			eksConfig,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, eksContent)
+	}
 }
 
 // createTestCluster creates a test cluster configuration.
@@ -231,6 +256,47 @@ func createTestCluster(name string) v1alpha1.Cluster {
 			Distribution:       v1alpha1.DistributionKind,
 			SourceDirectory:    defaultSourceDirectory,
 			DistributionConfig: "kind.yaml",
+		},
+	}
+}
+
+// createDefaultKindConfig creates a default Kind cluster configuration.
+func createDefaultKindConfig(name string) *v1alpha4.Cluster {
+	kindCluster := kindconfig.NewKindCluster(name, "", "")
+	// Add a minimal control plane node
+	var node v1alpha4.Node
+
+	node.Role = v1alpha4.ControlPlaneRole
+	kindCluster.Nodes = append(kindCluster.Nodes, node)
+
+	return kindCluster
+}
+
+// createDefaultEKSConfig creates a minimal EKS cluster configuration for testing.
+func createDefaultEKSConfig(name string) *v1alpha5.ClusterConfig {
+	minSize := 1
+	maxSize := 3
+	desiredCapacity := 2
+
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:    name,
+			Region:  "us-west-2",
+			Version: "",
+		},
+		NodeGroups: []*v1alpha5.NodeGroup{
+			{
+				NodeGroupBase: &v1alpha5.NodeGroupBase{
+					Name:         name + "-workers",
+					InstanceType: "m5.large",
+					ScalingConfig: &v1alpha5.ScalingConfig{
+						MinSize:         &minSize,
+						MaxSize:         &maxSize,
+						DesiredCapacity: &desiredCapacity,
+					},
+				},
+			},
 		},
 	}
 }
