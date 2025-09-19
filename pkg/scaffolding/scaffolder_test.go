@@ -253,7 +253,7 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 	cluster := createTestCluster(name)
 	cluster.Spec.Distribution = v1alpha1.DistributionK3d
 	cluster.Spec.DistributionConfig = "k3d.yaml"
-	cluster.Spec.SourceDirectory = "manifests"  // Non-default value
+	cluster.Spec.SourceDirectory = "k8s"  // Default value - will be omitted
 	return cluster
 }
 

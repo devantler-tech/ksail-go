@@ -1,3 +1,4 @@
+
 [TestGeneratedContent/Kind_configuration_content - 1]
 apiVersion: ksail.dev/v1alpha1
 kind: Cluster
@@ -5,42 +6,21 @@ metadata:
   name: test-cluster
 
 ---
+
 [TestGeneratedContent/Kind_configuration_content - 2]
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: test-cluster
 
 ---
+
 [TestGeneratedContent/Kind_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
 
 ---
-[TestGeneratedContent/K3d_configuration_content - 1]
-apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-metadata:
-  name: test-cluster
-spec:
-  distribution: K3d
-  distributionConfig: k3d.yaml
-  sourceDirectory: manifests
 
----
-[TestGeneratedContent/K3d_configuration_content - 2]
-apiVersion: k3d.io/v1alpha5
-kind: Simple
-metadata:
-  name: test-cluster
-
----
-[TestGeneratedContent/K3d_configuration_content - 3]
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources: []
-
----
 [TestGeneratedContent/EKS_configuration_content - 1]
 apiVersion: ksail.dev/v1alpha1
 kind: Cluster
@@ -52,6 +32,7 @@ spec:
   sourceDirectory: workloads
 
 ---
+
 [TestGeneratedContent/EKS_configuration_content - 2]
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
@@ -66,7 +47,42 @@ nodeGroups:
   name: test-cluster-workers
 
 ---
+
 [TestGeneratedContent/EKS_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffold/Unknown_distribution - 1]
+provided distribution is unknown
+---
+
+[TestScaffold/Tind_distribution_not_implemented - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestGeneratedContent/K3d_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: K3d
+  distributionConfig: k3d.yaml
+
+---
+
+[TestGeneratedContent/K3d_configuration_content - 2]
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: test-cluster
+
+---
+
+[TestGeneratedContent/K3d_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
