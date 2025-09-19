@@ -7,7 +7,6 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
-	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
@@ -15,7 +14,6 @@ import (
 // ConfigManager implements configuration management for K3d v1alpha5.SimpleConfig configurations.
 // It provides file-based configuration loading without Viper dependency.
 type ConfigManager struct {
-	marshaller   yamlmarshaller.YAMLMarshaller[*v1alpha5.SimpleConfig]
 	configPath   string
 	config       *v1alpha5.SimpleConfig
 	configLoaded bool
@@ -94,7 +92,6 @@ func NewK3dSimpleConfig(name, apiVersion, kind string) *v1alpha5.SimpleConfig {
 // configPath specifies the path to the K3d configuration file to load.
 func NewConfigManager(configPath string) *ConfigManager {
 	return &ConfigManager{
-		marshaller:   yamlmarshaller.YAMLMarshaller[*v1alpha5.SimpleConfig]{},
 		configPath:   configPath,
 		config:       nil,
 		configLoaded: false,

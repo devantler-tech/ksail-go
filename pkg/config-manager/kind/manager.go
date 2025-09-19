@@ -7,14 +7,12 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
-	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // ConfigManager implements configuration management for Kind cluster configurations.
 // It provides file-based configuration loading without Viper dependency.
 type ConfigManager struct {
-	marshaller   yamlmarshaller.YAMLMarshaller[*v1alpha4.Cluster]
 	configPath   string
 	config       *v1alpha4.Cluster
 	configLoaded bool
@@ -58,7 +56,6 @@ func NewKindCluster(name, apiVersion, kind string) *v1alpha4.Cluster {
 // configPath specifies the path to the Kind configuration file to load.
 func NewConfigManager(configPath string) *ConfigManager {
 	return &ConfigManager{
-		marshaller:   yamlmarshaller.YAMLMarshaller[*v1alpha4.Cluster]{},
 		configPath:   configPath,
 		config:       nil,
 		configLoaded: false,
