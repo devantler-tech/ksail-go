@@ -41,13 +41,14 @@ func LoadConfigFromFile[T any](
 
 	// Read file contents safely
 	// Since we've resolved the path through traversal, we use the directory containing the file as the base
-	baseDir := filepath.Dir(resolvedPath)
+	cleaned := filepath.Clean(resolvedPath)
+	baseDir := filepath.Dir(cleaned)
 
-	data, err := io.ReadFileSafe(baseDir, resolvedPath)
+	data, err := io.ReadFileSafe(baseDir, cleaned)
 	if err != nil {
 		var zero T
 
-		return zero, fmt.Errorf("failed to read config file %s: %w", resolvedPath, err)
+		return zero, fmt.Errorf("failed to read config file %s: %w", cleaned, err)
 	}
 
 	// Parse YAML into the default config (which will overwrite defaults with file values)
@@ -58,7 +59,7 @@ func LoadConfigFromFile[T any](
 	if err != nil {
 		var zero T
 
-		return zero, fmt.Errorf("failed to unmarshal config from %s: %w", resolvedPath, err)
+		return zero, fmt.Errorf("failed to unmarshal config from %s: %w", cleaned, err)
 	}
 
 	return config, nil

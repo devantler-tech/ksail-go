@@ -52,7 +52,7 @@ func FindFile(filePath string) (string, error) {
 
 		_, err := os.Stat(candidatePath)
 		if err == nil {
-			return candidatePath, nil
+			return filepath.Clean(candidatePath), nil
 		}
 
 		// Move up one directory
