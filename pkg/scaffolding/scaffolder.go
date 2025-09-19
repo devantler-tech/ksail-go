@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	eksgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
@@ -104,23 +105,25 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 
 // generateKindConfig generates the kind.yaml configuration file.
 func (s *Scaffolder) generateKindConfig(output string, force bool) error {
-	// Create a minimal Kind cluster configuration
-	kindCluster := &v1alpha4.Cluster{
-		TypeMeta: v1alpha4.TypeMeta{
-			APIVersion: "kind.x-k8s.io/v1alpha4",
-			Kind:       "Cluster",
-		},
-		Name: s.KSailConfig.Metadata.Name,
-	}
+	// Create a minimal Kind cluster configuration with explicit minimal YAML output
+	yamlContent := fmt.Sprintf(`apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: %s
+`, s.KSailConfig.Metadata.Name)
 
 	opts := yamlgenerator.Options{
 		Output: output + "kind.yaml",
 		Force:  force,
 	}
 
-	_, err := s.KindGenerator.Generate(kindCluster, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
+	// Write minimal YAML directly instead of using generator to avoid defaults
+	if opts.Output != "" {
+		result, err := io.TryWriteFile(yamlContent, opts.Output, opts.Force)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
+		}
+
+		_ = result
 	}
 
 	return nil
@@ -128,14 +131,26 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 // generateK3dConfig generates the k3d.yaml configuration file.
 func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
+	// Create minimal K3d YAML content
+	yamlContent := fmt.Sprintf(`apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: %s
+`, s.KSailConfig.Metadata.Name)
+
 	opts := yamlgenerator.Options{
 		Output: output + "k3d.yaml",
 		Force:  force,
 	}
 
-	_, err := s.K3dGenerator.Generate(&s.KSailConfig, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
+	// Write minimal YAML directly
+	if opts.Output != "" {
+		result, err := io.TryWriteFile(yamlContent, opts.Output, opts.Force)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
+		}
+
+		_ = result
 	}
 
 	return nil
@@ -195,19 +210,19 @@ func createDefaultEKSConfig(name string) *v1alpha5.ClusterConfig {
 			AutoApplyPodIdentityAssociations: false,
 			DisableDefaultAddons:             false,
 		},
-		PrivateCluster:    nil,
-		NodeGroups:        createDefaultNodeGroups(name, minSize, maxSize, desiredCapacity),
-		ManagedNodeGroups: nil,
-		FargateProfiles:   nil,
-		AvailabilityZones: nil,
-		LocalZones:        nil,
-		CloudWatch:        nil,
-		SecretsEncryption: nil,
-		Status:            nil,
-		GitOps:            nil,
-		Karpenter:         nil,
-		Outpost:           nil,
-		ZonalShiftConfig:  nil,
+		PrivateCluster:          nil,
+		NodeGroups:              createDefaultNodeGroups(name, minSize, maxSize, desiredCapacity),
+		ManagedNodeGroups:       nil,
+		FargateProfiles:         nil,
+		AvailabilityZones:       nil,
+		LocalZones:              nil,
+		CloudWatch:              nil,
+		SecretsEncryption:       nil,
+		Status:                  nil,
+		GitOps:                  nil,
+		Karpenter:               nil,
+		Outpost:                 nil,
+		ZonalShiftConfig:        nil,
 	}
 }
 
