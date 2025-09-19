@@ -1,6 +1,8 @@
 package scaffolding_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -19,8 +21,18 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	// Clean snapshots after tests - ignore exit code
-	_, _ = snaps.Clean(m, snaps.CleanOpts{Sort: true})
+	exitCode := m.Run()
+
+	// Clean snapshots after tests
+	cleaned, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to clean snapshots: %v\n", err)
+		os.Exit(1)
+	}
+
+	_ = cleaned
+
+	os.Exit(exitCode)
 }
 
 func TestNewScaffolder(t *testing.T) {

@@ -1,0 +1,116 @@
+[TestGeneratedContent/Kind_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: Kind
+  distributionConfig: kind.yaml
+  sourceDirectory: k8s
+
+---
+
+[TestGeneratedContent/Kind_configuration_content - 2]
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: test-cluster
+networking:
+  apiServerAddress: 127.0.0.1
+  ipFamily: ipv4
+  kubeProxyMode: iptables
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/16
+nodes:
+- image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+  role: control-plane
+
+---
+
+[TestGeneratedContent/Kind_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+---
+
+[TestGeneratedContent/K3d_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: K3d
+  distributionConfig: kind.yaml
+  sourceDirectory: manifests
+
+---
+
+[TestGeneratedContent/K3d_configuration_content - 2]
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+kubeAPI: {}
+metadata:
+  name: test-cluster
+options:
+  k3d:
+    disableImageVolume: false
+    disableLoadbalancer: false
+    disableRollback: false
+    loadbalancer: {}
+    wait: false
+  k3s: {}
+  kubeconfig: {}
+  runtime:
+    HostPidMode: false
+registries: {}
+
+---
+
+[TestGeneratedContent/K3d_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+---
+
+[TestGeneratedContent/EKS_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: EKS
+  distributionConfig: kind.yaml
+  sourceDirectory: workloads
+
+---
+
+[TestGeneratedContent/EKS_configuration_content - 2]
+addonsConfig: {}
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: test-cluster
+  region: us-west-2
+nodeGroups:
+- desiredCapacity: 2
+  instanceType: m5.large
+  maxSize: 3
+  minSize: 1
+  name: test-cluster-workers
+  privateNetworking: false
+
+---
+
+[TestGeneratedContent/EKS_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+---
+
+[TestScaffold/Tind_distribution_not_implemented - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffold/Unknown_distribution - 1]
+provided distribution is unknown
+---
+
