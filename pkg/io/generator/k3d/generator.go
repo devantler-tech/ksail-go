@@ -61,6 +61,56 @@ func (g *K3dGenerator) buildSimpleConfig(cluster *v1alpha1.Cluster) *v1alpha5.Si
 		ObjectMeta: types.ObjectMeta{
 			Name: cluster.Metadata.Name,
 		},
+		Servers: 0,
+		Agents:  0,
+		ExposeAPI: v1alpha5.SimpleExposureOpts{
+			Host:     "",
+			HostIP:   "",
+			HostPort: "",
+		},
+		Image:        "",
+		Network:      "",
+		Subnet:       "",
+		ClusterToken: "",
+		Volumes:      nil,
+		Ports:        nil,
+		Options: v1alpha5.SimpleConfigOptions{
+			K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
+				Wait:                false,
+				Timeout:             0,
+				DisableLoadbalancer: false,
+				DisableImageVolume:  false,
+				NoRollback:          false,
+				NodeHookActions:     nil,
+				Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
+					ConfigOverrides: nil,
+				},
+			},
+			K3sOptions: v1alpha5.SimpleConfigOptionsK3s{
+				ExtraArgs:  nil,
+				NodeLabels: nil,
+			},
+			KubeconfigOptions: v1alpha5.SimpleConfigOptionsKubeconfig{
+				UpdateDefaultKubeconfig: false,
+				SwitchCurrentContext:    false,
+			},
+			Runtime: v1alpha5.SimpleConfigOptionsRuntime{
+				GPURequest:    "",
+				ServersMemory: "",
+				AgentsMemory:  "",
+				HostPidMode:   false,
+				Labels:        nil,
+				Ulimits:       nil,
+			},
+		},
+		Env: nil,
+		Registries: v1alpha5.SimpleConfigRegistries{
+			Use:    nil,
+			Create: nil,
+			Config: "",
+		},
+		HostAliases: nil,
+		Files:       nil,
 	}
 }
 
