@@ -146,7 +146,10 @@ func TestGeneratedContent(t *testing.T) {
 			scaffolder := scaffolding.NewScaffolder(cluster)
 
 			// Test KSail YAML generation
-			ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(cluster, yamlgenerator.Options{})
+			ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(
+				cluster,
+				yamlgenerator.Options{},
+			)
 			require.NoError(t, err)
 			snaps.MatchSnapshot(t, ksailContent)
 
@@ -154,24 +157,36 @@ func TestGeneratedContent(t *testing.T) {
 			switch tt.distribution {
 			case v1alpha1.DistributionKind:
 				kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
-				kindContent, err := scaffolder.KindGenerator.Generate(kindConfig, yamlgenerator.Options{})
+				kindContent, err := scaffolder.KindGenerator.Generate(
+					kindConfig,
+					yamlgenerator.Options{},
+				)
 				require.NoError(t, err)
 				snaps.MatchSnapshot(t, kindContent)
 
 			case v1alpha1.DistributionK3d:
-				k3dContent, err := scaffolder.K3dGenerator.Generate(&cluster, yamlgenerator.Options{})
+				k3dContent, err := scaffolder.K3dGenerator.Generate(
+					&cluster,
+					yamlgenerator.Options{},
+				)
 				require.NoError(t, err)
 				snaps.MatchSnapshot(t, k3dContent)
 
 			case v1alpha1.DistributionEKS:
 				eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
-				eksContent, err := scaffolder.EKSGenerator.Generate(eksConfig, yamlgenerator.Options{})
+				eksContent, err := scaffolder.EKSGenerator.Generate(
+					eksConfig,
+					yamlgenerator.Options{},
+				)
 				require.NoError(t, err)
 				snaps.MatchSnapshot(t, eksContent)
 			}
 
 			// Test Kustomization generation
-			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(&cluster, yamlgenerator.Options{})
+			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
+				&cluster,
+				yamlgenerator.Options{},
+			)
 			require.NoError(t, err)
 			snaps.MatchSnapshot(t, kustomizationContent)
 		})
