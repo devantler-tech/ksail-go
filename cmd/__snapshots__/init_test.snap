@@ -1,20 +1,27 @@
-
 [TestInitCmdHelp - 1]
-Initialize a new project.
+Scaffold a new Kubernetes project in the specified directory.
+
+  Includes:
+  - 'ksail.yaml' configuration file for configuring KSail
+  - 'kind.yaml'|'k3d.yaml'|'talos/*' configuration file(s) for configuring the distribution
+  - '.sops.yaml' for managing secrets with SOPS (optional)
+  - 'k8s/kustomization.yaml' as an entry point for Kustomize
 
 Usage:
   init [flags]
 
 Flags:
-  -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
-  -h, --help                        help for init
-  -s, --source-directory string     Directory containing workloads to deploy (default "k8s")
+  -d, --distribution string          Kubernetes distribution to use (default "Kind")
+  -f, --force                        overwrite files
+  -h, --help                         help for init
+  -o, --output string                Output directory for scaffolded files (default ".")
+  -r, --reconciliation-tool string   Reconciliation tool to use (default "Kubectl")
+  -s, --source-directory string      Directory containing workloads to deploy (default "k8s")
 
 ---
 
 [TestInitCmdExecute - 1]
-✔ project initialized successfully
-► Distribution: Kind
-► Source directory: k8s
+Scaffolding new project
+✔ project scaffolded
 
 ---

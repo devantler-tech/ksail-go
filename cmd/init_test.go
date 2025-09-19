@@ -2,13 +2,13 @@ package cmd_test
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,7 +25,7 @@ func TestNewInitCmd(t *testing.T) {
 		t.Fatalf("expected Use to be 'init', got %q", cmd.Use)
 	}
 
-	if cmd.Short != "Initialize a new project" {
+	if cmd.Short != "Scaffold a new project" {
 		t.Fatalf("expected Short description, got %q", cmd.Short)
 	}
 }
@@ -33,10 +33,21 @@ func TestNewInitCmd(t *testing.T) {
 func TestInitCmdExecute(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
-		CommandName: "init",
-		NewCommand:  cmd.NewInitCmd,
-	})
+	// Create a temporary directory for the test
+	tempDir := t.TempDir()
+
+	// Create command and set temporary output directory
+	cmd := cmd.NewInitCmd()
+	cmd.SetArgs([]string{"--output", tempDir})
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	// Use snapshot testing for the output
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestInitCmdHelp(t *testing.T) {
@@ -85,19 +96,33 @@ func TestInitCmdFlags(t *testing.T) {
 func TestHandleInitRunESuccess(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
 
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
+	// Create the command and set output directory
+	testCmd := cmd.NewInitCmd()
+	testCmd.SetArgs([]string{"--output", tempDir})
 
-	manager := configmanager.NewConfigManager()
+	// Execute the command
+	err := testCmd.Execute()
 
-	err := cmd.HandleInitRunE(testCmd, manager, []string{})
-
+	// Verify execution was successful
 	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ project initialized successfully")
-	assert.Contains(t, out.String(), "► Distribution:")
-	assert.Contains(t, out.String(), "► Source directory:")
+
+	// Verify files were created
+	expectedFiles := []string{
+		"ksail.yaml",
+		"kind.yaml",
+		".sops.yaml",
+		"k8s/kustomization.yaml",
+	}
+
+	for _, file := range expectedFiles {
+		filePath := filepath.Join(tempDir, file)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			t.Errorf("expected file %s to be created", file)
+		}
+	}
 }
 
 // Error testing removed - will be reimplemented with concrete types
