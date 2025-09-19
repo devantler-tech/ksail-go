@@ -4,7 +4,7 @@ This package provides scaffolding utilities for KSail projects.
 
 ## Purpose
 
-Contains utilities for generating KSail project files and configurations. The scaffolder creates the necessary configuration files for a complete KSail project setup.
+Contains utilities for generating KSail project files and configurations. The scaffold creator provides the necessary configuration files for a complete KSail project setup.
 
 ## Features
 
@@ -34,9 +34,9 @@ cluster := v1alpha1.Cluster{
     },
 }
 
-// Create scaffolder and generate files
-scaffolder := scaffolding.NewScaffolder(cluster)
-err := scaffolder.Scaffold("/path/to/output/", false)
+// Create scaffold instance and generate files
+scaffold := scaffolding.NewScaffolder(cluster)
+err := scaffold.Scaffold("/path/to/output/", false)
 if err != nil {
     log.Fatal(err)
 }
@@ -44,7 +44,7 @@ if err != nil {
 
 ## Generated Files
 
-The scaffolder generates the following files based on the cluster configuration:
+The scaffold creator generates the following files based on the cluster configuration:
 
 - **ksail.yaml**: Main KSail cluster configuration
 - **Distribution config**: Kind, K3d, or EKS-specific configuration file
