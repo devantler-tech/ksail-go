@@ -14,8 +14,13 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const (
+	defaultSourceDirectory = "k8s"
+)
+
 func TestMain(m *testing.M) {
-	snaps.Clean(m, snaps.CleanOpts{Sort: true})
+	// Clean snapshots after tests - ignore exit code
+	_, _ = snaps.Clean(m, snaps.CleanOpts{Sort: true})
 }
 
 func TestNewScaffolder(t *testing.T) {
@@ -36,7 +41,39 @@ func TestNewScaffolder(t *testing.T) {
 func TestScaffold(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	tests := getScaffoldTestCases()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			cluster := createTestCluster("test-cluster")
+			cluster.Spec.Distribution = testCase.distribution
+			testCase.setupCluster(&cluster)
+
+			scaffolder := scaffolding.NewScaffolder(cluster)
+
+			// Test scaffolding without output path (content generation only)
+			err := scaffolder.Scaffold("", false)
+
+			if testCase.expectError {
+				require.Error(t, err)
+				snaps.MatchSnapshot(t, err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// getScaffoldTestCases returns the test cases for scaffolding tests.
+func getScaffoldTestCases() []struct {
+	name         string
+	distribution v1alpha1.Distribution
+	setupCluster func(cluster *v1alpha1.Cluster)
+	expectError  bool
+} {
+	return []struct {
 		name         string
 		distribution v1alpha1.Distribution
 		setupCluster func(cluster *v1alpha1.Cluster)
@@ -46,7 +83,7 @@ func TestScaffold(t *testing.T) {
 			name:         "Kind distribution",
 			distribution: v1alpha1.DistributionKind,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "k8s"
+				cluster.Spec.SourceDirectory = defaultSourceDirectory
 			},
 		},
 		{
@@ -67,7 +104,7 @@ func TestScaffold(t *testing.T) {
 			name:         "Tind distribution not implemented",
 			distribution: v1alpha1.DistributionTind,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "k8s"
+				cluster.Spec.SourceDirectory = defaultSourceDirectory
 			},
 			expectError: true,
 		},
@@ -75,39 +112,20 @@ func TestScaffold(t *testing.T) {
 			name:         "Unknown distribution",
 			distribution: "Unknown",
 			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "k8s"
+				cluster.Spec.SourceDirectory = defaultSourceDirectory
 			},
 			expectError: true,
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			cluster := createTestCluster("test-cluster")
-			cluster.Spec.Distribution = tt.distribution
-			tt.setupCluster(&cluster)
-
-			scaffolder := scaffolding.NewScaffolder(cluster)
-
-			// Test scaffolding without output path (content generation only)
-			err := scaffolder.Scaffold("", false)
-
-			if tt.expectError {
-				require.Error(t, err)
-				snaps.MatchSnapshot(t, err.Error())
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
 }
 
-func TestGeneratedContent(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
+// getGeneratedContentTestCases returns the test cases for content generation tests.
+func getGeneratedContentTestCases() []struct {
+	name         string
+	distribution v1alpha1.Distribution
+	setupCluster func(cluster *v1alpha1.Cluster)
+} {
+	return []struct {
 		name         string
 		distribution v1alpha1.Distribution
 		setupCluster func(cluster *v1alpha1.Cluster)
@@ -116,7 +134,7 @@ func TestGeneratedContent(t *testing.T) {
 			name:         "Kind configuration content",
 			distribution: v1alpha1.DistributionKind,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
-				cluster.Spec.SourceDirectory = "k8s"
+				cluster.Spec.SourceDirectory = defaultSourceDirectory
 			},
 		},
 		{
@@ -134,62 +152,93 @@ func TestGeneratedContent(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+func TestGeneratedContent(t *testing.T) {
+	t.Parallel()
+
+	tests := getGeneratedContentTestCases()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			cluster := createTestCluster("test-cluster")
-			cluster.Spec.Distribution = tt.distribution
-			tt.setupCluster(&cluster)
+			cluster.Spec.Distribution = testCase.distribution
+			testCase.setupCluster(&cluster)
 
 			scaffolder := scaffolding.NewScaffolder(cluster)
 
-			// Test KSail YAML generation
-			ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(
-				cluster,
-				yamlgenerator.Options{},
-			)
-			require.NoError(t, err)
-			snaps.MatchSnapshot(t, ksailContent)
-
-			// Test distribution-specific content
-			switch tt.distribution {
-			case v1alpha1.DistributionKind:
-				kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
-				kindContent, err := scaffolder.KindGenerator.Generate(
-					kindConfig,
-					yamlgenerator.Options{},
-				)
-				require.NoError(t, err)
-				snaps.MatchSnapshot(t, kindContent)
-
-			case v1alpha1.DistributionK3d:
-				k3dContent, err := scaffolder.K3dGenerator.Generate(
-					&cluster,
-					yamlgenerator.Options{},
-				)
-				require.NoError(t, err)
-				snaps.MatchSnapshot(t, k3dContent)
-
-			case v1alpha1.DistributionEKS:
-				eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
-				eksContent, err := scaffolder.EKSGenerator.Generate(
-					eksConfig,
-					yamlgenerator.Options{},
-				)
-				require.NoError(t, err)
-				snaps.MatchSnapshot(t, eksContent)
-			}
-
-			// Test Kustomization generation
-			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
-				&cluster,
-				yamlgenerator.Options{},
-			)
-			require.NoError(t, err)
-			snaps.MatchSnapshot(t, kustomizationContent)
+			testAllContentGeneration(t, scaffolder, cluster, testCase.distribution)
 		})
+	}
+}
+
+// testAllContentGeneration tests all aspects of content generation for a given distribution.
+func testAllContentGeneration(
+	t *testing.T,
+	scaffolder *scaffolding.Scaffolder,
+	cluster v1alpha1.Cluster,
+	distribution v1alpha1.Distribution,
+) {
+	t.Helper()
+
+	// Test KSail YAML generation
+	ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(
+		cluster,
+		yamlgenerator.Options{},
+	)
+	require.NoError(t, err)
+	snaps.MatchSnapshot(t, ksailContent)
+
+	// Test distribution-specific content
+	testDistributionSpecificContent(t, scaffolder, cluster, distribution)
+
+	// Test Kustomization generation
+	kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
+		&cluster,
+		yamlgenerator.Options{},
+	)
+	require.NoError(t, err)
+	snaps.MatchSnapshot(t, kustomizationContent)
+}
+
+// testDistributionSpecificContent tests the generation of distribution-specific configurations.
+func testDistributionSpecificContent(
+	t *testing.T,
+	scaffolder *scaffolding.Scaffolder,
+	cluster v1alpha1.Cluster,
+	distribution v1alpha1.Distribution,
+) {
+	t.Helper()
+
+	//nolint:exhaustive // We only test supported distributions here
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
+		kindContent, err := scaffolder.KindGenerator.Generate(
+			kindConfig,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, kindContent)
+
+	case v1alpha1.DistributionK3d:
+		k3dContent, err := scaffolder.K3dGenerator.Generate(
+			&cluster,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, k3dContent)
+
+	case v1alpha1.DistributionEKS:
+		eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
+		eksContent, err := scaffolder.EKSGenerator.Generate(
+			eksConfig,
+			yamlgenerator.Options{},
+		)
+		require.NoError(t, err)
+		snaps.MatchSnapshot(t, eksContent)
 	}
 }
 
@@ -205,7 +254,7 @@ func createTestCluster(name string) v1alpha1.Cluster {
 		},
 		Spec: v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionKind,
-			SourceDirectory:    "k8s",
+			SourceDirectory:    defaultSourceDirectory,
 			DistributionConfig: "kind.yaml",
 		},
 	}
@@ -216,8 +265,10 @@ func createDefaultKindConfig(name string) *v1alpha4.Cluster {
 	kindCluster := kindconfig.NewKindCluster(name, "", "")
 	// Add a minimal control plane node
 	var node v1alpha4.Node
+
 	node.Role = v1alpha4.ControlPlaneRole
 	kindCluster.Nodes = append(kindCluster.Nodes, node)
+
 	return kindCluster
 }
 
