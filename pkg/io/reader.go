@@ -29,3 +29,43 @@ func ReadFileSafe(basePath, filePath string) ([]byte, error) {
 
 	return data, nil
 }
+
+// FindFile resolves a file path with directory traversal.
+// For absolute paths, returns the path as-is.
+// For relative paths, traverses up from the current directory to find the file.
+// Returns the resolved absolute path if found, or the original path if not found.
+func FindFile(filePath string) (string, error) {
+	// If absolute path, return as-is
+	if filepath.IsAbs(filePath) {
+		return filePath, nil
+	}
+
+	// For relative paths, start from current directory and traverse up
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	// Traverse up the directory tree looking for the file
+	for {
+		candidatePath := filepath.Join(currentDir, filePath)
+
+		_, err := os.Stat(candidatePath)
+		if err == nil {
+			return filepath.Clean(candidatePath), nil
+		}
+
+		// Move up one directory
+		parentDir := filepath.Dir(currentDir)
+		// Stop if we've reached the root directory
+		if parentDir == currentDir {
+			break
+		}
+
+		currentDir = parentDir
+	}
+
+	// If not found during traversal, return the original relative path
+	// This allows the caller to handle the file-not-found case appropriately
+	return filePath, nil
+}

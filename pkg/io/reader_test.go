@@ -70,3 +70,109 @@ func TestReadFileSafe(t *testing.T) {
 		testutils.AssertErrContains(t, err, "failed to read file", "ReadFileSafe")
 	})
 }
+
+//nolint:paralleltest,tparallel // Cannot use t.Parallel() with t.Chdir()
+func TestFindFile(t *testing.T) {
+	t.Run("absolute path", testFindFileAbsolutePath)
+	//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
+	t.Run("relative path found in current directory", testFindFileRelativePathCurrent)
+	//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
+	t.Run("relative path found in parent directory", testFindFileRelativePathParent)
+	//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
+	t.Run("relative path not found", testFindFileRelativePathNotFound)
+	//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
+	t.Run("relative path traversal multiple levels", testFindFileRelativePathMultipleLevels)
+}
+
+func testFindFileAbsolutePath(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	absolutePath := filepath.Join(tempDir, "config.yaml")
+	err := os.WriteFile(absolutePath, []byte("test"), 0o600)
+	require.NoError(t, err)
+
+	resolved, err := ioutils.FindFile(absolutePath)
+
+	require.NoError(t, err)
+	assert.Equal(t, absolutePath, resolved)
+}
+
+func testFindFileRelativePathCurrent(t *testing.T) {
+	// Create a temporary directory and change to it
+	tempDir := t.TempDir()
+
+	t.Chdir(tempDir)
+
+	// Create config file in current directory
+	configFile := "test-config.yaml"
+	err := os.WriteFile(configFile, []byte("test"), 0o600)
+	require.NoError(t, err)
+
+	resolved, err := ioutils.FindFile(configFile)
+
+	require.NoError(t, err)
+
+	expectedPath := filepath.Join(tempDir, configFile)
+	assert.Equal(t, expectedPath, resolved)
+}
+
+func testFindFileRelativePathParent(t *testing.T) {
+	// Create a temporary directory structure
+	tempDir := t.TempDir()
+
+	// Create config file in temp directory
+	configFile := "parent-config.yaml"
+	configPath := filepath.Join(tempDir, configFile)
+	err := os.WriteFile(configPath, []byte("test"), 0o600)
+	require.NoError(t, err)
+
+	// Create subdirectory and change to it
+	subDir := filepath.Join(tempDir, "subdir")
+	err = os.Mkdir(subDir, 0o750)
+	require.NoError(t, err)
+
+	t.Chdir(subDir)
+
+	resolved, err := ioutils.FindFile(configFile)
+
+	require.NoError(t, err)
+	assert.Equal(t, configPath, resolved)
+}
+
+func testFindFileRelativePathNotFound(t *testing.T) {
+	tempDir := t.TempDir()
+
+	t.Chdir(tempDir)
+
+	configFile := "non-existent-config.yaml"
+
+	resolved, err := ioutils.FindFile(configFile)
+
+	require.NoError(t, err)
+	// Should return original path when not found
+	assert.Equal(t, configFile, resolved)
+}
+
+func testFindFileRelativePathMultipleLevels(t *testing.T) {
+	// Create a deep directory structure
+	tempDir := t.TempDir()
+
+	// Create config file at root level
+	configFile := "deep-config.yaml"
+	configPath := filepath.Join(tempDir, configFile)
+	err := os.WriteFile(configPath, []byte("test"), 0o600)
+	require.NoError(t, err)
+
+	// Create nested subdirectories
+	deepDir := filepath.Join(tempDir, "level1", "level2", "level3")
+	err = os.MkdirAll(deepDir, 0o750)
+	require.NoError(t, err)
+
+	t.Chdir(deepDir)
+
+	resolved, err := ioutils.FindFile(configFile)
+
+	require.NoError(t, err)
+	assert.Equal(t, configPath, resolved)
+}
