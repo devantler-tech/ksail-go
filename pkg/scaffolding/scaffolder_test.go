@@ -13,9 +13,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	v := m.Run()
+	exitCode := m.Run()
 	snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	os.Exit(v)
+	os.Exit(exitCode)
 }
 
 func TestNewScaffolder(t *testing.T) {
@@ -155,16 +155,44 @@ func generateDistributionContent(
 ) {
 	t.Helper()
 
-	// Generate KSail YAML content
-	ksailContent := fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-metadata:
-  name: %s
-spec:
-  distribution: %s
-  distributionConfig: %s
-  sourceDirectory: %s
-`, cluster.Metadata.Name, cluster.Spec.Distribution, cluster.Spec.DistributionConfig, cluster.Spec.SourceDirectory)
+	// Create a copy of the cluster and filter out default values for KSail YAML
+	config := cluster
+	
+	// Filter out default values to keep output minimal
+	if config.Spec.SourceDirectory == "k8s" {
+		config.Spec.SourceDirectory = ""
+	}
+	if config.Spec.Distribution == v1alpha1.DistributionKind {
+		config.Spec.Distribution = ""
+	}
+	if config.Spec.DistributionConfig == "kind.yaml" {
+		config.Spec.DistributionConfig = ""
+	}
+
+	// Generate KSail YAML content - only include non-default fields
+	ksailContent := fmt.Sprintf("apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nmetadata:\n  name: %s\n", config.Metadata.Name)
+	
+	// Add spec fields only if they are non-default
+	hasSpec := false
+	specContent := ""
+	
+	if config.Spec.Distribution != "" {
+		specContent += fmt.Sprintf("  distribution: %s\n", cluster.Spec.Distribution)
+		hasSpec = true
+	}
+	if config.Spec.DistributionConfig != "" {
+		specContent += fmt.Sprintf("  distributionConfig: %s\n", cluster.Spec.DistributionConfig)
+		hasSpec = true
+	}
+	if config.Spec.SourceDirectory != "" {
+		specContent += fmt.Sprintf("  sourceDirectory: %s\n", cluster.Spec.SourceDirectory)
+		hasSpec = true
+	}
+	
+	if hasSpec {
+		ksailContent += "spec:\n" + specContent
+	}
+	
 	snaps.MatchSnapshot(t, ksailContent)
 
 	//nolint:exhaustive // We only test supported distributions here
@@ -217,7 +245,7 @@ func createKindCluster(name string) v1alpha1.Cluster {
 	cluster := createTestCluster(name)
 	cluster.Spec.Distribution = v1alpha1.DistributionKind
 	cluster.Spec.DistributionConfig = "kind.yaml"
-	cluster.Spec.SourceDirectory = "k8s"
+	cluster.Spec.SourceDirectory = "k8s"  // This is the default, so it should be filtered out
 	return cluster
 }
 
@@ -225,7 +253,7 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 	cluster := createTestCluster(name)
 	cluster.Spec.Distribution = v1alpha1.DistributionK3d
 	cluster.Spec.DistributionConfig = "k3d.yaml"
-	cluster.Spec.SourceDirectory = "manifests"
+	cluster.Spec.SourceDirectory = "manifests"  // Non-default value
 	return cluster
 }
 
@@ -233,7 +261,7 @@ func createEKSCluster(name string) v1alpha1.Cluster {
 	cluster := createTestCluster(name)
 	cluster.Spec.Distribution = v1alpha1.DistributionEKS
 	cluster.Spec.DistributionConfig = "eks-config.yaml"
-	cluster.Spec.SourceDirectory = "workloads"
+	cluster.Spec.SourceDirectory = "workloads"  // Non-default value
 	return cluster
 }
 
