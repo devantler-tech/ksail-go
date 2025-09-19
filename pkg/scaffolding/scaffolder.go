@@ -195,7 +195,7 @@ func createDefaultEKSConfig(name string) *v1alpha5.ClusterConfig {
 			AutoApplyPodIdentityAssociations: false,
 			DisableDefaultAddons:             false,
 		},
-		PrivateCluster:    nil, //nolint:gci // False positive - not an import issue
+		PrivateCluster:    nil,
 		NodeGroups:        createDefaultNodeGroups(name, minSize, maxSize, desiredCapacity),
 		ManagedNodeGroups: nil,
 		FargateProfiles:   nil,
