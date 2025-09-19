@@ -198,7 +198,7 @@ mega-linter-runner -f go            # Full lint: ~11-12 minutes (CI-consistent)
 
 ### Comprehensive Testing Scenarios
 
-**1. Build Validation**
+#### 1. Build Validation
 
 ```bash
 go build -o ksail .                 # Must complete without errors
@@ -206,7 +206,7 @@ go build -o ksail .                 # Must complete without errors
 ./ksail --version                   # Must show version info
 ```
 
-**2. Command Testing** (All commands work as stubs)
+#### 2. Command Testing (All commands work as stubs)
 
 ```bash
 # Test all command help outputs
@@ -225,7 +225,7 @@ go build -o ksail .                 # Must complete without errors
 ./ksail list --all
 ```
 
-**3. Mock Generation Testing** (when interfaces change)
+#### 3. Mock Generation Testing (when interfaces change)
 
 ```bash
 mockery                             # Must complete without errors (~1.3s)
