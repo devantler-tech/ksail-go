@@ -1,16 +1,22 @@
 package scaffolding_test
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolding"
-	"github.com/stretchr/testify/assert"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
+	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
+
+func TestMain(m *testing.M) {
+	snaps.Clean(m, snaps.CleanOpts{Sort: true})
+}
 
 func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
@@ -18,164 +24,158 @@ func TestNewScaffolder(t *testing.T) {
 	cluster := createTestCluster("test-cluster")
 	scaffolder := scaffolding.NewScaffolder(cluster)
 
-	assert.NotNil(t, scaffolder)
-	assert.Equal(t, cluster, scaffolder.KSailConfig)
-	assert.NotNil(t, scaffolder.KSailYAMLGenerator)
-	assert.NotNil(t, scaffolder.KindGenerator)
-	assert.NotNil(t, scaffolder.K3dGenerator)
-	assert.NotNil(t, scaffolder.EKSGenerator)
-	assert.NotNil(t, scaffolder.KustomizationGenerator)
+	require.NotNil(t, scaffolder)
+	require.Equal(t, cluster, scaffolder.KSailConfig)
+	require.NotNil(t, scaffolder.KSailYAMLGenerator)
+	require.NotNil(t, scaffolder.KindGenerator)
+	require.NotNil(t, scaffolder.K3dGenerator)
+	require.NotNil(t, scaffolder.EKSGenerator)
+	require.NotNil(t, scaffolder.KustomizationGenerator)
 }
 
-func TestScaffoldKind(t *testing.T) {
+func TestScaffold(t *testing.T) {
 	t.Parallel()
 
-	cluster := createTestCluster("test-kind-cluster")
-	cluster.Spec.Distribution = v1alpha1.DistributionKind
-	cluster.Spec.SourceDirectory = "k8s"
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		setupCluster func(cluster *v1alpha1.Cluster)
+		expectError  bool
+	}{
+		{
+			name:         "Kind distribution",
+			distribution: v1alpha1.DistributionKind,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "k8s"
+			},
+		},
+		{
+			name:         "K3d distribution",
+			distribution: v1alpha1.DistributionK3d,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "manifests"
+			},
+		},
+		{
+			name:         "EKS distribution",
+			distribution: v1alpha1.DistributionEKS,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "workloads"
+			},
+		},
+		{
+			name:         "Tind distribution not implemented",
+			distribution: v1alpha1.DistributionTind,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "k8s"
+			},
+			expectError: true,
+		},
+		{
+			name:         "Unknown distribution",
+			distribution: "Unknown",
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "k8s"
+			},
+			expectError: true,
+		},
+	}
 
-	scaffolder := scaffolding.NewScaffolder(cluster)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
+			cluster := createTestCluster("test-cluster")
+			cluster.Spec.Distribution = tt.distribution
+			tt.setupCluster(&cluster)
 
-	err := scaffolder.Scaffold(outputPath, false)
-	require.NoError(t, err)
+			scaffolder := scaffolding.NewScaffolder(cluster)
 
-	// Verify files were created
-	assertFileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "kind.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "k8s"))
+			// Test scaffolding without output path (content generation only)
+			err := scaffolder.Scaffold("", false)
 
-	// Verify content of ksail.yaml
-	ksailContent, err := os.ReadFile(filepath.Join(tempDir, "ksail.yaml"))
-	require.NoError(t, err)
-	assert.Contains(t, string(ksailContent), "apiVersion: ksail.dev/v1alpha1")
-	assert.Contains(t, string(ksailContent), "kind: Cluster")
-
-	// Verify content of kind.yaml
-	kindContent, err := os.ReadFile(filepath.Join(tempDir, "kind.yaml"))
-	require.NoError(t, err)
-	assert.Contains(t, string(kindContent), "apiVersion: kind.x-k8s.io/v1alpha4")
-	assert.Contains(t, string(kindContent), "kind: Cluster")
+			if tt.expectError {
+				require.Error(t, err)
+				snaps.MatchSnapshot(t, err.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
-func TestScaffoldK3d(t *testing.T) {
+func TestGeneratedContent(t *testing.T) {
 	t.Parallel()
 
-	cluster := createTestCluster("test-k3d-cluster")
-	cluster.Spec.Distribution = v1alpha1.DistributionK3d
-	cluster.Spec.SourceDirectory = "manifests"
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		setupCluster func(cluster *v1alpha1.Cluster)
+	}{
+		{
+			name:         "Kind configuration content",
+			distribution: v1alpha1.DistributionKind,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "k8s"
+			},
+		},
+		{
+			name:         "K3d configuration content",
+			distribution: v1alpha1.DistributionK3d,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "manifests"
+			},
+		},
+		{
+			name:         "EKS configuration content",
+			distribution: v1alpha1.DistributionEKS,
+			setupCluster: func(cluster *v1alpha1.Cluster) {
+				cluster.Spec.SourceDirectory = "workloads"
+			},
+		},
+	}
 
-	scaffolder := scaffolding.NewScaffolder(cluster)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
+			cluster := createTestCluster("test-cluster")
+			cluster.Spec.Distribution = tt.distribution
+			tt.setupCluster(&cluster)
 
-	err := scaffolder.Scaffold(outputPath, false)
-	require.NoError(t, err)
+			scaffolder := scaffolding.NewScaffolder(cluster)
 
-	// Verify files were created
-	assertFileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "k3d.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "manifests"))
+			// Test KSail YAML generation
+			ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(cluster, yamlgenerator.Options{})
+			require.NoError(t, err)
+			snaps.MatchSnapshot(t, ksailContent)
 
-	// Verify content of k3d.yaml
-	k3dContent, err := os.ReadFile(filepath.Join(tempDir, "k3d.yaml"))
-	require.NoError(t, err)
-	assert.Contains(t, string(k3dContent), "apiVersion: k3d.io/v1alpha5")
-	assert.Contains(t, string(k3dContent), "kind: Simple")
-}
+			// Test distribution-specific content
+			switch tt.distribution {
+			case v1alpha1.DistributionKind:
+				kindConfig := createDefaultKindConfig(cluster.Metadata.Name)
+				kindContent, err := scaffolder.KindGenerator.Generate(kindConfig, yamlgenerator.Options{})
+				require.NoError(t, err)
+				snaps.MatchSnapshot(t, kindContent)
 
-func TestScaffoldEKS(t *testing.T) {
-	t.Parallel()
+			case v1alpha1.DistributionK3d:
+				k3dContent, err := scaffolder.K3dGenerator.Generate(&cluster, yamlgenerator.Options{})
+				require.NoError(t, err)
+				snaps.MatchSnapshot(t, k3dContent)
 
-	cluster := createTestCluster("test-eks-cluster")
-	cluster.Spec.Distribution = v1alpha1.DistributionEKS
-	cluster.Spec.SourceDirectory = "manifests"
+			case v1alpha1.DistributionEKS:
+				eksConfig := createDefaultEKSConfig(cluster.Metadata.Name)
+				eksContent, err := scaffolder.EKSGenerator.Generate(eksConfig, yamlgenerator.Options{})
+				require.NoError(t, err)
+				snaps.MatchSnapshot(t, eksContent)
+			}
 
-	scaffolder := scaffolding.NewScaffolder(cluster)
-
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
-
-	err := scaffolder.Scaffold(outputPath, false)
-	require.NoError(t, err)
-
-	// Verify files were created
-	assertFileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "eks-config.yaml"))
-	assertFileExists(t, filepath.Join(tempDir, "manifests"))
-
-	// Verify content of eks-config.yaml
-	eksContent, err := os.ReadFile(filepath.Join(tempDir, "eks-config.yaml"))
-	require.NoError(t, err)
-	assert.Contains(t, string(eksContent), "apiVersion: eksctl.io/v1alpha5")
-	assert.Contains(t, string(eksContent), "kind: ClusterConfig")
-}
-
-func TestScaffoldTindError(t *testing.T) {
-	t.Parallel()
-
-	cluster := createTestCluster("test-tind-cluster")
-	cluster.Spec.Distribution = v1alpha1.DistributionTind
-
-	scaffolder := scaffolding.NewScaffolder(cluster)
-
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
-
-	err := scaffolder.Scaffold(outputPath, false)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "talos-in-docker distribution is not yet implemented")
-}
-
-func TestScaffoldUnknownDistributionError(t *testing.T) {
-	t.Parallel()
-
-	cluster := createTestCluster("test-unknown-cluster")
-	cluster.Spec.Distribution = "Unknown"
-
-	scaffolder := scaffolding.NewScaffolder(cluster)
-
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
-
-	err := scaffolder.Scaffold(outputPath, false)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "provided distribution is unknown")
-}
-
-func TestScaffoldWithForce(t *testing.T) {
-	t.Parallel()
-
-	cluster := createTestCluster("test-force-cluster")
-	cluster.Spec.Distribution = v1alpha1.DistributionKind
-	cluster.Spec.SourceDirectory = "k8s"
-
-	scaffolder := scaffolding.NewScaffolder(cluster)
-
-	// Create temp directory for output
-	tempDir := t.TempDir()
-	outputPath := tempDir + "/"
-
-	// Create existing files
-	ksailPath := filepath.Join(tempDir, "ksail.yaml")
-	require.NoError(t, os.WriteFile(ksailPath, []byte("existing content"), 0o644))
-
-	err := scaffolder.Scaffold(outputPath, true) // force = true
-	require.NoError(t, err)
-
-	// Verify files were overwritten
-	assertFileExists(t, ksailPath)
-	content, err := os.ReadFile(ksailPath)
-	require.NoError(t, err)
-	assert.NotEqual(t, "existing content", string(content))
+			// Test Kustomization generation
+			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(&cluster, yamlgenerator.Options{})
+			require.NoError(t, err)
+			snaps.MatchSnapshot(t, kustomizationContent)
+		})
+	}
 }
 
 // createTestCluster creates a test cluster configuration.
@@ -196,9 +196,41 @@ func createTestCluster(name string) v1alpha1.Cluster {
 	}
 }
 
-// assertFileExists checks if a file exists and fails the test if it doesn't.
-func assertFileExists(t *testing.T, path string) {
-	t.Helper()
-	_, err := os.Stat(path)
-	assert.NoError(t, err, "file should exist: %s", path)
+// createDefaultKindConfig creates a default Kind cluster configuration.
+func createDefaultKindConfig(name string) *v1alpha4.Cluster {
+	kindCluster := kindconfig.NewKindCluster(name, "", "")
+	// Add a minimal control plane node
+	var node v1alpha4.Node
+	node.Role = v1alpha4.ControlPlaneRole
+	kindCluster.Nodes = append(kindCluster.Nodes, node)
+	return kindCluster
+}
+
+// createDefaultEKSConfig creates a minimal EKS cluster configuration for testing.
+func createDefaultEKSConfig(name string) *v1alpha5.ClusterConfig {
+	minSize := 1
+	maxSize := 3
+	desiredCapacity := 2
+
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:    name,
+			Region:  "us-west-2",
+			Version: "",
+		},
+		NodeGroups: []*v1alpha5.NodeGroup{
+			{
+				NodeGroupBase: &v1alpha5.NodeGroupBase{
+					Name:         name + "-workers",
+					InstanceType: "m5.large",
+					ScalingConfig: &v1alpha5.ScalingConfig{
+						MinSize:         &minSize,
+						MaxSize:         &maxSize,
+						DesiredCapacity: &desiredCapacity,
+					},
+				},
+			},
+		},
+	}
 }

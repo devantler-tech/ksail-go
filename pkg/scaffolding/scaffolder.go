@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	eksgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
@@ -19,11 +20,11 @@ import (
 // Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
 	KSailConfig            v1alpha1.Cluster
-	KSailYAMLGenerator     *yamlgenerator.YAMLGenerator[v1alpha1.Cluster]
-	KindGenerator          *kindgenerator.KindGenerator
-	K3dGenerator           *k3dgenerator.K3dGenerator
-	EKSGenerator           *eksgenerator.EKSGenerator
-	KustomizationGenerator *kustomizationgenerator.KustomizationGenerator
+	KSailYAMLGenerator     generator.Generator[v1alpha1.Cluster, yamlgenerator.Options]
+	KindGenerator          generator.Generator[*v1alpha4.Cluster, yamlgenerator.Options]
+	K3dGenerator           generator.Generator[*v1alpha1.Cluster, yamlgenerator.Options]
+	EKSGenerator           generator.Generator[*v1alpha5.ClusterConfig, yamlgenerator.Options]
+	KustomizationGenerator generator.Generator[*v1alpha1.Cluster, yamlgenerator.Options]
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
