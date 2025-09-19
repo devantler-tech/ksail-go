@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	eksgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
@@ -105,13 +104,14 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 
 // generateKindConfig generates the kind.yaml configuration file.
 func (s *Scaffolder) generateKindConfig(output string, force bool) error {
-	// Create a default Kind cluster configuration
-	kindCluster := kindconfig.NewKindCluster(s.KSailConfig.Metadata.Name, "", "")
-	// Add a minimal control plane node
-	var node v1alpha4.Node
-
-	node.Role = v1alpha4.ControlPlaneRole
-	kindCluster.Nodes = append(kindCluster.Nodes, node)
+	// Create a minimal Kind cluster configuration
+	kindCluster := &v1alpha4.Cluster{
+		TypeMeta: v1alpha4.TypeMeta{
+			APIVersion: "kind.x-k8s.io/v1alpha4",
+			Kind:       "Cluster",
+		},
+		Name: s.KSailConfig.Metadata.Name,
+	}
 
 	opts := yamlgenerator.Options{
 		Output: output + "kind.yaml",

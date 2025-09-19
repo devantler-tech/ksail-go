@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolding"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -96,6 +95,7 @@ func getScaffoldTestCases() []struct {
 			distribution: v1alpha1.DistributionKind,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = defaultSourceDirectory
+				cluster.Spec.DistributionConfig = "kind.yaml"
 			},
 		},
 		{
@@ -103,6 +103,7 @@ func getScaffoldTestCases() []struct {
 			distribution: v1alpha1.DistributionK3d,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = "manifests"
+				cluster.Spec.DistributionConfig = "k3d.yaml"
 			},
 		},
 		{
@@ -110,6 +111,7 @@ func getScaffoldTestCases() []struct {
 			distribution: v1alpha1.DistributionEKS,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = "workloads"
+				cluster.Spec.DistributionConfig = "eks-config.yaml"
 			},
 		},
 		{
@@ -147,6 +149,7 @@ func getGeneratedContentTestCases() []struct {
 			distribution: v1alpha1.DistributionKind,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = defaultSourceDirectory
+				cluster.Spec.DistributionConfig = "kind.yaml"
 			},
 		},
 		{
@@ -154,6 +157,7 @@ func getGeneratedContentTestCases() []struct {
 			distribution: v1alpha1.DistributionK3d,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = "manifests"
+				cluster.Spec.DistributionConfig = "k3d.yaml"
 			},
 		},
 		{
@@ -161,6 +165,7 @@ func getGeneratedContentTestCases() []struct {
 			distribution: v1alpha1.DistributionEKS,
 			setupCluster: func(cluster *v1alpha1.Cluster) {
 				cluster.Spec.SourceDirectory = "workloads"
+				cluster.Spec.DistributionConfig = "eks-config.yaml"
 			},
 		},
 	}
@@ -274,14 +279,13 @@ func createTestCluster(name string) v1alpha1.Cluster {
 
 // createDefaultKindConfig creates a default Kind cluster configuration.
 func createDefaultKindConfig(name string) *v1alpha4.Cluster {
-	kindCluster := kindconfig.NewKindCluster(name, "", "")
-	// Add a minimal control plane node
-	var node v1alpha4.Node
-
-	node.Role = v1alpha4.ControlPlaneRole
-	kindCluster.Nodes = append(kindCluster.Nodes, node)
-
-	return kindCluster
+	return &v1alpha4.Cluster{
+		TypeMeta: v1alpha4.TypeMeta{
+			APIVersion: "kind.x-k8s.io/v1alpha4",
+			Kind:       "Cluster",
+		},
+		Name: name,
+	}
 }
 
 // createDefaultEKSConfig creates a minimal EKS cluster configuration for testing.

@@ -14,21 +14,13 @@ spec:
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: test-cluster
-networking:
-  apiServerAddress: 127.0.0.1
-  ipFamily: ipv4
-  kubeProxyMode: iptables
-  podSubnet: 10.244.0.0/16
-  serviceSubnet: 10.96.0.0/16
-nodes:
-- image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
-  role: control-plane
 
 ---
 
 [TestGeneratedContent/Kind_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+resources: []
 
 ---
 
@@ -39,7 +31,7 @@ metadata:
   name: test-cluster
 spec:
   distribution: K3d
-  distributionConfig: kind.yaml
+  distributionConfig: k3d.yaml
   sourceDirectory: manifests
 
 ---
@@ -47,27 +39,15 @@ spec:
 [TestGeneratedContent/K3d_configuration_content - 2]
 apiVersion: k3d.io/v1alpha5
 kind: Simple
-kubeAPI: {}
 metadata:
   name: test-cluster
-options:
-  k3d:
-    disableImageVolume: false
-    disableLoadbalancer: false
-    disableRollback: false
-    loadbalancer: {}
-    wait: false
-  k3s: {}
-  kubeconfig: {}
-  runtime:
-    HostPidMode: false
-registries: {}
 
 ---
 
 [TestGeneratedContent/K3d_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+resources: []
 
 ---
 
@@ -78,13 +58,12 @@ metadata:
   name: test-cluster
 spec:
   distribution: EKS
-  distributionConfig: kind.yaml
+  distributionConfig: eks-config.yaml
   sourceDirectory: workloads
 
 ---
 
 [TestGeneratedContent/EKS_configuration_content - 2]
-addonsConfig: {}
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
@@ -103,6 +82,7 @@ nodeGroups:
 [TestGeneratedContent/EKS_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+resources: []
 
 ---
 

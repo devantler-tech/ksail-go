@@ -61,20 +61,6 @@ func (g *K3dGenerator) buildSimpleConfig(cluster *v1alpha1.Cluster) *v1alpha5.Si
 		ObjectMeta: types.ObjectMeta{
 			Name: cluster.Metadata.Name,
 		},
-		Servers:      0,
-		Agents:       0,
-		ExposeAPI:    g.buildExposureOpts(),
-		Image:        "",
-		Network:      "",
-		Subnet:       "",
-		ClusterToken: "",
-		Volumes:      nil,
-		Ports:        nil,
-		Options:      g.buildConfigOptions(),
-		Env:          nil,
-		Registries:   g.buildRegistries(),
-		HostAliases:  nil,
-		Files:        nil,
 	}
 }
 
