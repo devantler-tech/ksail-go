@@ -211,14 +211,12 @@ func generateDistributionContent(
 kind: ClusterConfig
 metadata:
   name: %s
-  region: us-west-2
+  region: eu-north-1
 nodeGroups:
-- desiredCapacity: 2
+- desiredCapacity: 1
   instanceType: m5.large
-  maxSize: 3
-  minSize: 1
-  name: %s-workers
-`, name, name)
+  name: ng-1
+`, name)
 		snaps.MatchSnapshot(t, eksContent)
 	}
 }

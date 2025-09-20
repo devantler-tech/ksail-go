@@ -13,8 +13,8 @@ import (
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -81,9 +81,11 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	if config.Spec.SourceDirectory == "k8s" {
 		config.Spec.SourceDirectory = ""
 	}
+
 	if config.Spec.Distribution == v1alpha1.DistributionKind {
 		config.Spec.Distribution = ""
 	}
+
 	if config.Spec.DistributionConfig == "kind.yaml" {
 		config.Spec.DistributionConfig = ""
 	}
@@ -125,12 +127,24 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name:                 s.KSailConfig.Metadata.Name,
-		Nodes:                []v1alpha4.Node{},
-		Networking:           v1alpha4.Networking{},
-		FeatureGates:         map[string]bool{},
-		RuntimeConfig:        map[string]string{},
-		KubeadmConfigPatches: []string{},
+		Name: s.KSailConfig.Metadata.Name,
+		Nodes: []v1alpha4.Node{},
+		Networking: v1alpha4.Networking{
+			IPFamily:            "",
+			APIServerPort:       0,
+			APIServerAddress:    "",
+			PodSubnet:           "",
+			ServiceSubnet:       "",
+			DisableDefaultCNI:   false,
+			KubeProxyMode:       "",
+			DNSSearch:           nil,
+		},
+		FeatureGates:                     map[string]bool{},
+		RuntimeConfig:                    map[string]string{},
+		KubeadmConfigPatches:             []string{},
+		KubeadmConfigPatchesJSON6902:     nil,
+		ContainerdConfigPatches:          []string{},
+		ContainerdConfigPatchesJSON6902:  nil,
 	}
 
 	opts := yamlgenerator.Options{
@@ -166,59 +180,138 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 
 // generateEKSConfig generates the eks-config.yaml configuration file.
 func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
-	// Create EKS cluster configuration with required fields
-	eksConfig := &v1alpha5.ClusterConfig{
+	eksConfig := s.createMinimalEKSConfig()
+	
+	eksGen := eksgenerator.NewEKSGenerator()
+	opts := yamlgenerator.Options{
+		Output: filepath.Join(output, s.KSailConfig.Spec.DistributionConfig),
+		Force:  force,
+	}
+
+	_, err := eksGen.Generate(eksConfig, opts)
+	if err != nil {
+		return fmt.Errorf("generate EKS config: %w", err)
+	}
+	
+	return nil
+}
+
+func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
+	return &v1alpha5.ClusterConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "eksctl.io/v1alpha5",
 			Kind:       "ClusterConfig",
 		},
-		Metadata: &v1alpha5.ClusterMeta{
-			Name:   s.KSailConfig.Metadata.Name,
-			Region: "us-west-2",
-		},
+		Metadata: s.createEKSMetadata(),
 		NodeGroups: []*v1alpha5.NodeGroup{
-			{
-				NodeGroupBase: &v1alpha5.NodeGroupBase{
-					Name:         s.KSailConfig.Metadata.Name + "-workers",
-					InstanceType: "m5.large",
-					ScalingConfig: &v1alpha5.ScalingConfig{
-						DesiredCapacity: &[]int{2}[0],
-						MinSize:         &[]int{1}[0],
-						MaxSize:         &[]int{3}[0],
-					},
-					VolumeSize:        &[]int{0}[0],
-					VolumeType:        &[]string{""}[0],
-					VolumeEncrypted:   &[]bool{false}[0],
-					Tags:              map[string]string{},
-					PrivateNetworking: false,
-				},
-			},
+			s.createEKSNodeGroup(),
 		},
-		ManagedNodeGroups: []*v1alpha5.ManagedNodeGroup{},
-		FargateProfiles:   []*v1alpha5.FargateProfile{},
-		AvailabilityZones: []string{},
-		CloudWatch: &v1alpha5.ClusterCloudWatch{
-			ClusterLogging: &v1alpha5.ClusterCloudWatchLogging{
-				EnableTypes:        []string{},
-				LogRetentionInDays: 0,
-			},
+		ManagedNodeGroups:       nil,
+		FargateProfiles:         nil,
+		AvailabilityZones:       nil,
+		LocalZones:              nil,
+		KubernetesNetworkConfig: nil,
+		AutoModeConfig:          nil,
+		RemoteNetworkConfig:     nil,
+		IAM:                     nil,
+		IAMIdentityMappings:     nil,
+		IdentityProviders:       nil,
+		AccessConfig:            nil,
+		VPC:                     nil,
+		Addons:                  nil,
+		AddonsConfig: v1alpha5.AddonsConfig{
+			AutoApplyPodIdentityAssociations: false,
+			DisableDefaultAddons:             false,
 		},
-		SecretsEncryption: &v1alpha5.SecretsEncryption{
-			KeyARN: "",
+		PrivateCluster:   nil,
+		CloudWatch:       nil,
+		SecretsEncryption: nil,
+		Status:           nil,
+		GitOps:           nil,
+		Karpenter:        nil,
+		Outpost:          nil,
+		ZonalShiftConfig: nil,
+	}
+}
+
+func (s *Scaffolder) createEKSMetadata() *v1alpha5.ClusterMeta {
+	return &v1alpha5.ClusterMeta{
+		Name:              s.KSailConfig.Metadata.Name,
+		Region:            "eu-north-1",
+		Version:           "",        // string
+		ForceUpdateVersion: nil,
+		Tags:              nil,
+		Annotations:       nil,
+		AccountID:         "",        // string
+	}
+}
+
+func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
+	return &v1alpha5.NodeGroup{
+		NodeGroupBase: s.createEKSNodeGroupBase(),
+		InstancesDistribution:    nil,
+		ASGMetricsCollection:     nil,
+		CPUCredits:               nil,
+		ClassicLoadBalancerNames: nil,
+		TargetGroupARNs:          nil,
+		Taints:                   nil,
+		UpdateConfig:             nil,
+		ClusterDNS:               "", // string zero value
+		KubeletExtraConfig:       nil,
+		ContainerRuntime:         nil,
+		MaxInstanceLifetime:      nil,
+		LocalZones:               nil,
+		EnclaveEnabled:           nil,
+	}
+}
+
+func (s *Scaffolder) createEKSNodeGroupBase() *v1alpha5.NodeGroupBase {
+	return &v1alpha5.NodeGroupBase{
+		Name:                        "ng-1",
+		AMIFamily:                   "", // string zero value
+		InstanceType:                "m5.large",
+		AvailabilityZones:           nil,
+		Subnets:                     nil,
+		InstancePrefix:              "", // string zero value
+		InstanceName:                "", // string zero value
+		ScalingConfig: &v1alpha5.ScalingConfig{
+			DesiredCapacity: &[]int{1}[0],
+			MinSize:         nil,
+			MaxSize:         nil,
 		},
+		VolumeSize:                  nil,
+		VolumeType:                  nil,
+		VolumeEncrypted:             nil,
+		VolumeKmsKeyID:              nil, // *string
+		VolumeIOPS:                  nil,
+		VolumeThroughput:            nil,
+		VolumeName:                  nil, // *string
+		AdditionalVolumes:           nil,
+		SSH:                         nil,
+		Labels:                      nil,
+		IAM:                         nil,
+		AMI:                         "", // string
+		SecurityGroups:              nil,
+		MaxPodsPerNode:              0,  // int zero value
+		ASGSuspendProcesses:         nil,
+		EBSOptimized:                nil,
+		PreBootstrapCommands:        nil,
+		OverrideBootstrapCommand:    nil, // *string
+		Tags:                        nil,
+		PropagateASGTags:            nil,
+		DisableIMDSv1:               nil,
+		DisablePodIMDS:              nil,
+		Placement:                   nil,
+		EFAEnabled:                  nil,
+		InstanceSelector:            nil,
+		AdditionalEncryptedVolume:   "", // string
+		Bottlerocket:                nil,
+		EnableDetailedMonitoring:    nil,
+		CapacityReservation:         nil,
+		InstanceMarketOptions:       nil,
+		OutpostARN:                  "", // string
+		PrivateNetworking:           false,
 	}
-
-	opts := yamlgenerator.Options{
-		Output: output + "eks-config.yaml",
-		Force:  force,
-	}
-
-	_, err := s.EKSGenerator.Generate(eksConfig, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrEKSConfigGeneration, err)
-	}
-
-	return nil
 }
 
 // generateKustomizationConfig generates the kustomization.yaml file.
