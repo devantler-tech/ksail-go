@@ -165,7 +165,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 	return nil
 }
 
-// generateEKSConfig generates the eks-config.yaml configuration file.
+// generateEKSConfig generates the eks.yaml configuration file.
 func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	eksConfig := s.createMinimalEKSConfig()
 

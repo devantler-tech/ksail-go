@@ -28,7 +28,7 @@ metadata:
   name: test-cluster
 spec:
   distribution: EKS
-  distributionConfig: eks-config.yaml
+  distributionConfig: eks.yaml
   sourceDirectory: workloads
 
 ---

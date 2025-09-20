@@ -16,7 +16,7 @@ func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewEKSGenerator()
-	tests := generatortestutils.GetStandardGenerateTestCases("eks-config.yaml")
+	tests := generatortestutils.GetStandardGenerateTestCases("eks.yaml")
 
 	generatortestutils.TestGenerateCommon(
 		t,
@@ -27,7 +27,7 @@ func TestGenerate(t *testing.T) {
 			t.Helper()
 			assertEKSYAML(t, result, clusterName)
 		},
-		"eks-config.yaml",
+		"eks.yaml",
 	)
 }
 
@@ -42,7 +42,7 @@ func TestGenerateExistingFileNoForce(t *testing.T) {
 		t,
 		gen,
 		cfg,
-		"eks-config.yaml",
+		"eks.yaml",
 		assertEKSYAML,
 		"existing-no-force",
 		false,
@@ -60,7 +60,7 @@ func TestGenerateExistingFileWithForce(t *testing.T) {
 		t,
 		gen,
 		cfg,
-		"eks-config.yaml",
+		"eks.yaml",
 		assertEKSYAML,
 		"existing-with-force",
 		true,
@@ -74,7 +74,7 @@ func TestGenerateFileWriteError(t *testing.T) {
 	cfg := createTestClusterConfig("error-cluster")
 
 	// Use an invalid file path that will cause a write error
-	invalidPath := "/dev/null/invalid/path/eks-config.yaml"
+	invalidPath := "/dev/null/invalid/path/eks.yaml"
 	opts := yamlgenerator.Options{
 		Output: invalidPath,
 		Force:  true,

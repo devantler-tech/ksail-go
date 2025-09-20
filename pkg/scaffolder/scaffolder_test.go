@@ -258,7 +258,7 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 func createEKSCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)
 	c.Spec.Distribution = v1alpha1.DistributionEKS
-	c.Spec.DistributionConfig = "eks-config.yaml"
+	c.Spec.DistributionConfig = "eks.yaml"
 	c.Spec.SourceDirectory = "workloads" // non-default to ensure it is included in KSail YAML output
 
 	return c
