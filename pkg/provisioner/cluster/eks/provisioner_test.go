@@ -595,13 +595,9 @@ func newProvisionerForTest(
 }
 
 func createTestProvisionerClusterConfig() *v1alpha5.ClusterConfig {
-	desiredCapacity := 2
-
 	return &v1alpha5.ClusterConfig{
-		TypeMeta:     v1alpha5.ClusterConfigTypeMeta(),
-		Metadata:     createTestProvisionerMetadata(),
-		AddonsConfig: createTestProvisionerAddonsConfig(),
-		NodeGroups:   createTestProvisionerNodeGroups(desiredCapacity),
+		TypeMeta: v1alpha5.ClusterConfigTypeMeta(),
+		Metadata: createTestProvisionerMetadata(),
 	}
 }
 
@@ -614,24 +610,6 @@ func createTestProvisionerMetadata() *v1alpha5.ClusterMeta {
 
 func createTestProvisionerAddonsConfig() v1alpha5.AddonsConfig {
 	return v1alpha5.AddonsConfig{}
-}
-
-func createTestProvisionerNodeGroups(desiredCapacity int) []*v1alpha5.NodeGroup {
-	return []*v1alpha5.NodeGroup{
-		{
-			NodeGroupBase: createTestProvisionerNodeGroupBase(desiredCapacity),
-		},
-	}
-}
-
-func createTestProvisionerNodeGroupBase(desiredCapacity int) *v1alpha5.NodeGroupBase {
-	return clustertestutils.CreateTestEKSNodeGroupBase(clustertestutils.EKSNodeGroupBaseOptions{
-		Name:            "test-nodegroup",
-		InstanceType:    "",
-		MinSize:         nil,
-		MaxSize:         nil,
-		DesiredCapacity: &desiredCapacity,
-	})
 }
 
 // mockClusterDeleteAction sets up the standard mock for Delete action on clusterActions.
