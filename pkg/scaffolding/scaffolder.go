@@ -74,21 +74,8 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 
 // generateKSailConfig generates the ksail.yaml configuration file.
 func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
-	// Create a copy of the config and filter out default values
+	// Use the config as-is, without filtering default values
 	config := s.KSailConfig
-
-	// Filter out default values to keep output minimal
-	if config.Spec.SourceDirectory == "k8s" {
-		config.Spec.SourceDirectory = ""
-	}
-
-	if config.Spec.Distribution == v1alpha1.DistributionKind {
-		config.Spec.Distribution = ""
-	}
-
-	if config.Spec.DistributionConfig == "kind.yaml" {
-		config.Spec.DistributionConfig = ""
-	}
 
 	opts := yamlgenerator.Options{
 		Output: output + "ksail.yaml",

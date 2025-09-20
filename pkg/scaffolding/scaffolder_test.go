@@ -259,7 +259,7 @@ func createEKSCluster(name string) v1alpha1.Cluster {
 	cluster := createTestCluster(name)
 	cluster.Spec.Distribution = v1alpha1.DistributionEKS
 	cluster.Spec.DistributionConfig = "eks-config.yaml"
-	cluster.Spec.SourceDirectory = "workloads"  // Non-default value
+	cluster.Spec.SourceDirectory = "k8s"
 	return cluster
 }
 
