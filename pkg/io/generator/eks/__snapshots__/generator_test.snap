@@ -1,0 +1,9 @@
+
+[TestGenerate - 1]
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: minimal
+  region: eu-north-1
+
+---

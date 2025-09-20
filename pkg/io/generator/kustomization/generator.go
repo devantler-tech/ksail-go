@@ -3,6 +3,7 @@ package kustomizationgenerator
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
@@ -38,43 +39,21 @@ func (g *KustomizationGenerator) Generate(
 			APIVersion: "kustomize.config.k8s.io/v1beta1",
 			Kind:       "Kustomization",
 		},
-		MetaData:                    nil,
-		OpenAPI:                     nil,
-		NamePrefix:                  "",
-		NameSuffix:                  "",
-		Namespace:                   "",
-		CommonLabels:                nil,
-		Labels:                      nil,
-		CommonAnnotations:           nil,
-		PatchesStrategicMerge:       nil,
-		PatchesJson6902:             nil,
-		Patches:                     nil,
-		Images:                      nil,
-		ImageTags:                   nil,
-		Replacements:                nil,
-		Replicas:                    nil,
-		Vars:                        nil,
-		SortOptions:                 nil,
-		Resources:                   []string{},
-		Components:                  nil,
-		Crds:                        nil,
-		Bases:                       nil,
-		ConfigMapGenerator:          nil,
-		SecretGenerator:             nil,
-		HelmGlobals:                 nil,
-		HelmCharts:                  nil,
-		HelmChartInflationGenerator: nil,
-		GeneratorOptions:            nil,
-		Configurations:              nil,
-		Generators:                  nil,
-		Transformers:                nil,
-		Validators:                  nil,
-		BuildMetadata:               nil,
+		Resources: []string{},
 	}
 
 	out, err := g.Marshaller.Marshal(&kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
+	}
+
+	// if output does not have resources: [] then add it
+	matched, err := regexp.MatchString(`(?m)^\s*resources:\s*\n\s*-\s*.*`, out)
+	if err != nil {
+		return "", fmt.Errorf("regexp match: %w", err)
+	}
+	if !matched {
+		out = out + "resources: []\n"
 	}
 
 	// If no output file specified, just return the YAML

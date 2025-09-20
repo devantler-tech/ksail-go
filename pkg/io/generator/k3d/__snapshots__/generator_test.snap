@@ -1,0 +1,20 @@
+
+[TestGenerate - 1]
+apiVersion: k3d.io/v1alpha3
+kind: Simple
+kubeAPI: {}
+metadata: {}
+options:
+  k3d:
+    disableImageVolume: false
+    disableLoadbalancer: false
+    disableRollback: false
+    loadbalancer: {}
+    wait: false
+  k3s: {}
+  kubeconfig: {}
+  runtime:
+    HostPidMode: false
+registries: {}
+
+---
