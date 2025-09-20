@@ -608,10 +608,6 @@ func createTestProvisionerMetadata() *v1alpha5.ClusterMeta {
 	}
 }
 
-func createTestProvisionerAddonsConfig() v1alpha5.AddonsConfig {
-	return v1alpha5.AddonsConfig{}
-}
-
 // mockClusterDeleteAction sets up the standard mock for Delete action on clusterActions.
 func mockClusterDeleteAction(
 	clusterActions *eksprovisioner.MockEKSClusterActions,
