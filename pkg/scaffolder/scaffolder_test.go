@@ -21,12 +21,12 @@ func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
-	scaff := scaffolder.NewScaffolder(cluster)
+	scaffolder := scaffolder.NewScaffolder(cluster)
 
-	require.NotNil(t, scaff)
-	require.Equal(t, cluster, scaff.KSailConfig)
-	require.NotNil(t, scaff.KSailYAMLGenerator)
-	require.NotNil(t, scaff.KustomizationGenerator)
+	require.NotNil(t, scaffolder)
+	require.Equal(t, cluster, scaffolder.KSailConfig)
+	require.NotNil(t, scaffolder.KSailYAMLGenerator)
+	require.NotNil(t, scaffolder.KustomizationGenerator)
 }
 
 func TestScaffold(t *testing.T) {
@@ -39,9 +39,9 @@ func TestScaffold(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc(testCase.name)
-			scaff := scaffolder.NewScaffolder(cluster)
+			scaffolder := scaffolder.NewScaffolder(cluster)
 
-			err := scaff.Scaffold(testCase.outputPath, testCase.force)
+			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -63,13 +63,13 @@ func TestGeneratedContent(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc("test-cluster")
-			scaff := scaffolder.NewScaffolder(cluster)
-			generateDistributionContent(t, scaff, cluster, testCase.distribution)
+			scaffolder := scaffolder.NewScaffolder(cluster)
+			generateDistributionContent(t, scaffolder, cluster, testCase.distribution)
 
 			kustomization := ktypes.Kustomization{}
 
 			// Generate kustomization content using actual generator, then ensure resources: [] is included
-			kustomizationContent, err := scaff.KustomizationGenerator.Generate(
+			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
 				&kustomization,
 				yamlgenerator.Options{},
 			)
@@ -164,7 +164,7 @@ func getContentTestCases() []contentTestCase {
 
 func generateDistributionContent(
 	t *testing.T,
-	scaff *scaffolder.Scaffolder,
+	scaffolder *scaffolder.Scaffolder,
 	cluster v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
 ) {
@@ -172,7 +172,10 @@ func generateDistributionContent(
 
 	// Generate KSail YAML content using actual generator but with minimal cluster config
 	minimalCluster := createMinimalClusterForSnapshot(cluster, distribution)
-	ksailContent, err := scaff.KSailYAMLGenerator.Generate(minimalCluster, yamlgenerator.Options{})
+	ksailContent, err := scaffolder.KSailYAMLGenerator.Generate(
+		minimalCluster,
+		yamlgenerator.Options{},
+	)
 	require.NoError(t, err)
 	snaps.MatchSnapshot(t, ksailContent)
 

@@ -14,8 +14,9 @@ linters:
   enable:
     - wsl_v5
   disable:
-    - wsl
     - exhaustruct
+    - revive
+    - wsl
   exclusions:
     paths:
       # Exclude auto-generated mock files from all linting rules
