@@ -78,6 +78,7 @@ func TestGeneratedContent(t *testing.T) {
 					"\n",
 				) + "\nresources: []\n"
 			}
+
 			snaps.MatchSnapshot(t, kustomizationContent)
 		})
 	}
@@ -201,7 +202,8 @@ nodeGroups:
 	}
 }
 
-// createMinimalClusterForSnapshot creates a cluster config that produces the same YAML as the original hardcoded version.
+// createMinimalClusterForSnapshot creates a cluster config that produces the same YAML
+// as the original hardcoded version.
 func createMinimalClusterForSnapshot(
 	cluster v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
@@ -226,6 +228,7 @@ func createMinimalClusterForSnapshot(
 			Distribution:       v1alpha1.DistributionK3d,
 			DistributionConfig: "k3d.yaml",
 		}
+
 		return minimalCluster
 	case v1alpha1.DistributionEKS:
 		// For EKS, the original hardcoded output included distribution, distributionConfig, and sourceDirectory
@@ -234,6 +237,7 @@ func createMinimalClusterForSnapshot(
 			DistributionConfig: "eks.yaml",
 			SourceDirectory:    "k8s",
 		}
+
 		return minimalCluster
 	default:
 		return minimalCluster
