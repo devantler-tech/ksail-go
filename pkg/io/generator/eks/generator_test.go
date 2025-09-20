@@ -21,7 +21,10 @@ func TestGenerate(t *testing.T) {
 			APIVersion: "eksctl.io/v1alpha5",
 			Kind:       "ClusterConfig",
 		},
-		Metadata: &v1alpha5.ClusterMeta{Name: "minimal", Region: "eu-north-1"},
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:   "minimal",
+			Region: "eu-north-1",
+		},
 	}
 	result, err := gen.Generate(cluster, yamlgenerator.Options{})
 	require.NoError(t, err)

@@ -45,17 +45,6 @@ func (g *EKSGenerator) Generate(
 		return "", fmt.Errorf("cluster region is required")
 	}
 
-	// Run available specific validators
-	if err := cfg.ValidateClusterEndpointConfig(); err != nil {
-		return "", fmt.Errorf("invalid cluster endpoint config: %w", err)
-	}
-	if err := cfg.ValidatePrivateCluster(); err != nil {
-		return "", fmt.Errorf("invalid private cluster config: %w", err)
-	}
-	if err := cfg.ValidateVPCConfig(); err != nil {
-		return "", fmt.Errorf("invalid VPC config: %w", err)
-	}
-
 	out, err := g.Marshaller.Marshal(cfg)
 	if err != nil {
 		return "", fmt.Errorf("marshal EKS config: %w", err)
