@@ -43,11 +43,7 @@ func (g *KustomizationGenerator) Generate(
 	}
 
 	// if output does not have resources: [] then add it
-	matched, err := regexp.MatchString(`(?m)^\s*resources:\s*\n\s*-\s*.*`, out)
-	if err != nil {
-		return "", fmt.Errorf("regexp match: %w", err)
-	}
-
+	matched, _ := regexp.MatchString(`(?m)^\s*resources:\s*\n\s*-\s*.*`, out)
 	if !matched {
 		out += "resources: []\n"
 	}
