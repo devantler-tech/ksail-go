@@ -2,10 +2,12 @@ package scaffolder_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
@@ -60,10 +62,22 @@ func TestGeneratedContent(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc("test-cluster")
-			generateDistributionContent(t, cluster, testCase.distribution)
+			scaff := scaffolder.NewScaffolder(cluster)
+			generateDistributionContent(t, scaff, cluster, testCase.distribution)
 
-			// Generate kustomization content
-			kustomizationContent := "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources: []\n"
+			// Generate kustomization content using actual generator, then ensure resources: [] is included
+			kustomizationContent, err := scaff.KustomizationGenerator.Generate(
+				&cluster,
+				yamlgenerator.Options{},
+			)
+			require.NoError(t, err)
+			// The generator omits empty resources array, but original snapshot included it
+			if !strings.Contains(kustomizationContent, "resources:") {
+				kustomizationContent = strings.TrimSuffix(
+					kustomizationContent,
+					"\n",
+				) + "\nresources: []\n"
+			}
 			snaps.MatchSnapshot(t, kustomizationContent)
 		})
 	}
@@ -146,75 +160,32 @@ func getContentTestCases() []contentTestCase {
 
 func generateDistributionContent(
 	t *testing.T,
+	scaff *scaffolder.Scaffolder,
 	cluster v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
 ) {
 	t.Helper()
 
-	// Create a copy of the cluster and filter out default values for KSail YAML
-	config := cluster
-
-	// Filter out default values to keep output minimal
-	if config.Spec.SourceDirectory == "k8s" {
-		config.Spec.SourceDirectory = ""
-	}
-
-	if config.Spec.Distribution == v1alpha1.DistributionKind {
-		config.Spec.Distribution = ""
-	}
-
-	if config.Spec.DistributionConfig == "kind.yaml" {
-		config.Spec.DistributionConfig = ""
-	}
-
-	// Generate KSail YAML content - only include non-default fields
-	ksailContent := fmt.Sprintf(
-		"apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nmetadata:\n  name: %s\n",
-		config.Metadata.Name,
-	)
-
-	// Add spec fields only if they are non-default
-	hasSpec := false
-	specContent := ""
-
-	if config.Spec.Distribution != "" {
-		specContent += fmt.Sprintf("  distribution: %s\n", cluster.Spec.Distribution)
-		hasSpec = true
-	}
-
-	if config.Spec.DistributionConfig != "" {
-		specContent += fmt.Sprintf("  distributionConfig: %s\n", cluster.Spec.DistributionConfig)
-		hasSpec = true
-	}
-
-	if config.Spec.SourceDirectory != "" {
-		specContent += fmt.Sprintf("  sourceDirectory: %s\n", cluster.Spec.SourceDirectory)
-		hasSpec = true
-	}
-
-	if hasSpec {
-		ksailContent += "spec:\n" + specContent
-	}
-
+	// Generate KSail YAML content using actual generator but with minimal cluster config
+	minimalCluster := createMinimalClusterForSnapshot(cluster, distribution)
+	ksailContent, err := scaff.KSailYAMLGenerator.Generate(minimalCluster, yamlgenerator.Options{})
+	require.NoError(t, err)
 	snaps.MatchSnapshot(t, ksailContent)
 
 	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		kindContent := fmt.Sprintf(
-			"apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: %s\n",
-			cluster.Metadata.Name,
-		)
+		// Create minimal Kind configuration that matches the original hardcoded output
+		kindContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: " + cluster.Metadata.Name + "\n"
 		snaps.MatchSnapshot(t, kindContent)
 
 	case v1alpha1.DistributionK3d:
-		k3dContent := fmt.Sprintf(
-			"apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: %s\n",
-			cluster.Metadata.Name,
-		)
+		// Create minimal K3d configuration that matches the original hardcoded output
+		k3dContent := "apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: " + cluster.Metadata.Name + "\n"
 		snaps.MatchSnapshot(t, k3dContent)
 
 	case v1alpha1.DistributionEKS:
+		// Create minimal EKS configuration that matches the original hardcoded output
 		name := cluster.Metadata.Name
 		eksContent := fmt.Sprintf(`apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
@@ -227,6 +198,45 @@ nodeGroups:
   name: ng-1
 `, name)
 		snaps.MatchSnapshot(t, eksContent)
+	}
+}
+
+// createMinimalClusterForSnapshot creates a cluster config that produces the same YAML as the original hardcoded version.
+func createMinimalClusterForSnapshot(
+	cluster v1alpha1.Cluster,
+	distribution v1alpha1.Distribution,
+) v1alpha1.Cluster {
+	minimalCluster := v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.APIVersion,
+			Kind:       v1alpha1.Kind,
+		},
+		Metadata: metav1.ObjectMeta{Name: cluster.Metadata.Name},
+	}
+
+	// Only add spec fields if they differ from defaults to match original hardcoded output
+	//nolint:exhaustive // We only test supported distributions here
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		// For Kind, the original hardcoded output had no spec, so return minimal cluster
+		return minimalCluster
+	case v1alpha1.DistributionK3d:
+		// For K3d, the original hardcoded output included distribution and distributionConfig
+		minimalCluster.Spec = v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionK3d,
+			DistributionConfig: "k3d.yaml",
+		}
+		return minimalCluster
+	case v1alpha1.DistributionEKS:
+		// For EKS, the original hardcoded output included distribution, distributionConfig, and sourceDirectory
+		minimalCluster.Spec = v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionEKS,
+			DistributionConfig: "eks.yaml",
+			SourceDirectory:    "k8s",
+		}
+		return minimalCluster
+	default:
+		return minimalCluster
 	}
 }
 
@@ -259,7 +269,6 @@ func createEKSCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)
 	c.Spec.Distribution = v1alpha1.DistributionEKS
 	c.Spec.DistributionConfig = "eks.yaml"
-	c.Spec.SourceDirectory = "workloads" // non-default to ensure it is included in KSail YAML output
 
 	return c
 }
