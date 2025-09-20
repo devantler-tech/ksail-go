@@ -65,6 +65,7 @@ func TestGeneratedContent(t *testing.T) {
 			cluster := testCase.setupFunc("test-cluster")
 			scaff := scaffolder.NewScaffolder(cluster)
 			generateDistributionContent(t, scaff, cluster, testCase.distribution)
+
 			kustomization := ktypes.Kustomization{}
 
 			// Generate kustomization content using actual generator, then ensure resources: [] is included

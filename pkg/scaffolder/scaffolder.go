@@ -15,7 +15,6 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -195,14 +194,14 @@ func (s *Scaffolder) createMinimalK3dConfig() k3dv1alpha5.SimpleConfig {
 	}
 }
 
-func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
-	return &v1alpha5.ClusterConfig{
+func (s *Scaffolder) createMinimalEKSConfig() *eksv1alpha5.ClusterConfig {
+	return &eksv1alpha5.ClusterConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "eksctl.io/v1alpha5",
+			APIVersion: "eksctl.io/eksv1alpha5",
 			Kind:       "ClusterConfig",
 		},
 		Metadata: s.createEKSMetadata(),
-		NodeGroups: []*v1alpha5.NodeGroup{
+		NodeGroups: []*eksv1alpha5.NodeGroup{
 			s.createEKSNodeGroup(),
 		},
 		ManagedNodeGroups:       nil,
@@ -218,7 +217,7 @@ func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
 		AccessConfig:            nil,
 		VPC:                     nil,
 		Addons:                  nil,
-		AddonsConfig: v1alpha5.AddonsConfig{
+		AddonsConfig: eksv1alpha5.AddonsConfig{
 			AutoApplyPodIdentityAssociations: false,
 			DisableDefaultAddons:             false,
 		},
@@ -233,8 +232,8 @@ func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
 	}
 }
 
-func (s *Scaffolder) createEKSMetadata() *v1alpha5.ClusterMeta {
-	return &v1alpha5.ClusterMeta{
+func (s *Scaffolder) createEKSMetadata() *eksv1alpha5.ClusterMeta {
+	return &eksv1alpha5.ClusterMeta{
 		Name:               s.KSailConfig.Metadata.Name,
 		Region:             "eu-north-1",
 		Version:            "",
@@ -245,8 +244,8 @@ func (s *Scaffolder) createEKSMetadata() *v1alpha5.ClusterMeta {
 	}
 }
 
-func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
-	return &v1alpha5.NodeGroup{
+func (s *Scaffolder) createEKSNodeGroup() *eksv1alpha5.NodeGroup {
+	return &eksv1alpha5.NodeGroup{
 		NodeGroupBase:            s.createEKSNodeGroupBase(),
 		InstancesDistribution:    nil,
 		ASGMetricsCollection:     nil,
@@ -264,8 +263,8 @@ func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
 	}
 }
 
-func (s *Scaffolder) createEKSNodeGroupBase() *v1alpha5.NodeGroupBase {
-	return &v1alpha5.NodeGroupBase{
+func (s *Scaffolder) createEKSNodeGroupBase() *eksv1alpha5.NodeGroupBase {
+	return &eksv1alpha5.NodeGroupBase{
 		Name:              "ng-1",
 		AMIFamily:         "",
 		InstanceType:      "m5.large",
@@ -273,7 +272,7 @@ func (s *Scaffolder) createEKSNodeGroupBase() *v1alpha5.NodeGroupBase {
 		Subnets:           nil,
 		InstancePrefix:    "",
 		InstanceName:      "",
-		ScalingConfig: &v1alpha5.ScalingConfig{
+		ScalingConfig: &eksv1alpha5.ScalingConfig{
 			DesiredCapacity: &[]int{1}[0],
 			MinSize:         nil,
 			MaxSize:         nil,

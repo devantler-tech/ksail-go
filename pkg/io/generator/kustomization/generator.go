@@ -47,8 +47,9 @@ func (g *KustomizationGenerator) Generate(
 	if err != nil {
 		return "", fmt.Errorf("regexp match: %w", err)
 	}
+
 	if !matched {
-		out = out + "resources: []\n"
+		out += "resources: []\n"
 	}
 
 	// If no output file specified, just return the YAML

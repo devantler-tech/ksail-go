@@ -8,7 +8,6 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
-	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
@@ -50,17 +49,4 @@ func (g *K3dGenerator) Generate(
 	}
 
 	return out, nil
-}
-
-func (g *K3dGenerator) buildSimpleConfig() *v1alpha5.SimpleConfig {
-	// Create absolutely minimal configuration with explicit TypeMeta
-	//nolint:exhaustruct // We only want TypeMeta here
-	cfg := &v1alpha5.SimpleConfig{
-		TypeMeta: types.TypeMeta{
-			APIVersion: "k3d.io/v1alpha3",
-			Kind:       "Simple",
-		},
-	}
-
-	return cfg
 }
