@@ -52,132 +52,15 @@ func (g *K3dGenerator) Generate(
 	return out, nil
 }
 
-func (g *K3dGenerator) buildSimpleConfig(cluster *v1alpha1.Cluster) *v1alpha5.SimpleConfig {
-	return &v1alpha5.SimpleConfig{
+func (g *K3dGenerator) buildSimpleConfig(_ *v1alpha1.Cluster) *v1alpha5.SimpleConfig {
+	// Create absolutely minimal configuration with explicit TypeMeta
+	//nolint:exhaustruct // We only want TypeMeta here
+	cfg := &v1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
-			APIVersion: "k3d.io/v1alpha5",
+			APIVersion: "k3d.io/v1alpha3",
 			Kind:       "Simple",
 		},
-		ObjectMeta: types.ObjectMeta{
-			Name: cluster.Metadata.Name,
-		},
-		Servers: 0,
-		Agents:  0,
-		ExposeAPI: v1alpha5.SimpleExposureOpts{
-			Host:     "",
-			HostIP:   "",
-			HostPort: "",
-		},
-		Image:        "",
-		Network:      "",
-		Subnet:       "",
-		ClusterToken: "",
-		Volumes:      nil,
-		Ports:        nil,
-		Options: v1alpha5.SimpleConfigOptions{
-			K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
-				Wait:                false,
-				Timeout:             0,
-				DisableLoadbalancer: false,
-				DisableImageVolume:  false,
-				NoRollback:          false,
-				NodeHookActions:     nil,
-				Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-					ConfigOverrides: nil,
-				},
-			},
-			K3sOptions: v1alpha5.SimpleConfigOptionsK3s{
-				ExtraArgs:  nil,
-				NodeLabels: nil,
-			},
-			KubeconfigOptions: v1alpha5.SimpleConfigOptionsKubeconfig{
-				UpdateDefaultKubeconfig: false,
-				SwitchCurrentContext:    false,
-			},
-			Runtime: v1alpha5.SimpleConfigOptionsRuntime{
-				GPURequest:    "",
-				ServersMemory: "",
-				AgentsMemory:  "",
-				HostPidMode:   false,
-				Labels:        nil,
-				Ulimits:       nil,
-			},
-		},
-		Env: nil,
-		Registries: v1alpha5.SimpleConfigRegistries{
-			Use:    nil,
-			Create: nil,
-			Config: "",
-		},
-		HostAliases: nil,
-		Files:       nil,
 	}
-}
 
-func (g *K3dGenerator) buildExposureOpts() v1alpha5.SimpleExposureOpts {
-	return v1alpha5.SimpleExposureOpts{
-		Host:     "",
-		HostIP:   "",
-		HostPort: "",
-	}
-}
-
-func (g *K3dGenerator) buildConfigOptions() v1alpha5.SimpleConfigOptions {
-	return v1alpha5.SimpleConfigOptions{
-		K3dOptions:        BuildDefaultK3dOptions(),
-		K3sOptions:        BuildDefaultK3sOptions(),
-		KubeconfigOptions: BuildDefaultKubeconfigOptions(),
-		Runtime:           BuildDefaultRuntimeOptions(),
-	}
-}
-
-// BuildDefaultK3dOptions creates default K3d options configuration.
-func BuildDefaultK3dOptions() v1alpha5.SimpleConfigOptionsK3d {
-	return v1alpha5.SimpleConfigOptionsK3d{
-		Wait:                false,
-		Timeout:             0,
-		DisableLoadbalancer: false,
-		DisableImageVolume:  false,
-		NoRollback:          false,
-		NodeHookActions:     nil,
-		Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-			ConfigOverrides: nil,
-		},
-	}
-}
-
-// BuildDefaultK3sOptions creates default K3s options configuration.
-func BuildDefaultK3sOptions() v1alpha5.SimpleConfigOptionsK3s {
-	return v1alpha5.SimpleConfigOptionsK3s{
-		ExtraArgs:  nil,
-		NodeLabels: nil,
-	}
-}
-
-// BuildDefaultKubeconfigOptions creates default kubeconfig options configuration.
-func BuildDefaultKubeconfigOptions() v1alpha5.SimpleConfigOptionsKubeconfig {
-	return v1alpha5.SimpleConfigOptionsKubeconfig{
-		UpdateDefaultKubeconfig: false,
-		SwitchCurrentContext:    false,
-	}
-}
-
-// BuildDefaultRuntimeOptions creates default runtime options configuration.
-func BuildDefaultRuntimeOptions() v1alpha5.SimpleConfigOptionsRuntime {
-	return v1alpha5.SimpleConfigOptionsRuntime{
-		GPURequest:    "",
-		ServersMemory: "",
-		AgentsMemory:  "",
-		HostPidMode:   false,
-		Labels:        nil,
-		Ulimits:       nil,
-	}
-}
-
-func (g *K3dGenerator) buildRegistries() v1alpha5.SimpleConfigRegistries {
-	return v1alpha5.SimpleConfigRegistries{
-		Use:    nil,
-		Create: nil,
-		Config: "",
-	}
+	return cfg
 }

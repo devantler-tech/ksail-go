@@ -2,6 +2,7 @@
 package eksgenerator
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -10,6 +11,13 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+)
+
+// Static errors for validation.
+var (
+	ErrClusterMetadataRequired = errors.New("cluster metadata is required")
+	ErrClusterNameRequired     = errors.New("cluster name is required")
+	ErrClusterRegionRequired   = errors.New("cluster region is required")
 )
 
 // EKSGenerator generates an EKS ClusterConfig YAML.
@@ -36,13 +44,15 @@ func (g *EKSGenerator) Generate(
 
 	// Basic validation - check required fields
 	if cfg.Metadata == nil {
-		return "", fmt.Errorf("cluster metadata is required")
+		return "", ErrClusterMetadataRequired
 	}
+
 	if cfg.Metadata.Name == "" {
-		return "", fmt.Errorf("cluster name is required")
+		return "", ErrClusterNameRequired
 	}
+
 	if cfg.Metadata.Region == "" {
-		return "", fmt.Errorf("cluster region is required")
+		return "", ErrClusterRegionRequired
 	}
 
 	out, err := g.Marshaller.Marshal(cfg)

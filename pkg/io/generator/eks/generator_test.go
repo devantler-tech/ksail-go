@@ -15,6 +15,8 @@ import (
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
 func TestGenerate(t *testing.T) {
+	t.Parallel()
+
 	gen := generator.NewEKSGenerator()
 	cluster := &v1alpha5.ClusterConfig{
 		TypeMeta: metav1.TypeMeta{
