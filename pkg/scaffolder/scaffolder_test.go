@@ -1,4 +1,4 @@
-package scaffolding_test
+package scaffolder_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/scaffolding"
+	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,12 +22,12 @@ func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
-	scaffolder := scaffolding.NewScaffolder(cluster)
+	scaff := scaffolder.NewScaffolder(cluster)
 
-	require.NotNil(t, scaffolder)
-	require.Equal(t, cluster, scaffolder.KSailConfig)
-	require.NotNil(t, scaffolder.KSailYAMLGenerator)
-	require.NotNil(t, scaffolder.KustomizationGenerator)
+	require.NotNil(t, scaff)
+	require.Equal(t, cluster, scaff.KSailConfig)
+	require.NotNil(t, scaff.KSailYAMLGenerator)
+	require.NotNil(t, scaff.KustomizationGenerator)
 }
 
 func TestScaffold(t *testing.T) {
@@ -40,9 +40,9 @@ func TestScaffold(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc(testCase.name)
-			scaffolder := scaffolding.NewScaffolder(cluster)
+			scaff := scaffolder.NewScaffolder(cluster)
 
-			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
+			err := scaff.Scaffold(testCase.outputPath, testCase.force)
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -73,7 +73,7 @@ func TestGeneratedContent(t *testing.T) {
 	}
 }
 
-// Test case definitions
+// Test case definitions.
 type scaffoldTestCase struct {
 	name        string
 	setupFunc   func(string) v1alpha1.Cluster
@@ -157,52 +157,65 @@ func generateDistributionContent(
 
 	// Create a copy of the cluster and filter out default values for KSail YAML
 	config := cluster
-	
+
 	// Filter out default values to keep output minimal
 	if config.Spec.SourceDirectory == "k8s" {
 		config.Spec.SourceDirectory = ""
 	}
+
 	if config.Spec.Distribution == v1alpha1.DistributionKind {
 		config.Spec.Distribution = ""
 	}
+
 	if config.Spec.DistributionConfig == "kind.yaml" {
 		config.Spec.DistributionConfig = ""
 	}
 
 	// Generate KSail YAML content - only include non-default fields
-	ksailContent := fmt.Sprintf("apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nmetadata:\n  name: %s\n", config.Metadata.Name)
-	
+	ksailContent := fmt.Sprintf(
+		"apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nmetadata:\n  name: %s\n",
+		config.Metadata.Name,
+	)
+
 	// Add spec fields only if they are non-default
 	hasSpec := false
 	specContent := ""
-	
+
 	if config.Spec.Distribution != "" {
 		specContent += fmt.Sprintf("  distribution: %s\n", cluster.Spec.Distribution)
 		hasSpec = true
 	}
+
 	if config.Spec.DistributionConfig != "" {
 		specContent += fmt.Sprintf("  distributionConfig: %s\n", cluster.Spec.DistributionConfig)
 		hasSpec = true
 	}
+
 	if config.Spec.SourceDirectory != "" {
 		specContent += fmt.Sprintf("  sourceDirectory: %s\n", cluster.Spec.SourceDirectory)
 		hasSpec = true
 	}
-	
+
 	if hasSpec {
 		ksailContent += "spec:\n" + specContent
 	}
-	
+
 	snaps.MatchSnapshot(t, ksailContent)
 
 	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		kindContent := fmt.Sprintf("apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: %s\n", cluster.Metadata.Name)
+		kindContent := fmt.Sprintf(
+			"apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: %s\n",
+			cluster.Metadata.Name,
+		)
 		snaps.MatchSnapshot(t, kindContent)
 
 	case v1alpha1.DistributionK3d:
-		k3dContent := fmt.Sprintf("apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: %s\n", cluster.Metadata.Name)
+		k3dContent := fmt.Sprintf(
+			"apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: %s\n",
+			cluster.Metadata.Name,
+		)
 		snaps.MatchSnapshot(t, k3dContent)
 
 	case v1alpha1.DistributionEKS:
@@ -221,16 +234,14 @@ nodeGroups:
 	}
 }
 
-// Cluster creation helpers
+// Helper functions.
 func createTestCluster(name string) v1alpha1.Cluster {
 	return v1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name: name,
-		},
+		Metadata: metav1.ObjectMeta{Name: name},
 		Spec: v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionKind,
 			SourceDirectory:    "k8s",
@@ -239,40 +250,34 @@ func createTestCluster(name string) v1alpha1.Cluster {
 	}
 }
 
-func createKindCluster(name string) v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Distribution = v1alpha1.DistributionKind
-	cluster.Spec.DistributionConfig = "kind.yaml"
-	cluster.Spec.SourceDirectory = "k8s"  // This is the default, so it should be filtered out
-	return cluster
-}
-
+func createKindCluster(name string) v1alpha1.Cluster { return createTestCluster(name) }
 func createK3dCluster(name string) v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Distribution = v1alpha1.DistributionK3d
-	cluster.Spec.DistributionConfig = "k3d.yaml"
-	cluster.Spec.SourceDirectory = "k8s"  // Default value - will be omitted
-	return cluster
+	c := createTestCluster(name)
+	c.Spec.Distribution = v1alpha1.DistributionK3d
+	c.Spec.DistributionConfig = "k3d.yaml"
+
+	return c
 }
 
 func createEKSCluster(name string) v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Distribution = v1alpha1.DistributionEKS
-	cluster.Spec.DistributionConfig = "eks-config.yaml"
-	cluster.Spec.SourceDirectory = "k8s"
-	return cluster
+	c := createTestCluster(name)
+	c.Spec.Distribution = v1alpha1.DistributionEKS
+	c.Spec.DistributionConfig = "eks-config.yaml"
+	c.Spec.SourceDirectory = "workloads" // non-default to ensure it is included in KSail YAML output
+
+	return c
 }
 
 func createTindCluster(name string) v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Distribution = v1alpha1.DistributionTind
-	cluster.Spec.DistributionConfig = "tind.yaml"
-	return cluster
+	c := createTestCluster(name)
+	c.Spec.Distribution = v1alpha1.DistributionTind
+
+	return c
 }
 
 func createUnknownCluster(name string) v1alpha1.Cluster {
-	cluster := createTestCluster(name)
-	cluster.Spec.Distribution = "Unknown"
-	cluster.Spec.DistributionConfig = "unknown.yaml"
-	return cluster
+	c := createTestCluster(name)
+	c.Spec.Distribution = "unknown"
+
+	return c
 }

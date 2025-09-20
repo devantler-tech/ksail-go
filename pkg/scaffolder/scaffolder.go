@@ -1,5 +1,5 @@
-// Package scaffolding provides utilities for scaffolding KSail project files and configuration.
-package scaffolding
+// Package scaffolder provides utilities for scaffolding KSail project files and configuration.
+package scaffolder
 
 import (
 	"errors"
@@ -114,24 +114,24 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name: s.KSailConfig.Metadata.Name,
+		Name:  s.KSailConfig.Metadata.Name,
 		Nodes: []v1alpha4.Node{},
 		Networking: v1alpha4.Networking{
-			IPFamily:            "",
-			APIServerPort:       0,
-			APIServerAddress:    "",
-			PodSubnet:           "",
-			ServiceSubnet:       "",
-			DisableDefaultCNI:   false,
-			KubeProxyMode:       "",
-			DNSSearch:           nil,
+			IPFamily:          "",
+			APIServerPort:     0,
+			APIServerAddress:  "",
+			PodSubnet:         "",
+			ServiceSubnet:     "",
+			DisableDefaultCNI: false,
+			KubeProxyMode:     "",
+			DNSSearch:         nil,
 		},
-		FeatureGates:                     map[string]bool{},
-		RuntimeConfig:                    map[string]string{},
-		KubeadmConfigPatches:             []string{},
-		KubeadmConfigPatchesJSON6902:     nil,
-		ContainerdConfigPatches:          []string{},
-		ContainerdConfigPatchesJSON6902:  nil,
+		FeatureGates:                    map[string]bool{},
+		RuntimeConfig:                   map[string]string{},
+		KubeadmConfigPatches:            []string{},
+		KubeadmConfigPatchesJSON6902:    nil,
+		ContainerdConfigPatches:         []string{},
+		ContainerdConfigPatchesJSON6902: nil,
 	}
 
 	opts := yamlgenerator.Options{
@@ -168,7 +168,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 // generateEKSConfig generates the eks-config.yaml configuration file.
 func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	eksConfig := s.createMinimalEKSConfig()
-	
+
 	eksGen := eksgenerator.NewEKSGenerator()
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, s.KSailConfig.Spec.DistributionConfig),
@@ -179,7 +179,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	if err != nil {
 		return fmt.Errorf("generate EKS config: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -210,32 +210,32 @@ func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
 			AutoApplyPodIdentityAssociations: false,
 			DisableDefaultAddons:             false,
 		},
-		PrivateCluster:   nil,
-		CloudWatch:       nil,
+		PrivateCluster:    nil,
+		CloudWatch:        nil,
 		SecretsEncryption: nil,
-		Status:           nil,
-		GitOps:           nil,
-		Karpenter:        nil,
-		Outpost:          nil,
-		ZonalShiftConfig: nil,
+		Status:            nil,
+		GitOps:            nil,
+		Karpenter:         nil,
+		Outpost:           nil,
+		ZonalShiftConfig:  nil,
 	}
 }
 
 func (s *Scaffolder) createEKSMetadata() *v1alpha5.ClusterMeta {
 	return &v1alpha5.ClusterMeta{
-		Name:              s.KSailConfig.Metadata.Name,
-		Region:            "eu-north-1",
-		Version:           "",        // string
+		Name:               s.KSailConfig.Metadata.Name,
+		Region:             "eu-north-1",
+		Version:            "",
 		ForceUpdateVersion: nil,
-		Tags:              nil,
-		Annotations:       nil,
-		AccountID:         "",        // string
+		Tags:               nil,
+		Annotations:        nil,
+		AccountID:          "",
 	}
 }
 
 func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
 	return &v1alpha5.NodeGroup{
-		NodeGroupBase: s.createEKSNodeGroupBase(),
+		NodeGroupBase:            s.createEKSNodeGroupBase(),
 		InstancesDistribution:    nil,
 		ASGMetricsCollection:     nil,
 		CPUCredits:               nil,
@@ -243,7 +243,7 @@ func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
 		TargetGroupARNs:          nil,
 		Taints:                   nil,
 		UpdateConfig:             nil,
-		ClusterDNS:               "", // string zero value
+		ClusterDNS:               "",
 		KubeletExtraConfig:       nil,
 		ContainerRuntime:         nil,
 		MaxInstanceLifetime:      nil,
@@ -254,50 +254,50 @@ func (s *Scaffolder) createEKSNodeGroup() *v1alpha5.NodeGroup {
 
 func (s *Scaffolder) createEKSNodeGroupBase() *v1alpha5.NodeGroupBase {
 	return &v1alpha5.NodeGroupBase{
-		Name:                        "ng-1",
-		AMIFamily:                   "", // string zero value
-		InstanceType:                "m5.large",
-		AvailabilityZones:           nil,
-		Subnets:                     nil,
-		InstancePrefix:              "", // string zero value
-		InstanceName:                "", // string zero value
+		Name:              "ng-1",
+		AMIFamily:         "",
+		InstanceType:      "m5.large",
+		AvailabilityZones: nil,
+		Subnets:           nil,
+		InstancePrefix:    "",
+		InstanceName:      "",
 		ScalingConfig: &v1alpha5.ScalingConfig{
 			DesiredCapacity: &[]int{1}[0],
 			MinSize:         nil,
 			MaxSize:         nil,
 		},
-		VolumeSize:                  nil,
-		VolumeType:                  nil,
-		VolumeEncrypted:             nil,
-		VolumeKmsKeyID:              nil, // *string
-		VolumeIOPS:                  nil,
-		VolumeThroughput:            nil,
-		VolumeName:                  nil, // *string
-		AdditionalVolumes:           nil,
-		SSH:                         nil,
-		Labels:                      nil,
-		IAM:                         nil,
-		AMI:                         "", // string
-		SecurityGroups:              nil,
-		MaxPodsPerNode:              0,  // int zero value
-		ASGSuspendProcesses:         nil,
-		EBSOptimized:                nil,
-		PreBootstrapCommands:        nil,
-		OverrideBootstrapCommand:    nil, // *string
-		Tags:                        nil,
-		PropagateASGTags:            nil,
-		DisableIMDSv1:               nil,
-		DisablePodIMDS:              nil,
-		Placement:                   nil,
-		EFAEnabled:                  nil,
-		InstanceSelector:            nil,
-		AdditionalEncryptedVolume:   "", // string
-		Bottlerocket:                nil,
-		EnableDetailedMonitoring:    nil,
-		CapacityReservation:         nil,
-		InstanceMarketOptions:       nil,
-		OutpostARN:                  "", // string
-		PrivateNetworking:           false,
+		VolumeSize:                nil,
+		VolumeType:                nil,
+		VolumeEncrypted:           nil,
+		VolumeKmsKeyID:            nil,
+		VolumeIOPS:                nil,
+		VolumeThroughput:          nil,
+		VolumeName:                nil,
+		AdditionalVolumes:         nil,
+		SSH:                       nil,
+		Labels:                    nil,
+		IAM:                       nil,
+		AMI:                       "",
+		SecurityGroups:            nil,
+		MaxPodsPerNode:            0,
+		ASGSuspendProcesses:       nil,
+		EBSOptimized:              nil,
+		PreBootstrapCommands:      nil,
+		OverrideBootstrapCommand:  nil,
+		Tags:                      nil,
+		PropagateASGTags:          nil,
+		DisableIMDSv1:             nil,
+		DisablePodIMDS:            nil,
+		Placement:                 nil,
+		EFAEnabled:                nil,
+		InstanceSelector:          nil,
+		AdditionalEncryptedVolume: "",
+		Bottlerocket:              nil,
+		EnableDetailedMonitoring:  nil,
+		CapacityReservation:       nil,
+		InstanceMarketOptions:     nil,
+		OutpostARN:                "",
+		PrivateNetworking:         false,
 	}
 }
 
@@ -315,6 +315,3 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 
 	return nil
 }
-
-
-

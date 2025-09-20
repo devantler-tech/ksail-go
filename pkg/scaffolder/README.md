@@ -1,4 +1,4 @@
-# pkg/scaffolding
+# pkg/scaffolder
 
 This package provides scaffolding utilities for KSail projects.
 
@@ -16,7 +16,7 @@ Contains utilities for generating KSail project files and configurations. The sc
 ## Usage
 
 ```go
-import "github.com/devantler-tech/ksail-go/pkg/scaffolding"
+import "github.com/devantler-tech/ksail-go/pkg/scaffolder"
 
 // Create a cluster configuration
 cluster := v1alpha1.Cluster{
@@ -35,7 +35,7 @@ cluster := v1alpha1.Cluster{
 }
 
 // Create scaffold instance and generate files
-scaffold := scaffolding.NewScaffolder(cluster)
+scaffold := scaffolder.NewScaffolder(cluster)
 err := scaffold.Scaffold("/path/to/output/", false)
 if err != nil {
     log.Fatal(err)
@@ -53,7 +53,7 @@ The scaffold creator generates the following files based on the cluster configur
 ### Distribution-Specific Files
 
 - **Kind**: Generates `kind.yaml` with a basic cluster configuration including control-plane node
-- **K3d**: Generates `k3d.yaml` with a simple k3d cluster configuration  
+- **K3d**: Generates `k3d.yaml` with a simple k3d cluster configuration
 - **EKS**: Generates `eks-config.yaml` with an EKS cluster configuration including node groups
 - **Tind**: Not yet implemented (returns error)
 
