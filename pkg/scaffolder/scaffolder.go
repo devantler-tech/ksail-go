@@ -13,9 +13,13 @@ import (
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/k3d-io/k3d/v5/pkg/config/types"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
 // Error definitions for distribution handling.
@@ -34,9 +38,9 @@ type Scaffolder struct {
 	KSailConfig            v1alpha1.Cluster
 	KSailYAMLGenerator     generator.Generator[v1alpha1.Cluster, yamlgenerator.Options]
 	KindGenerator          generator.Generator[*v1alpha4.Cluster, yamlgenerator.Options]
-	K3dGenerator           generator.Generator[*v1alpha1.Cluster, yamlgenerator.Options]
-	EKSGenerator           generator.Generator[*v1alpha5.ClusterConfig, yamlgenerator.Options]
-	KustomizationGenerator generator.Generator[*v1alpha1.Cluster, yamlgenerator.Options]
+	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
+	EKSGenerator           generator.Generator[*eksv1alpha5.ClusterConfig, yamlgenerator.Options]
+	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
@@ -45,7 +49,7 @@ func NewScaffolder(cfg v1alpha1.Cluster) *Scaffolder {
 	kindGen := kindgenerator.NewKindGenerator()
 	k3dGen := k3dgenerator.NewK3dGenerator()
 	eksGen := eksgenerator.NewEKSGenerator()
-	kustGen := kustomizationgenerator.NewKustomizationGenerator(&cfg)
+	kustGen := kustomizationgenerator.NewKustomizationGenerator()
 
 	return &Scaffolder{
 		KSailConfig:            cfg,
@@ -149,15 +153,14 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 // generateK3dConfig generates the k3d.yaml configuration file.
 func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
-	// Create minimal K3d configuration
-	k3dConfig := &s.KSailConfig
+	k3dConfig := s.createMinimalK3dConfig()
 
 	opts := yamlgenerator.Options{
 		Output: output + "k3d.yaml",
 		Force:  force,
 	}
 
-	_, err := s.K3dGenerator.Generate(k3dConfig, opts)
+	_, err := s.K3dGenerator.Generate(&k3dConfig, opts)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
 	}
@@ -181,6 +184,15 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	}
 
 	return nil
+}
+
+func (s *Scaffolder) createMinimalK3dConfig() k3dv1alpha5.SimpleConfig {
+	return k3dv1alpha5.SimpleConfig{
+		TypeMeta: types.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "SimpleConfig",
+		},
+	}
 }
 
 func (s *Scaffolder) createMinimalEKSConfig() *v1alpha5.ClusterConfig {
@@ -303,12 +315,14 @@ func (s *Scaffolder) createEKSNodeGroupBase() *v1alpha5.NodeGroupBase {
 
 // generateKustomizationConfig generates the kustomization.yaml file.
 func (s *Scaffolder) generateKustomizationConfig(output string, force bool) error {
+	kustomization := ktypes.Kustomization{}
+
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, s.KSailConfig.Spec.SourceDirectory, "kustomization.yaml"),
 		Force:  force,
 	}
 
-	_, err := s.KustomizationGenerator.Generate(&s.KSailConfig, opts)
+	_, err := s.KustomizationGenerator.Generate(&kustomization, opts)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
 	}

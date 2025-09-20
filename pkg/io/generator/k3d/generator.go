@@ -4,7 +4,6 @@ package k3dgenerator
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
@@ -29,12 +28,13 @@ func NewK3dGenerator() *K3dGenerator {
 
 // Generate creates a k3d cluster YAML configuration and writes it to the specified output.
 func (g *K3dGenerator) Generate(
-	cluster *v1alpha1.Cluster,
+	cluster *v1alpha5.SimpleConfig,
 	opts yamlgenerator.Options,
 ) (string, error) {
-	cfg := g.buildSimpleConfig(cluster)
+	cluster.APIVersion = "k3d.io/v1alpha3"
+	cluster.Kind = "Simple"
 
-	out, err := g.Marshaller.Marshal(cfg)
+	out, err := g.Marshaller.Marshal(cluster)
 	if err != nil {
 		return "", fmt.Errorf("marshal k3d config: %w", err)
 	}
@@ -52,7 +52,7 @@ func (g *K3dGenerator) Generate(
 	return out, nil
 }
 
-func (g *K3dGenerator) buildSimpleConfig(_ *v1alpha1.Cluster) *v1alpha5.SimpleConfig {
+func (g *K3dGenerator) buildSimpleConfig() *v1alpha5.SimpleConfig {
 	// Create absolutely minimal configuration with explicit TypeMeta
 	//nolint:exhaustruct // We only want TypeMeta here
 	cfg := &v1alpha5.SimpleConfig{

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
@@ -15,34 +14,30 @@ import (
 
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
-	KSailConfig *v1alpha1.Cluster
-	Marshaller  marshaller.Marshaller[*ktypes.Kustomization]
+	Marshaller marshaller.Marshaller[*ktypes.Kustomization]
 }
 
 // NewKustomizationGenerator creates and returns a new KustomizationGenerator instance.
-func NewKustomizationGenerator(cfg *v1alpha1.Cluster) *KustomizationGenerator {
+func NewKustomizationGenerator() *KustomizationGenerator {
 	m := yamlmarshaller.NewMarshaller[*ktypes.Kustomization]()
 
 	return &KustomizationGenerator{
-		KSailConfig: cfg,
-		Marshaller:  m,
+		Marshaller: m,
 	}
 }
 
 // Generate creates a kustomization.yaml file and writes it to the specified output file path.
 func (g *KustomizationGenerator) Generate(
-	_ *v1alpha1.Cluster,
+	kustomization *ktypes.Kustomization,
 	opts yamlgenerator.Options,
 ) (string, error) {
-	kustomization := ktypes.Kustomization{
-		TypeMeta: ktypes.TypeMeta{
-			APIVersion: "kustomize.config.k8s.io/v1beta1",
-			Kind:       "Kustomization",
-		},
-		Resources: []string{},
+	kustomization.TypeMeta = ktypes.TypeMeta{
+		APIVersion: "kustomize.config.k8s.io/v1beta1",
+		Kind:       "Kustomization",
 	}
+	kustomization.Resources = []string{}
 
-	out, err := g.Marshaller.Marshal(&kustomization)
+	out, err := g.Marshaller.Marshal(kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
@@ -64,10 +65,11 @@ func TestGeneratedContent(t *testing.T) {
 			cluster := testCase.setupFunc("test-cluster")
 			scaff := scaffolder.NewScaffolder(cluster)
 			generateDistributionContent(t, scaff, cluster, testCase.distribution)
+			kustomization := ktypes.Kustomization{}
 
 			// Generate kustomization content using actual generator, then ensure resources: [] is included
 			kustomizationContent, err := scaff.KustomizationGenerator.Generate(
-				&cluster,
+				&kustomization,
 				yamlgenerator.Options{},
 			)
 			require.NoError(t, err)
