@@ -2,9 +2,9 @@ package scaffolder_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -12,11 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestMain(m *testing.M) {
-	exitCode := m.Run()
-	snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	os.Exit(exitCode)
-}
+func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
 func TestNewScaffolder(t *testing.T) {
 	t.Parallel()

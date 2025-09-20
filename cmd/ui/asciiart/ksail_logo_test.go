@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
