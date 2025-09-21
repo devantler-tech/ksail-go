@@ -14,8 +14,8 @@ func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
-	gen := generator.NewYAMLGenerator[map[string]interface{}]()
-	data := map[string]interface{}{"name": "minimal"}
+	gen := generator.NewYAMLGenerator[map[string]any]()
+	data := map[string]any{"name": "minimal"}
 	result, err := gen.Generate(data, generator.Options{})
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
