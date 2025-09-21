@@ -286,29 +286,13 @@ func testDeleteError(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	t.Parallel()
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		testStartSuccess(t)
-	})
-	t.Run("success with multiple nodegroups", func(t *testing.T) {
-		t.Parallel()
-		testStartSuccessMultipleNodegroups(t)
-	})
-	t.Run("cluster not found", func(t *testing.T) {
-		t.Parallel()
-		testStartClusterNotFound(t)
-	})
-	t.Run("nodegroup scale error", func(t *testing.T) {
-		t.Parallel()
-		testStartNodegroupScaleError(t)
-	})
-	t.Run("success without scaling config", func(t *testing.T) {
-		t.Parallel()
-		testStartSuccessWithoutScalingConfig(t)
-	})
-	t.Run("exists check error", func(t *testing.T) {
-		t.Parallel()
-		testStartExistsCheckError(t)
+	runParallelSubtests(t, map[string]func(*testing.T){
+		"success":                          testStartSuccess,
+		"success with multiple nodegroups": testStartSuccessMultipleNodegroups,
+		"cluster not found":                testStartClusterNotFound,
+		"nodegroup scale error":            testStartNodegroupScaleError,
+		"success without scaling config":   testStartSuccessWithoutScalingConfig,
+		"exists check error":               testStartExistsCheckError,
 	})
 }
 
@@ -316,7 +300,7 @@ func testStartSuccess(t *testing.T) {
 	t.Helper()
 
 	desiredCapacity, minSize := 1, 0
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -328,9 +312,6 @@ func testStartSuccess(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider // not used in this test
-	_ = clusterActions  // not used in this test
-	_ = clusterCreator  // not used in this test
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -346,7 +327,7 @@ func testStartSuccessMultipleNodegroups(t *testing.T) {
 
 	desiredCapacity1, desiredCapacity2 := 2, 3
 	minSize := 0
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{
 			{
@@ -369,9 +350,6 @@ func testStartSuccessMultipleNodegroups(t *testing.T) {
 			},
 		},
 	)
-	_ = clusterProvider // not used in this test
-	_ = clusterActions  // not used in this test
-	_ = clusterCreator  // not used in this test
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -386,13 +364,7 @@ func testStartSuccessMultipleNodegroups(t *testing.T) {
 func testStartClusterNotFound(t *testing.T) {
 	t.Helper()
 
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider  // not used in this test
-	_ = clusterActions   // not used in this test
-	_ = clusterCreator   // not used in this test
-	_ = nodeGroupManager // not used in this test
+	provisioner, lister := setupProvisionerForBasicTests(t)
 
 	setupExistsFailure(lister)
 
@@ -410,7 +382,7 @@ func testStartNodegroupScaleError(t *testing.T) {
 	t.Helper()
 
 	desiredCapacity, minSize := 1, 0
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -422,9 +394,6 @@ func testStartNodegroupScaleError(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider // not used in this test
-	_ = clusterActions  // not used in this test
-	_ = clusterCreator  // not used in this test
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -443,7 +412,7 @@ func testStartNodegroupScaleError(t *testing.T) {
 
 func testStartSuccessWithoutScalingConfig(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, _ := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -452,10 +421,6 @@ func testStartSuccessWithoutScalingConfig(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
 
 	setupExistsSuccess(lister)
 
@@ -467,13 +432,7 @@ func testStartSuccessWithoutScalingConfig(t *testing.T) {
 func testStartExistsCheckError(t *testing.T) {
 	t.Helper()
 
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+	provisioner, lister := setupProvisionerForBasicTests(t)
 
 	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).
 		Return(nil, errListClustersFailed)
@@ -491,29 +450,13 @@ func testStartExistsCheckError(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	t.Parallel()
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-		testStopSuccess(t)
-	})
-	t.Run("success with multiple nodegroups", func(t *testing.T) {
-		t.Parallel()
-		testStopSuccessMultipleNodegroups(t)
-	})
-	t.Run("cluster not found", func(t *testing.T) {
-		t.Parallel()
-		testStopClusterNotFound(t)
-	})
-	t.Run("nodegroup scale error", func(t *testing.T) {
-		t.Parallel()
-		testStopNodegroupScaleError(t)
-	})
-	t.Run("success creates scaling config", func(t *testing.T) {
-		t.Parallel()
-		testStopSuccessCreatesScalingConfig(t)
-	})
-	t.Run("exists check error", func(t *testing.T) {
-		t.Parallel()
-		testStopExistsCheckError(t)
+	runParallelSubtests(t, map[string]func(*testing.T){
+		"success":                          testStopSuccess,
+		"success with multiple nodegroups": testStopSuccessMultipleNodegroups,
+		"cluster not found":                testStopClusterNotFound,
+		"nodegroup scale error":            testStopNodegroupScaleError,
+		"success creates scaling config":   testStopSuccessCreatesScalingConfig,
+		"exists check error":               testStopExistsCheckError,
 	})
 }
 
@@ -521,7 +464,7 @@ func testStopSuccess(t *testing.T) {
 	t.Helper()
 
 	desiredCapacity, minSize := 1, 1
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -533,9 +476,6 @@ func testStopSuccess(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -551,7 +491,7 @@ func testStopSuccessMultipleNodegroups(t *testing.T) {
 
 	desiredCapacity1, desiredCapacity2 := 2, 3
 	minSize1, minSize2 := 1, 1
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{
 			{
@@ -574,9 +514,6 @@ func testStopSuccessMultipleNodegroups(t *testing.T) {
 			},
 		},
 	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -590,13 +527,7 @@ func testStopSuccessMultipleNodegroups(t *testing.T) {
 
 func testStopClusterNotFound(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+	provisioner, lister := setupProvisionerForBasicTests(t)
 
 	setupExistsFailure(lister)
 
@@ -614,7 +545,7 @@ func testStopNodegroupScaleError(t *testing.T) {
 	t.Helper()
 
 	desiredCapacity, minSize := 1, 1
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -626,9 +557,6 @@ func testStopNodegroupScaleError(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
 
 	setupExistsSuccess(lister)
 
@@ -648,7 +576,7 @@ func testStopNodegroupScaleError(t *testing.T) {
 
 func testStopSuccessCreatesScalingConfig(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisionerWithNodegroups(
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
 		t,
 		[]*v1alpha5.NodeGroup{{
 			NodeGroupBase: &v1alpha5.NodeGroupBase{
@@ -657,9 +585,6 @@ func testStopSuccessCreatesScalingConfig(t *testing.T) {
 			},
 		}},
 	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
 
 	setupExistsSuccess(lister)
 	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
@@ -672,13 +597,7 @@ func testStopSuccessCreatesScalingConfig(t *testing.T) {
 
 func testStopExistsCheckError(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+	provisioner, lister := setupProvisionerForBasicTests(t)
 
 	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).
 		Return(nil, errListClustersFailed)
@@ -875,6 +794,18 @@ func testExistsListError(t *testing.T) {
 
 // Helper functions
 
+// runParallelSubtests runs a set of parallel subtests.
+func runParallelSubtests(t *testing.T, tests map[string]func(*testing.T)) {
+	t.Helper()
+
+	for name, testFunc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			testFunc(t)
+		})
+	}
+}
+
 func setupMocks(t *testing.T) (
 	*v1alpha5.ClusterConfig,
 	*eks.ClusterProvider,
@@ -897,6 +828,7 @@ func setupMocks(t *testing.T) (
 	return clusterConfig, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
 }
 
+//nolint:unparam // Test helper designed for flexibility; some returns intentionally unused
 func setupProvisioner(t *testing.T) (
 	*eksprovisioner.EKSClusterProvisioner,
 	*eks.ClusterProvider,
@@ -922,12 +854,10 @@ func setupProvisioner(t *testing.T) (
 	return provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
 }
 
-func setupProvisionerWithNodegroups(t *testing.T, nodeGroups []*v1alpha5.NodeGroup) (
+// setupProvisionerForNodegroupTests returns only what's needed for nodegroup scaling tests.
+func setupProvisionerForNodegroupTests(t *testing.T, nodeGroups []*v1alpha5.NodeGroup) (
 	*eksprovisioner.EKSClusterProvisioner,
-	*eks.ClusterProvider,
-	*eksprovisioner.MockEKSClusterActions,
 	*eksprovisioner.MockEKSClusterLister,
-	*eksprovisioner.MockEKSClusterCreator,
 	*eksprovisioner.MockEKSNodeGroupManager,
 ) {
 	t.Helper()
@@ -945,7 +875,33 @@ func setupProvisionerWithNodegroups(t *testing.T, nodeGroups []*v1alpha5.NodeGro
 		nodeGroupManager,
 	)
 
-	return provisioner, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
+	return provisioner, clusterLister, nodeGroupManager
+}
+
+// setupProvisionerForBasicTests creates a basic provisioner and returns only
+// the components commonly used by basic tests (no nodegroups).
+func setupProvisionerForBasicTests(
+	t *testing.T,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSClusterLister,
+) {
+	t.Helper()
+
+	clusterConfig, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager := setupMocks(
+		t,
+	)
+
+	provisioner := eksprovisioner.NewEKSClusterProvisioner(
+		clusterConfig,
+		clusterProvider,
+		clusterActions,
+		clusterLister,
+		clusterCreator,
+		nodeGroupManager,
+	)
+
+	return provisioner, clusterLister
 }
 
 func setupExistsSuccess(lister *eksprovisioner.MockEKSClusterLister) {
