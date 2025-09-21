@@ -117,24 +117,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name:  s.KSailConfig.Metadata.Name,
-		Nodes: []v1alpha4.Node{},
-		Networking: v1alpha4.Networking{
-			IPFamily:          "",
-			APIServerPort:     0,
-			APIServerAddress:  "",
-			PodSubnet:         "",
-			ServiceSubnet:     "",
-			DisableDefaultCNI: false,
-			KubeProxyMode:     "",
-			DNSSearch:         nil,
-		},
-		FeatureGates:                    map[string]bool{},
-		RuntimeConfig:                   map[string]string{},
-		KubeadmConfigPatches:            []string{},
-		KubeadmConfigPatchesJSON6902:    nil,
-		ContainerdConfigPatches:         []string{},
-		ContainerdConfigPatchesJSON6902: nil,
+		Name: s.KSailConfig.Metadata.Name,
 	}
 
 	opts := yamlgenerator.Options{
