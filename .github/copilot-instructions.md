@@ -1,4 +1,5 @@
 # KSail-Go
+
 KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It provides declarative cluster provisioning, workload management, and lifecycle operations for Kind, K3d, and EKS distributions.
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
@@ -6,7 +7,9 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 ## Working Effectively
 
 ### Prerequisites
+
 Install these exact tools before starting development:
+
 - Go (v1.23.9+) - `go version` should show go1.23.9 or higher
 - mockery (v3.x) - for generating test mocks
 - golangci-lint - for code linting
@@ -14,6 +17,7 @@ Install these exact tools before starting development:
 - Docker - required for cluster provisioning and system tests
 
 ### Bootstrap and Build Commands
+
 Run these commands in sequence to set up the development environment:
 
 ```bash
@@ -37,6 +41,7 @@ golangci-lint run
 ```
 
 ### Mega-Linter (Comprehensive Validation)
+
 ```bash
 # Run comprehensive linting with go flavor - takes 5+ minutes
 # NEVER CANCEL: This is thorough validation. Set timeout to 10+ minutes
@@ -46,7 +51,9 @@ mega-linter-runner -f go
 ## Validation
 
 ### Always Run Before Committing
+
 Execute these commands before any commit to ensure CI will pass:
+
 ```bash
 # Essential pre-commit validation (run all of these):
 mockery                    # Generate fresh mocks
@@ -56,9 +63,11 @@ go build -o ksail .       # Ensure clean build
 ```
 
 ### Manual Testing Scenarios
+
 **ALWAYS test actual CLI functionality after making changes by running these scenarios:**
 
 #### Basic CLI Validation
+
 ```bash
 # Test CLI help and version
 ./ksail --help
@@ -72,7 +81,9 @@ go build -o ksail .       # Ensure clean build
 ```
 
 #### Complete Cluster Lifecycle Test
+
 Run this complete scenario in a temporary directory to validate changes:
+
 ```bash
 # Create test directory and navigate to it
 mkdir -p /tmp/ksail-test && cd /tmp/ksail-test
@@ -91,6 +102,7 @@ rm -rf k8s kind.yaml ksail.yaml
 ```
 
 #### Alternative Distribution Testing
+
 ```bash
 # Test K3d distribution
 ./ksail init --distribution K3d
@@ -100,9 +112,11 @@ rm -rf k8s kind.yaml ksail.yaml
 ```
 
 ### System Tests
+
 The CI runs comprehensive system tests that validate:
+
 - `init --distribution Kind`
-- `init --distribution K3d` 
+- `init --distribution K3d`
 - `init --distribution EKS`
 
 Each runs the complete lifecycle: init → up → status → list → start → reconcile → down
@@ -110,7 +124,8 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 ## Project Structure and Navigation
 
 ### Repository Layout
-```
+
+```txt
 /home/runner/work/ksail-go/ksail-go/
 ├── cmd/                    # CLI commands using Cobra framework
 │   ├── *.go               # Command implementations (init.go, up.go, down.go, etc.)
@@ -133,6 +148,7 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 ```
 
 ### Key Files to Review When Making Changes
+
 - **Command changes**: Always check corresponding test files (`*_test.go`)
 - **API changes**: Review `pkg/apis/cluster/v1alpha1/` definitions
 - **Configuration changes**: Check `pkg/config-manager/` implementations
@@ -140,6 +156,7 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 - **Build/CI changes**: Review `.github/workflows/ci.yaml`
 
 ### Common Development Locations
+
 - **Adding new CLI commands**: `cmd/*.go` + corresponding tests
 - **Cluster provider logic**: `pkg/provisioner/cluster/{kind,k3d,eks}/`
 - **Configuration handling**: `pkg/config-manager/`
@@ -149,6 +166,7 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 ## Timing Expectations and Timeouts
 
 ### Command Timing Reference (based on validation)
+
 - `go mod download`: ~0.045s (when cached)
 - `go build ./...`: ~2.1s
 - `go build -o ksail .`: ~1.4s
@@ -158,22 +176,29 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 - `mega-linter-runner -f go`: 5+ minutes
 
 ### Recommended Timeout Settings
-**CRITICAL: NEVER CANCEL these operations prematurely**
+
+> [!CAUTION]
+> CRITICAL: NEVER CANCEL these operations prematurely
+
 - Build commands: 60+ seconds timeout
-- Test commands: 90+ seconds timeout  
+- Test commands: 90+ seconds timeout
 - Linter commands: 120+ seconds timeout
 - Mega-linter: 600+ seconds (10+ minutes) timeout
 
 ## CI Workflow Information
 
 ### GitHub Actions Pipeline
+
 The CI pipeline (`.github/workflows/ci.yaml`) runs:
+
 1. **Standard Go CI**: Build, test, lint using reusable workflows
 2. **System Tests**: Matrix testing across Kind, K3d, and EKS distributions
 3. **Full lifecycle validation**: Each distribution tested through complete workflow
 
 ### Pre-commit Hooks
+
 Pre-commit hooks automatically run:
+
 - `golangci-lint-fmt`: Go code formatting
 - `mockery`: Mock generation via `scripts/run-mockery.sh`
 
@@ -182,25 +207,29 @@ Install pre-commit hooks: `pre-commit install`
 ## Dependencies and Requirements
 
 ### Go Version
+
 - **Required**: Go 1.24.0+ (specified in go.mod)
 - **Validated**: Works with Go 1.25.1
 
 ### External Tools
+
 - **Docker**: Required for cluster provisioning (Kind, K3d containers)
 - **mockery v3.x**: Critical for test mock generation
 - **golangci-lint**: Code quality enforcement
 - **mega-linter**: Comprehensive project validation
 
 ### Key Go Dependencies
+
 - `github.com/spf13/cobra`: CLI framework
 - `sigs.k8s.io/kind`: Kind cluster management
-- `github.com/k3d-io/k3d/v5`: K3d cluster management  
+- `github.com/k3d-io/k3d/v5`: K3d cluster management
 - `github.com/weaveworks/eksctl`: EKS cluster management
 - `k8s.io/client-go`: Kubernetes client libraries
 
 ## Common Tasks Reference
 
 ### Building the Application
+
 ```bash
 # Development build
 go build -o ksail .
@@ -211,6 +240,7 @@ GOOS=darwin GOARCH=amd64 go build -o ksail-darwin .
 ```
 
 ### Running Tests
+
 ```bash
 # All tests
 go test ./...
@@ -227,6 +257,7 @@ go test -cover ./...
 ```
 
 ### Mock Management
+
 ```bash
 # Generate all mocks (uses .mockery.yml config)
 mockery
@@ -236,6 +267,7 @@ mockery showconfig
 ```
 
 ### Code Quality
+
 ```bash
 # Run linter
 golangci-lint run
