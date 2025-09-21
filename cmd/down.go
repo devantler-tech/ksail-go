@@ -19,7 +19,7 @@ func NewDownCmd() *cobra.Command {
 				"cluster destroyed successfully",
 			)(cmd, manager, args)
 		},
-		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to destroy"),
+		cmdhelpers.StandardDistributionFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context of cluster to destroy",

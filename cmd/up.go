@@ -21,7 +21,7 @@ func NewUpCmd() *cobra.Command {
 		"Start the Kubernetes cluster",
 		`Start the Kubernetes cluster defined in the project configuration.`,
 		HandleUpRunE,
-		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },

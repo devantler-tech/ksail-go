@@ -19,7 +19,7 @@ func NewStartCmd() *cobra.Command {
 				"Cluster started successfully (stub implementation)",
 			)(cmd, manager, args)
 		},
-		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to start"),
+		cmdhelpers.StandardDistributionFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context of cluster to start",

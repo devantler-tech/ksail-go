@@ -182,13 +182,20 @@ func StandardClusterCommandRunE(
 	}
 }
 
+// StandardNameFieldSelector creates a standard field selector for cluster name.
+func StandardNameFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
+	return configmanager.FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		Description:  "Name of the cluster",
+		DefaultValue: "ksail-default",
+	}
+}
+
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
-func StandardDistributionFieldSelector(
-	description string,
-) configmanager.FieldSelector[v1alpha1.Cluster] {
+func StandardDistributionFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-		Description:  description,
+		Description:  "Kubernetes distribution to use",
 		DefaultValue: v1alpha1.DistributionKind,
 	}
 }

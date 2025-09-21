@@ -144,10 +144,9 @@ func TestLogClusterInfo(t *testing.T) {
 func TestStandardDistributionFieldSelector(t *testing.T) {
 	t.Parallel()
 
-	description := "Kubernetes distribution to use"
-	selector := cmdhelpers.StandardDistributionFieldSelector(description)
+	selector := cmdhelpers.StandardDistributionFieldSelector()
 
-	assert.Equal(t, description, selector.Description)
+	assert.Equal(t, "Kubernetes distribution to use", selector.Description)
 	assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
 
 	// Test selector function

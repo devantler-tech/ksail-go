@@ -16,11 +16,11 @@ import (
 func NewInitCmd() *cobra.Command {
 	// Create field selectors
 	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
-		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardNameFieldSelector(),
+		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardSourceDirectoryFieldSelector(),
-	}
-
-	// Use the common command creation helper
+	} // Use the common command creation helper
 	return cmdhelpers.NewCobraCommand(
 		"init",
 		"Initialize a new project",

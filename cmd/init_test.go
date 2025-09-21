@@ -94,7 +94,7 @@ func TestHandleInitRunE(t *testing.T) {
 
 		// Create manager with the same field selectors as the real init command
 		fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
-			cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+			cmdhelpers.StandardDistributionFieldSelector(),
 			cmdhelpers.StandardSourceDirectoryFieldSelector(),
 		}
 		manager := configmanager.NewConfigManager(fieldSelectors...)
