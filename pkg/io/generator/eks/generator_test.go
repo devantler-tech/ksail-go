@@ -32,6 +32,8 @@ func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("successful generation", func(t *testing.T) {
+		t.Parallel()
+
 		gen := generator.NewEKSGenerator()
 		cluster := createTestCluster("minimal", "eu-north-1")
 		result, err := gen.Generate(cluster, yamlgenerator.Options{})
@@ -41,6 +43,8 @@ func TestGenerate(t *testing.T) {
 	})
 
 	t.Run("missing metadata", func(t *testing.T) {
+		t.Parallel()
+
 		gen := generator.NewEKSGenerator()
 		cluster := &v1alpha5.ClusterConfig{
 			TypeMeta: metav1.TypeMeta{
@@ -54,6 +58,8 @@ func TestGenerate(t *testing.T) {
 	})
 
 	t.Run("missing cluster name", func(t *testing.T) {
+		t.Parallel()
+
 		gen := generator.NewEKSGenerator()
 		cluster := createTestCluster("", "eu-north-1")
 		_, err := gen.Generate(cluster, yamlgenerator.Options{})
@@ -62,6 +68,8 @@ func TestGenerate(t *testing.T) {
 	})
 
 	t.Run("missing cluster region", func(t *testing.T) {
+		t.Parallel()
+
 		gen := generator.NewEKSGenerator()
 		cluster := createTestCluster("minimal", "")
 		_, err := gen.Generate(cluster, yamlgenerator.Options{})

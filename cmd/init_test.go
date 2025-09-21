@@ -108,8 +108,8 @@ func TestHandleInitRunE(t *testing.T) {
 		// Change to temp directory for the test
 		origDir, _ := os.Getwd()
 
-		os.Chdir(tempDir)
-		defer os.Chdir(origDir)
+		t.Chdir(tempDir)
+		defer t.Chdir(origDir)
 
 		err := cmd.HandleInitRunE(testCmd, manager, []string{})
 
