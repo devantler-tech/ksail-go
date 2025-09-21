@@ -198,6 +198,10 @@
     "Qwen",
     "opencode",
     "Println",
-    "gomock"
+    "gomock",
+    "toplevel",
+    "pytest",
+    "clippy",
+    "underspecified"
   ]
 }

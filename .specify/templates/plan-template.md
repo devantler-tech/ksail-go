@@ -6,7 +6,7 @@
 
 ## Execution Flow (/plan command scope)
 
-```
+```txt
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
@@ -87,7 +87,7 @@
 
 ### Documentation (this feature)
 
-```
+```txt
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
@@ -99,7 +99,7 @@ specs/[###-feature]/
 
 ### Source Code (repository root)
 
-```
+```txt
 # Option 1: Single project (DEFAULT)
 src/
 ├── models/
@@ -146,7 +146,7 @@ ios/ or android/
 
 2. **Generate and dispatch research agents**:
 
-   ```
+   ```txt
    For each unknown in Technical Context:
      Task: "Research {unknown} for {feature context}"
    For each technology choice:
@@ -162,7 +162,8 @@ ios/ or android/
 
 ## Phase 1: Design & Contracts
 
-*Prerequisites: research.md complete*
+> [!IMPORTANT]
+> Prerequisites: research.md complete
 
 1. **Extract entities from feature spec** → `data-model.md`:
    - Entity name, fields, relationships
@@ -196,7 +197,8 @@ ios/ or android/
 
 ## Phase 2: Task Planning Approach
 
-*This section describes what the /tasks command will do - DO NOT execute during /plan*
+> [!IMPORTANT]
+> This section describes what the /tasks command will do - DO NOT execute during /plan
 
 **Task Generation Strategy**:
 
@@ -219,7 +221,8 @@ ios/ or android/
 
 ## Phase 3+: Future Implementation
 
-*These phases are beyond the scope of the /plan command*
+> [!IMPORTANT]
+> These phases are beyond the scope of the /plan command
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
 **Phase 4**: Implementation (execute tasks.md following constitutional principles)
@@ -227,16 +230,18 @@ ios/ or android/
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+> [!IMPORTANT]
+> Fill ONLY if Constitution Check has violations that must be justified
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+| -------------------------- | ------------------ | ------------------------------------ |
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
 
 ## Progress Tracking
 
-*This checklist is updated during execution flow*
+> [!IMPORTANT]
+> This checklist is updated during execution flow
 
 **Phase Status**:
 
