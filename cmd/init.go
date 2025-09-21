@@ -20,7 +20,8 @@ func NewInitCmd() *cobra.Command {
 		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardSourceDirectoryFieldSelector(),
-	} // Use the common command creation helper
+	}
+
 	return cmdhelpers.NewCobraCommand(
 		"init",
 		"Initialize a new project",
