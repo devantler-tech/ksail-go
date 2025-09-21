@@ -4,7 +4,6 @@ package cmd
 import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/cobra"
 )
 
@@ -20,10 +19,6 @@ func NewStartCmd() *cobra.Command {
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context of cluster to start",
-			DefaultValue: "kind-ksail-default",
-		},
+		cmdhelpers.StandardContextFieldSelector(),
 	)
 }

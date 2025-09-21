@@ -23,11 +23,7 @@ func NewUpCmd() *cobra.Command {
 		HandleUpRunE,
 		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context to use",
-			DefaultValue: "kind-ksail-default",
-		},
+		cmdhelpers.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 			Description:  "Timeout for cluster operations",

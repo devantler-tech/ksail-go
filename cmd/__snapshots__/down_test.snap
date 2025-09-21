@@ -13,7 +13,7 @@ Usage:
   down [flags]
 
 Flags:
-  -c, --context string              Kubernetes context of cluster to destroy (default "kind-ksail-default")
+  -c, --context string              Kubernetes context of cluster (default "kind-ksail-default")
   -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
   -h, --help                        help for down
 
