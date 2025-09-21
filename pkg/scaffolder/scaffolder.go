@@ -184,79 +184,13 @@ func (s *Scaffolder) createMinimalEKSConfig() *eksv1alpha5.ClusterConfig {
 			Kind:       "ClusterConfig",
 		},
 		Metadata: s.createEKSMetadata(),
-		NodeGroups: []*eksv1alpha5.NodeGroup{
-			s.createEKSNodeGroup(),
-		},
-		AddonsConfig: eksv1alpha5.AddonsConfig{
-			AutoApplyPodIdentityAssociations: false,
-			DisableDefaultAddons:             false,
-		},
 	}
 }
 
 func (s *Scaffolder) createEKSMetadata() *eksv1alpha5.ClusterMeta {
 	return &eksv1alpha5.ClusterMeta{
-		Name:      s.KSailConfig.Metadata.Name,
-		Region:    "eu-north-1",
-		Version:   "",
-		AccountID: "",
-	}
-}
-
-func (s *Scaffolder) createEKSNodeGroup() *eksv1alpha5.NodeGroup {
-	return &eksv1alpha5.NodeGroup{
-		NodeGroupBase: s.createEKSNodeGroupBase(),
-		ClusterDNS:    "",
-	}
-}
-
-func (s *Scaffolder) createEKSNodeGroupBase() *eksv1alpha5.NodeGroupBase {
-	desired := 1
-	return &eksv1alpha5.NodeGroupBase{
-		Name:              "ng-1",
-		AMIFamily:         "",
-		InstanceType:      "m5.large",
-		AvailabilityZones: nil,
-		Subnets:           nil,
-		InstancePrefix:    "",
-		InstanceName:      "",
-		ScalingConfig: &eksv1alpha5.ScalingConfig{
-			DesiredCapacity: &desired,
-			MinSize:         nil,
-			MaxSize:         nil,
-		},
-		VolumeSize:                nil,
-		VolumeType:                nil,
-		VolumeEncrypted:           nil,
-		VolumeKmsKeyID:            nil,
-		VolumeIOPS:                nil,
-		VolumeThroughput:          nil,
-		VolumeName:                nil,
-		AdditionalVolumes:         nil,
-		SSH:                       nil,
-		Labels:                    nil,
-		IAM:                       nil,
-		AMI:                       "",
-		SecurityGroups:            nil,
-		MaxPodsPerNode:            0,
-		ASGSuspendProcesses:       nil,
-		EBSOptimized:              nil,
-		PreBootstrapCommands:      nil,
-		OverrideBootstrapCommand:  nil,
-		Tags:                      nil,
-		PropagateASGTags:          nil,
-		DisableIMDSv1:             nil,
-		DisablePodIMDS:            nil,
-		Placement:                 nil,
-		EFAEnabled:                nil,
-		InstanceSelector:          nil,
-		AdditionalEncryptedVolume: "",
-		Bottlerocket:              nil,
-		EnableDetailedMonitoring:  nil,
-		CapacityReservation:       nil,
-		InstanceMarketOptions:     nil,
-		OutpostARN:                "",
-		PrivateNetworking:         false,
+		Name:   s.KSailConfig.Metadata.Name,
+		Region: "eu-north-1",
 	}
 }
 
