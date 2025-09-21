@@ -1,5 +1,3 @@
-// Package eksprovisioner provides implementations of the Provisioner interface
-// for provisioning EKS clusters in AWS.
 package eksprovisioner
 
 import (

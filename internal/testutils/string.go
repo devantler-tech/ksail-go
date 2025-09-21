@@ -1,4 +1,3 @@
-// Package testutils provides generic string assertion helpers for tests.
 package testutils
 
 import (

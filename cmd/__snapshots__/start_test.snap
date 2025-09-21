@@ -1,3 +1,11 @@
+
+[TestStartCmdExecute - 1]
+✔ Cluster started successfully (stub implementation)
+► Distribution: Kind
+► Context: kind-ksail-default
+
+---
+
 [TestStartCmdHelp - 1]
 Start a previously stopped cluster.
 
@@ -5,15 +13,8 @@ Usage:
   start [flags]
 
 Flags:
-  -c, --context string              Kubernetes context of cluster to start (default "kind-ksail-default")
-  -d, --distribution Distribution   Kubernetes distribution to start (default Kind)
+  -c, --context string              Kubernetes context of cluster (default "kind-ksail-default")
+  -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
   -h, --help                        help for start
-
----
-
-[TestStartCmdExecute - 1]
-✔ Cluster started successfully (stub implementation)
-► Distribution: Kind
-► Context: kind-ksail-default
 
 ---

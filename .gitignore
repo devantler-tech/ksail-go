@@ -14,8 +14,9 @@
 ksail-go
 k3d.yaml
 kind.yaml
+eks.yaml
 ksail.yaml
-/k8s/
+k8s/
 
 # ==============================================================================
 # Build and Release Artifacts

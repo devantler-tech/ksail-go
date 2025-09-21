@@ -2,7 +2,9 @@
 package eksgenerator
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -10,6 +12,16 @@ import (
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
+
+// Static errors for validation.
+var (
+	ErrClusterMetadataRequired = errors.New("cluster metadata is required")
+	ErrClusterNameRequired     = errors.New("cluster name is required")
+	ErrClusterRegionRequired   = errors.New("cluster region is required")
+)
+
+// Precompiled regex for removing empty addonsConfig lines.
+var emptyAddonsConfigRegex = regexp.MustCompile(`(?m)^addonsConfig: \{\}\s*\n`)
 
 // EKSGenerator generates an EKS ClusterConfig YAML.
 type EKSGenerator struct {
@@ -33,10 +45,27 @@ func (g *EKSGenerator) Generate(
 	// Ensure TypeMeta is set before applying defaults
 	cfg.TypeMeta = v1alpha5.ClusterConfigTypeMeta()
 
+	// Basic validation - check required fields
+	if cfg.Metadata == nil {
+		return "", ErrClusterMetadataRequired
+	}
+
+	if cfg.Metadata.Name == "" {
+		return "", ErrClusterNameRequired
+	}
+
+	if cfg.Metadata.Region == "" {
+		return "", ErrClusterRegionRequired
+	}
+
 	out, err := g.Marshaller.Marshal(cfg)
 	if err != nil {
 		return "", fmt.Errorf("marshal EKS config: %w", err)
 	}
+
+	// Remove empty addonsConfig line if it's just an empty object.
+	// It has to be done post-marshalling as the AddonsConfig is not a pointer.
+	out = emptyAddonsConfigRegex.ReplaceAllString(out, "")
 
 	// write to file if output path is specified
 	if opts.Output != "" {

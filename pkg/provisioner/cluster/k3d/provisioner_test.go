@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
-	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	"github.com/docker/go-connections/nat"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -267,31 +266,10 @@ func newK3dProvisionerForTest(
 }
 
 func buildTestSimpleConfig() *v1alpha5.SimpleConfig {
-	cfg := &v1alpha5.SimpleConfig{
-		ExposeAPI:  buildTestExposureOpts(),
-		Options:    buildTestConfigOptions(),
-		Registries: buildTestRegistries(),
-	}
+	cfg := &v1alpha5.SimpleConfig{}
 	cfg.Name = "cfg-name"
 
 	return cfg
-}
-
-func buildTestExposureOpts() v1alpha5.SimpleExposureOpts {
-	return v1alpha5.SimpleExposureOpts{}
-}
-
-func buildTestConfigOptions() v1alpha5.SimpleConfigOptions {
-	return v1alpha5.SimpleConfigOptions{
-		K3dOptions:        k3dgenerator.BuildDefaultK3dOptions(),
-		K3sOptions:        k3dgenerator.BuildDefaultK3sOptions(),
-		KubeconfigOptions: k3dgenerator.BuildDefaultKubeconfigOptions(),
-		Runtime:           k3dgenerator.BuildDefaultRuntimeOptions(),
-	}
-}
-
-func buildTestRegistries() v1alpha5.SimpleConfigRegistries {
-	return v1alpha5.SimpleConfigRegistries{}
 }
 
 type (

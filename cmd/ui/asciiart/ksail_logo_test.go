@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
@@ -319,6 +319,7 @@ func createEdgeCaseTestData() []struct {
 				if len(output) == 0 {
 					t.Error("Expected non-empty output for various length lines")
 				}
+
 				lines := strings.Split(output, "\n")
 				if len(lines) < 8 {
 					t.Errorf("Expected at least 8 lines, got %d", len(lines))
@@ -341,6 +342,7 @@ func createEdgeCaseTestData() []struct {
 			}, "\n"),
 			expectFunc: func(t *testing.T, output string) {
 				t.Helper()
+
 				if len(output) == 0 {
 					t.Error("Expected non-empty output for missing coverage test")
 				}

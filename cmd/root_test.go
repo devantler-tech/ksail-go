@@ -6,16 +6,14 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
 
 var errRootTest = errors.New("boom")
 
-func TestMain(main *testing.M) {
-	testutils.RunTestMainWithSnapshotCleanup(main)
-}
+func TestMain(main *testing.M) { testutils.RunTestMainWithSnapshotCleanup(main) }
 
 func TestNewRootCmdVersionFormatting(t *testing.T) {
 	t.Parallel()

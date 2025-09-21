@@ -3,137 +3,33 @@ package kindgenerator_test
 import (
 	"testing"
 
-	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
-	"github.com/stretchr/testify/assert"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	"github.com/gkampitakis/go-snaps/snaps"
+	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
+
+func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	gen := generator.NewKindGenerator()
-	tests := generatortestutils.GetStandardGenerateTestCases("kind-config.yaml")
 
-	generatortestutils.TestGenerateCommon(
-		t,
-		tests,
-		createTestCluster,
-		gen,
-		assertKindYAML,
-		"kind-config.yaml",
-	)
-}
-
-func TestGenerateExistingFileNoForce(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("existing-no-force")
-
-	// Act & Assert
-	generatortestutils.TestExistingFile(
-		t,
-		gen,
-		cluster,
-		"kind-config.yaml",
-		assertKindYAML,
-		"existing-no-force",
-		false,
-	)
-}
-
-func TestGenerateExistingFileWithForce(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("existing-with-force")
-
-	// Act & Assert
-	generatortestutils.TestExistingFile(
-		t,
-		gen,
-		cluster,
-		"kind-config.yaml",
-		assertKindYAML,
-		"existing-with-force",
-		true,
-	)
-}
-
-func TestGenerateFileWriteError(t *testing.T) {
-	t.Parallel()
-
-	gen := generator.NewKindGenerator()
-	cluster := createTestCluster("error-cluster")
-
-	// Act & Assert
-	generatortestutils.TestFileWriteError(
-		t,
-		gen,
-		cluster,
-		"kind-config.yaml",
-		"write kind config",
-	)
-}
-
-func TestGenerateMarshalError(t *testing.T) {
-	t.Parallel()
-
-	// Act & Assert
-	testKindMarshalError(
-		t,
-		createTestCluster,
-		"marshal kind config",
-	)
-}
-
-// createTestCluster creates a minimal test cluster configuration.
-func createTestCluster(name string) *v1alpha4.Cluster {
-	cluster := kindconfig.NewKindCluster(name, "", "")
-
-	// Add a minimal control plane node to ensure kind processes the cluster correctly
-	var node v1alpha4.Node
-
-	node.Role = v1alpha4.ControlPlaneRole
-	cluster.Nodes = append(cluster.Nodes, node)
-
-	return cluster
-}
-
-// assertKindYAML ensures the generated YAML contains the expected boilerplate and cluster name.
-func assertKindYAML(t *testing.T, result string, clusterName string) {
-	t.Helper()
-	assert.Contains(
-		t,
-		result,
-		"apiVersion: kind.x-k8s.io/v1alpha4",
-		"YAML should contain API version",
-	)
-	assert.Contains(t, result, "kind: Cluster", "YAML should contain kind")
-	assert.Contains(t, result, "name: "+clusterName, "YAML should contain cluster name")
-}
-
-// testKindMarshalError runs a test pattern for Kind generator marshal errors.
-func testKindMarshalError(
-	t *testing.T,
-	createCluster func(string) *v1alpha4.Cluster,
-	expectedErrorContains string,
-) {
-	t.Helper()
-
-	gen := generator.NewKindGenerator()
-	gen.Marshaller = generatortestutils.MarshalFailer[*v1alpha4.Cluster]{
-		Marshaller: nil,
+	createCluster := func(_ string) *kindv1alpha4.Cluster {
+		return &kindv1alpha4.Cluster{
+			TypeMeta: kindv1alpha4.TypeMeta{
+				APIVersion: "kind.x-k8s.io/v1alpha4",
+				Kind:       "Cluster",
+			},
+		}
 	}
-	cluster := createCluster("marshal-error-cluster")
 
-	// Act & Assert
-	generatortestutils.TestGeneratorMarshalError[*v1alpha4.Cluster, *v1alpha4.Cluster](
-		t,
-		gen,
-		cluster,
-		expectedErrorContains,
-	)
+	assertContent := func(t *testing.T, result, _ string) {
+		t.Helper()
+		snaps.MatchSnapshot(t, result)
+	}
+
+	generatortestutils.RunStandardGeneratorTests(t, gen, createCluster, "kind.yaml", assertContent)
 }

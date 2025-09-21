@@ -1,5 +1,11 @@
 APPLY_FIXES: all
+FLAVOR_SUGGESTIONS: false
+
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
-DISABLE_LINTERS: # TODO: Re-enable golangci-lint when mega-linter v8 compatibility issues with latest Go/golangci-lint versions are resolved
-  - GO_GOLANGCI_LINT
+IGNORE_GITIGNORED_FILES: true
+EXCLUDED_DIRECTORIES:
+  - report
+  - megalinter-reports
+
+DISABLE_LINTERS:
   - GO_REVIVE

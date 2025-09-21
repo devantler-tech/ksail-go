@@ -1,3 +1,12 @@
+
+[TestReconcileCmdExecute - 1]
+✔ Workloads reconciled successfully (stub implementation)
+► Reconciliation tool: Kubectl
+► Source directory: k8s
+► Context: kind-ksail-default
+
+---
+
 [TestReconcileCmdHelp - 1]
 Reconcile workloads in the cluster to match the desired state
 defined in configuration files.
@@ -11,13 +20,5 @@ Flags:
   -k, --kubeconfig string                        Path to kubeconfig file (default "~/.kube/config")
   -r, --reconciliation-tool ReconciliationTool   Tool to use for reconciling workloads (default Kubectl)
   -s, --source-directory string                  Directory containing workloads to reconcile (default "k8s")
-
----
-
-[TestReconcileCmdExecute - 1]
-✔ Workloads reconciled successfully (stub implementation)
-► Reconciliation tool: Kubectl
-► Source directory: k8s
-► Context: kind-ksail-default
 
 ---

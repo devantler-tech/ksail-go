@@ -34,8 +34,6 @@ func (g *KindGenerator) Generate(
 	cfg.APIVersion = "kind.x-k8s.io/v1alpha4"
 	cfg.Kind = "Cluster"
 
-	v1alpha4.SetDefaultsCluster(cfg)
-
 	out, err := g.Marshaller.Marshal(cfg)
 	if err != nil {
 		return "", fmt.Errorf("marshal kind config: %w", err)

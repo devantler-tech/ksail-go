@@ -1,0 +1,224 @@
+
+[TestScaffold/basic_scaffolding_operations/Tind_distribution_not_implemented - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffold/basic_scaffolding_operations/Unknown_distribution - 1]
+provided distribution is unknown
+---
+
+[TestScaffold/error_handling/distribution_error_paths - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffold/error_handling/distribution_error_paths - 2]
+provided distribution is unknown
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/EKS_config_with_problematic_path - 1]
+EKS error occurred: false
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/K3d_config_with_problematic_path - 1]
+K3d error occurred: false
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/Kind_config_with_problematic_path - 1]
+Kind error occurred: false
+---
+
+[TestScaffold/error_handling/invalid_output_path - 1]
+Error type: *fmt.wrapErrors, contains 'invalid argument': true
+---
+
+[TestScaffold/generated_content_validation/EKS_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: EKS
+  distributionConfig: eks.yaml
+  sourceDirectory: k8s
+
+---
+
+[TestScaffold/generated_content_validation/EKS_configuration_content - 2]
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: test-cluster
+  region: eu-north-1
+nodeGroups:
+- desiredCapacity: 1
+  instanceType: m5.large
+  name: ng-1
+
+---
+
+[TestScaffold/generated_content_validation/EKS_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffold/generated_content_validation/K3d_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: K3d
+  distributionConfig: k3d.yaml
+
+---
+
+[TestScaffold/generated_content_validation/K3d_configuration_content - 2]
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: test-cluster
+
+---
+
+[TestScaffold/generated_content_validation/K3d_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffold/generated_content_validation/Kind_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+
+---
+
+[TestScaffold/generated_content_validation/Kind_configuration_content - 2]
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: test-cluster
+
+---
+
+[TestScaffold/generated_content_validation/Kind_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffoldErrorHandling/invalid_output_path - 1]
+Error type: *fmt.wrapErrors, contains 'invalid argument': true
+---
+
+[TestScaffoldErrorHandling/distribution_error_paths - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffoldContentValidation/Kind_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+
+---
+
+[TestScaffoldGeneratorFailures/Kind_config_with_problematic_path - 1]
+Kind error occurred: false
+---
+
+[TestScaffoldGeneratorFailures/EKS_config_with_problematic_path - 1]
+EKS error occurred: false
+---
+
+[TestScaffoldGeneratorFailures/K3d_config_with_problematic_path - 1]
+K3d error occurred: false
+---
+
+[TestScaffoldContentValidation/EKS_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: EKS
+  distributionConfig: eks.yaml
+  sourceDirectory: k8s
+
+---
+
+[TestScaffoldContentValidation/K3d_configuration_content - 1]
+apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+metadata:
+  name: test-cluster
+spec:
+  distribution: K3d
+  distributionConfig: k3d.yaml
+
+---
+
+[TestScaffoldErrorHandling/distribution_error_paths - 2]
+provided distribution is unknown
+---
+
+[TestScaffoldBasicOperations/Unknown_distribution - 1]
+provided distribution is unknown
+---
+
+[TestScaffoldBasicOperations/Tind_distribution_not_implemented - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffoldContentValidation/Kind_configuration_content - 2]
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: test-cluster
+
+---
+
+[TestScaffoldContentValidation/EKS_configuration_content - 2]
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: test-cluster
+  region: eu-north-1
+nodeGroups:
+- desiredCapacity: 1
+  instanceType: m5.large
+  name: ng-1
+
+---
+
+[TestScaffoldContentValidation/K3d_configuration_content - 2]
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: test-cluster
+
+---
+
+[TestScaffoldContentValidation/Kind_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffoldContentValidation/EKS_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestScaffoldContentValidation/K3d_configuration_content - 3]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---

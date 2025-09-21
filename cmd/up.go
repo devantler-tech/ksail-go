@@ -1,4 +1,3 @@
-// Package cmd provides the command-line interface for KSail.
 package cmd
 
 import (
@@ -21,13 +20,9 @@ func NewUpCmd() *cobra.Command {
 		"Start the Kubernetes cluster",
 		`Start the Kubernetes cluster defined in the project configuration.`,
 		HandleUpRunE,
-		cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context to use",
-			DefaultValue: "kind-ksail-default",
-		},
+		cmdhelpers.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 			Description:  "Timeout for cluster operations",

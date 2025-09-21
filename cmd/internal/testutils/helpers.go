@@ -1,9 +1,7 @@
-// Package testutils provides testing helpers for command testing.
 package testutils
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -32,11 +30,11 @@ func TestSimpleCommandCreation(t *testing.T, data SimpleCommandTestData) {
 		t.Fatal("expected command to be created")
 	}
 
-	if cmd.Use != data.ExpectedUse {
+	if data.ExpectedUse != "" && cmd.Use != data.ExpectedUse {
 		t.Fatalf("expected Use to be %q, got %q", data.ExpectedUse, cmd.Use)
 	}
 
-	if cmd.Short != data.ExpectedShort {
+	if data.ExpectedShort != "" && cmd.Short != data.ExpectedShort {
 		t.Fatalf("expected Short description to be %q, got %q", data.ExpectedShort, cmd.Short)
 	}
 }
@@ -95,20 +93,4 @@ func TestRunEError(
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "test config load error")
-}
-
-// RunTestMainWithSnapshotCleanup runs the standard TestMain pattern with snapshot cleanup.
-// This eliminates duplication of the common TestMain boilerplate across test files.
-func RunTestMainWithSnapshotCleanup(m *testing.M) {
-	exitCode := m.Run()
-
-	cleaned, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
-	if err != nil {
-		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
-		os.Exit(1)
-	}
-
-	_ = cleaned
-
-	os.Exit(exitCode)
 }

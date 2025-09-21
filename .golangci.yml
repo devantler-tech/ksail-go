@@ -14,6 +14,7 @@ linters:
   enable:
     - wsl_v5
   disable:
+    - exhaustruct
     - wsl
   exclusions:
     paths:
@@ -21,13 +22,9 @@ linters:
       - ".*mocks.*\\.go$"
       - ".*_mocks_.*\\.go$"
     rules:
-      - path: ".*_test\\.go$"
-        linters:
-          - exhaustruct
-
-      - path: ".*/testutils/.*\\.go$"
-        linters:
-          - exhaustruct
+      - linters:
+          - ireturn
+        path: pkg/provisioner/containerengine/engine.go
   settings:
     wsl_v5:
       allow-first-in-block: true

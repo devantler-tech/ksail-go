@@ -1,4 +1,3 @@
-// Package fluxinstaller provides an installer for installing flux on a Kubernetes cluster.
 package fluxinstaller
 
 import (

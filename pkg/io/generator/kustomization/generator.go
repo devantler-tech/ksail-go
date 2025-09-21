@@ -3,8 +3,8 @@ package kustomizationgenerator
 
 import (
 	"fmt"
+	"strings"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
@@ -14,67 +14,37 @@ import (
 
 // KustomizationGenerator generates a kustomization.yaml.
 type KustomizationGenerator struct {
-	KSailConfig *v1alpha1.Cluster
-	Marshaller  marshaller.Marshaller[*ktypes.Kustomization]
+	Marshaller marshaller.Marshaller[*ktypes.Kustomization]
 }
 
 // NewKustomizationGenerator creates and returns a new KustomizationGenerator instance.
-func NewKustomizationGenerator(cfg *v1alpha1.Cluster) *KustomizationGenerator {
+func NewKustomizationGenerator() *KustomizationGenerator {
 	m := yamlmarshaller.NewMarshaller[*ktypes.Kustomization]()
 
 	return &KustomizationGenerator{
-		KSailConfig: cfg,
-		Marshaller:  m,
+		Marshaller: m,
 	}
 }
 
 // Generate creates a kustomization.yaml file and writes it to the specified output file path.
 func (g *KustomizationGenerator) Generate(
-	_ *v1alpha1.Cluster,
+	kustomization *ktypes.Kustomization,
 	opts yamlgenerator.Options,
 ) (string, error) {
-	kustomization := ktypes.Kustomization{
-		TypeMeta: ktypes.TypeMeta{
-			APIVersion: "kustomize.config.k8s.io/v1beta1",
-			Kind:       "Kustomization",
-		},
-		MetaData:                    nil,
-		OpenAPI:                     nil,
-		NamePrefix:                  "",
-		NameSuffix:                  "",
-		Namespace:                   "",
-		CommonLabels:                nil,
-		Labels:                      nil,
-		CommonAnnotations:           nil,
-		PatchesStrategicMerge:       nil,
-		PatchesJson6902:             nil,
-		Patches:                     nil,
-		Images:                      nil,
-		ImageTags:                   nil,
-		Replacements:                nil,
-		Replicas:                    nil,
-		Vars:                        nil,
-		SortOptions:                 nil,
-		Resources:                   []string{},
-		Components:                  nil,
-		Crds:                        nil,
-		Bases:                       nil,
-		ConfigMapGenerator:          nil,
-		SecretGenerator:             nil,
-		HelmGlobals:                 nil,
-		HelmCharts:                  nil,
-		HelmChartInflationGenerator: nil,
-		GeneratorOptions:            nil,
-		Configurations:              nil,
-		Generators:                  nil,
-		Transformers:                nil,
-		Validators:                  nil,
-		BuildMetadata:               nil,
+	kustomization.TypeMeta = ktypes.TypeMeta{
+		APIVersion: "kustomize.config.k8s.io/v1beta1",
+		Kind:       "Kustomization",
 	}
+	kustomization.Resources = []string{}
 
-	out, err := g.Marshaller.Marshal(&kustomization)
+	out, err := g.Marshaller.Marshal(kustomization)
 	if err != nil {
 		return "", fmt.Errorf("marshal kustomization: %w", err)
+	}
+
+	// Only add resources: [] if no resources field is present at all
+	if !strings.Contains(out, "resources:") {
+		out += "resources: []\n"
 	}
 
 	// If no output file specified, just return the YAML

@@ -70,6 +70,7 @@ func getLoadClusterTests() []struct {
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
 				var out bytes.Buffer
+
 				cmd := &cobra.Command{}
 				cmd.SetOut(&out)
 
@@ -141,13 +142,26 @@ func TestLogClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context: kind-ksail-default")
 }
 
+func TestStandardNameFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := cmdhelpers.StandardNameFieldSelector()
+
+	assert.Equal(t, "Name of the cluster", selector.Description)
+	assert.Equal(t, "ksail-default", selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Metadata.Name, result)
+}
+
 func TestStandardDistributionFieldSelector(t *testing.T) {
 	t.Parallel()
 
-	description := "Kubernetes distribution to use"
-	selector := cmdhelpers.StandardDistributionFieldSelector(description)
+	selector := cmdhelpers.StandardDistributionFieldSelector()
 
-	assert.Equal(t, description, selector.Description)
+	assert.Equal(t, "Kubernetes distribution to use", selector.Description)
 	assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
 
 	// Test selector function
@@ -182,6 +196,20 @@ func TestStandardDistributionConfigFieldSelector(t *testing.T) {
 	cluster := &v1alpha1.Cluster{}
 	result := selector.Selector(cluster)
 	assert.Equal(t, &cluster.Spec.DistributionConfig, result)
+}
+
+func TestStandardContextFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := cmdhelpers.StandardContextFieldSelector()
+
+	assert.Equal(t, "Kubernetes context of cluster", selector.Description)
+	assert.Equal(t, "kind-ksail-default", selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.Connection.Context, result)
 }
 
 func TestStandardClusterCommandRunE(t *testing.T) {
