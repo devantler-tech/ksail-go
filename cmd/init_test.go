@@ -55,7 +55,7 @@ func TestInitCmdExecute(t *testing.T) {
 			}
 			manager := configmanager.NewConfigManager(fieldSelectors...)
 
-			return cmd.HandleInitRunEWithOutputPath(cobraCmd, manager, tempDir)
+			return cmd.HandleInitRunE(cobraCmd, manager, []string{}, tempDir)
 		},
 	}
 	cmd.SetOut(&out)
@@ -143,8 +143,8 @@ func TestHandleInitRunE(t *testing.T) {
 		// Create a temporary directory for testing
 		tempDir := t.TempDir()
 
-		// Use the new function that accepts an output path
-		err := cmd.HandleInitRunEWithOutputPath(testCmd, manager, tempDir)
+		// Use the merged function with optional output path
+		err := cmd.HandleInitRunE(testCmd, manager, []string{}, tempDir)
 
 		require.NoError(t, err)
 		assert.Contains(t, out.String(), "✔ project initialized successfully")

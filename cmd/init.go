@@ -26,37 +26,33 @@ func NewInitCmd() *cobra.Command {
 		"init",
 		"Initialize a new project",
 		"Initialize a new project.",
-		HandleInitRunE,
+		func(cmd *cobra.Command, configManager *configmanager.ConfigManager, args []string) error {
+			return HandleInitRunE(cmd, configManager, args)
+		},
 		fieldSelectors...,
 	)
 }
 
-// HandleInitRunE handles the init command.
+// HandleInitRunE handles the init command with an optional output path.
+// If outputPath is empty, uses the current working directory.
 // Exported for testing purposes.
 func HandleInitRunE(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
-	_ []string,
-) error {
-	return HandleInitRunEWithOutputPath(cmd, configManager, "")
-}
-
-// HandleInitRunEWithOutputPath handles the init command with an optional output path.
-// If outputPath is empty, uses the current working directory.
-// Exported for testing purposes.
-func HandleInitRunEWithOutputPath(
-	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
-	outputPath string,
+	args []string,
+	outputPath ...string,
 ) error {
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load cluster config: %w", err)
 	}
 
-	// If no output path provided, use current working directory
-	if outputPath == "" {
-		outputPath, err = os.Getwd()
+	// Determine output path
+	var targetPath string
+	if len(outputPath) > 0 && outputPath[0] != "" {
+		targetPath = outputPath[0]
+	} else {
+		targetPath, err = os.Getwd()
 		if err != nil {
 			return fmt.Errorf("failed to get current directory: %w", err)
 		}
@@ -65,8 +61,8 @@ func HandleInitRunEWithOutputPath(
 	// Create scaffolder and generate project files
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
 
-	// Use outputPath directly - scaffolder will handle path joining
-	err = scaffolderInstance.Scaffold(outputPath, false)
+	// Use targetPath directly - scaffolder will handle path joining
+	err = scaffolderInstance.Scaffold(targetPath, false)
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
