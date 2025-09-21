@@ -46,7 +46,7 @@ func TestInitCmdExecute(t *testing.T) {
 		Use:   "init",
 		Short: "Initialize a new project",
 		Long:  "Initialize a new project.",
-		RunE: func(cobraCmd *cobra.Command, args []string) error {
+		RunE: func(cobraCmd *cobra.Command, _ []string) error {
 			fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 				cmdhelpers.StandardNameFieldSelector(),
 				cmdhelpers.StandardDistributionFieldSelector(),
@@ -54,6 +54,7 @@ func TestInitCmdExecute(t *testing.T) {
 				cmdhelpers.StandardSourceDirectoryFieldSelector(),
 			}
 			manager := configmanager.NewConfigManager(fieldSelectors...)
+
 			return cmd.HandleInitRunEWithOutputPath(cobraCmd, manager, tempDir)
 		},
 	}
@@ -125,6 +126,8 @@ func TestHandleInitRunE(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		var out bytes.Buffer
 
 		testCmd := &cobra.Command{}
