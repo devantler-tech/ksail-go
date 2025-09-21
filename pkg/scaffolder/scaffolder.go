@@ -154,13 +154,12 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	eksConfig := s.createEKSConfig()
 
-	eksGen := eksgenerator.NewEKSGenerator()
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, s.KSailConfig.Spec.DistributionConfig),
 		Force:  force,
 	}
 
-	_, err := eksGen.Generate(eksConfig, opts)
+	_, err := s.EKSGenerator.Generate(eksConfig, opts)
 	if err != nil {
 		return fmt.Errorf("generate EKS config: %w", err)
 	}
