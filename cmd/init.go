@@ -39,7 +39,7 @@ func NewInitCmd() *cobra.Command {
 func HandleInitRunE(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
-	args []string,
+	_ []string,
 	outputPath ...string,
 ) error {
 	cluster, err := configManager.LoadConfig()
