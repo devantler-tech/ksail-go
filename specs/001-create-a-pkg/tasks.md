@@ -40,18 +40,18 @@
 
 ## Phase 3.1: Setup & Environment
 
-- [ ] T001 Verify Go 1.24.0+ environment and KSail dependencies in `/Users/ndam/git-personal/monorepo/projects/ksail-go`
+- [x] T001 Verify Go 1.24.0+ environment and KSail dependencies in `/Users/ndam/git-personal/monorepo/projects/ksail-go`
 - [ ] T002 [P] Run mega-linter validation on pkg/scaffolder package
-- [ ] T003 [P] Verify constitutional compliance checklist in `.specify/memory/constitution.md`
+- [x] T003 [P] Verify constitutional compliance checklist in `.specify/memory/constitution.md`
 
 ## Phase 3.2: Test Coverage Validation ⚠️ CRITICAL
 
 **CRITICAL: These validations MUST pass for constitutional compliance**
 
-- [ ] T004 [P] Run test coverage analysis for pkg/scaffolder package (target: >90%)
-- [ ] T005 [P] Validate TestXxx naming patterns in `pkg/scaffolder/scaffolder_test.go`
-- [ ] T006 [P] Verify go-snaps snapshot testing functionality
-- [ ] T007 [P] Test error handling paths for all generator failures
+- [x] T004 [P] Run test coverage analysis for pkg/scaffolder package (target: >90%)
+- [x] T005 [P] Validate TestXxx naming patterns in `pkg/scaffolder/scaffolder_test.go`
+- [x] T006 [P] Verify go-snaps snapshot testing functionality
+- [x] T007 [P] Test error handling paths for all generator failures
 
 ## Phase 3.3: Contract Implementation Verification
 
