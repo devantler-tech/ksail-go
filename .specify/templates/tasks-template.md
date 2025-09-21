@@ -5,7 +5,7 @@
 
 ## Execution Flow (main)
 
-```
+```txt
 1. Load plan.md from feature directory
    → If not found: ERROR "No implementation plan found"
    → Extract: tech stack, libraries, structure

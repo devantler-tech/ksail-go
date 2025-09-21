@@ -8,7 +8,7 @@ Auto-generated from all feature plans. Last updated: [DATE]
 
 ## Project Structure
 
-```
+```txt
 [ACTUAL STRUCTURE FROM PLANS]
 ```
 
