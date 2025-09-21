@@ -211,6 +211,7 @@ func (s *Scaffolder) createEKSNodeGroup() *eksv1alpha5.NodeGroup {
 }
 
 func (s *Scaffolder) createEKSNodeGroupBase() *eksv1alpha5.NodeGroupBase {
+	desired := 1
 	return &eksv1alpha5.NodeGroupBase{
 		Name:              "ng-1",
 		AMIFamily:         "",
@@ -220,7 +221,7 @@ func (s *Scaffolder) createEKSNodeGroupBase() *eksv1alpha5.NodeGroupBase {
 		InstancePrefix:    "",
 		InstanceName:      "",
 		ScalingConfig: &eksv1alpha5.ScalingConfig{
-			DesiredCapacity: &[]int{1}[0],
+			DesiredCapacity: &desired,
 			MinSize:         nil,
 			MaxSize:         nil,
 		},
