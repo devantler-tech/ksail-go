@@ -1,11 +1,11 @@
 package yamlgenerator_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/io"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
@@ -31,10 +31,7 @@ func TestGenerate(t *testing.T) {
 	t.Run("with output file", func(t *testing.T) {
 		t.Parallel()
 
-		tempDir, err := os.MkdirTemp("", "yaml-generator-test-*")
-		require.NoError(t, err)
-
-		defer os.RemoveAll(tempDir)
+		tempDir := t.TempDir()
 
 		outputFile := filepath.Join(tempDir, "output.yaml")
 		result, err := gen.Generate(data, generator.Options{
@@ -47,7 +44,7 @@ func TestGenerate(t *testing.T) {
 		require.FileExists(t, outputFile)
 
 		// Read file content and match snapshot
-		content, err := os.ReadFile(outputFile)
+		content, err := io.ReadFileSafe(tempDir, outputFile)
 		require.NoError(t, err)
 		snaps.MatchSnapshot(t, string(content))
 	})
@@ -55,15 +52,12 @@ func TestGenerate(t *testing.T) {
 	t.Run("with output file and force overwrite", func(t *testing.T) {
 		t.Parallel()
 
-		tempDir, err := os.MkdirTemp("", "yaml-generator-test-*")
-		require.NoError(t, err)
-
-		defer os.RemoveAll(tempDir)
+		tempDir := t.TempDir()
 
 		outputFile := filepath.Join(tempDir, "output.yaml")
 
 		// Create file first
-		err = os.WriteFile(outputFile, []byte("existing content"), 0o644)
+		err := io.WriteFileSafe("existing content", tempDir, outputFile, true)
 		require.NoError(t, err)
 
 		result, err := gen.Generate(data, generator.Options{
@@ -77,7 +71,7 @@ func TestGenerate(t *testing.T) {
 		require.FileExists(t, outputFile)
 
 		// Read file content and match snapshot
-		content, err := os.ReadFile(outputFile)
+		content, err := io.ReadFileSafe(tempDir, outputFile)
 		require.NoError(t, err)
 		snaps.MatchSnapshot(t, string(content))
 	})
