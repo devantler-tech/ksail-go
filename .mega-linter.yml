@@ -4,3 +4,4 @@ IGNORE_GITIGNORED_FILES: true
 EXCLUDED_DIRECTORIES:
   - report
   - megalinter-reports
+FLAVOR_SUGGESTIONS: false
