@@ -186,30 +186,15 @@ func TestStandardDistributionConfigFieldSelector(t *testing.T) {
 func TestStandardContextFieldSelector(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		action              string
-		expectedDescription string
-	}{
-		{"start", "Kubernetes context of cluster to start"},
-		{"stop", "Kubernetes context of cluster to stop"},
-		{"destroy", "Kubernetes context of cluster to destroy"},
-	}
+	selector := cmdhelpers.StandardContextFieldSelector()
 
-	for _, testCase := range testCases {
-		t.Run("action_"+testCase.action, func(t *testing.T) {
-			t.Parallel()
+	assert.Equal(t, "Kubernetes context of cluster", selector.Description)
+	assert.Equal(t, "kind-ksail-default", selector.DefaultValue)
 
-			selector := cmdhelpers.StandardContextFieldSelector()
-
-			assert.Equal(t, testCase.expectedDescription, selector.Description)
-			assert.Equal(t, "kind-ksail-default", selector.DefaultValue)
-
-			// Test selector function
-			cluster := &v1alpha1.Cluster{}
-			result := selector.Selector(cluster)
-			assert.Equal(t, &cluster.Spec.Connection.Context, result)
-		})
-	}
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.Connection.Context, result)
 }
 
 func TestStandardClusterCommandRunE(t *testing.T) {
