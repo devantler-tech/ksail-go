@@ -5,7 +5,7 @@
 
 ## Execution Flow (main)
 
-```
+```txt
 1. Load plan.md from feature directory
    → If not found: ERROR "No implementation plan found"
    → Extract: tech stack, libraries, structure
@@ -53,7 +53,8 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+> [!IMPORTANT]
+> **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 - [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
 - [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
@@ -94,7 +95,7 @@
 
 ## Parallel Example
 
-```
+```txt
 # Launch T004-T007 together:
 Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
 Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
@@ -111,7 +112,8 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 
 ## Task Generation Rules
 
-*Applied during main() execution*
+> [!IMPORTANT]
+> Applied during main() execution
 
 1. **From Contracts**:
    - Each contract file → contract test task [P]
@@ -131,7 +133,8 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 
 ## Validation Checklist
 
-*GATE: Checked by main() before returning*
+> [!IMPORTANT]
+> GATE: Checked by main() before returning
 
 - [ ] All contracts have corresponding tests
 - [ ] All entities have model tasks

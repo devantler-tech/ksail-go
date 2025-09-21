@@ -57,13 +57,13 @@ OPTIONS:
 EXAMPLES:
   # Check task prerequisites (plan.md required)
   ./check-prerequisites.sh --json
-  
+
   # Check implementation prerequisites (plan.md + tasks.md required)
   ./check-prerequisites.sh --json --require-tasks --include-tasks
-  
+
   # Get feature paths only (no validation)
   ./check-prerequisites.sh --paths-only
-  
+
 EOF
 		exit 0
 		;;
@@ -76,10 +76,11 @@ done
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh"
 
 # Get feature paths and validate branch
-eval $(get_feature_paths)
+eval "$(get_feature_paths)"
 check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
 
 # If paths-only mode, output paths and exit
