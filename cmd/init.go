@@ -38,15 +38,28 @@ func HandleInitRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	return HandleInitRunEWithOutputPath(cmd, configManager, "")
+}
+
+// HandleInitRunEWithOutputPath handles the init command with an optional output path.
+// If outputPath is empty, uses the current working directory.
+// Exported for testing purposes.
+func HandleInitRunEWithOutputPath(
+	cmd *cobra.Command,
+	configManager *configmanager.ConfigManager,
+	outputPath string,
+) error {
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load cluster config: %w", err)
 	}
 
-	// Get current working directory for output
-	outputPath, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
+	// If no output path provided, use current working directory
+	if outputPath == "" {
+		outputPath, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current directory: %w", err)
+		}
 	}
 
 	// Create scaffolder and generate project files

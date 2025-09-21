@@ -1,3 +1,11 @@
+
+[TestDownCmdExecute - 1]
+✔ cluster destroyed successfully
+► Distribution: Kind
+► Context: kind-ksail-default
+
+---
+
 [TestDownCmdHelp - 1]
 Destroy a cluster.
 
@@ -6,14 +14,7 @@ Usage:
 
 Flags:
   -c, --context string              Kubernetes context of cluster to destroy (default "kind-ksail-default")
-  -d, --distribution Distribution   Kubernetes distribution to destroy (default Kind)
+  -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
   -h, --help                        help for down
-
----
-
-[TestDownCmdExecute - 1]
-✔ cluster destroyed successfully
-► Distribution: Kind
-► Context: kind-ksail-default
 
 ---

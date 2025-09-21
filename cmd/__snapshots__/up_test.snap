@@ -1,4 +1,11 @@
 
+[TestUpCmdExecute - 1]
+✔ Cluster created and started successfully (stub implementation)
+► Distribution: Kind
+► Context: kind-ksail-default
+
+---
+
 [TestUpCmdHelp - 1]
 Start the Kubernetes cluster defined in the project configuration.
 
@@ -11,12 +18,5 @@ Flags:
       --distribution-config string   Configuration file for the distribution (default "kind.yaml")
   -h, --help                         help for up
   -t, --timeout duration             Timeout for cluster operations (default 5m0s)
-
----
-
-[TestUpCmdExecute - 1]
-✔ Cluster created and started successfully (stub implementation)
-► Distribution: Kind
-► Context: kind-ksail-default
 
 ---

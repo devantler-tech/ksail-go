@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -10,6 +9,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,10 +36,47 @@ func TestNewInitCmd(t *testing.T) {
 func TestInitCmdExecute(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
-		CommandName: "init",
-		NewCommand:  cmd.NewInitCmd,
-	})
+	var out bytes.Buffer
+
+	// Create a temp directory for this test
+	tempDir := t.TempDir()
+
+	// Create a custom cobra command that uses the temp directory
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize a new project",
+		Long:  "Initialize a new project.",
+		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+				cmdhelpers.StandardNameFieldSelector(),
+				cmdhelpers.StandardDistributionFieldSelector(),
+				cmdhelpers.StandardDistributionConfigFieldSelector(),
+				cmdhelpers.StandardSourceDirectoryFieldSelector(),
+			}
+			manager := configmanager.NewConfigManager(fieldSelectors...)
+			return cmd.HandleInitRunEWithOutputPath(cobraCmd, manager, tempDir)
+		},
+	}
+	cmd.SetOut(&out)
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Capture the output as a snapshot
+	snaps.MatchSnapshot(t, out.String())
+
+	// Verify files were created in temp directory, not current directory
+	assert.FileExists(t, tempDir+"/ksail.yaml")
+	assert.FileExists(t, tempDir+"/kind.yaml")
+	assert.DirExists(t, tempDir+"/k8s")
+	assert.FileExists(t, tempDir+"/k8s/kustomization.yaml")
+
+	// Verify files were NOT created in current directory
+	assert.NoFileExists(t, "./ksail.yaml")
+	assert.NoFileExists(t, "./kind.yaml")
+	assert.NoDirExists(t, "./k8s")
 }
 
 func TestInitCmdHelp(t *testing.T) {
@@ -84,8 +121,9 @@ func TestInitCmdFlags(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
 func TestHandleInitRunE(t *testing.T) {
+	t.Parallel()
+
 	t.Run("success", func(t *testing.T) {
 		var out bytes.Buffer
 
@@ -102,23 +140,18 @@ func TestHandleInitRunE(t *testing.T) {
 		// Create a temporary directory for testing
 		tempDir := t.TempDir()
 
-		// Change to temp directory for the test
-		origDir, _ := os.Getwd()
-
-		t.Chdir(tempDir)
-		defer t.Chdir(origDir)
-
-		err := cmd.HandleInitRunE(testCmd, manager, []string{})
+		// Use the new function that accepts an output path
+		err := cmd.HandleInitRunEWithOutputPath(testCmd, manager, tempDir)
 
 		require.NoError(t, err)
 		assert.Contains(t, out.String(), "✔ project initialized successfully")
 		assert.Contains(t, out.String(), "► Distribution:")
 		assert.Contains(t, out.String(), "► Source directory:")
 
-		// Verify that scaffolder created the expected files
-		assert.FileExists(t, "ksail.yaml")
-		assert.FileExists(t, "kind.yaml")
-		assert.DirExists(t, "k8s")
-		assert.FileExists(t, "k8s/kustomization.yaml")
+		// Verify that scaffolder created the expected files in the temp directory
+		assert.FileExists(t, tempDir+"/ksail.yaml")
+		assert.FileExists(t, tempDir+"/kind.yaml")
+		assert.DirExists(t, tempDir+"/k8s")
+		assert.FileExists(t, tempDir+"/k8s/kustomization.yaml")
 	})
 }
