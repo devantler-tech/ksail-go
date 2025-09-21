@@ -15,7 +15,6 @@ linters:
     - wsl_v5
   disable:
     - exhaustruct
-    - revive
     - wsl
   exclusions:
     paths:
