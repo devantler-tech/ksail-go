@@ -1,5 +1,15 @@
 
-[TestGenerate - 1]
+[TestGenerate/with_output_file - 1]
+name: minimal
+
+---
+
+[TestGenerate/with_output_file_and_force_overwrite - 1]
+name: minimal
+
+---
+
+[TestGenerate/without_output_file - 1]
 name: minimal
 
 ---

@@ -70,6 +70,7 @@ func getLoadClusterTests() []struct {
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
 				var out bytes.Buffer
+
 				cmd := &cobra.Command{}
 				cmd.SetOut(&out)
 

@@ -1,5 +1,23 @@
 
-[TestGenerate/successful_generation - 1]
+[TestGenerate/successful_generation_with_output_file - 1]
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: minimal
+  region: eu-north-1
+
+---
+
+[TestGenerate/successful_generation_with_output_file_and_force_overwrite - 1]
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: minimal
+  region: eu-north-1
+
+---
+
+[TestGenerate/successful_generation_without_output_file - 1]
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:

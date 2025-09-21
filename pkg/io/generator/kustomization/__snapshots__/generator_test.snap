@@ -1,5 +1,19 @@
 
-[TestGenerate - 1]
+[TestGenerate/with_output_file - 1]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestGenerate/with_output_file_and_force_overwrite - 1]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+
+---
+
+[TestGenerate/without_output_file - 1]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
