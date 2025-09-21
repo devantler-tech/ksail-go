@@ -135,7 +135,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 // generateK3dConfig generates the k3d.yaml configuration file.
 func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
-	k3dConfig := s.createMinimalK3dConfig()
+	k3dConfig := s.createK3dConfig()
 
 	opts := yamlgenerator.Options{
 		Output: output + "k3d.yaml",
@@ -152,7 +152,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 
 // generateEKSConfig generates the eks.yaml configuration file.
 func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
-	eksConfig := s.createMinimalEKSConfig()
+	eksConfig := s.createEKSConfig()
 
 	eksGen := eksgenerator.NewEKSGenerator()
 	opts := yamlgenerator.Options{
@@ -168,7 +168,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	return nil
 }
 
-func (s *Scaffolder) createMinimalK3dConfig() k3dv1alpha5.SimpleConfig {
+func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 	return k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
@@ -177,20 +177,16 @@ func (s *Scaffolder) createMinimalK3dConfig() k3dv1alpha5.SimpleConfig {
 	}
 }
 
-func (s *Scaffolder) createMinimalEKSConfig() *eksv1alpha5.ClusterConfig {
+func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 	return &eksv1alpha5.ClusterConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "eksctl.io/eksv1alpha5",
 			Kind:       "ClusterConfig",
 		},
-		Metadata: s.createEKSMetadata(),
-	}
-}
-
-func (s *Scaffolder) createEKSMetadata() *eksv1alpha5.ClusterMeta {
-	return &eksv1alpha5.ClusterMeta{
-		Name:   s.KSailConfig.Metadata.Name,
-		Region: "eu-north-1",
+		Metadata: &eksv1alpha5.ClusterMeta{
+			Name:   s.KSailConfig.Metadata.Name,
+			Region: "eu-north-1",
+		},
 	}
 }
 
