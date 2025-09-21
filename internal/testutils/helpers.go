@@ -1,4 +1,3 @@
-// Package testutils provides testing helpers shared across packages.
 package testutils
 
 import (

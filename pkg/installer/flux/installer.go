@@ -1,4 +1,3 @@
-// Package fluxinstaller provides a Flux installer implementation.
 package fluxinstaller
 
 import (

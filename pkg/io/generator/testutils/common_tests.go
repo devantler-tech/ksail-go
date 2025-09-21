@@ -1,4 +1,3 @@
-// Package testutils provides generator-specific test utilities.
 package testutils
 
 import (

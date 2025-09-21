@@ -1,4 +1,3 @@
-// Package testutils provides generic file-related test utilities.
 package testutils
 
 import (

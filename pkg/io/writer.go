@@ -1,4 +1,3 @@
-// Package io provides utilities for input and output operations.
 package io
 
 import (

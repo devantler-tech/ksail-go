@@ -1,4 +1,3 @@
-// Package testutils provides generic marshal failure test utilities.
 package testutils
 
 import (

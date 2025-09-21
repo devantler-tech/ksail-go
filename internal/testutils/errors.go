@@ -1,4 +1,3 @@
-// Package testutils provides testing utilities to aid error handling in tests.
 package testutils
 
 import (

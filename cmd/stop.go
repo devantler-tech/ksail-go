@@ -1,4 +1,3 @@
-// Package cmd provides the command-line interface for KSail.
 package cmd
 
 import (

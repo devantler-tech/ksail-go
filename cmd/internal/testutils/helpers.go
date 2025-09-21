@@ -1,4 +1,3 @@
-// Package testutils provides testing helpers for command testing (command-layer specific).
 package testutils
 
 import (

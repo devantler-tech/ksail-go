@@ -1,4 +1,3 @@
-// Package k3dprovisioner contains the K3d cluster provisioner and its client provider interfaces.
 package k3dprovisioner
 
 import (

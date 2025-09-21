@@ -33,6 +33,7 @@ func TestGenerate(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("", "yaml-generator-test-*")
 		require.NoError(t, err)
+
 		defer os.RemoveAll(tempDir)
 
 		outputFile := filepath.Join(tempDir, "output.yaml")
@@ -56,6 +57,7 @@ func TestGenerate(t *testing.T) {
 
 		tempDir, err := os.MkdirTemp("", "yaml-generator-test-*")
 		require.NoError(t, err)
+
 		defer os.RemoveAll(tempDir)
 
 		outputFile := filepath.Join(tempDir, "output.yaml")

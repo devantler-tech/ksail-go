@@ -1,5 +1,3 @@
-// Package configmanager provides configuration management for KSail v1alpha1.Cluster configurations.
-// This file contains type-safe field selector definitions for compile-time safety.
 package configmanager
 
 import (

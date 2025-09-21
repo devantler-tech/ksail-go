@@ -1,4 +1,3 @@
-// Package testutils provides helpers for marshalling-related tests.
 package testutils
 
 import (

@@ -1,4 +1,3 @@
-// Package testutils provides testing utilities and shared test errors for command tests.
 package testutils
 
 import "errors"

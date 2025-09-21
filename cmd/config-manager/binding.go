@@ -1,5 +1,3 @@
-// Package configmanager provides configuration management for KSail v1alpha1.Cluster configurations.
-// This file contains field selector binding functionality for automatic CLI flag creation.
 package configmanager
 
 import (

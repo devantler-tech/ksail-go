@@ -5,8 +5,7 @@
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
 ## Execution Flow (/plan command scope)
-
-```txt
+```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
@@ -28,66 +27,32 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
-
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-
 [Extract from feature spec: primary requirement + technical approach from research]
 
 ## Technical Context
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
-
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Code Quality Excellence**:
-
-- [ ] Implementation plan includes comprehensive linting setup (mega-linter + golangci-lint)
-- [ ] Zero linting violations required before merge
-- [ ] Automated quality gates defined in CI/CD
-
-**Test-First Development**:
-
-- [ ] TDD approach explicitly planned (tests → fail → implement → pass → refactor)
-- [ ] Unit test coverage targets defined
-- [ ] Integration tests planned for external dependencies
-- [ ] Snapshot tests planned for CLI command outputs
-
-**User Experience Consistency**:
-
-- [ ] CLI interfaces follow Cobra framework conventions
-- [ ] Help text, error messaging, and output formatting standardized
-- [ ] UI components use established patterns from cmd/ui/ package
-
-**Performance Requirements**:
-
-- [ ] Build time targets defined (≤60s for builds, ≤120s for tests, ≤2s CLI startup)
-- [ ] Performance regression detection planned
-- [ ] Timeout protection for CI processes
-
-**Observable and Debuggable**:
-
-- [ ] Clear, actionable output with appropriate log levels planned
-- [ ] Error messages include context and next steps
-- [ ] Support for both human-readable and structured output formats
+[Gates determined based on constitution file]
 
 ## Project Structure
 
 ### Documentation (this feature)
-
-```txt
+```
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
@@ -98,8 +63,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-
-```txt
+```
 # Option 1: Single project (DEFAULT)
 src/
 ├── models/
@@ -138,15 +102,13 @@ ios/ or android/
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
-
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
    - For each dependency → best practices task
    - For each integration → patterns task
 
 2. **Generate and dispatch research agents**:
-
-   ```txt
+   ```
    For each unknown in Technical Context:
      Task: "Research {unknown} for {feature context}"
    For each technology choice:
@@ -161,9 +123,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
-
-> [!IMPORTANT]
-> Prerequisites: research.md complete
+*Prerequisites: research.md complete*
 
 1. **Extract entities from feature spec** → `data-model.md`:
    - Entity name, fields, relationships
@@ -196,22 +156,18 @@ ios/ or android/
 **Output**: data-model.md, /contracts/*, failing tests, quickstart.md, agent-specific file
 
 ## Phase 2: Task Planning Approach
-
-> [!IMPORTANT]
-> This section describes what the /tasks command will do - DO NOT execute during /plan
+*This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
-
 - Load `.specify/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Each contract → contract test task [P]
-- Each entity → model creation task [P]
+- Each entity → model creation task [P] 
 - Each user story → integration test task
 - Implementation tasks to make tests pass
 
 **Ordering Strategy**:
-
-- TDD order: Tests before implementation
+- TDD order: Tests before implementation 
 - Dependency order: Models before services before UI
 - Mark [P] for parallel execution (independent files)
 
@@ -220,31 +176,25 @@ ios/ or android/
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
+*These phases are beyond the scope of the /plan command*
 
-> [!IMPORTANT]
-> These phases are beyond the scope of the /plan command
-
-**Phase 3**: Task execution (/tasks command creates tasks.md)
-**Phase 4**: Implementation (execute tasks.md following constitutional principles)
+**Phase 3**: Task execution (/tasks command creates tasks.md)  
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+*Fill ONLY if Constitution Check has violations that must be justified*
 
-> [!IMPORTANT]
-> Fill ONLY if Constitution Check has violations that must be justified
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
-| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
-|----------------------------|--------------------|--------------------------------------|
-| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
 
 ## Progress Tracking
-
-> [!IMPORTANT]
-> This checklist is updated during execution flow
+*This checklist is updated during execution flow*
 
 **Phase Status**:
-
 - [ ] Phase 0: Research complete (/plan command)
 - [ ] Phase 1: Design complete (/plan command)
 - [ ] Phase 2: Task planning complete (/plan command - describe approach only)
@@ -253,7 +203,6 @@ ios/ or android/
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
-
 - [ ] Initial Constitution Check: PASS
 - [ ] Post-Design Constitution Check: PASS
 - [ ] All NEEDS CLARIFICATION resolved
