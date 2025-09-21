@@ -1,15 +1,15 @@
 
-[TestGenerate/with_output_file - 1]
-name: minimal
+[TestGenerate/with_file - 1]
+name: file-cluster
 
 ---
 
-[TestGenerate/with_output_file_and_force_overwrite - 1]
-name: minimal
+[TestGenerate/with_force_overwrite - 1]
+name: force-cluster
 
 ---
 
-[TestGenerate/without_output_file - 1]
-name: minimal
+[TestGenerate/without_file - 1]
+name: test-cluster
 
 ---

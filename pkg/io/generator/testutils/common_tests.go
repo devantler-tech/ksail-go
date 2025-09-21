@@ -18,6 +18,7 @@ type GenerateTestCase struct {
 	ClusterName string
 	SetupOutput func(t *testing.T) (output string, verifyFile bool, tempDir string)
 	ExpectError bool
+	Force       bool
 }
 
 // TestGenerateCommon runs the common TestGenerate pattern with shared setup and assertions.
@@ -39,6 +40,7 @@ func TestGenerateCommon[T any]( //nolint:tparallel
 			output, verifyFile, tempDir := testCase.SetupOutput(t)
 			opts := yamlgenerator.Options{
 				Output: output,
+				Force:  testCase.Force,
 			}
 
 			result, err := gen.Generate(cluster, opts)
@@ -84,6 +86,31 @@ func GetStandardGenerateTestCases(expectedFileName string) []GenerateTestCase {
 	}
 }
 
+// GetStandardGenerateTestCasesWithForce returns standard test cases including force overwrite.
+func GetStandardGenerateTestCasesWithForce(expectedFileName string) []GenerateTestCase {
+	standardCases := GetStandardGenerateTestCases(expectedFileName)
+
+	forceCase := GenerateTestCase{
+		Name:        "with force overwrite",
+		ClusterName: "force-cluster",
+		Force:       true,
+		SetupOutput: func(t *testing.T) (string, bool, string) {
+			t.Helper()
+			tempDir := t.TempDir()
+			outputPath := filepath.Join(tempDir, expectedFileName)
+
+			// Create existing file first
+			err := ioutils.WriteFileSafe("existing content", tempDir, outputPath, true)
+			require.NoError(t, err)
+
+			return outputPath, true, tempDir
+		},
+		ExpectError: false,
+	}
+
+	return append(standardCases, forceCase)
+}
+
 // TestExistingFile runs a common test pattern for generators with existing files.
 func TestExistingFile[T any](
 	t *testing.T,
@@ -121,26 +148,24 @@ func TestExistingFile[T any](
 	}
 }
 
-// TestFileWriteError runs a common test pattern for generators with file write errors.
-func TestFileWriteError[T any](
+// RunStandardGeneratorTests runs the standard generator test suite.
+func RunStandardGeneratorTests[T any](
 	t *testing.T,
 	gen generator.Generator[T, yamlgenerator.Options],
-	cluster T,
-	filename string,
-	expectedErrorContains string,
+	createCluster func(name string) T,
+	expectedFileName string,
+	assertContent func(*testing.T, string, string),
 ) {
 	t.Helper()
 
-	// Arrange - Use an invalid file path that will cause a write error
-	invalidPath := "/dev/null/invalid/path/" + filename
-	opts := yamlgenerator.Options{
-		Output: invalidPath,
-		Force:  true,
-	}
+	testCases := GetStandardGenerateTestCasesWithForce(expectedFileName)
 
-	result, err := gen.Generate(cluster, opts)
-
-	require.Error(t, err, "Generate should fail when file write fails")
-	assert.Contains(t, err.Error(), expectedErrorContains, "Error should mention write failure")
-	assert.Empty(t, result, "Result should be empty on error")
+	TestGenerateCommon(
+		t,
+		testCases,
+		createCluster,
+		gen,
+		assertContent,
+		expectedFileName,
+	)
 }

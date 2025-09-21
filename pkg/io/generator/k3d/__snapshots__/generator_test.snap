@@ -1,5 +1,5 @@
 
-[TestGenerate/with_output_file - 1]
+[TestGenerate/with_file - 1]
 apiVersion: k3d.io/v1alpha3
 kind: Simple
 kubeAPI: {}
@@ -19,7 +19,7 @@ registries: {}
 
 ---
 
-[TestGenerate/with_output_file_and_force_overwrite - 1]
+[TestGenerate/with_force_overwrite - 1]
 apiVersion: k3d.io/v1alpha3
 kind: Simple
 kubeAPI: {}
@@ -39,7 +39,7 @@ registries: {}
 
 ---
 
-[TestGenerate/without_output_file - 1]
+[TestGenerate/without_file - 1]
 apiVersion: k3d.io/v1alpha3
 kind: Simple
 kubeAPI: {}
