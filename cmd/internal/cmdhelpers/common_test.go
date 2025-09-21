@@ -141,6 +141,20 @@ func TestLogClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context: kind-ksail-default")
 }
 
+func TestStandardNameFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := cmdhelpers.StandardNameFieldSelector()
+
+	assert.Equal(t, "Name of the cluster", selector.Description)
+	assert.Equal(t, "ksail-default", selector.DefaultValue)
+
+	// Test selector function
+	cluster := &v1alpha1.Cluster{}
+	result := selector.Selector(cluster)
+	assert.Equal(t, &cluster.Metadata.Name, result)
+}
+
 func TestStandardDistributionFieldSelector(t *testing.T) {
 	t.Parallel()
 
