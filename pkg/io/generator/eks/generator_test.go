@@ -47,20 +47,6 @@ func TestGenerate(t *testing.T) {
 				APIVersion: "eksctl.io/v1alpha5",
 				Kind:       "ClusterConfig",
 			},
-			Metadata: nil,
-		}
-		_, err := gen.Generate(cluster, yamlgenerator.Options{})
-		require.Error(t, err)
-		require.Equal(t, generator.ErrClusterMetadataRequired, err)
-	})
-
-	t.Run("missing metadata", func(t *testing.T) {
-		gen := generator.NewEKSGenerator()
-		cluster := &v1alpha5.ClusterConfig{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "eksctl.io/v1alpha5",
-				Kind:       "ClusterConfig",
-			},
 		}
 		_, err := gen.Generate(cluster, yamlgenerator.Options{})
 		require.Error(t, err)
@@ -78,23 +64,6 @@ func TestGenerate(t *testing.T) {
 	t.Run("missing cluster region", func(t *testing.T) {
 		gen := generator.NewEKSGenerator()
 		cluster := createTestCluster("minimal", "")
-		_, err := gen.Generate(cluster, yamlgenerator.Options{})
-		require.Error(t, err)
-		require.Equal(t, generator.ErrClusterRegionRequired, err)
-	})
-
-	t.Run("missing cluster region", func(t *testing.T) {
-		gen := generator.NewEKSGenerator()
-		cluster := &v1alpha5.ClusterConfig{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "eksctl.io/v1alpha5",
-				Kind:       "ClusterConfig",
-			},
-			Metadata: &v1alpha5.ClusterMeta{
-				Name:   "minimal",
-				Region: "",
-			},
-		}
 		_, err := gen.Generate(cluster, yamlgenerator.Options{})
 		require.Error(t, err)
 		require.Equal(t, generator.ErrClusterRegionRequired, err)
