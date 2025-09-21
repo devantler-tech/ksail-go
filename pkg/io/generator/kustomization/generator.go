@@ -3,7 +3,7 @@ package kustomizationgenerator
 
 import (
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
@@ -42,9 +42,8 @@ func (g *KustomizationGenerator) Generate(
 		return "", fmt.Errorf("marshal kustomization: %w", err)
 	}
 
-	// if output does not have resources: [] then add it
-	matched, _ := regexp.MatchString(`(?m)^\s*resources:\s*\n\s*-\s*.*`, out)
-	if !matched {
+	// Only add resources: [] if no resources field is present at all
+	if !strings.Contains(out, "resources:") {
 		out += "resources: []\n"
 	}
 

@@ -20,6 +20,9 @@ var (
 	ErrClusterRegionRequired   = errors.New("cluster region is required")
 )
 
+// Precompiled regex for removing empty addonsConfig lines.
+var emptyAddonsConfigRegex = regexp.MustCompile(`(?m)^addonsConfig: \{\}\s*\n`)
+
 // EKSGenerator generates an EKS ClusterConfig YAML.
 type EKSGenerator struct {
 	Marshaller marshaller.Marshaller[*v1alpha5.ClusterConfig]
@@ -62,7 +65,7 @@ func (g *EKSGenerator) Generate(
 
 	// Remove empty addonsConfig line if it's just an empty object.
 	// It has to be done post-marshalling as the AddonsConfig is not a pointer.
-	out = regexp.MustCompile(`(?m)^addonsConfig: \{\}\s*\n`).ReplaceAllString(out, "")
+	out = emptyAddonsConfigRegex.ReplaceAllString(out, "")
 
 	// write to file if output path is specified
 	if opts.Output != "" {
