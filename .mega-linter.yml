@@ -1,7 +1,11 @@
 APPLY_FIXES: all
+FLAVOR_SUGGESTIONS: false
+
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
 IGNORE_GITIGNORED_FILES: true
 EXCLUDED_DIRECTORIES:
   - report
   - megalinter-reports
-FLAVOR_SUGGESTIONS: false
+
+DISABLE_LINTERS:
+  - GO_REVIVE
