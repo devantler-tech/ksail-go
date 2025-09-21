@@ -53,7 +53,8 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+> [!CAUTION]
+> CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation
 
 - [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
 - [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
@@ -111,7 +112,8 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 
 ## Task Generation Rules
 
-*Applied during main() execution*
+> [!NOTE]
+> Applied during main() execution
 
 1. **From Contracts**:
    - Each contract file → contract test task [P]
@@ -131,7 +133,8 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 
 ## Validation Checklist
 
-*GATE: Checked by main() before returning*
+> [!IMPORTANT]
+> GATE: Checked by main() before returning
 
 - [ ] All contracts have corresponding tests
 - [ ] All entities have model tasks

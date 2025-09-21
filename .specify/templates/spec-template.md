@@ -97,7 +97,8 @@ When creating this spec from a user prompt:
 
 ## Review & Acceptance Checklist
 
-*GATE: Automated checks run during main() execution*
+> [!IMPORTANT]
+> GATE: Automated checks run during main() execution
 
 ### Content Quality
 
@@ -118,7 +119,8 @@ When creating this spec from a user prompt:
 
 ## Execution Status
 
-*Updated by main() during processing*
+> [!NOTE]
+> Updated by main() during processing
 
 - [ ] User description parsed
 - [ ] Key concepts extracted

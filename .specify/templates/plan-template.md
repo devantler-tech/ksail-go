@@ -133,7 +133,8 @@ ios/ or android/
 
 ## Phase 1: Design & Contracts
 
-*Prerequisites: research.md complete*
+> [!IMPORTANT]
+> Prerequisites: research.md complete
 
 1. **Extract entities from feature spec** → `data-model.md`:
    - Entity name, fields, relationships
@@ -167,7 +168,8 @@ ios/ or android/
 
 ## Phase 2: Task Planning Approach
 
-*This section describes what the /tasks command will do - DO NOT execute during /plan*
+> [!NOTE]
+> This section describes what the /tasks command will do - DO NOT execute during /plan
 
 **Task Generation Strategy**:
 
@@ -190,7 +192,8 @@ ios/ or android/
 
 ## Phase 3+: Future Implementation
 
-*These phases are beyond the scope of the /plan command*
+> [!NOTE]
+> These phases are beyond the scope of the /plan command
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
 **Phase 4**: Implementation (execute tasks.md following constitutional principles)
@@ -198,7 +201,8 @@ ios/ or android/
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+> [!WARNING]
+> Fill ONLY if Constitution Check has violations that must be justified
 
 | Violation                  | Why Needed         | Simpler Alternative Rejected Because |
 |----------------------------|--------------------|--------------------------------------|
@@ -207,7 +211,8 @@ ios/ or android/
 
 ## Progress Tracking
 
-*This checklist is updated during execution flow*
+> [!NOTE]
+> This checklist is updated during execution flow
 
 **Phase Status**:
 
