@@ -94,7 +94,7 @@
 
 ## Parallel Example
 
-```
+```txt
 # Launch T004-T007 together:
 Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
 Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
