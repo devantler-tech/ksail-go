@@ -38,21 +38,50 @@
 
 ## Technical Context
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Project Type**: [single/web/mobile - determines source structure]
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Code Quality Excellence**:
+
+- [ ] Implementation plan includes comprehensive linting setup (mega-linter + golangci-lint)
+- [ ] Zero linting violations required before merge
+- [ ] Automated quality gates defined in CI/CD
+
+**Test-First Development**:
+
+- [ ] TDD approach explicitly planned (tests → fail → implement → pass → refactor)
+- [ ] Unit test coverage targets defined
+- [ ] Integration tests planned for external dependencies
+- [ ] Snapshot tests planned for CLI command outputs
+
+**User Experience Consistency**:
+
+- [ ] CLI interfaces follow Cobra framework conventions
+- [ ] Help text, error messaging, and output formatting standardized
+- [ ] UI components use established patterns from cmd/ui/ package
+
+**Performance Requirements**:
+
+- [ ] Build time targets defined (≤60s for builds, ≤120s for tests, ≤2s CLI startup)
+- [ ] Performance regression detection planned
+- [ ] Timeout protection for CI processes
+
+**Observable and Debuggable**:
+
+- [ ] Clear, actionable output with appropriate log levels planned
+- [ ] Error messages include context and next steps
+- [ ] Support for both human-readable and structured output formats
 
 ## Project Structure
 
@@ -192,18 +221,18 @@ ios/ or android/
 
 *These phases are beyond the scope of the /plan command*
 
-**Phase 3**: Task execution (/tasks command creates tasks.md)  
-**Phase 4**: Implementation (execute tasks.md following constitutional principles)  
+**Phase 3**: Task execution (/tasks command creates tasks.md)
+**Phase 4**: Implementation (execute tasks.md following constitutional principles)
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
 
 *Fill ONLY if Constitution Check has violations that must be justified*
 
-| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
-|----------------------------|--------------------|--------------------------------------|
-| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
 
 ## Progress Tracking
 
