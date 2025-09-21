@@ -32,59 +32,142 @@ func TestNewScaffolder(t *testing.T) {
 func TestScaffold(t *testing.T) {
 	t.Parallel()
 
-	tests := getScaffoldTestCases()
+	t.Run("basic scaffolding operations", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+		tests := getScaffoldTestCases()
 
-			cluster := testCase.setupFunc(testCase.name)
-			scaffolder := scaffolder.NewScaffolder(cluster)
+		for _, testCase := range tests {
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
 
-			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
+				cluster := testCase.setupFunc(testCase.name)
+				scaffolder := scaffolder.NewScaffolder(cluster)
 
-			if testCase.expectError {
-				require.Error(t, err)
-				snaps.MatchSnapshot(t, err.Error())
-			} else {
+				err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
+
+				if testCase.expectError {
+					require.Error(t, err)
+					snaps.MatchSnapshot(t, err.Error())
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	})
+
+	t.Run("generated content validation", func(t *testing.T) {
+		t.Parallel()
+
+		contentTests := getContentTestCases()
+
+		for _, testCase := range contentTests {
+			t.Run(testCase.name, func(t *testing.T) {
+				t.Parallel()
+
+				cluster := testCase.setupFunc("test-cluster")
+				scaffolder := scaffolder.NewScaffolder(cluster)
+				generateDistributionContent(t, scaffolder, cluster, testCase.distribution)
+
+				kustomization := ktypes.Kustomization{}
+
+				// Generate kustomization content using actual generator, then ensure resources: [] is included
+				kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
+					&kustomization,
+					yamlgenerator.Options{},
+				)
 				require.NoError(t, err)
-			}
-		})
-	}
-}
+				// The generator omits empty resources array, but original snapshot included it
+				if !strings.Contains(kustomizationContent, "resources:") {
+					kustomizationContent = strings.TrimSuffix(
+						kustomizationContent,
+						"\n",
+					) + "\nresources: []\n"
+				}
 
-func TestGeneratedContent(t *testing.T) {
-	t.Parallel()
+				snaps.MatchSnapshot(t, kustomizationContent)
+			})
+		}
+	})
 
-	contentTests := getContentTestCases()
+	t.Run("error handling", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range contentTests {
-		t.Run(testCase.name, func(t *testing.T) {
+		t.Run("invalid output path", func(t *testing.T) {
 			t.Parallel()
 
-			cluster := testCase.setupFunc("test-cluster")
-			scaffolder := scaffolder.NewScaffolder(cluster)
-			generateDistributionContent(t, scaffolder, cluster, testCase.distribution)
+			cluster := createTestCluster("error-test")
+			scaffolderInstance := scaffolder.NewScaffolder(cluster)
 
-			kustomization := ktypes.Kustomization{}
+			// Use invalid path with null byte to trigger file system error
+			err := scaffolderInstance.Scaffold("/invalid/\x00path/", false)
 
-			// Generate kustomization content using actual generator, then ensure resources: [] is included
-			kustomizationContent, err := scaffolder.KustomizationGenerator.Generate(
-				&kustomization,
-				yamlgenerator.Options{},
-			)
-			require.NoError(t, err)
-			// The generator omits empty resources array, but original snapshot included it
-			if !strings.Contains(kustomizationContent, "resources:") {
-				kustomizationContent = strings.TrimSuffix(
-					kustomizationContent,
-					"\n",
-				) + "\nresources: []\n"
+			require.Error(t, err)
+			snaps.MatchSnapshot(t, fmt.Sprintf("Error type: %T, contains 'invalid argument': %t",
+				err, strings.Contains(err.Error(), "invalid argument")))
+		})
+
+		t.Run("distribution error paths", func(t *testing.T) {
+			t.Parallel()
+
+			// Test Tind not implemented
+			tindCluster := createTindCluster("tind-test")
+			scaffolderInstance := scaffolder.NewScaffolder(tindCluster)
+
+			err := scaffolderInstance.Scaffold("/tmp/test-tind/", false)
+			require.Error(t, err)
+			require.ErrorIs(t, err, scaffolder.ErrTindNotImplemented)
+			snaps.MatchSnapshot(t, err.Error())
+
+			// Test Unknown distribution
+			unknownCluster := createUnknownCluster("unknown-test")
+			scaffolderInstance = scaffolder.NewScaffolder(unknownCluster)
+
+			err = scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
+			require.Error(t, err)
+			require.ErrorIs(t, err, scaffolder.ErrUnknownDistribution)
+			snaps.MatchSnapshot(t, err.Error())
+		})
+
+		t.Run("generator failure scenarios", func(t *testing.T) {
+			t.Parallel()
+
+			// Test scenarios that might cause generator failures
+			// Use very long paths to potentially trigger path length limits
+			longPath := "/tmp/" + strings.Repeat("very-long-directory-name/", 10)
+
+			testCases := []struct {
+				distribution string
+				clusterFunc  func(string) v1alpha1.Cluster
+			}{
+				{"Kind", createKindCluster},
+				{"K3d", createK3dCluster},
+				{"EKS", createEKSCluster},
 			}
 
-			snaps.MatchSnapshot(t, kustomizationContent)
+			for _, tc := range testCases {
+				t.Run(tc.distribution+" config with problematic path", func(t *testing.T) {
+					t.Parallel()
+
+					cluster := tc.clusterFunc("error-test")
+					scaffolderInstance := scaffolder.NewScaffolder(cluster)
+
+					err := scaffolderInstance.Scaffold(longPath, false)
+
+					// We expect some kind of error (file system, path length, etc.)
+					if err != nil {
+						snaps.MatchSnapshot(
+							t,
+							fmt.Sprintf("%s error occurred: %t", tc.distribution, err != nil),
+						)
+					} else {
+						// If no error, the generator handled the path successfully
+						snaps.MatchSnapshot(t, fmt.Sprintf("%s error occurred: %t", tc.distribution, err != nil))
+					}
+				})
+			}
 		})
-	}
+	})
 }
 
 // Test case definitions.

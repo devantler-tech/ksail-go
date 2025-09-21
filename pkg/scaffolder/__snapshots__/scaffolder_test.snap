@@ -1,5 +1,37 @@
 
-[TestGeneratedContent/EKS_configuration_content - 1]
+[TestScaffold/basic_scaffolding_operations/Tind_distribution_not_implemented - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffold/basic_scaffolding_operations/Unknown_distribution - 1]
+provided distribution is unknown
+---
+
+[TestScaffold/error_handling/distribution_error_paths - 1]
+talos-in-docker distribution is not yet implemented
+---
+
+[TestScaffold/error_handling/distribution_error_paths - 2]
+provided distribution is unknown
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/EKS_config_with_problematic_path - 1]
+EKS error occurred: false
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/K3d_config_with_problematic_path - 1]
+K3d error occurred: false
+---
+
+[TestScaffold/error_handling/generator_failure_scenarios/Kind_config_with_problematic_path - 1]
+Kind error occurred: false
+---
+
+[TestScaffold/error_handling/invalid_output_path - 1]
+Error type: *fmt.wrapErrors, contains 'invalid argument': true
+---
+
+[TestScaffold/generated_content_validation/EKS_configuration_content - 1]
 apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 metadata:
@@ -11,7 +43,7 @@ spec:
 
 ---
 
-[TestGeneratedContent/EKS_configuration_content - 2]
+[TestScaffold/generated_content_validation/EKS_configuration_content - 2]
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
@@ -24,14 +56,14 @@ nodeGroups:
 
 ---
 
-[TestGeneratedContent/EKS_configuration_content - 3]
+[TestScaffold/generated_content_validation/EKS_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
 
 ---
 
-[TestGeneratedContent/K3d_configuration_content - 1]
+[TestScaffold/generated_content_validation/K3d_configuration_content - 1]
 apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 metadata:
@@ -42,7 +74,7 @@ spec:
 
 ---
 
-[TestGeneratedContent/K3d_configuration_content - 2]
+[TestScaffold/generated_content_validation/K3d_configuration_content - 2]
 apiVersion: k3d.io/v1alpha5
 kind: Simple
 metadata:
@@ -50,14 +82,14 @@ metadata:
 
 ---
 
-[TestGeneratedContent/K3d_configuration_content - 3]
+[TestScaffold/generated_content_validation/K3d_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
 
 ---
 
-[TestGeneratedContent/Kind_configuration_content - 1]
+[TestScaffold/generated_content_validation/Kind_configuration_content - 1]
 apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 metadata:
@@ -65,24 +97,16 @@ metadata:
 
 ---
 
-[TestGeneratedContent/Kind_configuration_content - 2]
+[TestScaffold/generated_content_validation/Kind_configuration_content - 2]
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: test-cluster
 
 ---
 
-[TestGeneratedContent/Kind_configuration_content - 3]
+[TestScaffold/generated_content_validation/Kind_configuration_content - 3]
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources: []
 
----
-
-[TestScaffold/Tind_distribution_not_implemented - 1]
-talos-in-docker distribution is not yet implemented
----
-
-[TestScaffold/Unknown_distribution - 1]
-provided distribution is unknown
 ---

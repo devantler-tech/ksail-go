@@ -2,11 +2,14 @@ package cmd_test
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,23 +84,45 @@ func TestInitCmdFlags(t *testing.T) {
 	}
 }
 
-// TestHandleInitRunE_Success tests successful init command execution.
-func TestHandleInitRunESuccess(t *testing.T) {
+func TestHandleInitRunE(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
 
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
+		var out bytes.Buffer
 
-	manager := configmanager.NewConfigManager()
+		testCmd := &cobra.Command{}
+		testCmd.SetOut(&out)
 
-	err := cmd.HandleInitRunE(testCmd, manager, []string{})
+		// Create manager with the same field selectors as the real init command
+		fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+			cmdhelpers.StandardDistributionFieldSelector("Kubernetes distribution to use"),
+			cmdhelpers.StandardSourceDirectoryFieldSelector(),
+		}
+		manager := configmanager.NewConfigManager(fieldSelectors...)
 
-	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ project initialized successfully")
-	assert.Contains(t, out.String(), "► Distribution:")
-	assert.Contains(t, out.String(), "► Source directory:")
+		// Create a temporary directory for testing
+		tempDir := t.TempDir()
+
+		// Change to temp directory for the test
+		origDir, _ := os.Getwd()
+		os.Chdir(tempDir)
+		defer os.Chdir(origDir)
+
+		err := cmd.HandleInitRunE(testCmd, manager, []string{})
+
+		require.NoError(t, err)
+		assert.Contains(t, out.String(), "✔ project initialized successfully")
+		assert.Contains(t, out.String(), "► Distribution:")
+		assert.Contains(t, out.String(), "► Source directory:")
+
+		// Verify that scaffolder created the expected files
+		assert.FileExists(t, "ksail.yaml")
+		assert.FileExists(t, "kind.yaml")
+		assert.DirExists(t, "k8s")
+		assert.FileExists(t, "k8s/kustomization.yaml")
+	})
+
+	// Error testing removed - will be reimplemented with concrete types
 }
-
-// Error testing removed - will be reimplemented with concrete types

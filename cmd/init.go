@@ -3,10 +3,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +37,25 @@ func HandleInitRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	err := cmdhelpers.ExecuteCommandWithClusterInfo(
+	cluster, err := configManager.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load cluster config: %w", err)
+	}
+
+	// Get current working directory for output
+	outputPath, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	// Create scaffolder and generate project files
+	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
+	err = scaffolderInstance.Scaffold(outputPath+"/", false)
+	if err != nil {
+		return fmt.Errorf("failed to scaffold project files: %w", err)
+	}
+
+	err = cmdhelpers.ExecuteCommandWithClusterInfo(
 		cmd,
 		configManager,
 		"project initialized successfully",
