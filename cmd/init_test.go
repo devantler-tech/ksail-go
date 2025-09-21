@@ -84,12 +84,9 @@ func TestInitCmdFlags(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir()
 func TestHandleInitRunE(t *testing.T) {
-	t.Parallel()
-
 	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
 		var out bytes.Buffer
 
 		testCmd := &cobra.Command{}
@@ -124,6 +121,4 @@ func TestHandleInitRunE(t *testing.T) {
 		assert.DirExists(t, "k8s")
 		assert.FileExists(t, "k8s/kustomization.yaml")
 	})
-
-	// Error testing removed - will be reimplemented with concrete types
 }

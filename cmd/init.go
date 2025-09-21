@@ -51,7 +51,8 @@ func HandleInitRunE(
 	// Create scaffolder and generate project files
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
 
-	err = scaffolderInstance.Scaffold(outputPath+"/", false)
+	// Use outputPath directly - scaffolder will handle path joining
+	err = scaffolderInstance.Scaffold(outputPath, false)
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}

@@ -81,7 +81,7 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	config := s.KSailConfig
 
 	opts := yamlgenerator.Options{
-		Output: output + "ksail.yaml",
+		Output: filepath.Join(output, "ksail.yaml"),
 		Force:  force,
 	}
 
@@ -121,7 +121,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 	}
 
 	opts := yamlgenerator.Options{
-		Output: output + "kind.yaml",
+		Output: filepath.Join(output, "kind.yaml"),
 		Force:  force,
 	}
 
@@ -138,7 +138,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 	k3dConfig := s.createK3dConfig()
 
 	opts := yamlgenerator.Options{
-		Output: output + "k3d.yaml",
+		Output: filepath.Join(output, "k3d.yaml"),
 		Force:  force,
 	}
 

@@ -44,8 +44,7 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 type ClientCreator func() (client.APIClient, error)
 
 // GetDockerClient creates a Docker client using environment configuration.
-func GetDockerClient( //nolint:ireturn
-) (client.APIClient, error) {
+func GetDockerClient() (client.APIClient, error) {
 	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -58,8 +57,7 @@ func GetDockerClient( //nolint:ireturn
 }
 
 // GetPodmanUserClient creates a Podman client using the user-specific socket.
-func GetPodmanUserClient( //nolint:ireturn
-) (client.APIClient, error) {
+func GetPodmanUserClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
 		client.WithAPIVersionNegotiation(),
@@ -72,8 +70,7 @@ func GetPodmanUserClient( //nolint:ireturn
 }
 
 // GetPodmanSystemClient creates a Podman client using the system-wide socket.
-func GetPodmanSystemClient( //nolint:ireturn
-) (client.APIClient, error) {
+func GetPodmanSystemClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/podman/podman.sock"),
 		client.WithAPIVersionNegotiation(),

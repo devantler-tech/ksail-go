@@ -51,7 +51,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		return m.Config, nil
 	}
 
-	notify.Activityln(os.Stdout, "Loading KSail config")
+	notify.Activityln(os.Stdout, "loading ksail config")
 
 	// Use native Viper API to read configuration
 	// All paths and environment handling are already configured in constructor
@@ -63,7 +63,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		notify.Activityln(os.Stdout, "using default configuration")
+		notify.Activityln(os.Stdout, "using default config")
 	} else {
 		notify.Activityf(os.Stdout, "'%s' found", m.Viper.ConfigFileUsed())
 	}

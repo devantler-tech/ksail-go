@@ -22,6 +22,10 @@ linters:
       # Exclude auto-generated mock files from all linting rules
       - ".*mocks.*\\.go$"
       - ".*_mocks_.*\\.go$"
+    rules:
+      - linters:
+          - ireturn
+        path: pkg/provisioner/containerengine/engine.go
   settings:
     wsl_v5:
       allow-first-in-block: true
