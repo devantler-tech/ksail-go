@@ -14,21 +14,26 @@ import (
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
+// createTestCluster creates a test EKS cluster configuration with the given name and region.
+func createTestCluster(name, region string) *v1alpha5.ClusterConfig {
+	return &v1alpha5.ClusterConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "eksctl.io/v1alpha5",
+			Kind:       "ClusterConfig",
+		},
+		Metadata: &v1alpha5.ClusterMeta{
+			Name:   name,
+			Region: region,
+		},
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("successful generation", func(t *testing.T) {
 		gen := generator.NewEKSGenerator()
-		cluster := &v1alpha5.ClusterConfig{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "eksctl.io/v1alpha5",
-				Kind:       "ClusterConfig",
-			},
-			Metadata: &v1alpha5.ClusterMeta{
-				Name:   "minimal",
-				Region: "eu-north-1",
-			},
-		}
+		cluster := createTestCluster("minimal", "eu-north-1")
 		result, err := gen.Generate(cluster, yamlgenerator.Options{})
 		require.NoError(t, err)
 		require.NotEmpty(t, result)
@@ -49,21 +54,33 @@ func TestGenerate(t *testing.T) {
 		require.Equal(t, generator.ErrClusterMetadataRequired, err)
 	})
 
-	t.Run("missing cluster name", func(t *testing.T) {
+	t.Run("missing metadata", func(t *testing.T) {
 		gen := generator.NewEKSGenerator()
 		cluster := &v1alpha5.ClusterConfig{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "eksctl.io/v1alpha5",
 				Kind:       "ClusterConfig",
 			},
-			Metadata: &v1alpha5.ClusterMeta{
-				Name:   "",
-				Region: "eu-north-1",
-			},
 		}
 		_, err := gen.Generate(cluster, yamlgenerator.Options{})
 		require.Error(t, err)
+		require.Equal(t, generator.ErrClusterMetadataRequired, err)
+	})
+
+	t.Run("missing cluster name", func(t *testing.T) {
+		gen := generator.NewEKSGenerator()
+		cluster := createTestCluster("", "eu-north-1")
+		_, err := gen.Generate(cluster, yamlgenerator.Options{})
+		require.Error(t, err)
 		require.Equal(t, generator.ErrClusterNameRequired, err)
+	})
+
+	t.Run("missing cluster region", func(t *testing.T) {
+		gen := generator.NewEKSGenerator()
+		cluster := createTestCluster("minimal", "")
+		_, err := gen.Generate(cluster, yamlgenerator.Options{})
+		require.Error(t, err)
+		require.Equal(t, generator.ErrClusterRegionRequired, err)
 	})
 
 	t.Run("missing cluster region", func(t *testing.T) {

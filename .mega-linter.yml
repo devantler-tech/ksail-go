@@ -1,2 +1,6 @@
 APPLY_FIXES: all
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
+IGNORE_GITIGNORED_FILES: true
+EXCLUDED_DIRECTORIES:
+  - report
+  - megalinter-reports
