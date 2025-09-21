@@ -204,62 +204,26 @@ func (s *Scaffolder) createMinimalEKSConfig() *eksv1alpha5.ClusterConfig {
 		NodeGroups: []*eksv1alpha5.NodeGroup{
 			s.createEKSNodeGroup(),
 		},
-		ManagedNodeGroups:       nil,
-		FargateProfiles:         nil,
-		AvailabilityZones:       nil,
-		LocalZones:              nil,
-		KubernetesNetworkConfig: nil,
-		AutoModeConfig:          nil,
-		RemoteNetworkConfig:     nil,
-		IAM:                     nil,
-		IAMIdentityMappings:     nil,
-		IdentityProviders:       nil,
-		AccessConfig:            nil,
-		VPC:                     nil,
-		Addons:                  nil,
 		AddonsConfig: eksv1alpha5.AddonsConfig{
 			AutoApplyPodIdentityAssociations: false,
 			DisableDefaultAddons:             false,
 		},
-		PrivateCluster:    nil,
-		CloudWatch:        nil,
-		SecretsEncryption: nil,
-		Status:            nil,
-		GitOps:            nil,
-		Karpenter:         nil,
-		Outpost:           nil,
-		ZonalShiftConfig:  nil,
 	}
 }
 
 func (s *Scaffolder) createEKSMetadata() *eksv1alpha5.ClusterMeta {
 	return &eksv1alpha5.ClusterMeta{
-		Name:               s.KSailConfig.Metadata.Name,
-		Region:             "eu-north-1",
-		Version:            "",
-		ForceUpdateVersion: nil,
-		Tags:               nil,
-		Annotations:        nil,
-		AccountID:          "",
+		Name:      s.KSailConfig.Metadata.Name,
+		Region:    "eu-north-1",
+		Version:   "",
+		AccountID: "",
 	}
 }
 
 func (s *Scaffolder) createEKSNodeGroup() *eksv1alpha5.NodeGroup {
 	return &eksv1alpha5.NodeGroup{
-		NodeGroupBase:            s.createEKSNodeGroupBase(),
-		InstancesDistribution:    nil,
-		ASGMetricsCollection:     nil,
-		CPUCredits:               nil,
-		ClassicLoadBalancerNames: nil,
-		TargetGroupARNs:          nil,
-		Taints:                   nil,
-		UpdateConfig:             nil,
-		ClusterDNS:               "",
-		KubeletExtraConfig:       nil,
-		ContainerRuntime:         nil,
-		MaxInstanceLifetime:      nil,
-		LocalZones:               nil,
-		EnclaveEnabled:           nil,
+		NodeGroupBase: s.createEKSNodeGroupBase(),
+		ClusterDNS:    "",
 	}
 }
 
