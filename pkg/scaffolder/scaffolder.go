@@ -180,7 +180,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 	return &eksv1alpha5.ClusterConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "eksctl.io/eksv1alpha5",
+			APIVersion: "eksctl.io/v1alpha5",
 			Kind:       "ClusterConfig",
 		},
 		Metadata: &eksv1alpha5.ClusterMeta{
