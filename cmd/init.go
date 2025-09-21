@@ -22,35 +22,44 @@ func NewInitCmd() *cobra.Command {
 		cmdhelpers.StandardSourceDirectoryFieldSelector(),
 	}
 
-	return cmdhelpers.NewCobraCommand(
+	// Create the command using the helper
+	cmd := cmdhelpers.NewCobraCommand(
 		"init",
 		"Initialize a new project",
 		"Initialize a new project.",
-		func(cmd *cobra.Command, configManager *configmanager.ConfigManager, args []string) error {
-			return HandleInitRunE(cmd, configManager, args)
-		},
+		HandleInitRunE,
 		fieldSelectors...,
 	)
+
+	// Add the --output flag for specifying output directory
+	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
+
+	return cmd
 }
 
 // HandleInitRunE handles the init command with an optional output path.
 // If outputPath is empty, uses the current working directory.
+// The variadic outputPath parameter is for testing purposes only.
 // Exported for testing purposes.
 func HandleInitRunE(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
 	_ []string,
-	outputPath ...string,
 ) error {
+	// Bind the --output flag
+	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load cluster config: %w", err)
 	}
 
-	// Determine output path
+	// Determine target path - prioritize test parameter over flag
 	var targetPath string
-	if len(outputPath) > 0 && outputPath[0] != "" {
-		targetPath = outputPath[0]
+	// Get output path from flag
+	flagOutputPath := configManager.Viper.GetString("output")
+	if flagOutputPath != "" {
+		targetPath = flagOutputPath
 	} else {
 		targetPath, err = os.Getwd()
 		if err != nil {
