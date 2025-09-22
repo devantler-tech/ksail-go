@@ -5,14 +5,7 @@
 type Validator interface {
     // Validate performs validation on the provided configuration data
     // Returns ValidationResult containing status and any errors found
-    Validate(data []byte) *ValidationResult
-
-    // ValidateStruct performs validation on an already parsed configuration struct
-    // Returns ValidationResult containing status and any errors found
-    ValidateStruct(config interface{}) *ValidationResult
-
-    // GetSupportedTypes returns the configuration types this validator supports
-    GetSupportedTypes() []string
+    Validate(config interface{}) *ValidationResult
 }
 ```
 
@@ -20,35 +13,21 @@ type Validator interface {
 
 ### Validate Method
 
-- **Input**: Raw configuration file content as byte array
+- **Input**: Configuration struct or data (interface{})
 - **Output**: ValidationResult with status and errors
 - **Behavior**:
-  - MUST handle marshalling errors gracefully
+  - MUST handle both raw []byte data and parsed structs
+  - MUST handle marshalling errors gracefully for byte input
   - MUST prioritize parsing errors over semantic validation
   - MUST return structured ValidationError instances
   - MUST complete within 100ms for files <10KB
   - MUST NOT perform file I/O operations
   - MUST be thread-safe for concurrent validation
-
-### ValidateStruct Method
-
-- **Input**: Already parsed configuration struct
-- **Output**: ValidationResult with status and errors
-- **Behavior**:
   - MUST validate semantic correctness of configuration
   - MUST check field constraints and dependencies
   - MUST return actionable error messages
   - MUST be idempotent (same input = same output)
-  - MUST handle nil or malformed structs gracefully
-
-### GetSupportedTypes Method
-
-- **Input**: None
-- **Output**: String slice of supported configuration types
-- **Behavior**:
-  - MUST return consistent list of supported types
-  - MUST include all configuration formats the validator handles
-  - MUST be deterministic across calls
+  - MUST handle nil or malformed input gracefully
 
 ## Error Handling Contract
 

@@ -4,8 +4,10 @@ FLAVOR_SUGGESTIONS: false
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
 IGNORE_GITIGNORED_FILES: true
 EXCLUDED_DIRECTORIES:
-  - report
+  - .specify
   - megalinter-reports
+  - report
+  - .github/prompts
 
 DISABLE_LINTERS:
   - GO_REVIVE

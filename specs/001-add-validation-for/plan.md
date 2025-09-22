@@ -34,62 +34,68 @@
 
 ## Summary
 
-Configuration file validation system that validates all ksail configuration files (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml) whenever they are loaded. The system **prioritizes upstream Go package validators** wherever available, avoiding custom validation logic that duplicates existing functionality. Leverages official APIs from sigs.k8s.io/kind and k3d-io packages for authentic validation. Provides actionable error messages with specific field information and fix examples, and fails fast to prevent destructive operations with invalid configurations. Uses separate validators for each configuration type with independent validation logic.
+Configuration validation system for KSail that validates Kubernetes cluster configurations (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml) using upstream Go package validators to ensure configuration correctness before cluster operations. The system prioritizes struct validation over byte data validation for efficiency and simplicity, failing fast with actionable error messages.
 
 ## Technical Context
 
-**Language/Version**: Go 1.24.0+ (as per go.mod and constitution requirements)
-**Primary Dependencies**: sigs.k8s.io/yaml, github.com/k3d-io/k3d/v5/pkg/config/v1alpha5, sigs.k8s.io/kind/pkg/apis/config/v1alpha4, github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1
-**Upstream Validator Strategy**: **CRITICAL** - Use official validation from upstream packages where available (Kind, K3d) to ensure consistency with upstream tools and avoid reinventing validation logic
-**Storage**: File-based configuration files (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml)
-**Testing**: Go test with testify, go-snaps for snapshot testing, mockery for mocks
-**Target Platform**: Linux (amd64/arm64), macOS (amd64/arm64) - cross-platform CLI
-**Project Type**: Single project with pkg/ structure for validators
-**Performance Goals**: Configuration validation <100ms for files <10KB, memory usage <10MB
-**Constraints**: In-memory validation only, no file I/O during validation, fail-fast on errors, **preserve existing KSail config structure unchanged**
-**Scale/Scope**: Individual configuration files up to 10KB, 3 separate validator packages leveraging upstream validation where possible
+**Language/Version**: Go 1.24.0+ (from go.mod)
 
-**User-provided Implementation Details**: Add pkg/validator/ksail/config-validator.go, pkg/validator/kind/config-validator.go, and pkg/validator/k3d/config-validator.go to validate configurations. **CRITICAL**: Use upstream Go package validators wherever available - leverage sigs.k8s.io/kind/pkg/apis/config/v1alpha4 for Kind validation and github.com/k3d-io/k3d/v5/pkg/config for K3d validation instead of custom logic. Each validator should be independent - ksail validator handles ksail.yaml and coordinates loading of other configs, while kind/k3d validators only validate their specific configuration formats using official upstream APIs. **Do not alter the existing KSail configuration structure**.
+**Primary Dependencies**:
+
+- `sigs.k8s.io/kind` for Kind configuration validation
+- `github.com/k3d-io/k3d/v5` for K3d configuration validation
+- `eksctl.io/eksctl` for EKS configuration validation
+- Existing KSail `v1alpha1.Cluster` APIs (DO NOT ALTER)
+
+**Storage**: In-memory validation (no file I/O during validation)
+**Testing**: go test with testify, go-snaps for CLI output consistency
+**Target Platform**: Linux/macOS/Windows CLI tool
+**Project Type**: Single project (CLI tool)
+**Performance Goals**: <100ms validation time, <10MB memory usage
+**Constraints**: Must use upstream validators, no custom validation logic duplication
+**Scale/Scope**: 4 configuration types, simple validator interface design
+
+**API SIMPLIFICATION REQUIREMENT**: Remove `Validate(data []byte)` method from validator interface. Rename `ValidateStruct(config interface{})` to `Validate(config interface{})` as the primary validation method. This promotes struct validation over binary data validation, simplifying the API for consumers since configurations are already unmarshaled from files.
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**I. Code Quality First**: ✅ PASS
+**Code Quality First**: ✅ PASS
 
-- New validator packages will follow Go best practices in pkg/validator/ structure
-- Comprehensive godoc comments required for all public functions
+- Validation logic follows Go best practices with proper error handling
+- Uses upstream package validators (kind, k3d, eksctl) instead of custom implementations
+- Comprehensive godoc comments required for all public APIs
 - golangci-lint compliance mandatory
-- Dependencies controlled via existing depguard rules
 
-**II. Test-Driven Development (NON-NEGOTIABLE)**: ✅ PASS
+**Test-Driven Development**: ✅ PASS
 
-- TDD approach: Write failing tests first for each validator
-- *_test.go files required for each validator package
-- Unit tests for in-memory validation logic (no file I/O)
+- TDD approach: Tests written → User approved → Tests fail → Then implement
+- Contract tests for each validator interface method
 - Integration tests for complete validation workflows
-- Snapshot testing for error message consistency
+- Snapshot testing for CLI output consistency
+- System tests across all supported configuration types
 
-**III. User Experience Consistency**: ✅ PASS
+**User Experience Consistency**: ✅ PASS
 
-- Standardized error messages using existing notify package
-- Consistent error format across all validators
-- Actionable error messages with specific field paths and fix examples
-- Human-readable output for basic Kubernetes users
+- Consistent error message formatting across all validators
+- Standardized validation result structure
+- Clear, actionable error messages with fix suggestions
+- Location information (file, line, field) for all errors
 
-**IV. Performance Excellence**: ✅ PASS
+**Performance Excellence**: ✅ PASS
 
-- Validation completes <100ms (within constitution's <10s status check requirement)
-- Memory usage <10MB (within reasonable limits)
-- In-memory validation eliminates inefficient file I/O
-- No impact on build times (<90s) or test execution (<60s)
+- <100ms validation time requirement (well within SLA)
+- <10MB memory usage constraint
+- In-memory validation (no file I/O during validation)
+- Efficient struct validation over byte data validation
 
-**Quality Standards Compliance**: ✅ PASS
+**API Simplification**: ✅ ENHANCED
 
-- Go 1.24.0+ version requirement met
-- Unit testable without file system operations
-- Documentation for all public interfaces
-- Security: No external network dependencies for validation
+- Simplified validator interface: single `Validate(config interface{})` method
+- Removes unnecessary `Validate(data []byte)` complexity
+- Promotes efficient struct validation over byte manipulation
+- Cleaner API for consumers who already have unmarshaled configs
 
 ## Project Structure
 
@@ -108,28 +114,42 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```txt
-# Go project structure (existing ksail-go structure)
-pkg/
-├── validator/                      # NEW: Validation packages
-│   ├── ksail/
-│   │   ├── config-validator.go    # KSail config validation
-│   │   └── config-validator_test.go
-│   ├── kind/
-│   │   ├── config-validator.go    # Kind config validation
-│   │   └── config-validator_test.go
-│   └── k3d/
-│       ├── config-validator.go    # K3d config validation
-│       └── config-validator_test.go
-├── apis/                          # Existing: API definitions
-├── config-manager/                # Existing: Config management
-├── provisioner/                   # Existing: Cluster provisioning
-└── ...                           # Other existing packages
+# Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
 
-cmd/                               # Existing: CLI commands (integration points)
-internal/                          # Existing: Internal utilities
+tests/
+├── contract/
+├── integration/
+└── unit/
+
+# Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure]
 ```
 
-**Structure Decision**: Go project with new pkg/validator/ packages following existing conventions
+**Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
 
@@ -196,40 +216,20 @@ internal/                          # Existing: Internal utilities
 
 **Task Generation Strategy**:
 
-- Load `.specify/templates/tasks-template.md` as base framework
-- Generate tasks from Phase 1 design documents (contracts/, data-model.md, quickstart.md)
-- Create TDD workflow: failing tests first, then implementation to pass tests
-- Structure tasks by validator package (ksail, kind, k3d) for parallel development
+- Load `.specify/templates/tasks-template.md` as base
+- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
+- Each contract → contract test task [P]
+- Each entity → model creation task [P]
+- Each user story → integration test task
+- Implementation tasks to make tests pass
 
-**Task Categories and Ordering**:
+**Ordering Strategy**:
 
-1. **Setup Tasks**: Create package structure and basic types from data-model.md
-2. **Contract Test Tasks**: Generate failing tests from contracts/ specifications
-3. **Unit Test Tasks**: Create comprehensive unit tests for each validator [P]
-4. **Implementation Tasks**: Implement validators to pass tests
-5. **Integration Test Tasks**: Test complete validation workflows
-6. **Documentation Tasks**: Update godoc and integration guides
+- TDD order: Tests before implementation
+- Dependency order: Models before services before UI
+- Mark [P] for parallel execution (independent files)
 
-**Parallelization Strategy**:
-
-- Mark [P] for tasks within different validator packages (ksail, kind, k3d)
-- Sequential dependencies: Setup → Tests → Implementation → Integration
-- Each validator package can be developed independently after contracts are defined
-- Integration tests require all validators to be complete
-
-**Estimated Output**:
-
-- 8-10 setup and structure tasks
-- 15-20 test creation tasks (5-7 per validator)
-- 15-20 implementation tasks to make tests pass
-- 5-8 integration and documentation tasks
-- **Total**: 45-60 numbered, ordered tasks with clear dependencies
-
-**Integration Points**:
-
-- Tasks will integrate with existing pkg/config-manager for validation triggers
-- CLI command integration points defined for each validator
-- Error message formatting aligned with existing cmd/ui/notify package
+**Estimated Output**: 25-30 numbered, ordered tasks in tasks.md
 
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
@@ -259,9 +259,9 @@ internal/                          # Existing: Internal utilities
 
 **Phase Status**:
 
-- [x] Phase 0: Research complete (/plan command)
-- [x] Phase 1: Design complete (/plan command)
-- [x] Phase 2: Task planning complete (/plan command - describe approach only)
+- [x] Phase 0: Research complete (/plan command) - API simplification documented
+- [ ] Phase 1: Design complete (/plan command)
+- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
@@ -269,9 +269,9 @@ internal/                          # Existing: Internal utilities
 **Gate Status**:
 
 - [x] Initial Constitution Check: PASS
-- [x] Post-Design Constitution Check: PASS
-- [x] All NEEDS CLARIFICATION resolved
-- [x] Complexity deviations documented
+- [ ] Post-Design Constitution Check: PASS
+- [x] All NEEDS CLARIFICATION resolved - API simplified to single method
+- [ ] Complexity deviations documented
 
 ---
 *Based on Constitution v2.1.1 - See `/memory/constitution.md`*

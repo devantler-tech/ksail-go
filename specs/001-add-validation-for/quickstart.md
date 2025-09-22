@@ -170,7 +170,7 @@ time ksail status
 
 ### YAML Syntax Error
 
-```
+```txt
 Error: Configuration validation failed
 File: /path/to/ksail.yaml:6:25
 Field: metadata.description
@@ -182,7 +182,7 @@ Fix: Add closing quote to complete the string value
 
 ### Invalid Field Value
 
-```
+```txt
 Error: Configuration validation failed
 File: /path/to/ksail.yaml:7:17
 Field: spec.distribution
@@ -194,7 +194,7 @@ Fix: Change to a supported distribution, e.g., "Kind"
 
 ### Missing Required Field
 
-```
+```txt
 Error: Configuration validation failed
 File: /path/to/ksail.yaml
 Missing required fields:
@@ -205,7 +205,7 @@ Fix: Add missing fields to your ksail.yaml configuration
 
 ### Cross-Configuration Error
 
-```
+```txt
 Error: Configuration validation failed
 Field: kind.yaml cluster name
 Error: Cluster name mismatch between configurations
@@ -254,7 +254,7 @@ Validation runs automatically during:
 ## Success Criteria Verification
 
 ✅ **Immediate Feedback**: Validation errors appear immediately when commands are run
-✅ **Actionable Messages**: Error messages include specific field paths and fix suggestions  
+✅ **Actionable Messages**: Error messages include specific field paths and fix suggestions
 ✅ **Fast Performance**: Validation completes well under 100ms for typical configurations
 ✅ **Comprehensive Coverage**: All configuration types (ksail, kind, k3d) are validated
 ✅ **Fail-Fast Behavior**: Invalid configurations prevent command execution

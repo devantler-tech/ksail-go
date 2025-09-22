@@ -2,7 +2,25 @@
 
 ## Research Areas and Decisions
 
-### 1. Validation Architecture Patterns
+### 1. API Design Simplification (UPDATED)
+
+**Decision**: Single `Validate(config interface{}) *ValidationResult` method interface
+**Rationale**:
+
+- Configurations are already unmarshaled from files during normal KSail operations
+- Eliminates dual validation paths (`Validate([]byte)` vs `ValidateStruct(interface{})`)
+- Struct validation is more testable and efficient than byte validation
+- In-memory validation avoids unnecessary marshaling/unmarshaling cycles
+- Cleaner API for consumers who already have parsed configuration structs
+
+**Alternatives considered**:
+
+- Dual Interface Approach: Keep both `Validate([]byte)` and `ValidateStruct(interface{})`
+  - Rejected: Adds complexity without significant benefit, creates confusion
+- Byte-only Validation: Only `Validate([]byte)` method
+  - Rejected: Forces unnecessary marshaling, less efficient, harder to test
+
+### 2. Validation Architecture Patterns
 
 **Decision**: Independent validator packages with common interfaces
 **Rationale**:
@@ -17,7 +35,7 @@
 - Single monolithic validator: Rejected due to complexity and testing difficulties
 - Interface-based plugin system: Overkill for current scope, adds unnecessary complexity
 
-### 2. Error Handling and Message Format
+### 3. Error Handling and Message Format
 
 **Decision**: Structured ValidationError type with actionable messages
 **Rationale**:
@@ -32,7 +50,7 @@
 - Simple string errors: Rejected due to lack of structure and actionability
 - Complex error hierarchies: Rejected due to unnecessary complexity for current scope
 
-### 3. In-Memory Validation Strategy
+### 4. In-Memory Validation Strategy
 
 **Decision**: Parse configuration into structs, then validate in memory
 **Rationale**:
@@ -147,3 +165,9 @@
 | Coordination        | KSail orchestrates, others independent | Clear responsibilities              |
 
 All decisions align with constitution requirements for code quality, performance, testing, and user experience.
+
+## Research Status: COMPLETE
+
+All technical decisions have been made and documented. No NEEDS CLARIFICATION items remain. Ready for Phase 1 design.
+
+Key API simplification decision: Single `Validate(config interface{})` method replaces dual-method approach for simpler, more efficient validation.

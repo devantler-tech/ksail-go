@@ -129,7 +129,7 @@ Represents validation rules that depend on multiple configuration fields.
 
 ## Entity Relationships
 
-```
+```txt
 ValidationResult
 ├── contains []ValidationError
 ├── references ConfigurationSchema

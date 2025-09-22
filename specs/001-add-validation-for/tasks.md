@@ -1,47 +1,31 @@
 # Tasks: Configuration File Validation
 
 **Input**: Design documents from `/specs/001-add-validation-for/`
-**Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
-
-## ⚠️ CRITICAL IMPLEMENTATION REQUIREMENTS
-
-**UPSTREAM VALIDATOR PRIORITY**: Use upstream Go package validators wherever available to avoid duplicating validation logic that already exists in well-tested packages:
-
-- **Kind Validator**: MUST use `sigs.k8s.io/kind/pkg/apis/config/v1alpha4.Cluster` struct and leverage Kind's official validation methods
-- **K3d Validator**: MUST use `github.com/k3d-io/k3d/v5/pkg/config/v1alpha5.SimpleConfig` struct and K3d's validation patterns
-- **EKS Validator**: MUST use `github.com/weaveworks/eksctl` and AWS SDK Go v2 packages for EKS configuration validation
-- **KSail Validator**: Use existing `github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1.Cluster` - **DO NOT ALTER CONFIG STRUCTURE**
-- **Custom Logic**: Only implement custom validation for KSail-specific requirements NOT covered by upstream packages
-
-This ensures validation behavior matches upstream tools exactly and reduces maintenance overhead.
+**Prerequisites**: plan.md (✓), research.md (✓), data-model.md (✓), contracts/ (✓)
 
 ## Execution Flow (main)
 
 ```txt
 1. Load plan.md from feature directory
-   → Extract: Go 1.24.0+, pkg/validator structure, sigs.k8s.io/yaml dependencies
-2. Load optional design documents:
-   → data-model.md: Extract ValidationError, ValidationResult, ConfigurationSchema entities
-   → contracts/: validator-interface.md, ksail-validator.md, kind-validator.md, k3d-validator.md, eks-validator.md
-   → research.md: Independent validator packages, in-memory validation strategy
+   → Tech stack: Go 1.24.0+, upstream validators (kind, k3d, eksctl)
+   → Libraries: sigs.k8s.io/kind, github.com/k3d-io/k3d/v5, eksctl
+   → Structure: Single project CLI tool with pkg/validator/ structure
+2. Load design documents:
+   → data-model.md: ValidationError, ValidationResult, FileLocation entities
+   → contracts/: 5 contract files (validator-interface + 4 validators)
+   → research.md: API simplification to single Validate() method
 3. Generate tasks by category:
-   → Setup: pkg/validator structure, dependencies, interfaces
-   → Tests: contract tests for each validator, integration tests
-   → Core: ValidationError, ValidationResult models, validator implementations
-   → Integration: config-manager integration, CLI command integration
-   → Polish: unit tests, performance validation, documentation
+   → Setup: Remove spec violations (K8sVersion), API simplification, dependencies
+   → Tests: Contract tests for each validator (TDD)
+   → Core: Simplified validator implementations
+   → Integration: End-to-end validation workflows
+   → Polish: Performance benchmarks, documentation
 4. Apply task rules:
-   → Different validator packages = mark [P] for parallel
-   → Same package files = sequential (no [P])
+   → Different validator files = mark [P] for parallel
+   → Same interface files = sequential (no [P])
    → Tests before implementation (TDD)
-5. Number tasks sequentially (T001, T002...)
-6. Generate dependency graph
-7. Create parallel execution examples
-8. Validate task completeness:
-   → All validator contracts have tests? ✓
-   → All entities have models? ✓
-   → All validators implemented? ✓
-9. Return: SUCCESS (tasks ready for execution)
+5. Spec Compliance: Remove K8sVersion field that violates "DO NOT ALTER" requirement
+6. API Simplification Focus: Remove Validate([]byte), rename ValidateStruct→Validate
 ```
 
 ## Format: `[ID] [P?] Description`
@@ -49,82 +33,55 @@ This ensures validation behavior matches upstream tools exactly and reduces main
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Include exact file paths in descriptions
 
-## Path Conventions
+## Phase 3.1: Setup & API Simplification
 
-Go project structure with pkg/validator packages:
-
-- `pkg/validator/ksail/` - KSail configuration validator
-- `pkg/validator/kind/` - Kind configuration validator
-- `pkg/validator/k3d/` - K3d configuration validator
-- `pkg/validator/eks/` - EKS configuration validator
-
-## Phase 3.1: Setup
-
-- [x] T001 Create pkg/validator directory structure with ksail/, kind/, k3d/, eks/ subdirectories
-- [x] T002 Create core validation types file pkg/validator/types.go with ValidationError, ValidationResult, FileLocation structs
-- [x] T003 Create validator interface file pkg/validator/interface.go with Validator interface from contracts
-- [x] T004 [P] Configure testing setup with testify and go-snaps dependencies in go.mod
+- [x] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement)
+- [x] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go
+- [x] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go
+- [x] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl)
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 > [!CAUTION]
 > CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation
 
-### Contract Tests (Parallel - Different Validators)
-
-- [x] T005 [P] Contract test for KSail validator in pkg/validator/ksail/config-validator_test.go - test Validate() method with ksail.yaml content
-- [x] T006 [P] Contract test for Kind validator in pkg/validator/kind/config-validator_test.go - test Validate() method with kind.yaml content
-- [x] T007 [P] Contract test for K3d validator in pkg/validator/k3d/config-validator_test.go - test Validate() method with k3d.yaml content
-- [ ] T008 [P] Contract test for EKS validator in pkg/validator/eks/config-validator_test.go - test Validate() method with eksctl configuration content
-
-### Interface Contract Tests (Parallel - Different Validators)
-
-- [x] T009 [P] Interface compliance test for KSail validator in pkg/validator/ksail/config-validator_test.go - test ValidateStruct() and GetSupportedTypes()
-- [x] T010 [P] Interface compliance test for Kind validator in pkg/validator/kind/config-validator_test.go - test ValidateStruct() and GetSupportedTypes()
-- [x] T011 [P] Interface compliance test for K3d validator in pkg/validator/k3d/config-validator_test.go - test ValidateStruct() and GetSupportedTypes()
-- [ ] T012 [P] Interface compliance test for EKS validator in pkg/validator/eks/config-validator_test.go - test ValidateStruct() and GetSupportedTypes()
-
-### Validation Scenario Tests (Based on quickstart.md)
-
-- [x] T011 [P] YAML syntax error test in pkg/validator/ksail/config-validator_test.go - test malformed YAML detection
-- [x] T012 [P] Invalid field values test in pkg/validator/ksail/config-validator_test.go - test invalid distribution enum
-- [x] T013 [P] Missing required fields test in pkg/validator/ksail/config-validator_test.go - test missing spec section
-- [x] T014 [P] Cross-configuration validation test in pkg/validator/ksail/config-validator_test.go - test name mismatch between configs
-- [x] T015 [P] Performance validation test in pkg/validator/ksail/config-validator_test.go - test <100ms validation time
-
-### Integration Tests
-
-- [ ] T016 [P] Integration test for complete validation workflow in pkg/validator/integration_test.go - test ksail → kind coordination
-- [ ] T017 [P] Integration test for error message format in pkg/validator/integration_test.go - test structured ValidationError output
+- [x] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go
+- [ ] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/validator_test.go
+- [ ] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/validator_test.go
+- [ ] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/validator_test.go
+- [ ] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/validator_test.go
+- [ ] T010 [P] Integration test complete validation workflow in pkg/validator/manager_test.go
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-### Core Types Implementation
+- [ ] T011 [P] Update ValidationError struct in pkg/validator/types.go per data-model.md
+- [ ] T012 [P] Update ValidationResult struct in pkg/validator/types.go per data-model.md
+- [ ] T013 [P] Add FileLocation type in pkg/validator/types.go per data-model.md
+- [ ] T014 [P] Implement simplified KSail validator Validate() method in pkg/validator/ksail/validator.go
+- [ ] T015 [P] Implement simplified Kind validator Validate() method in pkg/validator/kind/validator.go
+- [ ] T016 [P] Implement simplified K3d validator Validate() method in pkg/validator/k3d/validator.go
+- [ ] T017 [P] Implement simplified EKS validator Validate() method in pkg/validator/eks/validator.go
+- [ ] T018 Update validator manager to use simplified interface in pkg/validator/manager.go
+- [ ] T019 Remove deprecated Validate([]byte) method implementations across all validators
 
-- [x] T018 Implement ValidationError struct in pkg/validator/types.go with Field, Message, CurrentValue, ExpectedValue, FixSuggestion, Location fields
-- [x] T019 Implement ValidationResult struct in pkg/validator/types.go with Valid, Errors, Warnings, ConfigFile fields
-- [x] T020 Implement FileLocation struct in pkg/validator/types.go with FilePath, Line, Column fields
+## Phase 3.4: Integration & Error Handling
 
-### Validator Implementations (Parallel - Independent Validators)
+- [ ] T020 [P] Implement detailed error messages with FixSuggestion in pkg/validator/ksail/validator.go
+- [ ] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/validator.go
+- [ ] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/validator.go
+- [ ] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/validator.go
+- [ ] T024 Add file location tracking for validation errors in pkg/validator/manager.go
+- [ ] T025 Implement validation error aggregation in pkg/validator/manager.go
 
-- [x] T021 [P] Implement KSail validator in pkg/validator/ksail/config-validator.go - Validate() method for ksail.yaml using existing v1alpha1.Cluster (DO NOT ALTER)
-- [x] T022 [P] Implement Kind validator in pkg/validator/kind/config-validator.go - Validate() method for kind.yaml **USING sigs.k8s.io/kind/pkg/apis/config/v1alpha4.Cluster**
-- [x] T023 [P] Implement K3d validator in pkg/validator/k3d/config-validator.go - Validate() method for k3d.yaml **USING github.com/k3d-io/k3d/v5/pkg/config/v1alpha5.SimpleConfig**
-- [ ] T024 [P] Implement EKS validator in pkg/validator/eks/config-validator.go - Validate() method for eksctl configuration **USING github.com/weaveworks/eksctl APIs**
+## Phase 3.5: Polish & Performance
 
-### Validator Struct Methods (Parallel - Independent Validators)
-
-- [x] T025 [P] Implement KSail ValidateStruct() in pkg/validator/ksail/config-validator.go for v1alpha1.Cluster validation using existing struct
-- [x] T026 [P] Implement Kind ValidateStruct() in pkg/validator/kind/config-validator.go **LEVERAGING official v1alpha4.Cluster validation methods**
-- [x] T027 [P] Implement K3d ValidateStruct() in pkg/validator/k3d/config-validator.go **LEVERAGING official v1alpha5.SimpleConfig validation patterns**
-- [ ] T028 [P] Implement EKS ValidateStruct() in pkg/validator/eks/config-validator.go **LEVERAGING official eksctl ClusterConfig validation**
-
-### Validator Support Methods (Parallel - Independent Validators)
-
-- [x] T029 [P] Implement KSail GetSupportedTypes() in pkg/validator/ksail/config-validator.go returning ["ksail"]
-- [x] T030 [P] Implement Kind GetSupportedTypes() in pkg/validator/kind/config-validator.go returning ["kind"]
-- [x] T031 [P] Implement K3d GetSupportedTypes() in pkg/validator/k3d/config-validator.go returning ["k3d"]
-- [ ] T032 [P] Implement EKS GetSupportedTypes() in pkg/validator/eks/config-validator.go returning ["eks"]
+- [ ] T026 [P] Performance benchmarks for <100ms validation time in pkg/validator/benchmarks_test.go
+- [ ] T027 [P] Memory usage validation <10MB in pkg/validator/benchmarks_test.go
+- [ ] T028 [P] Update validator package godoc comments in pkg/validator/interfaces.go
+- [ ] T029 [P] Update types package godoc comments in pkg/validator/types.go
+- [ ] T030 [P] Update README.md with simplified validation API examples
+- [ ] T031 Run quickstart validation scenarios from quickstart.md
+- [x] T032 [REMOVED] ~~Implement EKS GetSupportedTypes() in pkg/validator/eks/config-validator.go returning ["eks"]~~ - Method removed from interface
 
 ### Validation Logic Implementation
 
@@ -142,85 +99,79 @@ Go project structure with pkg/validator packages:
 
 ## Phase 3.5: Polish
 
-### Unit Tests (Parallel - Comprehensive Coverage)
-
-- [ ] T041 [P] Unit tests for ValidationError methods in pkg/validator/types_test.go
-- [ ] T042 [P] Unit tests for ValidationResult methods in pkg/validator/types_test.go
-- [ ] T043 [P] Unit tests for FileLocation methods in pkg/validator/types_test.go
-- [ ] T044 [P] Unit tests for KSail validator edge cases in pkg/validator/ksail/config-validator_test.go
-- [ ] T045 [P] Unit tests for Kind validator edge cases in pkg/validator/kind/config-validator_test.go
-- [ ] T046 [P] Unit tests for K3d validator edge cases in pkg/validator/k3d/config-validator_test.go
-- [ ] T047 [P] Unit tests for EKS validator edge cases in pkg/validator/eks/config-validator_test.go
-
-### Performance and Documentation
-
-- [ ] T044 Performance benchmarks in pkg/validator/benchmark_test.go - validate <100ms and <10MB constraints
-- [ ] T045 [P] Add godoc comments to all public interfaces and types in pkg/validator/
-- [ ] T046 [P] Update README.md with configuration validation feature documentation
-- [ ] T047 Validate complete quickstart.md scenarios manually - run all test cases from quickstart guide
-
 ## Dependencies
 
-```txt
-Setup Phase:
-T001 → T002 → T003 → T004
-
-Test Phase (TDD):
-T001-T004 → T005-T017 (all tests must be written and failing)
-
-Core Implementation:
-T005-T017 → T018-T020 (core types)
-T018-T020 → T021-T023 (validator implementations)
-T021-T023 → T024-T026 (struct validation)
-T024-T026 → T027-T029 (support methods)
-T027-T029 → T030-T033 (validation logic)
-
-Integration:
-T018-T033 → T034-T037 (config-manager and CLI integration)
-
-Polish:
-T034-T037 → T038-T047 (unit tests, performance, docs)
-```
+- API Cleanup (T001) before API updates (T002-T003) before dependency updates (T004)
+- API Updates (T001-T004) before tests (T005-T010)
+- Tests (T005-T010) before implementation (T011-T019)
+- Core types (T011-T013) before validator implementations (T014-T017)
+- Validator implementations before manager updates (T018-T019)
+- Core implementation before error handling (T020-T025)
+- All implementation before performance testing (T026-T027)
 
 ## Parallel Execution Examples
 
-### Phase 3.2: Contract Tests (Run Together)
+```txt
+# Phase 3.2: Launch contract tests together
+Task: "Contract test for KSail validator Validate() method in pkg/validator/ksail/validator_test.go"
+Task: "Contract test for Kind validator Validate() method in pkg/validator/kind/validator_test.go"
+Task: "Contract test for K3d validator Validate() method in pkg/validator/k3d/validator_test.go"
+Task: "Contract test for EKS validator Validate() method in pkg/validator/eks/validator_test.go"
 
-```bash
-# All validator contract tests can run in parallel
-go test -v ./pkg/validator/ksail/ -run TestConfigValidator_Validate &
-go test -v ./pkg/validator/kind/ -run TestConfigValidator_Validate &
-go test -v ./pkg/validator/k3d/ -run TestConfigValidator_Validate &
-go test -v ./pkg/validator/eks/ -run TestConfigValidator_Validate &
-wait
+# Phase 3.3: Launch validator implementations together
+Task: "Implement simplified KSail validator Validate() method in pkg/validator/ksail/validator.go"
+Task: "Implement simplified Kind validator Validate() method in pkg/validator/kind/validator.go"
+Task: "Implement simplified K3d validator Validate() method in pkg/validator/k3d/validator.go"
+Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks/validator.go"
 ```
 
-### Phase 3.3: Validator Implementations (Run Together)
+## API Simplification Focus Areas
 
-```bash
-# Implement all validators in parallel (different packages)
-# T021-T023: Core Validate() methods
-# T024-T026: ValidateStruct() methods
-# T027-T029: GetSupportedTypes() methods
-```
+> [!IMPORTANT]
+> PRIMARY OBJECTIVE: Simplify validator interface from dual-method to single-method
 
-### Phase 3.5: Unit Testing (Run Together)
+1. **Interface Simplification**:
+   - Remove: `Validate(data []byte) *ValidationResult`
+   - Rename: `ValidateStruct(config interface{}) *ValidationResult` → `Validate(config interface{}) *ValidationResult`
+   - Remove: `GetSupportedTypes() []string` - Simplified to single-method interface
 
-```bash
-# All unit tests can run in parallel
-go test -v ./pkg/validator/ksail/ &
-go test -v ./pkg/validator/kind/ &
-go test -v ./pkg/validator/k3d/ &
-go test -v ./pkg/validator/eks/ &
-go test -v ./pkg/validator/ &
-wait
-```
+2. **Performance Benefits**:
+   - Eliminates unnecessary marshaling/unmarshaling cycles
+   - Reduces memory allocations
+   - Improves testability with struct inputs
+   - Removes auto-discovery overhead in favor of explicit registration
 
-## Completion Criteria
+3. **User Experience**:
+   - Cleaner API for consumers who already have parsed configurations
+   - Consistent with KSail's existing configuration loading patterns
+   - Explicit validator registration provides better control
+   - Actionable error messages with FixSuggestion field
 
-✅ **All Validators Implemented**: KSail, Kind, K3d, EKS validators with full interface compliance
-✅ **TDD Compliance**: All tests written first and failing before implementation
-✅ **Performance Validated**: <100ms validation time, <10MB memory usage verified
-✅ **Integration Complete**: Validation integrated into config-manager and CLI commands
-✅ **Documentation Updated**: Godoc comments, README, and quickstart scenarios validated
-✅ **Constitutional Compliance**: Code quality, testing standards, and user experience requirements met
+## Validation Checklist
+
+> [!IMPORTANT]
+> GATE: Checked before task execution
+
+- [x] All contracts have corresponding tests (T005-T009)
+- [x] All entities have implementation tasks (T011-T013)
+- [x] All tests come before implementation (T005-T010 → T011-T019)
+- [x] Parallel tasks truly independent ([P] tasks use different files)
+- [x] Each task specifies exact file path
+- [x] No task modifies same file as another [P] task
+- [x] API simplification emphasized throughout task descriptions
+- [x] Spec compliance enforced (K8sVersion field removal)
+
+## Performance Targets
+
+- **Validation Time**: <100ms per configuration file
+- **Memory Usage**: <10MB during validation operations
+- **Concurrency**: Thread-safe validation for parallel operations
+- **Error Quality**: Actionable messages with specific fix suggestions
+
+## Notes
+
+- Focus on API simplification: single `Validate(config interface{})` method
+- Leverage upstream validators to avoid custom validation logic duplication
+- Maintain backward compatibility during transition
+- All tests must fail initially (TDD approach)
+- Commit after each completed task for progress tracking
