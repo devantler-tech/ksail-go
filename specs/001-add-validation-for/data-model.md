@@ -104,14 +104,14 @@ The system provides both standalone validators and embedded manager implementati
 **Standalone Validators** (for direct use and testing):
 
 - `pkg/validator/ksail.ConfigValidator`: Direct KSail configuration validation
-- `pkg/validator/kind.ConfigValidator`: Direct Kind configuration validation  
+- `pkg/validator/kind.ConfigValidator`: Direct Kind configuration validation
 - `pkg/validator/k3d.ConfigValidator`: Direct K3d configuration validation
 - `pkg/validator/eks.ConfigValidator`: Direct EKS configuration validation
 
 **Embedded Validators** (within ValidatorManager):
 
 - `KSailValidator`: Embedded `*v1alpha1.Cluster` validator
-- `KindValidator`: Embedded `*kindapi.Cluster` validator  
+- `KindValidator`: Embedded `*kindapi.Cluster` validator
 - `K3dValidator`: Embedded `map[string]any` validator
 - `EKSValidator`: Embedded `*v1alpha5.ClusterConfig` validator
 
@@ -138,7 +138,7 @@ ValidatorManager
 
 Standalone Validators (ConfigValidator)
 ├── provide direct validation access for testing
-├── implement same Validator[T] interface  
+├── implement same Validator[T] interface
 └── enable isolated unit testing and development
 ```
 
