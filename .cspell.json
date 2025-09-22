@@ -21,6 +21,7 @@
     "kindv1alpha4",
     "scaffolder",
     "Activityln",
+    "godoc",
     "APIV",
     "k3dtestutils",
     "clustertestutils",
