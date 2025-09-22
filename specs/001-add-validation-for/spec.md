@@ -68,8 +68,7 @@ As a KSail user, when I create or modify configuration files (ksail.yaml, kind.y
 - **ConfigurationFile**: Represents a configuration file (ksail.yaml, kind.yaml, etc.) with content, file type, and validation state
 - **ValidationError**: Represents a specific validation failure with location, error type, current value, expected value, and fix suggestion
 - **ValidationResult**: Contains the overall validation status and collection of any validation errors found
-- **ConfigurationSchema**: Defines the expected structure, required fields, data types, and constraints for each configuration file type
-- **FieldValidator**: Represents validation rules for individual configuration fields including type checking, range validation, and dependency validation
+- **Validator**: Interface for validating configuration data with semantic checking and constraint validation
 
 ## Review & Acceptance Checklist
 
