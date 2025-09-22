@@ -80,7 +80,7 @@ Defines the interface for configuration file validators.
 
 - Must handle both raw []byte data and parsed structs
 - Must validate semantic correctness of configuration
-- Must check field constraints and dependencies  
+- Must check field constraints and dependencies
 - Must return actionable error messages
 - Must be thread-safe for concurrent validation
 
