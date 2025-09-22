@@ -1,53 +1,88 @@
-# Validator Interface Contract
+# Configuration Validation Architecture Contract
+
+## Validator Interface for Loaded Structs
 
 ```go
-// Validator defines a type-safe interface for configuration file validators
-// T represents the specific configuration type that this validator handles
+// Validator defines an interface for validating loaded configuration structs
 type Validator[T any] interface {
-    // Validate performs validation on a typed configuration object
+    // Validate performs validation on a loaded configuration struct
     // Returns ValidationResult containing status and any errors found
-    Validate(config T) *ValidationResult
+    Validate(config *T) *ValidationResult
 }
 ```
 
 ## Contract Requirements
 
-### Type-Safe Validate Method
+### Type-Safe Validation Method
 
-- **Input**: Specific configuration type (e.g., `*v1alpha1.Cluster`, `*v1alpha4.Cluster`)
+- **Input**: Pre-loaded configuration struct of specific type (e.g., `*v1alpha1.Cluster`, `*v1alpha4.Cluster`)
 - **Output**: ValidationResult with status and errors
 - **Behavior**:
-  - MUST validate semantic correctness of the typed configuration
-  - MUST check field constraints and dependencies
-  - MUST return structured ValidationError instances
-  - MUST complete within 100ms for typical configurations
-  - MUST NOT perform file I/O operations
+  - MUST validate semantic correctness of the loaded configuration struct
+  - MUST check field constraints and dependencies within the struct
+  - MUST return structured ValidationError instances for any issues found
+  - MUST complete within 100ms for typical configuration structs
+  - MUST NOT perform file I/O operations (configs are already loaded)
   - MUST be thread-safe for concurrent validation
-  - MUST return actionable error messages
-  - MUST be idempotent (same input = same output)
-  - MUST handle nil input gracefully
+  - MUST return actionable error messages with field paths
+  - MUST be idempotent (same struct input = same validation output)
+  - MUST handle nil or malformed structs gracefully
 
-## Architecture Design
+## Integration with Config Managers
 
-The validation system has been simplified to use only type-safe validators with dependency injection:
+The validation system integrates seamlessly with existing config managers that handle the file loading and struct creation:
 
-### ValidatorManager Pattern
-
-The `ValidatorManager` handles type detection and parsing from raw bytes, then dispatches to the appropriate typed validator:
+### Config Manager Responsibilities
 
 ```go
-type ValidatorManager interface {
-    // ValidateFile detects configuration type and validates accordingly
-    ValidateFile(filePath string, data []byte) *ValidationResult
+// Each config manager handles file loading and struct creation
+type ConfigManager[T any] interface {
+    LoadConfig() (*T, error)
 }
 
-// Implementation uses embedded validators - no external dependencies needed
-func NewValidatorManager() ValidatorManager
+// Example implementations:
+ksailManager := configmanager.NewConfigManager(fieldSelectors...)
+kindManager := kind.NewConfigManager("kind.yaml")
+k3dManager := k3d.NewConfigManager("k3d.yaml")
 ```
 
-### Benefits of This Design
+### Validator Responsibilities
 
-- **Type Safety**: No type erasure, compile-time safety for all validation logic
+```go
+// Validators operate on the loaded structs from config managers
+type KSailValidator struct{}
+func (v *KSailValidator) Validate(config *v1alpha1.Cluster) *ValidationResult
+
+type KindValidator struct{}
+func (v *KindValidator) Validate(config *v1alpha4.Cluster) *ValidationResult
+
+type K3dValidator struct{}
+func (v *K3dValidator) Validate(config *v1alpha5.SimpleConfig) *ValidationResult
+```
+
+## Architecture Design Benefits
+
+### Clear Separation of Concerns
+
+- **Config Managers**: Handle file discovery, loading, parsing, defaults, and struct creation
+- **Validators**: Handle semantic validation and cross-configuration consistency on loaded structs
+- **Upstream APIs**: Provide distribution-specific validation for loaded configuration correctness
+
+### Upstream API Integration
+
+Each validator leverages official upstream APIs on the loaded structs:
+
+- **Kind validation**: Uses `sigs.k8s.io/kind/pkg/apis/config/v1alpha4.Cluster` validation methods
+- **K3d validation**: Uses `github.com/k3d-io/k3d/v5/pkg/config/v1alpha5.SimpleConfig` validation methods
+- **EKS validation**: Uses `github.com/weaveworks/eksctl` configuration validation methods
+- **KSail validation**: Uses existing `v1alpha1.Cluster` API validation (DO NOT ALTER)
+
+### Error Handling Strategy
+
+- **Loading errors take precedence**: Config manager YAML/parsing errors are reported first
+- **Actionable validation messages**: Each error includes specific struct field, current value, expected value, and fix suggestion
+- **Struct field context**: All errors reference struct field paths rather than file locations
+- **Cross-config coordination**: Validators can load and compare multiple configuration structs for consistency validation
 - **Simplified Dependencies**: No external validator parameters needed
 - **Self-Contained**: ValidatorManager contains all necessary validator implementations
 - **Better Testing**: Direct testing of typed validators without interface complications

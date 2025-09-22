@@ -2,27 +2,18 @@
 
 ## Implementation
 
-### Standalone Validator
-
-```go
-type ConfigValidator struct{}
-
-// Type-safe validation for KSail cluster configurations
-func (v *ConfigValidator) Validate(config *v1alpha1.Cluster) *ValidationResult
-```
-
-### Embedded Validator (in ValidatorManager)
+### KSail Validator for Loaded Structs
 
 ```go
 type KSailValidator struct{}
 
-// Type-safe validation for KSail cluster configurations
+// Validate performs validation on a loaded KSail cluster configuration
 func (v *KSailValidator) Validate(config *v1alpha1.Cluster) *ValidationResult
 ```
 
 ## Purpose
 
-Validates ksail.yaml configuration files using the existing v1alpha1.Cluster API structure.
+The KSailValidator validates loaded v1alpha1.Cluster structs for semantic correctness and cross-configuration consistency. It operates on configuration structs that have already been loaded by the KSail config manager, focusing purely on validation logic without file handling concerns.
 
 ## ⚠️ CRITICAL CONSTRAINT
 
@@ -32,26 +23,36 @@ Validates ksail.yaml configuration files using the existing v1alpha1.Cluster API
 
 ### KSail Configuration Schema Validation
 
-- Validate ksail.yaml structure against cluster API v1alpha1 schema
+- Validate loaded v1alpha1.Cluster struct fields against schema constraints
 - Check required fields: metadata.name, spec.distribution, spec.distributionConfig
 - Validate enum values for spec.distribution (Kind, K3d, EKS)
-- Validate spec.connection.context format consistency
+- Ensure field values are within valid ranges and follow expected patterns
 
-### Cross-Configuration Coordination
+### 🎯 **PRIMARY RESPONSIBILITY: Cross-Configuration Coordination**
 
-- Load and validate distribution-specific configurations when needed
-- Ensure naming consistency between ksail.yaml and distribution configs
-- Validate that distribution config files exist and are accessible
-- Coordinate with appropriate distribution validators
+**CRITICAL**: The KSail validator is the **ONLY** validator responsible for cross-configuration consistency. Distribution validators (Kind, K3d, EKS) handle only their own configurations.
 
-### Context Validation
+- Coordinate with other config managers to load distribution-specific configurations
+- Compare loaded KSail configuration with loaded distribution configurations
+- Ensure naming consistency between loaded ksail and distribution config structs
+- Validate that loaded configurations are mutually compatible
+- **Orchestrate** validation by calling distribution validators for their specific configs
+- **Aggregate** validation results from all configuration sources
 
-- Validate spec.connection.context matches expected pattern for distribution
-- For Kind: context must be "kind-{metadata.name}"
-- For K3d: context must be "k3d-{metadata.name}"
-- For EKS: context must match AWS EKS cluster ARN or cluster name pattern
+### Context Name Validation
 
-## Input/Output Contract
+- Validate spec.connection.context field matches expected pattern for distribution:
+  - Kind: context must be "kind-{metadata.name}"
+  - K3d: context must be "k3d-{metadata.name}"
+  - EKS: context must match AWS EKS cluster ARN or cluster name pattern
+- Check context name patterns against loaded metadata.name field
+
+### Configuration Consistency Validation
+
+- Ensure loaded KSail settings are compatible with loaded distribution configurations
+- Validate CNI settings alignment between ksail and distribution config structs
+- Check CSI and ingress controller settings for consistency across loaded configs
+- Verify that loaded configuration combinations are practically deployable## Input/Output Contract
 
 ### Supported Configuration Types
 

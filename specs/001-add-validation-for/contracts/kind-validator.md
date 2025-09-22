@@ -2,51 +2,48 @@
 
 ## Implementation
 
-### Standalone Validator
-
-```go
-type ConfigValidator struct{}
-
-// Type-safe validation for Kind cluster configurations
-func (v *ConfigValidator) Validate(config *kindapi.Cluster) *ValidationResult
-```
-
-### Embedded Validator (in ValidatorManager)
+### Dedicated Kind Validator for Loaded Structs
 
 ```go
 type KindValidator struct{}
 
-// Type-safe validation for Kind cluster configurations
-func (v *KindValidator) Validate(config *kindapi.Cluster) *ValidationResult
+// Validate performs validation on a loaded Kind cluster configuration
+func (v *KindValidator) Validate(config *v1alpha4.Cluster) *ValidationResult
 ```
 
 ## Purpose
 
-Validates kind.yaml configuration files for Kind Kubernetes distribution compatibility and correctness **using official Kind upstream APIs**.
+Validates loaded v1alpha4.Cluster structs for Kind Kubernetes distribution compatibility and correctness **using official Kind upstream APIs**. This validator focuses on Kind configuration semantic validation and ensuring compatibility with KSail configuration settings, operating on structs that have already been loaded by the Kind config manager.
 
 ## ⚠️ CRITICAL IMPLEMENTATION REQUIREMENT
 
-**MUST USE UPSTREAM KIND APIS**: This validator MUST leverage `sigs.k8s.io/kind/pkg/apis/config/v1alpha4.Cluster` for all validation logic to ensure complete compatibility with the Kind tool. Avoid custom validation that duplicates Kind's built-in validation functionality.
+**MUST USE UPSTREAM KIND APIS**: This validator MUST leverage `sigs.k8s.io/kind/pkg/apis/config/v1alpha4.Cluster` for all validation logic to ensure complete compatibility with the Kind tool. The validation approach should:
+
+1. Operate on loaded `v1alpha4.Cluster` structs provided by the Kind config manager
+2. Leverage Kind's built-in validation methods where available on the loaded struct
+3. Only add custom validation for KSail-specific cross-configuration requirements
+4. Avoid duplicating validation that Kind config manager and APIs already provide
 
 ## Validation Responsibilities
 
-### Kind Schema Validation (Using Upstream APIs)
+### 🎯 **PRIMARY RESPONSIBILITY: Kind Configuration Semantic Validation**
 
-- **UPSTREAM FIRST**: Use v1alpha4.Cluster struct unmarshaling for primary validation
-- Validate kind.yaml structure against official Kind API v1alpha4.Cluster schema
-- Leverage Kind's built-in validation methods where available
-- Check required fields and proper nesting structure using Kind's validation
-- Validate node configuration arrays and networking settings via Kind APIs
-- Ensure image and version compatibility using Kind's validation logic
+**CRITICAL**: The Kind validator is **ONLY** responsible for validating individual Kind configuration semantics. Cross-configuration consistency is handled by the KSail validator.
 
-### Kind-Specific Constraints
+- **UPSTREAM FIRST**: Validate loaded `v1alpha4.Cluster` struct using Kind's validation APIs
+- Check semantic correctness of node configurations, networking settings, and volume mounts
+- Leverage Kind's built-in validation methods for field constraints and dependencies
+- Validate Kind-specific features like extra port mappings and container image settings
 
-- Validate cluster name format and constraints
-- Check port mapping configurations for conflicts
-- Validate volume mount paths and accessibility
-- Ensure network configuration consistency
+### ⚠️ **LIMITED SCOPE: No Cross-Configuration Validation**
 
-### Node Configuration Validation
+This validator **DOES NOT** handle cross-configuration consistency. The KSail validator handles:
+
+- Comparing Kind config with KSail config for naming consistency
+- Ensuring Kind settings align with KSail distribution specifications
+- Orchestrating validation across multiple configuration sources
+
+### Kind-Specific Validation Only
 
 - Validate control-plane and worker node configurations
 - Check resource allocations and limits

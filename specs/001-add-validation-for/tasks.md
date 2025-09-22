@@ -35,43 +35,43 @@
 
 ## Phase 3.1: Setup & API Simplification
 
-- [x] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement)
-- [x] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go
-- [x] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go
-- [x] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl)
+- [ ] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement)
+- [ ] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go
+- [ ] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go
+- [ ] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl)
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 > [!CAUTION]
 > CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation
 
-- [x] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go
-- [x] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/config-validator_test.go
-- [x] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/config-validator_test.go
-- [x] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/config-validator_test.go
-- [x] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/config-validator_test.go
-- [x] T010 [P] Integration test complete validation workflow in pkg/validator/manager_test.go
+- [ ] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go
+- [ ] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/config-validator_test.go
+- [ ] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/config-validator_test.go
+- [ ] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/config-validator_test.go
+- [ ] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/config-validator_test.go
+- [ ] T010 [P] Integration test complete validation workflow in pkg/validator/manager_test.go
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [x] T011 [P] Update ValidationError struct in pkg/validator/types.go per data-model.md
-- [x] T012 [P] Update ValidationResult struct in pkg/validator/types.go per data-model.md
-- [x] T013 [P] Add FileLocation type in pkg/validator/types.go per data-model.md
-- [x] T014 [P] Implement simplified KSail validator Validate() method in pkg/validator/ksail/config-validator.go
-- [x] T015 [P] Implement simplified Kind validator Validate() method in pkg/validator/kind/config-validator.go
-- [x] T016 [P] Implement simplified K3d validator Validate() method in pkg/validator/k3d/config-validator.go
-- [x] T017 [P] Implement simplified EKS validator Validate() method in pkg/validator/eks/config-validator.go
-- [x] T018 Update validator manager to use simplified interface in pkg/validator/manager.go
-- [x] T019 Remove deprecated Validate([]byte) method implementations across all validators
+- [ ] T011 [P] Update ValidationError struct in pkg/validator/types.go per data-model.md
+- [ ] T012 [P] Update ValidationResult struct in pkg/validator/types.go per data-model.md
+- [ ] T013 [P] Add FileLocation type in pkg/validator/types.go per data-model.md
+- [ ] T014 [P] Implement KSail validator for loaded v1alpha1.Cluster structs in pkg/validator/ksail/config-validator.go
+- [ ] T015 [P] Implement Kind validator for loaded v1alpha4.Cluster structs in pkg/validator/kind/config-validator.go
+- [ ] T016 [P] Implement K3d validator for loaded v1alpha5.SimpleConfig structs in pkg/validator/k3d/config-validator.go
+- [ ] T017 [P] Implement EKS validator for loaded EKS config structs in pkg/validator/eks/config-validator.go
+- [ ] T018 Update validator manager to use simplified interface in pkg/validator/manager.go
+- [ ] T019 Remove deprecated Validate([]byte) method implementations across all validators
 
 ## Phase 3.4: Integration & Error Handling
 
-- [x] T020 [P] Implement detailed error messages with FixSuggestion in pkg/validator/ksail/config-validator.go
-- [x] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/config-validator.go
-- [x] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/config-validator.go
-- [x] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/config-validator.go
-- [x] T024 Add file location tracking for validation errors in pkg/validator/manager.go
-- [x] T025 Implement validation error aggregation in pkg/validator/manager.go
+- [ ] T020 [P] Implement detailed error messages with FixSuggestion in pkg/validator/ksail/config-validator.go
+- [ ] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/config-validator.go
+- [ ] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/config-validator.go
+- [ ] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/config-validator.go
+- [ ] T024 Add file location tracking for validation errors in pkg/validator/manager.go
+- [ ] T025 Implement validation error aggregation in pkg/validator/manager.go
 
 ## Phase 3.5: Polish & Performance
 
@@ -85,17 +85,17 @@
 
 ### Validation Logic Implementation
 
-- [x] T033 Schema validation for KSail config in pkg/validator/ksail/config-validator.go - required fields, enum constraints (use existing v1alpha1.Cluster, DO NOT ALTER)
-- [x] T034 Cross-configuration coordination in pkg/validator/ksail/config-validator.go - load and validate distribution configs **USING UPSTREAM VALIDATORS**
-- [x] T035 Context name validation in pkg/validator/ksail/config-validator.go - kind-{name}, k3d-{name}, EKS ARN/name patterns
-- [x] T036 Error message formatting in pkg/validator/ksail/config-validator.go - actionable ValidationError creation
+- [ ] T033 Schema validation for KSail config in pkg/validator/ksail/config-validator.go - required fields, enum constraints (use existing v1alpha1.Cluster, DO NOT ALTER)
+- [ ] T034 Cross-configuration coordination in pkg/validator/ksail/config-validator.go - coordinate with config managers to load and validate distribution configs **USING UPSTREAM VALIDATORS**
+- [ ] T035 Context name validation in pkg/validator/ksail/config-validator.go - kind-{name}, k3d-{name}, EKS ARN/name patterns
+- [ ] T036 Error message formatting in pkg/validator/ksail/config-validator.go - actionable ValidationError creation
 
 ## Phase 3.4: Integration
 
-- [x] T037 Integrate validation into existing config-manager in pkg/config-manager/manager.go - call validators during config loading
-- [x] T038 Add validation hooks to CLI commands in cmd/ - ensure validation runs before command execution
-- [x] T039 Update error handling in cmd/ui/notify package to display ValidationError messages consistently
-- [x] T040 Add fail-fast behavior to config loading - prevent command execution on validation errors
+- [ ] T037 Integrate validators with existing config managers - call validators after config loading in pkg/config-manager/
+- [ ] T038 Add validation hooks to CLI commands in cmd/ - ensure validation runs on loaded configs before command execution
+- [ ] T039 Update error handling in cmd/ui/notify package to display ValidationError messages consistently
+- [ ] T040 Add fail-fast behavior to config loading - prevent command execution on validation errors
 
 ## Phase 3.5: Polish
 
@@ -152,14 +152,16 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
 > [!IMPORTANT]
 > GATE: Checked before task execution
 
-- [x] All contracts have corresponding tests (T005-T009)
-- [x] All entities have implementation tasks (T011-T013)
-- [x] All tests come before implementation (T005-T010 → T011-T019)
+- [ ] All contracts have corresponding tests (T005-T009)
+- [ ] All entities have implementation tasks (T011-T013)
+- [ ] All tests come before implementation (T005-T010 → T011-T019)
 - [x] Parallel tasks truly independent ([P] tasks use different files)
 - [x] Each task specifies exact file path
 - [x] No task modifies same file as another [P] task
 - [x] API simplification emphasized throughout task descriptions
-- [x] Spec compliance enforced (K8sVersion field removal)
+- [ ] Spec compliance enforced (K8sVersion field removal)
+- [ ] Config manager integration strategy defined
+- [ ] Upstream validator dependencies verified
 
 ## Performance Targets
 
