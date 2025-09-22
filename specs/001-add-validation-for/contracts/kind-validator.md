@@ -1,5 +1,25 @@
 # Kind Configuration Validator Contract
 
+## Implementation
+
+### Standalone Validator
+
+```go
+type ConfigValidator struct{}
+
+// Type-safe validation for Kind cluster configurations
+func (v *ConfigValidator) Validate(config *kindapi.Cluster) *ValidationResult
+```
+
+### Embedded Validator (in ValidatorManager)
+
+```go
+type KindValidator struct{}
+
+// Type-safe validation for Kind cluster configurations
+func (v *KindValidator) Validate(config *kindapi.Cluster) *ValidationResult
+```
+
 ## Purpose
 
 Validates kind.yaml configuration files for Kind Kubernetes distribution compatibility and correctness **using official Kind upstream APIs**.

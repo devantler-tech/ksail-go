@@ -4,14 +4,16 @@
 
 ### 1. API Design Simplification (UPDATED)
 
-**Decision**: Single `Validate(config interface{}) *ValidationResult` method interface
+**Decision**: Generic `Validate[T any](config T) *ValidationResult` method interface
 **Rationale**:
 
 - Configurations are already unmarshaled from files during normal KSail operations
-- Eliminates dual validation paths (`Validate([]byte)` vs `ValidateStruct(interface{})`)
+- Generic interface provides compile-time type safety for all validation logic
+- Eliminates dual validation paths and type erasure complications
 - Struct validation is more testable and efficient than byte validation
 - In-memory validation avoids unnecessary marshaling/unmarshaling cycles
 - Cleaner API for consumers who already have parsed configuration structs
+- Better IDE support with autocomplete and type checking
 
 **Alternatives considered**:
 

@@ -1,5 +1,14 @@
 # K3d Configuration Validator Contract
 
+## Implementation
+
+```go
+type K3dValidator struct{}
+
+// Type-safe validation for K3d cluster configurations
+func (v *K3dValidator) Validate(config map[string]any) *ValidationResult
+```
+
 ## Purpose
 
 Validates k3d.yaml configuration files for K3d Kubernetes distribution compatibility and correctness **using official K3d upstream APIs**.

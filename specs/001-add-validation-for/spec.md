@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-add-validation-for`
 **Created**: 2025-09-22
-**Status**: Draft
+**Status**: Implemented
 **Input**: User description: "Add validation for configuration files, to ensure issues are highlighted for users, with actionable steps to fix their configuration files. The validation must be run whenever a config file is loaded, and fail in case the contents of the file is invalid with ksail or invalid in general. Marshalling errors should take precedence, such that validation can happen in memory, and not via read/write operations that are inefficient and hard to test."
 
 ## ⚠️ IMPLEMENTATION STRATEGY

@@ -46,32 +46,32 @@
 > CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation
 
 - [x] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go
-- [ ] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/validator_test.go
-- [ ] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/validator_test.go
-- [ ] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/validator_test.go
-- [ ] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/validator_test.go
-- [ ] T010 [P] Integration test complete validation workflow in pkg/validator/manager_test.go
+- [x] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/config-validator_test.go
+- [x] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/config-validator_test.go
+- [x] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/config-validator_test.go
+- [x] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/config-validator_test.go
+- [x] T010 [P] Integration test complete validation workflow in pkg/validator/manager_test.go
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [ ] T011 [P] Update ValidationError struct in pkg/validator/types.go per data-model.md
-- [ ] T012 [P] Update ValidationResult struct in pkg/validator/types.go per data-model.md
-- [ ] T013 [P] Add FileLocation type in pkg/validator/types.go per data-model.md
-- [ ] T014 [P] Implement simplified KSail validator Validate() method in pkg/validator/ksail/validator.go
-- [ ] T015 [P] Implement simplified Kind validator Validate() method in pkg/validator/kind/validator.go
-- [ ] T016 [P] Implement simplified K3d validator Validate() method in pkg/validator/k3d/validator.go
-- [ ] T017 [P] Implement simplified EKS validator Validate() method in pkg/validator/eks/validator.go
-- [ ] T018 Update validator manager to use simplified interface in pkg/validator/manager.go
-- [ ] T019 Remove deprecated Validate([]byte) method implementations across all validators
+- [x] T011 [P] Update ValidationError struct in pkg/validator/types.go per data-model.md
+- [x] T012 [P] Update ValidationResult struct in pkg/validator/types.go per data-model.md
+- [x] T013 [P] Add FileLocation type in pkg/validator/types.go per data-model.md
+- [x] T014 [P] Implement simplified KSail validator Validate() method in pkg/validator/ksail/config-validator.go
+- [x] T015 [P] Implement simplified Kind validator Validate() method in pkg/validator/kind/config-validator.go
+- [x] T016 [P] Implement simplified K3d validator Validate() method in pkg/validator/k3d/config-validator.go
+- [x] T017 [P] Implement simplified EKS validator Validate() method in pkg/validator/eks/config-validator.go
+- [x] T018 Update validator manager to use simplified interface in pkg/validator/manager.go
+- [x] T019 Remove deprecated Validate([]byte) method implementations across all validators
 
 ## Phase 3.4: Integration & Error Handling
 
-- [ ] T020 [P] Implement detailed error messages with FixSuggestion in pkg/validator/ksail/validator.go
-- [ ] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/validator.go
-- [ ] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/validator.go
-- [ ] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/validator.go
-- [ ] T024 Add file location tracking for validation errors in pkg/validator/manager.go
-- [ ] T025 Implement validation error aggregation in pkg/validator/manager.go
+- [x] T020 [P] Implement detailed error messages with FixSuggestion in pkg/validator/ksail/config-validator.go
+- [x] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/config-validator.go
+- [x] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/config-validator.go
+- [x] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/config-validator.go
+- [x] T024 Add file location tracking for validation errors in pkg/validator/manager.go
+- [x] T025 Implement validation error aggregation in pkg/validator/manager.go
 
 ## Phase 3.5: Polish & Performance
 

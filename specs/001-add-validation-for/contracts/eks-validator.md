@@ -1,5 +1,14 @@
 # EKS Configuration Validator Contract
 
+## Implementation
+
+```go
+type EKSValidator struct{}
+
+// Type-safe validation for EKS cluster configurations
+func (v *EKSValidator) Validate(config *v1alpha5.ClusterConfig) *ValidationResult
+```
+
 ## Purpose
 
 Validates EKS cluster configuration files and ensures compatibility with AWS EKS requirements.

@@ -68,21 +68,52 @@ Provides precise location information for validation errors.
 - Line must be positive integer when specified
 - Column must be positive integer when specified
 
-### Validator
+### Validator[T any]
 
-Defines the interface for configuration file validators.
+Defines a type-safe interface for configuration file validators.
 
 **Methods**:
 
-- `Validate(config interface{}) *ValidationResult`: Validates configuration data and returns validation result
+- `Validate(config T) *ValidationResult`: Validates typed configuration data and returns validation result
 
-**Validation Rules**:
+**Type Parameters**:
 
-- Must handle both raw []byte data and parsed structs
-- Must validate semantic correctness of configuration
-- Must check field constraints and dependencies
-- Must return actionable error messages
-- Must be thread-safe for concurrent validation
+- `T`: The specific configuration type this validator handles (e.g., `*v1alpha1.Cluster`, `*kindapi.Cluster`)
+
+### ValidatorManager
+
+Provides centralized configuration validation across multiple types with hybrid validator architecture.
+
+**Methods**:
+
+- `ValidateFile(filePath string, data []byte) *ValidationResult`: Validates a configuration file, automatically detecting the type
+- `ValidateFiles(files map[string][]byte) map[string]*ValidationResult`: Validates multiple configuration files and aggregates results
+
+**Implementation Details**:
+
+- Uses embedded validator instances for internal file type detection and routing
+- Standalone validator packages provide direct access for unit testing and specific use cases
+- Eliminates constructor parameters through self-contained embedded design
+- Provides automatic file type detection and routing
+- Supports multiple validation attempts with best-result selection
+
+### Hybrid Validator Architecture
+
+The system provides both standalone validators and embedded manager implementations:
+
+**Standalone Validators** (for direct use and testing):
+
+- `pkg/validator/ksail.ConfigValidator`: Direct KSail configuration validation
+- `pkg/validator/kind.ConfigValidator`: Direct Kind configuration validation  
+- `pkg/validator/k3d.ConfigValidator`: Direct K3d configuration validation
+- `pkg/validator/eks.ConfigValidator`: Direct EKS configuration validation
+
+**Embedded Validators** (within ValidatorManager):
+
+- `KSailValidator`: Embedded `*v1alpha1.Cluster` validator
+- `KindValidator`: Embedded `*kindapi.Cluster` validator  
+- `K3dValidator`: Embedded `map[string]any` validator
+- `EKSValidator`: Embedded `*v1alpha5.ClusterConfig` validator
 
 ## Entity Relationships
 
@@ -95,22 +126,60 @@ ValidationError
 ├── references FileLocation
 └── describes validation failure
 
-Validator
-├── validates ConfigurationFile
+Validator[T]
+├── validates typed configuration T
 └── generates ValidationResult
 
 ValidatorManager
-├── registers multiple Validators
-└── routes validation to appropriate Validator
+├── embeds KSailValidator, KindValidator, K3dValidator, EKSValidator
+├── auto-detects file types from raw bytes
+├── routes validation to appropriate embedded Validator
+└── provides centralized validation orchestration
+
+Standalone Validators (ConfigValidator)
+├── provide direct validation access for testing
+├── implement same Validator[T] interface  
+└── enable isolated unit testing and development
 ```
 
 ## Data Flow
 
-1. **Configuration Loading**: File content parsed into structured data
-2. **Validator Selection**: ValidatorManager selects appropriate validator for configuration type
-3. **Validation Execution**: Validator.Validate() performs semantic validation using upstream APIs
-4. **Error Collection**: ValidationErrors accumulated in ValidationResult
-5. **Result Generation**: Final ValidationResult with status and errors returned
+1. **Configuration Loading**: File content provided as raw []byte data
+2. **File Type Detection**: ValidatorManager analyzes content to detect configuration type
+3. **Parsing and Validation**: Each embedded validator attempts to parse and validate the data
+4. **Best Result Selection**: Manager selects the result with fewest errors (or first valid result)
+5. **Error Collection**: ValidationErrors accumulated in ValidationResult with file location context
+6. **Result Generation**: Final ValidationResult with status and errors returned
+
+### Alternative Direct Validation Flow
+
+For unit testing and direct validation:
+
+1. **Direct Instantiation**: Create standalone ConfigValidator instance
+2. **Type-Safe Validation**: Call Validate() with pre-parsed configuration struct
+3. **Immediate Results**: Get ValidationResult without file detection overhead
+
+## Validation Architecture
+
+### Embedded Validator Pattern
+
+The ValidatorManager uses embedded validator instances rather than a registry pattern:
+
+```txt
+DefaultValidatorManager {
+    ksailValidator: &KSailValidator{}
+    kindValidator:  &KindValidator{}
+    k3dValidator:   &K3dValidator{}
+    eksValidator:   &EKSValidator{}
+}
+```
+
+This design:
+
+- Eliminates constructor parameter redundancy
+- Provides type-safe validation routing
+- Simplifies dependency management
+- Enables concurrent validation attempts
 
 ## Validation Contexts
 

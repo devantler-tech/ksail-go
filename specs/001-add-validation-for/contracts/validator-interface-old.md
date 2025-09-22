@@ -8,6 +8,14 @@ type Validator[T any] interface {
     // Returns ValidationResult containing status and any errors found
     Validate(config T) *ValidationResult
 }
+
+// GenericValidator provides type-erased validation for the ValidatorManager
+// This allows different validator types to be used through a common interface
+type GenericValidator interface {
+    // ValidateAny performs validation on a configuration of unknown type
+    // Handles type conversion and parsing internally before validation
+    ValidateAny(config any) *ValidationResult
+}
 ```
 
 ## Contract Requirements
@@ -27,30 +35,22 @@ type Validator[T any] interface {
   - MUST be idempotent (same input = same output)
   - MUST handle nil input gracefully
 
-## Architecture Design
+### Type-Erased ValidateAny Method
 
-The validation system has been simplified to use only type-safe validators with dependency injection:
-
-### ValidatorManager Pattern
-
-The `ValidatorManager` handles type detection and parsing from raw bytes, then dispatches to the appropriate typed validator:
-
-```go
-type ValidatorManager interface {
-    // ValidateFile detects configuration type and validates accordingly
-    ValidateFile(filePath string, data []byte) *ValidationResult
-}
-
-// Implementation uses embedded validators - no external dependencies needed
-func NewValidatorManager() ValidatorManager
-```
-
-### Benefits of This Design
-
-- **Type Safety**: No type erasure, compile-time safety for all validation logic
-- **Simplified Dependencies**: No external validator parameters needed
-- **Self-Contained**: ValidatorManager contains all necessary validator implementations
-- **Better Testing**: Direct testing of typed validators without interface complications
+- **Input**: Configuration data (any type: []byte, map[string]any, or typed struct)
+- **Output**: ValidationResult with status and errors
+- **Behavior**:
+  - MUST handle both raw []byte data and parsed structs
+  - MUST handle marshalling errors gracefully for byte input
+  - MUST prioritize parsing errors over semantic validation
+  - MUST convert data to appropriate type before calling Validate()
+  - MUST return structured ValidationError instances
+  - MUST complete within 100ms for files <10KB
+  - MUST NOT perform file I/O operations
+  - MUST be thread-safe for concurrent validation
+  - MUST return actionable error messages
+  - MUST be idempotent (same input = same output)
+  - MUST handle nil or malformed input gracefully
 
 ## Type Safety Benefits
 
@@ -88,13 +88,3 @@ func NewValidatorManager() ValidatorManager
 - Concurrent validation calls MUST NOT interfere
 - No shared mutable state between validation calls
 - Validators MUST be safe for use in concurrent CLI commands
-
-## Removed Interfaces
-
-The following interfaces have been removed in favor of the simplified architecture:
-
-- `GenericValidator` - Eliminated type erasure for better type safety
-- `ValidateAny(any)` methods - Removed from all validators to enforce type safety
-- Registration-based ValidatorManager - Replaced with dependency injection pattern
-
-This simplification ensures better code quality, compile-time safety, and clearer architecture.

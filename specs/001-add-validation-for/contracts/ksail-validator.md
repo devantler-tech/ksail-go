@@ -1,8 +1,28 @@
 # KSail Configuration Validator Contract
 
+## Implementation
+
+### Standalone Validator
+
+```go
+type ConfigValidator struct{}
+
+// Type-safe validation for KSail cluster configurations
+func (v *ConfigValidator) Validate(config *v1alpha1.Cluster) *ValidationResult
+```
+
+### Embedded Validator (in ValidatorManager)
+
+```go
+type KSailValidator struct{}
+
+// Type-safe validation for KSail cluster configurations
+func (v *KSailValidator) Validate(config *v1alpha1.Cluster) *ValidationResult
+```
+
 ## Purpose
 
-Validates ksail.yaml configuration files and coordinates validation of related distribution-specific configurations.
+Validates ksail.yaml configuration files using the existing v1alpha1.Cluster API structure.
 
 ## ⚠️ CRITICAL CONSTRAINT
 
