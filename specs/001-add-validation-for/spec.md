@@ -5,6 +5,15 @@
 **Status**: Draft
 **Input**: User description: "Add validation for configuration files, to ensure issues are highlighted for users, with actionable steps to fix their configuration files. The validation must be run whenever a config file is loaded, and fail in case the contents of the file is invalid with ksail or invalid in general. Marshalling errors should take precedence, such that validation can happen in memory, and not via read/write operations that are innefiicient and hard to test."
 
+## ⚠️ IMPLEMENTATION STRATEGY
+
+**CRITICAL**: This validation implementation MUST prioritize upstream Go package validators over custom validation logic. Use official APIs from:
+- `sigs.k8s.io/kind` for Kind configuration validation
+- `github.com/k3d-io/k3d/v5` for K3d configuration validation
+- Existing KSail `v1alpha1.Cluster` APIs (DO NOT ALTER)
+
+**DO NOT** implement custom validation logic that duplicates functionality already available in upstream packages. This ensures compatibility with official tools and reduces maintenance burden.
+
 ## User Scenarios & Testing
 
 ### Primary User Story

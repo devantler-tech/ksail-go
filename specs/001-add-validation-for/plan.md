@@ -34,21 +34,22 @@
 
 ## Summary
 
-Configuration file validation system that validates all ksail configuration files (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml) whenever they are loaded. The system prioritizes marshalling errors for efficient in-memory validation, provides actionable error messages with specific field information and fix examples, and fails fast to prevent destructive operations with invalid configurations. Uses separate validators for each configuration type with independent validation logic.
+Configuration file validation system that validates all ksail configuration files (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml) whenever they are loaded. The system **prioritizes upstream Go package validators** wherever available, avoiding custom validation logic that duplicates existing functionality. Leverages official APIs from sigs.k8s.io/kind and k3d-io packages for authentic validation. Provides actionable error messages with specific field information and fix examples, and fails fast to prevent destructive operations with invalid configurations. Uses separate validators for each configuration type with independent validation logic.
 
 ## Technical Context
 
 **Language/Version**: Go 1.24.0+ (as per go.mod and constitution requirements)
 **Primary Dependencies**: sigs.k8s.io/yaml, github.com/k3d-io/k3d/v5/pkg/config/v1alpha5, sigs.k8s.io/kind/pkg/apis/config/v1alpha4, github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1
+**Upstream Validator Strategy**: **CRITICAL** - Use official validation from upstream packages where available (Kind, K3d) to ensure consistency with upstream tools and avoid reinventing validation logic
 **Storage**: File-based configuration files (ksail.yaml, kind.yaml, k3d.yaml, eks.yaml)
 **Testing**: Go test with testify, go-snaps for snapshot testing, mockery for mocks
 **Target Platform**: Linux (amd64/arm64), macOS (amd64/arm64) - cross-platform CLI
 **Project Type**: Single project with pkg/ structure for validators
 **Performance Goals**: Configuration validation <100ms for files <10KB, memory usage <10MB
-**Constraints**: In-memory validation only, no file I/O during validation, fail-fast on errors
-**Scale/Scope**: Individual configuration files up to 10KB, 3 separate validator packages with independent logic
+**Constraints**: In-memory validation only, no file I/O during validation, fail-fast on errors, **preserve existing KSail config structure unchanged**
+**Scale/Scope**: Individual configuration files up to 10KB, 3 separate validator packages leveraging upstream validation where possible
 
-**User-provided Implementation Details**: Add pkg/validator/ksail/config-validator.go, pkg/validator/kind/config-validator.go, and pkg/validator/k3d/config-validator.go to validate configurations. Each validator should be independent - ksail validator handles ksail.yaml and coordinates loading of other configs, while kind/k3d validators only validate their specific configuration formats.
+**User-provided Implementation Details**: Add pkg/validator/ksail/config-validator.go, pkg/validator/kind/config-validator.go, and pkg/validator/k3d/config-validator.go to validate configurations. **CRITICAL**: Use upstream Go package validators wherever available - leverage sigs.k8s.io/kind/pkg/apis/config/v1alpha4 for Kind validation and github.com/k3d-io/k3d/v5/pkg/config for K3d validation instead of custom logic. Each validator should be independent - ksail validator handles ksail.yaml and coordinates loading of other configs, while kind/k3d validators only validate their specific configuration formats using official upstream APIs. **Do not alter the existing KSail configuration structure**.
 
 ## Constitution Check
 

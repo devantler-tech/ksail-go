@@ -19,6 +19,7 @@ type Validator interface {
 ## Contract Requirements
 
 ### Validate Method
+
 - **Input**: Raw configuration file content as byte array
 - **Output**: ValidationResult with status and errors
 - **Behavior**:
@@ -30,6 +31,7 @@ type Validator interface {
   - MUST be thread-safe for concurrent validation
 
 ### ValidateStruct Method
+
 - **Input**: Already parsed configuration struct
 - **Output**: ValidationResult with status and errors
 - **Behavior**:
@@ -40,6 +42,7 @@ type Validator interface {
   - MUST handle nil or malformed structs gracefully
 
 ### GetSupportedTypes Method
+
 - **Input**: None
 - **Output**: String slice of supported configuration types
 - **Behavior**:
@@ -50,12 +53,14 @@ type Validator interface {
 ## Error Handling Contract
 
 ### ValidationError Requirements
+
 - Field path MUST be specific and navigable
 - Error message MUST be human-readable
 - Fix suggestion MUST be actionable
 - Location information MUST be accurate when available
 
 ### ValidationResult Requirements
+
 - Valid field MUST accurately reflect error state
 - Errors slice MUST contain all validation failures
 - Warnings MUST NOT affect validation status

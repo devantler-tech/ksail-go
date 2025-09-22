@@ -1,9 +1,11 @@
 # Configuration File Validation - Quickstart Guide
 
 ## Overview
+
 This guide demonstrates the configuration file validation feature that validates ksail.yaml, kind.yaml, k3d.yaml, and other configuration files automatically whenever they are loaded.
 
 ## Prerequisites
+
 - KSail CLI installed and available in PATH
 - Basic understanding of Kubernetes configuration
 - Sample configuration files for testing
@@ -11,6 +13,7 @@ This guide demonstrates the configuration file validation feature that validates
 ## Quick Validation Test
 
 ### Test 1: Valid Configuration Validation
+
 Create a valid ksail.yaml file and verify validation passes:
 
 ```bash
@@ -44,6 +47,7 @@ ksail status
 **Expected Result**: Command executes successfully without validation errors.
 
 ### Test 2: Invalid YAML Syntax Validation
+
 Test that malformed YAML is caught with actionable error messages:
 
 ```bash
@@ -66,6 +70,7 @@ ksail status
 **Expected Result**: Clear error message indicating YAML syntax error with line number and fix suggestion.
 
 ### Test 3: Invalid Field Values Validation
+
 Test semantic validation with invalid field values:
 
 ```bash
@@ -87,6 +92,7 @@ ksail status
 **Expected Result**: Validation error listing allowed distribution values (Kind, K3d, EKS) with example.
 
 ### Test 4: Missing Required Fields Validation
+
 Test that missing required fields are detected:
 
 ```bash
@@ -106,6 +112,7 @@ ksail status
 **Expected Result**: Error listing all missing required fields with examples.
 
 ### Test 5: Cross-Configuration Validation
+
 Test validation of relationships between configuration files:
 
 ```bash
@@ -138,6 +145,7 @@ ksail status
 **Expected Result**: Error indicating cluster name mismatch between ksail.yaml and kind.yaml with fix suggestion.
 
 ### Test 6: Performance Validation
+
 Verify that validation completes quickly for typical configurations:
 
 ```bash
@@ -161,6 +169,7 @@ time ksail status
 ## Error Message Examples
 
 ### YAML Syntax Error
+
 ```
 Error: Configuration validation failed
 File: /path/to/ksail.yaml:6:25
@@ -172,6 +181,7 @@ Fix: Add closing quote to complete the string value
 ```
 
 ### Invalid Field Value
+
 ```
 Error: Configuration validation failed
 File: /path/to/ksail.yaml:7:17
@@ -183,6 +193,7 @@ Fix: Change to a supported distribution, e.g., "Kind"
 ```
 
 ### Missing Required Field
+
 ```
 Error: Configuration validation failed
 File: /path/to/ksail.yaml
@@ -193,6 +204,7 @@ Fix: Add missing fields to your ksail.yaml configuration
 ```
 
 ### Cross-Configuration Error
+
 ```
 Error: Configuration validation failed
 Field: kind.yaml cluster name
@@ -205,7 +217,9 @@ Fix: Change kind.yaml name to "test-cluster" or update ksail.yaml metadata.name
 ## Validation Integration Points
 
 ### Command Integration
+
 Validation runs automatically during:
+
 - `ksail init` - Validates generated configurations
 - `ksail up` - Validates before cluster creation
 - `ksail status` - Validates before status check
@@ -213,6 +227,7 @@ Validation runs automatically during:
 - All other commands that load configuration
 
 ### Performance Characteristics
+
 - Validation completes within 100ms for typical files
 - Memory usage stays under 10MB during validation
 - No temporary files or I/O operations during validation
@@ -221,15 +236,19 @@ Validation runs automatically during:
 ## Troubleshooting Common Issues
 
 ### "Configuration file not found"
+
 **Solution**: Ensure ksail.yaml exists in current directory or run from project root.
 
 ### "Permission denied reading configuration"
+
 **Solution**: Check file permissions and ensure files are readable.
 
-### "Invalid YAML syntax" 
+### "Invalid YAML syntax"
+
 **Solution**: Use YAML validator or IDE with YAML support to identify syntax issues.
 
 ### "Distribution config file not found"
+
 **Solution**: Ensure the distributionConfig file path in ksail.yaml points to existing file.
 
 ## Success Criteria Verification
