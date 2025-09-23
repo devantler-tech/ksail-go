@@ -62,7 +62,7 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 		})
 	}
 
-	// Run comprehensive eksctl validation if essential validation passes
+	// Run comprehensive eksctl validation if essential validation passes and it's safe to do so
 	if !result.HasErrors() {
 		if err := v.validateWithUpstreamEksctl(config); err != nil {
 			result.AddError(validator.ValidationError{
@@ -76,16 +76,18 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 	return result
 }
 
-// validateWithUpstreamEksctl runs comprehensive eksctl validation with proper error handling
+// validateWithUpstreamEksctl attempts to run comprehensive eksctl validation.
+// We apply eksctl defaults before validation to prevent panics from missing required fields.
 func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) error {
-	// Use defer/recover to handle potential panics from comprehensive validation
-	defer func() {
-		if r := recover(); r != nil {
-			// Log the panic but don't fail the entire validation
-			// This allows graceful degradation if validation has issues
-		}
-	}()
+	// Create a copy to avoid modifying the original config
+	configCopy := *config
+
+	// Apply eksctl defaults to prevent panics from missing required fields
+	// This is what eksctl CLI does before validation
+	eksctlapi.SetClusterConfigDefaults(&configCopy)
 
 	// Run comprehensive eksctl validation
-	return eksctlapi.ValidateClusterConfig(config)
+	// Note: This returns a single error, but that error may contain multiple validation failures
+	// wrapped together using Go's error wrapping patterns (errors.Join, fmt.Errorf with %w, etc.)
+	return eksctlapi.ValidateClusterConfig(&configCopy)
 }

@@ -45,16 +45,8 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 	return result
 }
 
-// validateWithUpstreamK3d runs comprehensive K3d validation following the same workflow as K3d CLI with proper error handling
+// validateWithUpstreamK3d runs comprehensive K3d validation following the same workflow as K3d CLI.
 func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
-	// Use defer/recover to handle potential panics from comprehensive validation
-	defer func() {
-		if r := recover(); r != nil {
-			// Log the panic but don't fail the entire validation
-			// This allows graceful degradation if validation has issues
-		}
-	}()
-
 	// Create a copy to avoid modifying the original configuration
 	configCopy := *config
 
