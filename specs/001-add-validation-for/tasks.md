@@ -45,8 +45,9 @@
 > [!CAUTION]
 > CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation
 
-- [ ] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go
-- [ ] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/config-validator_test.go
+- [x] T005 [P] Contract test for simplified Validator interface in pkg/validator/interfaces_test.go - COMPLETED
+- [x] T006 [P] Contract test for KSail validator Validate() method in pkg/validator/ksail/validator_test.go - COMPLETED (failing as expected)
+- [ ] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/validator_test.go
 - [ ] T007 [P] Contract test for Kind validator Validate() method in pkg/validator/kind/config-validator_test.go
 - [ ] T008 [P] Contract test for K3d validator Validate() method in pkg/validator/k3d/config-validator_test.go
 - [ ] T009 [P] Contract test for EKS validator Validate() method in pkg/validator/eks/config-validator_test.go
