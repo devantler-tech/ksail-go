@@ -5,7 +5,7 @@ import (
 )
 
 // EKSClusterConfig represents an EKS cluster configuration.
-// TODO: Replace with actual eksctl configuration type in T017.
+// TODO: Replace with actual eksctl configuration type.
 type EKSClusterConfig struct {
 	Name   string
 	Region string
