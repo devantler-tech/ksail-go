@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/validator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/validator/kind"
 	"github.com/devantler-tech/ksail-go/pkg/validator/ksail"
+	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,6 +76,9 @@ func TestCompleteValidationWorkflow(t *testing.T) {
 		validator := k3d.NewValidator()
 
 		validConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "test-cluster",
+			},
 			Servers: 1,
 			Agents:  2,
 		}

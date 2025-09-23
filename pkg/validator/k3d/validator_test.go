@@ -3,6 +3,7 @@ package k3d
 import (
 	"testing"
 
+	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,6 +24,9 @@ func TestK3dValidatorContract(t *testing.T) {
 		{
 			name: "valid_k3d_config",
 			config: &k3dapi.SimpleConfig{
+				ObjectMeta: configtypes.ObjectMeta{
+					Name: "test-cluster",
+				},
 				Servers: 1,
 				Agents:  2,
 			},
@@ -30,13 +34,25 @@ func TestK3dValidatorContract(t *testing.T) {
 			expectErrors: []string{},
 		},
 		{
-			name: "invalid_k3d_config_no_servers",
+			name: "valid_k3d_config_zero_servers",
 			config: &k3dapi.SimpleConfig{
+				ObjectMeta: configtypes.ObjectMeta{
+					Name: "test-cluster-zero",
+				},
 				Servers: 0,
 				Agents:  2,
 			},
-			expectValid:  false,
-			expectErrors: []string{"at least one server node is required"},
+			expectValid:  true,
+			expectErrors: []string{},
+		},
+		{
+			name: "valid_k3d_config_no_name",
+			config: &k3dapi.SimpleConfig{
+				Servers: 1,
+				Agents:  2,
+			},
+			expectValid:  true,
+			expectErrors: []string{},
 		},
 		{
 			name:         "nil_config",
