@@ -35,10 +35,10 @@
 
 ## Phase 3.1: Setup & API Simplification
 
-- [ ] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement)
-- [ ] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go
-- [ ] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go
-- [ ] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl)
+- [x] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement) - ALREADY CORRECT: No K8sVersion field exists
+- [x] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go - ALREADY CORRECT: Only Validate(T) method exists
+- [x] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go - ALREADY CORRECT: Method already named Validate
+- [x] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl) - ALREADY CORRECT: All dependencies present
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
