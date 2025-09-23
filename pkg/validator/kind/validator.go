@@ -14,19 +14,48 @@ func NewValidator() *Validator {
 }
 
 // Validate performs validation on a loaded Kind cluster configuration.
-// This is a placeholder implementation that will fail tests initially (TDD approach).
 func (v *Validator) Validate(config *kindapi.Cluster) *validator.ValidationResult {
-	// Placeholder implementation - INTENTIONALLY INCOMPLETE to make tests fail
-	// This follows TDD approach where tests must fail before real implementation
 	result := validator.NewValidationResult("kind.yaml")
 
-	// TODO: Implement actual Kind validation using upstream APIs in T015
-	// For now, add a placeholder error to make tests fail
-	result.AddError(validator.ValidationError{
-		Field:         "placeholder",
-		Message:       "Kind validator not implemented yet",
-		FixSuggestion: "Implement Kind validator logic using sigs.k8s.io/kind APIs in T015",
-	})
+	// Handle nil config
+	if config == nil {
+		result.AddError(validator.ValidationError{
+			Field:         "config",
+			Message:       "configuration cannot be nil",
+			FixSuggestion: "Provide a valid Kind cluster configuration",
+		})
+		return result
+	}
+
+	// Validate cluster name is required
+	if config.Name == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "name",
+			Message:       "cluster name is required",
+			CurrentValue:  config.Name,
+			ExpectedValue: "non-empty string",
+			FixSuggestion: "Set the name field to a valid cluster name",
+		})
+	}
+
+	// Validate that at least one control-plane node exists
+	hasControlPlane := false
+	for _, node := range config.Nodes {
+		if node.Role == kindapi.ControlPlaneRole {
+			hasControlPlane = true
+			break
+		}
+	}
+
+	if !hasControlPlane {
+		result.AddError(validator.ValidationError{
+			Field:         "nodes",
+			Message:       "at least one control-plane node is required",
+			CurrentValue:  len(config.Nodes),
+			ExpectedValue: "at least one node with role: control-plane",
+			FixSuggestion: "Add at least one node with role set to 'control-plane'",
+		})
+	}
 
 	return result
 }

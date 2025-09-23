@@ -20,19 +20,40 @@ func NewValidator() *Validator {
 }
 
 // Validate performs validation on a loaded EKS cluster configuration.
-// This is a placeholder implementation that will fail tests initially (TDD approach).
 func (v *Validator) Validate(config *EKSClusterConfig) *validator.ValidationResult {
-	// Placeholder implementation - INTENTIONALLY INCOMPLETE to make tests fail
-	// This follows TDD approach where tests must fail before real implementation
 	result := validator.NewValidationResult("eks.yaml")
 
-	// TODO: Implement actual EKS validation using upstream eksctl APIs in T017
-	// For now, add a placeholder error to make tests fail
-	result.AddError(validator.ValidationError{
-		Field:         "placeholder",
-		Message:       "EKS validator not implemented yet",
-		FixSuggestion: "Implement EKS validator logic using github.com/weaveworks/eksctl APIs in T017",
-	})
+	// Handle nil config
+	if config == nil {
+		result.AddError(validator.ValidationError{
+			Field:         "config",
+			Message:       "configuration cannot be nil",
+			FixSuggestion: "Provide a valid EKS cluster configuration",
+		})
+		return result
+	}
+
+	// Validate cluster name is required
+	if config.Name == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "name",
+			Message:       "cluster name is required",
+			CurrentValue:  config.Name,
+			ExpectedValue: "non-empty string",
+			FixSuggestion: "Set the name field to a valid EKS cluster name",
+		})
+	}
+
+	// Validate region is required
+	if config.Region == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "region",
+			Message:       "region is required",
+			CurrentValue:  config.Region,
+			ExpectedValue: "valid AWS region (e.g., us-west-2)",
+			FixSuggestion: "Set the region field to a valid AWS region",
+		})
+	}
 
 	return result
 }

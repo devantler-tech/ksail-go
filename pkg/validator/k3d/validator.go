@@ -14,19 +14,29 @@ func NewValidator() *Validator {
 }
 
 // Validate performs validation on a loaded K3d cluster configuration.
-// This is a placeholder implementation that will fail tests initially (TDD approach).
 func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationResult {
-	// Placeholder implementation - INTENTIONALLY INCOMPLETE to make tests fail
-	// This follows TDD approach where tests must fail before real implementation
 	result := validator.NewValidationResult("k3d.yaml")
 
-	// TODO: Implement actual K3d validation using upstream APIs in T016
-	// For now, add a placeholder error to make tests fail
-	result.AddError(validator.ValidationError{
-		Field:         "placeholder",
-		Message:       "K3d validator not implemented yet",
-		FixSuggestion: "Implement K3d validator logic using github.com/k3d-io/k3d/v5 APIs in T016",
-	})
+	// Handle nil config
+	if config == nil {
+		result.AddError(validator.ValidationError{
+			Field:         "config",
+			Message:       "configuration cannot be nil",
+			FixSuggestion: "Provide a valid K3d cluster configuration",
+		})
+		return result
+	}
+
+	// Validate that at least one server node is required
+	if config.Servers <= 0 {
+		result.AddError(validator.ValidationError{
+			Field:         "servers",
+			Message:       "at least one server node is required",
+			CurrentValue:  config.Servers,
+			ExpectedValue: "integer >= 1",
+			FixSuggestion: "Set servers to at least 1 for a functional K3d cluster",
+		})
+	}
 
 	return result
 }
