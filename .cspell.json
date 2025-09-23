@@ -207,7 +207,11 @@
     "underspecified",
     "KILOCODE",
     "AUGGIE",
-    "kilocode",
-    "auggie"
+    "auggie",
+    "dapi",
+    "dconfig",
+    "eksctlapi",
+    "kindapi",
+    "ksailvalidator"
   ]
 }
