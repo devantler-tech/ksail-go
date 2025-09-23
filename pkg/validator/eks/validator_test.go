@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
 // TestEKSValidatorContract tests the contract for EKS configuration validator
@@ -15,34 +16,48 @@ func TestEKSValidatorContract(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		config       *EKSClusterConfig
+		config       *eksctlapi.ClusterConfig
 		expectValid  bool
 		expectErrors []string
 	}{
 		{
 			name: "valid_eks_config",
-			config: &EKSClusterConfig{
-				Name:   "test-cluster",
-				Region: "us-west-2",
+			config: &eksctlapi.ClusterConfig{
+				Metadata: &eksctlapi.ClusterMeta{
+					Name:   "test-cluster",
+					Region: "us-west-2",
+				},
 			},
 			expectValid:  true,
 			expectErrors: []string{},
 		},
 		{
 			name: "invalid_eks_config_missing_name",
-			config: &EKSClusterConfig{
-				Region: "us-west-2",
+			config: &eksctlapi.ClusterConfig{
+				Metadata: &eksctlapi.ClusterMeta{
+					Region: "us-west-2",
+				},
 			},
 			expectValid:  false,
 			expectErrors: []string{"cluster name is required"},
 		},
 		{
 			name: "invalid_eks_config_missing_region",
-			config: &EKSClusterConfig{
-				Name: "test-cluster",
+			config: &eksctlapi.ClusterConfig{
+				Metadata: &eksctlapi.ClusterMeta{
+					Name: "test-cluster",
+				},
 			},
 			expectValid:  false,
 			expectErrors: []string{"region is required"},
+		},
+		{
+			name:   "invalid_eks_config_missing_metadata",
+			config: &eksctlapi.ClusterConfig{
+				// No metadata
+			},
+			expectValid:  false,
+			expectErrors: []string{"metadata is required"},
 		},
 		{
 			name:         "nil_config",

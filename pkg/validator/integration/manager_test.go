@@ -11,6 +11,7 @@ import (
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -89,9 +90,11 @@ func TestCompleteValidationWorkflow(t *testing.T) {
 	t.Run("eks_validator_integration", func(t *testing.T) {
 		validator := eks.NewValidator()
 
-		validConfig := &eks.EKSClusterConfig{
-			Name:   "test-cluster",
-			Region: "us-west-2",
+		validConfig := &eksctlapi.ClusterConfig{
+			Metadata: &eksctlapi.ClusterMeta{
+				Name:   "test-cluster",
+				Region: "us-west-2",
+			},
 		}
 
 		result := validator.Validate(validConfig)
