@@ -146,12 +146,14 @@ func LoadClusterWithErrorHandling(
 
 	// Handle validation errors with fail-fast behavior
 	if !result.Valid {
-		notify.Errorln(cmd.OutOrStdout(), "Configuration validation failed:")
+		// Aggregate all error messages into a single string
+		errorMessages := ""
 		for _, validationErr := range result.Errors {
-			notify.Errorln(
-				cmd.OutOrStdout(),
-				fmt.Sprintf("  - %s: %s", validationErr.Field, validationErr.Message),
-			)
+			errorMessages += fmt.Sprintf("  - %s: %s\n", validationErr.Field, validationErr.Message)
+		}
+		notify.Errorln(cmd.OutOrStdout(), "Configuration validation failed:\n"+errorMessages)
+		// Print fix suggestions separately
+		for _, validationErr := range result.Errors {
 			if validationErr.FixSuggestion != "" {
 				notify.Activityln(
 					cmd.OutOrStdout(),
