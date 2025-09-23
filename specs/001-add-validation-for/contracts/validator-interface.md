@@ -7,7 +7,7 @@
 type Validator[T any] interface {
     // Validate performs validation on a loaded configuration struct
     // Returns ValidationResult containing status and any errors found
-    Validate(config *T) *ValidationResult
+    Validate(config T) *ValidationResult
 }
 ```
 
