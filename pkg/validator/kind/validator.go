@@ -27,35 +27,5 @@ func (v *Validator) Validate(config *kindapi.Cluster) *validator.ValidationResul
 		return result
 	}
 
-	// Validate cluster name is required
-	if config.Name == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "name",
-			Message:       "cluster name is required",
-			CurrentValue:  config.Name,
-			ExpectedValue: "non-empty string",
-			FixSuggestion: "Set the name field to a valid cluster name",
-		})
-	}
-
-	// Validate that at least one control-plane node exists
-	hasControlPlane := false
-	for _, node := range config.Nodes {
-		if node.Role == kindapi.ControlPlaneRole {
-			hasControlPlane = true
-			break
-		}
-	}
-
-	if !hasControlPlane {
-		result.AddError(validator.ValidationError{
-			Field:         "nodes",
-			Message:       "at least one control-plane node is required",
-			CurrentValue:  len(config.Nodes),
-			ExpectedValue: "at least one node with role: control-plane",
-			FixSuggestion: "Add at least one node with role set to 'control-plane'",
-		})
-	}
-
 	return result
 }

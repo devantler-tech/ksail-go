@@ -41,7 +41,7 @@ func TestKindValidatorContract(t *testing.T) {
 			expectErrors: []string{},
 		},
 		{
-			name: "invalid_kind_config_missing_name",
+			name: "valid_kind_config_no_name",
 			config: &kindapi.Cluster{
 				TypeMeta: kindapi.TypeMeta{
 					APIVersion: "kind.x-k8s.io/v1alpha4",
@@ -53,25 +53,31 @@ func TestKindValidatorContract(t *testing.T) {
 					},
 				},
 			},
-			expectValid:  false,
-			expectErrors: []string{"cluster name is required"},
+			expectValid:  true,
+			expectErrors: []string{},
 		},
 		{
-			name: "invalid_kind_config_no_control_plane",
+			name: "valid_kind_config_no_nodes",
 			config: &kindapi.Cluster{
 				TypeMeta: kindapi.TypeMeta{
 					APIVersion: "kind.x-k8s.io/v1alpha4",
 					Kind:       "Cluster",
 				},
 				Name: "test-cluster",
-				Nodes: []kindapi.Node{
-					{
-						Role: kindapi.WorkerRole,
-					},
+			},
+			expectValid:  true,
+			expectErrors: []string{},
+		},
+		{
+			name: "valid_kind_config_minimal",
+			config: &kindapi.Cluster{
+				TypeMeta: kindapi.TypeMeta{
+					APIVersion: "kind.x-k8s.io/v1alpha4",
+					Kind:       "Cluster",
 				},
 			},
-			expectValid:  false,
-			expectErrors: []string{"at least one control-plane node is required"},
+			expectValid:  true,
+			expectErrors: []string{},
 		},
 		{
 			name:         "nil_config",
