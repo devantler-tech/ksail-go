@@ -132,7 +132,7 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
 ## API Simplification Focus Areas
 
 > [!IMPORTANT]
-> PRIMARY OBJECTIVE: Simplify validator interface from dual-method to single-method
+> Validator interface has been simplified from dual-method to single-method
 
 1. **Interface Simplification**:
    - Remove: `Validate(data []byte) *ValidationResult`
