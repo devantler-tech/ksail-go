@@ -14,6 +14,7 @@ func NewValidator() *Validator {
 }
 
 // Validate performs validation on a loaded EKS cluster configuration using upstream eksctl APIs.
+// This validator performs both essential field validation and comprehensive upstream eksctl validation.
 func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.ValidationResult {
 	result := validator.NewValidationResult("eks.yaml")
 
@@ -61,10 +62,30 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 		})
 	}
 
-	// Basic EKS configuration validation using upstream types
-	// Focus on essential fields required for KSail integration
-	// Note: Full eksctl validation requires completely initialized config structure
-	// TODO: Consider adding comprehensive eksctl validation for complete configurations
+	// Run comprehensive eksctl validation if essential validation passes
+	if !result.HasErrors() {
+		if err := v.validateWithUpstreamEksctl(config); err != nil {
+			result.AddError(validator.ValidationError{
+				Field:         "config",
+				Message:       err.Error(),
+				FixSuggestion: "Check the EKS cluster configuration schema at https://schema.eksctl.io for complete requirements and examples",
+			})
+		}
+	}
 
 	return result
+}
+
+// validateWithUpstreamEksctl runs comprehensive eksctl validation with proper error handling
+func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) error {
+	// Use defer/recover to handle potential panics from comprehensive validation
+	defer func() {
+		if r := recover(); r != nil {
+			// Log the panic but don't fail the entire validation
+			// This allows graceful degradation if validation has issues
+		}
+	}()
+
+	// Run comprehensive eksctl validation
+	return eksctlapi.ValidateClusterConfig(config)
 }

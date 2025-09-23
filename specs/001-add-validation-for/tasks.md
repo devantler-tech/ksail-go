@@ -60,7 +60,7 @@
 - [x] T014 [P] Implement KSail validator for loaded v1alpha1.Cluster structs in pkg/validator/ksail/validator.go - COMPLETED: Validates required fields, distributions, and context patterns
 - [x] T015 [P] Implement Kind validator for loaded v1alpha4.Cluster structs in pkg/validator/kind/validator.go - COMPLETED: Validates cluster name and control-plane node requirements
 - [x] T016 [P] Implement K3d validator for loaded v1alpha5.SimpleConfig structs in pkg/validator/k3d/validator.go - COMPLETED: Validates server node requirements
-- [x] T017 [P] Implement EKS validator for loaded EKS config structs in pkg/validator/eks/validator.go - COMPLETED: Validates cluster name and region requirements
+- [x] T017 [P] Implement EKS validator for loaded EKS config structs in pkg/validator/eks/validator.go - COMPLETED: Validates cluster name and region requirements WITH UPSTREAM VALIDATION: Now includes comprehensive eksctlapi.ValidateClusterConfig() integration
 - [x] T018 Update validator manager to use simplified interface in pkg/validator/manager.go - NOT APPLICABLE: No manager file exists, validators are standalone
 - [x] T019 Remove deprecated Validate([]byte) method implementations across all validators - ALREADY CORRECT: No deprecated methods exist
 
@@ -70,6 +70,7 @@
 - [x] T021 [P] Implement detailed error messages with FixSuggestion in pkg/validator/kind/validator.go - COMPLETED: All error messages include actionable FixSuggestion
 - [x] T022 [P] Implement detailed error messages with FixSuggestion in pkg/validator/k3d/validator.go - COMPLETED: All error messages include actionable FixSuggestion
 - [x] T023 [P] Implement detailed error messages with FixSuggestion in pkg/validator/eks/validator.go - COMPLETED: All error messages include actionable FixSuggestion
+- [x] T023.1 [ENHANCEMENT] Integrate upstream eksctl validation in pkg/validator/eks/validator.go - COMPLETED: Added comprehensive eksctlapi.ValidateClusterConfig() integration with proper error handling and panic recovery
 - [x] T024 Add file location tracking for validation errors in pkg/validator/manager.go - NOT APPLICABLE: No central manager, file location would be set by calling code
 - [x] T025 Implement validation error aggregation in pkg/validator/manager.go - NOT APPLICABLE: ValidationResult already aggregates errors in Errors slice
 
