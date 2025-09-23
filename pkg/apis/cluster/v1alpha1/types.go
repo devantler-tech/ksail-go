@@ -39,12 +39,11 @@ const (
 	APIVersion = Group + "/" + Version
 )
 
-// Cluster represents a KSail cluster desired state + metadata.
+// Cluster represents a KSail cluster desired state.
 type Cluster struct {
 	metav1.TypeMeta `json:",inline"`
 
-	Metadata metav1.ObjectMeta `json:"metadata,omitzero"`
-	Spec     Spec              `json:"spec,omitzero"`
+	Spec Spec `json:"spec,omitzero"`
 }
 
 // Spec defines the desired state of a KSail cluster.

@@ -43,14 +43,14 @@ func TestFieldSelectorStructureAndTypes(t *testing.T) {
 
 	// Test that FieldSelector has the expected structure
 	selector := configmanager.FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		Description:  "Test description",
-		DefaultValue: "test-value",
+		DefaultValue: v1alpha1.DistributionKind,
 	}
 
 	require.NotNil(t, selector.Selector)
 	assert.Equal(t, "Test description", selector.Description)
-	assert.Equal(t, "test-value", selector.DefaultValue)
+	assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
 
 	// Test that the selector function works
 	cluster := &v1alpha1.Cluster{}
@@ -58,20 +58,20 @@ func TestFieldSelectorStructureAndTypes(t *testing.T) {
 	require.NotNil(t, result)
 
 	// Verify it returns a pointer to the correct field
-	namePtr, ok := result.(*string)
-	require.True(t, ok, "Selector should return a pointer to string")
-	assert.Equal(t, &cluster.Metadata.Name, namePtr)
+	distributionPtr, ok := result.(*v1alpha1.Distribution)
+	require.True(t, ok, "Selector should return a pointer to Distribution")
+	assert.Equal(t, &cluster.Spec.Distribution, distributionPtr)
 }
 
-// TestAddFlagFromField_MetadataAndBasicFields tests AddFlagFromField with metadata and basic spec fields.
-func TestAddFlagFromFieldMetadataAndBasicFields(t *testing.T) {
+// TestAddFlagFromField_SpecFields tests AddFlagFromField with spec fields.
+func TestAddFlagFromFieldSpecFields(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
 		{
-			name:         "Metadata.Name field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			defaultValue: "test-cluster",
+			name:         "Spec.Distribution field",
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			defaultValue: v1alpha1.DistributionKind,
 			description:  []string{"Cluster name"},
 			expectedDesc: "Cluster name",
 		},
@@ -170,28 +170,28 @@ func TestAddFlagFromFieldDescriptionHandling(t *testing.T) {
 	tests := []testCase{
 		{
 			name:         "No description provided",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			defaultValue: "test",
 			description:  []string{},
 			expectedDesc: "",
 		},
 		{
 			name:         "Empty description provided",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			defaultValue: "test",
 			description:  []string{""},
 			expectedDesc: "",
 		},
 		{
 			name:         "Multiple descriptions (takes first)",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			defaultValue: "test",
 			description:  []string{"First description", "Second description"},
 			expectedDesc: "First description",
 		},
 		{
 			name:         "Nil default value",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			defaultValue: nil,
 			description:  []string{"Test with nil default"},
 			expectedDesc: "Test with nil default",
@@ -328,7 +328,7 @@ func testAddFlagFromFieldType(t *testing.T, defaultValue any, expectedType strin
 	t.Helper()
 
 	selector := configmanager.AddFlagFromField(
-		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		defaultValue,
 		"Test description",
 	)
@@ -355,35 +355,6 @@ func testAddFlagFromFieldType(t *testing.T, defaultValue any, expectedType strin
 		}
 	} else {
 		assert.Nil(t, selector.DefaultValue, "Expected nil default value")
-	}
-}
-
-// TestFieldSelector_MetadataFields tests compile-time safety for metadata field selectors.
-func TestFieldSelectorMetadataFields(t *testing.T) {
-	t.Parallel()
-
-	cluster := &v1alpha1.Cluster{}
-
-	metadataSelectors := []struct {
-		name     string
-		selector func(*v1alpha1.Cluster) any
-	}{
-		{
-			name:     "Metadata.Name",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-		},
-		{
-			name:     "Metadata.Namespace",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Metadata.Namespace },
-		},
-	}
-
-	for _, testCase := range metadataSelectors {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			testFieldSelector(t, cluster, testCase.selector, testCase.name)
-		})
 	}
 }
 

@@ -20,7 +20,14 @@ func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	manager := configmanager.NewConfigManager()
+	// Use a config manager with distribution field selector to provide a valid default
+	manager := configmanager.NewConfigManager(
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to use",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+	)
 
 	// Test the actual exported function
 	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
@@ -66,7 +73,14 @@ func getLoadClusterTests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) *configmanager.ConfigManager {
-				return configmanager.NewConfigManager()
+				// Use a config manager with distribution field selector to provide a valid default
+				return configmanager.NewConfigManager(
+					configmanager.FieldSelector[v1alpha1.Cluster]{
+						Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+						Description:  "Kubernetes distribution to use",
+						DefaultValue: v1alpha1.DistributionKind,
+					},
+				)
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
 				var out bytes.Buffer
@@ -140,20 +154,6 @@ func TestLogClusterInfo(t *testing.T) {
 
 	assert.Contains(t, out.String(), "► Distribution: Kind")
 	assert.Contains(t, out.String(), "► Context: kind-ksail-default")
-}
-
-func TestStandardNameFieldSelector(t *testing.T) {
-	t.Parallel()
-
-	selector := cmdhelpers.StandardNameFieldSelector()
-
-	assert.Equal(t, "Name of the cluster", selector.Description)
-	assert.Equal(t, "ksail-default", selector.DefaultValue)
-
-	// Test selector function
-	cluster := &v1alpha1.Cluster{}
-	result := selector.Selector(cluster)
-	assert.Equal(t, &cluster.Metadata.Name, result)
 }
 
 func TestStandardDistributionFieldSelector(t *testing.T) {
@@ -244,7 +244,13 @@ func getStandardClusterCommandRunETests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) *configmanager.ConfigManager {
-				return configmanager.NewConfigManager()
+				return configmanager.NewConfigManager(
+					configmanager.FieldSelector[v1alpha1.Cluster]{
+						Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+						Description:  "Kubernetes distribution to use",
+						DefaultValue: v1alpha1.DistributionKind,
+					},
+				)
 			},
 			setupCommand: func() *cobra.Command {
 				cmd := &cobra.Command{}

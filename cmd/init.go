@@ -15,7 +15,6 @@ import (
 func NewInitCmd() *cobra.Command {
 	// Create field selectors
 	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
-		cmdhelpers.StandardNameFieldSelector(),
 		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardSourceDirectoryFieldSelector(),

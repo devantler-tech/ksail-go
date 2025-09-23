@@ -132,7 +132,6 @@ func (m *ConfigManager) handleDurationFlag(
 // We initialize this map once and reuse it for better performance.
 func (m *ConfigManager) getFieldMappings() map[any]string {
 	return map[any]string{
-		&m.Config.Metadata.Name:              "name",
 		&m.Config.Spec.Distribution:          "distribution",
 		&m.Config.Spec.DistributionConfig:    "distribution-config",
 		&m.Config.Spec.SourceDirectory:       "source-directory",

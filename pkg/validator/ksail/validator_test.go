@@ -29,14 +29,8 @@ func TestKSailValidator(t *testing.T) {
 					APIVersion: "ksail.dev/v1alpha1",
 					Kind:       "Cluster",
 				},
-				Metadata: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
 				Spec: v1alpha1.Spec{
 					Distribution: v1alpha1.DistributionKind,
-					Connection: v1alpha1.Connection{
-						Context: "kind-test-cluster",
-					},
 				},
 			},
 			expectValid:  true,
@@ -49,9 +43,6 @@ func TestKSailValidator(t *testing.T) {
 					APIVersion: "ksail.dev/v1alpha1",
 					Kind:       "Cluster",
 				},
-				Metadata: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
 				Spec: v1alpha1.Spec{
 					Distribution: "InvalidDistribution",
 				},
@@ -60,7 +51,7 @@ func TestKSailValidator(t *testing.T) {
 			expectErrors: []string{"spec.distribution"},
 		},
 		{
-			name: "missing_required_name",
+			name: "valid_config_without_metadata",
 			config: &v1alpha1.Cluster{
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "ksail.dev/v1alpha1",
@@ -70,48 +61,8 @@ func TestKSailValidator(t *testing.T) {
 					Distribution: v1alpha1.DistributionKind,
 				},
 			},
-			expectValid:  false,
-			expectErrors: []string{"metadata.name"},
-		},
-		{
-			name: "invalid_context_pattern_kind",
-			config: &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Metadata: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution: v1alpha1.DistributionKind,
-					Connection: v1alpha1.Connection{
-						Context: "wrong-context-name",
-					},
-				},
-			},
-			expectValid:  false,
-			expectErrors: []string{"spec.connection.context"},
-		},
-		{
-			name: "invalid_context_pattern_k3d",
-			config: &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Metadata: metav1.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution: v1alpha1.DistributionK3d,
-					Connection: v1alpha1.Connection{
-						Context: "kind-test-cluster", // Wrong prefix for K3d
-					},
-				},
-			},
-			expectValid:  false,
-			expectErrors: []string{"spec.connection.context"},
+			expectValid:  true,
+			expectErrors: []string{},
 		},
 		{
 			name:         "nil_config",
@@ -171,9 +122,6 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 				APIVersion: "ksail.dev/v1alpha1",
 				Kind:       "Cluster",
 			},
-			Metadata: metav1.ObjectMeta{
-				Name: "test-cluster",
-			},
 			Spec: v1alpha1.Spec{
 				Distribution: v1alpha1.DistributionKind,
 			},
@@ -186,70 +134,4 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 		// Once implemented, it should validate cross-configuration consistency
 		t.Log("Cross-configuration validation test placeholder - implement in T034")
 	})
-}
-
-// TestKSailValidatorContextPatterns tests context name validation patterns
-func TestKSailValidatorContextPatterns(t *testing.T) {
-	validator := NewValidator()
-
-	contextTests := []struct {
-		name         string
-		distribution v1alpha1.Distribution
-		clusterName  string
-		context      string
-		expectValid  bool
-	}{
-		{"kind_valid_context", v1alpha1.DistributionKind, "my-cluster", "kind-my-cluster", true},
-		{"kind_invalid_context", v1alpha1.DistributionKind, "my-cluster", "k3d-my-cluster", false},
-		{"k3d_valid_context", v1alpha1.DistributionK3d, "my-cluster", "k3d-my-cluster", true},
-		{"k3d_invalid_context", v1alpha1.DistributionK3d, "my-cluster", "kind-my-cluster", false},
-		{
-			"eks_valid_arn",
-			v1alpha1.DistributionEKS,
-			"my-cluster",
-			"arn:aws:eks:us-west-2:123456789012:cluster/my-cluster",
-			true,
-		},
-		{"eks_valid_name", v1alpha1.DistributionEKS, "my-cluster", "my-cluster", true},
-		{"eks_invalid_context", v1alpha1.DistributionEKS, "my-cluster", "kind-my-cluster", false},
-	}
-
-	for _, tt := range contextTests {
-		t.Run(tt.name, func(t *testing.T) {
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Metadata: metav1.ObjectMeta{
-					Name: tt.clusterName,
-				},
-				Spec: v1alpha1.Spec{
-					Distribution: tt.distribution,
-					Connection: v1alpha1.Connection{
-						Context: tt.context,
-					},
-				},
-			}
-
-			result := validator.Validate(config)
-			require.NotNil(t, result)
-
-			if tt.expectValid {
-				assert.True(t, result.Valid, "Context pattern should be valid for %s", tt.name)
-			} else {
-				assert.False(t, result.Valid, "Context pattern should be invalid for %s", tt.name)
-				// Find the context error
-				found := false
-				for _, err := range result.Errors {
-					if err.Field == "spec.connection.context" {
-						found = true
-						assert.NotEmpty(t, err.FixSuggestion, "Context error must have fix suggestion")
-						break
-					}
-				}
-				assert.True(t, found, "Expected context validation error not found")
-			}
-		})
-	}
 }

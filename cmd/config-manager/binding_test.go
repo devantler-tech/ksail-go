@@ -230,7 +230,7 @@ func testAddFlagFromFieldErrorHandling(t *testing.T) {
 		{
 			name: "Valid field selector",
 			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 				"test",
 				"Test field",
 			),

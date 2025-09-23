@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -13,20 +12,8 @@ func NewCluster() *Cluster {
 			Kind:       Kind,
 			APIVersion: APIVersion,
 		},
-		Metadata: NewClusterMetadata(""),
-		Spec:     NewClusterSpec(),
+		Spec: NewClusterSpec(),
 	}
-}
-
-// NewClusterMetadata creates a new metav1.ObjectMeta with the specified name and default values.
-func NewClusterMetadata(name string) metav1.ObjectMeta {
-	objectMeta := k8sutils.NewEmptyObjectMeta()
-	objectMeta.Name = name
-	objectMeta.OwnerReferences = []metav1.OwnerReference{}
-	objectMeta.Finalizers = []string{}
-	objectMeta.ManagedFields = []metav1.ManagedFieldsEntry{}
-
-	return objectMeta
 }
 
 // NewClusterSpec creates a new Spec with default values.

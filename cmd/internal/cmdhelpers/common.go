@@ -7,6 +7,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
 
@@ -139,6 +140,45 @@ func LoadClusterWithErrorHandling(
 		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
+	// Validate the loaded configuration
+	validator := ksailvalidator.NewValidator()
+	result := validator.Validate(cluster)
+
+	// Handle validation errors with fail-fast behavior
+	if !result.Valid {
+		notify.Errorln(cmd.OutOrStdout(), "Configuration validation failed:")
+		for _, validationErr := range result.Errors {
+			notify.Errorln(
+				cmd.OutOrStdout(),
+				fmt.Sprintf("  - %s: %s", validationErr.Field, validationErr.Message),
+			)
+			if validationErr.FixSuggestion != "" {
+				notify.Activityln(
+					cmd.OutOrStdout(),
+					fmt.Sprintf("    Fix: %s", validationErr.FixSuggestion),
+				)
+			}
+		}
+
+		// Display warnings if any
+		for _, warning := range result.Warnings {
+			notify.Warnln(
+				cmd.OutOrStdout(),
+				fmt.Sprintf("  - %s: %s", warning.Field, warning.Message),
+			)
+		}
+
+		return nil, fmt.Errorf("configuration validation failed with %d errors", len(result.Errors))
+	}
+
+	// Display warnings even for valid configurations
+	for _, warning := range result.Warnings {
+		notify.Warnln(
+			cmd.OutOrStdout(),
+			fmt.Sprintf("Warning - %s: %s", warning.Field, warning.Message),
+		)
+	}
+
 	return cluster, nil
 }
 
@@ -179,15 +219,6 @@ func StandardClusterCommandRunE(
 		}
 
 		return nil
-	}
-}
-
-// StandardNameFieldSelector creates a standard field selector for cluster name.
-func StandardNameFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
-	return configmanager.FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-		Description:  "Name of the cluster",
-		DefaultValue: "ksail-default",
 	}
 }
 

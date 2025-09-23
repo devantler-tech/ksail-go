@@ -45,22 +45,24 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Cluster] {
 	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		configmanager.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"ksail-default",
-			"Name of the cluster",
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.Distribution(""), // Empty distribution for testing defaults
+			"Kubernetes distribution",
 		),
 	}
-	selectors = append(selectors, createStandardFieldSelectors()...)
+	selectors = append(
+		selectors,
+		createStandardFieldSelectors()[1:]...) // Skip the first selector which is Distribution
 
 	return selectors
 }
 
-// createTestClusterFieldSelectors creates field selectors for test cases with "test-cluster" name.
+// createTestClusterFieldSelectors creates field selectors for test cases with v1alpha1.DistributionKind name.
 func createTestClusterFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
 	return []configmanager.FieldSelector[v1alpha1.Cluster]{
 		configmanager.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-			"test-cluster",
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
 			"Name of the cluster",
 		),
 	}
@@ -88,35 +90,34 @@ func TestNewManager(t *testing.T) {
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
-		name                string
-		envVars             map[string]string
-		expectedClusterName string
-		shouldSucceed       bool
+		name                 string
+		envVars              map[string]string
+		expectedDistribution v1alpha1.Distribution
+		shouldSucceed        bool
 	}{
 		{
-			name:                "LoadConfig with defaults",
-			envVars:             map[string]string{},
-			expectedClusterName: "ksail-default",
-			shouldSucceed:       true,
+			name:                 "LoadConfig with defaults",
+			envVars:              map[string]string{},
+			expectedDistribution: v1alpha1.Distribution(""),
+			shouldSucceed:        true,
 		},
 		{
 			name: "LoadConfig with environment variables",
 			envVars: map[string]string{
-				"KSAIL_METADATA_NAME": "test-cluster",
+				"KSAIL_SPEC_DISTRIBUTION": "Kind",
 			},
-			expectedClusterName: "test-cluster",
-			shouldSucceed:       true,
+			expectedDistribution: v1alpha1.DistributionKind,
+			shouldSucceed:        true,
 		},
 		{
 			name: "LoadConfig with multiple environment variables",
 			envVars: map[string]string{
-				"KSAIL_METADATA_NAME":           "env-cluster",
 				"KSAIL_SPEC_DISTRIBUTION":       "K3d",
 				"KSAIL_SPEC_SOURCEDIRECTORY":    "custom-k8s",
 				"KSAIL_SPEC_CONNECTION_CONTEXT": "custom-context",
 			},
-			expectedClusterName: "env-cluster",
-			shouldSucceed:       true,
+			expectedDistribution: v1alpha1.DistributionK3d,
+			shouldSucceed:        true,
 		},
 	}
 
@@ -136,7 +137,7 @@ func TestLoadConfig(t *testing.T) {
 			if testCase.shouldSucceed {
 				require.NoError(t, err)
 				require.NotNil(t, cluster)
-				assert.Equal(t, testCase.expectedClusterName, cluster.Metadata.Name)
+				assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
 
 				// Test that subsequent calls return the same config
 				cluster2, err2 := manager.LoadConfig()
@@ -184,7 +185,7 @@ func TestAddFlagFromFieldHelper(t *testing.T) {
 			t.Parallel()
 
 			selector := configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 				testCase.defaultValue,
 				testCase.description...,
 			)
@@ -274,7 +275,7 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 
 	// After loading, Config property should be accessible and equal to returned cluster
 	assert.Equal(t, cluster, manager.Config)
-	assert.Equal(t, "test-cluster", manager.Config.Metadata.Name)
+	assert.Equal(t, v1alpha1.DistributionKind, manager.Config.Spec.Distribution)
 }
 
 // testFieldValueSetting is a helper function for testing field value setting scenarios.
@@ -309,13 +310,13 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 
 	testFieldValueSetting(
 		t,
-		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		nil, // nil value should be handled gracefully
 		"Test nil default",
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When default is nil, field should remain empty
-			assert.Empty(t, cluster.Metadata.Name)
+			assert.Empty(t, cluster.Spec.Distribution)
 		},
 	)
 }
@@ -326,13 +327,13 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 
 	testFieldValueSetting(
 		t,
-		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		123, // int cannot be converted to string
 		"Test non-convertible type",
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When type is not convertible, field should remain empty
-			assert.Empty(t, cluster.Metadata.Name)
+			assert.Empty(t, cluster.Spec.Distribution)
 		},
 	)
 }
@@ -343,13 +344,13 @@ func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 
 	testFieldValueSetting(
 		t,
-		func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-		"direct-assignment",
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+		v1alpha1.DistributionK3d,
 		"Test direct assignment",
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// Direct string assignment should work
-			assert.Equal(t, "direct-assignment", cluster.Metadata.Name)
+			assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 		},
 	)
 }
@@ -360,13 +361,13 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 
 	testFieldValueSetting(
 		t,
-		func(c *v1alpha1.Cluster) any { return c.Metadata.Name }, // Return value, not pointer
+		func(c *v1alpha1.Cluster) any { return c.Spec.Distribution }, // Return value, not pointer
 		"should-not-set",
 		"Test non-pointer field",
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// Non-pointer field should remain empty
-			assert.Empty(t, cluster.Metadata.Name)
+			assert.Empty(t, cluster.Spec.Distribution)
 		},
 	)
 }
@@ -448,10 +449,9 @@ func TestManager_readConfigurationFile_ConfigFound(t *testing.T) {
 
 	// Create a valid config file to test the success path
 	configContent := `
-metadata:
-  name: test-config-found
 spec:
   distribution: Kind
+  sourceDirectory: test-config-found
 `
 
 	// Create a temporary directory and file
@@ -473,7 +473,8 @@ spec:
 	require.NotNil(t, cluster)
 
 	// Verify config was loaded properly (this exercises the "else" branch in readConfigurationFile)
-	assert.Equal(t, "test-config-found", cluster.Metadata.Name)
+	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
+	assert.Equal(t, "test-config-found", cluster.Spec.SourceDirectory)
 }
 
 // runIsFieldEmptyTestCases is a helper function to run test cases for isFieldEmpty function.

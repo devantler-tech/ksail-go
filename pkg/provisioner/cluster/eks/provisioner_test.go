@@ -114,26 +114,20 @@ func testCreateInvalidConfig(t *testing.T) {
 func testCreateEmptyClusterName(t *testing.T) {
 	t.Helper()
 
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: &v1alpha5.ClusterMeta{Name: ""}, // empty name
-	}
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
+	provisioner, clusterProvider, clusterActions, clusterLister, creator, nodeGroupManager := setupProvisioner(
+		t,
 	)
+	_ = clusterProvider  // not used in this test
+	_ = clusterActions   // not used in this test
+	_ = clusterLister    // not used in this test
+	_ = nodeGroupManager // not used in this test
+
+	// Expect successful creation with default name "ksail-default"
+	creator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	err := provisioner.Create(context.Background(), "")
 
-	assert.ErrorIs(
-		t,
-		err,
-		eksprovisioner.ErrEmptyClusterName,
-		"Create should fail with empty cluster name",
-	)
+	assert.NoError(t, err, "Create should succeed with empty cluster name using default")
 }
 
 func testCreateError(t *testing.T) {
@@ -230,26 +224,21 @@ func testDeleteInvalidConfig(t *testing.T) {
 func testDeleteEmptyClusterName(t *testing.T) {
 	t.Helper()
 
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: &v1alpha5.ClusterMeta{Name: ""}, // empty name
-	}
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
+	provisioner, clusterProvider, actions, clusterLister, creator, nodeGroupManager := setupProvisioner(
+		t,
 	)
+	_ = clusterProvider  // not used in this test
+	_ = clusterLister    // not used in this test
+	_ = creator          // not used in this test
+	_ = nodeGroupManager // not used in this test
+
+	// Expect successful deletion with default name "ksail-default"
+	actions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(nil)
 
 	err := provisioner.Delete(context.Background(), "")
 
-	assert.ErrorIs(
-		t,
-		err,
-		eksprovisioner.ErrEmptyClusterName,
-		"Delete should fail with empty cluster name",
-	)
+	assert.NoError(t, err, "Delete should succeed with empty cluster name using default")
 }
 
 func testDeleteError(t *testing.T) {
@@ -743,7 +732,7 @@ func testExistsTrueDefaultName(t *testing.T) {
 	_ = clusterCreator
 	_ = nodeGroupManager
 	expectedClusters := []cluster.Description{
-		{Name: "default-cluster"},
+		{Name: "default-cluster"}, // This matches what setupMocks creates
 		{Name: "other-cluster"},
 	}
 	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)

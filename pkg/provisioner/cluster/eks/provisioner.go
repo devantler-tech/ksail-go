@@ -186,7 +186,11 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 		return false, fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	target := setName(name, e.clusterConfig.Metadata.Name)
+	// Use the provided name if given, otherwise use the name from the distribution config
+	target := name
+	if target == "" && e.clusterConfig != nil && e.clusterConfig.Metadata != nil {
+		target = e.clusterConfig.Metadata.Name
+	}
 
 	return slices.Contains(clusters, target), nil
 }
@@ -200,12 +204,14 @@ func (e *EKSClusterProvisioner) setupClusterOperation(
 		return nil, ErrInvalidClusterConfig
 	}
 
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	if target == "" {
+	// Use the provided name if given, otherwise use the name from the distribution config
+	if name != "" {
+		e.clusterConfig.Metadata.Name = name
+	}
+	// If no name provided and distribution config doesn't have a name, that's an error
+	if e.clusterConfig.Metadata.Name == "" {
 		return nil, ErrEmptyClusterName
 	}
-
-	e.clusterConfig.Metadata.Name = target
 
 	return e.clusterProvider, nil
 }
@@ -242,13 +248,4 @@ func (e *EKSClusterProvisioner) setupNodeGroupManager(
 	}
 
 	return e.nodeGroupManager, nil
-}
-
-// setName returns name if non-empty, otherwise returns defaultName.
-func setName(name, defaultName string) string {
-	if name == "" {
-		return defaultName
-	}
-
-	return name
 }

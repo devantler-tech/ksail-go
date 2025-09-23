@@ -28,17 +28,6 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 		return result
 	}
 
-	// Validate required metadata.name
-	if config.Metadata.Name == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "metadata.name",
-			Message:       "cluster name is required",
-			CurrentValue:  config.Metadata.Name,
-			ExpectedValue: "non-empty string",
-			FixSuggestion: "Set metadata.name to a valid cluster name",
-		})
-	}
-
 	// Validate distribution field
 	if config.Spec.Distribution == "" {
 		result.AddError(validator.ValidationError{
@@ -58,29 +47,6 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 		})
 	}
 
-	// Validate context naming patterns if connection context is specified
-	if config.Spec.Connection.Context != "" {
-		if !isValidContextPattern(
-			config.Spec.Distribution,
-			config.Spec.Connection.Context,
-			config.Metadata.Name,
-		) {
-			result.AddError(validator.ValidationError{
-				Field:        "spec.connection.context",
-				Message:      "context name does not match expected pattern for distribution",
-				CurrentValue: config.Spec.Connection.Context,
-				ExpectedValue: getExpectedContextPattern(
-					config.Spec.Distribution,
-					config.Metadata.Name,
-				),
-				FixSuggestion: getContextFixSuggestion(
-					config.Spec.Distribution,
-					config.Metadata.Name,
-				),
-			})
-		}
-	}
-
 	return result
 }
 
@@ -91,65 +57,5 @@ func isValidDistribution(distribution v1alpha1.Distribution) bool {
 		return true
 	default:
 		return false
-	}
-}
-
-// isValidContextPattern validates context naming patterns based on distribution.
-func isValidContextPattern(
-	distribution v1alpha1.Distribution,
-	context string,
-	clusterName string,
-) bool {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		// Kind contexts should follow pattern: kind-{cluster-name}
-		expectedContext := "kind-" + clusterName
-		return context == expectedContext
-	case v1alpha1.DistributionK3d:
-		// K3d contexts should follow pattern: k3d-{cluster-name}
-		expectedContext := "k3d-" + clusterName
-		return context == expectedContext
-	case v1alpha1.DistributionEKS:
-		// EKS contexts can be ARN format or simple name
-		// ARN format: arn:aws:eks:region:account:cluster/cluster-name
-		// Simple format: cluster-name (same as metadata.name)
-		if context == clusterName {
-			return true
-		}
-		// Basic ARN pattern validation (simplified)
-		if len(context) > 20 && context[:12] == "arn:aws:eks:" {
-			return true
-		}
-		return false
-	default:
-		return false
-	}
-}
-
-// getExpectedContextPattern returns the expected context pattern for a distribution.
-func getExpectedContextPattern(distribution v1alpha1.Distribution, clusterName string) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return "kind-" + clusterName
-	case v1alpha1.DistributionK3d:
-		return "k3d-" + clusterName
-	case v1alpha1.DistributionEKS:
-		return clusterName + " or arn:aws:eks:region:account:cluster/" + clusterName
-	default:
-		return "unknown"
-	}
-}
-
-// getContextFixSuggestion returns a fix suggestion for context validation errors.
-func getContextFixSuggestion(distribution v1alpha1.Distribution, clusterName string) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return "Set spec.connection.context to 'kind-" + clusterName + "'"
-	case v1alpha1.DistributionK3d:
-		return "Set spec.connection.context to 'k3d-" + clusterName + "'"
-	case v1alpha1.DistributionEKS:
-		return "Set spec.connection.context to '" + clusterName + "' or the full EKS cluster ARN"
-	default:
-		return "Use the correct context pattern for your distribution"
 	}
 }

@@ -21,9 +21,6 @@ func TestClusterDirectCreation(t *testing.T) {
 			Kind:       v1alpha1.Kind,
 			APIVersion: v1alpha1.APIVersion,
 		},
-		Metadata: metav1.ObjectMeta{
-			Name: "test",
-		},
 		Spec: v1alpha1.Spec{
 			Distribution: v1alpha1.DistributionK3d,
 			Connection: v1alpha1.Connection{
@@ -41,7 +38,6 @@ func TestClusterDirectCreation(t *testing.T) {
 
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
-	assert.Equal(t, "test", cluster.Metadata.Name)
 	assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 }
 
@@ -253,34 +249,7 @@ func TestNewCluster(t *testing.T) {
 	require.NotNil(t, cluster)
 	assert.Equal(t, v1alpha1.Kind, cluster.Kind)
 	assert.Equal(t, v1alpha1.APIVersion, cluster.APIVersion)
-	assert.NotNil(t, cluster.Metadata)
 	assert.NotNil(t, cluster.Spec)
-}
-
-func TestNewClusterMetadata(t *testing.T) {
-	t.Parallel()
-
-	t.Run("with_name", func(t *testing.T) {
-		t.Parallel()
-
-		metadata := v1alpha1.NewClusterMetadata("test-cluster")
-
-		assert.Equal(t, "test-cluster", metadata.Name)
-		assert.NotNil(t, metadata.OwnerReferences)
-		assert.NotNil(t, metadata.Finalizers)
-		assert.NotNil(t, metadata.ManagedFields)
-	})
-
-	t.Run("with_empty_name", func(t *testing.T) {
-		t.Parallel()
-
-		metadata := v1alpha1.NewClusterMetadata("")
-
-		assert.Empty(t, metadata.Name)
-		assert.NotNil(t, metadata.OwnerReferences)
-		assert.NotNil(t, metadata.Finalizers)
-		assert.NotNil(t, metadata.ManagedFields)
-	})
 }
 
 func TestNewClusterSpec(t *testing.T) {

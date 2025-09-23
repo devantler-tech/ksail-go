@@ -111,13 +111,12 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 
 // generateKindConfig generates the kind.yaml configuration file.
 func (s *Scaffolder) generateKindConfig(output string, force bool) error {
-	// Create minimal Kind cluster configuration
+	// Create minimal Kind cluster configuration (name will be provided by Kind defaults)
 	kindConfig := &v1alpha4.Cluster{
 		TypeMeta: v1alpha4.TypeMeta{
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name: s.KSailConfig.Metadata.Name,
 	}
 
 	opts := yamlgenerator.Options{
@@ -168,12 +167,14 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 }
 
 func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
-	return k3dv1alpha5.SimpleConfig{
+	config := k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "SimpleConfig",
 		},
 	}
+	config.Name = "my-cluster"
+	return config
 }
 
 func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
@@ -183,7 +184,7 @@ func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 			Kind:       "ClusterConfig",
 		},
 		Metadata: &eksv1alpha5.ClusterMeta{
-			Name:   s.KSailConfig.Metadata.Name,
+			Name:   "my-cluster",
 			Region: "eu-north-1",
 		},
 	}

@@ -16,7 +16,6 @@ Flags:
   -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
       --distribution-config string   Configuration file for the distribution (default "kind.yaml")
   -h, --help                         help for init
-      --name string                  Name of the cluster (default "ksail-default")
   -o, --output string                Output directory for the project
   -s, --source-directory string      Directory containing workloads to deploy (default "k8s")
 
