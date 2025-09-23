@@ -154,7 +154,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	eksConfig := s.createEKSConfig()
 
 	opts := yamlgenerator.Options{
-		Output: filepath.Join(output, s.KSailConfig.Spec.DistributionConfig),
+		Output: filepath.Join(output, "eks.yaml"),
 		Force:  force,
 	}
 
@@ -173,7 +173,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 			Kind:       "SimpleConfig",
 		},
 	}
-	config.Name = "my-cluster"
+
 	return config
 }
 
@@ -184,7 +184,7 @@ func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 			Kind:       "ClusterConfig",
 		},
 		Metadata: &eksv1alpha5.ClusterMeta{
-			Name:   "my-cluster",
+			Name:   "eks-default",
 			Region: "eu-north-1",
 		},
 	}
