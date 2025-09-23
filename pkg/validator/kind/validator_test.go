@@ -8,7 +8,7 @@ import (
 	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// TestKindValidatorContract tests the contract for Kind configuration validator
+// TestKindValidatorContract tests the contract for Kind configuration validator.
 func TestKindValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validator := NewValidator()
@@ -103,6 +103,7 @@ func TestKindValidatorContract(t *testing.T) {
 					for _, err := range result.Errors {
 						if err.Message == expectedError {
 							found = true
+
 							break
 						}
 					}

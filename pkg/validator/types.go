@@ -1,4 +1,3 @@
-// Package validator provides common types and interfaces for configuration file validation.
 package validator
 
 import (
@@ -26,6 +25,23 @@ type ValidationError struct {
 	Location FileLocation `json:"location" yaml:"location"`
 }
 
+// NewValidationError creates a new ValidationError with the specified parameters.
+func NewValidationError(
+	field, message string,
+	currentValue, expectedValue any,
+	fixSuggestion string,
+	location FileLocation,
+) ValidationError {
+	return ValidationError{
+		Field:         field,
+		Message:       message,
+		CurrentValue:  currentValue,
+		ExpectedValue: expectedValue,
+		FixSuggestion: fixSuggestion,
+		Location:      location,
+	}
+}
+
 // Error implements the error interface for ValidationError.
 func (ve ValidationError) Error() string {
 	if ve.Field != "" {
@@ -50,13 +66,23 @@ type ValidationResult struct {
 	ConfigFile string `json:"configFile" yaml:"configFile"`
 }
 
+// NewValidationResult creates a new ValidationResult for the specified configuration file.
+func NewValidationResult(configFile string) *ValidationResult {
+	return &ValidationResult{
+		Valid:      true,
+		Errors:     make([]ValidationError, 0),
+		Warnings:   make([]ValidationError, 0),
+		ConfigFile: configFile,
+	}
+}
+
 // HasErrors returns true if the validation result contains any errors.
-func (vr ValidationResult) HasErrors() bool {
+func (vr *ValidationResult) HasErrors() bool {
 	return len(vr.Errors) > 0
 }
 
 // HasWarnings returns true if the validation result contains any warnings.
-func (vr ValidationResult) HasWarnings() bool {
+func (vr *ValidationResult) HasWarnings() bool {
 	return len(vr.Warnings) > 0
 }
 
@@ -83,6 +109,15 @@ type FileLocation struct {
 	Column int `json:"column" yaml:"column"`
 }
 
+// NewFileLocation creates a new FileLocation with the specified parameters.
+func NewFileLocation(filePath string, line, column int) FileLocation {
+	return FileLocation{
+		FilePath: filePath,
+		Line:     line,
+		Column:   column,
+	}
+}
+
 // String returns a formatted string representation of the file location.
 func (fl FileLocation) String() string {
 	if fl.Line > 0 && fl.Column > 0 {
@@ -92,40 +127,4 @@ func (fl FileLocation) String() string {
 	}
 
 	return fl.FilePath
-}
-
-// NewValidationResult creates a new ValidationResult for the specified configuration file.
-func NewValidationResult(configFile string) *ValidationResult {
-	return &ValidationResult{
-		Valid:      true,
-		Errors:     make([]ValidationError, 0),
-		Warnings:   make([]ValidationError, 0),
-		ConfigFile: configFile,
-	}
-}
-
-// NewValidationError creates a new ValidationError with the specified parameters.
-func NewValidationError(
-	field, message string,
-	currentValue, expectedValue any,
-	fixSuggestion string,
-	location FileLocation,
-) ValidationError {
-	return ValidationError{
-		Field:         field,
-		Message:       message,
-		CurrentValue:  currentValue,
-		ExpectedValue: expectedValue,
-		FixSuggestion: fixSuggestion,
-		Location:      location,
-	}
-}
-
-// NewFileLocation creates a new FileLocation with the specified parameters.
-func NewFileLocation(filePath string, line, column int) FileLocation {
-	return FileLocation{
-		FilePath: filePath,
-		Line:     line,
-		Column:   column,
-	}
 }

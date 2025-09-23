@@ -83,6 +83,7 @@ func TestEKSValidatorContract(t *testing.T) {
 					for _, err := range result.Errors {
 						if err.Message == expectedError {
 							found = true
+
 							break
 						}
 					}

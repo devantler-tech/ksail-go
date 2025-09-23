@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TestKSailValidator tests the contract for KSail configuration validator
+// TestKSailValidator tests the contract for KSail configuration validator.
 func TestKSailValidator(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validator := NewValidator()
@@ -93,6 +93,7 @@ func TestKSailValidator(t *testing.T) {
 							// Verify error has actionable content
 							assert.NotEmpty(t, err.Message, "Error message must not be empty")
 							assert.NotEmpty(t, err.FixSuggestion, "Error must have fix suggestion")
+
 							break
 						}
 					}

@@ -25,6 +25,7 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 			Message:       "configuration cannot be nil",
 			FixSuggestion: "Provide a valid KSail cluster configuration",
 		})
+
 		return result
 	}
 
@@ -53,7 +54,8 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 // isValidDistribution checks if the distribution value is supported.
 func isValidDistribution(distribution v1alpha1.Distribution) bool {
 	switch distribution {
-	case v1alpha1.DistributionKind, v1alpha1.DistributionK3d, v1alpha1.DistributionEKS:
+	case v1alpha1.DistributionKind, v1alpha1.DistributionK3d,
+		v1alpha1.DistributionEKS, v1alpha1.DistributionTind:
 		return true
 	default:
 		return false

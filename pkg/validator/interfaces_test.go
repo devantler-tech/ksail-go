@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestValidatorInterface tests the contract for the simplified Validator interface
+// TestValidatorInterface tests the contract for the simplified Validator interface.
 func TestValidatorInterface(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -42,7 +42,7 @@ func TestValidatorInterface(t *testing.T) {
 	}
 }
 
-// TestValidationResult tests the ValidationResult type contract
+// TestValidationResult tests the ValidationResult type contract.
 func TestValidationResult(t *testing.T) {
 	t.Run("new_validation_result", func(t *testing.T) {
 		result := NewValidationResult("test.yaml")
@@ -56,7 +56,7 @@ func TestValidationResult(t *testing.T) {
 	t.Run("add_error_sets_invalid", func(t *testing.T) {
 		result := NewValidationResult("test.yaml")
 
-		error := ValidationError{
+		validationError := ValidationError{
 			Field:         "spec.distribution",
 			Message:       "invalid distribution",
 			CurrentValue:  "invalid",
@@ -64,7 +64,7 @@ func TestValidationResult(t *testing.T) {
 			FixSuggestion: "Set distribution to one of: Kind, K3d, EKS",
 		}
 
-		result.AddError(error)
+		result.AddError(validationError)
 
 		assert.False(t, result.Valid)
 		assert.Len(t, result.Errors, 1)
@@ -89,7 +89,7 @@ func TestValidationResult(t *testing.T) {
 	})
 }
 
-// TestValidationError tests the ValidationError type contract
+// TestValidationError tests the ValidationError type contract.
 func TestValidationError(t *testing.T) {
 	t.Run("error_interface", func(t *testing.T) {
 		err := ValidationError{

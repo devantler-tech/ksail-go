@@ -1,3 +1,4 @@
+// Package kind provides Kind configuration validation functionality.
 package kind
 
 import (
@@ -24,6 +25,7 @@ func (v *Validator) Validate(config *kindapi.Cluster) *validator.ValidationResul
 			Message:       "configuration cannot be nil",
 			FixSuggestion: "Provide a valid Kind cluster configuration",
 		})
+
 		return result
 	}
 

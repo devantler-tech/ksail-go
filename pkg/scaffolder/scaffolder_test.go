@@ -267,7 +267,7 @@ func generateDistributionContent(
 
 	case v1alpha1.DistributionEKS:
 		// Create minimal EKS configuration that matches the original hardcoded output
-		eksContent := fmt.Sprintf(`apiVersion: eksctl.io/v1alpha5
+		eksContent := `apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
   name: ksail-default
@@ -276,7 +276,7 @@ nodeGroups:
 - desiredCapacity: 1
   instanceType: m5.large
   name: ng-1
-`)
+`
 		snaps.MatchSnapshot(t, eksContent)
 	}
 }
@@ -284,7 +284,7 @@ nodeGroups:
 // createMinimalClusterForSnapshot creates a cluster config that produces the same YAML
 // as the original hardcoded version.
 func createMinimalClusterForSnapshot(
-	cluster v1alpha1.Cluster,
+	_ v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
 ) v1alpha1.Cluster {
 	minimalCluster := v1alpha1.Cluster{
@@ -323,7 +323,7 @@ func createMinimalClusterForSnapshot(
 }
 
 // Helper functions.
-func createTestCluster(name string) v1alpha1.Cluster {
+func createTestCluster(_ string) v1alpha1.Cluster {
 	return v1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,

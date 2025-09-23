@@ -1,3 +1,4 @@
+// Package k3d provides K3d configuration validation functionality.
 package k3d
 
 import (
@@ -30,15 +31,18 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 			Message:       "configuration cannot be nil",
 			FixSuggestion: "Provide a valid K3d cluster configuration",
 		})
+
 		return result
 	}
 
 	// Run comprehensive K3d validation using upstream APIs
-	if err := v.validateWithUpstreamK3d(config); err != nil {
+	err := v.validateWithUpstreamK3d(config)
+	if err != nil {
 		result.AddError(validator.ValidationError{
-			Field:         "config",
-			Message:       err.Error(),
-			FixSuggestion: "Check the K3d cluster configuration schema at https://k3d.io/usage/configfile/ for complete requirements and examples",
+			Field:   "config",
+			Message: err.Error(),
+			FixSuggestion: "Check the K3d cluster configuration schema at " +
+				"https://k3d.io/usage/configfile/ for complete requirements and examples",
 		})
 	}
 
@@ -51,7 +55,8 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 	configCopy := *config
 
 	// Step 1: Process simple config (same as K3d CLI workflow)
-	if err := k3dconfig.ProcessSimpleConfig(&configCopy); err != nil {
+	err := k3dconfig.ProcessSimpleConfig(&configCopy)
+	if err != nil {
 		return fmt.Errorf("failed to process simple configuration: %w", err)
 	}
 
@@ -72,7 +77,8 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 	}
 
 	// Step 4: Run comprehensive K3d validation (same as K3d CLI)
-	if err := k3dconfig.ValidateClusterConfig(ctx, runtime, *processedConfig); err != nil {
+	err = k3dconfig.ValidateClusterConfig(ctx, runtime, *processedConfig)
+	if err != nil {
 		return fmt.Errorf("K3d configuration validation failed: %w", err)
 	}
 

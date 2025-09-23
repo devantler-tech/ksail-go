@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestK3dValidatorContract tests the contract for K3d configuration validator
+// TestK3dValidatorContract tests the contract for K3d configuration validator.
 func TestK3dValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validator := NewValidator()
@@ -78,6 +78,7 @@ func TestK3dValidatorContract(t *testing.T) {
 					for _, err := range result.Errors {
 						if err.Message == expectedError {
 							found = true
+
 							break
 						}
 					}

@@ -233,7 +233,8 @@ func testDeleteEmptyClusterName(t *testing.T) {
 	_ = nodeGroupManager // not used in this test
 
 	// Expect successful deletion with default name "ksail-default"
-	actions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+	actions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
 		Return(nil)
 
 	err := provisioner.Delete(context.Background(), "")

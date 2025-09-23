@@ -103,6 +103,8 @@
 
 ## Phase 3.5: Polish
 
+- [x] T041 Fix all golangci-lint issues to ensure code quality compliance
+
 ## Dependencies
 
 - API Cleanup (T001) before API updates (T002-T003) before dependency updates (T004)

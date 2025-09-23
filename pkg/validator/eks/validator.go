@@ -1,6 +1,9 @@
+// Package eks provides EKS configuration validation functionality.
 package eks
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/pkg/validator"
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
@@ -25,6 +28,7 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 			Message:       "configuration cannot be nil",
 			FixSuggestion: "Provide a valid EKS cluster configuration",
 		})
+
 		return result
 	}
 
@@ -37,6 +41,7 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 			ExpectedValue: "ClusterMeta object with name and region",
 			FixSuggestion: "Add metadata section with name and region fields",
 		})
+
 		return result
 	}
 
@@ -64,11 +69,13 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 
 	// Run comprehensive eksctl validation if essential validation passes and it's safe to do so
 	if !result.HasErrors() {
-		if err := v.validateWithUpstreamEksctl(config); err != nil {
+		err := v.validateWithUpstreamEksctl(config)
+		if err != nil {
 			result.AddError(validator.ValidationError{
-				Field:         "config",
-				Message:       err.Error(),
-				FixSuggestion: "Check the EKS cluster configuration schema at https://schema.eksctl.io for complete requirements and examples",
+				Field:   "config",
+				Message: err.Error(),
+				FixSuggestion: "Check the EKS cluster configuration schema at " +
+					"https://schema.eksctl.io for complete requirements and examples",
 			})
 		}
 	}
@@ -89,5 +96,10 @@ func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) 
 	// Run comprehensive eksctl validation
 	// Note: This returns a single error, but that error may contain multiple validation failures
 	// wrapped together using Go's error wrapping patterns (errors.Join, fmt.Errorf with %w, etc.)
-	return eksctlapi.ValidateClusterConfig(&configCopy)
+	err := eksctlapi.ValidateClusterConfig(&configCopy)
+	if err != nil {
+		return fmt.Errorf("eksctl validation failed: %w", err)
+	}
+
+	return nil
 }
