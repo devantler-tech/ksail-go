@@ -165,7 +165,7 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 				Distribution:       v1alpha1.DistributionKind,
 				DistributionConfig: "kind.yaml",
 				Connection: v1alpha1.Connection{
-					Context: "kind-ksail-default", // No distribution config provided, so use conventional default
+					Context: "kind-kind", // No distribution config provided, so use conventional default
 				},
 			},
 		}
@@ -221,10 +221,10 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		distributionConfigFile = "kind.yaml"
-		contextName = "kind-ksail-default" // No distribution config provided, use conventional default
+		contextName = "kind-kind" // No distribution config provided, use conventional default
 	case v1alpha1.DistributionK3d:
 		distributionConfigFile = "k3d.yaml"
-		contextName = "k3d-ksail-default" // No distribution config provided, use conventional default
+		contextName = "k3d-k3s-default" // No distribution config provided, use conventional default
 	case v1alpha1.DistributionEKS:
 		distributionConfigFile = "eks.yaml"
 		contextName = "default" // EKS doesn't use prefix pattern
@@ -259,7 +259,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Connection.Context = "kind-ksail-default" // No distribution config, so expect conventional default
+		config.Spec.Connection.Context = "kind-kind" // No distribution config, so expect conventional default
 
 		validator := ksailvalidator.NewValidator()
 		result := validator.Validate(config)
@@ -272,7 +272,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionK3d)
-		config.Spec.Connection.Context = "k3d-ksail-default" // No distribution config, so expect conventional default
+		config.Spec.Connection.Context = "k3d-k3s-default" // No distribution config, so expect conventional default
 
 		validator := ksailvalidator.NewValidator()
 		result := validator.Validate(config)
@@ -301,7 +301,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 				found = true
 
 				assert.Contains(t, err.Message, "context name does not match expected pattern")
-				assert.Contains(t, err.FixSuggestion, "kind-ksail-default")
+				assert.Contains(t, err.FixSuggestion, "kind-kind")
 
 				break
 			}

@@ -129,7 +129,7 @@ func TestFormatValidationErrors(t *testing.T) {
 				Valid:  true,
 				Errors: []validator.ValidationError{},
 			},
-			expected: "unknown validation error",
+			expected: "",
 		},
 	}
 

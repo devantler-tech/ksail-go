@@ -210,7 +210,7 @@ func StandardContextFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 		Description:  "Kubernetes context of cluster",
-		DefaultValue: "kind-ksail-default",
+		DefaultValue: "kind-kind",
 	}
 }
 

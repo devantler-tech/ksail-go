@@ -36,7 +36,7 @@ func CreateDefaultConfigManager() *configmanager.ConfigManager {
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context name",
-			DefaultValue: "kind-ksail-default", // Using default pattern that validator expects
+			DefaultValue: "kind-kind", // Using default pattern that validator expects
 		},
 	)
 }

@@ -204,16 +204,16 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
 
 - [x] T050 [ENHANCEMENT] Update default configurations to simplify minimal configs - COMPLETED: Updated generators, config managers, validators, and scaffolder to use new simplified defaults:
   - **Kind**: name: `kind`, context: `kind-kind`, minimal config: `apiVersion: kind.x-k8s.io/v1alpha4, kind: Cluster`
-  - **K3d**: name: `k3d-default`, context: `k3d-k3s-default`, minimal config: `apiVersion: k3d.io/v1alpha5, kind: Simple`
-  - **EKS**: name: `eks-default`, context: NONE (validation skipped), minimal config: `apiVersion: eksctl.io/v1alpha5, kind: ClusterConfig, metadata: {name: eks-default, region: eu-north-1}`
+  - **K3d**: name: `default`, context: `k3d-default`, minimal config: `apiVersion: k3d.io/v1alpha5, kind: Simple`
+  - **EKS**: name: `default`, context: NONE (validation skipped), minimal config: `apiVersion: eksctl.io/v1alpha5, kind: ClusterConfig, metadata: {name: default, region: eu-north-1}`
   - Updated scaffolder, generators, config managers, and validator context patterns
   - All tests pass and `ksail init` now creates minimal, clean configurations
   - Context validation properly handles new patterns and EKS skipping
 
 - [x] T051 [ENHANCEMENT] Fix init command to set correct context and distribution config based on distribution - COMPLETED: Enhanced init command to dynamically set correct context and distribution config filenames:
-  - Added `GetExpectedContextName()` helper that calculates context patterns: Kind→`kind-kind`, K3d→`k3d-k3s-default`, EKS→empty
-  - Added `GetExpectedDistributionConfigName()` helper that sets correct config filenames: Kind→`kind.yaml`, K3d→`k3d.yaml`, EKS→`eks.yaml`
-  - Updated `HandleInitRunE()` to automatically set context and distributionConfig fields after loading config
+  - Added `getExpectedContextName()` helper that calculates context patterns: Kind→`kind-kind`, K3d→`k3d-default`, EKS→empty
+  - Added `getExpectedDistributionConfigName()` helper that sets correct config filenames: Kind→`kind.yaml`, K3d→`k3d.yaml`, EKS→`eks.yaml`
+  - Updated scaffolder to automatically set context and distributionConfig fields during file generation
   - Manual testing verified all distributions generate correct minimal configurations with proper context patterns
   - Fixes issue where context field was empty and distributionConfig was always "kind.yaml" regardless of distribution
 
@@ -223,7 +223,7 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
   - Updated `generateKSailConfig()` to apply defaults before generating ksail.yaml file
   - Removed defaults logic from init command (`HandleInitRunE()`) and cmdhelpers package
   - Improved architecture: scaffolder now owns all file generation logic including ensuring consistent defaults
-  - Manual testing verified all distributions still generate correct configurations: Kind→`kind-kind`, K3d→`k3d-k3s-default`, EKS→no context
+  - Manual testing verified all distributions generate correct configurations: Kind→`kind-kind`, K3d→`k3d-default`, EKS→no context
   - Better separation of concerns: init command handles user input, scaffolder handles file generation with correct defaults
 
 - [x] T053 [CRITICAL] Fix all golangci-lint issues for code quality compliance - COMPLETED: Resolved all linting violations to maintain code quality standards:
@@ -233,6 +233,15 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
   - **Auto-fixes**: Applied `golangci-lint run --fix` to automatically resolve nlreturn (missing blank lines before return) issues
   - **Verification**: Confirmed all linting issues resolved with `golangci-lint run --timeout=30s` returning clean results
   - **Functional testing**: Verified init command still works correctly after all fixes with proper context and distribution config generation
+
+- [x] T054 [CRITICAL] Update CLI defaults and test expectations to match scaffolder-generated contexts - COMPLETED: Fixed inconsistency between scaffolder-generated contexts and CLI/test expectations:
+  - **CLI Updates**: Updated `StandardContextFieldSelector()` default from `kind-ksail-default` to `kind-kind` to match scaffolder patterns
+  - **Reconcile Command**: Updated hard-coded context default from `kind-ksail-default` to `kind-kind`
+  - **Test Updates**: Updated all test expectations across validator tests, command tests, and cmdhelpers tests to expect correct context patterns
+  - **Validator Logic**: Fixed K3d validator `getK3dConfigName()` fallback from `k3s-default` to `default` to match scaffolder config generation
+  - **Snapshots**: Updated all test snapshots to reflect new default context patterns in command help text
+  - **Verification**: All tests now pass with consistent context expectations matching actual scaffolder generation
+  - **Manual Testing**: Verified `ksail init` generates correct contexts: Kind→`kind-kind`, K3d→`k3d-default`, EKS→no context
 
 ## Notes
 

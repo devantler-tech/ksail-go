@@ -46,7 +46,7 @@ func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context name",
-			DefaultValue: "kind-ksail-default", // Using default pattern that validator expects
+			DefaultValue: "kind-kind", // Using default pattern that validator expects
 		},
 	)
 
@@ -159,7 +159,7 @@ func TestLogClusterInfo(t *testing.T) {
 		Value string
 	}{
 		{"Distribution", "Kind"},
-		{"Context", "kind-ksail-default"},
+		{"Context", "kind-kind"},
 	}
 
 	for _, field := range fields {
@@ -167,7 +167,7 @@ func TestLogClusterInfo(t *testing.T) {
 	}
 
 	assert.Contains(t, out.String(), "► Distribution: Kind")
-	assert.Contains(t, out.String(), "► Context: kind-ksail-default")
+	assert.Contains(t, out.String(), "► Context: kind-kind")
 }
 
 func TestStandardDistributionFieldSelector(t *testing.T) {
@@ -218,7 +218,7 @@ func TestStandardContextFieldSelector(t *testing.T) {
 	selector := cmdhelpers.StandardContextFieldSelector()
 
 	assert.Equal(t, "Kubernetes context of cluster", selector.Description)
-	assert.Equal(t, "kind-ksail-default", selector.DefaultValue)
+	assert.Equal(t, "kind-kind", selector.DefaultValue)
 
 	// Test selector function
 	cluster := &v1alpha1.Cluster{}
@@ -564,5 +564,5 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	contextResult := contextSelector.Selector(cluster)
 	assert.Equal(t, &cluster.Spec.Connection.Context, contextResult)
 	assert.Equal(t, "Kubernetes context of cluster", contextSelector.Description)
-	assert.Equal(t, "kind-ksail-default", contextSelector.DefaultValue)
+	assert.Equal(t, "kind-kind", contextSelector.DefaultValue)
 }
