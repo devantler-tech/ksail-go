@@ -88,8 +88,9 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	// Validate the loaded configuration
 	validator := k3dvalidator.NewValidator()
 
-	if err := helpers.ValidateConfig(config, validator); err != nil {
-		return nil, err
+	err = helpers.ValidateConfig(config, validator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	m.config = config

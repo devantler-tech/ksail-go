@@ -104,8 +104,9 @@ func (m *ConfigManager) LoadConfig() (*eksctlapi.ClusterConfig, error) {
 	// Validate the loaded configuration
 	validator := eksvalidator.NewValidator()
 
-	if err := helpers.ValidateConfig(config, validator); err != nil {
-		return nil, err
+	err = helpers.ValidateConfig(config, validator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	m.config = config

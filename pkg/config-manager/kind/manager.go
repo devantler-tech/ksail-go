@@ -90,8 +90,9 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	// Validate the loaded configuration
 	validator := kindvalidator.NewValidator()
 
-	if err := helpers.ValidateConfig(config, validator); err != nil {
-		return nil, err
+	err = helpers.ValidateConfig(config, validator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	m.config = config
