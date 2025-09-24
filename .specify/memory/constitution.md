@@ -1,78 +1,50 @@
-<!--
-Sync Impact Report:
-- Version change: 1.0.0 → 1.1.0
-- Modified principles: None (validation demonstrates successful adherence)
-- Added sections: None
-- Removed sections: None
-- Implementation milestone: Configuration validation system successfully implemented following TDD principles
-- Templates requiring updates:
-  ✅ constitution.md updated
-  ✅ plan-template.md aligned (version reference updated)
-  ⚠ spec-template.md verified (no updates needed)
-  ⚠ tasks-template.md verified (no updates needed)
-- Follow-up TODOs: none
--->
-
-# KSail Constitution
+# [PROJECT_NAME] Constitution
+<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
 
 ## Core Principles
 
-### I. Code Quality First
+### [PRINCIPLE_1_NAME]
+<!-- Example: I. Library-First -->
+[PRINCIPLE_1_DESCRIPTION]
+<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
 
-All code MUST pass comprehensive quality gates before merge. Every package follows Go best practices with mandatory linting via golangci-lint. Code MUST be self-documenting through clear naming, structured organization in cmd/ and pkg/ directories, and comprehensive godoc comments. Dependencies are strictly controlled via depguard rules, and all auto-generated files (mocks) are excluded from quality checks.
+### [PRINCIPLE_2_NAME]
+<!-- Example: II. CLI Interface -->
+[PRINCIPLE_2_DESCRIPTION]
+<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
 
-Rationale: KSail manages critical Kubernetes infrastructure. Poor code quality leads to unreliable cluster operations, difficult debugging, and user frustration.
+### [PRINCIPLE_3_NAME]
+<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
+[PRINCIPLE_3_DESCRIPTION]
+<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
 
-### II. Test-Driven Development (NON-NEGOTIABLE)
+### [PRINCIPLE_4_NAME]
+<!-- Example: IV. Integration Testing -->
+[PRINCIPLE_4_DESCRIPTION]
+<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
 
-TDD is mandatory: Tests written → User approved → Tests fail → Then implement. Red-Green-Refactor cycle strictly enforced. Every package MUST have corresponding *_test.go files. System tests validate complete workflows (init → up → status → list → start → reconcile → down) across all supported distributions (Kind, K3d, EKS). Snapshot testing via go-snaps ensures CLI output consistency.
+### [PRINCIPLE_5_NAME]
+<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
+[PRINCIPLE_5_DESCRIPTION]
+<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
 
-Successfully demonstrated in the configuration validation system implementation (September 2025), where contract tests were written first, failed as expected, then implementation followed to make tests pass.
+## [SECTION_2_NAME]
+<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
 
-Rationale: Kubernetes tooling failure has severe consequences. TDD ensures robust functionality and prevents regressions in complex orchestration scenarios.
+[SECTION_2_CONTENT]
+<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
 
-### III. User Experience Consistency
+## [SECTION_3_NAME]
+<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
 
-CLI interface MUST provide predictable, intuitive workflows across all Kubernetes distributions. Commands follow consistent patterns: ksail [action] with standardized help text, error messages, and output formatting. Support both JSON and human-readable formats. UI feedback uses standardized notify package for consistent error/success reporting. All operations provide clear progress indication and meaningful error messages.
-
-Rationale: Users switch between different Kubernetes distributions frequently. Inconsistent interfaces create cognitive overhead and reduce productivity.
-
-### IV. Performance Excellence
-
-Cluster operations MUST complete within defined SLA boundaries: cluster creation <3 minutes, status checks <10 seconds, reconciliation <5 minutes. Memory usage MUST remain under reasonable limits during concurrent operations. Build times MUST stay under 90 seconds, test execution under 60 seconds. All external tool dependencies (kubectl, helm, flux) MUST be efficiently managed to avoid unnecessary overhead.
-
-Rationale: Developer productivity depends on fast feedback loops. Slow operations interrupt development workflow and reduce adoption.
-
-## Quality Standards
-
-**Go Version**: Minimum Go 1.24.0 as specified in go.mod
-**Testing Coverage**: Minimum 80% code coverage with comprehensive integration tests
-**Linting**: Zero tolerance for golangci-lint violations using project .golangci.yml configuration
-**Documentation**: All public functions, types, and packages MUST have godoc comments
-**Dependencies**: External dependencies limited to approved list in depguard configuration
-**Security**: All dependencies scanned via Trivy, SOPS integration for secrets management
-**Build Validation**: All builds MUST pass mega-linter comprehensive validation before release
-
-## Development Workflow
-
-**Branch Strategy**: Feature branches from main with descriptive names (test/feature-name)
-**Code Review**: All PRs require review and MUST pass CI checks including system tests
-**Testing Gates**: Unit tests, integration tests, and system tests MUST pass before merge
-**Release Process**: Semantic versioning with automated releases via GoReleaser
-**Documentation**: Changes affecting user workflow MUST update corresponding documentation
-**Compliance Verification**: Every PR MUST verify constitution compliance via checklist review
+[SECTION_3_CONTENT]
+<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
 
 ## Governance
+<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-This constitution supersedes all other development practices and guidelines. All code reviews MUST verify compliance with these principles. Technical complexity MUST be justified against these standards - if a change violates principles without clear necessity, it MUST be simplified or rejected.
+[GOVERNANCE_RULES]
+<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
 
-Amendments require:
-
-1. Documentation of rationale and impact assessment
-2. Review and approval from project maintainers
-3. Migration plan for existing code that conflicts with new requirements
-4. Update of all dependent templates and guidance files
-
-Use `.github/copilot-instructions.md` for runtime development guidance and tool-specific implementation details.
-
-**Version**: 1.1.0 | **Ratified**: 2025-09-22 | **Last Amended**: 2025-09-23
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
+<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
