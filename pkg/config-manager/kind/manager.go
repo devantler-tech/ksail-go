@@ -7,6 +7,8 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	"github.com/devantler-tech/ksail-go/pkg/validator"
+	kindvalidator "github.com/devantler-tech/ksail-go/pkg/validator/kind"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -65,6 +67,7 @@ func NewConfigManager(configPath string) *ConfigManager {
 // LoadConfig loads the Kind configuration from the specified file.
 // Returns the previously loaded config if already loaded.
 // If the file doesn't exist, returns a default Kind cluster configuration.
+// Validates the configuration after loading and returns an error if validation fails.
 func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	// If config is already loaded, return it
 	if m.configLoaded {
@@ -89,8 +92,41 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 	// Apply Kind defaults to the loaded config
 	v1alpha4.SetDefaultsCluster(config)
 
+	// Validate the loaded configuration
+	validator := kindvalidator.NewValidator()
+
+	result := validator.Validate(config)
+	if !result.Valid {
+		return nil, fmt.Errorf(
+			"configuration validation failed: %s",
+			formatValidationErrors(result),
+		)
+	}
+
 	m.config = config
 	m.configLoaded = true
 
 	return m.config, nil
+}
+
+// formatValidationErrors formats validation errors into a readable string.
+func formatValidationErrors(result *validator.ValidationResult) string {
+	if len(result.Errors) == 0 {
+		return "unknown validation error"
+	}
+
+	var errorMsg string
+
+	for i, err := range result.Errors {
+		if i > 0 {
+			errorMsg += "; "
+		}
+
+		errorMsg += fmt.Sprintf("%s: %s", err.Field, err.Message)
+		if err.FixSuggestion != "" {
+			errorMsg += fmt.Sprintf(" (%s)", err.FixSuggestion)
+		}
+	}
+
+	return errorMsg
 }

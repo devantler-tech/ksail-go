@@ -7,6 +7,8 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	"github.com/devantler-tech/ksail-go/pkg/validator"
+	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/validator/k3d"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
@@ -101,6 +103,7 @@ func NewConfigManager(configPath string) *ConfigManager {
 // LoadConfig loads the K3d configuration from the specified file.
 // Returns the previously loaded config if already loaded.
 // If the file doesn't exist, returns a default K3d cluster configuration.
+// Validates the configuration after loading and returns an error if validation fails.
 func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	// If config is already loaded, return it
 	if m.configLoaded {
@@ -120,8 +123,41 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
+	// Validate the loaded configuration
+	validator := k3dvalidator.NewValidator()
+
+	result := validator.Validate(config)
+	if !result.Valid {
+		return nil, fmt.Errorf(
+			"configuration validation failed: %s",
+			formatValidationErrors(result),
+		)
+	}
+
 	m.config = config
 	m.configLoaded = true
 
 	return m.config, nil
+}
+
+// formatValidationErrors formats validation errors into a readable string.
+func formatValidationErrors(result *validator.ValidationResult) string {
+	if len(result.Errors) == 0 {
+		return "unknown validation error"
+	}
+
+	var errorMsg string
+
+	for i, err := range result.Errors {
+		if i > 0 {
+			errorMsg += "; "
+		}
+
+		errorMsg += fmt.Sprintf("%s: %s", err.Field, err.Message)
+		if err.FixSuggestion != "" {
+			errorMsg += fmt.Sprintf(" (%s)", err.FixSuggestion)
+		}
+	}
+
+	return errorMsg
 }
