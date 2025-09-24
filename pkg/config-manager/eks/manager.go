@@ -98,9 +98,6 @@ func (m *ConfigManager) LoadConfig() (*eksctlapi.ClusterConfig, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Apply EKS defaults to the loaded config
-	eksctlapi.SetClusterConfigDefaults(config)
-
 	// Validate the loaded configuration
 	validator := eksvalidator.NewValidator()
 

@@ -84,9 +84,6 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Apply Kind defaults to the loaded config
-	v1alpha4.SetDefaultsCluster(config)
-
 	// Validate the loaded configuration
 	validator := kindvalidator.NewValidator()
 
