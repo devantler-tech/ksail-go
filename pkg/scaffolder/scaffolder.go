@@ -32,6 +32,14 @@ var (
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
 
+// Distribution config file constants.
+const (
+	KindConfigFile = "kind.yaml"
+	K3dConfigFile  = "k3d.yaml"
+	EKSConfigFile  = "eks.yaml"
+	TindConfigFile = "tind.yaml"
+)
+
 // getExpectedContextName calculates the expected context name for a distribution using default cluster names.
 // This is used during scaffolding to ensure consistent context patterns between KSail config and distribution configs.
 // Returns empty string for EKS (context validation is skipped) and unsupported distributions.
@@ -41,9 +49,11 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		distributionName = "kind" // Default Kind cluster name (matches generateKindConfig)
+
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
 		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
+
 		return "k3d-" + distributionName
 	case v1alpha1.DistributionEKS:
 		// EKS context validation is skipped, return empty
@@ -61,15 +71,15 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) string {
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		return "kind.yaml"
+		return KindConfigFile
 	case v1alpha1.DistributionK3d:
-		return "k3d.yaml"
+		return K3dConfigFile
 	case v1alpha1.DistributionEKS:
-		return "eks.yaml"
+		return EKSConfigFile
 	case v1alpha1.DistributionTind:
-		return "tind.yaml"
+		return TindConfigFile
 	default:
-		return "kind.yaml" // fallback default
+		return KindConfigFile // fallback default
 	}
 }
 
@@ -131,7 +141,7 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 	}
 
 	// Set the expected distribution config filename if it's empty or set to default
-	if config.Spec.DistributionConfig == "" || config.Spec.DistributionConfig == "kind.yaml" {
+	if config.Spec.DistributionConfig == "" || config.Spec.DistributionConfig == KindConfigFile {
 		expectedConfigName := getExpectedDistributionConfigName(config.Spec.Distribution)
 		config.Spec.DistributionConfig = expectedConfigName
 	}
@@ -185,7 +195,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 	}
 
 	opts := yamlgenerator.Options{
-		Output: filepath.Join(output, "kind.yaml"),
+		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
 	}
 

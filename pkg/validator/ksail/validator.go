@@ -100,12 +100,14 @@ func (v *Validator) validateContextName(
 	if expectedContext == "" {
 		// Add error for unsupported distributions
 		v.addUnsupportedDistributionError(config, result)
+
 		return
 	}
 
 	// Check for unsupported distributions that return invalid context patterns
 	if v.isUnsupportedDistribution(config.Spec.Distribution) {
 		v.addUnsupportedDistributionError(config, result)
+
 		return
 	}
 
@@ -174,6 +176,30 @@ func (v *Validator) addUnsupportedDistributionError(
 ) {
 	distribution := config.Spec.Distribution
 	switch distribution {
+	case v1alpha1.DistributionKind:
+		// Kind is supported, should not reach here in normal validation flow
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       "unexpected error in Kind distribution validation",
+			CurrentValue:  distribution,
+			FixSuggestion: "Report this as a bug - Kind should be supported",
+		})
+	case v1alpha1.DistributionK3d:
+		// K3d is supported, should not reach here in normal validation flow
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       "unexpected error in K3d distribution validation",
+			CurrentValue:  distribution,
+			FixSuggestion: "Report this as a bug - K3d should be supported",
+		})
+	case v1alpha1.DistributionEKS:
+		// EKS is supported, should not reach here in normal validation flow
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       "unexpected error in EKS distribution validation",
+			CurrentValue:  distribution,
+			FixSuggestion: "Report this as a bug - EKS should be supported",
+		})
 	case v1alpha1.DistributionTind:
 		result.AddError(validator.ValidationError{
 			Field:         "spec.distribution",
@@ -192,8 +218,8 @@ func (v *Validator) addUnsupportedDistributionError(
 }
 
 // getExpectedContextName returns the expected context name for the given configuration.
-// Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted from the distribution config.
-// If no cluster name is found, "ksail-default" is used as the ultimate fallback.
+// Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted
+// from the distribution config. If no cluster name is found, "ksail-default" is used as the ultimate fallback.
 func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
 

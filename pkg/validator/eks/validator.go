@@ -79,7 +79,8 @@ func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) 
 
 // deepCopyConfig creates a deep copy of the EKS cluster configuration using the copier library.
 // This ensures that upstream validation operations cannot modify the original configuration object.
-// Copier is preferred over JSON marshalling/unmarshalling because it preserves Go type information and avoids serialization overhead.
+// Copier is preferred over JSON marshalling/unmarshalling because it preserves Go type information
+// and avoids serialization overhead.
 func (v *Validator) deepCopyConfig(
 	config *eksctlapi.ClusterConfig,
 ) (*eksctlapi.ClusterConfig, error) {
