@@ -39,7 +39,8 @@ const (
 	APIVersion = Group + "/" + Version
 )
 
-// Cluster represents a KSail cluster desired state.
+// Cluster represents a KSail cluster configuration including API metadata and desired state.
+// It contains TypeMeta for API versioning information and Spec for the cluster specification.
 type Cluster struct {
 	metav1.TypeMeta `json:",inline"`
 
