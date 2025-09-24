@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -362,6 +363,11 @@ func (g *GatewayController) Set(value string) error {
 		GatewayControllerCilium,
 		GatewayControllerNone,
 	)
+}
+
+// IsValid checks if the distribution value is supported.
+func (d *Distribution) IsValid() bool {
+	return slices.Contains(validDistributions(), *d)
 }
 
 // String returns the string representation of the Distribution.

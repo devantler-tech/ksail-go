@@ -69,6 +69,32 @@ func TestDistributionSet(t *testing.T) {
 	)
 }
 
+func TestDistributionIsValid(t *testing.T) {
+	t.Parallel()
+
+	validCases := []v1alpha1.Distribution{
+		v1alpha1.DistributionKind,
+		v1alpha1.DistributionK3d,
+		v1alpha1.DistributionEKS,
+		v1alpha1.DistributionTind,
+	}
+
+	for _, dist := range validCases {
+		assert.True(t, dist.IsValid(), "Distribution %s should be valid", dist)
+	}
+
+	invalidCases := []v1alpha1.Distribution{
+		"",
+		"invalid",
+		"docker",
+		"kubernetes",
+	}
+
+	for _, dist := range invalidCases {
+		assert.False(t, dist.IsValid(), "Distribution %s should be invalid", dist)
+	}
+}
+
 func TestReconciliationToolSet(t *testing.T) {
 	t.Parallel()
 

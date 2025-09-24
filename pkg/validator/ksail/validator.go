@@ -20,7 +20,7 @@ type Validator struct {
 
 // NewValidator creates a new KSail configuration validator with optional distribution configurations.
 // Distribution configs are used for cross-configuration validation (name consistency, context patterns).
-func NewValidator(distributionConfigs ...interface{}) *Validator {
+func NewValidator(distributionConfigs ...any) *Validator {
 	validator := &Validator{}
 
 	// Accept distribution configurations for cross-configuration validation
@@ -120,7 +120,7 @@ func (v *Validator) validateDistribution(
 	distribution := config.Spec.Distribution
 
 	// Check if distribution is empty or invalid
-	if distribution == "" || !isValidDistribution(distribution) {
+	if distribution == "" || !distribution.IsValid() {
 		var message, fixSuggestion string
 
 		if distribution == "" {
@@ -216,15 +216,4 @@ func (v *Validator) getEKSConfigName() string {
 	}
 
 	return ""
-}
-
-// isValidDistribution checks if the distribution value is supported.
-func isValidDistribution(distribution v1alpha1.Distribution) bool {
-	switch distribution {
-	case v1alpha1.DistributionKind, v1alpha1.DistributionK3d,
-		v1alpha1.DistributionEKS, v1alpha1.DistributionTind:
-		return true
-	default:
-		return false
-	}
 }
