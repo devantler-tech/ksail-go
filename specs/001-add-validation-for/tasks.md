@@ -89,14 +89,15 @@
 
 ## Phase 3.4: Integration
 
-- [x] T037 Integrate validators with existing config managers - COMPLETED: Integrated validation into Kind and K3d config managers' LoadConfig() methods with proper error handling and formatted error messages
+- [x] T036.1 [ENHANCEMENT] Create EKS config manager - COMPLETED: Implemented pkg/config-manager/eks with comprehensive configuration management for EKS cluster configurations, including validation integration, default config generation, error handling, and comprehensive tests
+- [x] T037 Integrate validators with existing config managers - COMPLETED: Integrated validation into Kind, K3d, and EKS config managers' LoadConfig() methods with proper error handling and formatted error messages
 - [x] T038 Add validation hooks to CLI commands - COMPLETED: Validation hooks already implemented in LoadClusterWithErrorHandling function used by all CLI commands
 - [x] T039 Update error handling in cmd/ui/notify package - COMPLETED: Error handling already properly implemented with structured validation error display and fix suggestions
 - [x] T040 Add fail-fast behavior to config loading - COMPLETED: Fail-fast behavior already implemented in LoadClusterWithErrorHandling with detailed error reporting
 
 ## Phase 3.5: Polish
 
-- [x] T041 Fix all golangci-lint issues to ensure code quality compliance - COMPLETED: Successfully resolved all linting issues (0 issues remaining). Fixed whitespace issues detected by wsl_v5 linter (missing blank lines above for loop, assert statements) and nlreturn issues (missing blank line before break statement) in pkg/validator/ksail/validator_test.go. Applied formatting fixes using golangci-lint run --fix and golangci-lint fmt. All golangci-lint checks now pass and all tests are working correctly.
+- [x] T041 Fix all golangci-lint issues to ensure code quality compliance - COMPLETED: Successfully resolved all linting issues (0 issues remaining). Fixed whitespace issues detected by wsl_v5 linter (missing blank lines above for loop, assert statements) and nlreturn issues (missing blank line before break statement) in pkg/validator/ksail/validator_test.go. Applied formatting fixes using golangci-lint run --fix and golangci-lint fmt. Fixed err113 violations by replacing dynamic error formatting with wrapped static errors using ErrConfigurationValidationFailed in all config managers (EKS, K3d, Kind). All golangci-lint checks now pass and all tests are working correctly.
 - [x] T042 Optimize test performance by reducing excessive validation errors in large slice test - COMPLETED: Reduced testLargeSlices from 10,000 to 1,000 validation errors to improve test execution time while maintaining the same test coverage for large slice scenarios. Test validates ValidationResult with many errors, proper invalid state, error count accuracy, HasErrors() functionality, and JSON serialization of large slices.
 
 ## Dependencies

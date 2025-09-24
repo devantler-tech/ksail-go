@@ -3,6 +3,7 @@
 package k3d
 
 import (
+	"errors"
 	"fmt"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -12,6 +13,9 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
+
+// ErrConfigurationValidationFailed is returned when configuration validation fails.
+var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
 // ConfigManager implements configuration management for K3d v1alpha5.SimpleConfig configurations.
 // It provides file-based configuration loading without Viper dependency.
@@ -29,6 +33,19 @@ var _ configmanager.ConfigManager[v1alpha5.SimpleConfig] = (*ConfigManager)(nil)
 // This function provides a canonical way to create K3d clusters with proper field initialization.
 // Use empty string for name to create a cluster without a specific name.
 func NewK3dSimpleConfig(name, apiVersion, kind string) *v1alpha5.SimpleConfig {
+	// Set default name if empty
+	if name == "" {
+		name = "k3d-default"
+	}
+
+	if apiVersion == "" {
+		apiVersion = "k3d.io/v1alpha5"
+	}
+
+	if kind == "" {
+		kind = "Simple"
+	}
+
 	return &v1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: apiVersion,
@@ -79,7 +96,8 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	result := validator.Validate(config)
 	if !result.Valid {
 		return nil, fmt.Errorf(
-			"configuration validation failed: %s",
+			"%w: %s",
+			ErrConfigurationValidationFailed,
 			formatValidationErrors(result),
 		)
 	}
