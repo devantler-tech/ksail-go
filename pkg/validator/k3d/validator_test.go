@@ -199,94 +199,26 @@ func createK3dValidTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfi
 }
 
 func createK3dInvalidTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
-	var testCases []testutils.ValidatorTestCase[*k3dapi.SimpleConfig]
-
-	testCases = append(testCases, createK3dMissingKindTestCase())
-	testCases = append(testCases, createK3dMissingAPIVersionTestCase())
-	testCases = append(testCases, createK3dBothMissingTestCase())
-
-	return testCases
-}
-
-func createK3dMissingKindTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
-	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
-		Name: "invalid_k3d_config_missing_kind",
-		Config: &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				APIVersion: "k3d.io/v1alpha5",
-				// Kind is missing
-			},
+	// Create factory function for base config to ensure each test gets a separate instance
+	configFactory := func() *k3dapi.SimpleConfig {
+		return &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{},
 			ObjectMeta: configtypes.ObjectMeta{
 				Name: "test-cluster",
 			},
 			Servers: 1,
 			Agents:  2,
-		},
-		ExpectedValid: false,
-		ExpectedErrors: []validator.ValidationError{
-			{
-				Field:         "kind",
-				Message:       "kind is required",
-				ExpectedValue: "Simple",
-				FixSuggestion: "Set kind to 'Simple'",
-			},
-		},
+		}
 	}
-}
 
-func createK3dMissingAPIVersionTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
-	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
-		Name: "invalid_k3d_config_missing_api_version",
-		Config: &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				// APIVersion is missing
-				Kind: "Simple",
-			},
-			ObjectMeta: configtypes.ObjectMeta{
-				Name: "test-cluster",
-			},
-			Servers: 1,
-			Agents:  2,
+	// Use helper to create metadata validation test cases
+	return testutils.CreateMetadataValidationTestCases(
+		configFactory,
+		func(config *k3dapi.SimpleConfig, kind string) { config.Kind = kind },
+		func(config *k3dapi.SimpleConfig, apiVersion string) { config.APIVersion = apiVersion },
+		testutils.MetadataTestCaseConfig{
+			ExpectedKind:       "Simple",
+			ExpectedAPIVersion: "k3d.io/v1alpha5",
 		},
-		ExpectedValid: false,
-		ExpectedErrors: []validator.ValidationError{
-			{
-				Field:         "apiVersion",
-				Message:       "apiVersion is required",
-				ExpectedValue: "k3d.io/v1alpha5",
-				FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
-			},
-		},
-	}
-}
-
-func createK3dBothMissingTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
-	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
-		Name: "invalid_k3d_config_both_missing",
-		Config: &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				// Both APIVersion and Kind are missing
-			},
-			ObjectMeta: configtypes.ObjectMeta{
-				Name: "test-cluster",
-			},
-			Servers: 1,
-			Agents:  2,
-		},
-		ExpectedValid: false,
-		ExpectedErrors: []validator.ValidationError{
-			{
-				Field:         "kind",
-				Message:       "kind is required",
-				ExpectedValue: "Simple",
-				FixSuggestion: "Set kind to 'Simple'",
-			},
-			{
-				Field:         "apiVersion",
-				Message:       "apiVersion is required",
-				ExpectedValue: "k3d.io/v1alpha5",
-				FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
-			},
-		},
-	}
+	)
 }

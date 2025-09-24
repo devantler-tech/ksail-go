@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/validator/metadata"
 	"github.com/jinzhu/copier"
 	k3dconfig "github.com/k3d-io/k3d/v5/pkg/config"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -29,7 +30,7 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 	if config == nil {
 		result.AddError(validator.ValidationError{
 			Field:         "config",
-			Message:       "configuration cannot be nil",
+			Message:       "configuration is nil",
 			FixSuggestion: "Provide a valid K3d cluster configuration",
 		})
 
@@ -37,23 +38,7 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 	}
 
 	// Validate required metadata fields
-	if config.Kind == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "kind",
-			Message:       "kind is required",
-			ExpectedValue: "Simple",
-			FixSuggestion: "Set kind to 'Simple'",
-		})
-	}
-
-	if config.APIVersion == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "apiVersion",
-			Message:       "apiVersion is required",
-			ExpectedValue: "k3d.io/v1alpha5",
-			FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
-		})
-	}
+	metadata.ValidateMetadata(config.Kind, config.APIVersion, "Simple", "k3d.io/v1alpha5", result)
 
 	// Run comprehensive K3d validation using upstream APIs
 	err := v.validateWithUpstreamK3d(config)

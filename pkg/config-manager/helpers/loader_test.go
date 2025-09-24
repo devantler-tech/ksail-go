@@ -87,113 +87,64 @@ func testLoadConfigInvalidYAML(t *testing.T) {
 func TestFormatValidationErrors(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		result   *validator.ValidationResult
-		expected string
-	}{
+	commonResults := createCommonValidationResults()
+
+	tests := []TestCase{
 		{
-			name: "single error without fix suggestion",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required"},
-				},
-			},
-			expected: "name: is required",
+			Name:     "single error without fix suggestion",
+			Result:   commonResults["single_error"],
+			Expected: "name: is required",
 		},
 		{
-			name: "single error with fix suggestion",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required", FixSuggestion: "add name field"},
-				},
-			},
-			expected: "name: is required (add name field)",
+			Name:     "single error with fix suggestion",
+			Result:   commonResults["single_error_with_fix"],
+			Expected: "name: is required (add name field)",
 		},
 		{
-			name: "multiple errors",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required", FixSuggestion: "add name field"},
-					{Field: "version", Message: "is invalid"},
-				},
-			},
-			expected: "name: is required (add name field); version: is invalid",
+			Name:     "multiple errors",
+			Result:   commonResults["multiple_errors"],
+			Expected: "name: is required (add name field); version: is invalid",
 		},
 		{
-			name: "no errors",
-			result: &validator.ValidationResult{
-				Valid:  true,
-				Errors: []validator.ValidationError{},
-			},
-			expected: "",
+			Name:     "no errors",
+			Result:   commonResults["no_errors"],
+			Expected: "",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := helpers.FormatValidationErrors(tt.result)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+	runFormattingTest(t, tests, helpers.FormatValidationErrors)
 }
 
 func TestFormatValidationErrorsMultiline(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		result   *validator.ValidationResult
-		expected string
-	}{
+	commonResults := createCommonValidationResults()
+
+	tests := []TestCase{
 		{
-			name: "single error",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required"},
-				},
-			},
-			expected: "  - name: is required\n",
+			Name:     "single error",
+			Result:   commonResults["single_error"],
+			Expected: "  - name: is required\n",
 		},
 		{
-			name: "multiple errors",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required"},
-					{Field: "version", Message: "is invalid"},
-				},
-			},
-			expected: "  - name: is required\n  - version: is invalid\n",
+			Name:     "multiple errors with specific validation data",
+			Result:   commonResults["multiple_errors"],
+			Expected: "  - name: is required\n  - version: is invalid\n",
 		},
 		{
-			name: "no errors",
-			result: &validator.ValidationResult{
-				Valid:  true,
-				Errors: []validator.ValidationError{},
-			},
-			expected: "",
+			Name:     "no errors",
+			Result:   commonResults["no_errors"],
+			Expected: "",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := helpers.FormatValidationErrorsMultiline(tt.result)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
+	runFormattingTest(t, tests, helpers.FormatValidationErrorsMultiline)
 }
 
 func TestFormatValidationFixSuggestions(t *testing.T) {
 	t.Parallel()
+
+	commonResults := createCommonValidationResults()
 
 	tests := []struct {
 		name     string
@@ -201,45 +152,23 @@ func TestFormatValidationFixSuggestions(t *testing.T) {
 		expected []string
 	}{
 		{
-			name: "single fix suggestion",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required", FixSuggestion: "add name field"},
-				},
-			},
+			name:     "single fix suggestion",
+			result:   commonResults["single_error_with_fix"],
 			expected: []string{"    Fix: add name field"},
 		},
 		{
-			name: "multiple fix suggestions",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required", FixSuggestion: "add name field"},
-					{Field: "version", Message: "is invalid", FixSuggestion: "use valid version"},
-				},
-			},
+			name:     "multiple fix suggestions",
+			result:   commonResults["multiple_errors_with_fixes"],
 			expected: []string{"    Fix: add name field", "    Fix: use valid version"},
 		},
 		{
-			name: "mixed errors with and without fix suggestions",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required", FixSuggestion: "add name field"},
-					{Field: "version", Message: "is invalid"},
-				},
-			},
+			name:     "mixed errors with and without fix suggestions",
+			result:   commonResults["multiple_errors"],
 			expected: []string{"    Fix: add name field"},
 		},
 		{
-			name: "no fix suggestions",
-			result: &validator.ValidationResult{
-				Valid: false,
-				Errors: []validator.ValidationError{
-					{Field: "name", Message: "is required"},
-				},
-			},
+			name:     "no fix suggestions",
+			result:   commonResults["single_error"],
 			expected: []string{},
 		},
 	}
@@ -368,9 +297,7 @@ func testValidateConfigInvalid(t *testing.T) {
 	}
 
 	err := helpers.ValidateConfig(config, mockVal)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "configuration validation failed")
-	assert.Contains(t, err.Error(), "name is required")
+	assertValidationError(t, err, "name is required")
 }
 
 func testValidateConfigMultipleErrors(t *testing.T) {
@@ -399,8 +326,5 @@ func testValidateConfigMultipleErrors(t *testing.T) {
 	}
 
 	err := helpers.ValidateConfig(config, mockVal)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "configuration validation failed")
-	assert.Contains(t, err.Error(), "name is required")
-	assert.Contains(t, err.Error(), "apiVersion is required")
+	assertValidationError(t, err, "name is required", "apiVersion is required")
 }

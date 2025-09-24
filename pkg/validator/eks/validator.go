@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/validator/metadata"
 	"github.com/jinzhu/copier"
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
@@ -26,15 +27,21 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 	if config == nil {
 		result.AddError(validator.ValidationError{
 			Field:         "config",
-			Message:       "configuration cannot be nil",
+			Message:       "configuration is nil",
 			FixSuggestion: "Provide a valid EKS cluster configuration",
 		})
 
 		return result
 	}
 
-	// Validate required fields
-	v.validateTypeMetaFields(config, result)
+	// Validate required metadata fields
+	metadata.ValidateMetadata(
+		config.Kind,
+		config.APIVersion,
+		"ClusterConfig",
+		"eksctl.io/v1alpha5",
+		result,
+	)
 	v.validateMetadataFields(config, result)
 
 	// Run comprehensive eksctl validation if essential validation passes and it's safe to do so
@@ -95,28 +102,6 @@ func (v *Validator) deepCopyConfig(
 }
 
 // validateTypeMetaFields validates required TypeMeta fields.
-func (v *Validator) validateTypeMetaFields(
-	config *eksctlapi.ClusterConfig,
-	result *validator.ValidationResult,
-) {
-	if config.Kind == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "kind",
-			Message:       "kind is required",
-			ExpectedValue: "ClusterConfig",
-			FixSuggestion: "Set kind to 'ClusterConfig'",
-		})
-	}
-
-	if config.APIVersion == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "apiVersion",
-			Message:       "apiVersion is required",
-			ExpectedValue: "eksctl.io/v1alpha5",
-			FixSuggestion: "Set apiVersion to 'eksctl.io/v1alpha5'",
-		})
-	}
-}
 
 // validateMetadataFields validates required metadata fields.
 func (v *Validator) validateMetadataFields(

@@ -76,15 +76,122 @@ func AssertValidationResult[T any](
 }
 
 // CreateNilConfigTestCase creates a standard test case for nil configuration validation.
+// This only works correctly for pointer types where the zero value is nil.
 func CreateNilConfigTestCase[T any]() ValidatorTestCase[T] {
-	var nilConfig T
+	var nilConfig T // For pointer types, this will be nil
 
 	return ValidatorTestCase[T]{
 		Name:          "nil_config",
 		Config:        nilConfig,
 		ExpectedValid: false,
 		ExpectedErrors: []validator.ValidationError{
-			{Field: "config", Message: "configuration cannot be nil"},
+			{Field: "config", Message: "configuration is nil"},
+		},
+	}
+}
+
+// MetadataTestCaseConfig contains configuration for metadata validation test cases.
+type MetadataTestCaseConfig struct {
+	ExpectedKind       string
+	ExpectedAPIVersion string
+}
+
+// CreateMetadataValidationTestCases creates common metadata validation test cases.
+// This eliminates duplication of Kind and APIVersion validation tests across validators.
+// The configFactory function should create a new instance each time it's called.
+func CreateMetadataValidationTestCases[T any](
+	configFactory func() T,
+	setKind func(T, string),
+	setAPIVersion func(T, string),
+	config MetadataTestCaseConfig,
+) []ValidatorTestCase[T] {
+	return []ValidatorTestCase[T]{
+		createMissingKindTestCase(configFactory, setKind, setAPIVersion, config),
+		createMissingAPIVersionTestCase(configFactory, setKind, setAPIVersion, config),
+		createMissingBothTestCase(configFactory, setKind, setAPIVersion, config),
+	}
+}
+
+// createMissingKindTestCase creates a test case for missing kind field.
+func createMissingKindTestCase[T any](
+	configFactory func() T,
+	setKind func(T, string),
+	setAPIVersion func(T, string),
+	config MetadataTestCaseConfig,
+) ValidatorTestCase[T] {
+	missingKindConfig := configFactory()
+	setKind(missingKindConfig, "")
+	setAPIVersion(missingKindConfig, config.ExpectedAPIVersion)
+
+	return ValidatorTestCase[T]{
+		Name:          "missing_kind",
+		Config:        missingKindConfig,
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "kind",
+				Message:       "kind is required",
+				ExpectedValue: config.ExpectedKind,
+				FixSuggestion: "Set kind to '" + config.ExpectedKind + "'",
+			},
+		},
+	}
+}
+
+// createMissingAPIVersionTestCase creates a test case for missing apiVersion field.
+func createMissingAPIVersionTestCase[T any](
+	configFactory func() T,
+	setKind func(T, string),
+	setAPIVersion func(T, string),
+	config MetadataTestCaseConfig,
+) ValidatorTestCase[T] {
+	missingAPIVersionConfig := configFactory()
+	setKind(missingAPIVersionConfig, config.ExpectedKind)
+	setAPIVersion(missingAPIVersionConfig, "")
+
+	return ValidatorTestCase[T]{
+		Name:          "missing_api_version",
+		Config:        missingAPIVersionConfig,
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "apiVersion",
+				Message:       "apiVersion is required",
+				ExpectedValue: config.ExpectedAPIVersion,
+				FixSuggestion: "Set apiVersion to '" + config.ExpectedAPIVersion + "'",
+			},
+		},
+	}
+}
+
+// createMissingBothTestCase creates a test case for missing both kind and apiVersion fields.
+func createMissingBothTestCase[T any](
+	configFactory func() T,
+	setKind func(T, string),
+	setAPIVersion func(T, string),
+	config MetadataTestCaseConfig,
+) ValidatorTestCase[T] {
+	missingBothConfig := configFactory()
+	setKind(missingBothConfig, "")
+	setAPIVersion(missingBothConfig, "")
+
+	return ValidatorTestCase[T]{
+		Name:          "missing_both",
+		Config:        missingBothConfig,
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "kind",
+				Message:       "kind is required",
+				ExpectedValue: config.ExpectedKind,
+				FixSuggestion: "Set kind to '" + config.ExpectedKind + "'",
+			},
+			{
+				Field:         "apiVersion",
+				Message:       "apiVersion is required",
+				ExpectedValue: config.ExpectedAPIVersion,
+				FixSuggestion: "Set apiVersion to '" + config.ExpectedAPIVersion + "'",
+			},
 		},
 	}
 }

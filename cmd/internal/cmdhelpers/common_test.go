@@ -21,34 +21,8 @@ func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	// Use a complete config manager that provides all required fields for validation
-	manager := configmanager.NewConfigManager(
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
-			Description:  "API version",
-			DefaultValue: "ksail.dev/v1alpha1",
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
-			Description:  "Resource kind",
-			DefaultValue: "Cluster",
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			Description:  "Path to distribution configuration file",
-			DefaultValue: "kind.yaml",
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context name",
-			DefaultValue: "kind-kind", // Using default pattern that validator expects
-		},
-	)
+	// Use the standard config manager from testutils to eliminate duplication
+	manager := testutils.CreateDefaultConfigManager()
 
 	// Test the actual exported function
 	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")

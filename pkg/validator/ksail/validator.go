@@ -6,6 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/validator/metadata"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	eksctl "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -46,7 +47,7 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 	if config == nil {
 		result.AddError(validator.ValidationError{
 			Field:         "config",
-			Message:       "configuration cannot be nil",
+			Message:       "configuration is nil",
 			FixSuggestion: "Provide a valid KSail cluster configuration",
 		})
 
@@ -54,23 +55,13 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 	}
 
 	// Validate required metadata fields
-	if config.Kind == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "kind",
-			Message:       "kind is required",
-			ExpectedValue: "Cluster",
-			FixSuggestion: "Set kind to 'Cluster'",
-		})
-	}
-
-	if config.APIVersion == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "apiVersion",
-			Message:       "apiVersion is required",
-			ExpectedValue: "ksail.dev/v1alpha1",
-			FixSuggestion: "Set apiVersion to 'ksail.dev/v1alpha1'",
-		})
-	}
+	metadata.ValidateMetadata(
+		config.Kind,
+		config.APIVersion,
+		"Cluster",
+		"ksail.dev/v1alpha1",
+		result,
+	)
 
 	// Validate distribution field
 	v.validateDistribution(config, result)
