@@ -251,11 +251,11 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	}
 }
 
-// TestKSailValidatorCrossConfigurationEnhanced tests the enhanced cross-configuration validation.
-func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
+// TestKSailValidatorContextNameValidation tests context name validation patterns.
+func TestKSailValidatorContextNameValidation(t *testing.T) {
 	t.Parallel()
 
-	t.Run("context_name_validation_kind", func(t *testing.T) {
+	t.Run("kind_valid_context", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
@@ -268,7 +268,7 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
 
-	t.Run("context_name_validation_k3d", func(t *testing.T) {
+	t.Run("k3d_valid_context", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionK3d)
@@ -281,7 +281,7 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
 
-	t.Run("context_name_validation_invalid", func(t *testing.T) {
+	t.Run("invalid_context_pattern", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
@@ -309,8 +309,13 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 
 		assert.True(t, found, "Should have context validation error")
 	})
+}
 
-	t.Run("distribution_name_consistency_kind", func(t *testing.T) {
+// TestKSailValidatorKindConsistency tests Kind distribution name consistency validation.
+func TestKSailValidatorKindConsistency(t *testing.T) {
+	t.Parallel()
+
+	t.Run("matching_names", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
@@ -328,7 +333,7 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		assert.Empty(t, result.Errors, "Matching names should have no errors")
 	})
 
-	t.Run("context_name_with_distribution_config", func(t *testing.T) {
+	t.Run("custom_name", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
@@ -349,8 +354,13 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		)
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
+}
 
-	t.Run("distribution_name_consistency_k3d", func(t *testing.T) {
+// TestKSailValidatorK3dConsistency tests K3d distribution name consistency validation.
+func TestKSailValidatorK3dConsistency(t *testing.T) {
+	t.Parallel()
+
+	t.Run("matching_names", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionK3d)
@@ -369,8 +379,13 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		assert.True(t, result.Valid, "Matching K3d config names should pass validation")
 		assert.Empty(t, result.Errors, "Matching names should have no errors")
 	})
+}
 
-	t.Run("distribution_name_consistency_eks", func(t *testing.T) {
+// TestKSailValidatorEKSConsistency tests EKS distribution name consistency validation.
+func TestKSailValidatorEKSConsistency(t *testing.T) {
+	t.Parallel()
+
+	t.Run("matching_names", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionEKS)
@@ -389,8 +404,13 @@ func TestKSailValidatorCrossConfigurationEnhanced(t *testing.T) {
 		assert.True(t, result.Valid, "Matching EKS config names should pass validation")
 		assert.Empty(t, result.Errors, "Matching names should have no errors")
 	})
+}
 
-	t.Run("multiple_distribution_configs", func(t *testing.T) {
+// TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
+func TestKSailValidatorMultipleConfigs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("uses_correct_distribution", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)

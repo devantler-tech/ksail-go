@@ -43,6 +43,7 @@ linters:
             - github.com/docker
             - github.com/fatih/color
             - github.com/gkampitakis/go-snaps
+            - github.com/jinzhu/copier
             - github.com/k3d-io
             - github.com/mittwald/go-helm-client
             - github.com/rancher

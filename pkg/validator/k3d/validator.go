@@ -116,7 +116,8 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 func (v *Validator) deepCopyConfig(config *k3dapi.SimpleConfig) (*k3dapi.SimpleConfig, error) {
 	var configCopy k3dapi.SimpleConfig
 
-	if err := copier.Copy(&configCopy, config); err != nil {
+	err := copier.Copy(&configCopy, config)
+	if err != nil {
 		return nil, fmt.Errorf("failed to deep copy config: %w", err)
 	}
 

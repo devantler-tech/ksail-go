@@ -85,7 +85,8 @@ func (v *Validator) deepCopyConfig(
 ) (*eksctlapi.ClusterConfig, error) {
 	var configCopy eksctlapi.ClusterConfig
 
-	if err := copier.Copy(&configCopy, config); err != nil {
+	err := copier.Copy(&configCopy, config)
+	if err != nil {
 		return nil, fmt.Errorf("failed to deep copy config: %w", err)
 	}
 
