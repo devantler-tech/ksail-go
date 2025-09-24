@@ -1,5 +1,5 @@
-// Package metadata provides shared metadata validation utilities used across multiple validators.
-package metadata
+// Package common provides shared validation utilities used across multiple validators.
+package common
 
 import "github.com/devantler-tech/ksail-go/pkg/validator"
 
