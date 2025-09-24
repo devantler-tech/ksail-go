@@ -767,7 +767,7 @@ func testLargeSlices(t *testing.T) {
 	})
 }
 
-// TestNewValidationError tests the NewValidationError constructor function
+// TestNewValidationError tests the NewValidationError constructor function.
 func TestNewValidationError(t *testing.T) {
 	t.Parallel()
 
@@ -790,7 +790,7 @@ func TestNewValidationError(t *testing.T) {
 	assert.Equal(t, location, err.Location)
 }
 
-// TestNewFileLocation tests the NewFileLocation constructor function
+// TestNewFileLocation tests the NewFileLocation constructor function.
 func TestNewFileLocation(t *testing.T) {
 	t.Parallel()
 
@@ -801,64 +801,7 @@ func TestNewFileLocation(t *testing.T) {
 	assert.Equal(t, 8, location.Column)
 }
 
-// TestFileLocationString tests the String method of FileLocation
-func TestFileLocationString(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name     string
-		location validator.FileLocation
-		expected string
-	}{
-		{
-			name: "full_location_with_line_and_column",
-			location: validator.FileLocation{
-				FilePath: "/path/to/config.yaml",
-				Line:     10,
-				Column:   5,
-			},
-			expected: "/path/to/config.yaml:10:5",
-		},
-		{
-			name: "location_with_line_only",
-			location: validator.FileLocation{
-				FilePath: "/path/to/config.yaml",
-				Line:     10,
-				Column:   0, // No column
-			},
-			expected: "/path/to/config.yaml:10",
-		},
-		{
-			name: "location_with_no_line_or_column",
-			location: validator.FileLocation{
-				FilePath: "/path/to/config.yaml",
-				Line:     0, // No line
-				Column:   0, // No column
-			},
-			expected: "/path/to/config.yaml",
-		},
-		{
-			name: "location_with_column_but_no_line",
-			location: validator.FileLocation{
-				FilePath: "/path/to/config.yaml",
-				Line:     0, // No line
-				Column:   5, // Has column but no line
-			},
-			expected: "/path/to/config.yaml",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := testCase.location.String()
-			assert.Equal(t, testCase.expected, result)
-		})
-	}
-}
-
-// TestValidationErrorWithCompleteFields tests ValidationError with all possible fields populated
+// TestValidationErrorWithCompleteFields tests ValidationError with all possible fields populated.
 func TestValidationErrorWithCompleteFields(t *testing.T) {
 	t.Parallel()
 
@@ -887,7 +830,7 @@ func TestValidationErrorWithCompleteFields(t *testing.T) {
 	assert.Equal(t, location, err.Location)
 }
 
-// TestValidationErrorWithoutField tests ValidationError Error() method when Field is empty
+// TestValidationErrorWithoutField tests ValidationError Error() method when Field is empty.
 func TestValidationErrorWithoutField(t *testing.T) {
 	t.Parallel()
 

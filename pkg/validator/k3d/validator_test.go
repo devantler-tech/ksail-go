@@ -26,107 +26,129 @@ func TestK3dValidatorContract(t *testing.T) {
 	)
 }
 
-// TestK3dValidatorValidationFailures tests specific validation failures and edge cases
+// TestK3dValidatorValidationFailures tests specific validation failures and edge cases.
 func TestK3dValidatorValidationFailures(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invalid_network_config", testK3dInvalidNetworkConfig)
+	t.Run("edge_case_large_server_count", testK3dLargeServerCount)
+	t.Run("empty_name_with_complex_config", testK3dEmptyNameComplexConfig)
+}
+
+func testK3dInvalidNetworkConfig(t *testing.T) {
 	t.Parallel()
 
 	validatorInstance := k3dvalidator.NewValidator()
 
-	t.Run("invalid_network_config", func(t *testing.T) {
-		t.Parallel()
+	// Test with invalid network configuration
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "test-cluster",
+		},
+		Servers: 1,
+		Agents:  1,
+		// Very long network name that might cause validation to fail
+		Network: "invalid-network-123456789012345678901234567890123456789012345678901234567890",
+	}
 
-		// Test with invalid network configuration
-		config := &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				APIVersion: "k3d.io/v1alpha5",
-				Kind:       "Simple",
-			},
-			ObjectMeta: configtypes.ObjectMeta{
-				Name: "test-cluster",
-			},
-			Servers: 1,
-			Agents:  1,
-			Network: "invalid-network-123456789012345678901234567890123456789012345678901234567890", // Very long network name that might cause validation to fail
-		}
+	result := validatorInstance.Validate(config)
 
-		result := validatorInstance.Validate(config)
+	// The upstream validation should handle network validation
+	// We expect either success or a validation error
+	if !result.Valid && len(result.Errors) > 0 {
+		// Check that error contains helpful information
+		found := false
 
-		// The upstream validation should handle network validation
-		// We expect either success or a validation error
-		if !result.Valid && len(result.Errors) > 0 {
-			// Check that error contains helpful information
-			found := false
-			for _, err := range result.Errors {
-				if err.Field == "config" {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected config validation error for invalid network name")
+		for _, err := range result.Errors {
+			if err.Field == "config" {
+				found = true
+
+				break
 			}
 		}
-	})
 
-	t.Run("edge_case_large_server_count", func(t *testing.T) {
-		t.Parallel()
-
-		// Test with unusually large server count
-		config := &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				APIVersion: "k3d.io/v1alpha5",
-				Kind:       "Simple",
-			},
-			ObjectMeta: configtypes.ObjectMeta{
-				Name: "test-cluster",
-			},
-			Servers: 100, // Large server count
-			Agents:  1,
+		if !found {
+			t.Errorf("Expected config validation error for invalid network name")
 		}
+	}
+}
 
-		result := validatorInstance.Validate(config)
+func testK3dLargeServerCount(t *testing.T) {
+	t.Parallel()
 
-		// This should either validate successfully or fail with a meaningful error
-		if !result.Valid {
-			if len(result.Errors) == 0 {
-				t.Errorf("Expected validation errors when result is invalid")
+	validatorInstance := k3dvalidator.NewValidator()
+
+	// Test with unusually large server count
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "test-cluster",
+		},
+		Servers: 100, // Large server count
+		Agents:  1,
+	}
+
+	result := validatorInstance.Validate(config)
+
+	// This should either validate successfully or fail with a meaningful error
+	if !result.Valid {
+		if len(result.Errors) == 0 {
+			t.Errorf("Expected validation errors when result is invalid")
+		}
+	}
+}
+
+func testK3dEmptyNameComplexConfig(t *testing.T) {
+	t.Parallel()
+
+	validatorInstance := k3dvalidator.NewValidator()
+
+	// Test empty name with more complex configuration
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "", // Empty name
+		},
+		Servers: 1,
+		Agents:  2,
+		Image:   "rancher/k3s:v1.27.1-k3s1",
+	}
+
+	result := validatorInstance.Validate(config)
+
+	// Should validate successfully since empty name is allowed
+	if !result.Valid && len(result.Errors) > 0 {
+		// If it fails, check the error is reasonable
+		for _, err := range result.Errors {
+			if err.Field == "config" && err.Message != "" {
+				// This is acceptable - upstream validation caught something
+				continue
 			}
 		}
-	})
-
-	t.Run("empty_name_with_complex_config", func(t *testing.T) {
-		t.Parallel()
-
-		// Test empty name with more complex configuration
-		config := &k3dapi.SimpleConfig{
-			TypeMeta: configtypes.TypeMeta{
-				APIVersion: "k3d.io/v1alpha5",
-				Kind:       "Simple",
-			},
-			ObjectMeta: configtypes.ObjectMeta{
-				Name: "", // Empty name
-			},
-			Servers: 1,
-			Agents:  2,
-			Image:   "rancher/k3s:v1.27.1-k3s1",
-		}
-
-		result := validatorInstance.Validate(config)
-
-		// Should validate successfully since empty name is allowed
-		if !result.Valid && len(result.Errors) > 0 {
-			// If it fails, check the error is reasonable
-			for _, err := range result.Errors {
-				if err.Field == "config" && err.Message != "" {
-					// This is acceptable - upstream validation caught something
-					continue
-				}
-			}
-		}
-	})
+	}
 }
 
 func createK3dTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
+	var testCases []testutils.ValidatorTestCase[*k3dapi.SimpleConfig]
+
+	testCases = append(testCases, createK3dValidTestCases()...)
+	testCases = append(testCases, createK3dInvalidTestCases()...)
+	testCases = append(testCases, testutils.CreateNilConfigTestCase[*k3dapi.SimpleConfig]())
+
+	return testCases
+}
+
+func createK3dValidTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
 	return []testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
 		{
 			Name: "valid_k3d_config",
@@ -173,80 +195,98 @@ func createK3dTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
 			ExpectedValid:  true,
 			ExpectedErrors: []validator.ValidationError{},
 		},
-		{
-			Name: "invalid_k3d_config_missing_kind",
-			Config: &k3dapi.SimpleConfig{
-				TypeMeta: configtypes.TypeMeta{
-					APIVersion: "k3d.io/v1alpha5",
-					// Kind is missing
-				},
-				ObjectMeta: configtypes.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Servers: 1,
-				Agents:  2,
+	}
+}
+
+func createK3dInvalidTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
+	var testCases []testutils.ValidatorTestCase[*k3dapi.SimpleConfig]
+
+	testCases = append(testCases, createK3dMissingKindTestCase())
+	testCases = append(testCases, createK3dMissingAPIVersionTestCase())
+	testCases = append(testCases, createK3dBothMissingTestCase())
+
+	return testCases
+}
+
+func createK3dMissingKindTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
+	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
+		Name: "invalid_k3d_config_missing_kind",
+		Config: &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{
+				APIVersion: "k3d.io/v1alpha5",
+				// Kind is missing
 			},
-			ExpectedValid: false,
-			ExpectedErrors: []validator.ValidationError{
-				{
-					Field:         "kind",
-					Message:       "kind is required",
-					ExpectedValue: "Simple",
-					FixSuggestion: "Set kind to 'Simple'",
-				},
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "test-cluster",
+			},
+			Servers: 1,
+			Agents:  2,
+		},
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "kind",
+				Message:       "kind is required",
+				ExpectedValue: "Simple",
+				FixSuggestion: "Set kind to 'Simple'",
 			},
 		},
-		{
-			Name: "invalid_k3d_config_missing_api_version",
-			Config: &k3dapi.SimpleConfig{
-				TypeMeta: configtypes.TypeMeta{
-					// APIVersion is missing
-					Kind: "Simple",
-				},
-				ObjectMeta: configtypes.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Servers: 1,
-				Agents:  2,
+	}
+}
+
+func createK3dMissingAPIVersionTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
+	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
+		Name: "invalid_k3d_config_missing_api_version",
+		Config: &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{
+				// APIVersion is missing
+				Kind: "Simple",
 			},
-			ExpectedValid: false,
-			ExpectedErrors: []validator.ValidationError{
-				{
-					Field:         "apiVersion",
-					Message:       "apiVersion is required",
-					ExpectedValue: "k3d.io/v1alpha5",
-					FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
-				},
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "test-cluster",
+			},
+			Servers: 1,
+			Agents:  2,
+		},
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "apiVersion",
+				Message:       "apiVersion is required",
+				ExpectedValue: "k3d.io/v1alpha5",
+				FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
 			},
 		},
-		{
-			Name: "invalid_k3d_config_both_missing",
-			Config: &k3dapi.SimpleConfig{
-				TypeMeta: configtypes.TypeMeta{
-					// Both APIVersion and Kind are missing
-				},
-				ObjectMeta: configtypes.ObjectMeta{
-					Name: "test-cluster",
-				},
-				Servers: 1,
-				Agents:  2,
+	}
+}
+
+func createK3dBothMissingTestCase() testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
+	return testutils.ValidatorTestCase[*k3dapi.SimpleConfig]{
+		Name: "invalid_k3d_config_both_missing",
+		Config: &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{
+				// Both APIVersion and Kind are missing
 			},
-			ExpectedValid: false,
-			ExpectedErrors: []validator.ValidationError{
-				{
-					Field:         "kind",
-					Message:       "kind is required",
-					ExpectedValue: "Simple",
-					FixSuggestion: "Set kind to 'Simple'",
-				},
-				{
-					Field:         "apiVersion",
-					Message:       "apiVersion is required",
-					ExpectedValue: "k3d.io/v1alpha5",
-					FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
-				},
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "test-cluster",
+			},
+			Servers: 1,
+			Agents:  2,
+		},
+		ExpectedValid: false,
+		ExpectedErrors: []validator.ValidationError{
+			{
+				Field:         "kind",
+				Message:       "kind is required",
+				ExpectedValue: "Simple",
+				FixSuggestion: "Set kind to 'Simple'",
+			},
+			{
+				Field:         "apiVersion",
+				Message:       "apiVersion is required",
+				ExpectedValue: "k3d.io/v1alpha5",
+				FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
 			},
 		},
-		testutils.CreateNilConfigTestCase[*k3dapi.SimpleConfig](),
 	}
 }

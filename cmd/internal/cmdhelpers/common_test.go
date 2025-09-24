@@ -354,11 +354,12 @@ func TestNewCobraCommand(t *testing.T) {
 	assert.Equal(t, testArgs, receivedArgs)
 }
 
-// TestExecuteCommandWithClusterInfo tests the ExecuteCommandWithClusterInfo function
+// TestExecuteCommandWithClusterInfo tests the ExecuteCommandWithClusterInfo function.
 func TestExecuteCommandWithClusterInfo(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
 
@@ -385,11 +386,12 @@ func TestExecuteCommandWithClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context:")
 }
 
-// TestLogSuccessWithClusterInfo tests the LogSuccessWithClusterInfo function
+// TestLogSuccessWithClusterInfo tests the LogSuccessWithClusterInfo function.
 func TestLogSuccessWithClusterInfo(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
 
@@ -407,11 +409,12 @@ func TestLogSuccessWithClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Source Directory: k8s")
 }
 
-// TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields
+// TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields.
 func TestLogClusterInfoWithEmptyFields(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
 
@@ -422,11 +425,12 @@ func TestLogClusterInfoWithEmptyFields(t *testing.T) {
 	assert.Empty(t, out.String())
 }
 
-// TestLogClusterInfoWithMultipleFields tests LogClusterInfo with various field combinations
+// TestLogClusterInfoWithMultipleFields tests LogClusterInfo with various field combinations.
 func TestLogClusterInfoWithMultipleFields(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	cmd := &cobra.Command{}
 	cmd.SetOut(&out)
 
@@ -445,7 +449,7 @@ func TestLogClusterInfoWithMultipleFields(t *testing.T) {
 	assert.Contains(t, out.String(), "► Config File: k3d.yaml")
 }
 
-// TestNewCobraCommandWithMultipleFieldSelectors tests command creation with multiple field selectors
+// TestNewCobraCommandWithMultipleFieldSelectors tests command creation with multiple field selectors.
 func TestNewCobraCommandWithMultipleFieldSelectors(t *testing.T) {
 	t.Parallel()
 
@@ -454,9 +458,10 @@ func TestNewCobraCommandWithMultipleFieldSelectors(t *testing.T) {
 		receivedArgs []string
 	)
 
-	runE := func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
+	runE := func(_ *cobra.Command, _ *configmanager.ConfigManager, args []string) error {
 		runECalled = true
 		receivedArgs = args
+
 		return nil
 	}
 
@@ -487,14 +492,15 @@ func TestNewCobraCommandWithMultipleFieldSelectors(t *testing.T) {
 	assert.Equal(t, testArgs, receivedArgs)
 }
 
-// TestNewCobraCommandWithNoFieldSelectors tests command creation without field selectors
+// TestNewCobraCommandWithNoFieldSelectors tests command creation without field selectors.
 func TestNewCobraCommandWithNoFieldSelectors(t *testing.T) {
 	t.Parallel()
 
 	var runECalled bool
 
-	runE := func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
+	runE := func(_ *cobra.Command, _ *configmanager.ConfigManager, _ []string) error {
 		runECalled = true
+
 		return nil
 	}
 
@@ -516,7 +522,7 @@ func TestNewCobraCommandWithNoFieldSelectors(t *testing.T) {
 	assert.True(t, runECalled)
 }
 
-// TestStandardFieldSelectorsComprehensive tests all standard field selectors
+// TestStandardFieldSelectorsComprehensive tests all standard field selectors.
 func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	t.Parallel()
 
