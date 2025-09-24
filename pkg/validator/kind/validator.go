@@ -29,5 +29,24 @@ func (v *Validator) Validate(config *kindapi.Cluster) *validator.ValidationResul
 		return result
 	}
 
+	// Validate required metadata fields
+	if config.Kind == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "kind",
+			Message:       "kind is required",
+			ExpectedValue: "Cluster",
+			FixSuggestion: "Set kind to 'Cluster'",
+		})
+	}
+
+	if config.APIVersion == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "apiVersion",
+			Message:       "apiVersion is required",
+			ExpectedValue: "kind.x-k8s.io/v1alpha4",
+			FixSuggestion: "Set apiVersion to 'kind.x-k8s.io/v1alpha4'",
+		})
+	}
+
 	return result
 }

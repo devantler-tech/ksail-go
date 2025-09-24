@@ -36,6 +36,25 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 		return result
 	}
 
+	// Validate required metadata fields
+	if config.Kind == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "kind",
+			Message:       "kind is required",
+			ExpectedValue: "Simple",
+			FixSuggestion: "Set kind to 'Simple'",
+		})
+	}
+
+	if config.APIVersion == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "apiVersion",
+			Message:       "apiVersion is required",
+			ExpectedValue: "k3d.io/v1alpha5",
+			FixSuggestion: "Set apiVersion to 'k3d.io/v1alpha5'",
+		})
+	}
+
 	// Run comprehensive K3d validation using upstream APIs
 	err := v.validateWithUpstreamK3d(config)
 	if err != nil {

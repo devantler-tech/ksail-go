@@ -18,6 +18,16 @@ func CreateDefaultConfigManager() *configmanager.ConfigManager {
 			Description:  "Kubernetes distribution to use",
 			DefaultValue: v1alpha1.DistributionKind,
 		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Path to distribution configuration file",
+			DefaultValue: "kind.yaml",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context name",
+			DefaultValue: "kind-ksail",
+		},
 	)
 }
 

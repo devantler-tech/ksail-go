@@ -33,40 +33,9 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 		return result
 	}
 
-	// Validate metadata is present (required field per eksctl API)
-	if config.Metadata == nil {
-		result.AddError(validator.ValidationError{
-			Field:         "metadata",
-			Message:       "metadata is required",
-			CurrentValue:  nil,
-			ExpectedValue: "ClusterMeta object with name and region",
-			FixSuggestion: "Add metadata section with name and region fields",
-		})
-
-		return result
-	}
-
-	// Validate cluster name is required (upstream eksctl requirement)
-	if config.Metadata.Name == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "metadata.name",
-			Message:       "cluster name is required",
-			CurrentValue:  config.Metadata.Name,
-			ExpectedValue: "non-empty string",
-			FixSuggestion: "Set metadata.name to a valid EKS cluster name (1-63 characters, alphanumeric and hyphens)",
-		})
-	}
-
-	// Validate region is required (upstream eksctl requirement)
-	if config.Metadata.Region == "" {
-		result.AddError(validator.ValidationError{
-			Field:         "metadata.region",
-			Message:       "region is required",
-			CurrentValue:  config.Metadata.Region,
-			ExpectedValue: "valid AWS region (e.g., us-west-2)",
-			FixSuggestion: "Set metadata.region to a valid AWS region",
-		})
-	}
+	// Validate required fields
+	v.validateTypeMetaFields(config, result)
+	v.validateMetadataFields(config, result)
 
 	// Run comprehensive eksctl validation if essential validation passes and it's safe to do so
 	if !result.HasErrors() {
@@ -128,4 +97,69 @@ func (v *Validator) deepCopyConfig(
 	}
 
 	return &configCopy, nil
+}
+
+// validateTypeMetaFields validates required TypeMeta fields.
+func (v *Validator) validateTypeMetaFields(
+	config *eksctlapi.ClusterConfig,
+	result *validator.ValidationResult,
+) {
+	if config.Kind == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "kind",
+			Message:       "kind is required",
+			ExpectedValue: "ClusterConfig",
+			FixSuggestion: "Set kind to 'ClusterConfig'",
+		})
+	}
+
+	if config.APIVersion == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "apiVersion",
+			Message:       "apiVersion is required",
+			ExpectedValue: "eksctl.io/v1alpha5",
+			FixSuggestion: "Set apiVersion to 'eksctl.io/v1alpha5'",
+		})
+	}
+}
+
+// validateMetadataFields validates required metadata fields.
+func (v *Validator) validateMetadataFields(
+	config *eksctlapi.ClusterConfig,
+	result *validator.ValidationResult,
+) {
+	// Validate metadata is present (required field per eksctl API)
+	if config.Metadata == nil {
+		result.AddError(validator.ValidationError{
+			Field:         "metadata",
+			Message:       "metadata is required",
+			CurrentValue:  nil,
+			ExpectedValue: "ClusterMeta object with name and region",
+			FixSuggestion: "Add metadata section with name and region fields",
+		})
+
+		return
+	}
+
+	// Validate cluster name is required (upstream eksctl requirement)
+	if config.Metadata.Name == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "metadata.name",
+			Message:       "cluster name is required",
+			CurrentValue:  config.Metadata.Name,
+			ExpectedValue: "non-empty string",
+			FixSuggestion: "Set metadata.name to a valid EKS cluster name (1-63 characters, alphanumeric and hyphens)",
+		})
+	}
+
+	// Validate region is required (upstream eksctl requirement)
+	if config.Metadata.Region == "" {
+		result.AddError(validator.ValidationError{
+			Field:         "metadata.region",
+			Message:       "region is required",
+			CurrentValue:  config.Metadata.Region,
+			ExpectedValue: "valid AWS region (e.g., us-west-2)",
+			FixSuggestion: "Set metadata.region to a valid AWS region",
+		})
+	}
 }

@@ -31,6 +31,10 @@ func createK3dTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
 		{
 			Name: "valid_k3d_config",
 			Config: &k3dapi.SimpleConfig{
+				TypeMeta: configtypes.TypeMeta{
+					APIVersion: "k3d.io/v1alpha5",
+					Kind:       "Simple",
+				},
 				ObjectMeta: configtypes.ObjectMeta{
 					Name: "test-cluster",
 				},
@@ -43,6 +47,10 @@ func createK3dTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
 		{
 			Name: "valid_k3d_config_zero_servers",
 			Config: &k3dapi.SimpleConfig{
+				TypeMeta: configtypes.TypeMeta{
+					APIVersion: "k3d.io/v1alpha5",
+					Kind:       "Simple",
+				},
 				ObjectMeta: configtypes.ObjectMeta{
 					Name: "test-cluster",
 				},
@@ -55,6 +63,10 @@ func createK3dTestCases() []testutils.ValidatorTestCase[*k3dapi.SimpleConfig] {
 		{
 			Name: "valid_k3d_config_no_name",
 			Config: &k3dapi.SimpleConfig{
+				TypeMeta: configtypes.TypeMeta{
+					APIVersion: "k3d.io/v1alpha5",
+					Kind:       "Simple",
+				},
 				Servers: 1,
 				Agents:  2,
 			},

@@ -30,6 +30,7 @@ func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig
 		{
 			Name: "valid_eks_config",
 			Config: &eksctlapi.ClusterConfig{
+				TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
 				Metadata: &eksctlapi.ClusterMeta{
 					Name:   "test-cluster",
 					Region: "us-west-2",
@@ -41,6 +42,7 @@ func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig
 		{
 			Name: "invalid_eks_config_missing_name",
 			Config: &eksctlapi.ClusterConfig{
+				TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
 				Metadata: &eksctlapi.ClusterMeta{
 					Region: "us-west-2",
 				},
@@ -53,6 +55,7 @@ func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig
 		{
 			Name: "invalid_eks_config_missing_region",
 			Config: &eksctlapi.ClusterConfig{
+				TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
 				Metadata: &eksctlapi.ClusterMeta{
 					Name: "test-cluster",
 				},
@@ -63,8 +66,9 @@ func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig
 			},
 		},
 		{
-			Name:   "invalid_eks_config_missing_metadata",
+			Name: "invalid_eks_config_missing_metadata",
 			Config: &eksctlapi.ClusterConfig{
+				TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
 				// No metadata
 			},
 			ExpectedValid: false,
