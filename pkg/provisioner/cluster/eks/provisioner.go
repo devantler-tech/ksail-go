@@ -186,13 +186,24 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 		return false, fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	// Use the provided name if given, otherwise use the name from the distribution config
-	target := name
-	if target == "" && e.clusterConfig != nil && e.clusterConfig.Metadata != nil {
-		target = e.clusterConfig.Metadata.Name
-	}
+	target := e.getEffectiveClusterName(name)
 
 	return slices.Contains(clusters, target), nil
+}
+
+// getEffectiveClusterName determines the effective cluster name to use.
+// Returns the provided name if not empty, otherwise returns the name from cluster config.
+// Returns empty string if no name is available from either source.
+func (e *EKSClusterProvisioner) getEffectiveClusterName(name string) string {
+	if name != "" {
+		return name
+	}
+
+	if e.clusterConfig != nil && e.clusterConfig.Metadata != nil {
+		return e.clusterConfig.Metadata.Name
+	}
+
+	return ""
 }
 
 // setupClusterOperation sets up common cluster operation prerequisites.
@@ -204,14 +215,13 @@ func (e *EKSClusterProvisioner) setupClusterOperation(
 		return nil, ErrInvalidClusterConfig
 	}
 
-	// Use the provided name if given, otherwise use the name from the distribution config
-	if name != "" {
-		e.clusterConfig.Metadata.Name = name
-	}
-	// If no name provided and distribution config doesn't have a name, that's an error
-	if e.clusterConfig.Metadata.Name == "" {
+	effectiveName := e.getEffectiveClusterName(name)
+	if effectiveName == "" {
 		return nil, ErrEmptyClusterName
 	}
+
+	// Update the cluster config with the effective name
+	e.clusterConfig.Metadata.Name = effectiveName
 
 	return e.clusterProvider, nil
 }
