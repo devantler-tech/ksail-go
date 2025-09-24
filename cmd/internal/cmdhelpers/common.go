@@ -2,7 +2,6 @@
 package cmdhelpers
 
 import (
-	"errors"
 	"fmt"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -12,9 +11,6 @@ import (
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
-
-// ErrConfigurationValidationFailed is returned when configuration validation fails.
-var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
 // ClusterInfoField represents a field to log from cluster information.
 type ClusterInfoField struct {
@@ -130,7 +126,7 @@ func LoadClusterWithErrorHandling(
 		}
 
 		return nil, fmt.Errorf("%w with %d errors",
-			ErrConfigurationValidationFailed, len(result.Errors))
+			helpers.ErrConfigurationValidationFailed, len(result.Errors))
 	}
 
 	// Display warnings even for valid configurations using standardized helper
