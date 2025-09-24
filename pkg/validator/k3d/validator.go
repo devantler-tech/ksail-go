@@ -3,10 +3,10 @@ package k3d
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/jinzhu/copier"
 	k3dconfig "github.com/k3d-io/k3d/v5/pkg/config"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
@@ -110,21 +110,14 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 	return nil
 }
 
-// deepCopyConfig creates a deep copy of the K3d simple configuration using JSON marshalling/unmarshalling.
+// deepCopyConfig creates a deep copy of the K3d simple configuration using the copier library.
 // This ensures that upstream validation operations cannot modify the original configuration object.
+// Using copier is more efficient than JSON marshalling/unmarshalling for frequently called validation.
 func (v *Validator) deepCopyConfig(config *k3dapi.SimpleConfig) (*k3dapi.SimpleConfig, error) {
-	// Marshal the original config to JSON
-	jsonData, err := json.Marshal(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal config to JSON: %w", err)
-	}
-
-	// Unmarshal into a new config instance
 	var configCopy k3dapi.SimpleConfig
 
-	err = json.Unmarshal(jsonData, &configCopy)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config from JSON: %w", err)
+	if err := copier.Copy(&configCopy, config); err != nil {
+		return nil, fmt.Errorf("failed to deep copy config: %w", err)
 	}
 
 	return &configCopy, nil

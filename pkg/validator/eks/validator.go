@@ -2,10 +2,10 @@
 package eks
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/jinzhu/copier"
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
@@ -77,23 +77,16 @@ func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) 
 	return nil
 }
 
-// deepCopyConfig creates a deep copy of the EKS cluster configuration using JSON marshalling/unmarshalling.
+// deepCopyConfig creates a deep copy of the EKS cluster configuration using the copier library.
 // This ensures that upstream validation operations cannot modify the original configuration object.
+// Using copier is more efficient than JSON marshalling/unmarshalling for frequently called validation.
 func (v *Validator) deepCopyConfig(
 	config *eksctlapi.ClusterConfig,
 ) (*eksctlapi.ClusterConfig, error) {
-	// Marshal the original config to JSON
-	jsonData, err := json.Marshal(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal config to JSON: %w", err)
-	}
-
-	// Unmarshal into a new config instance
 	var configCopy eksctlapi.ClusterConfig
 
-	err = json.Unmarshal(jsonData, &configCopy)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config from JSON: %w", err)
+	if err := copier.Copy(&configCopy, config); err != nil {
+		return nil, fmt.Errorf("failed to deep copy config: %w", err)
 	}
 
 	return &configCopy, nil
