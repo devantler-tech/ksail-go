@@ -11,8 +11,8 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// DefaultClusterName is the conventional default cluster name used when no specific config name is provided.
-const DefaultClusterName = "ksail-default"
+// KSailDefaultClusterName is the conventional default cluster name used when no specific config name is provided.
+const KSailDefaultClusterName = "ksail-default"
 
 // Validator validates KSail cluster configurations for semantic correctness and cross-configuration consistency.
 type Validator struct {
@@ -96,7 +96,14 @@ func (v *Validator) validateContextName(
 
 	expectedContext := v.getExpectedContextName(config)
 	if expectedContext == "" {
-		// Unknown distribution, validation handled elsewhere
+		// Add error for unsupported distributions
+		v.addUnsupportedDistributionError(config, result)
+		return
+	}
+
+	// Check for unsupported distributions that return invalid context patterns
+	if v.isUnsupportedDistribution(config.Spec.Distribution) {
+		v.addUnsupportedDistributionError(config, result)
 		return
 	}
 
@@ -153,14 +160,40 @@ func (v *Validator) validateDistribution(
 	}
 }
 
+// isUnsupportedDistribution checks if the distribution is not supported for context validation.
+func (v *Validator) isUnsupportedDistribution(distribution v1alpha1.Distribution) bool {
+	return distribution == v1alpha1.DistributionTind
+}
+
+// addUnsupportedDistributionError adds validation errors for unsupported distributions.
+func (v *Validator) addUnsupportedDistributionError(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	distribution := config.Spec.Distribution
+	switch distribution {
+	case v1alpha1.DistributionTind:
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       "Tind distribution is not yet supported for context validation",
+			CurrentValue:  distribution,
+			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
+		})
+	default:
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       "unknown distribution for context validation",
+			CurrentValue:  distribution,
+			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
+		})
+	}
+}
+
 // getExpectedContextName returns the expected context name for the given configuration.
 // Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted from the distribution config.
 // If no cluster name is found, "ksail-default" is used as the ultimate fallback.
 func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
-	if distributionName == "" {
-		distributionName = "default"
-	}
 
 	switch config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
@@ -202,7 +235,7 @@ func (v *Validator) getKindConfigName() string {
 	}
 
 	// Return conventional KSail default name when no config is provided
-	return DefaultClusterName
+	return KSailDefaultClusterName
 }
 
 // getK3dConfigName returns the K3d configuration name if available.
@@ -212,7 +245,7 @@ func (v *Validator) getK3dConfigName() string {
 	}
 
 	// Return conventional KSail default name when no config is provided
-	return DefaultClusterName
+	return KSailDefaultClusterName
 }
 
 // getEKSConfigName returns the EKS configuration name if available.
@@ -222,5 +255,5 @@ func (v *Validator) getEKSConfigName() string {
 	}
 
 	// Return conventional KSail default name when no config is provided
-	return DefaultClusterName
+	return KSailDefaultClusterName
 }
