@@ -151,7 +151,8 @@ func (v *Validator) validateDistribution(
 }
 
 // getExpectedContextName returns the expected context name for the given configuration.
-// Context name follows the pattern: {distribution}-{distribution_config_name} or {distribution}-default.
+// Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted from the distribution config.
+// If no cluster name is found, "ksail-default" is used as the ultimate fallback.
 func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
 	if distributionName == "" {
