@@ -74,20 +74,16 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	err = cmdhelpers.ExecuteCommandWithClusterInfo(
+	// Display success message and cluster info directly using the already loaded cluster
+	// This avoids loading the config again and potential validation issues with the newly created files
+	cmdhelpers.LogSuccessWithClusterInfo(
 		cmd,
-		configManager,
 		"project initialized successfully",
-		func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
-			return []cmdhelpers.ClusterInfoField{
-				{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
-				{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
-			}
+		[]cmdhelpers.ClusterInfoField{
+			{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
+			{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
 		},
 	)
-	if err != nil {
-		return fmt.Errorf("failed to execute init command: %w", err)
-	}
 
 	return nil
 }
