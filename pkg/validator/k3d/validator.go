@@ -112,7 +112,7 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 
 // deepCopyConfig creates a deep copy of the K3d simple configuration using the copier library.
 // This ensures that upstream validation operations cannot modify the original configuration object.
-// Using copier is more efficient than JSON marshalling/unmarshalling for frequently called validation.
+// Using copier is an alternative to JSON marshalling/unmarshalling for creating deep copies.
 func (v *Validator) deepCopyConfig(config *k3dapi.SimpleConfig) (*k3dapi.SimpleConfig, error) {
 	var configCopy k3dapi.SimpleConfig
 
