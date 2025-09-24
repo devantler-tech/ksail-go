@@ -4,11 +4,11 @@ package cmdhelpers
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
@@ -112,43 +112,31 @@ func LoadClusterWithErrorHandling(
 
 	// Handle validation errors with fail-fast behavior
 	if !result.Valid {
-		// Aggregate all error messages into a single string using strings.Builder for performance
-		var errorMessages strings.Builder
-		for _, validationErr := range result.Errors {
-			errorMessages.WriteString(fmt.Sprintf("  - %s: %s\n",
-				validationErr.Field, validationErr.Message))
-		}
-
+		// Use standardized error formatting from helpers
+		errorMessages := helpers.FormatValidationErrorsMultiline(result)
 		notify.Errorln(cmd.OutOrStdout(),
-			"Configuration validation failed:\n"+errorMessages.String())
-		// Print fix suggestions separately
-		for _, validationErr := range result.Errors {
-			if validationErr.FixSuggestion != "" {
-				notify.Activityln(
-					cmd.OutOrStdout(),
-					"    Fix: "+validationErr.FixSuggestion,
-				)
-			}
+			"Configuration validation failed:\n"+errorMessages)
+
+		// Print fix suggestions using standardized helper
+		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
+		for _, suggestion := range fixSuggestions {
+			notify.Activityln(cmd.OutOrStdout(), suggestion)
 		}
 
-		// Display warnings if any
-		for _, warning := range result.Warnings {
-			notify.Warnln(
-				cmd.OutOrStdout(),
-				fmt.Sprintf("  - %s: %s", warning.Field, warning.Message),
-			)
+		// Display warnings using standardized helper
+		warnings := helpers.FormatValidationWarnings(result)
+		for _, warning := range warnings {
+			notify.Warnln(cmd.OutOrStdout(), warning)
 		}
 
 		return nil, fmt.Errorf("%w with %d errors",
 			ErrConfigurationValidationFailed, len(result.Errors))
 	}
 
-	// Display warnings even for valid configurations
-	for _, warning := range result.Warnings {
-		notify.Warnln(
-			cmd.OutOrStdout(),
-			fmt.Sprintf("Warning - %s: %s", warning.Field, warning.Message),
-		)
+	// Display warnings even for valid configurations using standardized helper
+	warnings := helpers.FormatValidationWarnings(result)
+	for _, warning := range warnings {
+		notify.Warnln(cmd.OutOrStdout(), warning)
 	}
 
 	return cluster, nil
