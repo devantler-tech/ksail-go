@@ -210,6 +210,22 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
   - All tests pass and `ksail init` now creates minimal, clean configurations
   - Context validation properly handles new patterns and EKS skipping
 
+- [x] T051 [ENHANCEMENT] Fix init command to set correct context and distribution config based on distribution - COMPLETED: Enhanced init command to dynamically set correct context and distribution config filenames:
+  - Added `GetExpectedContextName()` helper that calculates context patterns: Kind→`kind-kind`, K3d→`k3d-k3s-default`, EKS→empty
+  - Added `GetExpectedDistributionConfigName()` helper that sets correct config filenames: Kind→`kind.yaml`, K3d→`k3d.yaml`, EKS→`eks.yaml`
+  - Updated `HandleInitRunE()` to automatically set context and distributionConfig fields after loading config
+  - Manual testing verified all distributions generate correct minimal configurations with proper context patterns
+  - Fixes issue where context field was empty and distributionConfig was always "kind.yaml" regardless of distribution
+
+- [x] T052 [REFACTOR] Move context and distribution config defaults logic to scaffolder for better architecture - COMPLETED: Refactored defaults setting logic from init command to scaffolder for better separation of concerns:
+  - Moved `getExpectedContextName()` and `getExpectedDistributionConfigName()` helper functions to scaffolder package
+  - Added `applyKSailConfigDefaults()` method to scaffolder that applies distribution-specific defaults
+  - Updated `generateKSailConfig()` to apply defaults before generating ksail.yaml file
+  - Removed defaults logic from init command (`HandleInitRunE()`) and cmdhelpers package
+  - Improved architecture: scaffolder now owns all file generation logic including ensuring consistent defaults
+  - Manual testing verified all distributions still generate correct configurations: Kind→`kind-kind`, K3d→`k3d-k3s-default`, EKS→no context
+  - Better separation of concerns: init command handles user input, scaffolder handles file generation with correct defaults
+
 ## Notes
 
 - Focus on API simplification: single `Validate(config interface{})` method
