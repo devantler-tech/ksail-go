@@ -4,6 +4,7 @@ package cmdhelpers
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -66,51 +67,12 @@ func NewCobraCommand(
 
 	// Create the base command
 	cmd := &cobra.Command{
-		Use:                    use,
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  short,
-		GroupID:                "",
-		Long:                   long,
-		Example:                "",
-		ValidArgs:              nil,
-		ValidArgsFunction:      nil,
-		Args:                   nil,
-		ArgAliases:             nil,
-		BashCompletionFunction: "",
-		Deprecated:             "",
-		Annotations:            nil,
-		Version:                "",
-		PersistentPreRun:       nil,
-		PersistentPreRunE:      nil,
-		PreRun:                 nil,
-		PreRunE:                nil,
-		Run:                    nil,
+		Use:   use,
+		Short: short,
+		Long:  long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, manager, args)
 		},
-		PostRun:            nil,
-		PostRunE:           nil,
-		PersistentPostRun:  nil,
-		PersistentPostRunE: nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:         false,
-			DisableNoDescFlag:         false,
-			DisableDescriptions:       false,
-			HiddenDefaultCmd:          false,
-			DefaultShellCompDirective: nil,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 
@@ -150,12 +112,15 @@ func LoadClusterWithErrorHandling(
 
 	// Handle validation errors with fail-fast behavior
 	if !result.Valid {
-		// Aggregate all error messages into a single string
-		errorMessages := ""
+		// Aggregate all error messages into a single string using strings.Builder for performance
+		var errorMessages strings.Builder
 		for _, validationErr := range result.Errors {
-			errorMessages += fmt.Sprintf("  - %s: %s\n", validationErr.Field, validationErr.Message)
+			errorMessages.WriteString(fmt.Sprintf("  - %s: %s\n",
+				validationErr.Field, validationErr.Message))
 		}
-		notify.Errorln(cmd.OutOrStdout(), "Configuration validation failed:\n"+errorMessages)
+
+		notify.Errorln(cmd.OutOrStdout(),
+			"Configuration validation failed:\n"+errorMessages.String())
 		// Print fix suggestions separately
 		for _, validationErr := range result.Errors {
 			if validationErr.FixSuggestion != "" {
