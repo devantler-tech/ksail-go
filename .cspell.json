@@ -214,6 +214,7 @@
     "k3dtypes",
     "dupl",
     "goconst",
+    "staticcheck",
     "eksctlapi",
     "kindapi",
     "ksailvalidator",
