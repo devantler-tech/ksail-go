@@ -3,19 +3,14 @@
 package k3d
 
 import (
-	"errors"
 	"fmt"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
-	"github.com/devantler-tech/ksail-go/pkg/validator"
 	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/validator/k3d"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
-
-// ErrConfigurationValidationFailed is returned when configuration validation fails.
-var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
 // ConfigManager implements configuration management for K3d v1alpha5.SimpleConfig configurations.
 // It provides file-based configuration loading without Viper dependency.
@@ -93,39 +88,12 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	// Validate the loaded configuration
 	validator := k3dvalidator.NewValidator()
 
-	result := validator.Validate(config)
-	if !result.Valid {
-		return nil, fmt.Errorf(
-			"%w: %s",
-			ErrConfigurationValidationFailed,
-			formatValidationErrors(result),
-		)
+	if err := helpers.ValidateConfig(config, validator); err != nil {
+		return nil, err
 	}
 
 	m.config = config
 	m.configLoaded = true
 
 	return m.config, nil
-}
-
-// formatValidationErrors formats validation errors into a readable string.
-func formatValidationErrors(result *validator.ValidationResult) string {
-	if len(result.Errors) == 0 {
-		return "unknown validation error"
-	}
-
-	var errorMsg string
-
-	for i, err := range result.Errors {
-		if i > 0 {
-			errorMsg += "; "
-		}
-
-		errorMsg += fmt.Sprintf("%s: %s", err.Field, err.Message)
-		if err.FixSuggestion != "" {
-			errorMsg += fmt.Sprintf(" (%s)", err.FixSuggestion)
-		}
-	}
-
-	return errorMsg
 }

@@ -5,8 +5,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
 	eksvalidator "github.com/devantler-tech/ksail-go/pkg/validator/eks"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/devantler-tech/ksail-go/pkg/validator/testutils"
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
@@ -15,110 +14,64 @@ func TestEKSValidatorContract(t *testing.T) {
 	t.Parallel()
 
 	// This test MUST FAIL initially to follow TDD approach
-	validator := eksvalidator.NewValidator()
-	require.NotNil(t, validator, "EKS validator constructor must return non-nil validator")
-
+	validatorInstance := eksvalidator.NewValidator()
 	testCases := createEKSTestCases()
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := validator.Validate(testCase.config)
-			require.NotNil(t, result, "Validation result cannot be nil")
-
-			assertEKSValidationResult(t, testCase, result)
-		})
-	}
+	testutils.RunValidatorTests(
+		t,
+		validatorInstance,
+		testCases,
+		testutils.AssertValidationResult[*eksctlapi.ClusterConfig],
+	)
 }
 
-func createEKSTestCases() []struct {
-	name         string
-	config       *eksctlapi.ClusterConfig
-	expectValid  bool
-	expectErrors []string
-} {
-	return []struct {
-		name         string
-		config       *eksctlapi.ClusterConfig
-		expectValid  bool
-		expectErrors []string
-	}{
+func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig] {
+	return []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig]{
 		{
-			name: "valid_eks_config",
-			config: &eksctlapi.ClusterConfig{
+			Name: "valid_eks_config",
+			Config: &eksctlapi.ClusterConfig{
 				Metadata: &eksctlapi.ClusterMeta{
 					Name:   "test-cluster",
 					Region: "us-west-2",
 				},
 			},
-			expectValid:  true,
-			expectErrors: []string{},
+			ExpectedValid:  true,
+			ExpectedErrors: []validator.ValidationError{},
 		},
 		{
-			name: "invalid_eks_config_missing_name",
-			config: &eksctlapi.ClusterConfig{
+			Name: "invalid_eks_config_missing_name",
+			Config: &eksctlapi.ClusterConfig{
 				Metadata: &eksctlapi.ClusterMeta{
 					Region: "us-west-2",
 				},
 			},
-			expectValid:  false,
-			expectErrors: []string{"cluster name is required"},
+			ExpectedValid: false,
+			ExpectedErrors: []validator.ValidationError{
+				{Field: "metadata.name", Message: "cluster name is required"},
+			},
 		},
 		{
-			name: "invalid_eks_config_missing_region",
-			config: &eksctlapi.ClusterConfig{
+			Name: "invalid_eks_config_missing_region",
+			Config: &eksctlapi.ClusterConfig{
 				Metadata: &eksctlapi.ClusterMeta{
 					Name: "test-cluster",
 				},
 			},
-			expectValid:  false,
-			expectErrors: []string{"region is required"},
+			ExpectedValid: false,
+			ExpectedErrors: []validator.ValidationError{
+				{Field: "metadata.region", Message: "region is required"},
+			},
 		},
 		{
-			name:   "invalid_eks_config_missing_metadata",
-			config: &eksctlapi.ClusterConfig{
+			Name:   "invalid_eks_config_missing_metadata",
+			Config: &eksctlapi.ClusterConfig{
 				// No metadata
 			},
-			expectValid:  false,
-			expectErrors: []string{"metadata is required"},
+			ExpectedValid: false,
+			ExpectedErrors: []validator.ValidationError{
+				{Field: "metadata", Message: "metadata is required"},
+			},
 		},
-		{
-			name:         "nil_config",
-			config:       nil,
-			expectValid:  false,
-			expectErrors: []string{"configuration cannot be nil"},
-		},
-	}
-}
-
-func assertEKSValidationResult(t *testing.T, testCase struct {
-	name         string
-	config       *eksctlapi.ClusterConfig
-	expectValid  bool
-	expectErrors []string
-}, result *validator.ValidationResult,
-) {
-	t.Helper()
-
-	assert.Equal(t, testCase.expectValid, result.Valid, "Expected validation to pass")
-
-	if testCase.expectValid {
-		assert.Empty(t, result.Errors, "Expected no validation errors")
-	} else {
-		// Check that expected error messages are found
-		for _, expectedError := range testCase.expectErrors {
-			found := false
-
-			for _, resultErr := range result.Errors {
-				if resultErr.Message == expectedError {
-					found = true
-
-					break
-				}
-			}
-
-			assert.True(t, found, "Expected error message '%s' not found in validation errors", expectedError)
-		}
+		testutils.CreateNilConfigTestCase[*eksctlapi.ClusterConfig](),
 	}
 }

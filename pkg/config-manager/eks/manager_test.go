@@ -10,15 +10,25 @@ import (
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-// validateEKSDefaults validates EKS default configuration.
-func validateEKSDefaults(t *testing.T, config *eksctlapi.ClusterConfig) {
+// validateEKSConfigStructure validates the basic EKS configuration structure.
+func validateEKSConfigStructure(
+	t *testing.T,
+	config *eksctlapi.ClusterConfig,
+	expectedName, expectedRegion string,
+) {
 	t.Helper()
 
 	assert.Equal(t, "eksctl.io/v1alpha5", config.APIVersion)
 	assert.Equal(t, "ClusterConfig", config.Kind)
 	assert.NotNil(t, config.Metadata)
-	assert.Equal(t, "eks-default", config.Metadata.Name)
-	assert.Equal(t, "eu-north-1", config.Metadata.Region)
+	assert.Equal(t, expectedName, config.Metadata.Name)
+	assert.Equal(t, expectedRegion, config.Metadata.Region)
+}
+
+// validateEKSDefaults validates EKS default configuration.
+func validateEKSDefaults(t *testing.T, config *eksctlapi.ClusterConfig) {
+	t.Helper()
+	validateEKSConfigStructure(t, config, "eks-default", "eu-north-1")
 }
 
 // validateEKSConfig validates EKS configuration with specific values.
@@ -28,12 +38,7 @@ func validateEKSConfig(
 ) func(t *testing.T, config *eksctlapi.ClusterConfig) {
 	return func(t *testing.T, config *eksctlapi.ClusterConfig) {
 		t.Helper()
-
-		assert.Equal(t, "eksctl.io/v1alpha5", config.APIVersion)
-		assert.Equal(t, "ClusterConfig", config.Kind)
-		assert.NotNil(t, config.Metadata)
-		assert.Equal(t, expectedName, config.Metadata.Name)
-		assert.Equal(t, expectedRegion, config.Metadata.Region)
+		validateEKSConfigStructure(t, config, expectedName, expectedRegion)
 	}
 }
 

@@ -10,6 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// createTestValidationErrors creates standard validation errors for test cases to eliminate duplication.
+func createTestValidationErrors() []validator.ValidationError {
+	return []validator.ValidationError{
+		{
+			Field:         "metadata.name",
+			Message:       "missing required field",
+			FixSuggestion: "provide a valid name",
+			Location:      validator.FileLocation{FilePath: "config.yaml", Line: 5},
+		},
+		{
+			Field:         "spec.distribution",
+			Message:       "invalid distribution",
+			FixSuggestion: "use valid distribution",
+			Location:      validator.FileLocation{FilePath: "config.yaml", Line: 10},
+		},
+	}
+}
+
 // TestValidationError_Construction tests that ValidationError can be created with all fields.
 func TestValidationError_Construction(t *testing.T) {
 	t.Parallel()
@@ -287,38 +305,12 @@ func createValidResultEmptyErrorsCase() validationResultTestCase {
 
 func createInvalidResultWithErrorsCase() validationResultTestCase {
 	return validationResultTestCase{
-		name:  "Invalid result with errors",
-		valid: false,
-		errors: []validator.ValidationError{
-			{
-				Field:         "metadata.name",
-				Message:       "missing required field",
-				FixSuggestion: "provide a valid name",
-				Location:      validator.FileLocation{FilePath: "config.yaml", Line: 5},
-			},
-			{
-				Field:         "spec.distribution",
-				Message:       "invalid distribution",
-				FixSuggestion: "use valid distribution",
-				Location:      validator.FileLocation{FilePath: "config.yaml", Line: 10},
-			},
-		},
+		name:   "Invalid result with errors",
+		valid:  false,
+		errors: createTestValidationErrors(),
 		expected: validator.ValidationResult{
-			Valid: false,
-			Errors: []validator.ValidationError{
-				{
-					Field:         "metadata.name",
-					Message:       "missing required field",
-					FixSuggestion: "provide a valid name",
-					Location:      validator.FileLocation{FilePath: "config.yaml", Line: 5},
-				},
-				{
-					Field:         "spec.distribution",
-					Message:       "invalid distribution",
-					FixSuggestion: "use valid distribution",
-					Location:      validator.FileLocation{FilePath: "config.yaml", Line: 10},
-				},
-			},
+			Valid:  false,
+			Errors: createTestValidationErrors(),
 		},
 	}
 }

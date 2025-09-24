@@ -51,16 +51,8 @@ type ksailTestCase struct {
 
 func createValidKindKSailConfigCase() ksailTestCase {
 	return ksailTestCase{
-		name: "valid_kind_configuration",
-		config: &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution: v1alpha1.DistributionKind,
-			},
-		},
+		name:         "valid_kind_configuration",
+		config:       createValidKSailConfig(v1alpha1.DistributionKind),
 		expectValid:  true,
 		expectErrors: []string{},
 	}
@@ -85,16 +77,8 @@ func createInvalidDistributionKSailCase() ksailTestCase {
 
 func createValidConfigWithoutMetadataCase() ksailTestCase {
 	return ksailTestCase{
-		name: "valid_config_without_metadata",
-		config: &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution: v1alpha1.DistributionKind,
-			},
-		},
+		name:         "valid_config_without_metadata",
+		config:       createValidKSailConfig(v1alpha1.DistributionKind),
 		expectValid:  true,
 		expectErrors: []string{},
 	}
@@ -218,4 +202,17 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 
 		assert.True(t, found, "Should find distribution validation error")
 	})
+}
+
+// createValidKSailConfig creates a valid KSail configuration with the specified distribution.
+func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluster {
+	return &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ksail.dev/v1alpha1",
+			Kind:       "Cluster",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution: distribution,
+		},
+	}
 }

@@ -57,22 +57,17 @@ func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Clust
 	return selectors
 }
 
-// createTestClusterFieldSelectors creates field selectors for test cases with v1alpha1.DistributionKind name.
-func createTestClusterFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
-	return []configmanager.FieldSelector[v1alpha1.Cluster]{
-		configmanager.AddFlagFromField(
-			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			v1alpha1.DistributionKind,
-			"Name of the cluster",
-		),
-	}
+// createDistributionOnlyFieldSelectors creates field selectors with only the distribution field.
+func createDistributionOnlyFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
+	// Use the first selector (distribution) from the standard field selectors
+	return createStandardFieldSelectors()[:1]
 }
 
 // TestNewManager tests the NewManager constructor.
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := createTestClusterFieldSelectors()
+	fieldSelectors := createDistributionOnlyFieldSelectors()
 
 	manager := configmanager.NewConfigManager(fieldSelectors...)
 
@@ -261,7 +256,7 @@ func TestAddFlagsFromFields(t *testing.T) {
 func TestLoadConfigConfigProperty(t *testing.T) {
 	t.Parallel()
 
-	fieldSelectors := createTestClusterFieldSelectors()
+	fieldSelectors := createDistributionOnlyFieldSelectors()
 
 	manager := configmanager.NewConfigManager(fieldSelectors...)
 

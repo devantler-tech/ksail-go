@@ -6,11 +6,14 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// createDefaultConfigManager creates a standard config manager for tests to eliminate duplication.
 
 func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	t.Parallel()
@@ -73,14 +76,7 @@ func getLoadClusterTests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) *configmanager.ConfigManager {
-				// Use a config manager with distribution field selector to provide a valid default
-				return configmanager.NewConfigManager(
-					configmanager.FieldSelector[v1alpha1.Cluster]{
-						Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-						Description:  "Kubernetes distribution to use",
-						DefaultValue: v1alpha1.DistributionKind,
-					},
-				)
+				return testutils.CreateDefaultConfigManager()
 			},
 			setupCommand: func() (*cobra.Command, *bytes.Buffer) {
 				var out bytes.Buffer
@@ -244,13 +240,7 @@ func getStandardClusterCommandRunETests() []struct {
 		{
 			name: "success",
 			setupManager: func(_ *testing.T) *configmanager.ConfigManager {
-				return configmanager.NewConfigManager(
-					configmanager.FieldSelector[v1alpha1.Cluster]{
-						Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-						Description:  "Kubernetes distribution to use",
-						DefaultValue: v1alpha1.DistributionKind,
-					},
-				)
+				return testutils.CreateDefaultConfigManager()
 			},
 			setupCommand: func() *cobra.Command {
 				cmd := &cobra.Command{}

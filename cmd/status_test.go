@@ -1,14 +1,10 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,18 +45,8 @@ func TestStatusCmdHelp(t *testing.T) {
 func TestHandleStatusRunESuccess(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	manager := configmanager.NewConfigManager(
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-	)
+	testCmd, out := testutils.SetupCommandWithOutput()
+	manager := testutils.CreateDefaultConfigManager()
 
 	err := cmd.HandleStatusRunE(testCmd, manager, []string{})
 
