@@ -211,7 +211,7 @@ func (v *Validator) getK3dConfigName() string {
 
 // getEKSConfigName returns the EKS configuration name if available.
 func (v *Validator) getEKSConfigName() string {
-	if v.eksConfig != nil && v.eksConfig.Metadata.Name != "" {
+	if v.eksConfig != nil && v.eksConfig.Metadata != nil && v.eksConfig.Metadata.Name != "" {
 		return v.eksConfig.Metadata.Name
 	}
 
