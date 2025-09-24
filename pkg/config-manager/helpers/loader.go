@@ -74,7 +74,7 @@ func LoadConfigFromFile[T any](
 // This function eliminates duplication between different config managers.
 func FormatValidationErrors(result *validator.ValidationResult) string {
 	if len(result.Errors) == 0 {
-		return "unknown validation error"
+		return ""
 	}
 
 	var errorMsg string
