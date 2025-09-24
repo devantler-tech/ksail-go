@@ -1,11 +1,4 @@
 
-[TestStartCmdExecute - 1]
-✔ Cluster started successfully (stub implementation)
-► Distribution: Kind
-► Context: kind-ksail-default
-
----
-
 [TestStartCmdHelp - 1]
 Start a previously stopped cluster.
 

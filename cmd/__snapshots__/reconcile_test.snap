@@ -1,12 +1,4 @@
 
-[TestReconcileCmdExecute - 1]
-✔ Workloads reconciled successfully (stub implementation)
-► Reconciliation tool: Kubectl
-► Source directory: k8s
-► Context: kind-ksail-default
-
----
-
 [TestReconcileCmdHelp - 1]
 Reconcile workloads in the cluster to match the desired state
 defined in configuration files.

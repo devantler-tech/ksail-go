@@ -305,3 +305,98 @@ func TestFormatValidationWarnings(t *testing.T) {
 		})
 	}
 }
+
+// Mock validator for testing ValidateConfig
+type mockValidator struct {
+	shouldReturnValid bool
+	validationErrors  []validator.ValidationError
+}
+
+func (m *mockValidator) Validate(config *testConfig) *validator.ValidationResult {
+	result := validator.NewValidationResult("test.yaml")
+
+	if !m.shouldReturnValid {
+		for _, err := range m.validationErrors {
+			result.AddError(err)
+		}
+	}
+
+	return result
+}
+
+func TestValidateConfig(t *testing.T) {
+	t.Parallel()
+
+	t.Run("valid config passes validation", func(t *testing.T) {
+		t.Parallel()
+
+		config := &testConfig{
+			Name:       "test-cluster",
+			APIVersion: "test/v1",
+			Kind:       "TestCluster",
+		}
+
+		mockVal := &mockValidator{shouldReturnValid: true}
+
+		err := helpers.ValidateConfig(config, mockVal)
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid config fails validation", func(t *testing.T) {
+		t.Parallel()
+
+		config := &testConfig{
+			Name:       "", // Invalid empty name
+			APIVersion: "test/v1",
+			Kind:       "TestCluster",
+		}
+
+		mockVal := &mockValidator{
+			shouldReturnValid: false,
+			validationErrors: []validator.ValidationError{
+				{
+					Field:         "name",
+					Message:       "name is required",
+					FixSuggestion: "provide a valid name",
+				},
+			},
+		}
+
+		err := helpers.ValidateConfig(config, mockVal)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "configuration validation failed")
+		assert.Contains(t, err.Error(), "name is required")
+	})
+
+	t.Run("multiple validation errors", func(t *testing.T) {
+		t.Parallel()
+
+		config := &testConfig{
+			Name:       "", // Invalid empty name
+			APIVersion: "", // Invalid empty API version
+			Kind:       "TestCluster",
+		}
+
+		mockVal := &mockValidator{
+			shouldReturnValid: false,
+			validationErrors: []validator.ValidationError{
+				{
+					Field:         "name",
+					Message:       "name is required",
+					FixSuggestion: "provide a valid name",
+				},
+				{
+					Field:         "apiVersion",
+					Message:       "apiVersion is required",
+					FixSuggestion: "provide a valid API version",
+				},
+			},
+		}
+
+		err := helpers.ValidateConfig(config, mockVal)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "configuration validation failed")
+		assert.Contains(t, err.Error(), "name is required")
+		assert.Contains(t, err.Error(), "apiVersion is required")
+	})
+}

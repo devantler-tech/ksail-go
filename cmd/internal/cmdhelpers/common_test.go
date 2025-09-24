@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// createDefaultConfigManager creates a standard config manager for tests to eliminate duplication.
-
 func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	t.Parallel()
 
@@ -23,12 +21,32 @@ func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
 	testCmd := &cobra.Command{}
 	testCmd.SetOut(&out)
 
-	// Use a config manager with distribution field selector to provide a valid default
+	// Use a complete config manager that provides all required fields for validation
 	manager := configmanager.NewConfigManager(
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "ksail.dev/v1alpha1",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "Cluster",
+		},
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			Description:  "Kubernetes distribution to use",
 			DefaultValue: v1alpha1.DistributionKind,
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Path to distribution configuration file",
+			DefaultValue: "kind.yaml",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context name",
+			DefaultValue: "kind-ksail-default", // Using default pattern that validator expects
 		},
 	)
 
@@ -334,4 +352,211 @@ func TestNewCobraCommand(t *testing.T) {
 	assert.NotNil(t, receivedManager)
 	assert.Equal(t, cmd, receivedCmd)
 	assert.Equal(t, testArgs, receivedArgs)
+}
+
+// TestExecuteCommandWithClusterInfo tests the ExecuteCommandWithClusterInfo function
+func TestExecuteCommandWithClusterInfo(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	manager := testutils.CreateDefaultConfigManager()
+
+	// Test successful execution
+	infoFieldsFunc := func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
+		return []cmdhelpers.ClusterInfoField{
+			{"Distribution", string(cluster.Spec.Distribution)},
+			{"Context", cluster.Spec.Connection.Context},
+		}
+	}
+
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
+		cmd,
+		manager,
+		"Test executed successfully",
+		infoFieldsFunc,
+	)
+
+	require.NoError(t, err)
+	assert.Contains(t, out.String(), "✔ Test executed successfully")
+	assert.Contains(t, out.String(), "► Distribution:")
+	assert.Contains(t, out.String(), "► Context:")
+}
+
+// TestLogSuccessWithClusterInfo tests the LogSuccessWithClusterInfo function
+func TestLogSuccessWithClusterInfo(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	infoFields := []cmdhelpers.ClusterInfoField{
+		{"Distribution", "Kind"},
+		{"Context", "kind-test-cluster"},
+		{"Source Directory", "k8s"},
+	}
+
+	cmdhelpers.LogSuccessWithClusterInfo(cmd, "Operation completed", infoFields)
+
+	assert.Contains(t, out.String(), "✔ Operation completed")
+	assert.Contains(t, out.String(), "► Distribution: Kind")
+	assert.Contains(t, out.String(), "► Context: kind-test-cluster")
+	assert.Contains(t, out.String(), "► Source Directory: k8s")
+}
+
+// TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields
+func TestLogClusterInfoWithEmptyFields(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	// Test with empty fields slice
+	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{})
+
+	// Should not output anything
+	assert.Empty(t, out.String())
+}
+
+// TestLogClusterInfoWithMultipleFields tests LogClusterInfo with various field combinations
+func TestLogClusterInfoWithMultipleFields(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	fields := []cmdhelpers.ClusterInfoField{
+		{"Distribution", "K3d"},
+		{"Source Directory", "deployments"},
+		{"Context", "k3d-my-cluster"},
+		{"Config File", "k3d.yaml"},
+	}
+
+	cmdhelpers.LogClusterInfo(cmd, fields)
+
+	assert.Contains(t, out.String(), "► Distribution: K3d")
+	assert.Contains(t, out.String(), "► Source Directory: deployments")
+	assert.Contains(t, out.String(), "► Context: k3d-my-cluster")
+	assert.Contains(t, out.String(), "► Config File: k3d.yaml")
+}
+
+// TestNewCobraCommandWithMultipleFieldSelectors tests command creation with multiple field selectors
+func TestNewCobraCommandWithMultipleFieldSelectors(t *testing.T) {
+	t.Parallel()
+
+	var (
+		runECalled   bool
+		receivedArgs []string
+	)
+
+	runE := func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
+		runECalled = true
+		receivedArgs = args
+		return nil
+	}
+
+	cmd := cmdhelpers.NewCobraCommand(
+		"multi-test",
+		"Multi field test command",
+		"This command tests multiple field selectors",
+		runE,
+		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardSourceDirectoryFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
+	)
+
+	require.NotNil(t, cmd)
+	assert.Equal(t, "multi-test", cmd.Use)
+	assert.Equal(t, "Multi field test command", cmd.Short)
+	assert.Equal(t, "This command tests multiple field selectors", cmd.Long)
+
+	// Test that flags are added (the exact flag testing would require more complex setup)
+	assert.NotNil(t, cmd.Flags())
+
+	// Test RunE execution
+	testArgs := []string{"arg1", "arg2", "arg3"}
+	err := cmd.RunE(cmd, testArgs)
+
+	require.NoError(t, err)
+	assert.True(t, runECalled)
+	assert.Equal(t, testArgs, receivedArgs)
+}
+
+// TestNewCobraCommandWithNoFieldSelectors tests command creation without field selectors
+func TestNewCobraCommandWithNoFieldSelectors(t *testing.T) {
+	t.Parallel()
+
+	var runECalled bool
+
+	runE := func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
+		runECalled = true
+		return nil
+	}
+
+	cmd := cmdhelpers.NewCobraCommand(
+		"no-fields",
+		"No fields command",
+		"This command has no field selectors",
+		runE,
+		// No field selectors provided
+	)
+
+	require.NotNil(t, cmd)
+	assert.Equal(t, "no-fields", cmd.Use)
+
+	// Test RunE execution
+	err := cmd.RunE(cmd, []string{})
+
+	require.NoError(t, err)
+	assert.True(t, runECalled)
+}
+
+// TestStandardFieldSelectorsComprehensive tests all standard field selectors
+func TestStandardFieldSelectorsComprehensive(t *testing.T) {
+	t.Parallel()
+
+	// Test all standard field selectors in one comprehensive test
+	cluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionK3d,
+			DistributionConfig: "k3d.yaml",
+			SourceDirectory:    "manifests",
+			Connection: v1alpha1.Connection{
+				Context: "k3d-test-cluster",
+			},
+		},
+	}
+
+	// Test distribution selector
+	distSelector := cmdhelpers.StandardDistributionFieldSelector()
+	distResult := distSelector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.Distribution, distResult)
+	assert.Equal(t, "Kubernetes distribution to use", distSelector.Description)
+	assert.Equal(t, v1alpha1.DistributionKind, distSelector.DefaultValue)
+
+	// Test source directory selector
+	srcSelector := cmdhelpers.StandardSourceDirectoryFieldSelector()
+	srcResult := srcSelector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.SourceDirectory, srcResult)
+	assert.Equal(t, "Directory containing workloads to deploy", srcSelector.Description)
+	assert.Equal(t, "k8s", srcSelector.DefaultValue)
+
+	// Test distribution config selector
+	configSelector := cmdhelpers.StandardDistributionConfigFieldSelector()
+	configResult := configSelector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.DistributionConfig, configResult)
+	assert.Equal(t, "Configuration file for the distribution", configSelector.Description)
+	assert.Equal(t, "kind.yaml", configSelector.DefaultValue)
+
+	// Test context selector
+	contextSelector := cmdhelpers.StandardContextFieldSelector()
+	contextResult := contextSelector.Selector(cluster)
+	assert.Equal(t, &cluster.Spec.Connection.Context, contextResult)
+	assert.Equal(t, "Kubernetes context of cluster", contextSelector.Description)
+	assert.Equal(t, "kind-ksail-default", contextSelector.DefaultValue)
 }

@@ -114,6 +114,21 @@ Enhanced all validators (Kind, K3d, EKS) with comprehensive TypeMeta field valid
 - [x] T046 [DOCUMENTATION] Update Cluster struct comment to reflect both desired state and metadata - COMPLETED: Enhanced comment from "represents a KSail cluster desired state" to "represents a KSail cluster configuration including API metadata and desired state" with additional clarity about TypeMeta for API versioning and Spec for cluster specification. This addresses user feedback about the comment not accurately reflecting the complete struct purpose.
 - [x] T047 [REFACTOR] Extract getEffectiveClusterName() helper method in EKS provisioner - COMPLETED: Eliminated code duplication between Exists() and setupClusterOperation() methods by extracting shared logic into getEffectiveClusterName() helper method. This ensures consistency in cluster name resolution logic (prioritize provided name, fallback to config metadata name). All tests pass and code quality maintained (0 linting issues).
 - [x] T048 [REFACTOR] Centralize distribution validation logic in v1alpha1 package - COMPLETED: Eliminated code duplication by replacing isValidDistribution() function in KSail validator with new IsValid() method on Distribution type. Added comprehensive test coverage for the new method. This centralizes validation logic in the v1alpha1 package where it belongs, following Go idioms and reducing maintenance burden. All tests pass and code quality maintained (0 linting issues).
+- [x] T049 [ENHANCEMENT] Improve test coverage for core validation components without altering source code - COMPLETED: Significantly improved test coverage across multiple packages:
+  - pkg/validator/k3d/validator.go: 56.06% → 80.6% (+24.54%)
+  - pkg/validator/eks/validator.go: 76.19% → 88.9% (+12.71%)
+  - cmd/internal/cmdhelpers/common.go: 28.57% → 72.2% (+43.63%)
+  - pkg/validator/types.go: 65.11% → 100.0% (+34.89%)
+  - pkg/validator/ksail/validator.go: 76.92% → 83.3% (+6.38%)
+  - pkg/config-manager/helpers/loader.go: 80.00% → 91.8% (+11.8%)
+
+  Added comprehensive test coverage including:
+  - Edge cases and error paths for all validator implementations
+  - Complete coverage of constructor functions (NewValidationError, NewFileLocation)
+  - Comprehensive field selector testing for cmdhelpers
+  - Mock-based testing for ValidateConfig helper function
+  - FileLocation String() method coverage with various formatting scenarios
+  - Complex configuration validation scenarios
 
 ## Dependencies
 

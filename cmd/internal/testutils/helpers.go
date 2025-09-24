@@ -10,9 +10,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CreateDefaultConfigManager creates a standard config manager for cmd tests to eliminate duplication.
+// CreateDefaultConfigManager creates a standard config manager for cmd tests that passes KSail validation.
 func CreateDefaultConfigManager() *configmanager.ConfigManager {
 	return configmanager.NewConfigManager(
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "ksail.dev/v1alpha1",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "Cluster",
+		},
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			Description:  "Kubernetes distribution to use",
@@ -26,7 +36,7 @@ func CreateDefaultConfigManager() *configmanager.ConfigManager {
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context name",
-			DefaultValue: "kind-ksail",
+			DefaultValue: "kind-ksail-default", // Using default pattern that validator expects
 		},
 	)
 }

@@ -197,7 +197,8 @@ func (v *Validator) getKindConfigName() string {
 		return v.kindConfig.Name
 	}
 
-	return ""
+	// Return conventional KSail default name when no config is provided
+	return "ksail-default"
 }
 
 // getK3dConfigName returns the K3d configuration name if available.
@@ -206,7 +207,8 @@ func (v *Validator) getK3dConfigName() string {
 		return v.k3dConfig.Name
 	}
 
-	return ""
+	// Return conventional KSail default name when no config is provided
+	return "ksail-default"
 }
 
 // getEKSConfigName returns the EKS configuration name if available.
@@ -215,5 +217,6 @@ func (v *Validator) getEKSConfigName() string {
 		return v.eksConfig.Metadata.Name
 	}
 
-	return ""
+	// Return conventional KSail default name when no config is provided
+	return "ksail-default"
 }

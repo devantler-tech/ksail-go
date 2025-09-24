@@ -76,6 +76,139 @@ func createEKSTestCases() []testutils.ValidatorTestCase[*eksctlapi.ClusterConfig
 				{Field: "metadata", Message: "metadata is required"},
 			},
 		},
+		{
+			Name: "invalid_eks_config_missing_type_meta",
+			Config: &eksctlapi.ClusterConfig{
+				// TypeMeta is missing
+				Metadata: &eksctlapi.ClusterMeta{
+					Name:   "test-cluster",
+					Region: "us-west-2",
+				},
+			},
+			ExpectedValid: false,
+			ExpectedErrors: []validator.ValidationError{
+				{Field: "kind", Message: "kind is required"},
+				{Field: "apiVersion", Message: "apiVersion is required"},
+			},
+		},
+		{
+			Name: "invalid_eks_config_wrong_kind",
+			Config: &eksctlapi.ClusterConfig{
+				TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
+				Metadata: &eksctlapi.ClusterMeta{
+					Name:   "test-cluster",
+					Region: "us-west-2",
+				},
+			},
+			ExpectedValid:  true, // We override the Kind field validation in preprocessing, so this should be valid
+			ExpectedErrors: []validator.ValidationError{},
+		},
 		testutils.CreateNilConfigTestCase[*eksctlapi.ClusterConfig](),
 	}
+}
+
+// TestEKSValidatorEdgeCases tests specific edge cases and error conditions
+func TestEKSValidatorEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	validatorInstance := eksvalidator.NewValidator()
+
+	t.Run("upstream_validation_complex_config", func(t *testing.T) {
+		t.Parallel()
+
+		// Test with a more complex configuration that might trigger upstream validation
+		config := &eksctlapi.ClusterConfig{
+			TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
+			Metadata: &eksctlapi.ClusterMeta{
+				Name:    "test-cluster",
+				Region:  "us-west-2",
+				Version: "1.27",
+			},
+			VPC: &eksctlapi.ClusterVPC{
+				Network: eksctlapi.Network{
+					ID: "vpc-12345", // Test with existing VPC ID
+				},
+			},
+		}
+
+		result := validatorInstance.Validate(config)
+
+		// Should validate successfully or provide meaningful errors
+		if !result.Valid {
+			if len(result.Errors) == 0 {
+				t.Errorf("Expected validation errors when result is invalid")
+			}
+			// All errors should have proper field and message
+			for _, err := range result.Errors {
+				if err.Field == "" || err.Message == "" {
+					t.Errorf("Validation error missing field or message: %+v", err)
+				}
+			}
+		}
+	})
+
+	t.Run("empty_metadata_fields", func(t *testing.T) {
+		t.Parallel()
+
+		// Test with empty metadata fields
+		config := &eksctlapi.ClusterConfig{
+			TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
+			Metadata: &eksctlapi.ClusterMeta{
+				Name:   "", // Empty name
+				Region: "", // Empty region
+			},
+		}
+
+		result := validatorInstance.Validate(config)
+
+		// Should fail validation
+		if result.Valid {
+			t.Errorf("Expected validation to fail with empty metadata fields")
+		}
+
+		// Should have specific errors for missing name and region
+		foundNameError := false
+		foundRegionError := false
+		for _, err := range result.Errors {
+			if err.Field == "metadata.name" {
+				foundNameError = true
+			}
+			if err.Field == "metadata.region" {
+				foundRegionError = true
+			}
+		}
+
+		if !foundNameError {
+			t.Errorf("Expected validation error for missing cluster name")
+		}
+		if !foundRegionError {
+			t.Errorf("Expected validation error for missing region")
+		}
+	})
+
+	t.Run("invalid_region_format", func(t *testing.T) {
+		t.Parallel()
+
+		// Test with invalid region format
+		config := &eksctlapi.ClusterConfig{
+			TypeMeta: eksctlapi.ClusterConfigTypeMeta(),
+			Metadata: &eksctlapi.ClusterMeta{
+				Name:   "test-cluster",
+				Region: "invalid-region-format", // Invalid region format
+			},
+		}
+
+		result := validatorInstance.Validate(config)
+
+		// This may pass basic validation but could fail upstream validation
+		// We just verify the validation process completes without panic
+		if !result.Valid && len(result.Errors) > 0 {
+			// Errors should be properly formatted
+			for _, err := range result.Errors {
+				if err.Message == "" {
+					t.Errorf("Validation error missing message: %+v", err)
+				}
+			}
+		}
+	})
 }

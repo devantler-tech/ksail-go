@@ -1,11 +1,4 @@
 
-[TestDownCmdExecute - 1]
-✔ cluster destroyed successfully
-► Distribution: Kind
-► Context: kind-ksail-default
-
----
-
 [TestDownCmdHelp - 1]
 Destroy a cluster.
 
