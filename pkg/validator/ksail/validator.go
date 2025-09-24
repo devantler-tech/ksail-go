@@ -11,9 +11,6 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// KSailDefaultClusterName is the conventional default cluster name used when no specific config name is provided.
-const KSailDefaultClusterName = "ksail-default"
-
 // Validator validates KSail cluster configurations for semantic correctness and cross-configuration consistency.
 type Validator struct {
 	kindConfig *kindv1alpha4.Cluster
@@ -89,6 +86,11 @@ func (v *Validator) validateContextName(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
+	// Skip context validation for EKS as it doesn't rely on context names
+	if config.Spec.Distribution == v1alpha1.DistributionEKS {
+		return
+	}
+
 	if config.Spec.Connection.Context == "" {
 		// Context is optional, no validation needed if empty
 		return
@@ -234,8 +236,8 @@ func (v *Validator) getKindConfigName() string {
 		return v.kindConfig.Name
 	}
 
-	// Return conventional KSail default name when no config is provided
-	return KSailDefaultClusterName
+	// Return default Kind cluster name when no config is provided
+	return "kind"
 }
 
 // getK3dConfigName returns the K3d configuration name if available.
@@ -244,8 +246,8 @@ func (v *Validator) getK3dConfigName() string {
 		return v.k3dConfig.Name
 	}
 
-	// Return conventional KSail default name when no config is provided
-	return KSailDefaultClusterName
+	// Return default K3d cluster name when no config is provided
+	return "k3s-default"
 }
 
 // getEKSConfigName returns the EKS configuration name if available.
@@ -254,6 +256,6 @@ func (v *Validator) getEKSConfigName() string {
 		return v.eksConfig.Metadata.Name
 	}
 
-	// Return conventional KSail default name when no config is provided
-	return KSailDefaultClusterName
+	// Return default EKS cluster name when no config is provided
+	return "eks-default"
 }

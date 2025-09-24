@@ -30,7 +30,7 @@ func (g *K3dGenerator) Generate(
 	cluster *v1alpha5.SimpleConfig,
 	opts yamlgenerator.Options,
 ) (string, error) {
-	cluster.APIVersion = "k3d.io/v1alpha3"
+	cluster.APIVersion = "k3d.io/v1alpha5"
 	cluster.Kind = "Simple"
 
 	out, err := g.Marshaller.Marshal(cluster)

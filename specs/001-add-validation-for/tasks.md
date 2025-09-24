@@ -201,6 +201,16 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
 - **Concurrency**: Thread-safe validation for parallel operations
 - **Error Quality**: Actionable messages with specific fix suggestions
 
+## Defaults Update Implementation (September 24, 2025)
+
+- [x] T050 [ENHANCEMENT] Update default configurations to simplify minimal configs - COMPLETED: Updated generators, config managers, validators, and scaffolder to use new simplified defaults:
+  - **Kind**: name: `kind`, context: `kind-kind`, minimal config: `apiVersion: kind.x-k8s.io/v1alpha4, kind: Cluster`
+  - **K3d**: name: `k3d-default`, context: `k3d-k3s-default`, minimal config: `apiVersion: k3d.io/v1alpha5, kind: Simple`
+  - **EKS**: name: `eks-default`, context: NONE (validation skipped), minimal config: `apiVersion: eksctl.io/v1alpha5, kind: ClusterConfig, metadata: {name: eks-default, region: eu-north-1}`
+  - Updated scaffolder, generators, config managers, and validator context patterns
+  - All tests pass and `ksail init` now creates minimal, clean configurations
+  - Context validation properly handles new patterns and EKS skipping
+
 ## Notes
 
 - Focus on API simplification: single `Validate(config interface{})` method

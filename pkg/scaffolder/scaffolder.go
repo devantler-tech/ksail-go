@@ -117,7 +117,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name: "ksail-default",
+		Name: "kind",
 	}
 
 	opts := yamlgenerator.Options{
@@ -171,10 +171,10 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 	config := k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
-			Kind:       "SimpleConfig",
+			Kind:       "Simple",
 		},
 		ObjectMeta: types.ObjectMeta{
-			Name: "ksail-default",
+			Name: "k3d-default",
 		},
 	}
 
@@ -188,7 +188,7 @@ func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 			Kind:       "ClusterConfig",
 		},
 		Metadata: &eksv1alpha5.ClusterMeta{
-			Name:   "ksail-default",
+			Name:   "eks-default",
 			Region: "eu-north-1",
 		},
 	}

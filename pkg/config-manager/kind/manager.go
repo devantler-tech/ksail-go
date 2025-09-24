@@ -29,7 +29,7 @@ var _ configmanager.ConfigManager[v1alpha4.Cluster] = (*ConfigManager)(nil)
 func NewKindCluster(name, apiVersion, kind string) *v1alpha4.Cluster {
 	// Set default name if empty
 	if name == "" {
-		name = "kind-default"
+		name = "kind"
 	}
 
 	if apiVersion == "" {
