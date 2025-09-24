@@ -2,6 +2,7 @@
 package eks
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
@@ -86,20 +87,45 @@ func (v *Validator) Validate(config *eksctlapi.ClusterConfig) *validator.Validat
 // validateWithUpstreamEksctl attempts to run comprehensive eksctl validation.
 // We apply eksctl defaults before validation to prevent panics from missing required fields.
 func (v *Validator) validateWithUpstreamEksctl(config *eksctlapi.ClusterConfig) error {
-	// Create a copy to avoid modifying the original config
-	configCopy := *config
+	// Create a deep copy to avoid modifying the original config using marshalling/unmarshalling
+	configCopy, err := v.deepCopyConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create deep copy of config: %w", err)
+	}
 
 	// Apply eksctl defaults to prevent panics from missing required fields
 	// This is what eksctl CLI does before validation
-	eksctlapi.SetClusterConfigDefaults(&configCopy)
+	eksctlapi.SetClusterConfigDefaults(configCopy)
 
 	// Run comprehensive eksctl validation
 	// Note: This returns a single error, but that error may contain multiple validation failures
 	// wrapped together using Go's error wrapping patterns (errors.Join, fmt.Errorf with %w, etc.)
-	err := eksctlapi.ValidateClusterConfig(&configCopy)
-	if err != nil {
-		return fmt.Errorf("eksctl validation failed: %w", err)
+	validationErr := eksctlapi.ValidateClusterConfig(configCopy)
+	if validationErr != nil {
+		return fmt.Errorf("eksctl validation failed: %w", validationErr)
 	}
 
 	return nil
+}
+
+// deepCopyConfig creates a deep copy of the EKS cluster configuration using JSON marshalling/unmarshalling.
+// This ensures that upstream validation operations cannot modify the original configuration object.
+func (v *Validator) deepCopyConfig(
+	config *eksctlapi.ClusterConfig,
+) (*eksctlapi.ClusterConfig, error) {
+	// Marshal the original config to JSON
+	jsonData, err := json.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal config to JSON: %w", err)
+	}
+
+	// Unmarshal into a new config instance
+	var configCopy eksctlapi.ClusterConfig
+
+	err = json.Unmarshal(jsonData, &configCopy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config from JSON: %w", err)
+	}
+
+	return &configCopy, nil
 }

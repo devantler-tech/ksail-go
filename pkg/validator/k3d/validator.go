@@ -3,6 +3,7 @@ package k3d
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
@@ -51,13 +52,16 @@ func (v *Validator) Validate(config *k3dapi.SimpleConfig) *validator.ValidationR
 
 // validateWithUpstreamK3d runs comprehensive K3d validation following the same workflow as K3d CLI.
 func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
-	// Create a copy to avoid modifying the original configuration
-	configCopy := *config
+	// Create a deep copy to avoid modifying the original configuration using marshalling/unmarshalling
+	configCopy, err := v.deepCopyConfig(config)
+	if err != nil {
+		return fmt.Errorf("failed to create deep copy of config: %w", err)
+	}
 
 	// Step 1: Process simple config (same as K3d CLI workflow)
-	err := k3dconfig.ProcessSimpleConfig(&configCopy)
-	if err != nil {
-		return fmt.Errorf("failed to process simple configuration: %w", err)
+	processErr := k3dconfig.ProcessSimpleConfig(configCopy)
+	if processErr != nil {
+		return fmt.Errorf("failed to process simple configuration: %w", processErr)
 	}
 
 	// Step 2: Transform simple config to cluster config (requires a runtime context)
@@ -65,22 +69,44 @@ func (v *Validator) validateWithUpstreamK3d(config *k3dapi.SimpleConfig) error {
 	runtime := runtimes.Docker
 	ctx := context.Background()
 
-	clusterConfig, err := k3dconfig.TransformSimpleToClusterConfig(ctx, runtime, configCopy, "")
-	if err != nil {
-		return fmt.Errorf("failed to transform configuration: %w", err)
+	clusterConfig, transformErr := k3dconfig.TransformSimpleToClusterConfig(
+		ctx, runtime, *configCopy, "",
+	)
+	if transformErr != nil {
+		return fmt.Errorf("failed to transform configuration: %w", transformErr)
 	}
 
 	// Step 3: Process cluster config
-	processedConfig, err := k3dconfig.ProcessClusterConfig(*clusterConfig)
-	if err != nil {
-		return fmt.Errorf("failed to process cluster configuration: %w", err)
+	processedConfig, processClusterErr := k3dconfig.ProcessClusterConfig(*clusterConfig)
+	if processClusterErr != nil {
+		return fmt.Errorf("failed to process cluster configuration: %w", processClusterErr)
 	}
 
 	// Step 4: Run comprehensive K3d validation (same as K3d CLI)
-	err = k3dconfig.ValidateClusterConfig(ctx, runtime, *processedConfig)
-	if err != nil {
-		return fmt.Errorf("K3d configuration validation failed: %w", err)
+	validateErr := k3dconfig.ValidateClusterConfig(ctx, runtime, *processedConfig)
+	if validateErr != nil {
+		return fmt.Errorf("K3d configuration validation failed: %w", validateErr)
 	}
 
 	return nil
+}
+
+// deepCopyConfig creates a deep copy of the K3d simple configuration using JSON marshalling/unmarshalling.
+// This ensures that upstream validation operations cannot modify the original configuration object.
+func (v *Validator) deepCopyConfig(config *k3dapi.SimpleConfig) (*k3dapi.SimpleConfig, error) {
+	// Marshal the original config to JSON
+	jsonData, err := json.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal config to JSON: %w", err)
+	}
+
+	// Unmarshal into a new config instance
+	var configCopy k3dapi.SimpleConfig
+
+	err = json.Unmarshal(jsonData, &configCopy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config from JSON: %w", err)
+	}
+
+	return &configCopy, nil
 }
