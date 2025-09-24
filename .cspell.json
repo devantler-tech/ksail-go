@@ -212,6 +212,13 @@
     "dconfig",
     "eksctlapi",
     "kindapi",
-    "ksailvalidator"
+    "ksailvalidator",
+    "eksvalidator",
+    "k3dvalidator",
+    "kindvalidator",
+    "Testvalidator",
+    "nlreturn",
+    "Underspecification",
+    "TKTK"
   ]
 }
