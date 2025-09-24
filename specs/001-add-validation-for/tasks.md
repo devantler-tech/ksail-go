@@ -21,23 +21,16 @@
    → Integration: End-to-end validation workflows
    → Polish: Performance benchmarks, documentation
 4. Apply task rules:
-   → Different validator files = mark [P] for parallel
-   → Same interface files = sequential (no [P])
-   → Tests before implementation (TDD)
+   → Mark [P] for any tasks that:
+        - Operate on different files or modules with no dependencies between them
+        - Can be executed independently without affecting each other's outcome
+        - Example: Updating different validator files, adding tests in separate test files
+   → Do NOT mark [P] for tasks that:
+        - Modify the same file or module
+        - Have explicit dependencies (e.g., tests that require implementation, or sequential refactors)
+   → Always write tests before implementation (TDD)
 5. Spec Compliance: Remove K8sVersion field that violates "DO NOT ALTER" requirement
 6. API Simplification Focus: Remove Validate([]byte), rename ValidateStruct→Validate
-```
-
-## Format: `[ID] [P?] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies)
-- Include exact file paths in descriptions
-
-## Phase 3.1: Setup & API Simplification
-
-- [x] T001 Remove K8sVersion field from KSail Spec struct in pkg/apis/cluster/v1alpha1/types.go (violates spec requirement) - ALREADY CORRECT: No K8sVersion field exists
-- [x] T002 Update validator interface to remove Validate([]byte) method in pkg/validator/interfaces.go - ALREADY CORRECT: Only Validate(T) method exists
-- [x] T003 Rename ValidateStruct→Validate in pkg/validator/interfaces.go - ALREADY CORRECT: Method already named Validate
 - [x] T004 [P] Update go.mod dependencies for upstream validators (kind, k3d, eksctl) - ALREADY CORRECT: All dependencies present
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
