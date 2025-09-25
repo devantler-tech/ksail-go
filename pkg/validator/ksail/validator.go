@@ -237,6 +237,12 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 		return v.getKindConfigName()
 	case v1alpha1.DistributionK3d:
 		return v.getK3dConfigName()
+	case v1alpha1.DistributionTind:
+		// Tind would have similar config name extraction
+		return "tind"
+	case v1alpha1.DistributionEKS:
+		// EKS cluster name extraction (not implemented in this context)
+		return "default"
 	default:
 		return ""
 	}

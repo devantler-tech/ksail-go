@@ -464,14 +464,18 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 
 		// Check for Tind-specific error
 		found := false
+
 		for _, err := range result.Errors {
 			if err.Field == "spec.distribution" &&
 				strings.Contains(err.Message, "Tind distribution is not yet supported") {
 				found = true
+
 				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
+
 				break
 			}
 		}
+
 		assert.True(t, found, "Should have Tind-specific unsupported distribution error")
 	})
 
@@ -500,14 +504,18 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 
 		// Check for unknown distribution error
 		found := false
+
 		for _, err := range result.Errors {
 			if err.Field == "spec.distribution" &&
 				strings.Contains(err.Message, "unknown distribution") {
 				found = true
+
 				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
+
 				break
 			}
 		}
+
 		assert.True(t, found, "Should have unknown distribution error")
 	})
 
@@ -1019,14 +1027,18 @@ func TestKSailValidatorDistributionValidation(t *testing.T) {
 
 		// Check for distribution error
 		found := false
+
 		for _, err := range result.Errors {
 			if err.Field == "spec.distribution" &&
 				strings.Contains(err.Message, "distribution is required") {
 				found = true
+
 				assert.Contains(t, err.FixSuggestion, "Set spec.distribution")
+
 				break
 			}
 		}
+
 		assert.True(t, found, "Should have distribution required error")
 	})
 
@@ -1052,14 +1064,18 @@ func TestKSailValidatorDistributionValidation(t *testing.T) {
 
 		// Check for distribution config error
 		found := false
+
 		for _, err := range result.Errors {
 			if err.Field == "spec.distributionConfig" &&
 				strings.Contains(err.Message, "distributionConfig is required") {
 				found = true
+
 				assert.Contains(t, err.FixSuggestion, "Set spec.distributionConfig")
+
 				break
 			}
 		}
+
 		assert.True(t, found, "Should have distribution config required error")
 	})
 
@@ -1085,14 +1101,18 @@ func TestKSailValidatorDistributionValidation(t *testing.T) {
 
 		// Check for invalid distribution error
 		found := false
+
 		for _, err := range result.Errors {
 			if err.Field == "spec.distribution" &&
 				strings.Contains(err.Message, "invalid distribution value") {
 				found = true
+
 				assert.Contains(t, err.FixSuggestion, "Use a valid distribution type")
+
 				break
 			}
 		}
+
 		assert.True(t, found, "Should have invalid distribution error")
 	})
 }
@@ -1494,17 +1514,21 @@ func TestKSailValidatorCoverageEnhancement(t *testing.T) {
 
 				// Create validator based on available configs
 				var validator *ksailvalidator.Validator
+
 				if test.kindConfig != nil || test.k3dConfig != nil || test.eksConfig != nil {
 					configs := make([]any, 0)
 					if test.kindConfig != nil {
 						configs = append(configs, test.kindConfig)
 					}
+
 					if test.k3dConfig != nil {
 						configs = append(configs, test.k3dConfig)
 					}
+
 					if test.eksConfig != nil {
 						configs = append(configs, test.eksConfig)
 					}
+
 					validator = ksailvalidator.NewValidator(configs...)
 				} else {
 					validator = ksailvalidator.NewValidator()

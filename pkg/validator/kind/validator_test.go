@@ -9,12 +9,13 @@ import (
 	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// TestNewValidator tests the NewValidator constructor
+// TestNewValidator tests the NewValidator constructor.
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
 	t.Run("constructor", func(t *testing.T) {
 		t.Parallel()
+
 		validator := kindvalidator.NewValidator()
 		if validator == nil {
 			t.Fatal("NewValidator should return non-nil validator")
@@ -22,7 +23,7 @@ func TestNewValidator(t *testing.T) {
 	})
 }
 
-// TestValidate tests the main Validate method with comprehensive scenarios
+// TestValidate tests the main Validate method with comprehensive scenarios.
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
@@ -32,7 +33,7 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-// Helper function for contract testing
+// Helper function for contract testing.
 func testKindValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := kindvalidator.NewValidator()

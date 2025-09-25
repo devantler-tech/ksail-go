@@ -1,4 +1,4 @@
-package metadata
+package metadata_test
 
 import (
 	"testing"
@@ -182,7 +182,7 @@ func TestValidateNilConfig(t *testing.T) {
 	}
 }
 
-// Helper function to find an error by field name
+// Helper function to find an error by field name.
 func findErrorByField(errors []validator.ValidationError, field string) *validator.ValidationError {
 	for i := range errors {
 		if errors[i].Field == field {

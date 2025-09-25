@@ -10,12 +10,13 @@ import (
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
-// TestNewValidator tests the NewValidator constructor
+// TestNewValidator tests the NewValidator constructor.
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
 	t.Run("constructor", func(t *testing.T) {
 		t.Parallel()
+
 		validator := k3dvalidator.NewValidator()
 		if validator == nil {
 			t.Fatal("NewValidator should return non-nil validator")
@@ -23,7 +24,7 @@ func TestNewValidator(t *testing.T) {
 	})
 }
 
-// TestValidate tests the main Validate method with comprehensive scenarios
+// TestValidate tests the main Validate method with comprehensive scenarios.
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
@@ -40,7 +41,7 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-// Helper function for contract testing
+// Helper function for contract testing.
 func testK3dValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := k3dvalidator.NewValidator()
