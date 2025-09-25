@@ -10,10 +10,38 @@ import (
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
-// TestK3dValidatorContract tests the contract for K3d configuration validator.
-func TestK3dValidatorContract(t *testing.T) {
+// TestNewValidator tests the NewValidator constructor
+func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
+	t.Run("constructor", func(t *testing.T) {
+		t.Parallel()
+		validator := k3dvalidator.NewValidator()
+		if validator == nil {
+			t.Fatal("NewValidator should return non-nil validator")
+		}
+	})
+}
+
+// TestValidate tests the main Validate method with comprehensive scenarios
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("contract_scenarios", func(t *testing.T) {
+		t.Parallel()
+		testK3dValidatorContract(t)
+	})
+
+	t.Run("validation_failures", func(t *testing.T) {
+		t.Parallel()
+		t.Run("invalid_network_config", testK3dInvalidNetworkConfig)
+		t.Run("edge_case_large_server_count", testK3dLargeServerCount)
+		t.Run("empty_name_with_complex_config", testK3dEmptyNameComplexConfig)
+	})
+}
+
+// Helper function for contract testing
+func testK3dValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := k3dvalidator.NewValidator()
 	testCases := createK3dTestCases()
@@ -24,15 +52,6 @@ func TestK3dValidatorContract(t *testing.T) {
 		testCases,
 		testutils.AssertValidationResult[*k3dapi.SimpleConfig],
 	)
-}
-
-// TestK3dValidatorValidationFailures tests specific validation failures and edge cases.
-func TestK3dValidatorValidationFailures(t *testing.T) {
-	t.Parallel()
-
-	t.Run("invalid_network_config", testK3dInvalidNetworkConfig)
-	t.Run("edge_case_large_server_count", testK3dLargeServerCount)
-	t.Run("empty_name_with_complex_config", testK3dEmptyNameComplexConfig)
 }
 
 func testK3dInvalidNetworkConfig(t *testing.T) {

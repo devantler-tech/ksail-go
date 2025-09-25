@@ -9,11 +9,32 @@ import (
 	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// TestKindValidatorContract tests the contract for Kind configuration validator.
-func TestKindValidatorContract(t *testing.T) {
-	// This test MUST FAIL initially to follow TDD approach
+// TestNewValidator tests the NewValidator constructor
+func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
+	t.Run("constructor", func(t *testing.T) {
+		t.Parallel()
+		validator := kindvalidator.NewValidator()
+		if validator == nil {
+			t.Fatal("NewValidator should return non-nil validator")
+		}
+	})
+}
+
+// TestValidate tests the main Validate method with comprehensive scenarios
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("contract_scenarios", func(t *testing.T) {
+		t.Parallel()
+		testKindValidatorContract(t)
+	})
+}
+
+// Helper function for contract testing
+func testKindValidatorContract(t *testing.T) {
+	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := kindvalidator.NewValidator()
 	testCases := createKindTestCases()
 

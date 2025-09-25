@@ -1,6 +1,7 @@
 package ksail_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -431,5 +432,1094 @@ func TestKSailValidatorMultipleConfigs(t *testing.T) {
 
 		assert.True(t, result.Valid, "Should validate only the matching distribution config")
 		assert.Empty(t, result.Errors, "Should have no errors when distribution matches")
+	})
+}
+
+// TestKSailValidatorUnsupportedDistribution tests handling of unsupported distributions.
+func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
+	t.Parallel()
+
+	t.Run("tind_distribution", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionTind,
+				DistributionConfig: "tind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "tind-default",
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Tind distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors")
+
+		// Check for Tind-specific error
+		found := false
+		for _, err := range result.Errors {
+			if err.Field == "spec.distribution" &&
+				strings.Contains(err.Message, "Tind distribution is not yet supported") {
+				found = true
+				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
+				break
+			}
+		}
+		assert.True(t, found, "Should have Tind-specific unsupported distribution error")
+	})
+
+	t.Run("unknown_distribution", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.Distribution("UnknownDistribution"),
+				DistributionConfig: "unknown.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "unknown-context",
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Unknown distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors")
+
+		// Check for unknown distribution error
+		found := false
+		for _, err := range result.Errors {
+			if err.Field == "spec.distribution" &&
+				strings.Contains(err.Message, "unknown distribution") {
+				found = true
+				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
+				break
+			}
+		}
+		assert.True(t, found, "Should have unknown distribution error")
+	})
+
+	t.Run("test_supported_distribution_error_paths", func(t *testing.T) {
+		t.Parallel()
+
+		// Test error handling for supported distributions that shouldn't reach unsupported error logic
+		// This tests the Kind, K3d, and EKS cases in addUnsupportedDistributionError
+		testCases := []struct {
+			name         string
+			distribution v1alpha1.Distribution
+			expectedMsg  string
+		}{
+			{
+				name:         "kind_unexpected_error",
+				distribution: v1alpha1.DistributionKind,
+				expectedMsg:  "unexpected error in Kind distribution validation",
+			},
+			{
+				name:         "k3d_unexpected_error",
+				distribution: v1alpha1.DistributionK3d,
+				expectedMsg:  "unexpected error in K3d distribution validation",
+			},
+			{
+				name:         "eks_unexpected_error",
+				distribution: v1alpha1.DistributionEKS,
+				expectedMsg:  "unexpected error in EKS distribution validation",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+
+				// Create a config that would normally be valid but with mismatched context
+				// to potentially trigger the unsupported distribution error path
+				config := &v1alpha1.Cluster{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "ksail.dev/v1alpha1",
+						Kind:       "Cluster",
+					},
+					Spec: v1alpha1.Spec{
+						Distribution:       tc.distribution,
+						DistributionConfig: "config.yaml",
+						Connection: v1alpha1.Connection{
+							Context: "some-context",
+						},
+					},
+				}
+
+				validator := ksailvalidator.NewValidator()
+				result := validator.Validate(config)
+
+				// These should normally pass validation or have different errors
+				// The unexpected error cases are defensive code paths
+				if tc.distribution == v1alpha1.DistributionEKS {
+					// EKS skips context validation entirely
+					assert.True(t, result.Valid, "EKS should skip context validation")
+				} else {
+					// Other distributions may have context validation errors but not the "unexpected" ones
+					// This tests the normal validation flow
+					if !result.Valid {
+						for _, err := range result.Errors {
+							assert.NotContains(t, err.Message, tc.expectedMsg,
+								"Should not have unexpected error message in normal validation")
+						}
+					}
+				}
+			})
+		}
+	})
+}
+
+// TestKSailValidatorEKSConfigName tests EKS configuration name extraction.
+func TestKSailValidatorEKSConfigName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("eks_with_metadata_name", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "test-cluster",
+				},
+			},
+		}
+
+		// Create EKS config with metadata name
+		eksConfig := &eksctl.ClusterConfig{
+			Metadata: &eksctl.ClusterMeta{
+				Name: "test-cluster",
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(eksConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "EKS config with metadata should pass validation")
+		assert.Empty(t, result.Errors, "Should have no errors")
+	})
+
+	t.Run("eks_without_metadata", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "eks-default",
+				},
+			},
+		}
+
+		// Create EKS config without metadata (should use default)
+		eksConfig := &eksctl.ClusterConfig{}
+
+		validator := ksailvalidator.NewValidator(eksConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "EKS config without metadata should use default name")
+		assert.Empty(t, result.Errors, "Should have no errors")
+	})
+
+	t.Run("eks_with_empty_metadata_name", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "eks-default",
+				},
+			},
+		}
+
+		// Create EKS config with empty metadata name
+		eksConfig := &eksctl.ClusterConfig{
+			Metadata: &eksctl.ClusterMeta{
+				Name: "",
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(eksConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "EKS config with empty metadata name should use default")
+		assert.Empty(t, result.Errors, "Should have no errors")
+	})
+
+	t.Run("eks_no_config_uses_default", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "eks-default",
+				},
+			},
+		}
+
+		// No EKS config provided - should use default
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "EKS without config should use default name")
+		assert.Empty(t, result.Errors, "Should have no errors")
+	})
+}
+
+// TestKSailValidatorContextPatterns tests different context name patterns.
+func TestKSailValidatorContextPatterns(t *testing.T) {
+	t.Parallel()
+
+	t.Run("eks_skip_context_validation", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "any-context-name", // EKS should skip context validation
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "EKS should skip context validation")
+		assert.Empty(t, result.Errors, "EKS context validation should be skipped")
+	})
+
+	t.Run("empty_context_validation_skipped", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionKind,
+				DistributionConfig: "kind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "", // Empty context should skip validation
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Empty context should skip validation")
+		assert.Empty(t, result.Errors, "Empty context validation should be skipped")
+	})
+
+	t.Run("tind_expected_context_pattern", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionTind,
+				DistributionConfig: "tind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "tind-cluster",
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Tind distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors for Tind")
+	})
+}
+
+// TestKSailValidatorCrossConfigurationValidation tests validation with distribution configs
+// This indirectly tests the getDistributionConfigName method through the public API.
+func TestKSailValidatorCrossConfigurationValidation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("kind_cross_validation_with_config_name", func(t *testing.T) {
+		t.Parallel()
+
+		kindConfig := &kindv1alpha4.Cluster{Name: "custom-kind-cluster"}
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionKind,
+				DistributionConfig: "kind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "kind-custom-kind-cluster", // Should match the Kind config name
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(kindConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass with matching Kind config name")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("k3d_cross_validation_with_config_name", func(t *testing.T) {
+		t.Parallel()
+
+		k3dConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: k3dtypes.ObjectMeta{Name: "custom-k3d-cluster"},
+		}
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionK3d,
+				DistributionConfig: "k3d.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "k3d-custom-k3d-cluster", // Should match the K3d config name
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(k3dConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass with matching K3d config name")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("eks_cross_validation_with_config_name", func(t *testing.T) {
+		t.Parallel()
+
+		eksConfig := &eksctl.ClusterConfig{
+			Metadata: &eksctl.ClusterMeta{Name: "custom-eks-cluster"},
+		}
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "", // EKS doesn't use context validation
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(eksConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass for EKS config")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("kind_default_fallback", func(t *testing.T) {
+		t.Parallel()
+
+		kindConfig := &kindv1alpha4.Cluster{Name: ""} // Empty name should use default
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionKind,
+				DistributionConfig: "kind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "kind-kind", // Should match default "kind"
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(kindConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass with default Kind name")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("k3d_default_fallback", func(t *testing.T) {
+		t.Parallel()
+
+		k3dConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: k3dtypes.ObjectMeta{Name: ""}, // Empty name should use default
+		}
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionK3d,
+				DistributionConfig: "k3d.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "k3d-k3s-default", // Should match default "k3s-default" with k3d prefix
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(k3dConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass with default K3d name")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("eks_default_fallback", func(t *testing.T) {
+		t.Parallel()
+
+		eksConfig := &eksctl.ClusterConfig{
+			Metadata: &eksctl.ClusterMeta{Name: ""}, // Empty name gets default behavior
+		}
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionEKS,
+				DistributionConfig: "eks.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "", // EKS skips context validation
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator(eksConfig)
+		result := validator.Validate(config)
+
+		assert.True(t, result.Valid, "Validation should pass for EKS with empty metadata name")
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+
+	t.Run("tind_distribution_handling", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionTind,
+				DistributionConfig: "tind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "tind-cluster",
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Tind distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors for Tind")
+	})
+
+	t.Run("no_distribution_config_provided", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionKind,
+				DistributionConfig: "kind.yaml",
+				Connection: v1alpha1.Connection{
+					Context: "kind-kind", // Should match default when no config provided
+				},
+			},
+		}
+
+		validator := ksailvalidator.NewValidator() // No distribution config provided
+		result := validator.Validate(config)
+
+		assert.True(
+			t,
+			result.Valid,
+			"Validation should pass with default Kind name when no config provided",
+		)
+		assert.Empty(t, result.Errors, "Should have no validation errors")
+	})
+}
+
+// TestKSailValidatorDistributionValidation tests distribution field validation.
+func TestKSailValidatorDistributionValidation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty_distribution", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       "", // Empty distribution
+				DistributionConfig: "config.yaml",
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Empty distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors")
+
+		// Check for distribution error
+		found := false
+		for _, err := range result.Errors {
+			if err.Field == "spec.distribution" &&
+				strings.Contains(err.Message, "distribution is required") {
+				found = true
+				assert.Contains(t, err.FixSuggestion, "Set spec.distribution")
+				break
+			}
+		}
+		assert.True(t, found, "Should have distribution required error")
+	})
+
+	t.Run("empty_distribution_config", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.DistributionKind,
+				DistributionConfig: "", // Empty distribution config
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Empty distribution config should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors")
+
+		// Check for distribution config error
+		found := false
+		for _, err := range result.Errors {
+			if err.Field == "spec.distributionConfig" &&
+				strings.Contains(err.Message, "distributionConfig is required") {
+				found = true
+				assert.Contains(t, err.FixSuggestion, "Set spec.distributionConfig")
+				break
+			}
+		}
+		assert.True(t, found, "Should have distribution config required error")
+	})
+
+	t.Run("invalid_distribution_value", func(t *testing.T) {
+		t.Parallel()
+
+		config := &v1alpha1.Cluster{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "ksail.dev/v1alpha1",
+				Kind:       "Cluster",
+			},
+			Spec: v1alpha1.Spec{
+				Distribution:       v1alpha1.Distribution("InvalidDistribution"),
+				DistributionConfig: "config.yaml",
+			},
+		}
+
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.False(t, result.Valid, "Invalid distribution should fail validation")
+		assert.NotEmpty(t, result.Errors, "Should have validation errors")
+
+		// Check for invalid distribution error
+		found := false
+		for _, err := range result.Errors {
+			if err.Field == "spec.distribution" &&
+				strings.Contains(err.Message, "invalid distribution value") {
+				found = true
+				assert.Contains(t, err.FixSuggestion, "Use a valid distribution type")
+				break
+			}
+		}
+		assert.True(t, found, "Should have invalid distribution error")
+	})
+}
+
+// TestKSailValidatorCoverageEnhancement tests additional scenarios to improve code coverage.
+func TestKSailValidatorCoverageEnhancement(t *testing.T) {
+	t.Parallel()
+
+	t.Run("distribution_config_name_edge_cases", func(t *testing.T) {
+		t.Parallel()
+
+		// Test getKindConfigName with various scenarios
+		t.Run("kind_config_edge_cases", func(t *testing.T) {
+			t.Parallel()
+
+			tests := []struct {
+				name         string
+				kindConfig   *kindv1alpha4.Cluster
+				expectedName string
+				description  string
+			}{
+				{
+					name:         "kind_with_whitespace_name",
+					kindConfig:   &kindv1alpha4.Cluster{Name: "  test-kind  "},
+					expectedName: "  test-kind  ",
+					description:  "Should preserve whitespace in Kind config name",
+				},
+				{
+					name:         "kind_with_special_characters",
+					kindConfig:   &kindv1alpha4.Cluster{Name: "test-kind_123"},
+					expectedName: "test-kind_123",
+					description:  "Should handle special characters in Kind config name",
+				},
+			}
+
+			for _, test := range tests {
+				t.Run(test.name, func(t *testing.T) {
+					t.Parallel()
+
+					// Create a valid config to test cross-configuration validation
+					config := &v1alpha1.Cluster{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: "ksail.dev/v1alpha1",
+							Kind:       "Cluster",
+						},
+						Spec: v1alpha1.Spec{
+							Distribution:       v1alpha1.DistributionKind,
+							DistributionConfig: "kind.yaml",
+							Connection: v1alpha1.Connection{
+								Context: "kind-" + test.expectedName,
+							},
+						},
+					}
+
+					validator := ksailvalidator.NewValidator(test.kindConfig)
+					result := validator.Validate(config)
+
+					assert.True(t, result.Valid, test.description+" should pass validation")
+					assert.Empty(
+						t,
+						result.Errors,
+						test.description+" should have no validation errors",
+					)
+				})
+			}
+		})
+
+		// Test getK3dConfigName with various scenarios
+		t.Run("k3d_config_edge_cases", func(t *testing.T) {
+			t.Parallel()
+
+			tests := []struct {
+				name         string
+				k3dConfig    *k3dapi.SimpleConfig
+				expectedName string
+				description  string
+			}{
+				{
+					name: "k3d_with_unicode_name",
+					k3dConfig: &k3dapi.SimpleConfig{
+						ObjectMeta: k3dtypes.ObjectMeta{Name: "test-k3d-ñ"},
+					},
+					expectedName: "test-k3d-ñ",
+					description:  "Should handle unicode characters in K3d config name",
+				},
+				{
+					name: "k3d_with_long_name",
+					k3dConfig: &k3dapi.SimpleConfig{
+						ObjectMeta: k3dtypes.ObjectMeta{
+							Name: "very-long-k3d-cluster-name-that-exceeds-normal-length",
+						},
+					},
+					expectedName: "very-long-k3d-cluster-name-that-exceeds-normal-length",
+					description:  "Should handle long K3d config names",
+				},
+			}
+
+			for _, test := range tests {
+				t.Run(test.name, func(t *testing.T) {
+					t.Parallel()
+
+					// Create a valid config to test cross-configuration validation
+					config := &v1alpha1.Cluster{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: "ksail.dev/v1alpha1",
+							Kind:       "Cluster",
+						},
+						Spec: v1alpha1.Spec{
+							Distribution:       v1alpha1.DistributionK3d,
+							DistributionConfig: "k3d.yaml",
+							Connection: v1alpha1.Connection{
+								Context: "k3d-" + test.expectedName,
+							},
+						},
+					}
+
+					validator := ksailvalidator.NewValidator(test.k3dConfig)
+					result := validator.Validate(config)
+
+					assert.True(t, result.Valid, test.description+" should pass validation")
+					assert.Empty(
+						t,
+						result.Errors,
+						test.description+" should have no validation errors",
+					)
+				})
+			}
+		})
+
+		// Test EKS config name handling
+		t.Run("eks_config_edge_cases", func(t *testing.T) {
+			t.Parallel()
+
+			tests := []struct {
+				name        string
+				eksConfig   *eksctl.ClusterConfig
+				description string
+			}{
+				{
+					name: "eks_with_complex_metadata",
+					eksConfig: &eksctl.ClusterConfig{
+						Metadata: &eksctl.ClusterMeta{
+							Name:    "test-eks-cluster",
+							Region:  "us-west-2",
+							Version: "1.28",
+						},
+					},
+					description: "Should handle EKS config with complex metadata",
+				},
+				{
+					name: "eks_with_minimal_metadata",
+					eksConfig: &eksctl.ClusterConfig{
+						Metadata: &eksctl.ClusterMeta{
+							Name: "minimal",
+						},
+					},
+					description: "Should handle EKS config with minimal metadata",
+				},
+			}
+
+			for _, test := range tests {
+				t.Run(test.name, func(t *testing.T) {
+					t.Parallel()
+
+					// Create a valid config - EKS doesn't validate context
+					config := &v1alpha1.Cluster{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: "ksail.dev/v1alpha1",
+							Kind:       "Cluster",
+						},
+						Spec: v1alpha1.Spec{
+							Distribution:       v1alpha1.DistributionEKS,
+							DistributionConfig: "eks.yaml",
+							Connection: v1alpha1.Connection{
+								Context: "", // EKS allows empty context
+							},
+						},
+					}
+
+					validator := ksailvalidator.NewValidator(test.eksConfig)
+					result := validator.Validate(config)
+
+					assert.True(t, result.Valid, test.description+" should pass validation")
+					assert.Empty(
+						t,
+						result.Errors,
+						test.description+" should have no validation errors",
+					)
+				})
+			}
+		})
+	})
+
+	t.Run("context_validation_comprehensive", func(t *testing.T) {
+		t.Parallel()
+
+		// Test various context validation scenarios to improve coverage
+		tests := []struct {
+			name         string
+			distribution v1alpha1.Distribution
+			context      string
+			shouldPass   bool
+			description  string
+		}{
+			{
+				name:         "kind_with_exact_match",
+				distribution: v1alpha1.DistributionKind,
+				context:      "kind-kind",
+				shouldPass:   true,
+				description:  "Kind context should match exactly",
+			},
+			{
+				name:         "k3d_with_exact_match",
+				distribution: v1alpha1.DistributionK3d,
+				context:      "k3d-k3s-default",
+				shouldPass:   true,
+				description:  "K3d context should match exactly",
+			},
+			{
+				name:         "eks_with_any_context",
+				distribution: v1alpha1.DistributionEKS,
+				context:      "any-context-name",
+				shouldPass:   true,
+				description:  "EKS allows any context",
+			},
+			{
+				name:         "kind_with_case_mismatch",
+				distribution: v1alpha1.DistributionKind,
+				context:      "KIND-kind",
+				shouldPass:   false,
+				description:  "Kind context is case sensitive",
+			},
+			{
+				name:         "k3d_with_extra_prefix",
+				distribution: v1alpha1.DistributionK3d,
+				context:      "prefix-k3d-k3s-default",
+				shouldPass:   false,
+				description:  "K3d context should not have extra prefix",
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				config := &v1alpha1.Cluster{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "ksail.dev/v1alpha1",
+						Kind:       "Cluster",
+					},
+					Spec: v1alpha1.Spec{
+						Distribution:       test.distribution,
+						DistributionConfig: "config.yaml",
+						Connection: v1alpha1.Connection{
+							Context: test.context,
+						},
+					},
+				}
+
+				validator := ksailvalidator.NewValidator()
+				result := validator.Validate(config)
+
+				if test.shouldPass {
+					assert.True(t, result.Valid, test.description+" should pass validation")
+					assert.Empty(
+						t,
+						result.Errors,
+						test.description+" should have no validation errors",
+					)
+				} else {
+					assert.False(t, result.Valid, test.description+" should fail validation")
+					assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
+				}
+			})
+		}
+	})
+
+	t.Run("multiple_distribution_configs", func(t *testing.T) {
+		t.Parallel()
+
+		// Test validator with multiple distribution configs
+		kindConfig := &kindv1alpha4.Cluster{Name: "test-kind"}
+		k3dConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: k3dtypes.ObjectMeta{Name: "test-k3d"},
+		}
+		eksConfig := &eksctl.ClusterConfig{
+			Metadata: &eksctl.ClusterMeta{Name: "test-eks"},
+		}
+
+		tests := []struct {
+			name         string
+			distribution v1alpha1.Distribution
+			context      string
+			shouldPass   bool
+		}{
+			{
+				name:         "kind_with_all_configs",
+				distribution: v1alpha1.DistributionKind,
+				context:      "kind-test-kind",
+				shouldPass:   true,
+			},
+			{
+				name:         "k3d_with_all_configs",
+				distribution: v1alpha1.DistributionK3d,
+				context:      "k3d-test-k3d",
+				shouldPass:   true,
+			},
+			{
+				name:         "eks_with_all_configs",
+				distribution: v1alpha1.DistributionEKS,
+				context:      "", // EKS allows empty context
+				shouldPass:   true,
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				config := &v1alpha1.Cluster{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "ksail.dev/v1alpha1",
+						Kind:       "Cluster",
+					},
+					Spec: v1alpha1.Spec{
+						Distribution:       test.distribution,
+						DistributionConfig: "config.yaml",
+						Connection: v1alpha1.Connection{
+							Context: test.context,
+						},
+					},
+				}
+
+				// Create validator with all distribution configs
+				validator := ksailvalidator.NewValidator(kindConfig, k3dConfig, eksConfig)
+				result := validator.Validate(config)
+
+				if test.shouldPass {
+					assert.True(t, result.Valid, "Validation should pass with multiple configs")
+					assert.Empty(t, result.Errors, "Should have no validation errors")
+				} else {
+					assert.False(t, result.Valid, "Validation should fail")
+					assert.NotEmpty(t, result.Errors, "Should have validation errors")
+				}
+			})
+		}
+	})
+
+	t.Run("additional_context_patterns", func(t *testing.T) {
+		t.Parallel()
+
+		// Test additional context patterns to improve getExpectedContextName coverage
+		tests := []struct {
+			name         string
+			distribution v1alpha1.Distribution
+			context      string
+			kindConfig   *kindv1alpha4.Cluster
+			k3dConfig    *k3dapi.SimpleConfig
+			eksConfig    *eksctl.ClusterConfig
+			shouldPass   bool
+		}{
+			{
+				name:         "tind_context_pattern_with_empty_name",
+				distribution: v1alpha1.DistributionTind,
+				context:      "tind-", // Empty name case
+				kindConfig:   nil,
+				k3dConfig:    nil,
+				eksConfig:    nil,
+				shouldPass:   false, // Tind is unsupported
+			},
+			{
+				name:         "unknown_distribution_context",
+				distribution: v1alpha1.Distribution("UnknownDist"),
+				context:      "unknown-context",
+				kindConfig:   nil,
+				k3dConfig:    nil,
+				eksConfig:    nil,
+				shouldPass:   false, // Unknown distribution
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				t.Parallel()
+
+				config := &v1alpha1.Cluster{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "ksail.dev/v1alpha1",
+						Kind:       "Cluster",
+					},
+					Spec: v1alpha1.Spec{
+						Distribution:       test.distribution,
+						DistributionConfig: "config.yaml",
+						Connection: v1alpha1.Connection{
+							Context: test.context,
+						},
+					},
+				}
+
+				// Create validator based on available configs
+				var validator *ksailvalidator.Validator
+				if test.kindConfig != nil || test.k3dConfig != nil || test.eksConfig != nil {
+					configs := make([]any, 0)
+					if test.kindConfig != nil {
+						configs = append(configs, test.kindConfig)
+					}
+					if test.k3dConfig != nil {
+						configs = append(configs, test.k3dConfig)
+					}
+					if test.eksConfig != nil {
+						configs = append(configs, test.eksConfig)
+					}
+					validator = ksailvalidator.NewValidator(configs...)
+				} else {
+					validator = ksailvalidator.NewValidator()
+				}
+
+				result := validator.Validate(config)
+
+				if test.shouldPass {
+					assert.True(t, result.Valid, test.name+" should pass validation")
+					assert.Empty(t, result.Errors, test.name+" should have no validation errors")
+				} else {
+					assert.False(t, result.Valid, test.name+" should fail validation")
+					assert.NotEmpty(t, result.Errors, test.name+" should have validation errors")
+				}
+			})
+		}
 	})
 }

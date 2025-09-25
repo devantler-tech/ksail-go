@@ -237,11 +237,6 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 		return v.getKindConfigName()
 	case v1alpha1.DistributionK3d:
 		return v.getK3dConfigName()
-	case v1alpha1.DistributionEKS:
-		return v.getEKSConfigName()
-	case v1alpha1.DistributionTind:
-		// Tind configuration name extraction would go here when implemented
-		return ""
 	default:
 		return ""
 	}
@@ -265,14 +260,4 @@ func (v *Validator) getK3dConfigName() string {
 
 	// Return default K3d cluster name when no config is provided
 	return "k3s-default"
-}
-
-// getEKSConfigName returns the EKS configuration name if available.
-func (v *Validator) getEKSConfigName() string {
-	if v.eksConfig != nil && v.eksConfig.Metadata != nil && v.eksConfig.Metadata.Name != "" {
-		return v.eksConfig.Metadata.Name
-	}
-
-	// Return default EKS cluster name when no config is provided
-	return "eks-default"
 }

@@ -9,10 +9,36 @@ import (
 	eksctlapi "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 )
 
-// TestEKSValidatorContract tests the contract for EKS configuration validator.
-func TestEKSValidatorContract(t *testing.T) {
+// TestNewValidator tests the NewValidator constructor
+func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
+	t.Run("constructor", func(t *testing.T) {
+		t.Parallel()
+		validator := eksvalidator.NewValidator()
+		if validator == nil {
+			t.Fatal("NewValidator should return non-nil validator")
+		}
+	})
+}
+
+// TestValidate tests the main Validate method with comprehensive scenarios
+func TestValidate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("contract_scenarios", func(t *testing.T) {
+		t.Parallel()
+		testEKSValidatorContract(t)
+	})
+
+	t.Run("edge_cases", func(t *testing.T) {
+		t.Parallel()
+		testEKSValidatorEdgeCases(t)
+	})
+}
+
+// Helper function for contract testing
+func testEKSValidatorContract(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := eksvalidator.NewValidator()
 	testCases := createEKSTestCases()
@@ -121,10 +147,8 @@ func createEKSInvalidTestCases() []testutils.ValidatorTestCase[*eksctlapi.Cluste
 	}
 }
 
-// TestEKSValidatorEdgeCases tests specific edge cases and error conditions.
-func TestEKSValidatorEdgeCases(t *testing.T) {
-	t.Parallel()
-
+// testEKSValidatorEdgeCases tests specific edge cases and error conditions.
+func testEKSValidatorEdgeCases(t *testing.T) {
 	t.Run("upstream_validation_complex_config", testEKSUpstreamValidationComplexConfig)
 	t.Run("empty_metadata_fields", testEKSEmptyMetadataFields)
 	t.Run("invalid_region_format", testEKSInvalidRegionFormat)
