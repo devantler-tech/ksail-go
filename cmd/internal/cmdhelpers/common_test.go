@@ -541,28 +541,35 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	assert.Equal(t, "kind-kind", contextSelector.DefaultValue)
 }
 
+// runValidationFailureTest runs a common validation failure test pattern.
+// This eliminates duplication between validation failure test cases.
+func runValidationFailureTest(t *testing.T) {
+	t.Helper()
+
+	var out bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	// Create a config manager with validation issues
+	manager := createConfigManagerWithValidationIssues()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+
+	// Should return error due to validation failure
+	require.Error(t, err)
+	assert.Nil(t, cluster)
+	assert.Contains(t, err.Error(), "configuration validation failed")
+	assert.Contains(t, out.String(), "Configuration validation failed:")
+}
+
 // TestLoadClusterWithErrorHandling_EdgeCases tests edge cases for LoadClusterWithErrorHandling.
 func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("validation_failure_path", func(t *testing.T) {
 		t.Parallel()
-
-		var out bytes.Buffer
-
-		cmd := &cobra.Command{}
-		cmd.SetOut(&out)
-
-		// Create a config manager with validation issues
-		manager := createConfigManagerWithValidationIssues()
-
-		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
-
-		// Should return error due to validation failure
-		require.Error(t, err)
-		assert.Nil(t, cluster)
-		assert.Contains(t, err.Error(), "configuration validation failed")
-		assert.Contains(t, out.String(), "Configuration validation failed:")
+		runValidationFailureTest(t)
 	})
 
 	t.Run("nil_command", func(t *testing.T) {
@@ -600,21 +607,7 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 func TestLoadClusterWithErrorHandling_ValidationFailure(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	// Create a config manager that returns a cluster with validation issues
-	manager := createConfigManagerWithValidationIssues()
-
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
-
-	// Should return error due to validation failure
-	require.Error(t, err)
-	assert.Nil(t, cluster)
-	assert.Contains(t, err.Error(), "configuration validation failed")
-	assert.Contains(t, out.String(), "Configuration validation failed:")
+	runValidationFailureTest(t)
 }
 
 // createConfigManagerWithValidationIssues creates a config manager that returns invalid configuration.

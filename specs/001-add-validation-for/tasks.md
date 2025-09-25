@@ -320,6 +320,13 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
   - **Method**: Followed code-coverage.prompt.md structured approach: prerequisite check → task analysis → coverage gap identification → targeted test improvements → validation. Focused on error path coverage, edge case testing, and validation failure scenarios without modifying source code.
   - **Quality**: All 100% test pass rate maintained, zero linting issues, and comprehensive error handling coverage achieved. Tests cover configuration loading failures, validation error paths, command execution failures, and edge case scenarios.
 
+- [ ] T062 [CRITICAL] Fix code duplication identified by jscpd linter - ACTIVE: Address 3 clones found by jscpd:
+  1. **Validator test constructors**: Duplicate NewValidator constructor test pattern across pkg/validator/k3d/validator_test.go, pkg/validator/kind/validator_test.go, and pkg/validator/eks/validator_test.go (13 lines, 86 tokens each) - Create shared test helper in pkg/validator/testutils
+  2. **Validator test structure**: Duplicate TestValidate function structure pattern across same files - Extract common test structure to shared helper
+  3. **cmdhelpers validation test**: Duplicate validation failure test logic in cmd/internal/cmdhelpers/common_test.go (11 lines, 92 tokens) - Extract shared validation test helper function
+  - **Target**: Reduce duplication from 0.18% to 0% (zero tolerance policy)
+  - **Method**: Create shared test helpers while preserving test coverage and functionality
+
 ## Notes
 
 - Focus on API simplification: single `Validate(config interface{})` method

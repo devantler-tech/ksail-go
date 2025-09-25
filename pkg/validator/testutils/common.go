@@ -195,3 +195,47 @@ func createMissingBothTestCase[T any](
 		},
 	}
 }
+
+// RunNewValidatorConstructorTest runs a common test pattern for validator constructors.
+// This eliminates duplication of NewValidator constructor tests across validator test files.
+func RunNewValidatorConstructorTest[T any](
+	t *testing.T,
+	constructorFunc func() validator.Validator[T],
+) {
+	t.Helper()
+
+	t.Run("constructor", func(t *testing.T) {
+		t.Parallel()
+
+		validatorInstance := constructorFunc()
+		if validatorInstance == nil {
+			t.Fatal("NewValidator should return non-nil validator")
+		}
+	})
+}
+
+// RunValidateTest runs a common test pattern for the main Validate method.
+// This eliminates duplication of TestValidate function structure across validator test files.
+func RunValidateTest[T any](
+	t *testing.T,
+	contractTestFunc func(*testing.T),
+	edgeTestFuncs ...func(*testing.T),
+) {
+	t.Helper()
+
+	t.Run("contract_scenarios", func(t *testing.T) {
+		t.Parallel()
+		contractTestFunc(t)
+	})
+
+	// Run edge case tests if provided
+	if len(edgeTestFuncs) > 0 {
+		t.Run("edge_cases", func(t *testing.T) {
+			t.Parallel()
+
+			for _, testFunc := range edgeTestFuncs {
+				testFunc(t)
+			}
+		})
+	}
+}

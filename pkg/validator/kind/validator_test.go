@@ -13,13 +13,8 @@ import (
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("constructor", func(t *testing.T) {
-		t.Parallel()
-
-		validator := kindvalidator.NewValidator()
-		if validator == nil {
-			t.Fatal("NewValidator should return non-nil validator")
-		}
+	testutils.RunNewValidatorConstructorTest(t, func() validator.Validator[*kindapi.Cluster] {
+		return kindvalidator.NewValidator()
 	})
 }
 
@@ -27,10 +22,7 @@ func TestNewValidator(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("contract_scenarios", func(t *testing.T) {
-		t.Parallel()
-		testKindValidatorContract(t)
-	})
+	testutils.RunValidateTest[*kindapi.Cluster](t, testKindValidatorContract)
 }
 
 // Helper function for contract testing.

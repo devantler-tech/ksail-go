@@ -13,29 +13,23 @@ import (
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("constructor", func(t *testing.T) {
-		t.Parallel()
-
-		validator := eksvalidator.NewValidator()
-		if validator == nil {
-			t.Fatal("NewValidator should return non-nil validator")
-		}
-	})
+	testutils.RunNewValidatorConstructorTest(
+		t,
+		func() validator.Validator[*eksctlapi.ClusterConfig] {
+			return eksvalidator.NewValidator()
+		},
+	)
 }
 
 // TestValidate tests the main Validate method with comprehensive scenarios.
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("contract_scenarios", func(t *testing.T) {
-		t.Parallel()
-		testEKSValidatorContract(t)
-	})
-
-	t.Run("edge_cases", func(t *testing.T) {
-		t.Parallel()
-		testEKSValidatorEdgeCases(t)
-	})
+	testutils.RunValidateTest[*eksctlapi.ClusterConfig](
+		t,
+		testEKSValidatorContract,
+		testEKSValidatorEdgeCases,
+	)
 }
 
 // Helper function for contract testing.

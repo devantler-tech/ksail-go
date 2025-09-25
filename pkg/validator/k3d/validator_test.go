@@ -19,13 +19,8 @@ const (
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
 
-	t.Run("constructor", func(t *testing.T) {
-		t.Parallel()
-
-		validator := k3dvalidator.NewValidator()
-		if validator == nil {
-			t.Fatal("NewValidator should return non-nil validator")
-		}
+	testutils.RunNewValidatorConstructorTest(t, func() validator.Validator[*k3dapi.SimpleConfig] {
+		return k3dvalidator.NewValidator()
 	})
 }
 
@@ -33,17 +28,20 @@ func TestNewValidator(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("contract_scenarios", func(t *testing.T) {
-		t.Parallel()
-		testK3dValidatorContract(t)
-	})
+	testutils.RunValidateTest[*k3dapi.SimpleConfig](
+		t,
+		testK3dValidatorContract,
+		testK3dValidationFailures,
+	)
+}
 
-	t.Run("validation_failures", func(t *testing.T) {
-		t.Parallel()
-		t.Run("invalid_network_config", testK3dInvalidNetworkConfig)
-		t.Run("edge_case_large_server_count", testK3dLargeServerCount)
-		t.Run("empty_name_with_complex_config", testK3dEmptyNameComplexConfig)
-	})
+// testK3dValidationFailures runs validation failure tests.
+func testK3dValidationFailures(t *testing.T) {
+	t.Helper()
+
+	t.Run("invalid_network_config", testK3dInvalidNetworkConfig)
+	t.Run("edge_case_large_server_count", testK3dLargeServerCount)
+	t.Run("empty_name_with_complex_config", testK3dEmptyNameComplexConfig)
 }
 
 // Helper function for contract testing.
