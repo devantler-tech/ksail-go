@@ -25,6 +25,21 @@ func validateEKSConfigStructure(
 	assert.Equal(t, expectedRegion, config.Metadata.Region)
 }
 
+// assertEKSBasicConfig asserts basic configuration properties for EKS cluster.
+func assertEKSBasicConfig(
+	t *testing.T,
+	config *eksctlapi.ClusterConfig,
+	expectedName, expectedRegion string,
+) {
+	t.Helper()
+
+	assert.NotNil(t, config)
+	assert.Equal(t, "eksctl.io/v1alpha5", config.APIVersion)
+	assert.Equal(t, "ClusterConfig", config.Kind)
+	assert.Equal(t, expectedName, config.Metadata.Name)
+	assert.Equal(t, expectedRegion, config.Metadata.Region)
+}
+
 // validateEKSDefaults validates EKS default configuration.
 func validateEKSDefaults(t *testing.T, config *eksctlapi.ClusterConfig) {
 	t.Helper()
@@ -110,6 +125,17 @@ metadata:
 func TestNewEKSClusterConfig(t *testing.T) {
 	t.Parallel()
 
+	t.Run("with_all_parameters", testNewEKSClusterConfigWithAllParameters)
+	t.Run("with_empty_name", testNewEKSClusterConfigWithEmptyName)
+	t.Run("with_empty_region", testNewEKSClusterConfigWithEmptyRegion)
+	t.Run("with_empty_apiVersion_and_kind", testNewEKSClusterConfigWithEmptyAPIVersionAndKind)
+	t.Run("with_all_empty_values", testNewEKSClusterConfigWithAllEmptyValues)
+}
+
+func testNewEKSClusterConfigWithAllParameters(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
 	config := eks.NewEKSClusterConfig(
 		"test-cluster",
 		"us-west-2",
@@ -122,4 +148,59 @@ func TestNewEKSClusterConfig(t *testing.T) {
 	assert.Equal(t, "ClusterConfig", config.Kind)
 	assert.Equal(t, "test-cluster", config.Metadata.Name)
 	assert.Equal(t, "us-west-2", config.Metadata.Region)
+}
+
+func testNewEKSClusterConfigWithEmptyName(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	config := eks.NewEKSClusterConfig(
+		"",
+		"us-west-2",
+		"eksctl.io/v1alpha5",
+		"ClusterConfig",
+	)
+
+	assert.NotNil(t, config)
+	assert.Equal(t, "eks-default", config.Metadata.Name)
+	assert.Equal(t, "us-west-2", config.Metadata.Region)
+}
+
+func testNewEKSClusterConfigWithEmptyRegion(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	config := eks.NewEKSClusterConfig(
+		"test-cluster",
+		"",
+		"eksctl.io/v1alpha5",
+		"ClusterConfig",
+	)
+
+	assert.NotNil(t, config)
+	assert.Equal(t, "test-cluster", config.Metadata.Name)
+	assert.Equal(t, "eu-north-1", config.Metadata.Region)
+}
+
+func testNewEKSClusterConfigWithEmptyAPIVersionAndKind(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	config := eks.NewEKSClusterConfig(
+		"test-cluster",
+		"us-west-2",
+		"",
+		"",
+	)
+
+	assertEKSBasicConfig(t, config, "test-cluster", "us-west-2")
+}
+
+func testNewEKSClusterConfigWithAllEmptyValues(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	config := eks.NewEKSClusterConfig("", "", "", "")
+
+	assertEKSBasicConfig(t, config, "eks-default", "eu-north-1")
 }
