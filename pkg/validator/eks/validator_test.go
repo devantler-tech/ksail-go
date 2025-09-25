@@ -40,6 +40,8 @@ func TestValidate(t *testing.T) {
 
 // Helper function for contract testing.
 func testEKSValidatorContract(t *testing.T) {
+	t.Helper()
+
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := eksvalidator.NewValidator()
 	testCases := createEKSTestCases()

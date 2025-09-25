@@ -16,6 +16,10 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const (
+	specDistributionField = "spec.distribution"
+)
+
 // TestKSailValidator tests the contract for KSail configuration validator.
 func TestKSailValidator(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
@@ -76,7 +80,7 @@ func createInvalidDistributionKSailCase() ksailTestCase {
 			},
 		},
 		expectValid:  false,
-		expectErrors: []string{"spec.distribution"},
+		expectErrors: []string{specDistributionField},
 	}
 }
 
@@ -199,7 +203,7 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 		found := false
 
 		for _, err := range invalidResult.Errors {
-			if err.Field == "spec.distribution" {
+			if err.Field == specDistributionField {
 				found = true
 
 				assert.NotEmpty(t, err.Message, "Error message should not be empty")
@@ -466,7 +470,7 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "spec.distribution" &&
+			if err.Field == specDistributionField &&
 				strings.Contains(err.Message, "Tind distribution is not yet supported") {
 				found = true
 
@@ -506,7 +510,7 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "spec.distribution" &&
+			if err.Field == specDistributionField &&
 				strings.Contains(err.Message, "unknown distribution") {
 				found = true
 
@@ -546,8 +550,8 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 			},
 		}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
 				t.Parallel()
 
 				// Create a config that would normally be valid but with mismatched context
@@ -558,7 +562,7 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 						Kind:       "Cluster",
 					},
 					Spec: v1alpha1.Spec{
-						Distribution:       tc.distribution,
+						Distribution:       testCase.distribution,
 						DistributionConfig: "config.yaml",
 						Connection: v1alpha1.Connection{
 							Context: "some-context",
@@ -571,7 +575,7 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 
 				// These should normally pass validation or have different errors
 				// The unexpected error cases are defensive code paths
-				if tc.distribution == v1alpha1.DistributionEKS {
+				if testCase.distribution == v1alpha1.DistributionEKS {
 					// EKS skips context validation entirely
 					assert.True(t, result.Valid, "EKS should skip context validation")
 				} else {
@@ -579,7 +583,7 @@ func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 					// This tests the normal validation flow
 					if !result.Valid {
 						for _, err := range result.Errors {
-							assert.NotContains(t, err.Message, tc.expectedMsg,
+							assert.NotContains(t, err.Message, testCase.expectedMsg,
 								"Should not have unexpected error message in normal validation")
 						}
 					}
@@ -1029,7 +1033,7 @@ func TestKSailValidatorDistributionValidation(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "spec.distribution" &&
+			if err.Field == specDistributionField &&
 				strings.Contains(err.Message, "distribution is required") {
 				found = true
 
@@ -1103,7 +1107,7 @@ func TestKSailValidatorDistributionValidation(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "spec.distribution" &&
+			if err.Field == specDistributionField &&
 				strings.Contains(err.Message, "invalid distribution value") {
 				found = true
 

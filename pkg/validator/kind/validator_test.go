@@ -35,6 +35,8 @@ func TestValidate(t *testing.T) {
 
 // Helper function for contract testing.
 func testKindValidatorContract(t *testing.T) {
+	t.Helper()
+
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := kindvalidator.NewValidator()
 	testCases := createKindTestCases()

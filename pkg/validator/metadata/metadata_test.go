@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/validator/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +74,7 @@ func TestValidateMetadata(t *testing.T) {
 
 			result := &validator.ValidationResult{}
 
-			ValidateMetadata(
+			metadata.ValidateMetadata(
 				test.kind,
 				test.apiVersion,
 				test.expectedKind,
@@ -84,13 +85,13 @@ func TestValidateMetadata(t *testing.T) {
 			require.Len(t, result.Errors, test.expectErrors,
 				"Expected %d errors, got %d", test.expectErrors, len(result.Errors))
 
-			for i, expectedField := range test.expectedFields {
-				assert.Equal(t, expectedField, result.Errors[i].Field,
-					"Error %d field mismatch", i)
-				assert.NotEmpty(t, result.Errors[i].Message,
-					"Error %d should have a message", i)
-				assert.NotEmpty(t, result.Errors[i].FixSuggestion,
-					"Error %d should have a fix suggestion", i)
+			for index, expectedField := range test.expectedFields {
+				assert.Equal(t, expectedField, result.Errors[index].Field,
+					"Error %d field mismatch", index)
+				assert.NotEmpty(t, result.Errors[index].Message,
+					"Error %d should have a message", index)
+				assert.NotEmpty(t, result.Errors[index].FixSuggestion,
+					"Error %d should have a fix suggestion", index)
 			}
 
 			// Validate specific error content for missing kind
@@ -165,7 +166,7 @@ func TestValidateNilConfig(t *testing.T) {
 
 			result := &validator.ValidationResult{}
 
-			isNil := ValidateNilConfig(test.config, test.configType, result)
+			isNil := metadata.ValidateNilConfig(test.config, test.configType, result)
 
 			assert.Equal(t, test.expectNil, isNil,
 				"Expected isNil=%v, got %v", test.expectNil, isNil)

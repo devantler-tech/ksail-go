@@ -43,6 +43,8 @@ func TestValidate(t *testing.T) {
 
 // Helper function for contract testing.
 func testK3dValidatorContract(t *testing.T) {
+	t.Helper()
+
 	// This test MUST FAIL initially to follow TDD approach
 	validatorInstance := k3dvalidator.NewValidator()
 	testCases := createK3dTestCases()
