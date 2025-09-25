@@ -540,3 +540,149 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	assert.Equal(t, "Kubernetes context of cluster", contextSelector.Description)
 	assert.Equal(t, "kind-kind", contextSelector.DefaultValue)
 }
+
+// TestLoadClusterWithErrorHandling_EdgeCases tests edge cases for LoadClusterWithErrorHandling.
+func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("validation_failure_path", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+
+		cmd := &cobra.Command{}
+		cmd.SetOut(&out)
+
+		// Create a config manager with validation issues
+		manager := createConfigManagerWithValidationIssues()
+
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+
+		// Should return error due to validation failure
+		require.Error(t, err)
+		assert.Nil(t, cluster)
+		assert.Contains(t, err.Error(), "configuration validation failed")
+		assert.Contains(t, out.String(), "Configuration validation failed:")
+	})
+
+	t.Run("nil_command", func(t *testing.T) {
+		t.Parallel()
+
+		manager := testutils.CreateDefaultConfigManager()
+
+		// Should handle nil command gracefully
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(nil, manager)
+
+		// This should still work as the function doesn't require command output in success path
+		require.NoError(t, err)
+		assert.NotNil(t, cluster)
+	})
+
+	t.Run("empty_output", func(t *testing.T) {
+		t.Parallel()
+
+		cmd := &cobra.Command{}
+		// Don't set output - should default to stdout
+
+		manager := testutils.CreateDefaultConfigManager()
+
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+
+		require.NoError(t, err)
+		assert.NotNil(t, cluster)
+	})
+}
+
+// This function is kept for potential future use in load error testing
+// Currently validation failure testing covers the same error handling paths// TestLoadClusterWithErrorHandling_ValidationFailure tests validation failure scenarios.
+func TestLoadClusterWithErrorHandling_ValidationFailure(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	// Create a config manager that returns a cluster with validation issues
+	manager := createConfigManagerWithValidationIssues()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+
+	// Should return error due to validation failure
+	require.Error(t, err)
+	assert.Nil(t, cluster)
+	assert.Contains(t, err.Error(), "configuration validation failed")
+	assert.Contains(t, out.String(), "Configuration validation failed:")
+}
+
+// createConfigManagerWithValidationIssues creates a config manager that returns invalid configuration.
+func createConfigManagerWithValidationIssues() *configmanager.ConfigManager {
+	return configmanager.NewConfigManager(
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "", // Empty API version will cause validation failure
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "", // Empty Kind will cause validation failure
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to use",
+			DefaultValue: v1alpha1.Distribution("InvalidDistribution"), // Invalid distribution
+		},
+	)
+}
+
+// TestStandardClusterCommandRunE_ErrorPath tests the error path of StandardClusterCommandRunE.
+func TestStandardClusterCommandRunE_ErrorPath(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	// Use a config manager with validation issues to trigger error path
+	manager := createConfigManagerWithValidationIssues()
+
+	// Create the run function
+	runFunc := cmdhelpers.StandardClusterCommandRunE("This should fail")
+
+	// Execute the function - should return error
+	err := runFunc(cmd, manager, []string{})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to handle cluster command")
+}
+
+// TestExecuteCommandWithClusterInfo_ErrorPath tests error handling in ExecuteCommandWithClusterInfo.
+func TestExecuteCommandWithClusterInfo_ErrorPath(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+
+	// Use a config manager with validation issues to trigger error path
+	manager := createConfigManagerWithValidationIssues()
+
+	infoFieldsFunc := func(_ *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
+		return []cmdhelpers.ClusterInfoField{
+			{"Test Field", "Test Value"},
+		}
+	}
+
+	err := cmdhelpers.ExecuteCommandWithClusterInfo(
+		cmd,
+		manager,
+		"This should fail",
+		infoFieldsFunc,
+	)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load cluster configuration")
+}

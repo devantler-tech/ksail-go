@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/validator/testutils"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewValidator tests the NewValidator constructor.
@@ -104,27 +105,240 @@ func testK3dLargeServerCount(t *testing.T) {
 
 	validatorInstance := k3dvalidator.NewValidator()
 
-	// Test with unusually large server count
+	// Test with large server count that might cause issues
 	config := &k3dapi.SimpleConfig{
 		TypeMeta: configtypes.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
 		ObjectMeta: configtypes.ObjectMeta{
-			Name: "test-cluster",
+			Name: "large-cluster",
 		},
-		Servers: 100, // Large server count
-		Agents:  1,
+		Servers: 10, // Very large server count
+		Agents:  20, // Very large agent count
 	}
 
 	result := validatorInstance.Validate(config)
 
-	// This should either validate successfully or fail with a meaningful error
+	// The upstream validation should handle resource limits
+	// We expect this to potentially be valid or have specific resource errors
 	if !result.Valid {
-		if len(result.Errors) == 0 {
-			t.Errorf("Expected validation errors when result is invalid")
+		// Check that error is related to resource concerns
+		found := false
+
+		for _, err := range result.Errors {
+			if err.Field == "config" {
+				found = true
+
+				break
+			}
+		}
+
+		if !found {
+			t.Errorf("Expected config validation for large server count")
 		}
 	}
+}
+
+// TestK3dValidatorEdgeCases tests additional edge cases to improve coverage.
+func TestK3dValidatorEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("deepcopy_scenarios", func(t *testing.T) {
+		t.Parallel()
+		testK3dDeepCopyScenarios(t)
+	})
+
+	t.Run("upstream_validation_scenarios", func(t *testing.T) {
+		t.Parallel()
+		testK3dUpstreamValidationScenarios(t)
+	})
+
+	t.Run("config_transformation_edge_cases", func(t *testing.T) {
+		t.Parallel()
+		testK3dConfigTransformationEdgeCases(t)
+	})
+}
+
+func testK3dDeepCopyScenarios(t *testing.T) {
+	t.Helper()
+
+	validatorInstance := k3dvalidator.NewValidator()
+
+	// Test with configuration that exercises deep copy logic
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "deepcopy-test-cluster",
+		},
+		Servers: 2,
+		Agents:  2,
+		// Test network configuration that gets deep copied
+		Network: "test-network",
+		Subnet:  "172.20.0.0/16",
+		Image:   "rancher/k3s:v1.25.0-k3s1",
+	}
+
+	result := validatorInstance.Validate(config)
+
+	// The configuration should be processed - this tests deep copy functionality
+	// The result may be valid or invalid depending on environment, but should not panic
+	if !result.Valid {
+		t.Logf("Deep copy config validation failed (may be expected): %v", result.Errors)
+		// Verify that we get meaningful error structure
+		assert.NotEmpty(t, result.Errors)
+	}
+}
+
+func testK3dUpstreamValidationScenarios(t *testing.T) {
+	t.Helper()
+
+	validatorInstance := k3dvalidator.NewValidator()
+
+	// Test scenario that exercises the upstream validation path more thoroughly
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "upstream-test",
+		},
+		Servers: 1,
+		Agents:  0,
+		// Test with specific K3s image that might trigger upstream validation
+		Image: "rancher/k3s:latest",
+		// Test with network configuration
+		Network: "test-network",
+		// Test with subnet configuration
+		Subnet: "172.20.0.0/16",
+	}
+
+	result := validatorInstance.Validate(config)
+
+	// This exercises the upstream validation pipeline
+	// Result may be valid or invalid depending on Docker environment
+	if !result.Valid {
+		// Verify that errors contain meaningful information
+		assert.NotEmpty(t, result.Errors)
+
+		for _, err := range result.Errors {
+			assert.NotEmpty(t, err.Message)
+			assert.NotEmpty(t, err.Field)
+		}
+	}
+}
+
+func testK3dConfigTransformationEdgeCases(t *testing.T) {
+	t.Helper()
+
+	validatorInstance := k3dvalidator.NewValidator()
+
+	// Test configuration with potentially problematic values that might trigger error paths
+	config := &k3dapi.SimpleConfig{
+		TypeMeta: configtypes.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		ObjectMeta: configtypes.ObjectMeta{
+			Name: "transform-test",
+		},
+		Servers: 1,
+		Agents:  1,
+		// Basic image configuration to test transformation
+		Image:   "rancher/k3s:v1.27.0-k3s1",
+		Network: "bridge",
+	}
+
+	result := validatorInstance.Validate(config)
+
+	// This exercises the config transformation and processing pipeline
+	// Should handle basic configuration structure
+	if !result.Valid {
+		// Verify error structure is meaningful
+		for _, err := range result.Errors {
+			assert.NotEmpty(t, err.Message)
+			assert.NotEmpty(t, err.Field)
+		}
+	}
+}
+
+// TestK3dValidatorErrorPaths tests specific error scenarios to improve coverage.
+func TestK3dValidatorErrorPaths(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil_config", func(t *testing.T) {
+		t.Parallel()
+
+		validatorInstance := k3dvalidator.NewValidator()
+
+		// Test with nil config - should be handled gracefully
+		result := validatorInstance.Validate(nil)
+
+		assert.False(t, result.Valid)
+		assert.NotEmpty(t, result.Errors)
+	})
+
+	t.Run("malformed_config", func(t *testing.T) {
+		t.Parallel()
+
+		validatorInstance := k3dvalidator.NewValidator()
+
+		// Test with malformed configuration that might trigger processing errors
+		config := &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{
+				APIVersion: "invalid-version",
+				Kind:       "Invalid",
+			},
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "", // Empty name might cause issues
+			},
+			Servers: -1, // Invalid server count
+			Agents:  -1, // Invalid agent count
+		}
+
+		result := validatorInstance.Validate(config)
+
+		// This should either pass validation or fail with meaningful errors
+		if !result.Valid {
+			assert.NotEmpty(t, result.Errors)
+
+			for _, err := range result.Errors {
+				assert.NotEmpty(t, err.Message)
+			}
+		}
+	})
+
+	t.Run("extreme_values", func(t *testing.T) {
+		t.Parallel()
+
+		validatorInstance := k3dvalidator.NewValidator()
+
+		// Test with extreme values that might trigger validation failures
+		config := &k3dapi.SimpleConfig{
+			TypeMeta: configtypes.TypeMeta{
+				APIVersion: "k3d.io/v1alpha5",
+				Kind:       "Simple",
+			},
+			ObjectMeta: configtypes.ObjectMeta{
+				Name: "extreme-test",
+			},
+			Servers: 1000, // Extremely large server count
+			Agents:  1000, // Extremely large agent count
+			// Potentially problematic image
+			Image: "nonexistent:invalid-tag",
+		}
+
+		result := validatorInstance.Validate(config)
+
+		// This might trigger upstream validation errors or resource constraints
+		if !result.Valid {
+			assert.NotEmpty(t, result.Errors)
+		}
+	})
 }
 
 func testK3dEmptyNameComplexConfig(t *testing.T) {

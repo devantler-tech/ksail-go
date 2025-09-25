@@ -152,6 +152,8 @@ func createEKSInvalidTestCases() []testutils.ValidatorTestCase[*eksctlapi.Cluste
 
 // testEKSValidatorEdgeCases tests specific edge cases and error conditions.
 func testEKSValidatorEdgeCases(t *testing.T) {
+	t.Helper()
+
 	t.Run("upstream_validation_complex_config", testEKSUpstreamValidationComplexConfig)
 	t.Run("empty_metadata_fields", testEKSEmptyMetadataFields)
 	t.Run("invalid_region_format", testEKSInvalidRegionFormat)
