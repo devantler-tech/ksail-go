@@ -74,15 +74,7 @@ func TestCreate(t *testing.T) {
 func testCreateSuccess(t *testing.T) {
 	t.Helper()
 
-	provisioner, clusterProvider, clusterActions, clusterLister, creator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider  // not used in this test
-	_ = clusterActions   // not used in this test
-	_ = clusterLister    // not used in this test
-	_ = nodeGroupManager // not used in this test
-
-	creator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	provisioner, _ := setupCreateTest(t, nil)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
@@ -92,14 +84,7 @@ func testCreateSuccess(t *testing.T) {
 func testCreateInvalidConfig(t *testing.T) {
 	t.Helper()
 
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		nil, // nil config
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithNilConfig(t)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
@@ -114,31 +99,6 @@ func testCreateInvalidConfig(t *testing.T) {
 func testCreateEmptyClusterName(t *testing.T) {
 	t.Helper()
 
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: &v1alpha5.ClusterMeta{Name: ""}, // empty name
-	}
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
-
-	err := provisioner.Create(context.Background(), "")
-
-	assert.ErrorIs(
-		t,
-		err,
-		eksprovisioner.ErrEmptyClusterName,
-		"Create should fail with empty cluster name",
-	)
-}
-
-func testCreateError(t *testing.T) {
-	t.Helper()
-
 	provisioner, clusterProvider, clusterActions, clusterLister, creator, nodeGroupManager := setupProvisioner(
 		t,
 	)
@@ -147,7 +107,18 @@ func testCreateError(t *testing.T) {
 	_ = clusterLister    // not used in this test
 	_ = nodeGroupManager // not used in this test
 
-	creator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(errCreateFailed)
+	// Expect successful creation with default name "ksail-default"
+	creator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	err := provisioner.Create(context.Background(), "")
+
+	assert.NoError(t, err, "Create should succeed with empty cluster name using default")
+}
+
+func testCreateError(t *testing.T) {
+	t.Helper()
+
+	provisioner, _ := setupCreateTest(t, errCreateFailed)
 
 	err := provisioner.Create(context.Background(), "test-cluster")
 
@@ -183,23 +154,7 @@ func TestDelete(t *testing.T) {
 func testDeleteSuccess(t *testing.T) {
 	t.Helper()
 
-	provisioner, clusterProvider, actions, clusterLister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider  // not used in this test
-	_ = clusterLister    // not used in this test
-	_ = clusterCreator   // not used in this test
-	_ = nodeGroupManager // not used in this test
-
-	actions.On("Delete",
-		mock.Anything,                        // context
-		mock.AnythingOfType("time.Duration"), // waitInterval
-		mock.AnythingOfType("time.Duration"), // podEvictionWaitPeriod
-		mock.AnythingOfType("bool"),          // wait
-		mock.AnythingOfType("bool"),          // force
-		mock.AnythingOfType("bool"),          // disableNodegroupEviction
-		mock.AnythingOfType("int"),           // parallel
-	).Return(nil)
+	provisioner, _ := setupDeleteTest(t, nil)
 
 	err := provisioner.Delete(context.Background(), "test-cluster")
 
@@ -208,14 +163,7 @@ func testDeleteSuccess(t *testing.T) {
 
 func testDeleteInvalidConfig(t *testing.T) {
 	t.Helper()
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		nil, // nil config
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
-	)
+	provisioner := createProvisionerWithNilConfig(t)
 
 	err := provisioner.Delete(context.Background(), "test-cluster")
 
@@ -230,48 +178,28 @@ func testDeleteInvalidConfig(t *testing.T) {
 func testDeleteEmptyClusterName(t *testing.T) {
 	t.Helper()
 
-	clusterConfig := &v1alpha5.ClusterConfig{
-		Metadata: &v1alpha5.ClusterMeta{Name: ""}, // empty name
-	}
-	provisioner := eksprovisioner.NewEKSClusterProvisioner(
-		clusterConfig,
-		&eks.ClusterProvider{},
-		eksprovisioner.NewMockEKSClusterActions(t),
-		eksprovisioner.NewMockEKSClusterLister(t),
-		eksprovisioner.NewMockEKSClusterCreator(t),
-		eksprovisioner.NewMockEKSNodeGroupManager(t),
+	provisioner, clusterProvider, actions, clusterLister, creator, nodeGroupManager := setupProvisioner(
+		t,
 	)
+	_ = clusterProvider  // not used in this test
+	_ = clusterLister    // not used in this test
+	_ = creator          // not used in this test
+	_ = nodeGroupManager // not used in this test
+
+	// Expect successful deletion with default name "ksail-default"
+	actions.On("Delete", mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything).
+		Return(nil)
 
 	err := provisioner.Delete(context.Background(), "")
 
-	assert.ErrorIs(
-		t,
-		err,
-		eksprovisioner.ErrEmptyClusterName,
-		"Delete should fail with empty cluster name",
-	)
+	assert.NoError(t, err, "Delete should succeed with empty cluster name using default")
 }
 
 func testDeleteError(t *testing.T) {
 	t.Helper()
 
-	provisioner, clusterProvider, actions, clusterLister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider  // not used in this test
-	_ = clusterLister    // not used in this test
-	_ = clusterCreator   // not used in this test
-	_ = nodeGroupManager // not used in this test
-
-	actions.On("Delete",
-		mock.Anything,                        // context
-		mock.AnythingOfType("time.Duration"), // waitInterval
-		mock.AnythingOfType("time.Duration"), // podEvictionWaitPeriod
-		mock.AnythingOfType("bool"),          // wait
-		mock.AnythingOfType("bool"),          // force
-		mock.AnythingOfType("bool"),          // disableNodegroupEviction
-		mock.AnythingOfType("int"),           // parallel
-	).Return(errDeleteFailed)
+	provisioner, _ := setupDeleteTest(t, errDeleteFailed)
 
 	err := provisioner.Delete(context.Background(), "test-cluster")
 
@@ -299,23 +227,7 @@ func TestStart(t *testing.T) {
 func testStartSuccess(t *testing.T) {
 	t.Helper()
 
-	desiredCapacity, minSize := 1, 0
-	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
-		t,
-		[]*v1alpha5.NodeGroup{{
-			NodeGroupBase: &v1alpha5.NodeGroupBase{
-				Name: "ng1",
-				ScalingConfig: &v1alpha5.ScalingConfig{
-					DesiredCapacity: &desiredCapacity,
-					MinSize:         &minSize,
-				},
-			},
-		}},
-	)
-
-	setupExistsSuccess(lister)
-	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
-		Return(nil)
+	provisioner, _, _ := setupNodegroupScaleTest(t, nil)
 
 	err := provisioner.Start(context.Background(), "test-cluster")
 
@@ -381,23 +293,7 @@ func testStartClusterNotFound(t *testing.T) {
 func testStartNodegroupScaleError(t *testing.T) {
 	t.Helper()
 
-	desiredCapacity, minSize := 1, 0
-	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
-		t,
-		[]*v1alpha5.NodeGroup{{
-			NodeGroupBase: &v1alpha5.NodeGroupBase{
-				Name: "ng1",
-				ScalingConfig: &v1alpha5.ScalingConfig{
-					DesiredCapacity: &desiredCapacity,
-					MinSize:         &minSize,
-				},
-			},
-		}},
-	)
-
-	setupExistsSuccess(lister)
-	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
-		Return(errScaleFailed)
+	provisioner, _, _ := setupNodegroupScaleTest(t, errScaleFailed)
 
 	err := provisioner.Start(context.Background(), "test-cluster")
 
@@ -432,10 +328,7 @@ func testStartSuccessWithoutScalingConfig(t *testing.T) {
 func testStartExistsCheckError(t *testing.T) {
 	t.Helper()
 
-	provisioner, lister := setupProvisionerForBasicTests(t)
-
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).
-		Return(nil, errListClustersFailed)
+	provisioner, _ := setupExistsCheckErrorTest(t)
 
 	err := provisioner.Start(context.Background(), "test-cluster")
 
@@ -463,23 +356,7 @@ func TestStop(t *testing.T) {
 func testStopSuccess(t *testing.T) {
 	t.Helper()
 
-	desiredCapacity, minSize := 1, 1
-	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
-		t,
-		[]*v1alpha5.NodeGroup{{
-			NodeGroupBase: &v1alpha5.NodeGroupBase{
-				Name: "ng1",
-				ScalingConfig: &v1alpha5.ScalingConfig{
-					DesiredCapacity: &desiredCapacity,
-					MinSize:         &minSize,
-				},
-			},
-		}},
-	)
-
-	setupExistsSuccess(lister)
-	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
-		Return(nil)
+	provisioner, _, _ := setupNodegroupScaleTestWithMinSize(t, 1, nil)
 
 	err := provisioner.Stop(context.Background(), "test-cluster")
 
@@ -544,24 +421,7 @@ func testStopClusterNotFound(t *testing.T) {
 func testStopNodegroupScaleError(t *testing.T) {
 	t.Helper()
 
-	desiredCapacity, minSize := 1, 1
-	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
-		t,
-		[]*v1alpha5.NodeGroup{{
-			NodeGroupBase: &v1alpha5.NodeGroupBase{
-				Name: "ng1",
-				ScalingConfig: &v1alpha5.ScalingConfig{
-					DesiredCapacity: &desiredCapacity,
-					MinSize:         &minSize,
-				},
-			},
-		}},
-	)
-
-	setupExistsSuccess(lister)
-
-	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
-		Return(errScaleFailed)
+	provisioner, _, _ := setupNodegroupScaleTestWithMinSize(t, 1, errScaleFailed)
 
 	err := provisioner.Stop(context.Background(), "test-cluster")
 
@@ -597,10 +457,7 @@ func testStopSuccessCreatesScalingConfig(t *testing.T) {
 
 func testStopExistsCheckError(t *testing.T) {
 	t.Helper()
-	provisioner, lister := setupProvisionerForBasicTests(t)
-
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).
-		Return(nil, errListClustersFailed)
+	provisioner, _ := setupExistsCheckErrorTest(t)
 
 	err := provisioner.Stop(context.Background(), "test-cluster")
 
@@ -631,18 +488,12 @@ func TestList(t *testing.T) {
 
 func testListSuccess(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+
 	expectedClusters := []cluster.Description{
 		{Name: "cluster1"},
 		{Name: "cluster2"},
 	}
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)
+	provisioner, _ := setupListerTest(t, expectedClusters)
 
 	clusters, err := provisioner.List(context.Background())
 
@@ -671,15 +522,7 @@ func testListSuccessEmpty(t *testing.T) {
 
 func testListError(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
-
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(nil, errListFailed)
+	provisioner, _ := setupListerErrorTest(t)
 
 	_, err := provisioner.List(context.Background())
 
@@ -714,18 +557,12 @@ func TestExists(t *testing.T) {
 
 func testExistsTrueWithName(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+
 	expectedClusters := []cluster.Description{
 		{Name: "test-cluster"},
 		{Name: "other-cluster"},
 	}
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)
+	provisioner, _ := setupListerTest(t, expectedClusters)
 
 	exists, err := provisioner.Exists(context.Background(), "test-cluster")
 
@@ -743,7 +580,7 @@ func testExistsTrueDefaultName(t *testing.T) {
 	_ = clusterCreator
 	_ = nodeGroupManager
 	expectedClusters := []cluster.Description{
-		{Name: "default-cluster"},
+		{Name: "default-cluster"}, // This matches what setupMocks creates
 		{Name: "other-cluster"},
 	}
 	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)
@@ -756,17 +593,11 @@ func testExistsTrueDefaultName(t *testing.T) {
 
 func testExistsFalse(t *testing.T) {
 	t.Helper()
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
+
 	expectedClusters := []cluster.Description{
 		{Name: "other-cluster"},
 	}
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)
+	provisioner, _ := setupListerTest(t, expectedClusters)
 
 	exists, err := provisioner.Exists(context.Background(), "test-cluster")
 
@@ -776,16 +607,7 @@ func testExistsFalse(t *testing.T) {
 
 func testExistsListError(t *testing.T) {
 	t.Helper()
-
-	provisioner, clusterProvider, clusterActions, lister, clusterCreator, nodeGroupManager := setupProvisioner(
-		t,
-	)
-	_ = clusterProvider
-	_ = clusterActions
-	_ = clusterCreator
-	_ = nodeGroupManager
-
-	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(nil, errListFailed)
+	provisioner, _ := setupListerErrorTest(t)
 
 	_, err := provisioner.Exists(context.Background(), "test-cluster")
 
@@ -828,7 +650,6 @@ func setupMocks(t *testing.T) (
 	return clusterConfig, clusterProvider, clusterActions, clusterLister, clusterCreator, nodeGroupManager
 }
 
-//nolint:unparam // Test helper designed for flexibility; some returns intentionally unused
 func setupProvisioner(t *testing.T) (
 	*eksprovisioner.EKSClusterProvisioner,
 	*eks.ClusterProvider,
@@ -915,4 +736,203 @@ func setupExistsFailure(lister *eksprovisioner.MockEKSClusterLister) {
 	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return([]cluster.Description{
 		{Name: "other-cluster"},
 	}, nil)
+}
+
+// setupProvisionerWithUsedMocks returns a provisioner and the specific mocks that will be used
+// This helper reduces duplication for tests that only need specific mocks.
+func setupProvisionerWithUsedMocks(t *testing.T, usedMocks ...string) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eks.ClusterProvider,
+	*eksprovisioner.MockEKSClusterActions,
+	*eksprovisioner.MockEKSClusterLister,
+	*eksprovisioner.MockEKSClusterCreator,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+	provisioner, clusterProvider, clusterActions, clusterLister, creator, nodeGroupManager := setupProvisioner(
+		t,
+	)
+
+	// Mark unused mocks to avoid "not used" comments
+	usedMockSet := make(map[string]bool)
+	for _, mock := range usedMocks {
+		usedMockSet[mock] = true
+	}
+
+	if !usedMockSet["clusterProvider"] {
+		_ = clusterProvider
+	}
+
+	if !usedMockSet["clusterActions"] {
+		_ = clusterActions
+	}
+
+	if !usedMockSet["clusterLister"] {
+		_ = clusterLister
+	}
+
+	if !usedMockSet["creator"] {
+		_ = creator
+	}
+
+	if !usedMockSet["nodeGroupManager"] {
+		_ = nodeGroupManager
+	}
+
+	return provisioner, clusterProvider, clusterActions, clusterLister, creator, nodeGroupManager
+}
+
+// createProvisionerWithNilConfig creates a provisioner with nil config for error testing.
+func createProvisionerWithNilConfig(t *testing.T) *eksprovisioner.EKSClusterProvisioner {
+	t.Helper()
+
+	return eksprovisioner.NewEKSClusterProvisioner(
+		nil, // nil config
+		&eks.ClusterProvider{},
+		eksprovisioner.NewMockEKSClusterActions(t),
+		eksprovisioner.NewMockEKSClusterLister(t),
+		eksprovisioner.NewMockEKSClusterCreator(t),
+		eksprovisioner.NewMockEKSNodeGroupManager(t),
+	)
+}
+
+// setupCreateTest sets up provisioner and creator mock for create tests.
+func setupCreateTest(
+	t *testing.T,
+	returnError error,
+) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterCreator) {
+	t.Helper()
+	prov, cp, ca, cl, cr, ng := setupProvisionerWithUsedMocks(t, "creator")
+	_ = cp
+	_ = ca
+	_ = cl
+	_ = ng
+	provisioner, creator := prov, cr
+
+	creator.On("CreateCluster", mock.Anything, mock.Anything, mock.Anything).Return(returnError)
+
+	return provisioner, creator
+}
+
+// setupDeleteTest sets up provisioner and actions mock for delete tests.
+func setupDeleteTest(
+	t *testing.T,
+	returnError error,
+) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterActions) {
+	t.Helper()
+	prov, cp, actions, cl, cr, ng := setupProvisionerWithUsedMocks(t, "actions")
+	_ = cp
+	_ = cl
+	_ = cr
+	_ = ng
+	provisioner := prov
+
+	actions.On("Delete",
+		mock.Anything,                        // context
+		mock.AnythingOfType("time.Duration"), // waitInterval
+		mock.AnythingOfType("time.Duration"), // podEvictionWaitPeriod
+		mock.AnythingOfType("bool"),          // wait
+		mock.AnythingOfType("bool"),          // force
+		mock.AnythingOfType("bool"),          // disableNodegroupEviction
+		mock.AnythingOfType("int"),           // parallel
+	).Return(returnError)
+
+	return provisioner, actions
+}
+
+// setupNodegroupScaleTest sets up provisioner with single nodegroup for scale tests.
+func setupNodegroupScaleTest(
+	t *testing.T,
+	returnError error,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSClusterLister,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+
+	return setupNodegroupScaleTestWithMinSize(t, 0, returnError)
+}
+
+// setupNodegroupScaleTestWithMinSize sets up provisioner with single nodegroup for scale tests
+// with configurable minSize.
+func setupNodegroupScaleTestWithMinSize(
+	t *testing.T,
+	minSize int,
+	returnError error,
+) (
+	*eksprovisioner.EKSClusterProvisioner,
+	*eksprovisioner.MockEKSClusterLister,
+	*eksprovisioner.MockEKSNodeGroupManager,
+) {
+	t.Helper()
+
+	desiredCapacity := 1
+	provisioner, lister, nodeGroupManager := setupProvisionerForNodegroupTests(
+		t,
+		[]*v1alpha5.NodeGroup{{
+			NodeGroupBase: &v1alpha5.NodeGroupBase{
+				Name: "ng1",
+				ScalingConfig: &v1alpha5.ScalingConfig{
+					DesiredCapacity: &desiredCapacity,
+					MinSize:         &minSize,
+				},
+			},
+		}},
+	)
+
+	setupExistsSuccess(lister)
+	nodeGroupManager.On("Scale", mock.Anything, mock.AnythingOfType("*v1alpha5.NodeGroupBase"), true).
+		Return(returnError)
+
+	return provisioner, lister, nodeGroupManager
+}
+
+// setupListerTest sets up provisioner and lister with expected clusters for list/exists tests.
+func setupListerTest(
+	t *testing.T,
+	expectedClusters []cluster.Description,
+) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterLister) {
+	t.Helper()
+	provisioner, clusterProvider, clusterActions, lister, creator, nodeGroupManager := setupProvisionerWithUsedMocks(
+		t,
+		"lister",
+	)
+	_ = clusterProvider
+	_ = clusterActions
+	_ = creator
+	_ = nodeGroupManager
+
+	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(expectedClusters, nil)
+
+	return provisioner, lister
+}
+
+// setupListerErrorTest sets up provisioner and lister for testing GetClusters errors.
+func setupListerErrorTest(
+	t *testing.T,
+) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterLister) {
+	t.Helper()
+	prov, cp, ca, lister, cr, ng := setupProvisionerWithUsedMocks(t, "lister")
+	_ = cp
+	_ = ca
+	_ = cr
+	_ = ng
+	provisioner := prov
+
+	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).Return(nil, errListFailed)
+
+	return provisioner, lister
+}
+
+// setupExistsCheckErrorTest sets up provisioner and lister for exists check error tests.
+func setupExistsCheckErrorTest(
+	t *testing.T,
+) (*eksprovisioner.EKSClusterProvisioner, *eksprovisioner.MockEKSClusterLister) {
+	t.Helper()
+	provisioner, lister := setupProvisionerForBasicTests(t)
+	lister.On("GetClusters", mock.Anything, mock.Anything, false, 100).
+		Return(nil, errListClustersFailed)
+
+	return provisioner, lister
 }

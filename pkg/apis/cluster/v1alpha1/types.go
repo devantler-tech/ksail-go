@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,12 +40,12 @@ const (
 	APIVersion = Group + "/" + Version
 )
 
-// Cluster represents a KSail cluster desired state + metadata.
+// Cluster represents a KSail cluster configuration including API metadata and desired state.
+// It contains TypeMeta for API versioning information and Spec for the cluster specification.
 type Cluster struct {
 	metav1.TypeMeta `json:",inline"`
 
-	Metadata metav1.ObjectMeta `json:"metadata,omitzero"`
-	Spec     Spec              `json:"spec,omitzero"`
+	Spec Spec `json:"spec,omitzero"`
 }
 
 // Spec defines the desired state of a KSail cluster.
@@ -362,6 +363,11 @@ func (g *GatewayController) Set(value string) error {
 		GatewayControllerCilium,
 		GatewayControllerNone,
 	)
+}
+
+// IsValid checks if the distribution value is supported.
+func (d *Distribution) IsValid() bool {
+	return slices.Contains(validDistributions(), *d)
 }
 
 // String returns the string representation of the Distribution.

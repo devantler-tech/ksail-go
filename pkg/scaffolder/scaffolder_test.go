@@ -256,28 +256,27 @@ func generateDistributionContent(
 	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		// Create minimal Kind configuration that matches the original hardcoded output
-		kindContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\nname: " + cluster.Metadata.Name + "\n"
+		// Create minimal Kind configuration without name (Kind will use defaults)
+		kindContent := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
 		snaps.MatchSnapshot(t, kindContent)
 
 	case v1alpha1.DistributionK3d:
 		// Create minimal K3d configuration that matches the original hardcoded output
-		k3dContent := "apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: " + cluster.Metadata.Name + "\n"
+		k3dContent := "apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: ksail-default\n"
 		snaps.MatchSnapshot(t, k3dContent)
 
 	case v1alpha1.DistributionEKS:
 		// Create minimal EKS configuration that matches the original hardcoded output
-		name := cluster.Metadata.Name
-		eksContent := fmt.Sprintf(`apiVersion: eksctl.io/v1alpha5
+		eksContent := `apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: %s
+  name: ksail-default
   region: eu-north-1
 nodeGroups:
 - desiredCapacity: 1
   instanceType: m5.large
   name: ng-1
-`, name)
+`
 		snaps.MatchSnapshot(t, eksContent)
 	}
 }
@@ -285,7 +284,7 @@ nodeGroups:
 // createMinimalClusterForSnapshot creates a cluster config that produces the same YAML
 // as the original hardcoded version.
 func createMinimalClusterForSnapshot(
-	cluster v1alpha1.Cluster,
+	_ v1alpha1.Cluster,
 	distribution v1alpha1.Distribution,
 ) v1alpha1.Cluster {
 	minimalCluster := v1alpha1.Cluster{
@@ -293,7 +292,6 @@ func createMinimalClusterForSnapshot(
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: metav1.ObjectMeta{Name: cluster.Metadata.Name},
 	}
 
 	// Only add spec fields if they differ from defaults to match original hardcoded output
@@ -325,13 +323,12 @@ func createMinimalClusterForSnapshot(
 }
 
 // Helper functions.
-func createTestCluster(name string) v1alpha1.Cluster {
+func createTestCluster(_ string) v1alpha1.Cluster {
 	return v1alpha1.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       v1alpha1.Kind,
 		},
-		Metadata: metav1.ObjectMeta{Name: name},
 		Spec: v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionKind,
 			SourceDirectory:    "k8s",

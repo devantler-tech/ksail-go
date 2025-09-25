@@ -26,7 +26,7 @@ func NewReconcileCmd() *cobra.Command {
 		{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 			Description:  "Kubernetes context to reconcile workloads in",
-			DefaultValue: "kind-ksail-default",
+			DefaultValue: "kind-kind",
 		},
 		{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },

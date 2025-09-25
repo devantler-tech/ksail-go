@@ -4,8 +4,13 @@ FLAVOR_SUGGESTIONS: false
 FILTER_REGEX_EXCLUDE: megalinter-reports/.*
 IGNORE_GITIGNORED_FILES: true
 EXCLUDED_DIRECTORIES:
-  - report
+  - .specify
   - megalinter-reports
+  - report
+  - .github/prompts
+  - .jscpd
 
 DISABLE_LINTERS:
   - GO_REVIVE
+
+MARKDOWN_MARKDOWNLINT_FILTER_REGEX_EXCLUDE: .github/prompts

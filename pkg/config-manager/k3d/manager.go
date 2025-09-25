@@ -7,6 +7,7 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/validator/k3d"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
@@ -27,6 +28,19 @@ var _ configmanager.ConfigManager[v1alpha5.SimpleConfig] = (*ConfigManager)(nil)
 // This function provides a canonical way to create K3d clusters with proper field initialization.
 // Use empty string for name to create a cluster without a specific name.
 func NewK3dSimpleConfig(name, apiVersion, kind string) *v1alpha5.SimpleConfig {
+	// Set default name if empty
+	if name == "" {
+		name = "k3d-default"
+	}
+
+	if apiVersion == "" {
+		apiVersion = "k3d.io/v1alpha5"
+	}
+
+	if kind == "" {
+		kind = "Simple"
+	}
+
 	return &v1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: apiVersion,
@@ -35,56 +49,6 @@ func NewK3dSimpleConfig(name, apiVersion, kind string) *v1alpha5.SimpleConfig {
 		ObjectMeta: types.ObjectMeta{
 			Name: name,
 		},
-		Servers: 0,
-		Agents:  0,
-		ExposeAPI: v1alpha5.SimpleExposureOpts{
-			Host:     "",
-			HostIP:   "",
-			HostPort: "",
-		},
-		Image:        "",
-		Network:      "",
-		Subnet:       "",
-		ClusterToken: "",
-		Volumes:      nil,
-		Ports:        nil,
-		Options: v1alpha5.SimpleConfigOptions{
-			K3dOptions: v1alpha5.SimpleConfigOptionsK3d{
-				Wait:                false,
-				Timeout:             0,
-				DisableLoadbalancer: false,
-				DisableImageVolume:  false,
-				NoRollback:          false,
-				NodeHookActions:     nil,
-				Loadbalancer: v1alpha5.SimpleConfigOptionsK3dLoadbalancer{
-					ConfigOverrides: nil,
-				},
-			},
-			K3sOptions: v1alpha5.SimpleConfigOptionsK3s{
-				ExtraArgs:  nil,
-				NodeLabels: nil,
-			},
-			KubeconfigOptions: v1alpha5.SimpleConfigOptionsKubeconfig{
-				UpdateDefaultKubeconfig: false,
-				SwitchCurrentContext:    false,
-			},
-			Runtime: v1alpha5.SimpleConfigOptionsRuntime{
-				GPURequest:    "",
-				ServersMemory: "",
-				AgentsMemory:  "",
-				HostPidMode:   false,
-				Labels:        nil,
-				Ulimits:       nil,
-			},
-		},
-		Env: nil,
-		Registries: v1alpha5.SimpleConfigRegistries{
-			Use:    nil,
-			Create: nil,
-			Config: "",
-		},
-		HostAliases: nil,
-		Files:       nil,
 	}
 }
 
@@ -101,6 +65,7 @@ func NewConfigManager(configPath string) *ConfigManager {
 // LoadConfig loads the K3d configuration from the specified file.
 // Returns the previously loaded config if already loaded.
 // If the file doesn't exist, returns a default K3d cluster configuration.
+// Validates the configuration after loading and returns an error if validation fails.
 func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	// If config is already loaded, return it
 	if m.configLoaded {
@@ -118,6 +83,14 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// Validate the loaded configuration
+	validator := k3dvalidator.NewValidator()
+
+	err = helpers.ValidateConfig(config, validator)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	m.config = config

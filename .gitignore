@@ -39,6 +39,7 @@ megalinter-reports/
 report/
 *.zip
 __MACOSX/
+.jscpd/
 
 # megalinter temp files
 *-megalinter_file_names_cspell.txt

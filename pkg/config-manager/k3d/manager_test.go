@@ -18,6 +18,16 @@ func validateK3dDefaults(t *testing.T, config *v1alpha5.SimpleConfig) {
 	assert.Equal(t, "Simple", config.Kind)
 }
 
+// assertK3dBasicConfig asserts basic configuration properties for K3d cluster.
+func assertK3dBasicConfig(t *testing.T, config *v1alpha5.SimpleConfig, expectedName string) {
+	t.Helper()
+
+	assert.NotNil(t, config)
+	assert.Equal(t, "k3d.io/v1alpha5", config.APIVersion)
+	assert.Equal(t, "Simple", config.Kind)
+	assert.Equal(t, expectedName, config.Name)
+}
+
 // validateK3dConfig validates K3d configuration with specific values.
 func validateK3dConfig(
 	expectedName string,
@@ -31,6 +41,59 @@ func validateK3dConfig(
 		assert.Equal(t, expectedServers, config.Servers)
 		assert.Equal(t, expectedAgents, config.Agents)
 	}
+}
+
+// TestNewK3dSimpleConfig tests the NewK3dSimpleConfig constructor.
+func TestNewK3dSimpleConfig(t *testing.T) {
+	t.Parallel()
+
+	t.Run("with_all_parameters", func(t *testing.T) {
+		t.Parallel()
+
+		config := k3d.NewK3dSimpleConfig(
+			"test-cluster",
+			"k3d.io/v1alpha5",
+			"Simple",
+		)
+
+		assertK3dBasicConfig(t, config, "test-cluster")
+	})
+
+	t.Run("with_empty_name", func(t *testing.T) {
+		t.Parallel()
+
+		config := k3d.NewK3dSimpleConfig(
+			"",
+			"k3d.io/v1alpha5",
+			"Simple",
+		)
+
+		assert.NotNil(t, config)
+		assert.Equal(t, "k3d-default", config.Name)
+	})
+
+	t.Run("with_empty_apiVersion_and_kind", func(t *testing.T) {
+		t.Parallel()
+
+		config := k3d.NewK3dSimpleConfig(
+			"test-cluster",
+			"",
+			"",
+		)
+
+		assertK3dBasicConfig(t, config, "test-cluster")
+	})
+
+	t.Run("with_all_empty_values", func(t *testing.T) {
+		t.Parallel()
+
+		config := k3d.NewK3dSimpleConfig("", "", "")
+
+		assert.NotNil(t, config)
+		assert.Equal(t, "k3d.io/v1alpha5", config.APIVersion)
+		assert.Equal(t, "Simple", config.Kind)
+		assert.Equal(t, "k3d-default", config.Name)
+	})
 }
 
 func TestNewConfigManager(t *testing.T) {

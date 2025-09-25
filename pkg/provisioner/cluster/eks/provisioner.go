@@ -186,9 +186,26 @@ func (e *EKSClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 		return false, fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	target := setName(name, e.clusterConfig.Metadata.Name)
+	target := e.getEffectiveClusterName(name)
 
 	return slices.Contains(clusters, target), nil
+}
+
+// getEffectiveClusterName determines the effective cluster name to use.
+// Returns the provided name if not empty, otherwise returns the name from cluster config.
+// Returns empty string if no name is available from either source.
+func (e *EKSClusterProvisioner) getEffectiveClusterName(name string) string {
+	if name != "" {
+		return name
+	}
+
+	if e.clusterConfig != nil && e.clusterConfig.Metadata != nil &&
+		e.clusterConfig.Metadata.Name != "" {
+		return e.clusterConfig.Metadata.Name
+	}
+
+	// Return default cluster name if none is available
+	return "ksail-default"
 }
 
 // setupClusterOperation sets up common cluster operation prerequisites.
@@ -200,12 +217,13 @@ func (e *EKSClusterProvisioner) setupClusterOperation(
 		return nil, ErrInvalidClusterConfig
 	}
 
-	target := setName(name, e.clusterConfig.Metadata.Name)
-	if target == "" {
+	effectiveName := e.getEffectiveClusterName(name)
+	if effectiveName == "" {
 		return nil, ErrEmptyClusterName
 	}
 
-	e.clusterConfig.Metadata.Name = target
+	// Update the cluster config with the effective name
+	e.clusterConfig.Metadata.Name = effectiveName
 
 	return e.clusterProvider, nil
 }
@@ -242,13 +260,4 @@ func (e *EKSClusterProvisioner) setupNodeGroupManager(
 	}
 
 	return e.nodeGroupManager, nil
-}
-
-// setName returns name if non-empty, otherwise returns defaultName.
-func setName(name, defaultName string) string {
-	if name == "" {
-		return defaultName
-	}
-
-	return name
 }

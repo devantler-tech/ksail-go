@@ -7,6 +7,8 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
 
@@ -61,51 +63,12 @@ func NewCobraCommand(
 
 	// Create the base command
 	cmd := &cobra.Command{
-		Use:                    use,
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  short,
-		GroupID:                "",
-		Long:                   long,
-		Example:                "",
-		ValidArgs:              nil,
-		ValidArgsFunction:      nil,
-		Args:                   nil,
-		ArgAliases:             nil,
-		BashCompletionFunction: "",
-		Deprecated:             "",
-		Annotations:            nil,
-		Version:                "",
-		PersistentPreRun:       nil,
-		PersistentPreRunE:      nil,
-		PreRun:                 nil,
-		PreRunE:                nil,
-		Run:                    nil,
+		Use:   use,
+		Short: short,
+		Long:  long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runE(cmd, manager, args)
 		},
-		PostRun:            nil,
-		PostRunE:           nil,
-		PersistentPostRun:  nil,
-		PersistentPostRunE: nil,
-		FParseErrWhitelist: cobra.FParseErrWhitelist{
-			UnknownFlags: false,
-		},
-		CompletionOptions: cobra.CompletionOptions{
-			DisableDefaultCmd:         false,
-			DisableNoDescFlag:         false,
-			DisableDescriptions:       false,
-			HiddenDefaultCmd:          false,
-			DefaultShellCompDirective: nil,
-		},
-		TraverseChildren:           false,
-		Hidden:                     false,
-		SilenceErrors:              false,
-		SilenceUsage:               false,
-		DisableFlagParsing:         false,
-		DisableAutoGenTag:          false,
-		DisableFlagsInUseLine:      false,
-		DisableSuggestions:         false,
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
 	}
 
@@ -137,6 +100,39 @@ func LoadClusterWithErrorHandling(
 		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
 
 		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	// Validate the loaded configuration
+	validator := ksailvalidator.NewValidator()
+	result := validator.Validate(cluster)
+
+	// Handle validation errors with fail-fast behavior
+	if !result.Valid {
+		// Use standardized error formatting from helpers
+		errorMessages := helpers.FormatValidationErrorsMultiline(result)
+		notify.Errorln(cmd.OutOrStdout(),
+			"Configuration validation failed:\n"+errorMessages)
+
+		// Print fix suggestions using standardized helper
+		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
+		for _, suggestion := range fixSuggestions {
+			notify.Activityln(cmd.OutOrStdout(), suggestion)
+		}
+
+		// Display warnings using standardized helper
+		warnings := helpers.FormatValidationWarnings(result)
+		for _, warning := range warnings {
+			notify.Warnln(cmd.OutOrStdout(), warning)
+		}
+
+		return nil, fmt.Errorf("%w with %d errors",
+			helpers.ErrConfigurationValidationFailed, len(result.Errors))
+	}
+
+	// Display warnings even for valid configurations using standardized helper
+	warnings := helpers.FormatValidationWarnings(result)
+	for _, warning := range warnings {
+		notify.Warnln(cmd.OutOrStdout(), warning)
 	}
 
 	return cluster, nil
@@ -182,15 +178,6 @@ func StandardClusterCommandRunE(
 	}
 }
 
-// StandardNameFieldSelector creates a standard field selector for cluster name.
-func StandardNameFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
-	return configmanager.FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Metadata.Name },
-		Description:  "Name of the cluster",
-		DefaultValue: "ksail-default",
-	}
-}
-
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
 func StandardDistributionFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
@@ -223,7 +210,7 @@ func StandardContextFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 		Description:  "Kubernetes context of cluster",
-		DefaultValue: "kind-ksail-default",
+		DefaultValue: "kind-kind",
 	}
 }
 
@@ -239,8 +226,18 @@ func ExecuteCommandWithClusterInfo(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, infoFieldsFunc(cluster))
+	LogSuccessWithClusterInfo(cmd, successMessage, infoFieldsFunc(cluster))
 
 	return nil
+}
+
+// LogSuccessWithClusterInfo logs a success message followed by cluster information fields.
+// This is useful when you already have cluster information and don't need to reload the config.
+func LogSuccessWithClusterInfo(
+	cmd *cobra.Command,
+	successMessage string,
+	infoFields []ClusterInfoField,
+) {
+	notify.Successln(cmd.OutOrStdout(), successMessage)
+	LogClusterInfo(cmd, infoFields)
 }

@@ -2,13 +2,18 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/validator"
 )
+
+// ErrConfigurationValidationFailed is returned when configuration validation fails.
+var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
 // This function eliminates duplication between different config managers.
@@ -63,4 +68,84 @@ func LoadConfigFromFile[T any](
 	}
 
 	return config, nil
+}
+
+// FormatValidationErrors formats validation errors into a single-line readable string.
+// This function eliminates duplication between different config managers.
+func FormatValidationErrors(result *validator.ValidationResult) string {
+	if len(result.Errors) == 0 {
+		return ""
+	}
+
+	var errorMsg string
+
+	for i, err := range result.Errors {
+		if i > 0 {
+			errorMsg += "; "
+		}
+
+		errorMsg += fmt.Sprintf("%s: %s", err.Field, err.Message)
+		if err.FixSuggestion != "" {
+			errorMsg += fmt.Sprintf(" (%s)", err.FixSuggestion)
+		}
+	}
+
+	return errorMsg
+}
+
+// FormatValidationErrorsMultiline formats validation errors into a multi-line string for CLI display.
+// This function provides a standardized way to format validation errors for user-facing output.
+func FormatValidationErrorsMultiline(result *validator.ValidationResult) string {
+	if len(result.Errors) == 0 {
+		return ""
+	}
+
+	var errorMsg string
+
+	for _, err := range result.Errors {
+		errorMsg += fmt.Sprintf("  - %s: %s\n", err.Field, err.Message)
+	}
+
+	return errorMsg
+}
+
+// FormatValidationFixSuggestions formats fix suggestions for validation errors.
+// This function provides a standardized way to format fix suggestions for CLI display.
+func FormatValidationFixSuggestions(result *validator.ValidationResult) []string {
+	suggestions := make([]string, 0)
+
+	for _, err := range result.Errors {
+		if err.FixSuggestion != "" {
+			suggestions = append(suggestions, "    Fix: "+err.FixSuggestion)
+		}
+	}
+
+	return suggestions
+}
+
+// FormatValidationWarnings formats validation warnings for CLI display.
+// This function provides a standardized way to format validation warnings.
+func FormatValidationWarnings(result *validator.ValidationResult) []string {
+	warnings := make([]string, 0)
+
+	for _, warning := range result.Warnings {
+		warnings = append(warnings, fmt.Sprintf("Warning - %s: %s", warning.Field, warning.Message))
+	}
+
+	return warnings
+}
+
+// ValidateConfig validates a configuration and returns an error if validation fails.
+// This function eliminates duplication between different config managers.
+func ValidateConfig[T any](config T, validatorInstance validator.Validator[T]) error {
+	result := validatorInstance.Validate(config)
+	if !result.Valid {
+		return fmt.Errorf(
+			"%w: %s",
+			ErrConfigurationValidationFailed,
+			FormatValidationErrors(result),
+		)
+	}
+
+	return nil
 }

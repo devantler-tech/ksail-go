@@ -1,11 +1,4 @@
 
-[TestStatusCmdExecute - 1]
-✔ Cluster status: Running (stub implementation)
-► Context: kind-ksail-default
-► Kubeconfig: ~/.kube/config
-
----
-
 [TestStatusCmdHelp - 1]
 Show the current status of the Kubernetes cluster.
 
@@ -13,7 +6,7 @@ Usage:
   status [flags]
 
 Flags:
-  -c, --context string      Kubernetes context of cluster (default "kind-ksail-default")
+  -c, --context string      Kubernetes context of cluster (default "kind-kind")
   -h, --help                help for status
   -k, --kubeconfig string   Path to kubeconfig file (default "~/.kube/config")
   -t, --timeout duration    Timeout for status check operations (default 5m0s)

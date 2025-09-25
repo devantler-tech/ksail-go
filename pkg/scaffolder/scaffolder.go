@@ -32,6 +32,57 @@ var (
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
 
+// Distribution config file constants.
+const (
+	KindConfigFile = "kind.yaml"
+	K3dConfigFile  = "k3d.yaml"
+	EKSConfigFile  = "eks.yaml"
+	TindConfigFile = "tind.yaml"
+)
+
+// getExpectedContextName calculates the expected context name for a distribution using default cluster names.
+// This is used during scaffolding to ensure consistent context patterns between KSail config and distribution configs.
+// Returns empty string for EKS (context validation is skipped) and unsupported distributions.
+func getExpectedContextName(distribution v1alpha1.Distribution) string {
+	var distributionName string
+
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		distributionName = "kind" // Default Kind cluster name (matches generateKindConfig)
+
+		return "kind-" + distributionName
+	case v1alpha1.DistributionK3d:
+		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
+
+		return "k3d-" + distributionName
+	case v1alpha1.DistributionEKS:
+		// EKS context validation is skipped, return empty
+		return ""
+	case v1alpha1.DistributionTind:
+		// Tind is not yet implemented
+		return ""
+	default:
+		return ""
+	}
+}
+
+// getExpectedDistributionConfigName returns the expected distribution config filename for a distribution.
+// This is used during scaffolding to set the correct config file name that matches the generated files.
+func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) string {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return KindConfigFile
+	case v1alpha1.DistributionK3d:
+		return K3dConfigFile
+	case v1alpha1.DistributionEKS:
+		return EKSConfigFile
+	case v1alpha1.DistributionTind:
+		return TindConfigFile
+	default:
+		return KindConfigFile // fallback default
+	}
+}
+
 // Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
 	KSailConfig            v1alpha1.Cluster
@@ -75,10 +126,33 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	return s.generateKustomizationConfig(output, force)
 }
 
+// applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
+// This ensures the generated ksail.yaml has consistent context and distributionConfig values
+// that match the distribution-specific configuration files being generated.
+func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
+	config := s.KSailConfig
+
+	// Set the expected context if it's empty, based on the distribution and default cluster names
+	if config.Spec.Connection.Context == "" {
+		expectedContext := getExpectedContextName(config.Spec.Distribution)
+		if expectedContext != "" {
+			config.Spec.Connection.Context = expectedContext
+		}
+	}
+
+	// Set the expected distribution config filename if it's empty or set to default
+	if config.Spec.DistributionConfig == "" || config.Spec.DistributionConfig == KindConfigFile {
+		expectedConfigName := getExpectedDistributionConfigName(config.Spec.Distribution)
+		config.Spec.DistributionConfig = expectedConfigName
+	}
+
+	return config
+}
+
 // generateKSailConfig generates the ksail.yaml configuration file.
 func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
-	// Use the config as-is, without filtering default values
-	config := s.KSailConfig
+	// Apply distribution-specific defaults to ensure consistency with generated files
+	config := s.applyKSailConfigDefaults()
 
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, "ksail.yaml"),
@@ -111,17 +185,17 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 
 // generateKindConfig generates the kind.yaml configuration file.
 func (s *Scaffolder) generateKindConfig(output string, force bool) error {
-	// Create minimal Kind cluster configuration
+	// Create Kind cluster configuration with standard KSail name
 	kindConfig := &v1alpha4.Cluster{
 		TypeMeta: v1alpha4.TypeMeta{
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name: s.KSailConfig.Metadata.Name,
+		Name: "kind",
 	}
 
 	opts := yamlgenerator.Options{
-		Output: filepath.Join(output, "kind.yaml"),
+		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
 	}
 
@@ -155,7 +229,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	eksConfig := s.createEKSConfig()
 
 	opts := yamlgenerator.Options{
-		Output: filepath.Join(output, s.KSailConfig.Spec.DistributionConfig),
+		Output: filepath.Join(output, "eks.yaml"),
 		Force:  force,
 	}
 
@@ -168,12 +242,17 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 }
 
 func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
-	return k3dv1alpha5.SimpleConfig{
+	config := k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
-			Kind:       "SimpleConfig",
+			Kind:       "Simple",
+		},
+		ObjectMeta: types.ObjectMeta{
+			Name: "k3s-default",
 		},
 	}
+
+	return config
 }
 
 func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
@@ -183,7 +262,7 @@ func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
 			Kind:       "ClusterConfig",
 		},
 		Metadata: &eksv1alpha5.ClusterMeta{
-			Name:   s.KSailConfig.Metadata.Name,
+			Name:   "eks-default",
 			Region: "eu-north-1",
 		},
 	}

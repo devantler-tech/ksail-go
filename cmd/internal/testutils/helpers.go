@@ -4,13 +4,52 @@ import (
 	"bytes"
 	"testing"
 
+	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
+
+// CreateDefaultConfigManager creates a standard config manager for cmd tests that passes KSail validation.
+func CreateDefaultConfigManager() *configmanager.ConfigManager {
+	return configmanager.NewConfigManager(
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "ksail.dev/v1alpha1",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "Cluster",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to use",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Path to distribution configuration file",
+			DefaultValue: "kind.yaml",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context name",
+			DefaultValue: "kind-kind", // Using default pattern that validator expects
+		},
+	)
+}
+
+// SetupCommandWithOutput creates a standard cobra command with output buffer for cmd tests.
+func SetupCommandWithOutput() (*cobra.Command, *bytes.Buffer) {
+	var out bytes.Buffer
+
+	testCmd := &cobra.Command{}
+	testCmd.SetOut(&out)
+
+	return testCmd, &out
+}
 
 // SimpleCommandTestData holds test data for simple command testing.
 type SimpleCommandTestData struct {
@@ -72,25 +111,4 @@ func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	}
 
 	snaps.MatchSnapshot(t, out.String())
-}
-
-// TestRunEError tests command RunE error handling with common pattern.
-func TestRunEError(
-	t *testing.T,
-	runEFunc func(cmd *cobra.Command, configManager configmanager.ConfigManager[v1alpha1.Cluster], args []string) error,
-) {
-	t.Helper()
-
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	mockManager := configmanager.NewMockConfigManager[v1alpha1.Cluster](t)
-	mockManager.EXPECT().LoadConfig().Return(nil, ErrTestConfigLoadError)
-
-	err := runEFunc(testCmd, mockManager, []string{})
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "test config load error")
 }

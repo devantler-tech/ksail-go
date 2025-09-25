@@ -1,13 +1,10 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,10 +23,13 @@ func TestNewStatusCmd(t *testing.T) {
 func TestStatusCmdExecute(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
-		CommandName: "status",
-		NewCommand:  cmd.NewStatusCmd,
-	})
+	statusCmd := cmd.NewStatusCmd()
+
+	err := statusCmd.Execute()
+
+	// Expect a validation error because no valid configuration is provided
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration validation failed")
 }
 
 func TestStatusCmdHelp(t *testing.T) {
@@ -45,12 +45,8 @@ func TestStatusCmdHelp(t *testing.T) {
 func TestHandleStatusRunESuccess(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	manager := configmanager.NewConfigManager()
+	testCmd, out := testutils.SetupCommandWithOutput()
+	manager := testutils.CreateDefaultConfigManager()
 
 	err := cmd.HandleStatusRunE(testCmd, manager, []string{})
 

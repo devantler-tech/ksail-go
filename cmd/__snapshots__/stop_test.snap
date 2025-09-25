@@ -1,11 +1,4 @@
 
-[TestStopCmdExecute - 1]
-✔ Cluster stopped successfully (stub implementation)
-► Distribution: Kind
-► Context: kind-ksail-default
-
----
-
 [TestStopCmdHelp - 1]
 Stop the Kubernetes cluster without removing it.
 
@@ -13,7 +6,7 @@ Usage:
   stop [flags]
 
 Flags:
-  -c, --context string              Kubernetes context of cluster (default "kind-ksail-default")
+  -c, --context string              Kubernetes context of cluster (default "kind-kind")
   -d, --distribution Distribution   Kubernetes distribution to use (default Kind)
   -h, --help                        help for stop
 

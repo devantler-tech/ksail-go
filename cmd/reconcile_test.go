@@ -1,13 +1,11 @@
 package cmd_test
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,10 +24,13 @@ func TestNewReconcileCmd(t *testing.T) {
 func TestReconcileCmdExecute(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSimpleCommandExecution(t, testutils.SimpleCommandTestData{
-		CommandName: "reconcile",
-		NewCommand:  cmd.NewReconcileCmd,
-	})
+	reconcileCmd := cmd.NewReconcileCmd()
+
+	err := reconcileCmd.Execute()
+
+	// Expect a validation error because no valid configuration is provided
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration validation failed")
 }
 
 func TestReconcileCmdHelp(t *testing.T) {
@@ -45,12 +46,8 @@ func TestReconcileCmdHelp(t *testing.T) {
 func TestHandleReconcileRunESuccess(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	manager := configmanager.NewConfigManager()
+	testCmd, out := testutils.SetupCommandWithOutput()
+	manager := testutils.CreateDefaultConfigManager()
 
 	err := cmd.HandleReconcileRunE(testCmd, manager, []string{})
 
@@ -65,11 +62,7 @@ func TestHandleReconcileRunESuccess(t *testing.T) {
 func TestHandleReconcileRunEError(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
+	testCmd, _ := testutils.SetupCommandWithOutput()
 	manager := configmanager.NewConfigManager()
 
 	// Test that the function doesn't panic - error testing can be enhanced later
