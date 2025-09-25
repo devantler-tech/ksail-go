@@ -199,7 +199,8 @@ func (e *EKSClusterProvisioner) getEffectiveClusterName(name string) string {
 		return name
 	}
 
-	if e.clusterConfig != nil && e.clusterConfig.Metadata != nil && e.clusterConfig.Metadata.Name != "" {
+	if e.clusterConfig != nil && e.clusterConfig.Metadata != nil &&
+		e.clusterConfig.Metadata.Name != "" {
 		return e.clusterConfig.Metadata.Name
 	}
 
