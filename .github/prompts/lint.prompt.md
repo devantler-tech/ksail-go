@@ -1,5 +1,5 @@
 ---
-description: Execute comprehensive linting analysis and fix all golangci-lint issues following task-driven approach based on implementation tasks and linting best practices
+description: Execute comprehensive linting analysis and fix all golangci-lint, jscpd, and cspell issues following task-driven approach based on implementation tasks and linting best practices
 ---
 
 The user input can be provided directly by the agent or as a command argument - you **MUST** consider it before proceeding with the prompt (if not empty).
@@ -20,20 +20,26 @@ $ARGUMENTS
 3. Parse tasks.md structure and extract linting-focused tasks:
    - **Linting compliance tasks**: golangci-lint, code quality, style enforcement
    - **Code organization tasks**: Function length, complexity, duplication reduction
+   - **Code duplication tasks**: jscpd violations, extract common functions, reduce copy-paste
+   - **Spelling compliance tasks**: cspell violations, fix typos, maintain dictionary
    - **Test quality tasks**: Test structure, helper functions, best practices
    - **Documentation tasks**: Comments, godoc, formatting standards
 
 4. Execute comprehensive linting analysis and fixes:
    - **Initial analysis**: Run `golangci-lint run --timeout=5m` to identify all issues
-   - **Categorize issues**: Group by linter type (funlen, cyclop, wsl_v5, etc.)
-   - **Prioritize fixes**: Critical issues first, then style and formatting
+   - **Code duplication analysis**: Run `jscpd` to identify duplicated code blocks
+   - **Spelling analysis**: Run `cspell` to identify spelling errors in code and comments
+   - **Categorize issues**: Group by linter type (funlen, cyclop, wsl_v5, jscpd, cspell, etc.)
+   - **Prioritize fixes**: Critical issues first, then duplication, spelling, then style and formatting
    - **Apply automatic fixes**: Use `golangci-lint run --fix` and `golangci-lint fmt`
-   - **Manual fixes**: Address complex issues requiring code restructuring
+   - **Manual fixes**: Address complex issues requiring code restructuring, extract duplicated code, fix spelling
 
 5. Linting execution rules and priorities:
    - **Auto-fixes first**: Apply all automated formatting and style fixes
    - **Function restructuring**: Break down long functions (funlen), reduce complexity (cyclop, gocognit)
    - **Code organization**: Extract helper functions, eliminate duplication, improve readability
+   - **Duplication elimination**: Extract common code patterns identified by jscpd into shared functions
+   - **Spelling corrections**: Fix all cspell violations, add technical terms to project dictionary
    - **Documentation quality**: Add missing periods (godot), improve comments, maintain consistency
    - **Test improvements**: Add t.Helper(), fix test package naming, improve test structure
    - **Error handling**: Address exhaustive switch cases, unused variables, variable naming
@@ -49,16 +55,20 @@ $ARGUMENTS
 7. Progress tracking and validation:
    - Report linting progress after each batch of fixes
    - Run `golangci-lint run --timeout=5m` after each major change
+   - Run `jscpd` after duplication fixes to verify reduction
+   - Run `cspell` after spelling fixes to verify corrections
    - Ensure `go test ./...` passes after each batch
-   - Track remaining issue count and types
+   - Track remaining issue count and types for all linters
    - **IMPORTANT**: Mark completed linting tasks as [X] in tasks.md
 
 8. Completion validation and quality gates:
    - Verify **zero golangci-lint issues** remain (`golangci-lint run` exits with code 0)
+   - Verify **zero jscpd duplications** remain (`jscpd` reports no violations)
+   - Verify **zero cspell errors** remain (`cspell` reports no spelling mistakes)
    - Confirm all tests pass (`go test ./...` successful)
    - Validate code coverage is maintained or improved
    - Check that functionality is preserved (no breaking changes)
-   - Report final linting status with summary of fixes applied
+   - Report final linting status with summary of fixes applied for all linters
 
 ## Linting Issue Priority Matrix
 
@@ -66,8 +76,10 @@ $ARGUMENTS
 - **funlen**: Function length violations (break into smaller functions)
 - **cyclop/gocognit**: Cyclomatic/cognitive complexity (extract helper functions)
 - **exhaustive**: Missing switch cases (add required cases)
+- **jscpd**: Code duplication violations (extract common functions, reduce copy-paste)
 
 ### **High Priority**
+- **cspell**: Spelling errors in code and comments (fix typos, update dictionary)
 - **goconst**: Repeated strings (extract constants)
 - **gocritic**: Code quality issues (improve patterns)
 - **testpackage**: Test package naming (use _test suffix)
@@ -134,4 +146,47 @@ func testUtilityFunction(t *testing.T) {
 }
 ```
 
-Note: This approach focuses exclusively on linting compliance while maintaining existing functionality. Code quality improvements are achieved through systematic issue resolution following Go best practices and maintaining zero-issue status.
+### **Code Duplication (jscpd)**
+```go
+// Before: Duplicated validation logic
+func ValidateKindConfig(config KindConfig) error {
+    if config.Name == "" {
+        return errors.New("name is required")
+    }
+    if config.Image == "" {
+        return errors.New("image is required")
+    }
+    return nil
+}
+
+func ValidateK3dConfig(config K3dConfig) error {
+    if config.Name == "" {
+        return errors.New("name is required")
+    }
+    if config.Image == "" {
+        return errors.New("image is required")
+    }
+    return nil
+}
+
+// After: Extract common validation
+func validateRequiredFields(name, image string) error {
+    if name == "" {
+        return errors.New("name is required")
+    }
+    if image == "" {
+        return errors.New("image is required")
+    }
+    return nil
+}
+
+func ValidateKindConfig(config KindConfig) error {
+    return validateRequiredFields(config.Name, config.Image)
+}
+
+func ValidateK3dConfig(config K3dConfig) error {
+    return validateRequiredFields(config.Name, config.Image)
+}
+```
+
+Note: This approach focuses exclusively on linting compliance while maintaining existing functionality. Code quality improvements are achieved through systematic issue resolution following Go best practices, duplication elimination, and spelling accuracy while maintaining zero-issue status.
