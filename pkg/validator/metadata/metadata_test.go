@@ -12,151 +12,193 @@ import (
 func TestValidateMetadata(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name               string
-		kind               string
-		apiVersion         string
-		expectedKind       string
-		expectedAPIVersion string
-		expectErrors       int
-		expectedFields     []string
-	}{
-		{
-			name:               "valid_metadata",
-			kind:               "Cluster",
-			apiVersion:         "kind.x-k8s.io/v1alpha4",
-			expectedKind:       "Cluster",
-			expectedAPIVersion: "kind.x-k8s.io/v1alpha4",
-			expectErrors:       0,
-			expectedFields:     nil,
-		},
-		{
-			name:               "missing_kind",
-			kind:               "",
-			apiVersion:         "kind.x-k8s.io/v1alpha4",
-			expectedKind:       "Cluster",
-			expectedAPIVersion: "kind.x-k8s.io/v1alpha4",
-			expectErrors:       1,
-			expectedFields:     []string{"kind"},
-		},
-		{
-			name:               "missing_api_version",
-			kind:               "Cluster",
-			apiVersion:         "",
-			expectedKind:       "Cluster",
-			expectedAPIVersion: "kind.x-k8s.io/v1alpha4",
-			expectErrors:       1,
-			expectedFields:     []string{"apiVersion"},
-		},
-		{
-			name:               "missing_both",
-			kind:               "",
-			apiVersion:         "",
-			expectedKind:       "Cluster",
-			expectedAPIVersion: "kind.x-k8s.io/v1alpha4",
-			expectErrors:       2,
-			expectedFields:     []string{"kind", "apiVersion"},
-		},
-		{
-			name:               "empty_expected_values",
-			kind:               "",
-			apiVersion:         "",
-			expectedKind:       "",
-			expectedAPIVersion: "",
-			expectErrors:       2,
-			expectedFields:     []string{"kind", "apiVersion"},
-		},
-	}
+	testValidMetadata(t)
+	testMissingKind(t)
+	testMissingAPIVersion(t)
+	testMissingBothFields(t)
+	testEmptyExpectedValues(t)
+}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
+// testValidMetadata tests validation with valid metadata.
+func testValidMetadata(t *testing.T) {
+	t.Helper()
 
-			result := &validator.ValidationResult{}
+	t.Run("valid_metadata", func(t *testing.T) {
+		t.Parallel()
 
-			metadata.ValidateMetadata(
-				test.kind,
-				test.apiVersion,
-				test.expectedKind,
-				test.expectedAPIVersion,
-				result,
-			)
+		result := &validator.ValidationResult{}
 
-			require.Len(t, result.Errors, test.expectErrors,
-				"Expected %d errors, got %d", test.expectErrors, len(result.Errors))
+		metadata.ValidateMetadata(
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+			result,
+		)
 
-			for index, expectedField := range test.expectedFields {
-				assert.Equal(t, expectedField, result.Errors[index].Field,
-					"Error %d field mismatch", index)
-				assert.NotEmpty(t, result.Errors[index].Message,
-					"Error %d should have a message", index)
-				assert.NotEmpty(t, result.Errors[index].FixSuggestion,
-					"Error %d should have a fix suggestion", index)
-			}
+		require.Empty(t, result.Errors, "Expected no errors for valid metadata")
+	})
+}
 
-			// Validate specific error content for missing kind
-			if test.kind == "" {
-				kindError := findErrorByField(result.Errors, "kind")
-				require.NotNil(t, kindError, "Should have kind error")
-				assert.Equal(t, "kind is required", kindError.Message)
-				assert.Equal(t, test.expectedKind, kindError.ExpectedValue)
-				assert.Equal(t, "Set kind to '"+test.expectedKind+"'", kindError.FixSuggestion)
-			}
+// testMissingKind tests validation with missing kind field.
+func testMissingKind(t *testing.T) {
+	t.Helper()
 
-			// Validate specific error content for missing apiVersion
-			if test.apiVersion == "" {
-				apiVersionError := findErrorByField(result.Errors, "apiVersion")
-				require.NotNil(t, apiVersionError, "Should have apiVersion error")
-				assert.Equal(t, "apiVersion is required", apiVersionError.Message)
-				assert.Equal(t, test.expectedAPIVersion, apiVersionError.ExpectedValue)
-				assert.Equal(
-					t,
-					"Set apiVersion to '"+test.expectedAPIVersion+"'",
-					apiVersionError.FixSuggestion,
-				)
-			}
-		})
-	}
+	t.Run("missing_kind", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+
+		metadata.ValidateMetadata(
+			"",
+			"kind.x-k8s.io/v1alpha4",
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+			result,
+		)
+
+		require.Len(t, result.Errors, 1, "Expected 1 error for missing kind")
+		validateKindError(t, result.Errors, "Cluster")
+	})
+}
+
+// testMissingAPIVersion tests validation with missing apiVersion field.
+func testMissingAPIVersion(t *testing.T) {
+	t.Helper()
+
+	t.Run("missing_api_version", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+
+		metadata.ValidateMetadata(
+			"Cluster",
+			"",
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+			result,
+		)
+
+		require.Len(t, result.Errors, 1, "Expected 1 error for missing apiVersion")
+		validateAPIVersionError(t, result.Errors, "kind.x-k8s.io/v1alpha4")
+	})
+}
+
+// testMissingBothFields tests validation with both fields missing.
+func testMissingBothFields(t *testing.T) {
+	t.Helper()
+
+	t.Run("missing_both", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+
+		metadata.ValidateMetadata(
+			"",
+			"",
+			"Cluster",
+			"kind.x-k8s.io/v1alpha4",
+			result,
+		)
+
+		require.Len(t, result.Errors, 2, "Expected 2 errors for missing both fields")
+		validateKindError(t, result.Errors, "Cluster")
+		validateAPIVersionError(t, result.Errors, "kind.x-k8s.io/v1alpha4")
+	})
+}
+
+// testEmptyExpectedValues tests validation with empty expected values.
+func testEmptyExpectedValues(t *testing.T) {
+	t.Helper()
+
+	t.Run("empty_expected_values", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+
+		metadata.ValidateMetadata("", "", "", "", result)
+
+		require.Len(t, result.Errors, 2, "Expected 2 errors for empty expected values")
+		validateKindError(t, result.Errors, "")
+		validateAPIVersionError(t, result.Errors, "")
+	})
+}
+
+// validateKindError validates that a kind error exists with expected content.
+func validateKindError(t *testing.T, errors []validator.ValidationError, expectedKind string) {
+	t.Helper()
+
+	kindError := findErrorByField(errors, "kind")
+	require.NotNil(t, kindError, "Should have kind error")
+	assert.Equal(t, "kind is required", kindError.Message)
+	assert.Equal(t, expectedKind, kindError.ExpectedValue)
+	assert.Equal(t, "Set kind to '"+expectedKind+"'", kindError.FixSuggestion)
+}
+
+// validateAPIVersionError validates that an apiVersion error exists with expected content.
+func validateAPIVersionError(
+	t *testing.T,
+	errors []validator.ValidationError,
+	expectedAPIVersion string,
+) {
+	t.Helper()
+
+	apiVersionError := findErrorByField(errors, "apiVersion")
+	require.NotNil(t, apiVersionError, "Should have apiVersion error")
+	assert.Equal(t, "apiVersion is required", apiVersionError.Message)
+	assert.Equal(t, expectedAPIVersion, apiVersionError.ExpectedValue)
+	assert.Equal(t, "Set apiVersion to '"+expectedAPIVersion+"'", apiVersionError.FixSuggestion)
 }
 
 func TestValidateNilConfig(t *testing.T) {
 	t.Parallel()
 
+	testNilConfig(t)
+	testValidConfigs(t)
+	testEmptyConfigType(t)
+}
+
+// testNilConfig tests validation with nil config.
+func testNilConfig(t *testing.T) {
+	t.Helper()
+
+	t.Run("nil_config", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+		isNil := metadata.ValidateNilConfig(nil, "Kind", result)
+
+		assert.True(t, isNil, "Expected isNil=true for nil config")
+		require.Len(t, result.Errors, 1, "Expected 1 error for nil config")
+		assert.Equal(t, "config", result.Errors[0].Field)
+		assert.Equal(t, "configuration is nil", result.Errors[0].Message)
+		assert.Contains(t, result.Errors[0].FixSuggestion, "Kind")
+	})
+}
+
+// testValidConfigs tests validation with various valid config types.
+func testValidConfigs(t *testing.T) {
+	t.Helper()
+
 	tests := []struct {
 		name       string
 		config     interface{}
 		configType string
-		expectNil  bool
 	}{
-		{
-			name:       "nil_config",
-			config:     nil,
-			configType: "Kind",
-			expectNil:  true,
-		},
 		{
 			name:       "valid_string_config",
 			config:     "test",
 			configType: "Kind",
-			expectNil:  false,
 		},
 		{
 			name:       "valid_struct_config",
 			config:     struct{ Name string }{Name: "test"},
 			configType: "K3d",
-			expectNil:  false,
 		},
 		{
 			name:       "valid_pointer_config",
 			config:     &struct{ Name string }{Name: "test"},
 			configType: "EKS",
-			expectNil:  false,
-		},
-		{
-			name:       "empty_string_config_type",
-			config:     nil,
-			configType: "",
-			expectNil:  true,
 		},
 	}
 
@@ -165,22 +207,30 @@ func TestValidateNilConfig(t *testing.T) {
 			t.Parallel()
 
 			result := &validator.ValidationResult{}
-
 			isNil := metadata.ValidateNilConfig(test.config, test.configType, result)
 
-			assert.Equal(t, test.expectNil, isNil,
-				"Expected isNil=%v, got %v", test.expectNil, isNil)
-
-			if test.expectNil {
-				require.Len(t, result.Errors, 1, "Expected 1 error for nil config")
-				assert.Equal(t, "config", result.Errors[0].Field)
-				assert.Equal(t, "configuration is nil", result.Errors[0].Message)
-				assert.Contains(t, result.Errors[0].FixSuggestion, test.configType)
-			} else {
-				assert.Empty(t, result.Errors, "Expected no errors for non-nil config")
-			}
+			assert.False(t, isNil, "Expected isNil=false for non-nil config")
+			assert.Empty(t, result.Errors, "Expected no errors for non-nil config")
 		})
 	}
+}
+
+// testEmptyConfigType tests validation with empty config type.
+func testEmptyConfigType(t *testing.T) {
+	t.Helper()
+
+	t.Run("empty_string_config_type", func(t *testing.T) {
+		t.Parallel()
+
+		result := &validator.ValidationResult{}
+		isNil := metadata.ValidateNilConfig(nil, "", result)
+
+		assert.True(t, isNil, "Expected isNil=true for nil config with empty type")
+		require.Len(t, result.Errors, 1, "Expected 1 error for nil config")
+		assert.Equal(t, "config", result.Errors[0].Field)
+		assert.Equal(t, "configuration is nil", result.Errors[0].Message)
+		assert.Contains(t, result.Errors[0].FixSuggestion, "")
+	})
 }
 
 // Helper function to find an error by field name.

@@ -8,6 +8,7 @@ EXCLUDED_DIRECTORIES:
   - megalinter-reports
   - report
   - .github/prompts
+  - .jscpd
 
 DISABLE_LINTERS:
   - GO_REVIVE

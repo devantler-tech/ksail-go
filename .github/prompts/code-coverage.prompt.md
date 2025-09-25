@@ -20,7 +20,7 @@ $ARGUMENTS
 3. Parse tasks.md structure and extract test-focused tasks:
    - **Test organization tasks**: Test file consolidation, structure improvements
    - **Coverage improvement tasks**: Identify low-coverage areas, add comprehensive tests
-   - **Test quality tasks**: Code style, helper functions, maintability improvements
+   - **Test quality tasks**: Code style, helper functions, maintainability improvements
    - **Test validation tasks**: Linting, formatting, best practices compliance
 
 4. Execute test coverage improvements following task-based approach:
