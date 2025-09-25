@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	configFieldName = "config"
+)
+
 // TestNewValidator tests the NewValidator constructor.
 func TestNewValidator(t *testing.T) {
 	t.Parallel()
@@ -87,7 +91,7 @@ func testK3dInvalidNetworkConfig(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "config" {
+			if err.Field == configFieldName {
 				found = true
 
 				break
@@ -127,7 +131,7 @@ func testK3dLargeServerCount(t *testing.T) {
 		found := false
 
 		for _, err := range result.Errors {
-			if err.Field == "config" {
+			if err.Field == configFieldName {
 				found = true
 
 				break
@@ -366,7 +370,7 @@ func testK3dEmptyNameComplexConfig(t *testing.T) {
 	if !result.Valid && len(result.Errors) > 0 {
 		// If it fails, check the error is reasonable
 		for _, err := range result.Errors {
-			if err.Field == "config" && err.Message != "" {
+			if err.Field == configFieldName && err.Message != "" {
 				// This is acceptable - upstream validation caught something
 				continue
 			}

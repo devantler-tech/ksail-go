@@ -594,7 +594,9 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 }
 
 // This function is kept for potential future use in load error testing
-// Currently validation failure testing covers the same error handling paths// TestLoadClusterWithErrorHandling_ValidationFailure tests validation failure scenarios.
+// Currently validation failure testing covers the same error handling paths
+
+// TestLoadClusterWithErrorHandling_ValidationFailure tests validation failure scenarios.
 func TestLoadClusterWithErrorHandling_ValidationFailure(t *testing.T) {
 	t.Parallel()
 
