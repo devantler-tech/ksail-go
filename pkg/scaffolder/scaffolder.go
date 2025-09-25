@@ -248,7 +248,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 			Kind:       "Simple",
 		},
 		ObjectMeta: types.ObjectMeta{
-			Name: "k3d-k3s-default",
+			Name: "k3s-default",
 		},
 	}
 
