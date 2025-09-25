@@ -29,6 +29,7 @@ $ARGUMENTS
    - **Test function size limits**: Maximum 60 lines per test function (funlen compliance)
    - **Helper function extraction**: Break down large tests into reusable helper functions
    - **Coverage analysis**: Measure and improve coverage without altering source code
+   - **EXCLUDE testutils**: Skip coverage analysis for all testutils packages - these are test utilities, not production code
 
 5. Test improvement execution rules:
    - **Organization first**: Consolidate test files, eliminate duplication
@@ -42,6 +43,7 @@ $ARGUMENTS
    - **Coverage targets**: Aim for high coverage without sacrificing test quality
    - **Code style compliance**: Follow Go testing best practices and linting rules
    - **Helper function patterns**: Use t.Helper(), avoid code duplication, maintain readability
+   - **CRITICAL: Ignore testutils packages**: testutils packages MUST BE IGNORED for coverage analysis - do not create tests for testutils directories as they are test helper utilities, not production code requiring coverage
 
 7. Progress tracking for test improvements:
    - Report coverage metrics before and after changes
@@ -56,5 +58,13 @@ $ARGUMENTS
    - Validate all tests pass with proper parallel execution
    - Check linting compliance for test files
    - Report final coverage metrics and improvement summary
+   - **CONFIRM testutils exclusion**: Ensure testutils packages are not included in coverage reports or analysis
 
-Note: This approach focuses exclusively on test improvements while maintaining existing functionality. Source code remains unchanged while test quality and coverage are enhanced through better organization and comprehensive test scenarios.
+## Coverage Analysis Exclusions
+
+**IMPORTANT**: The following package patterns MUST BE EXCLUDED from coverage analysis:
+- `**/testutils/` - Test utility packages containing shared test helpers
+- `**/*testutils*/` - Any package with "testutils" in the name
+- Test utility packages provide shared helpers for other tests but do not require their own test coverage
+
+Note: This approach focuses exclusively on test improvements while maintaining existing functionality. Source code remains unchanged while test quality and coverage are enhanced through better organization and comprehensive test scenarios. Testutils packages are explicitly excluded from coverage requirements as they are test infrastructure, not production code.
