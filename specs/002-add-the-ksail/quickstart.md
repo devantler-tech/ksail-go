@@ -83,16 +83,10 @@ mkdir custom-ksail-project
 cd custom-ksail-project
 
 # Run with custom options
-ksail init --name my-cluster --distribution k3d --secret-manager
+ksail init --name my-cluster --distribution k3d
 
 # Expected additional output:
-# ✓ Created .sops.yaml
-```
-
-**Validation**:
-- Custom name appears in ksail.yaml
-- k3d.yaml created instead of kind.yaml
-- .sops.yaml present when --secret-manager used
+# ✓ Created k3d.yaml
 - Configuration reflects chosen options
 
 ### 4. Conflict Detection
