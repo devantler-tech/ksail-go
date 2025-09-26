@@ -41,27 +41,6 @@ The scaffolder is initialized with a complete v1alpha1.Cluster configuration loa
 - Scaffolder uses one Generator per distribution type
 - Generates distribution-specific config files
 
-### ScaffoldTemplate
-Represents an embedded template for project file generation.
-
-**Attributes**:
-- `Name` (string): Template identifier (e.g., "ksail.yaml", "kind.yaml")
-- `Content` ([]byte): Template content with placeholder substitution
-- `TargetPath` (string): Relative path where file should be created
-- `Required` (boolean): Whether template is mandatory for all projects
-- `DistributionSpecific` (boolean): Whether template applies only to specific distribution
-
-**Validation Rules**:
-- Content must be valid template with proper placeholder syntax
-- TargetPath must be relative and safe (no directory traversal)
-- Required templates cannot be skipped
-- Distribution-specific templates only generated when matching distribution selected
-
-**Relationships**:
-- Belongs to one Distribution
-- Used by InitConfig for generation
-- Produces one or more ProjectFiles
-
 ### ProjectFile
 Represents a generated configuration file in the new project.
 
