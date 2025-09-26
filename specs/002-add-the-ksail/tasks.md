@@ -71,7 +71,7 @@
 
 - [x] T018 Integrate progress feedback with existing file generation events
 - [x] T019 Enhance existing error messages to meet NFR-005 (actionable remediation)
-- [x] T021 Update existing CLI help text to document new flags and options  
+- [x] T021 Update existing CLI help text to document new flags and options
 - [x] T022 Validate enhanced implementation against all spec requirements (FR-001 to FR-016)## Phase 5: Quality Assurance
 
 - [ ] T023 [P] Run enhanced test suite and ensure >90% coverage maintained
