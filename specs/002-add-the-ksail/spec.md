@@ -58,7 +58,7 @@
 ### Session 2025-09-26 (Analysis Refinements)
 
 - Q: How does performance requirement align with constitutional <200ms CLI response time? → A: <200ms applies to CLI startup/validation, <5s applies to full project initialization
-- Q: How does user specify different distributions? → A: Through `--distribution` flag accepting kind|k3d|talos values
+- Q: How does user specify different distributions? → A: Through `--distribution` flag accepting kind|k3d|EKS values
 - Q: What specific next steps should be displayed? → A: Three specific commands: run ksail up, edit ksail.yaml, add manifests to k8s/
 - Q: Should SOPS configuration be generated in this feature? → A: No - SOPS functionality will be implemented in a separate future specification
 
