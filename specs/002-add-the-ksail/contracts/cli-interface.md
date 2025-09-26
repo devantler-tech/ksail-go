@@ -37,7 +37,7 @@ ksail init [flags]
 - MUST NOT be empty or whitespace only
 
 ### Distribution
-- MUST be one of: `kind`, `k3d`, `EKS`
+- MUST be one of: `kind`, `k3d`, `eks`
 - Case-insensitive matching
 - Invalid values result in exit code 3
 
