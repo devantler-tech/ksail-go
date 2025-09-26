@@ -161,8 +161,10 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if _, err := os.Stat(opts.Output); err == nil && !force {
+	_, statErr := os.Stat(opts.Output)
+	if statErr == nil && !force {
 		notify.Warnln(os.Stdout, "skipped 'ksail.yaml', file exists use --force to overwrite")
+
 		return nil
 	}
 
@@ -170,6 +172,7 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err)
 	}
+
 	if force {
 		notify.Activityln(os.Stdout, "overwrote 'ksail.yaml'")
 	} else {
@@ -211,8 +214,10 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if _, err := os.Stat(opts.Output); err == nil && !force {
+	_, statErr := os.Stat(opts.Output)
+	if statErr == nil && !force {
 		notify.Warnln(os.Stdout, "skipped 'kind.yaml', file exists use --force to overwrite")
+
 		return nil
 	}
 
@@ -220,6 +225,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
 	}
+
 	if force {
 		notify.Activityln(os.Stdout, "overwrote 'kind.yaml'")
 	} else {
@@ -238,8 +244,10 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if _, err := os.Stat(opts.Output); err == nil && !force {
+	_, statErr := os.Stat(opts.Output)
+	if statErr == nil && !force {
 		notify.Warnln(os.Stdout, "skipped 'k3d.yaml', file exists use --force to overwrite")
+
 		return nil
 	}
 
@@ -247,6 +255,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
 	}
+
 	if force {
 		notify.Activityln(os.Stdout, "overwrote 'k3d.yaml'")
 	} else {
@@ -265,8 +274,10 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if _, err := os.Stat(opts.Output); err == nil && !force {
+	_, statErr := os.Stat(opts.Output)
+	if statErr == nil && !force {
 		notify.Warnln(os.Stdout, "skipped 'eks.yaml', file exists use --force to overwrite")
+
 		return nil
 	}
 
@@ -274,6 +285,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 	if err != nil {
 		return fmt.Errorf("generate EKS config: %w", err)
 	}
+
 	if force {
 		notify.Activityln(os.Stdout, "overwrote 'eks.yaml'")
 	} else {
@@ -319,11 +331,13 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 		Force:  force,
 	}
 
-	if _, err := os.Stat(opts.Output); err == nil && !force {
+	_, statErr := os.Stat(opts.Output)
+	if statErr == nil && !force {
 		notify.Warnln(
 			os.Stdout,
 			"skipped 'k8s/kustomization.yaml', file exists use --force to overwrite",
 		)
+
 		return nil
 	}
 
@@ -331,6 +345,7 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
 	}
+
 	if force {
 		notify.Activityln(os.Stdout, "overwrote 'k8s/kustomization.yaml'")
 	} else {

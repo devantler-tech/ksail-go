@@ -84,6 +84,7 @@ func HandleInitRunE(
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
+
 	notify.Successln(cmd.OutOrStdout(), "initialized project")
 
 	return nil
