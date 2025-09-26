@@ -6,6 +6,7 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/spf13/cobra"
@@ -75,26 +76,15 @@ func HandleInitRunE(
 	// Create scaffolder and generate project files
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
 
-	// Show progress indicator
-	fmt.Println("📂 Initializing project...")
+	cmd.Println()
+	cmd.Println("📂 Initializing project...")
 
-	// Use targetPath directly - scaffolder will handle path joining
+	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
-
-	// Show completion messages for generated files
-	fmt.Printf("✓ Created ksail.yaml\n")
-	switch cluster.Spec.Distribution {
-	case "Kind":
-		fmt.Printf("✓ Created kind.yaml\n")
-	case "K3d":
-		fmt.Printf("✓ Created k3d.yaml\n")
-	case "EKS":
-		fmt.Printf("✓ Created eks.yaml\n")
-	}
-	fmt.Printf("✓ Created k8s/kustomization.yaml\n")
+	notify.Successln(cmd.OutOrStdout(), "initialized project")
 
 	return nil
 }

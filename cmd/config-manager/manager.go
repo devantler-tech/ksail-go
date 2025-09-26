@@ -45,7 +45,9 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 // Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded, return it
+	fmt.Println("⏳ Loading configuration...")
 	if m.configLoaded {
+		notify.Successln(os.Stdout, "config already loaded, reusing existing config")
 		return m.Config, nil
 	}
 

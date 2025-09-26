@@ -360,29 +360,6 @@ func TestExecuteCommandWithClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context:")
 }
 
-// TestLogSuccessWithClusterInfo tests the LogSuccessWithClusterInfo function.
-func TestLogSuccessWithClusterInfo(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	infoFields := []cmdhelpers.ClusterInfoField{
-		{"Distribution", "Kind"},
-		{"Context", "kind-test-cluster"},
-		{"Source Directory", "k8s"},
-	}
-
-	cmdhelpers.LogSuccessWithClusterInfo(cmd, "Operation completed", infoFields)
-
-	assert.Contains(t, out.String(), "✔ Operation completed")
-	assert.Contains(t, out.String(), "► Distribution: Kind")
-	assert.Contains(t, out.String(), "► Context: kind-test-cluster")
-	assert.Contains(t, out.String(), "► Source Directory: k8s")
-}
-
 // TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields.
 func TestLogClusterInfoWithEmptyFields(t *testing.T) {
 	t.Parallel()

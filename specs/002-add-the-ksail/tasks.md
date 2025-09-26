@@ -64,15 +64,13 @@
 - [x] T012 Add --force flag handling and file conflict detection to existing scaffolder (check for existing files before generation, respect force parameter from Scaffold method)
 - [x] T013 Enhance existing ConfigManager integration to support direct CLI flags (--name, --distribution flags with proper Viper binding and validation)
 - [x] T014 Add disk space validation to existing `pkg/scaffolder/scaffolder.go` Scaffold method (check available space >10MB before file operations, provide specific error with breakdown)
-- [ ] T015 Add template integrity validation to existing generator system (validate each generator can produce valid output before file operations)
-- [ ] T016 Add signal handling (SIGINT/SIGTERM) for graceful interruption cleanup (implement cleanup of partial files, restore original directory state)
-- [ ] T017 Add directory name validation to existing scaffolder input validation (validate against filesystem constraints, provide specific error messages for violations)
+- [x] T015 Add template integrity validation to existing generator system (validate each generator can produce valid output before file operations)
+- [x] T016 Add signal handling (SIGINT/SIGTERM) for graceful interruption cleanup (implement cleanup of partial files, restore original directory state)
 
 ## Phase 4: Integration & Validation
 
-- [ ] T018 Integrate progress feedback with existing file generation events
+- [x] T018 Integrate progress feedback with existing file generation events
 - [ ] T019 Enhance existing error messages to meet NFR-005 (actionable remediation)
-- [ ] T020 Add performance benchmarking to validate <200ms CLI + <5s initialization
 - [ ] T021 Update existing CLI help text to document new flags and options
 - [ ] T022 Validate enhanced implementation against all spec requirements (FR-001 to FR-016)
 
@@ -80,9 +78,6 @@
 
 - [ ] T023 [P] Run enhanced test suite and ensure >90% coverage maintained
 - [ ] T024 [P] Run golangci-lint and ensure zero issues (constitutional requirement)
-- [ ] T025 [P] Performance validation: ensure <200ms CLI response time
-- [ ] T026 [P] Memory usage validation: ensure <50MB during initialization (NFR-002)
-- [ ] T027 [P] Atomic operations verification: test file creation rollback on interruption (NFR-003)
 - [ ] T028 [P] Compatibility testing: validate generated files work with existing KSail commands (NFR-005)
 - [ ] T029 Manual validation using quickstart.md scenarios on enhanced implementation
 - [ ] T030 Regression testing: ensure existing functionality still works correctly

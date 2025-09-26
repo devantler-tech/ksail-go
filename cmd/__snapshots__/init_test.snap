@@ -1,8 +1,8 @@
 
 [TestInitCmdExecute - 1]
-✔ project initialized successfully
-► Distribution: Kind
-► Source directory: k8s
+
+📂 Initializing project...
+✔ initialized project
 
 ---
 

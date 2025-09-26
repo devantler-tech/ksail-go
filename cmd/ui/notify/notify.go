@@ -76,19 +76,19 @@ func Successln(out io.Writer, args ...any) {
 
 // Activityf prints a blue activity message to the provided writer, prefixed with a symbol.
 func Activityf(out io.Writer, format string, args ...any) {
-	color := fcolor.New(fcolor.FgBlue)
+	color := fcolor.New(fcolor.Reset)
 	notifyf(out, color, ActivitySymbol, format, args...)
 }
 
 // Activity prints a blue activity message to the provided writer without a trailing newline, prefixed with a symbol.
 func Activity(out io.Writer, args ...any) {
-	color := fcolor.New(fcolor.FgBlue)
+	color := fcolor.New(fcolor.Reset)
 	notify(out, color, ActivitySymbol, args...)
 }
 
 // Activityln prints a blue activity message to the provided writer with a trailing newline, prefixed with a symbol.
 func Activityln(out io.Writer, args ...any) {
-	color := fcolor.New(fcolor.FgBlue)
+	color := fcolor.New(fcolor.Reset)
 	notifyln(out, color, ActivitySymbol, args...)
 }
 

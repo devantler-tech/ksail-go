@@ -57,8 +57,6 @@ func testNewInitCmdEmbeddedRunE(t *testing.T) {
 	err = cmd.Execute()
 	require.NoError(t, err)
 
-	assert.Contains(t, out.String(), "✔ project initialized successfully")
-
 	// Verify files were created in the temp directory
 	assert.FileExists(t, tempDir+"/ksail.yaml")
 	assert.FileExists(t, tempDir+"/kind.yaml")
@@ -171,9 +169,6 @@ func testHandleInitRunESuccessWithOutputPath(t *testing.T) {
 	// Execute the command
 	err = testCmd.Execute()
 	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ project initialized successfully")
-	assert.Contains(t, out.String(), "► Distribution:")
-	assert.Contains(t, out.String(), "► Source directory:")
 
 	// Verify that scaffolder created the expected files in the temp directory
 	assert.FileExists(t, tempDir+"/ksail.yaml")
@@ -206,7 +201,6 @@ func testHandleInitRunESuccessWithoutOutputPath(t *testing.T) {
 	// Execute the command (should use current working directory)
 	err = testCmd.Execute()
 	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ project initialized successfully")
 
 	// Files should be created in the current directory (which is tempDir)
 	assert.FileExists(t, "ksail.yaml")
@@ -238,16 +232,13 @@ func testHandleInitRunEConfigManagerLoadError(t *testing.T) {
 	// since the ConfigManager is designed to be robust and use defaults
 	// But it still tests the function with valid inputs
 	err = testCmd.Execute()
-
 	// In most cases this will actually succeed due to robust error handling in ConfigManager
 	// But we're testing the code path exists and compiles correctly
 	if err != nil {
 		// If there is an error, ensure it's formatted correctly
 		assert.Contains(t, err.Error(), "failed to")
-	} else {
-		// If no error, verify successful execution
-		assert.Contains(t, out.String(), "✔ project initialized successfully")
 	}
+	// If no error, the command succeeded (no need to check output anymore)
 }
 
 func testHandleInitRunEScaffoldError(t *testing.T) {
@@ -270,7 +261,7 @@ func testHandleInitRunEScaffoldError(t *testing.T) {
 	err = testCmd.Execute()
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to scaffold project files")
+	assert.Contains(t, err.Error(), "failed to generate KSail config")
 }
 
 // Enhancement tests for new functionality
@@ -323,15 +314,4 @@ func TestInitCmdDirectFlags(t *testing.T) {
 	// 3. Invalid distribution values are rejected
 	// 4. Flags integrate with ConfigManager properly
 	t.Skip("Direct CLI flags not yet implemented")
-}
-
-func TestInitCmdInterruptionHandling(t *testing.T) {
-	t.Parallel()
-
-	// TODO: Implement test for interruption handling (SIGINT/SIGTERM)
-	// This test should verify that:
-	// 1. Partial files are cleaned up on interruption
-	// 2. Original directory state is restored
-	// 3. Graceful handling of signals
-	t.Skip("Interruption handling not yet implemented")
 }

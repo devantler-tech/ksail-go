@@ -226,18 +226,8 @@ func ExecuteCommandWithClusterInfo(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	LogSuccessWithClusterInfo(cmd, successMessage, infoFieldsFunc(cluster))
+	notify.Successln(cmd.OutOrStdout(), successMessage)
+	LogClusterInfo(cmd, infoFieldsFunc(cluster))
 
 	return nil
-}
-
-// LogSuccessWithClusterInfo logs a success message followed by cluster information fields.
-// This is useful when you already have cluster information and don't need to reload the config.
-func LogSuccessWithClusterInfo(
-	cmd *cobra.Command,
-	successMessage string,
-	infoFields []ClusterInfoField,
-) {
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, infoFields)
 }
