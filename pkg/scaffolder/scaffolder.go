@@ -4,7 +4,9 @@ package scaffolder
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
@@ -30,6 +32,7 @@ var (
 	ErrK3dConfigGeneration     = errors.New("failed to generate K3d configuration")
 	ErrEKSConfigGeneration     = errors.New("failed to generate EKS configuration")
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
+	ErrInsufficientDiskSpace   = errors.New("insufficient disk space")
 )
 
 // Distribution config file constants.
@@ -113,7 +116,13 @@ func NewScaffolder(cfg v1alpha1.Cluster) *Scaffolder {
 
 // Scaffold generates project files and configurations.
 func (s *Scaffolder) Scaffold(output string, force bool) error {
-	err := s.generateKSailConfig(output, force)
+	// Check disk space before starting operations
+	err := s.validateDiskSpace(output)
+	if err != nil {
+		return err
+	}
+
+	err = s.generateKSailConfig(output, force)
 	if err != nil {
 		return err
 	}
@@ -280,6 +289,36 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 	_, err := s.KustomizationGenerator.Generate(&kustomization, opts)
 	if err != nil {
 		return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
+	}
+
+	return nil
+}
+
+// validateDiskSpace checks if there is sufficient disk space (>10MB) in the target directory.
+// Returns ErrInsufficientDiskSpace with detailed breakdown if space is insufficient.
+func (s *Scaffolder) validateDiskSpace(targetPath string) error {
+	const minRequiredBytes = 10 * 1024 * 1024 // 10MB in bytes
+
+	// Get the directory to check - use parent if targetPath doesn't exist
+	dirToCheck := targetPath
+	if info, err := os.Stat(targetPath); err != nil || !info.IsDir() {
+		dirToCheck = filepath.Dir(targetPath)
+	}
+
+	// Get filesystem stats
+	var stat syscall.Statfs_t
+	err := syscall.Statfs(dirToCheck, &stat)
+	if err != nil {
+		return fmt.Errorf("failed to check disk space for %s: %w", dirToCheck, err)
+	}
+
+	// Calculate available space in bytes
+	availableBytes := stat.Bavail * uint64(stat.Bsize)
+	availableMB := availableBytes / (1024 * 1024)
+
+	if availableBytes < minRequiredBytes {
+		return fmt.Errorf("%w: only %d MB available, need at least 10 MB (path: %s)",
+			ErrInsufficientDiskSpace, availableMB, dirToCheck)
 	}
 
 	return nil

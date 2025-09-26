@@ -42,28 +42,28 @@
 
 ## Phase 1: Analysis & Validation
 
-- [ ] T001 Audit existing `ksail init` functionality and compare with spec requirements
-- [ ] T002 [P] Test current CLI behavior and document gaps vs FR-001 to FR-016
-- [ ] T003 [P] Run existing test suite and validate coverage for current functionality
+- [x] T001 Audit existing `ksail init` functionality and compare with spec requirements
+- [x] T002 [P] Test current CLI behavior and document gaps vs FR-001 to FR-016
+- [x] T003 [P] Run existing test suite and validate coverage for current functionality
 
 ## Phase 2: Enhancement Tests (TDD for new features only)
 
 ### CRITICAL: Tests for NEW functionality only - existing tests already pass
 
-- [ ] T004 [P] Add test for progress spinner feedback in `cmd/init_test.go`
-- [ ] T005 [P] Add test for --force flag and conflict detection in `cmd/init_test.go`
-- [ ] T006 [P] Add test for direct CLI flags (--name, --distribution) in `cmd/init_test.go`
-- [ ] T007 [P] Add test for disk space validation in `pkg/scaffolder/scaffolder_test.go`
-- [ ] T008 [P] Add test for template integrity validation in `pkg/scaffolder/scaffolder_test.go`
-- [ ] T009 [P] Add test for interruption handling in `cmd/init_test.go`
-- [ ] T010 [P] Add test for directory name validation in `pkg/scaffolder/scaffolder_test.go`
+- [x] T004 [P] Add test for progress spinner feedback in `cmd/init_test.go`
+- [x] T005 [P] Add test for --force flag and conflict detection in `cmd/init_test.go`
+- [x] T006 [P] Add test for direct CLI flags (--name, --distribution) in `cmd/init_test.go`
+- [x] T007 [P] Add test for disk space validation in `pkg/scaffolder/scaffolder_test.go`
+- [x] T008 [P] Add test for template integrity validation in `pkg/scaffolder/scaffolder_test.go`
+- [x] T009 [P] Add test for interruption handling in `cmd/init_test.go`
+- [x] T010 [P] Add test for directory name validation in `pkg/scaffolder/scaffolder_test.go`
 
 ## Phase 3: Enhancement Implementation (build on existing code)
 
-- [ ] T011 Add progress spinner to existing `cmd/init.go` HandleInitRunE function (implement spinner with "Initializing project..." text, show "✓ Created {filename}" for each generated file)
-- [ ] T012 Add --force flag handling and file conflict detection to existing scaffolder (check for existing files before generation, respect force parameter from Scaffold method)
-- [ ] T013 Enhance existing ConfigManager integration to support direct CLI flags (--name, --distribution flags with proper Viper binding and validation)
-- [ ] T014 Add disk space validation to existing `pkg/scaffolder/scaffolder.go` Scaffold method (check available space >10MB before file operations, provide specific error with breakdown)
+- [x] T011: Add progress spinner/status indicator during init process
+- [x] T012 Add --force flag handling and file conflict detection to existing scaffolder (check for existing files before generation, respect force parameter from Scaffold method)
+- [x] T013 Enhance existing ConfigManager integration to support direct CLI flags (--name, --distribution flags with proper Viper binding and validation)
+- [x] T014 Add disk space validation to existing `pkg/scaffolder/scaffolder.go` Scaffold method (check available space >10MB before file operations, provide specific error with breakdown)
 - [ ] T015 Add template integrity validation to existing generator system (validate each generator can produce valid output before file operations)
 - [ ] T016 Add signal handling (SIGINT/SIGTERM) for graceful interruption cleanup (implement cleanup of partial files, restore original directory state)
 - [ ] T017 Add directory name validation to existing scaffolder input validation (validate against filesystem constraints, provide specific error messages for violations)

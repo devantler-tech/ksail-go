@@ -32,6 +32,9 @@ func NewInitCmd() *cobra.Command {
 	// Add the --output flag for specifying output directory
 	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
 
+	// Add the --force flag for overwriting existing files
+	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
+
 	return cmd
 }
 
@@ -44,8 +47,9 @@ func HandleInitRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	// Bind the --output flag
+	// Bind the --output and --force flags
 	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	_ = configManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
@@ -65,25 +69,32 @@ func HandleInitRunE(
 		}
 	}
 
+	// Get the force flag value
+	force := configManager.Viper.GetBool("force")
+
 	// Create scaffolder and generate project files
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
 
+	// Show progress indicator
+	fmt.Println("📂 Initializing project...")
+
 	// Use targetPath directly - scaffolder will handle path joining
-	err = scaffolderInstance.Scaffold(targetPath, false)
+	err = scaffolderInstance.Scaffold(targetPath, force)
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	// Display success message and cluster info directly using the already loaded cluster
-	// This avoids loading the config again and potential validation issues with the newly created files
-	cmdhelpers.LogSuccessWithClusterInfo(
-		cmd,
-		"project initialized successfully",
-		[]cmdhelpers.ClusterInfoField{
-			{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
-			{Label: "Source directory", Value: cluster.Spec.SourceDirectory},
-		},
-	)
+	// Show completion messages for generated files
+	fmt.Printf("✓ Created ksail.yaml\n")
+	switch cluster.Spec.Distribution {
+	case "Kind":
+		fmt.Printf("✓ Created kind.yaml\n")
+	case "K3d":
+		fmt.Printf("✓ Created k3d.yaml\n")
+	case "EKS":
+		fmt.Printf("✓ Created eks.yaml\n")
+	}
+	fmt.Printf("✓ Created k8s/kustomization.yaml\n")
 
 	return nil
 }

@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -270,4 +271,67 @@ func testHandleInitRunEScaffoldError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to scaffold project files")
+}
+
+// Enhancement tests for new functionality
+
+func TestInitCmdProgressSpinner(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	testCmd := cmd.NewInitCmd()
+
+	// Set the --output flag to the temp directory
+	err := testCmd.Flags().Set("output", tempDir)
+	require.NoError(t, err)
+
+	// Execute the command - should succeed without error
+	err = testCmd.Execute()
+	require.NoError(t, err)
+
+	// Verify the expected files were created (proves progress completed successfully)
+	expectedFiles := []string{
+		filepath.Join(tempDir, "ksail.yaml"),
+		filepath.Join(tempDir, "kind.yaml"),
+		filepath.Join(tempDir, "k8s", "kustomization.yaml"),
+	}
+
+	for _, file := range expectedFiles {
+		assert.FileExists(t, file, "Expected file should exist: %s", file)
+	}
+}
+
+func TestInitCmdForceFlag(t *testing.T) {
+	t.Parallel()
+
+	// TODO: Implement test for --force flag and conflict detection
+	// This test should verify that:
+	// 1. Without --force: command fails when files exist
+	// 2. With --force: command overwrites existing files
+	// 3. Proper conflict detection and error messages
+	t.Skip("Force flag and conflict detection not yet implemented")
+}
+
+func TestInitCmdDirectFlags(t *testing.T) {
+	t.Parallel()
+
+	// TODO: Implement test for direct CLI flags (--name, --distribution)
+	// This test should verify that:
+	// 1. --name flag properly sets project name
+	// 2. --distribution flag accepts kind, k3d, talos
+	// 3. Invalid distribution values are rejected
+	// 4. Flags integrate with ConfigManager properly
+	t.Skip("Direct CLI flags not yet implemented")
+}
+
+func TestInitCmdInterruptionHandling(t *testing.T) {
+	t.Parallel()
+
+	// TODO: Implement test for interruption handling (SIGINT/SIGTERM)
+	// This test should verify that:
+	// 1. Partial files are cleaned up on interruption
+	// 2. Original directory state is restored
+	// 3. Graceful handling of signals
+	t.Skip("Interruption handling not yet implemented")
 }

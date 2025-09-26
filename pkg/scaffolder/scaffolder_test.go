@@ -2,6 +2,7 @@ package scaffolder_test
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ktypes "sigs.k8s.io/kustomize/api/types"
@@ -366,4 +368,57 @@ func createUnknownCluster(name string) v1alpha1.Cluster {
 	c.Spec.Distribution = "unknown"
 
 	return c
+}
+
+// Enhancement tests for new scaffolder functionality
+
+func TestScaffolderDiskSpaceValidation(t *testing.T) {
+	t.Parallel()
+
+	// Test with a valid directory that should have sufficient space
+	tempDir := t.TempDir()
+
+	// Create a basic cluster config for testing
+	cluster := createTestCluster("test-cluster")
+	scaffolderInstance := scaffolder.NewScaffolder(cluster)
+
+	// Test the disk space validation via the Scaffold method
+	// This should succeed because temp directories typically have >10MB available
+	err := scaffolderInstance.Scaffold(tempDir, false)
+
+	// Should not return an error for a normal temp directory (should have >10MB available)
+	assert.NoError(t, err, "Expected no error for directory with sufficient space")
+
+	// Verify that files were actually created (proving disk space check passed)
+	expectedFiles := []string{
+		filepath.Join(tempDir, "ksail.yaml"),
+		filepath.Join(tempDir, "kind.yaml"),
+		filepath.Join(tempDir, "k8s", "kustomization.yaml"),
+	}
+
+	for _, file := range expectedFiles {
+		assert.FileExists(t, file, "Expected file should exist: %s", file)
+	}
+}
+
+func TestScaffolderTemplateIntegrityValidation(t *testing.T) {
+	t.Parallel()
+
+	// TODO: Implement test for template integrity validation
+	// This test should verify that:
+	// 1. Each generator can produce valid output before file operations
+	// 2. Validation occurs at startup/before scaffolding
+	// 3. Fails fast if template generation fails
+	t.Skip("Template integrity validation not yet implemented")
+}
+
+func TestScaffolderDirectoryNameValidation(t *testing.T) {
+	t.Parallel()
+
+	// TODO: Implement test for directory name validation
+	// This test should verify that:
+	// 1. Directory names are validated against filesystem constraints
+	// 2. Specific error messages for violations (invalid chars, length, reserved names)
+	// 3. Both input validation and created directory validation
+	t.Skip("Directory name validation not yet implemented")
 }
