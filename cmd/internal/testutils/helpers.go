@@ -122,17 +122,16 @@ func TestCmdExecuteInCleanDir(t *testing.T, cmdFactory func() *cobra.Command, cm
 
 	// Create a temporary directory to ensure no ksail.yaml exists
 	tempDir := t.TempDir()
+
 	originalDir, err := os.Getwd()
 	if err != nil {
 		t.Fatalf("failed to get current directory: %v", err)
 	}
 
-	err = os.Chdir(tempDir)
-	if err != nil {
-		t.Fatalf("failed to change to temp directory: %v", err)
-	}
+	t.Chdir(tempDir)
+
 	defer func() {
-		_ = os.Chdir(originalDir)
+		t.Chdir(originalDir)
 	}()
 
 	cmd := cmdFactory()

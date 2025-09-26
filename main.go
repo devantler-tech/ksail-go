@@ -23,6 +23,7 @@ func run() int {
 	err := rootCmd.Execute()
 	if err != nil {
 		notify.Errorln(rootCmd.ErrOrStderr(), err)
+
 		return 1
 	}
 

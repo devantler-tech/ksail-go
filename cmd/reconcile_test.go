@@ -21,9 +21,8 @@ func TestNewReconcileCmd(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir() in Go 1.25.1+
 func TestReconcileCmdExecute(t *testing.T) {
-	t.Parallel()
-
 	testutils.TestCmdExecuteInCleanDir(t, cmd.NewReconcileCmd, "reconcile")
 }
 

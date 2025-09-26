@@ -20,9 +20,8 @@ func TestNewStatusCmd(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir() in Go 1.25.1+
 func TestStatusCmdExecute(t *testing.T) {
-	t.Parallel()
-
 	testutils.TestCmdExecuteInCleanDir(t, cmd.NewStatusCmd, "status")
 }
 

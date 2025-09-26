@@ -21,6 +21,7 @@ func TestRunSuccess(t *testing.T) {
 
 	// Test run function with --help flag (this typically exits with 0)
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "--help"}
@@ -36,6 +37,7 @@ func TestRunWithInvalidCommand(t *testing.T) {
 
 	// Test run function with invalid command
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "invalid-command"}

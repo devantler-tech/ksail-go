@@ -318,6 +318,7 @@ func TestInitCmdForceFlag(t *testing.T) {
 	// Store original file modification times
 	ksailStat, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
 	require.NoError(t, err)
+
 	originalModTime := ksailStat.ModTime()
 
 	// Test without --force (should skip existing files - files remain unchanged)
