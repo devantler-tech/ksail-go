@@ -171,9 +171,9 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 		return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err)
 	}
 	if force {
-		notify.Successln(os.Stdout, "overwrote 'ksail.yaml'")
+		notify.Activityln(os.Stdout, "overwrote 'ksail.yaml'")
 	} else {
-		notify.Successln(os.Stdout, "created 'ksail.yaml'")
+		notify.Activityln(os.Stdout, "created 'ksail.yaml'")
 	}
 
 	return nil
@@ -221,9 +221,9 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
 	}
 	if force {
-		notify.Successln(os.Stdout, "overwrote 'kind.yaml'")
+		notify.Activityln(os.Stdout, "overwrote 'kind.yaml'")
 	} else {
-		notify.Successln(os.Stdout, "created 'kind.yaml'")
+		notify.Activityln(os.Stdout, "created 'kind.yaml'")
 	}
 
 	return nil
@@ -248,9 +248,9 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 		return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
 	}
 	if force {
-		notify.Successln(os.Stdout, "overwrote 'k3d.yaml'")
+		notify.Activityln(os.Stdout, "overwrote 'k3d.yaml'")
 	} else {
-		notify.Successln(os.Stdout, "created 'k3d.yaml'")
+		notify.Activityln(os.Stdout, "created 'k3d.yaml'")
 	}
 
 	return nil
@@ -275,9 +275,9 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 		return fmt.Errorf("generate EKS config: %w", err)
 	}
 	if force {
-		notify.Successln(os.Stdout, "overwrote 'eks.yaml'")
+		notify.Activityln(os.Stdout, "overwrote 'eks.yaml'")
 	} else {
-		notify.Successln(os.Stdout, "created 'eks.yaml'")
+		notify.Activityln(os.Stdout, "created 'eks.yaml'")
 	}
 
 	return nil
@@ -332,9 +332,9 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 		return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
 	}
 	if force {
-		notify.Successln(os.Stdout, "overwrote 'k8s/kustomization.yaml'")
+		notify.Activityln(os.Stdout, "overwrote 'k8s/kustomization.yaml'")
 	} else {
-		notify.Successln(os.Stdout, "created 'k8s/kustomization.yaml'")
+		notify.Activityln(os.Stdout, "created 'k8s/kustomization.yaml'")
 	}
 
 	return nil
