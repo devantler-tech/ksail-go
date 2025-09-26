@@ -91,7 +91,7 @@ Any user (developer, platform engineer, or DevOps practitioner) wants to start u
 
 - **FR-001**: System MUST provide a `ksail init` command that scaffolds a new Kubernetes project
 - **FR-002**: Command MUST create a `ksail.yaml` configuration file with Kind as the default distribution
-- **FR-003**: Command MUST generate kind.yaml by default, with other distribution files (k3d.yaml, talos configs) generated when `--distribution` flag specifies k3d or talos
+- **FR-003**: Command MUST generate kind.yaml by default, with other distribution files (k3d.yaml, eks configs) generated when `--distribution` flag specifies k3d or eks
 - **FR-004**: Command MUST create a basic Kustomize structure with `k8s/kustomization.yaml`
 - **FR-005**: Command MUST display a spinner with "Initializing project..." text and show each file creation below the spinner with checkmark symbols (format: "✓ Created {filename}" for each generated file)
 - **FR-006**: Command MUST offer customization options through specific CLI flags: --name (project name), --distribution (kind|k3d|talos), --reconciliation-tool (kubectl|flux), --force (boolean to overwrite existing files)
