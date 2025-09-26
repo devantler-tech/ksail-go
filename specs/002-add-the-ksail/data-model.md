@@ -1,4 +1,6 @@
-# Data Model: KSail Init Command### ScaffoldTemplate
+# Data Model: KSail Init Command
+
+### ScaffoldTemplate
 Represents a runtime-generated template for project file generation.
 
 **Attributes**:
