@@ -24,13 +24,7 @@ func TestNewReconcileCmd(t *testing.T) {
 func TestReconcileCmdExecute(t *testing.T) {
 	t.Parallel()
 
-	reconcileCmd := cmd.NewReconcileCmd()
-
-	err := reconcileCmd.Execute()
-
-	// Expect a validation error because no valid configuration is provided
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "configuration validation failed")
+	testutils.TestCmdExecuteInCleanDir(t, cmd.NewReconcileCmd, "reconcile")
 }
 
 func TestReconcileCmdHelp(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
@@ -314,7 +315,12 @@ func TestInitCmdForceFlag(t *testing.T) {
 	err = cmd1.Execute()
 	require.NoError(t, err)
 
-	// Test without --force (should skip existing files)
+	// Store original file modification times
+	ksailStat, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
+	require.NoError(t, err)
+	originalModTime := ksailStat.ModTime()
+
+	// Test without --force (should skip existing files - files remain unchanged)
 	cmd2 := cmd.NewInitCmd()
 
 	var out2 bytes.Buffer
@@ -324,9 +330,15 @@ func TestInitCmdForceFlag(t *testing.T) {
 	err = cmd2.Execute()
 	require.NoError(t, err)
 
-	output := out2.String()
-	assert.Contains(t, output, "skipped")
-	assert.Contains(t, output, "use --force to overwrite")
+	// Verify files were not modified (same mod time)
+	ksailStat2, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
+	require.NoError(t, err)
+	assert.Equal(
+		t,
+		originalModTime,
+		ksailStat2.ModTime(),
+		"File should not be modified without --force",
+	)
 
 	// Test with --force (should overwrite files)
 	cmd3 := cmd.NewInitCmd()
@@ -337,11 +349,21 @@ func TestInitCmdForceFlag(t *testing.T) {
 	require.NoError(t, err)
 	err = cmd3.Flags().Set("force", "true")
 	require.NoError(t, err)
+
+	// Small delay to ensure different mod time
+	time.Sleep(10 * time.Millisecond)
+
 	err = cmd3.Execute()
 	require.NoError(t, err)
 
-	output = out3.String()
-	assert.Contains(t, output, "overwrote")
+	// Verify files were modified (different mod time)
+	ksailStat3, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
+	require.NoError(t, err)
+	assert.True(
+		t,
+		ksailStat3.ModTime().After(originalModTime),
+		"File should be modified with --force",
+	)
 }
 
 func TestInitCmdDirectFlags(t *testing.T) {

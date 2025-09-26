@@ -2,6 +2,8 @@ package testutils
 
 import (
 	"bytes"
+	"os"
+	"strings"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -111,4 +113,41 @@ func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	}
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+// TestCmdExecuteInCleanDir executes a command in a temporary directory with no ksail.yaml file
+// and validates that it returns a configuration validation error.
+func TestCmdExecuteInCleanDir(t *testing.T, cmdFactory func() *cobra.Command, cmdName string) {
+	t.Helper()
+
+	// Create a temporary directory to ensure no ksail.yaml exists
+	tempDir := t.TempDir()
+	originalDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %v", err)
+	}
+
+	err = os.Chdir(tempDir)
+	if err != nil {
+		t.Fatalf("failed to change to temp directory: %v", err)
+	}
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	cmd := cmdFactory()
+	err = cmd.Execute()
+
+	// Expect a validation error because no valid configuration is provided
+	if err == nil {
+		t.Fatalf("expected validation error for %s command, got nil", cmdName)
+	}
+
+	if !strings.Contains(err.Error(), "configuration validation failed") {
+		t.Fatalf(
+			"expected 'configuration validation failed' in error for %s command, got: %v",
+			cmdName,
+			err,
+		)
+	}
 }

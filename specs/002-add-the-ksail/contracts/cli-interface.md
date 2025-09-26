@@ -94,7 +94,7 @@ Generated based on flags:
 
 ### File Content Requirements
 
-- All YAML files MUST be valid and parseable
+- All YAML files MUST be valid and parsable
 - Configuration files MUST be compatible with target tools
 - Generated content MUST pass validation by respective tools
 

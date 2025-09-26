@@ -15,14 +15,20 @@ var (
 	date    = "unknown"
 )
 
-func main() {
+// run executes the main application logic and returns an exit code.
+// This function is separated from main() to make it testable.
+func run() int {
 	rootCmd := cmd.NewRootCmd(version, commit, date)
 
 	err := rootCmd.Execute()
 	if err != nil {
 		notify.Errorln(rootCmd.ErrOrStderr(), err)
-		os.Exit(1)
+		return 1
 	}
 
-	os.Exit(0)
+	return 0
+}
+
+func main() {
+	os.Exit(run())
 }

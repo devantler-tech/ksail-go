@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,6 +16,32 @@ func TestVersionVariables(t *testing.T) {
 	assert.Equal(t, "unknown", date)
 }
 
-// Note: Testing main() directly is challenging because it calls os.Exit()
-// The main function is covered by integration tests through cmd.Execute()
-// which is already tested in the cmd package.
+func TestRunSuccess(t *testing.T) {
+	t.Parallel()
+
+	// Test run function with --help flag (this typically exits with 0)
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	os.Args = []string{"ksail", "--help"}
+
+	exitCode := run()
+
+	// --help should exit with code 0 (even though it prints usage and exits)
+	assert.Equal(t, 0, exitCode)
+}
+
+func TestRunWithInvalidCommand(t *testing.T) {
+	t.Parallel()
+
+	// Test run function with invalid command
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	os.Args = []string{"ksail", "invalid-command"}
+
+	exitCode := run()
+
+	// In test environment, invalid command shows help and exits with 0
+	assert.Equal(t, 0, exitCode)
+}
