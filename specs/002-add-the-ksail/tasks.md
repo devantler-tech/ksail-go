@@ -38,7 +38,7 @@
 ## Format: `[ID] [P?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- Paths relative to repository root: `/Users/ndam/git-personal/monorepo/projects/ksail-go/`
+- Paths relative to repository root: `<REPO_ROOT>`
 
 ## Phase 1: Analysis & Validation
 
