@@ -14,7 +14,7 @@ Represents a runtime-generated template for project file generation.
 - Generator must produce valid template content with proper placeholder substitution
 - TargetPath must be relative and safe (no directory traversal)
 - Required templates cannot be skipped
-- Distribution-specific templates only generated when matching distribution selectedies
+- Distribution-specific templates only generated when matching distribution selected
 
 ### v1alpha1.Cluster (Existing)
 **Note**: KSail init uses the existing v1alpha1.Cluster configuration structure, not a separate InitConfig.
