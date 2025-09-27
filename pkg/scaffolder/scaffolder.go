@@ -161,18 +161,26 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	filePath string,
 	fileName string,
 	force bool,
-) bool {
+) (bool, bool) {
 	_, statErr := os.Stat(filePath)
-	if statErr == nil && !force {
-		notify.Warnln(
-			s.Writer,
-			fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
-		)
+	if statErr == nil {
+		if !force {
+			notify.Warnln(
+				s.Writer,
+				fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
+			)
 
-		return true
+			return true, true
+		}
+
+		return false, true
 	}
 
-	return false
+	if !errors.Is(statErr, os.ErrNotExist) && statErr != nil {
+		return false, false
+	}
+
+	return false, false
 }
 
 // GenerationParams groups parameters for generateWithFileHandling.
@@ -191,7 +199,13 @@ func generateWithFileHandling[T any](
 	scaffolder *Scaffolder,
 	params GenerationParams[T],
 ) error {
-	if scaffolder.checkFileExistsAndSkip(params.Opts.Output, params.DisplayName, params.Force) {
+	skip, existed := scaffolder.checkFileExistsAndSkip(
+		params.Opts.Output,
+		params.DisplayName,
+		params.Force,
+	)
+
+	if skip {
 		return nil
 	}
 
@@ -204,14 +218,14 @@ func generateWithFileHandling[T any](
 		return fmt.Errorf("failed to generate %s: %w", params.DisplayName, err)
 	}
 
-	scaffolder.notifyFileAction(params.DisplayName, params.Force)
+	scaffolder.notifyFileAction(params.DisplayName, existed)
 
 	return nil
 }
 
-func (s *Scaffolder) notifyFileAction(displayName string, force bool) {
+func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 	action := "created"
-	if force {
+	if overwritten {
 		action = "overwrote"
 	}
 
