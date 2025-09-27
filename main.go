@@ -25,28 +25,17 @@ func main() {
 	}
 }
 
-func runSafelyWithArgs(args []string) int {
-	var (
-		recovered any
-		stack     []byte
-	)
-
+func runSafelyWithArgs(args []string) (exitCode int) {
 	defer func() {
 		if r := recover(); r != nil {
-			recovered = r
-			stack = debug.Stack()
+			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, debug.Stack())
+			notify.Errorln(os.Stderr, panicMessage)
+			exitCode = 1
 		}
 	}()
 
-	exitCode := runWithArgs(args)
-	if recovered != nil {
-		panicMessage := fmt.Sprintf("panic recovered: %v\n%s", recovered, stack)
-		notify.Errorln(os.Stderr, panicMessage)
-
-		return 1
-	}
-
-	return exitCode
+	exitCode = runWithArgs(args)
+	return
 }
 
 // run executes the main application logic and returns an exit code.
