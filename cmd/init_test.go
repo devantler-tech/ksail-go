@@ -305,7 +305,20 @@ func TestInitCmdForceFlag(t *testing.T) {
 
 	tempDir := t.TempDir()
 
-	// Create initial project
+	// Create initial project and get original mod time
+	originalModTime := createInitialProject(t, tempDir)
+
+	// Test without --force (should skip existing files)
+	testWithoutForceFlag(t, tempDir, originalModTime)
+
+	// Test with --force (should overwrite files)
+	testWithForceFlag(t, tempDir, originalModTime)
+}
+
+// createInitialProject creates an initial project and returns the original modification time.
+func createInitialProject(t *testing.T, tempDir string) time.Time {
+	t.Helper()
+
 	cmd1 := cmd.NewInitCmd()
 
 	var out1 bytes.Buffer
@@ -319,14 +332,18 @@ func TestInitCmdForceFlag(t *testing.T) {
 	ksailStat, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
 	require.NoError(t, err)
 
-	originalModTime := ksailStat.ModTime()
+	return ksailStat.ModTime()
+}
 
-	// Test without --force (should skip existing files - files remain unchanged)
+// testWithoutForceFlag tests init command without --force flag.
+func testWithoutForceFlag(t *testing.T, tempDir string, originalModTime time.Time) {
+	t.Helper()
+
 	cmd2 := cmd.NewInitCmd()
 
 	var out2 bytes.Buffer
 	cmd2.SetOut(&out2)
-	err = cmd2.Flags().Set("output", tempDir)
+	err := cmd2.Flags().Set("output", tempDir)
 	require.NoError(t, err)
 	err = cmd2.Execute()
 	require.NoError(t, err)
@@ -340,13 +357,17 @@ func TestInitCmdForceFlag(t *testing.T) {
 		ksailStat2.ModTime(),
 		"File should not be modified without --force",
 	)
+}
 
-	// Test with --force (should overwrite files)
+// testWithForceFlag tests init command with --force flag.
+func testWithForceFlag(t *testing.T, tempDir string, originalModTime time.Time) {
+	t.Helper()
+
 	cmd3 := cmd.NewInitCmd()
 
 	var out3 bytes.Buffer
 	cmd3.SetOut(&out3)
-	err = cmd3.Flags().Set("output", tempDir)
+	err := cmd3.Flags().Set("output", tempDir)
 	require.NoError(t, err)
 	err = cmd3.Flags().Set("force", "true")
 	require.NoError(t, err)

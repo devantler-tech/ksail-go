@@ -597,7 +597,7 @@ func TestLoadClusterWithErrorHandling_ValidationFailure(t *testing.T) {
 
 // createConfigManagerWithValidationIssues creates a config manager that returns invalid configuration.
 func createConfigManagerWithValidationIssues() *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
+	return testutils.CreateConfigManagerWithFieldSelectors(
 		io.Discard,
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },

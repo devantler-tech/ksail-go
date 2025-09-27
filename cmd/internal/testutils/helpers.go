@@ -13,9 +13,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CreateConfigManagerWithFieldSelectors creates a config manager with the provided field selectors.
+func CreateConfigManagerWithFieldSelectors(
+	writer io.Writer,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
+) *configmanager.ConfigManager {
+	return configmanager.NewConfigManager(writer, fieldSelectors...)
+}
+
 // CreateDefaultConfigManager creates a standard config manager for cmd tests that passes KSail validation.
 func CreateDefaultConfigManager() *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
+	return CreateConfigManagerWithFieldSelectors(
 		io.Discard,
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
