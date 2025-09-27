@@ -33,6 +33,14 @@ func run() int {
 }
 
 func main() {
+	exitCode := runSafely()
+
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
+}
+
+func runSafely() int {
 	exitCode := 0
 
 	defer func() {
@@ -43,9 +51,9 @@ func main() {
 
 			exitCode = 1
 		}
-
-		os.Exit(exitCode)
 	}()
 
 	exitCode = run()
+
+	return exitCode
 }
