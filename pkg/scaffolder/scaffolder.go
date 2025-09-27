@@ -186,23 +186,25 @@ type GenerationParams[T any] struct {
 }
 
 // generateWithFileHandling wraps template generation with common file existence checks and notifications.
+
 func generateWithFileHandling[T any](
-	s *Scaffolder,
+	scaffolder *Scaffolder,
 	params GenerationParams[T],
 ) error {
-	if s.checkFileExistsAndSkip(params.Opts.Output, params.DisplayName, params.Force) {
+	if scaffolder.checkFileExistsAndSkip(params.Opts.Output, params.DisplayName, params.Force) {
 		return nil
 	}
 
-	if _, err := params.Gen.Generate(params.Model, params.Opts); err != nil {
+	_, err := params.Gen.Generate(params.Model, params.Opts)
+	if err != nil {
 		if params.WrapErr != nil {
 			return params.WrapErr(err)
 		}
 
-		return err
+		return fmt.Errorf("failed to generate %s: %w", params.DisplayName, err)
 	}
 
-	s.notifyFileAction(params.DisplayName, params.Force)
+	scaffolder.notifyFileAction(params.DisplayName, params.Force)
 
 	return nil
 }
@@ -228,12 +230,16 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 
 	return generateWithFileHandling(
 		s,
-		s.KSailYAMLGenerator,
-		config,
-		opts,
-		"ksail.yaml",
-		force,
-		func(err error) error { return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err) },
+		GenerationParams[v1alpha1.Cluster]{
+			Gen:         s.KSailYAMLGenerator,
+			Model:       config,
+			Opts:        opts,
+			DisplayName: "ksail.yaml",
+			Force:       force,
+			WrapErr: func(err error) error {
+				return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err)
+			},
+		},
 	)
 }
 
@@ -271,12 +277,16 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 	return generateWithFileHandling(
 		s,
-		s.KindGenerator,
-		kindConfig,
-		opts,
-		"kind.yaml",
-		force,
-		func(err error) error { return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err) },
+		GenerationParams[*v1alpha4.Cluster]{
+			Gen:         s.KindGenerator,
+			Model:       kindConfig,
+			Opts:        opts,
+			DisplayName: "kind.yaml",
+			Force:       force,
+			WrapErr: func(err error) error {
+				return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
+			},
+		},
 	)
 }
 
@@ -291,12 +301,16 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 
 	return generateWithFileHandling(
 		s,
-		s.K3dGenerator,
-		&k3dConfig,
-		opts,
-		"k3d.yaml",
-		force,
-		func(err error) error { return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err) },
+		GenerationParams[*k3dv1alpha5.SimpleConfig]{
+			Gen:         s.K3dGenerator,
+			Model:       &k3dConfig,
+			Opts:        opts,
+			DisplayName: "k3d.yaml",
+			Force:       force,
+			WrapErr: func(err error) error {
+				return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
+			},
+		},
 	)
 }
 
@@ -311,12 +325,16 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 
 	return generateWithFileHandling(
 		s,
-		s.EKSGenerator,
-		eksConfig,
-		opts,
-		"eks.yaml",
-		force,
-		func(err error) error { return fmt.Errorf("generate EKS config: %w", err) },
+		GenerationParams[*eksv1alpha5.ClusterConfig]{
+			Gen:         s.EKSGenerator,
+			Model:       eksConfig,
+			Opts:        opts,
+			DisplayName: "eks.yaml",
+			Force:       force,
+			WrapErr: func(err error) error {
+				return fmt.Errorf("generate EKS config: %w", err)
+			},
+		},
 	)
 }
 
@@ -358,11 +376,15 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 
 	return generateWithFileHandling(
 		s,
-		s.KustomizationGenerator,
-		&kustomization,
-		opts,
-		"k8s/kustomization.yaml",
-		force,
-		func(err error) error { return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err) },
+		GenerationParams[*ktypes.Kustomization]{
+			Gen:         s.KustomizationGenerator,
+			Model:       &kustomization,
+			Opts:        opts,
+			DisplayName: "k8s/kustomization.yaml",
+			Force:       force,
+			WrapErr: func(err error) error {
+				return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
+			},
+		},
 	)
 }

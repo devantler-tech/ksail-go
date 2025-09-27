@@ -1,8 +1,11 @@
 package scaffolder_test
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,10 +15,15 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/require"
+	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
+
+var errGenerateFailure = errors.New("generate failure")
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
@@ -161,6 +169,44 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestScaffoldSkipsExistingFileWithoutForce(t *testing.T) {
+	t.Parallel()
+
+	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+	require.NoError(t, err)
+	require.Equal(t, 0, spies.ksail.callCount)
+	require.Contains(t, buffer.String(), "skipped 'ksail.yaml'")
+}
+
+func TestScaffoldOverwritesFilesWhenForceEnabled(t *testing.T) {
+	t.Parallel()
+
+	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+
+	err := scaffolderInstance.Scaffold(tempDir, true)
+	require.NoError(t, err)
+	require.Positive(t, spies.ksail.callCount)
+	require.Contains(t, buffer.String(), "overwrote 'ksail.yaml'")
+}
+
+func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+	spies.ksail.returnErr = errGenerateFailure
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+	require.Error(t, err)
+	require.ErrorIs(t, err, scaffolder.ErrKSailConfigGeneration)
+	require.Equal(t, 1, spies.ksail.callCount)
+	require.Equal(t, 0, spies.kind.callCount)
 }
 
 // Test case definitions.
@@ -368,4 +414,77 @@ func createUnknownCluster(name string) v1alpha1.Cluster {
 	c.Spec.Distribution = "unknown"
 
 	return c
+}
+
+type spyGenerator[T any] struct {
+	callCount  int
+	returnErr  error
+	lastOutput yamlgenerator.Options
+}
+
+func (s *spyGenerator[T]) Generate(_ T, opts yamlgenerator.Options) (string, error) {
+	s.callCount++
+	s.lastOutput = opts
+
+	return "", s.returnErr
+}
+
+type generatorSpies struct {
+	ksail         *spyGenerator[v1alpha1.Cluster]
+	kind          *spyGenerator[*v1alpha4.Cluster]
+	k3d           *spyGenerator[*k3dv1alpha5.SimpleConfig]
+	eks           *spyGenerator[*eksv1alpha5.ClusterConfig]
+	kustomization *spyGenerator[*ktypes.Kustomization]
+}
+
+func newScaffolderWithSpies(
+	t *testing.T,
+	writer io.Writer,
+) (*scaffolder.Scaffolder, generatorSpies) {
+	t.Helper()
+
+	cluster := createTestCluster("spy-cluster")
+	scaffolderInstance := scaffolder.NewScaffolder(cluster, writer)
+
+	spies := generatorSpies{
+		ksail:         &spyGenerator[v1alpha1.Cluster]{},
+		kind:          &spyGenerator[*v1alpha4.Cluster]{},
+		k3d:           &spyGenerator[*k3dv1alpha5.SimpleConfig]{},
+		eks:           &spyGenerator[*eksv1alpha5.ClusterConfig]{},
+		kustomization: &spyGenerator[*ktypes.Kustomization]{},
+	}
+
+	scaffolderInstance.KSailYAMLGenerator = spies.ksail
+	scaffolderInstance.KindGenerator = spies.kind
+	scaffolderInstance.K3dGenerator = spies.k3d
+	scaffolderInstance.EKSGenerator = spies.eks
+	scaffolderInstance.KustomizationGenerator = spies.kustomization
+
+	return scaffolderInstance, spies
+}
+
+func setupExistingKSailFile(
+	t *testing.T,
+) (
+	string,
+	*bytes.Buffer,
+	*scaffolder.Scaffolder,
+	generatorSpies,
+) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	require.NoError(
+		t,
+		os.WriteFile(
+			filepath.Join(tempDir, "ksail.yaml"),
+			[]byte("existing"),
+			0o600,
+		),
+	)
+
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	return tempDir, buffer, scaffolderInstance, spies
 }
