@@ -16,7 +16,7 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 
 	requireParentMetadata(t, cmd)
 
-	for name, metadata := range expectedLifecycleMetadata() {
+	for name, metadata := range expectedLifecycleMetadata(t) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -57,33 +57,29 @@ type lifecycleMetadata struct {
 	long  string
 }
 
-func expectedLifecycleMetadata() map[string]lifecycleMetadata {
-	return map[string]lifecycleMetadata{
-		"up": {
-			short: "Start the Kubernetes cluster",
-			long:  "Start the Kubernetes cluster defined in the project configuration.",
-		},
-		"down": {
-			short: "Destroy a cluster",
-			long:  "Destroy a cluster.",
-		},
-		"start": {
-			short: "Start a stopped cluster",
-			long:  "Start a previously stopped cluster.",
-		},
-		"stop": {
-			short: "Stop the Kubernetes cluster",
-			long:  "Stop the Kubernetes cluster without removing it.",
-		},
-		"status": {
-			short: "Show status of the Kubernetes cluster",
-			long:  "Show the current status of the Kubernetes cluster.",
-		},
-		"list": {
-			short: "List clusters",
-			long:  "List all Kubernetes clusters managed by KSail.",
-		},
+func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
+	t.Helper()
+
+	commandConstructors := []func() *cobra.Command{
+		cluster.NewUpCmd,
+		cluster.NewDownCmd,
+		cluster.NewStartCmd,
+		cluster.NewStopCmd,
+		cluster.NewStatusCmd,
+		cluster.NewListCmd,
 	}
+
+	metadata := make(map[string]lifecycleMetadata, len(commandConstructors))
+
+	for _, constructor := range commandConstructors {
+		cmd := constructor()
+		metadata[cmd.Use] = lifecycleMetadata{
+			short: cmd.Short,
+			long:  cmd.Long,
+		}
+	}
+
+	return metadata
 }
 
 func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
