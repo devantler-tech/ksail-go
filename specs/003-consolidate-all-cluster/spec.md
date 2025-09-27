@@ -3,12 +3,12 @@
 **Feature Branch**: `003-consolidate-all-cluster`
 **Created**: 2025-09-27
 **Status**: Draft
-**Input**: User description: "Consolidate all cluster related commands under a `ksail cluster x` command, where x is the existing cluster related commands.
-
-This is important to ensure CLI UX stays intuitive and easy and uncluttered as ksail grows in features and CLI commands. It is important for users.
-
-A full codebase already exists, so this is an enhancement of the existing codebase, and it is important the plan and tasks generated from this spec is based on the existing codebase."
-
+**Input**: User description:
+> "Consolidate all cluster related commands under a `ksail cluster x` command, where x is the existing cluster related commands.
+> 
+> This is important to ensure CLI UX stays intuitive and easy and uncluttered as ksail grows in features and CLI commands. It is important for users.
+> 
+> A full codebase already exists, so this is an enhancement of the existing codebase, and it is important the plan and tasks generated from this spec is based on the existing codebase."
 ## Clarifications
 
 ### Session 2025-09-27
