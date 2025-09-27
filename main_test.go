@@ -20,12 +20,14 @@ var (
 func withArgs(t *testing.T, args []string, runner func()) {
 	t.Helper()
 
-	nextArgs := append([]string(nil), args...)
+	clonedArgs := append([]string(nil), args...)
 
 	osArgsMu.Lock()
-	snapshot := append([]string(nil), os.Args...)
-	osArgsStack = append(osArgsStack, snapshot)
-	os.Args = nextArgs
+
+	previousArgs := append([]string(nil), os.Args...)
+	osArgsStack = append(osArgsStack, previousArgs)
+	os.Args = clonedArgs
+
 	osArgsMu.Unlock()
 
 	defer func() {
@@ -156,9 +158,9 @@ func TestWithArgsTableDriven(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			withArgs(t, tt.args, func() {
 				assert.Equal(t, tt.args, os.Args)
 			})
