@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -6,15 +6,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewStopCmd creates and returns the stop command.
-func NewStopCmd() *cobra.Command {
+// NewDownCmd creates and returns the down command.
+func NewDownCmd() *cobra.Command {
 	return cmdhelpers.NewCobraCommand(
-		"stop",
-		"Stop the Kubernetes cluster",
-		`Stop the Kubernetes cluster without removing it.`,
+		"down",
+		"Destroy a cluster",
+		`Destroy a cluster.`,
 		func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
-				"Cluster stopped successfully (stub implementation)",
+				"cluster destroyed successfully",
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),

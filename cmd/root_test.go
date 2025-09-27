@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -54,6 +55,64 @@ func TestExecuteShowsVersion(t *testing.T) {
 	_ = root.Execute()
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+func TestClusterCommandShowsHelp(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("", "", "")
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"cluster"})
+
+	err := root.Execute()
+	if err != nil {
+		t.Fatalf("expected cluster command to show help without error, got %v", err)
+	}
+
+	output := out.String()
+
+	generalSnippets := []string{
+		"ksail cluster [command]",
+		"Available Commands:",
+	}
+
+	for _, snippet := range generalSnippets {
+		if !strings.Contains(output, snippet) {
+			t.Fatalf("expected cluster help output to contain %q, got %q", snippet, output)
+		}
+	}
+
+	lines := strings.Split(output, "\n")
+	expectedCommands := map[string]string{
+		"up":     "Start the Kubernetes cluster",
+		"down":   "Destroy a cluster",
+		"start":  "Start a stopped cluster",
+		"stop":   "Stop the Kubernetes cluster",
+		"status": "Show status of the Kubernetes cluster",
+		"list":   "List clusters",
+	}
+
+	for command, description := range expectedCommands {
+		found := false
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, command+" ") && strings.Contains(trimmed, description) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf(
+				"expected cluster help output to contain command %q with description %q, got %q",
+				command,
+				description,
+				output,
+			)
+		}
+	}
 }
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.

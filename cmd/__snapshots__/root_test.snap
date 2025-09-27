@@ -18,16 +18,11 @@ Usage:
   ksail [command]
 
 Available Commands:
+  cluster     Manage cluster lifecycle commands
   completion  Generate the autocompletion script for the specified shell
-  down        Destroy a cluster
   help        Help about any command
   init        Initialize a new project
-  list        List clusters
   reconcile   Reconcile workloads in the cluster
-  start       Start a stopped cluster
-  status      Show status of the Kubernetes cluster
-  stop        Stop the Kubernetes cluster
-  up          Start the Kubernetes cluster
 
 Flags:
   -h, --help      help for ksail

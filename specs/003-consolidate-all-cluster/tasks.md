@@ -22,35 +22,35 @@
 
 ## Non-Functional Validation
 
-- [ ] T015 (NFR-Performance) Validate CLI response and performance meet defined thresholds
-- [ ] T016 (NFR-Lint) Validate all code and tests pass golangci-lint with zero issues
-- [ ] T017 (NFR-Coverage) Validate >90% test coverage is achieved and validated
+- [X] T015 (NFR-Performance) Validate CLI response and performance meet defined thresholds
+- [X] T016 (NFR-Lint) Validate all code and tests pass golangci-lint with zero issues
+- [ ] T017 (NFR-Coverage) Validate >90% test coverage is achieved and validated *(blocked: current overall coverage 82.4% per `go test ./... -coverprofile=coverage.out`)*
 
 ## Phase 3.1: Setup
 
-- [ ] T001 (FR-001) Prepare `cmd/cluster/` package scaffold (create directory and lightweight `doc.go` explaining the consolidated cluster command namespace) so subsequent tests can target the new package.
+- [X] T001 (FR-001) Prepare `cmd/cluster/` package scaffold (create directory and lightweight `doc.go` explaining the consolidated cluster command namespace) so subsequent tests can target the new package.
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
-- [ ] T002 (FR-005, FR-003) Add explicit test for `ksail cluster` (bare) help output and ensure messaging parity with legacy commands (TDD) (i.e., verify that help text structure, error message format, and command output are consistent with the legacy commands)
-- [ ] T003 (FR-004, FR-007) Extend root command help snapshots to assert `cluster` appears in `ksail --help` and that `cluster --help` includes all lifecycle verbs except `reconcile`.
-- [ ] T004 (FR-002, FR-003, FR-004) Create table-driven tests that confirm each lifecycle subcommand is bound under `cluster` with the same short/long descriptions as the legacy top-level commands.
-- [ ] T005 (FR-004, FR-005, FR-007) Update CLI UI/help fixtures so the quickstart snapshot and usage guidance cover `ksail cluster` invocation patterns before implementation begins.
+- [X] T002 (FR-005, FR-003) Add explicit test for `ksail cluster` (bare) help output and ensure messaging parity with legacy commands (TDD) (i.e., verify that help text structure, error message format, and command output are consistent with the legacy commands)
+- [X] T003 (FR-004, FR-007) Extend root command help snapshots to assert `cluster` appears in `ksail --help` and that `cluster --help` includes all lifecycle verbs except `reconcile`.
+- [X] T004 (FR-002, FR-003, FR-004) Create table-driven tests that confirm each lifecycle subcommand is bound under `cluster` with the same short/long descriptions as the legacy top-level commands.
+- [X] T005 (FR-004, FR-005, FR-007) Update CLI UI/help fixtures so the quickstart snapshot and usage guidance cover `ksail cluster` invocation patterns before implementation begins.
 
 ## Phase 3.3: Implementation
 
-- [ ] T006 (FR-001, FR-002) Introduce the parent `cluster` Cobra command in `cmd/cluster/` and register it on the root command with an accurate summary.
-- [ ] T007 (FR-002, FR-003) Move existing lifecycle command constructors (`up`, `down`, `start`, `stop`, `status`, `list`) under the new parent while preserving command wiring and examples.
-- [ ] T008 (FR-006) Remove legacy top-level lifecycle command registrations and adjust any remaining references to point at the new group.
-- [ ] T009 (FR-004, FR-007) Update user-facing help text, usage examples, and quickstart documentation to reflect the grouped `cluster` commands and regenerate relevant markdown/JSON artifacts.
+- [X] T006 (FR-001, FR-002) Introduce the parent `cluster` Cobra command in `cmd/cluster/` and register it on the root command with an accurate summary.
+- [X] T007 (FR-002, FR-003) Move existing lifecycle command constructors (`up`, `down`, `start`, `stop`, `status`, `list`) under the new parent while preserving command wiring and examples.
+- [X] T008 (FR-006) Remove legacy top-level lifecycle command registrations and adjust any remaining references to point at the new group.
+- [X] T009 (FR-004, FR-007) Update user-facing help text, usage examples, and quickstart documentation to reflect the grouped `cluster` commands and regenerate relevant markdown/JSON artifacts.
 
 ## Phase 3.4: Integration & Validation
 
-- [ ] T010 (NFR-Lint) [P] Run `gofmt`/`goimports` on all touched Go files (including the new `cmd/cluster/` directory) to satisfy formatting gates. *(Depends on: T007)*
-- [ ] T011 (FR-002, FR-003, FR-007, NFR-Performance, NFR-Coverage) Execute `go test ./cmd` (updating go-snaps snapshots as needed) followed by `go test ./...` to confirm all suites pass with the new command structure. *(Depends on: T010)*
-- [ ] T012 (FR-004, FR-005, FR-006, FR-007, FR-003) [P] Follow quickstart smoke steps (`./ksail --help`, `./ksail cluster --help`, `./ksail cluster status`, and ensure `./ksail up` now errors) capturing any output adjustments for future release notes. *(Depends on: T011)*
-- [ ] T013 (NFR-Lint) [P] Run `golangci-lint run` to ensure lint gates still pass after refactor. *(Depends on: T010)*
-- [ ] T014 (FR-008) Ensure `reconcile` is not moved under `ksail cluster` and remains at the top level until migrated to `ksail workloads reconcile` in a future feature.
+- [X] T010 (NFR-Lint) [P] Run `gofmt`/`goimports` on all touched Go files (including the new `cmd/cluster/` directory) to satisfy formatting gates. *(Depends on: T007)*
+- [X] T011 (FR-002, FR-003, FR-007, NFR-Performance, NFR-Coverage) Execute `go test ./cmd` (updating go-snaps snapshots as needed) followed by `go test ./...` to confirm all suites pass with the new command structure. *(Depends on: T010)*
+- [X] T012 (FR-004, FR-005, FR-006, FR-007, FR-003) [P] Follow quickstart smoke steps (`./ksail --help`, `./ksail cluster --help`, `./ksail cluster status`, and ensure `./ksail up` now errors) capturing any output adjustments for future release notes. *(Depends on: T011)*
+- [X] T013 (NFR-Lint) [P] Run `golangci-lint run` to ensure lint gates still pass after refactor. *(Depends on: T010)*
+- [X] T014 (FR-008) Ensure `reconcile` is not moved under `ksail cluster` and remains at the top level until migrated to `ksail workloads reconcile` in a future feature.
 
 ## Dependencies
 
