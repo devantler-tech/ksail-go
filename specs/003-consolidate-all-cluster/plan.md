@@ -5,7 +5,8 @@
 **Input**: Feature specification from `/specs/003-consolidate-all-cluster/spec.md`
 
 ## Execution Flow (/plan command scope)
-```
+
+```txt
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
 2. Fill Technical Context (scan for NEEDS CLARIFICATION)
@@ -146,6 +147,10 @@ This section describes what the /tasks command will do - DO NOT execute during /
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan.
 
 ## Phase 3+: Future Implementation
+
+## Future Work / Out of Scope
+
+- Migration of the `reconcile` command to `ksail workloads reconcile` will be handled in a future feature and is explicitly out of scope for this refactor.
 
 These phases are beyond the scope of the /plan command
 

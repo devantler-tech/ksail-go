@@ -39,6 +39,21 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 
 ### Functional Requirements
 
+- **FR-008**: The `reconcile` command MUST NOT be moved under `ksail cluster` in this refactor. It will remain at the top level until migrated to `ksail workloads reconcile` in a future change.
+- **FR-008**: The `reconcile` command MUST NOT be moved under `ksail cluster` in this refactor. It will remain at the top level until migrated to `ksail workloads reconcile` in a future change.
+
+1. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
+
+### Acceptance Scenariosx
+
+1. **Given** an operator authenticated on their workstation, **When** they run `ksail cluster up`, **Then** the tool provisions a cluster exactly as the former `ksail up` command did and reports success or failure clearly.
+2. **Given** an operator exploring available operations, **When** they run `ksail cluster --help`, **Then** the CLI lists all cluster subcommands with concise explanations so the user understands available actions.
+3. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
+
+## Future Work / Out of Scope
+
+- Migration of the `reconcile` command to `ksail workloads reconcile` will be handled in a future feature and is explicitly out of scope for this refactor.
+
 - **FR-001**: The CLI MUST expose a parent `cluster` command (invoked as `ksail cluster`) dedicated to cluster lifecycle actions.
 - **FR-002**: The CLI MUST provide subcommands under `ksail cluster` for every existing cluster lifecycle capability (e.g., create, delete, start, stop, list, status) with the same user-facing behavior as today. (**Note:** `reconcile` is intentionally excluded and will be migrated separately.)
 - **FR-003**: Executing any cluster subcommand via `ksail cluster <subcommand>` MUST produce identical success/failure handling, messaging, and exit codes as the current standalone commands.
@@ -48,7 +63,6 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 - **FR-007**: The root `ksail --help` output MUST include a command list entry for `cluster` with a concise description, with no additional dedicated sections or migration notes.
 
 ## Completion Signals
-
 
 Feature is considered complete only when all constitution-mandated quality gates are met:
 
