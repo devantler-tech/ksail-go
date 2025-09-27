@@ -2,7 +2,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -35,7 +37,9 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			notify.Errorln(os.Stderr, r)
+			stack := debug.Stack()
+			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, stack)
+			notify.Errorln(os.Stderr, panicMessage)
 
 			exitCode = 1
 		}

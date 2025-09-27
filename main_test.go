@@ -1,26 +1,50 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime/debug"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:gochecknoglobals // Shared across tests to synchronize os.Args mutations.
-var osArgsMu sync.Mutex
+var (
+	osArgsMu    sync.Mutex
+	osArgsStack [][]string
+)
 
 func withArgs(t *testing.T, args []string, runner func()) {
 	t.Helper()
 
-	osArgsMu.Lock()
+	nextArgs := append([]string(nil), args...)
 
-	oldArgs := os.Args
-	os.Args = args
+	osArgsMu.Lock()
+	snapshot := append([]string(nil), os.Args...)
+	osArgsStack = append(osArgsStack, snapshot)
+	os.Args = nextArgs
+	osArgsMu.Unlock()
 
 	defer func() {
-		os.Args = oldArgs
+		osArgsMu.Lock()
+
+		stackLen := len(osArgsStack)
+		if stackLen == 0 {
+			os.Args = nil
+
+			osArgsMu.Unlock()
+
+			t.Fatalf("withArgs stack underflow; this indicates an imbalance in helper usage")
+
+			return
+		}
+
+		previous := osArgsStack[stackLen-1]
+		osArgsStack = osArgsStack[:stackLen-1]
+		os.Args = previous
 
 		osArgsMu.Unlock()
 	}()
@@ -103,4 +127,68 @@ func TestMainFunction(t *testing.T) {
 			run()
 		})
 	}, "main() simulation should not panic")
+}
+
+func TestWithArgsNested(t *testing.T) {
+	t.Parallel()
+
+	withArgs(t, []string{"ksail", "outer"}, func() {
+		assert.Equal(t, []string{"ksail", "outer"}, os.Args)
+
+		withArgs(t, []string{"ksail", "inner"}, func() {
+			assert.Equal(t, []string{"ksail", "inner"}, os.Args)
+		})
+
+		assert.Equal(t, []string{"ksail", "outer"}, os.Args)
+	})
+}
+
+func TestWithArgsTableDriven(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "root", args: []string{"ksail"}},
+		{name: "help", args: []string{"ksail", "--help"}},
+		{name: "version", args: []string{"ksail", "--version"}},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			withArgs(t, tt.args, func() {
+				assert.Equal(t, tt.args, os.Args)
+			})
+		})
+	}
+}
+
+func TestWithArgsPreservesPanicsAndStackTrace(t *testing.T) {
+	t.Parallel()
+
+	var (
+		recovered any
+		stack     []byte
+	)
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				recovered = r
+				stack = debug.Stack()
+			}
+		}()
+
+		withArgs(t, []string{"ksail", "panic"}, func() {
+			panic("test panic")
+		})
+	}()
+
+	require.NotNil(t, recovered)
+	require.Contains(t, fmt.Sprint(recovered), "test panic")
+	require.NotEmpty(t, stack)
+	assert.Contains(t, string(stack), "TestWithArgsPreservesPanicsAndStackTrace")
 }
