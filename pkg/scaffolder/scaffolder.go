@@ -154,6 +154,27 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 	return config
 }
 
+// checkFileExistsAndSkip checks if a file exists and should be skipped based on force flag.
+// Returns true if the file should be skipped (exists and force=false), false otherwise.
+// Outputs appropriate warning message if skipping.
+func (s *Scaffolder) checkFileExistsAndSkip(
+	filePath string,
+	fileName string,
+	force bool,
+) bool {
+	_, statErr := os.Stat(filePath)
+	if statErr == nil && !force {
+		notify.Warnln(
+			s.Writer,
+			fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
+		)
+
+		return true
+	}
+
+	return false
+}
+
 // generateKSailConfig generates the ksail.yaml configuration file.
 func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	// Apply distribution-specific defaults to ensure consistency with generated files
@@ -164,9 +185,8 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	_, statErr := os.Stat(opts.Output)
-	if statErr == nil && !force {
-		notify.Warnln(s.Writer, "skipped 'ksail.yaml', file exists use --force to overwrite")
+	if s.checkFileExistsAndSkip(opts.Output, "ksail.yaml", force) {
+		return nil
 	}
 
 	_, err := s.KSailYAMLGenerator.Generate(config, opts)
@@ -215,10 +235,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	_, statErr := os.Stat(opts.Output)
-	if statErr == nil && !force {
-		notify.Warnln(s.Writer, "skipped 'kind.yaml', file exists use --force to overwrite")
-
+	if s.checkFileExistsAndSkip(opts.Output, "kind.yaml", force) {
 		return nil
 	}
 
@@ -245,10 +262,7 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	_, statErr := os.Stat(opts.Output)
-	if statErr == nil && !force {
-		notify.Warnln(s.Writer, "skipped 'k3d.yaml', file exists use --force to overwrite")
-
+	if s.checkFileExistsAndSkip(opts.Output, "k3d.yaml", force) {
 		return nil
 	}
 
@@ -275,10 +289,7 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	_, statErr := os.Stat(opts.Output)
-	if statErr == nil && !force {
-		notify.Warnln(s.Writer, "skipped 'eks.yaml', file exists use --force to overwrite")
-
+	if s.checkFileExistsAndSkip(opts.Output, "eks.yaml", force) {
 		return nil
 	}
 
@@ -332,13 +343,7 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 		Force:  force,
 	}
 
-	_, statErr := os.Stat(opts.Output)
-	if statErr == nil && !force {
-		notify.Warnln(
-			s.Writer,
-			"skipped 'k8s/kustomization.yaml', file exists use --force to overwrite",
-		)
-
+	if s.checkFileExistsAndSkip(opts.Output, "k8s/kustomization.yaml", force) {
 		return nil
 	}
 
