@@ -31,11 +31,17 @@ func run() int {
 }
 
 func main() {
+	exitCode := 0
+
 	defer func() {
 		if r := recover(); r != nil {
 			notify.Errorln(os.Stderr, r)
-			os.Exit(1)
+
+			exitCode = 1
 		}
+
+		os.Exit(exitCode)
 	}()
-	os.Exit(run())
+
+	exitCode = run()
 }
