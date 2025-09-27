@@ -108,6 +108,7 @@ func TestGenerateWithOutputPath(t *testing.T) {
 	}
 
 	outputPath := tempDir + "/test-output.yaml"
+
 	result, err := gen.Generate(model, generator.Options{
 		Output: outputPath,
 		Force:  false,
@@ -137,11 +138,11 @@ func TestGenerateWithInvalidOutputDirectory(t *testing.T) {
 
 	// Use invalid path that should cause write error
 	invalidPath := "/invalid/path/that/does/not/exist/output.yaml"
+
 	_, err := gen.Generate(model, generator.Options{
 		Output: invalidPath,
 		Force:  false,
 	})
-
 	if err == nil {
 		t.Fatal("expected error for invalid output path, got none")
 	}

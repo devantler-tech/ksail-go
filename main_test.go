@@ -21,6 +21,7 @@ func TestRunBasic(t *testing.T) {
 
 	// Test that run function works without panicking with no arguments
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail"}
@@ -35,6 +36,7 @@ func TestRunWithHelp(t *testing.T) {
 
 	// Test that run function handles help flag without panicking
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "--help"}
@@ -49,6 +51,7 @@ func TestRunWithInvalidCommand(t *testing.T) {
 
 	// Test that run function handles invalid commands without panicking
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "invalid-command"}
@@ -63,6 +66,7 @@ func TestRunWithVersionFlag(t *testing.T) {
 
 	// Test that run function handles version flag without panicking
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "--version"}
@@ -77,6 +81,7 @@ func TestRunWithSubcommandHelp(t *testing.T) {
 
 	// Test that run function handles init help without panicking
 	oldArgs := os.Args
+
 	defer func() { os.Args = oldArgs }()
 
 	os.Args = []string{"ksail", "init", "--help"}
@@ -87,14 +92,19 @@ func TestRunWithSubcommandHelp(t *testing.T) {
 }
 
 func TestMainFunction(t *testing.T) {
+	t.Parallel()
+
 	// Test that main() doesn't panic when called
 	// Note: We can't easily test main() directly as it may call os.Exit()
 	// but we can verify it doesn't panic when run is called properly
 	assert.NotPanics(t, func() {
 		// Simulate what main does
 		oldArgs := os.Args
+
 		defer func() { os.Args = oldArgs }()
+
 		os.Args = []string{"ksail", "--help"}
+
 		run()
 	}, "main() simulation should not panic")
 }

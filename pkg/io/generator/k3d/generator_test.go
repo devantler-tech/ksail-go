@@ -32,6 +32,38 @@ func TestGenerate(t *testing.T) {
 	generatortestutils.RunStandardGeneratorTests(t, gen, createCluster, "k3d.yaml", assertContent)
 }
 
+// assertK3dYAMLContains verifies that the generated YAML contains expected k3d structure.
+func assertK3dYAMLContains(t *testing.T, result, clusterName string) {
+	t.Helper()
+	assert.Contains(t, result, "apiVersion: k3d.io/v1alpha5")
+	assert.Contains(t, result, "kind: Simple")
+	assert.Contains(t, result, "name: "+clusterName)
+}
+
+// assertComplexK3dConfig verifies complex configuration fields in generated YAML.
+func assertComplexK3dConfig(t *testing.T, result string) {
+	t.Helper()
+	assert.Contains(t, result, "servers: 3")
+	assert.Contains(t, result, "agents: 2")
+	assert.Contains(t, result, "image: rancher/k3s:v1.25.0-k3s1")
+	assert.Contains(t, result, "network: test-network")
+	assert.Contains(t, result, "wait: true")
+	assert.Contains(t, result, "disableImageVolume: true")
+	assert.Contains(t, result, "updateDefaultKubeconfig: true")
+	assert.Contains(t, result, "switchCurrentContext: true")
+}
+
+// assertPortMappingConfig verifies port mapping and environment configuration in generated YAML.
+func assertPortMappingConfig(t *testing.T, result string) {
+	t.Helper()
+	assert.Contains(t, result, "port: 8080:80")
+	assert.Contains(t, result, "port: 8443:443")
+	assert.Contains(t, result, "envVar: MY_VAR=test")
+	assert.Contains(t, result, "nodeFilters:")
+	assert.Contains(t, result, "- loadbalancer")
+	assert.Contains(t, result, "- all")
+}
+
 func TestGenerateWithComplexConfig(t *testing.T) {
 	t.Parallel()
 
@@ -61,17 +93,8 @@ func TestGenerateWithComplexConfig(t *testing.T) {
 	result, err := gen.Generate(cluster, opts)
 
 	require.NoError(t, err)
-	assert.Contains(t, result, "apiVersion: k3d.io/v1alpha5")
-	assert.Contains(t, result, "kind: Simple")
-	assert.Contains(t, result, "name: complex-cluster")
-	assert.Contains(t, result, "servers: 3")
-	assert.Contains(t, result, "agents: 2")
-	assert.Contains(t, result, "image: rancher/k3s:v1.25.0-k3s1")
-	assert.Contains(t, result, "network: test-network")
-	assert.Contains(t, result, "wait: true")
-	assert.Contains(t, result, "disableImageVolume: true")
-	assert.Contains(t, result, "updateDefaultKubeconfig: true")
-	assert.Contains(t, result, "switchCurrentContext: true")
+	assertK3dYAMLContains(t, result, "complex-cluster")
+	assertComplexK3dConfig(t, result)
 }
 
 func TestGenerateWithPortMappings(t *testing.T) {
@@ -104,15 +127,8 @@ func TestGenerateWithPortMappings(t *testing.T) {
 	result, err := gen.Generate(cluster, opts)
 
 	require.NoError(t, err)
-	assert.Contains(t, result, "apiVersion: k3d.io/v1alpha5")
-	assert.Contains(t, result, "kind: Simple")
-	assert.Contains(t, result, "name: port-mapping-cluster")
-	assert.Contains(t, result, "port: 8080:80")
-	assert.Contains(t, result, "port: 8443:443")
-	assert.Contains(t, result, "envVar: MY_VAR=test")
-	assert.Contains(t, result, "nodeFilters:")
-	assert.Contains(t, result, "- loadbalancer")
-	assert.Contains(t, result, "- all")
+	assertK3dYAMLContains(t, result, "port-mapping-cluster")
+	assertPortMappingConfig(t, result)
 }
 
 func TestGenerateWithFailingMarshaller(t *testing.T) {

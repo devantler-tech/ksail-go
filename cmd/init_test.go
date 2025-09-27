@@ -14,6 +14,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// assertInitFilesCreated verifies that all expected init command files are created in the specified directory.
+func assertInitFilesCreated(t *testing.T, dir string) {
+	t.Helper()
+	assert.FileExists(t, filepath.Join(dir, "ksail.yaml"))
+	assert.FileExists(t, filepath.Join(dir, "kind.yaml"))
+	assert.DirExists(t, filepath.Join(dir, "k8s"))
+	assert.FileExists(t, filepath.Join(dir, "k8s", "kustomization.yaml"))
+}
+
 func TestNewInitCmd(t *testing.T) {
 	t.Parallel()
 
@@ -59,10 +68,7 @@ func testNewInitCmdEmbeddedRunE(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify files were created in the temp directory
-	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
-	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
-	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
+	assertInitFilesCreated(t, tempDir)
 }
 
 func TestInitCmdExecute(t *testing.T) {
@@ -91,10 +97,7 @@ func TestInitCmdExecute(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 
 	// Verify files were created in temp directory, not current directory
-	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
-	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
-	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
+	assertInitFilesCreated(t, tempDir)
 
 	// Verify files were NOT created in current directory
 	assert.NoFileExists(t, "./ksail.yaml")
@@ -172,10 +175,7 @@ func testHandleInitRunESuccessWithOutputPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify that scaffolder created the expected files in the temp directory
-	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
-	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
-	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
+	assertInitFilesCreated(t, tempDir)
 }
 
 func testHandleInitRunESuccessWithoutOutputPath(t *testing.T) {
