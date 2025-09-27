@@ -1,6 +1,8 @@
 package cluster_test
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
@@ -85,5 +87,28 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 				sub.Long,
 			)
 		}
+	}
+}
+
+func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
+	t.Parallel()
+
+	cmd := cluster.NewClusterCmd()
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected executing cluster command without subcommand to succeed, got %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Usage:") {
+		t.Fatalf("expected help output to contain Usage section, got %q", output)
+	}
+	if !strings.Contains(output, "Available Commands:") {
+		t.Fatalf("expected help output to list available commands, got %q", output)
 	}
 }
