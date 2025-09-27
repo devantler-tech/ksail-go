@@ -1,6 +1,6 @@
 # Tasks: Consolidate Cluster Commands Under `ksail cluster`
 
-**Note:** Do not move `reconcile` under `ksail cluster` in this refactor. Leave it at the top level until it is migrated to `ksail workloads reconcile` in a future change.
+> **Scope Guard – `reconcile` remains top-level:** This refactor must not move `reconcile` under `ksail cluster`; keep it at the root until the future `ksail workloads reconcile` migration.
 
 **Input**: Design documents from `/specs/003-consolidate-all-cluster/`
 **Prerequisites**: plan.md, research.md, data-model.md, contracts/, quickstart.md
@@ -26,7 +26,6 @@
 - [ ] T016 (NFR-Lint) Validate all code and tests pass golangci-lint with zero issues
 - [ ] T017 (NFR-Coverage) Validate >90% test coverage is achieved and validated
 
-**Note:** The `reconcile` command is intentionally excluded from this refactor. It will be moved to `ksail workloads reconcile` in a future change.
 
 ## Phase 3.1: Setup
 
