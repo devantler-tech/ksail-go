@@ -11,7 +11,7 @@
 | `ksail cluster stop` | Stop a running cluster | 0/!0 |
 | `ksail cluster status` | Report cluster status | 0/!0 |
 | `ksail cluster list` | List managed clusters | 0/!0 |
-<!-- Note: `ksail cluster reconcile` is intentionally excluded from this refactor. It will be migrated to `ksail workloads reconcile` later. -->
+> **Note:** `ksail cluster reconcile` is intentionally excluded from this refactor. It will be migrated to `ksail workloads reconcile` later.
 
 ## Help Output Requirements
 
