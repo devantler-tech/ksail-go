@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"runtime"
 	"runtime/debug"
+	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,31 +17,80 @@ import (
 
 //nolint:gochecknoglobals // Shared across tests to synchronize os.Args mutations.
 var (
-	osArgsMu    sync.Mutex
+	osArgsLock  reentrantMutex
 	osArgsStack [][]string
+	commandMu   sync.Mutex
 )
+
+type reentrantMutex struct {
+	mu    sync.Mutex
+	owner uint64
+	depth int
+}
+
+func (m *reentrantMutex) Lock() {
+	gid := goroutineID()
+
+	if atomic.LoadUint64(&m.owner) == gid {
+		m.depth++
+
+		return
+	}
+
+	m.mu.Lock()
+	atomic.StoreUint64(&m.owner, gid)
+	m.depth = 1
+}
+
+func (m *reentrantMutex) Unlock() {
+	gid := goroutineID()
+
+	if atomic.LoadUint64(&m.owner) != gid {
+		panic("reentrantMutex: unlock attempted by non-owner goroutine")
+	}
+
+	m.depth--
+	if m.depth == 0 {
+		atomic.StoreUint64(&m.owner, 0)
+		m.mu.Unlock()
+	}
+}
+
+func goroutineID() uint64 {
+	var buf [64]byte
+
+	n := runtime.Stack(buf[:], false)
+
+	fields := bytes.Fields(buf[:n])
+	if len(fields) < 2 {
+		return 0
+	}
+
+	id, err := strconv.ParseUint(string(fields[1]), 10, 64)
+	if err != nil {
+		return 0
+	}
+
+	return id
+}
 
 func withArgs(t *testing.T, args []string, runner func()) {
 	t.Helper()
 
 	clonedArgs := append([]string(nil), args...)
 
-	osArgsMu.Lock()
+	osArgsLock.Lock()
 
 	previousArgs := append([]string(nil), os.Args...)
 	osArgsStack = append(osArgsStack, previousArgs)
 	os.Args = clonedArgs
 
-	osArgsMu.Unlock()
-
 	defer func() {
-		osArgsMu.Lock()
+		defer osArgsLock.Unlock()
 
 		stackLen := len(osArgsStack)
 		if stackLen == 0 {
 			os.Args = nil
-
-			osArgsMu.Unlock()
 
 			t.Fatalf("withArgs stack underflow; this indicates an imbalance in helper usage")
 
@@ -47,11 +100,20 @@ func withArgs(t *testing.T, args []string, runner func()) {
 		previous := osArgsStack[stackLen-1]
 		osArgsStack = osArgsStack[:stackLen-1]
 		os.Args = previous
-
-		osArgsMu.Unlock()
 	}()
 
 	runner()
+}
+
+func withCommand(t *testing.T, args []string, runner func()) {
+	t.Helper()
+
+	withArgs(t, args, func() {
+		commandMu.Lock()
+		defer commandMu.Unlock()
+
+		runner()
+	})
 }
 
 func TestVersionVariables(t *testing.T) {
@@ -67,7 +129,7 @@ func TestRunBasic(t *testing.T) {
 	t.Parallel()
 
 	// Test that run function works without panicking with no arguments
-	withArgs(t, []string{"ksail"}, func() {
+	withCommand(t, []string{"ksail"}, func() {
 		assert.NotPanics(t, func() {
 			run()
 		}, "run() should not panic")
@@ -78,7 +140,7 @@ func TestRunWithHelp(t *testing.T) {
 	t.Parallel()
 
 	// Test that run function handles help flag without panicking
-	withArgs(t, []string{"ksail", "--help"}, func() {
+	withCommand(t, []string{"ksail", "--help"}, func() {
 		assert.NotPanics(t, func() {
 			run()
 		}, "run() with help should not panic")
@@ -89,7 +151,7 @@ func TestRunWithInvalidCommand(t *testing.T) {
 	t.Parallel()
 
 	// Test that run function handles invalid commands without panicking
-	withArgs(t, []string{"ksail", "invalid-command"}, func() {
+	withCommand(t, []string{"ksail", "invalid-command"}, func() {
 		assert.NotPanics(t, func() {
 			run()
 		}, "run() with invalid command should not panic")
@@ -100,7 +162,7 @@ func TestRunWithVersionFlag(t *testing.T) {
 	t.Parallel()
 
 	// Test that run function handles version flag without panicking
-	withArgs(t, []string{"ksail", "--version"}, func() {
+	withCommand(t, []string{"ksail", "--version"}, func() {
 		assert.NotPanics(t, func() {
 			run()
 		}, "run() with version should not panic")
@@ -111,7 +173,7 @@ func TestRunWithSubcommandHelp(t *testing.T) {
 	t.Parallel()
 
 	// Test that run function handles init help without panicking
-	withArgs(t, []string{"ksail", "init", "--help"}, func() {
+	withCommand(t, []string{"ksail", "init", "--help"}, func() {
 		assert.NotPanics(t, func() {
 			run()
 		}, "run() with init help should not panic")
@@ -125,7 +187,7 @@ func TestMainFunction(t *testing.T) {
 	// Note: We can't easily test main() directly as it may call os.Exit()
 	// but we can verify it doesn't panic when run is called properly
 	assert.NotPanics(t, func() {
-		withArgs(t, []string{"ksail", "--help"}, func() {
+		withCommand(t, []string{"ksail", "--help"}, func() {
 			run()
 		})
 	}, "main() simulation should not panic")
