@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
+	"maps"
 	"strings"
 	"testing"
 
@@ -96,26 +97,42 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 		expectedCommands[subCmd.Use] = subCmd.Short
 	}
 
-	for command, description := range expectedCommands {
-		found := false
+	missing := make(map[string]string, len(expectedCommands))
+	maps.Copy(missing, expectedCommands)
 
-		for _, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if strings.HasPrefix(trimmed, command+" ") && strings.Contains(trimmed, description) {
-				found = true
-
-				break
-			}
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
 		}
 
-		if !found {
-			t.Fatalf(
-				"expected cluster help output to contain command %q with description %q, got %q",
-				command,
-				description,
-				output,
-			)
+		fields := strings.Fields(trimmed)
+		if len(fields) == 0 {
+			continue
 		}
+
+		command := fields[0]
+		description, exists := missing[command]
+		if !exists {
+			continue
+		}
+
+		if strings.Contains(trimmed, description) {
+			delete(missing, command)
+		}
+	}
+
+	if len(missing) > 0 {
+		var notFound []string
+		for command, description := range missing {
+			notFound = append(notFound, command+": "+description)
+		}
+
+		t.Fatalf(
+			"expected cluster help output to include: %s, got %q",
+			strings.Join(notFound, ", "),
+			output,
+		)
 	}
 }
 

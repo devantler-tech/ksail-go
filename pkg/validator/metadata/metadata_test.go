@@ -182,7 +182,7 @@ func testValidConfigs(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		config     interface{}
+		config     any
 		configType string
 	}{
 		{
