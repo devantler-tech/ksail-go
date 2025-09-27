@@ -75,52 +75,15 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 
 	output := out.String()
 
-	generalSnippets := []string{
-		"ksail cluster [command]",
-		"Available Commands:",
-	}
+	assertHelpSnippets(t, output)
 
-	for _, snippet := range generalSnippets {
-		if !strings.Contains(output, snippet) {
-			t.Fatalf("expected cluster help output to contain %q, got %q", snippet, output)
-		}
-	}
-
-	lines := strings.Split(output, "\n")
-	// Build expectedCommands map from the actual cluster subcommands to avoid duplication.
-	expectedCommands := make(map[string]string)
-	clusterCmd, _, err := root.Find([]string{"cluster"})
-	if err != nil {
-		t.Fatalf("could not find cluster command: %v", err)
-	}
-	for _, subCmd := range clusterCmd.Commands() {
-		expectedCommands[subCmd.Use] = subCmd.Short
-	}
+	expectedCommands := clusterSubcommandMetadata(t, root)
 
 	missing := make(map[string]string, len(expectedCommands))
 	maps.Copy(missing, expectedCommands)
 
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "" {
-			continue
-		}
-
-		fields := strings.Fields(trimmed)
-		if len(fields) == 0 {
-			continue
-		}
-
-		command := fields[0]
-		description, exists := missing[command]
-		if !exists {
-			continue
-		}
-
-		if strings.Contains(trimmed, description) {
-			delete(missing, command)
-		}
-	}
+	lines := strings.Split(output, "\n")
+	removeDocumentedCommands(lines, missing)
 
 	if len(missing) > 0 {
 		var notFound []string
@@ -133,6 +96,63 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 			strings.Join(notFound, ", "),
 			output,
 		)
+	}
+}
+
+func assertHelpSnippets(t *testing.T, output string) {
+	t.Helper()
+
+	snippets := []string{
+		"ksail cluster [command]",
+		"Available Commands:",
+	}
+
+	for _, snippet := range snippets {
+		if !strings.Contains(output, snippet) {
+			t.Fatalf("expected cluster help output to contain %q, got %q", snippet, output)
+		}
+	}
+}
+
+func clusterSubcommandMetadata(t *testing.T, root *cobra.Command) map[string]string {
+	t.Helper()
+
+	clusterCmd, _, err := root.Find([]string{"cluster"})
+	if err != nil {
+		t.Fatalf("could not find cluster command: %v", err)
+	}
+
+	metadata := make(map[string]string, len(clusterCmd.Commands()))
+
+	for _, subCmd := range clusterCmd.Commands() {
+		metadata[subCmd.Use] = subCmd.Short
+	}
+
+	return metadata
+}
+
+func removeDocumentedCommands(lines []string, missing map[string]string) {
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		fields := strings.Fields(trimmed)
+		if len(fields) == 0 {
+			continue
+		}
+
+		command := fields[0]
+
+		description, exists := missing[command]
+		if !exists {
+			continue
+		}
+
+		if strings.Contains(trimmed, description) {
+			delete(missing, command)
+		}
 	}
 }
 

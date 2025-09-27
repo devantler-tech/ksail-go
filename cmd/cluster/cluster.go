@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/spf13/cobra"
@@ -26,6 +28,11 @@ func NewClusterCmd() *cobra.Command {
 }
 
 func handleClusterRunE(cmd *cobra.Command, _ *configmanager.ConfigManager, _ []string) error {
-	// Cobra Help() can return an error (e.g., output stream or template issues), so return it to the caller.
-	return cmd.Help()
+	// Cobra Help() can return an error (e.g., output stream or template issues); wrap it for clarity.
+	err := cmd.Help()
+	if err != nil {
+		return fmt.Errorf("displaying cluster command help: %w", err)
+	}
+
+	return nil
 }
