@@ -2,6 +2,9 @@ package testutils
 
 import (
 	"bytes"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -10,9 +13,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CreateConfigManagerWithFieldSelectors creates a config manager with the provided field selectors.
+func CreateConfigManagerWithFieldSelectors(
+	writer io.Writer,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
+) *configmanager.ConfigManager {
+	return configmanager.NewConfigManager(writer, fieldSelectors...)
+}
+
 // CreateDefaultConfigManager creates a standard config manager for cmd tests that passes KSail validation.
 func CreateDefaultConfigManager() *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
+	return CreateConfigManagerWithFieldSelectors(
+		io.Discard,
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
 			Description:  "API version",
@@ -111,4 +123,40 @@ func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	}
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+// TestCmdExecuteInCleanDir executes a command in a temporary directory with no ksail.yaml file
+// and validates that it returns a configuration validation error.
+func TestCmdExecuteInCleanDir(t *testing.T, cmdFactory func() *cobra.Command, cmdName string) {
+	t.Helper()
+
+	// Create a temporary directory to ensure no ksail.yaml exists
+	tempDir := t.TempDir()
+
+	originalDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %v", err)
+	}
+
+	t.Chdir(tempDir)
+
+	defer func() {
+		t.Chdir(originalDir)
+	}()
+
+	cmd := cmdFactory()
+	err = cmd.Execute()
+
+	// Expect a validation error because no valid configuration is provided
+	if err == nil {
+		t.Fatalf("expected validation error for %s command, got nil", cmdName)
+	}
+
+	if !strings.Contains(err.Error(), "configuration validation failed") {
+		t.Fatalf(
+			"expected 'configuration validation failed' in error for %s command, got: %v",
+			cmdName,
+			err,
+		)
+	}
 }

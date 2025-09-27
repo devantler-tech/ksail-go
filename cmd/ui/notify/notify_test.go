@@ -220,3 +220,91 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 		t.Fatalf("expected stderr output %q, got %q", expectedErrorMsg, output)
 	}
 }
+
+func TestTitlef(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Titlef(&out, "🚀", "Starting %s version %s", "KSail", "v1.0.0")
+	got := out.String()
+	want := "🚀 Starting KSail version v1.0.0\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestTitle(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Title(&out, "🎯", "Deployment complete")
+	got := out.String()
+	want := "🎯 Deployment complete"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestTitleln(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Titleln(&out, "✨", "Process finished successfully")
+	got := out.String()
+	want := "✨ Process finished successfully\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestTitleFunctionsWithComplexEmojis(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Titlef with complex emoji", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+
+		notify.Titlef(&out, "🔧⚙️", "Configuration %s loaded", "production")
+		got := out.String()
+		want := "🔧⚙️ Configuration production loaded\n"
+
+		if got != want {
+			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("Title with Unicode", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+
+		notify.Title(&out, "📊", "Analytics dashboard ready")
+		got := out.String()
+		want := "📊 Analytics dashboard ready"
+
+		if got != want {
+			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("Titleln with empty emoji", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+
+		notify.Titleln(&out, "", "No emoji title")
+		got := out.String()
+		want := " No emoji title\n"
+
+		if got != want {
+			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		}
+	})
+}

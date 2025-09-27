@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"io"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -21,16 +22,9 @@ func TestNewReconcileCmd(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir() in Go 1.25.1+
 func TestReconcileCmdExecute(t *testing.T) {
-	t.Parallel()
-
-	reconcileCmd := cmd.NewReconcileCmd()
-
-	err := reconcileCmd.Execute()
-
-	// Expect a validation error because no valid configuration is provided
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "configuration validation failed")
+	testutils.TestCmdExecuteInCleanDir(t, cmd.NewReconcileCmd, "reconcile")
 }
 
 func TestReconcileCmdHelp(t *testing.T) {
@@ -63,7 +57,7 @@ func TestHandleReconcileRunEError(t *testing.T) {
 	t.Parallel()
 
 	testCmd, _ := testutils.SetupCommandWithOutput()
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	// Test that the function doesn't panic - error testing can be enhanced later
 	assert.NotPanics(t, func() {

@@ -35,7 +35,7 @@ cluster := v1alpha1.Cluster{
 }
 
 // Create scaffold instance and generate files
-scaffold := scaffolder.NewScaffolder(cluster)
+scaffold := scaffolder.NewScaffolder(cluster, os.Stdout)
 err := scaffold.Scaffold("/path/to/output/", false)
 if err != nil {
     log.Fatal(err)

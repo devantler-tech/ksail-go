@@ -1,7 +1,9 @@
 package configmanager_test
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -69,7 +71,7 @@ func TestNewManager(t *testing.T) {
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
@@ -118,6 +120,10 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			// Create temporary directory and change to it to isolate from existing config files
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+
 			// Set environment variables for the test
 			for key, value := range testCase.envVars {
 				t.Setenv(key, value)
@@ -125,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 
 			fieldSelectors := createFieldSelectorsWithName()
 
-			manager := configmanager.NewConfigManager(fieldSelectors...)
+			manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 			cluster, err := manager.LoadConfig()
 
@@ -228,7 +234,7 @@ func TestAddFlagsFromFields(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := configmanager.NewConfigManager(testCase.fieldSelectors...)
+			manager := configmanager.NewConfigManager(io.Discard, testCase.fieldSelectors...)
 			cmd := &cobra.Command{
 				Use: "test",
 			}
@@ -258,7 +264,7 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := v1alpha1.NewCluster()
@@ -283,6 +289,10 @@ func testFieldValueSetting(
 ) {
 	t.Helper()
 
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
 	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		{
 			Selector:     selector,
@@ -291,7 +301,7 @@ func testFieldValueSetting(
 		},
 	}
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -300,9 +310,9 @@ func testFieldValueSetting(
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNilDefault(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -317,9 +327,9 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -334,9 +344,9 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -351,9 +361,9 @@ func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNonPointerField(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return c.Spec.Distribution }, // Return value, not pointer
@@ -368,9 +378,9 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any {
@@ -395,7 +405,7 @@ func TestManager_readConfigurationFile_ErrorHandling(t *testing.T) {
 
 	// Create a directory with a file that will cause a YAML parsing error
 	tempDir := t.TempDir()
-	configFile := tempDir + "/ksail.yaml"
+	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	// Write content that will definitely cause a YAML parsing error
 	// Use severely malformed YAML that cannot be parsed
@@ -415,7 +425,7 @@ invalid yaml content
 
 	// Create a manager
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
 	cluster, err := manager.LoadConfig()
@@ -451,7 +461,7 @@ spec:
 
 	// Create a temporary directory and file
 	tempDir := t.TempDir()
-	configFile := tempDir + "/ksail.yaml"
+	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
@@ -461,7 +471,7 @@ spec:
 
 	// Create manager and load config
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)

@@ -2,6 +2,7 @@ package cmdhelpers_test
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -360,29 +361,6 @@ func TestExecuteCommandWithClusterInfo(t *testing.T) {
 	assert.Contains(t, out.String(), "► Context:")
 }
 
-// TestLogSuccessWithClusterInfo tests the LogSuccessWithClusterInfo function.
-func TestLogSuccessWithClusterInfo(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	infoFields := []cmdhelpers.ClusterInfoField{
-		{"Distribution", "Kind"},
-		{"Context", "kind-test-cluster"},
-		{"Source Directory", "k8s"},
-	}
-
-	cmdhelpers.LogSuccessWithClusterInfo(cmd, "Operation completed", infoFields)
-
-	assert.Contains(t, out.String(), "✔ Operation completed")
-	assert.Contains(t, out.String(), "► Distribution: Kind")
-	assert.Contains(t, out.String(), "► Context: kind-test-cluster")
-	assert.Contains(t, out.String(), "► Source Directory: k8s")
-}
-
 // TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields.
 func TestLogClusterInfoWithEmptyFields(t *testing.T) {
 	t.Parallel()
@@ -546,6 +524,10 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 func runValidationFailureTest(t *testing.T) {
 	t.Helper()
 
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
 	var out bytes.Buffer
 
 	cmd := &cobra.Command{}
@@ -564,16 +546,17 @@ func runValidationFailureTest(t *testing.T) {
 }
 
 // TestLoadClusterWithErrorHandling_EdgeCases tests edge cases for LoadClusterWithErrorHandling.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
-	t.Parallel()
-
 	t.Run("validation_failure_path", func(t *testing.T) {
-		t.Parallel()
 		runValidationFailureTest(t)
 	})
 
 	t.Run("nil_command", func(t *testing.T) {
-		t.Parallel()
+		// Create temporary directory and change to it to isolate from existing config files
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
 
 		manager := testutils.CreateDefaultConfigManager()
 
@@ -586,7 +569,9 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("empty_output", func(t *testing.T) {
-		t.Parallel()
+		// Create temporary directory and change to it to isolate from existing config files
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
 
 		cmd := &cobra.Command{}
 		// Don't set output - should default to stdout
@@ -604,15 +589,16 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 // Currently validation failure testing covers the same error handling paths
 
 // TestLoadClusterWithErrorHandling_ValidationFailure tests validation failure scenarios.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestLoadClusterWithErrorHandling_ValidationFailure(t *testing.T) {
-	t.Parallel()
-
 	runValidationFailureTest(t)
 }
 
 // createConfigManagerWithValidationIssues creates a config manager that returns invalid configuration.
 func createConfigManagerWithValidationIssues() *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
+	return testutils.CreateConfigManagerWithFieldSelectors(
+		io.Discard,
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
 			Description:  "API version",
@@ -632,8 +618,12 @@ func createConfigManagerWithValidationIssues() *configmanager.ConfigManager {
 }
 
 // TestStandardClusterCommandRunE_ErrorPath tests the error path of StandardClusterCommandRunE.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestStandardClusterCommandRunE_ErrorPath(t *testing.T) {
-	t.Parallel()
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
 
 	var out bytes.Buffer
 
@@ -654,8 +644,12 @@ func TestStandardClusterCommandRunE_ErrorPath(t *testing.T) {
 }
 
 // TestExecuteCommandWithClusterInfo_ErrorPath tests error handling in ExecuteCommandWithClusterInfo.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestExecuteCommandWithClusterInfo_ErrorPath(t *testing.T) {
-	t.Parallel()
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
 
 	var out bytes.Buffer
 

@@ -1,8 +1,11 @@
 
 [TestInitCmdExecute - 1]
-✔ project initialized successfully
-► Distribution: Kind
-► Source directory: k8s
+
+📂 Initializing project... 
+► created 'ksail.yaml'
+► created 'kind.yaml'
+► created 'k8s/kustomization.yaml'
+✔ initialized project
 
 ---
 
@@ -15,6 +18,7 @@ Usage:
 Flags:
   -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
       --distribution-config string   Configuration file for the distribution (default "kind.yaml")
+  -f, --force                        Overwrite existing files
   -h, --help                         help for init
   -o, --output string                Output directory for the project
   -s, --source-directory string      Directory containing workloads to deploy (default "k8s")

@@ -20,16 +20,9 @@ func TestNewStatusCmd(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Chdir() in Go 1.25.1+
 func TestStatusCmdExecute(t *testing.T) {
-	t.Parallel()
-
-	statusCmd := cmd.NewStatusCmd()
-
-	err := statusCmd.Execute()
-
-	// Expect a validation error because no valid configuration is provided
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "configuration validation failed")
+	testutils.TestCmdExecuteInCleanDir(t, cmd.NewStatusCmd, "status")
 }
 
 func TestStatusCmdHelp(t *testing.T) {

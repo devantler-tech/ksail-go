@@ -23,8 +23,6 @@ var ErrConfigurationValidationFailed = errors.New("configuration validation fail
 //   - createDefault: Function to create a default configuration
 //
 // Returns the loaded configuration or an error.
-//
-//nolint:ireturn // Generic function must return interface type
 func LoadConfigFromFile[T any](
 	configPath string,
 	createDefault func() T,

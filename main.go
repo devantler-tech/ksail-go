@@ -2,7 +2,10 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"os"
+	"runtime/debug"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -16,13 +19,39 @@ var (
 )
 
 func main() {
+	exitCode := runSafely(os.Args[1:], runWithArgs, os.Stderr)
+
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
+}
+
+//nolint:nonamedreturns // Named return simplifies panic recovery logic.
+func runSafely(args []string, runner func([]string) int, errWriter io.Writer) (exitCode int) {
+	defer func() {
+		if r := recover(); r != nil {
+			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, debug.Stack())
+			notify.Errorln(errWriter, panicMessage)
+
+			exitCode = 1
+		}
+	}()
+
+	exitCode = runner(args)
+
+	return exitCode
+}
+
+func runWithArgs(args []string) int {
 	rootCmd := cmd.NewRootCmd(version, commit, date)
+	rootCmd.SetArgs(args)
 
 	err := rootCmd.Execute()
 	if err != nil {
 		notify.Errorln(rootCmd.ErrOrStderr(), err)
-		os.Exit(1)
+
+		return 1
 	}
 
-	os.Exit(0)
+	return 0
 }

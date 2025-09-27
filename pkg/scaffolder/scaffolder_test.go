@@ -1,7 +1,12 @@
 package scaffolder_test
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -10,10 +15,15 @@ import (
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/require"
+	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
+
+var errGenerateFailure = errors.New("generate failure")
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
@@ -21,12 +31,53 @@ func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
-	scaffolder := scaffolder.NewScaffolder(cluster)
+	scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 
 	require.NotNil(t, scaffolder)
 	require.Equal(t, cluster, scaffolder.KSailConfig)
 	require.NotNil(t, scaffolder.KSailYAMLGenerator)
 	require.NotNil(t, scaffolder.KustomizationGenerator)
+}
+
+func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		expected     string
+	}{
+		{
+			name:         "Kind",
+			distribution: v1alpha1.DistributionKind,
+			expected:     scaffolder.KindConfigFile,
+		},
+		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
+		{name: "EKS", distribution: v1alpha1.DistributionEKS, expected: scaffolder.EKSConfigFile},
+		{
+			name:         "Tind",
+			distribution: v1alpha1.DistributionTind,
+			expected:     scaffolder.TindConfigFile,
+		},
+		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			buffer := &bytes.Buffer{}
+			scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+			scaffolderInstance.KSailConfig.Spec.Distribution = testCase.distribution
+			scaffolderInstance.KSailConfig.Spec.DistributionConfig = ""
+
+			_ = scaffolderInstance.Scaffold(tempDir, false)
+
+			require.Equal(t, testCase.expected, spies.ksail.lastModel.Spec.DistributionConfig)
+		})
+	}
 }
 
 func TestScaffoldBasicOperations(t *testing.T) {
@@ -39,7 +90,7 @@ func TestScaffoldBasicOperations(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc(testCase.name)
-			scaffolder := scaffolder.NewScaffolder(cluster)
+			scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 
 			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
 
@@ -63,7 +114,7 @@ func TestScaffoldContentValidation(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc("test-cluster")
-			scaffolder := scaffolder.NewScaffolder(cluster)
+			scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 			generateDistributionContent(t, scaffolder, cluster, testCase.distribution)
 
 			kustomization := ktypes.Kustomization{}
@@ -94,7 +145,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 		t.Parallel()
 
 		cluster := createTestCluster("error-test")
-		scaffolderInstance := scaffolder.NewScaffolder(cluster)
+		scaffolderInstance := scaffolder.NewScaffolder(cluster, io.Discard)
 
 		// Use invalid path with null byte to trigger file system error
 		err := scaffolderInstance.Scaffold("/invalid/\x00path/", false)
@@ -109,7 +160,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 
 		// Test Tind not implemented
 		tindCluster := createTindCluster("tind-test")
-		scaffolderInstance := scaffolder.NewScaffolder(tindCluster)
+		scaffolderInstance := scaffolder.NewScaffolder(tindCluster, io.Discard)
 
 		err := scaffolderInstance.Scaffold("/tmp/test-tind/", false)
 		require.Error(t, err)
@@ -118,7 +169,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 
 		// Test Unknown distribution
 		unknownCluster := createUnknownCluster("unknown-test")
-		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster)
+		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster, io.Discard)
 
 		err = scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
 		require.Error(t, err)
@@ -129,10 +180,6 @@ func TestScaffoldErrorHandling(t *testing.T) {
 
 func TestScaffoldGeneratorFailures(t *testing.T) {
 	t.Parallel()
-
-	// Test scenarios that might cause generator failures
-	// Use very long paths to potentially trigger path length limits
-	longPath := "/tmp/" + strings.Repeat("very-long-directory-name/", 10)
 
 	testCases := []struct {
 		distribution string
@@ -147,8 +194,17 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 		t.Run(testCase.distribution+" config with problematic path", func(t *testing.T) {
 			t.Parallel()
 
+			// Test scenarios that might cause generator failures
+			// Use a deeply nested path to potentially trigger path length limits
+			longPathParts := []string{t.TempDir()}
+			for range 10 {
+				longPathParts = append(longPathParts, "very-long-directory-name")
+			}
+
+			longPath := filepath.Join(longPathParts...)
+
 			cluster := testCase.clusterFunc("error-test")
-			scaffolderInstance := scaffolder.NewScaffolder(cluster)
+			scaffolderInstance := scaffolder.NewScaffolder(cluster, io.Discard)
 
 			err := scaffolderInstance.Scaffold(longPath, false)
 
@@ -159,6 +215,142 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 			)
 		})
 	}
+}
+
+func TestScaffoldSkipsExistingFileWithoutForce(t *testing.T) {
+	t.Parallel()
+
+	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+	require.NoError(t, err)
+	require.Equal(t, 0, spies.ksail.callCount)
+	require.Contains(t, buffer.String(), "skipped 'ksail.yaml'")
+}
+
+func TestScaffoldOverwritesFilesWhenForceEnabled(t *testing.T) {
+	t.Parallel()
+
+	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+
+	err := scaffolderInstance.Scaffold(tempDir, true)
+	require.NoError(t, err)
+	require.Positive(t, spies.ksail.callCount)
+	require.Contains(t, buffer.String(), "overwrote 'ksail.yaml'")
+}
+
+func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+	spies.ksail.returnErr = errGenerateFailure
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+	require.Error(t, err)
+	require.ErrorIs(t, err, scaffolder.ErrKSailConfigGeneration)
+	require.Equal(t, 1, spies.ksail.callCount)
+	require.Equal(t, 0, spies.kind.callCount)
+}
+
+func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []distributionErrorTestCase{
+		{
+			name: "Kind",
+			configure: func(spies generatorSpies) {
+				spies.kind.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionKind,
+			assertErr:    assertKindGenerationError,
+		},
+		{
+			name: "K3d",
+			configure: func(spies generatorSpies) {
+				spies.k3d.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionK3d,
+			assertErr:    assertK3dGenerationError,
+		},
+		{
+			name: "EKS",
+			configure: func(spies generatorSpies) {
+				spies.eks.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionEKS,
+			assertErr:    assertEKSGenerationError,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runDistributionErrorTest(t, testCase)
+		})
+	}
+}
+
+type distributionErrorTestCase struct {
+	name         string
+	configure    func(generatorSpies)
+	distribution v1alpha1.Distribution
+	assertErr    func(*testing.T, error)
+}
+
+func runDistributionErrorTest(t *testing.T, test distributionErrorTestCase) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	scaffolderInstance.KSailConfig.Spec.Distribution = test.distribution
+	test.configure(spies)
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+
+	require.Error(t, err)
+	test.assertErr(t, err)
+}
+
+func assertKindGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.ErrorIs(t, err, scaffolder.ErrKindConfigGeneration)
+	require.ErrorIs(t, err, errGenerateFailure)
+}
+
+func assertK3dGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.ErrorIs(t, err, scaffolder.ErrK3dConfigGeneration)
+	require.ErrorIs(t, err, errGenerateFailure)
+}
+
+func assertEKSGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, errGenerateFailure)
+	require.ErrorContains(t, err, "generate EKS config")
+}
+
+func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	spies.kustomization.returnErr = errGenerateFailure
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
 }
 
 // Test case definitions.
@@ -366,4 +558,79 @@ func createUnknownCluster(name string) v1alpha1.Cluster {
 	c.Spec.Distribution = "unknown"
 
 	return c
+}
+
+type spyGenerator[T any] struct {
+	callCount  int
+	returnErr  error
+	lastOutput yamlgenerator.Options
+	lastModel  T
+}
+
+func (s *spyGenerator[T]) Generate(model T, opts yamlgenerator.Options) (string, error) {
+	s.callCount++
+	s.lastOutput = opts
+	s.lastModel = model
+
+	return "", s.returnErr
+}
+
+type generatorSpies struct {
+	ksail         *spyGenerator[v1alpha1.Cluster]
+	kind          *spyGenerator[*v1alpha4.Cluster]
+	k3d           *spyGenerator[*k3dv1alpha5.SimpleConfig]
+	eks           *spyGenerator[*eksv1alpha5.ClusterConfig]
+	kustomization *spyGenerator[*ktypes.Kustomization]
+}
+
+func newScaffolderWithSpies(
+	t *testing.T,
+	writer io.Writer,
+) (*scaffolder.Scaffolder, generatorSpies) {
+	t.Helper()
+
+	cluster := createTestCluster("spy-cluster")
+	scaffolderInstance := scaffolder.NewScaffolder(cluster, writer)
+
+	spies := generatorSpies{
+		ksail:         &spyGenerator[v1alpha1.Cluster]{},
+		kind:          &spyGenerator[*v1alpha4.Cluster]{},
+		k3d:           &spyGenerator[*k3dv1alpha5.SimpleConfig]{},
+		eks:           &spyGenerator[*eksv1alpha5.ClusterConfig]{},
+		kustomization: &spyGenerator[*ktypes.Kustomization]{},
+	}
+
+	scaffolderInstance.KSailYAMLGenerator = spies.ksail
+	scaffolderInstance.KindGenerator = spies.kind
+	scaffolderInstance.K3dGenerator = spies.k3d
+	scaffolderInstance.EKSGenerator = spies.eks
+	scaffolderInstance.KustomizationGenerator = spies.kustomization
+
+	return scaffolderInstance, spies
+}
+
+func setupExistingKSailFile(
+	t *testing.T,
+) (
+	string,
+	*bytes.Buffer,
+	*scaffolder.Scaffolder,
+	generatorSpies,
+) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	require.NoError(
+		t,
+		os.WriteFile(
+			filepath.Join(tempDir, "ksail.yaml"),
+			[]byte("existing"),
+			0o600,
+		),
+	)
+
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	return tempDir, buffer, scaffolderInstance, spies
 }
