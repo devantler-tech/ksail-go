@@ -26,7 +26,6 @@
 - [ ] T016 (NFR-Lint) Validate all code and tests pass golangci-lint with zero issues
 - [ ] T017 (NFR-Coverage) Validate >90% test coverage is achieved and validated
 
-
 ## Phase 3.1: Setup
 
 - [ ] T001 (FR-001) Prepare `cmd/cluster/` package scaffold (create directory and lightweight `doc.go` explaining the consolidated cluster command namespace) so subsequent tests can target the new package.
