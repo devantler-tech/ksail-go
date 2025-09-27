@@ -141,14 +141,14 @@ func titlef(out io.Writer, col *fcolor.Color, emoji, format string, args ...any)
 // title prints an emoji and title message without a trailing newline using the provided color and writer.
 func title(out io.Writer, col *fcolor.Color, emoji string, args ...any) {
 	titleText := fmt.Sprint(args...)
-	_, err := col.Fprint(out, emoji, " ", titleText)
+	_, err := col.Fprint(out, fmt.Sprintf("%s %s", emoji, titleText))
 	handleNotifyError(err)
 }
 
 // titleln prints an emoji and title message with a trailing newline using the provided color and writer.
 func titleln(out io.Writer, col *fcolor.Color, emoji string, args ...any) {
 	titleText := fmt.Sprint(args...)
-	_, err := col.Fprintln(out, emoji, titleText)
+	_, err := col.Fprintln(out, fmt.Sprintf("%s %s", emoji, titleText))
 	handleNotifyError(err)
 }
 
