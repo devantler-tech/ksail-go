@@ -28,6 +28,7 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 
 1. **Given** an operator authenticated on their workstation, **When** they run `ksail cluster up`, **Then** the tool provisions a cluster exactly as the former `ksail up` command did and reports success or failure clearly.
 2. **Given** an operator exploring available operations, **When** they run `ksail cluster --help`, **Then** the CLI lists all cluster subcommands with concise explanations so the user understands available actions.
+3. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
 
 ### Edge Cases
 
@@ -39,21 +40,6 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 
 ### Functional Requirements
 
-- **FR-008**: The `reconcile` command MUST NOT be moved under `ksail cluster` in this refactor. It will remain at the top level until migrated to `ksail workloads reconcile` in a future change.
-- **FR-008**: The `reconcile` command MUST NOT be moved under `ksail cluster` in this refactor. It will remain at the top level until migrated to `ksail workloads reconcile` in a future change.
-
-1. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
-
-### Acceptance Scenariosx
-
-1. **Given** an operator authenticated on their workstation, **When** they run `ksail cluster up`, **Then** the tool provisions a cluster exactly as the former `ksail up` command did and reports success or failure clearly.
-2. **Given** an operator exploring available operations, **When** they run `ksail cluster --help`, **Then** the CLI lists all cluster subcommands with concise explanations so the user understands available actions.
-3. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
-
-## Future Work / Out of Scope
-
-- Migration of the `reconcile` command to `ksail workloads reconcile` will be handled in a future feature and is explicitly out of scope for this refactor.
-
 - **FR-001**: The CLI MUST expose a parent `cluster` command (invoked as `ksail cluster`) dedicated to cluster lifecycle actions.
 - **FR-002**: The CLI MUST provide subcommands under `ksail cluster` for every existing cluster lifecycle capability (e.g., create, delete, start, stop, list, status) with the same user-facing behavior as today. (**Note:** `reconcile` is intentionally excluded and will be migrated separately.)
 - **FR-003**: Executing any cluster subcommand via `ksail cluster <subcommand>` MUST produce identical success/failure handling, messaging, and exit codes as the current standalone commands.
@@ -61,6 +47,18 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 - **FR-005**: Running `ksail cluster` without a subcommand MUST display the cluster help/usage output so the workflow remains discoverable.
 - **FR-006**: Legacy top-level commands (e.g., `ksail up`, `ksail down`) MUST be removed so invoking them produces the CLI's standard unknown-command error, ensuring users transition to `ksail cluster <subcommand>` workflows.
 - **FR-007**: The root `ksail --help` output MUST include a command list entry for `cluster` with a concise description, with no additional dedicated sections or migration notes.
+- **FR-008**: The `reconcile` command MUST NOT be moved under `ksail cluster` in this refactor. It will remain at the top level until migrated to `ksail workloads reconcile` in a future change.
+
+## Dependencies & Assumptions
+
+- Existing Cobra command constructors (`NewUpCmd`, `NewDownCmd`, etc.) and handlers (`HandleUpRunE`, ...) remain stable and reusable under the new parent command without signature changes.
+- Snapshot testing infrastructure (`go-snaps` fixtures under `cmd/__snapshots__`) is available so help output deltas can be captured once tests are updated.
+- Build and smoke validation steps rely on the local `./ksail` binary produced via `go build ./...`.
+- Constitution quality gates (golangci-lint, coverage, performance thresholds) stay enforced by existing CI pipelines; no new tooling is required.
+
+## Future Work / Out of Scope
+
+- Migration of the `reconcile` command to `ksail workloads reconcile` will be handled in a future feature and is explicitly out of scope for this refactor.
 
 ## Completion Signals
 
@@ -90,11 +88,11 @@ GATE: Automated checks run during main() execution
 
 ### Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
-- [ ] Dependencies and assumptions identified
+- [x] Dependencies and assumptions identified
 
 ---
 
@@ -108,6 +106,6 @@ Updated by main() during processing
 - [x] User scenarios defined
 - [x] Requirements generated
 - [x] Entities identified: CLI command tree (root, cluster parent, subcommands), help output, error messages, legacy command aliases
-- [ ] Review checklist passed
+- [x] Review checklist passed
 
 ---

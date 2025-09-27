@@ -15,7 +15,7 @@
 
 ## Help Output Requirements
 
-- `ksail --help` **must** list `cluster` alongside other top-level commands with a short description: "Manage cluster lifecycle commands" (exact phrasing finalised during implementation but must be concise).
+- `ksail --help` **must** list `cluster` alongside other top-level commands with a short description: "Manage cluster lifecycle commands" (exact phrasing finalized during implementation but must be concise).
 - `ksail cluster --help` **must** include: short description, long description referencing lifecycle operations, and list each subcommand with its short description.
 
 ## Flag Expectations

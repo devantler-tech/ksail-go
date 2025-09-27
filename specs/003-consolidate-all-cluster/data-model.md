@@ -33,12 +33,12 @@
 
 | Command | Previous State | Next State | Notes |
 |---------|----------------|------------|-------|
-| `cluster up` | Unprovisioned / stopped | Running | Stub implementation today; behavior unchanged |
+| `cluster up` | Not provisioned / stopped | Running | Stub implementation today; behavior unchanged |
 | `cluster down` | Any | Removed | Stub implementation |
 | `cluster start` | Stopped | Running | |
 | `cluster stop` | Running | Stopped | |
 
-## Documentation Touchpoints
+## Documentation Touch Points
 
 - Root command help must list `cluster` with concise description (clarification #3).
 - `cluster` command help should enumerate subcommands with short/long descriptions derived from existing command metadata.

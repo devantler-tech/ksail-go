@@ -45,7 +45,7 @@ Group all cluster lifecycle commands (`up`, `down`, `start`, `stop`, `status`, `
 **Project Type**: Single Go CLI project
 **Performance Goals**: CLI response <200 ms for help and command wiring (Constitution IV)
 **Constraints**: Must maintain >90 % coverage, golangci-lint clean, and consistent Cobra UX (Constitution I–III)
-**Scale/Scope**: Eight existing cluster lifecycle commands plus root help updates
+**Scale/Scope**: Six existing cluster lifecycle commands (up, down, start, stop, status, list) plus root help updates
 
 ## Constitution Check
 

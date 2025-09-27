@@ -16,7 +16,7 @@
 
 ## Decision: Update command tests to reflect nested invocation while maintaining handler coverage
 
-- **Rationale**: Tests such as `cmd/up_test.go` leverage `testutils.TestSimpleCommandCreation` to validate command metadata. After relocation, these tests must assert the new parent command path (e.g., `cluster up`) and ensure root command help emphasises the new grouping. We will keep handler tests intact to satisfy the constitution’s TDD requirement.
+- **Rationale**: Tests such as `cmd/up_test.go` leverage `testutils.TestSimpleCommandCreation` to validate command metadata. After relocation, these tests must assert the new parent command path (e.g., `cluster up`) and ensure root command help emphasizes the new grouping. We will keep handler tests intact to satisfy the constitution’s TDD requirement.
 - **Alternatives Considered**:
   - *Delete existing tests and rely on manual QA*: Violates constitutional principle II (TDD-first).
   - *Only test the parent `cluster` command*: Would miss regressions in individual subcommand wiring and flag bindings.
