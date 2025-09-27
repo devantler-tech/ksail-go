@@ -1,6 +1,6 @@
 # Data Model: KSail Init Command
 
-### ScaffoldTemplate
+## ScaffoldTemplate
 
 Represents a runtime-generated template for project file generation.
 
@@ -19,7 +19,7 @@ Represents a runtime-generated template for project file generation.
 - Required templates cannot be skipped
 - Distribution-specific templates only generated when matching distribution selected
 
-### v1alpha1.Cluster (Existing)
+## v1alpha1.Cluster (Existing)
 
 **Note**: KSail init uses the existing v1alpha1.Cluster configuration structure, not a separate InitConfig.
 
@@ -49,7 +49,7 @@ The scaffolder is initialized with a complete v1alpha1.Cluster configuration loa
 - Scaffolder uses one Generator per distribution type
 - Generates distribution-specific config files
 
-### ProjectFile
+## ProjectFile
 
 Represents a generated configuration file in the new project.
 
@@ -80,7 +80,7 @@ Represents a generated configuration file in the new project.
 - Generated from one ScaffoldTemplate
 - Belongs to one ProjectStructure
 
-### ProjectStructure
+## ProjectStructure
 
 Represents the complete directory and file structure of a generated project.
 
@@ -107,7 +107,7 @@ Represents the complete directory and file structure of a generated project.
 
 ## Data Flow
 
-```
+```txt
 InitConfig (user input + defaults)
     ↓ (validation)
 ScaffoldTemplate[] (filtered by distribution)
