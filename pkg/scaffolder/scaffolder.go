@@ -167,8 +167,6 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	_, statErr := os.Stat(opts.Output)
 	if statErr == nil && !force {
 		notify.Warnln(s.Writer, "skipped 'ksail.yaml', file exists use --force to overwrite")
-
-		return nil
 	}
 
 	_, err := s.KSailYAMLGenerator.Generate(config, opts)
