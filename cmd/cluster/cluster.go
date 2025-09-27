@@ -26,8 +26,6 @@ func NewClusterCmd() *cobra.Command {
 }
 
 func handleClusterRunE(cmd *cobra.Command, _ *configmanager.ConfigManager, _ []string) error {
-	// Cobra help cannot fail at runtime, so ignoring the error is safe.
-	_ = cmd.Help()
-
-	return nil
+	// Cobra Help() can return an error (e.g., output stream or template issues), so return it to the caller.
+	return cmd.Help()
 }
