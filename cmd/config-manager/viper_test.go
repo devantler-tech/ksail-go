@@ -3,6 +3,7 @@ package configmanager_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -129,7 +130,7 @@ spec:
 
 	// Create a temporary directory and file
 	tempDir := t.TempDir()
-	configFile := tempDir + "/ksail.yaml"
+	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)
@@ -335,9 +336,9 @@ func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create nested directories
-	level1 := tempDir + "/level1"
-	level2 := level1 + "/level2"
-	level3 := level2 + "/level3"
+	level1 := filepath.Join(tempDir, "level1")
+	level2 := filepath.Join(level1, "level2")
+	level3 := filepath.Join(level2, "level3")
 
 	err := os.MkdirAll(level3, 0o750)
 	require.NoError(t, err)
@@ -348,11 +349,11 @@ func TestAddParentDirectoriesToViperPaths_DirectoryTraversal(t *testing.T) {
 `
 
 	// Config file at level1
-	err = os.WriteFile(level1+"/ksail.yaml", []byte(configContent), 0o600)
+	err = os.WriteFile(filepath.Join(level1, "ksail.yaml"), []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Config file at tempDir (root level)
-	err = os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	err = os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Change to level3 directory
@@ -390,7 +391,7 @@ func TestAddParentDirectoriesToViperPaths_WithDuplicates(t *testing.T) {
   name: test-duplicates
 `
 
-	err := os.WriteFile(tempDir+"/ksail.yaml", []byte(configContent), 0o600)
+	err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
 	require.NoError(t, err)
 
 	// Change to the directory
@@ -423,7 +424,7 @@ func TestAddParentDirectoriesToViperPaths_ErrorHandling(t *testing.T) {
 
 	// Create a temp directory and subdirectory
 	tempDir := t.TempDir()
-	subDir := tempDir + "/removed"
+	subDir := filepath.Join(tempDir, "removed")
 
 	err := os.Mkdir(subDir, 0o750)
 	require.NoError(t, err)

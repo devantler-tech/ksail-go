@@ -59,10 +59,10 @@ func testNewInitCmdEmbeddedRunE(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify files were created in the temp directory
-	assert.FileExists(t, tempDir+"/ksail.yaml")
-	assert.FileExists(t, tempDir+"/kind.yaml")
-	assert.DirExists(t, tempDir+"/k8s")
-	assert.FileExists(t, tempDir+"/k8s/kustomization.yaml")
+	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
+	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
+	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
+	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
 }
 
 func TestInitCmdExecute(t *testing.T) {
@@ -91,10 +91,10 @@ func TestInitCmdExecute(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 
 	// Verify files were created in temp directory, not current directory
-	assert.FileExists(t, tempDir+"/ksail.yaml")
-	assert.FileExists(t, tempDir+"/kind.yaml")
-	assert.DirExists(t, tempDir+"/k8s")
-	assert.FileExists(t, tempDir+"/k8s/kustomization.yaml")
+	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
+	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
+	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
+	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
 
 	// Verify files were NOT created in current directory
 	assert.NoFileExists(t, "./ksail.yaml")
@@ -172,10 +172,10 @@ func testHandleInitRunESuccessWithOutputPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify that scaffolder created the expected files in the temp directory
-	assert.FileExists(t, tempDir+"/ksail.yaml")
-	assert.FileExists(t, tempDir+"/kind.yaml")
-	assert.DirExists(t, tempDir+"/k8s")
-	assert.FileExists(t, tempDir+"/k8s/kustomization.yaml")
+	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
+	assert.FileExists(t, filepath.Join(tempDir, "kind.yaml"))
+	assert.DirExists(t, filepath.Join(tempDir, "k8s"))
+	assert.FileExists(t, filepath.Join(tempDir, "k8s", "kustomization.yaml"))
 }
 
 func testHandleInitRunESuccessWithoutOutputPath(t *testing.T) {

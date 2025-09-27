@@ -3,6 +3,7 @@ package configmanager_test
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -404,7 +405,7 @@ func TestManager_readConfigurationFile_ErrorHandling(t *testing.T) {
 
 	// Create a directory with a file that will cause a YAML parsing error
 	tempDir := t.TempDir()
-	configFile := tempDir + "/ksail.yaml"
+	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	// Write content that will definitely cause a YAML parsing error
 	// Use severely malformed YAML that cannot be parsed
@@ -460,7 +461,7 @@ spec:
 
 	// Create a temporary directory and file
 	tempDir := t.TempDir()
-	configFile := tempDir + "/ksail.yaml"
+	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err)

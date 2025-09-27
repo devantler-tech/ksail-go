@@ -3,6 +3,7 @@ package scaffolder_test
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -133,7 +134,7 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 
 	// Test scenarios that might cause generator failures
 	// Use very long paths to potentially trigger path length limits
-	longPath := "/tmp/" + strings.Repeat("very-long-directory-name/", 10)
+	longPath := filepath.Join("/tmp", strings.Repeat("very-long-directory-name/", 10))
 
 	testCases := []struct {
 		distribution string

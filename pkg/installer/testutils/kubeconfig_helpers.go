@@ -3,6 +3,7 @@ package testutils
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,7 +20,7 @@ func createKubeconfigFileWithContent(t *testing.T, content string) string {
 
 	tmpDir := t.TempDir()
 
-	kubeconfigPath := tmpDir + "/kubeconfig"
+	kubeconfigPath := filepath.Join(tmpDir, "kubeconfig")
 	err := os.WriteFile(kubeconfigPath, []byte(content), DefaultFilePermissions)
 	require.NoError(t, err)
 
