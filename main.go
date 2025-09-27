@@ -31,5 +31,11 @@ func run() int {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			notify.Errorln(os.Stderr, r)
+			os.Exit(1)
+		}
+	}()
 	os.Exit(run())
 }
