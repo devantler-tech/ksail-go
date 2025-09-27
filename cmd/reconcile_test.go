@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"io"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -56,7 +57,7 @@ func TestHandleReconcileRunEError(t *testing.T) {
 	t.Parallel()
 
 	testCmd, _ := testutils.SetupCommandWithOutput()
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	// Test that the function doesn't panic - error testing can be enhanced later
 	assert.NotPanics(t, func() {

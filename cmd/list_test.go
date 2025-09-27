@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -88,7 +89,7 @@ func TestHandleListRunESuccess(t *testing.T) {
 	// Add the --all flag to the command like the real command would have
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	err := cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -110,7 +111,7 @@ func TestHandleListRunEAllFlag(t *testing.T) {
 	err := testCmd.Flags().Set("all", "true")
 	require.NoError(t, err)
 
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	err = cmd.HandleListRunE(testCmd, manager, []string{})
 
@@ -129,7 +130,7 @@ func TestHandleListRunEError(t *testing.T) {
 	testCmd.SetOut(&out)
 	testCmd.Flags().Bool("all", false, "List all clusters including stopped ones")
 
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	// Test that the function doesn't panic - error testing can be enhanced later
 	// when real error conditions are available in the stub implementation

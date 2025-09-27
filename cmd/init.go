@@ -74,10 +74,10 @@ func HandleInitRunE(
 	force := configManager.Viper.GetBool("force")
 
 	// Create scaffolder and generate project files
-	scaffolderInstance := scaffolder.NewScaffolder(*cluster)
+	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
-	cmd.Println("📂 Initializing project...")
+	notify.Titleln(cmd.OutOrStdout(), "📂 Initializing project...")
 
 	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)

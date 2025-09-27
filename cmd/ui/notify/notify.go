@@ -92,6 +92,24 @@ func Activityln(out io.Writer, args ...any) {
 	notifyln(out, color, ActivitySymbol, args...)
 }
 
+// Titlef prints a formatted title message to the provided writer with an emoji and title.
+func Titlef(out io.Writer, emoji, format string, args ...any) {
+	color := fcolor.New(fcolor.Reset, fcolor.Bold)
+	titlef(out, color, emoji, format, args...)
+}
+
+// Title prints a title message to the provided writer with an emoji and title.
+func Title(out io.Writer, emoji string, args ...any) {
+	color := fcolor.New(fcolor.Reset, fcolor.Bold)
+	title(out, color, emoji, args...)
+}
+
+// Titleln prints a title message to the provided writer with a trailing newline, using an emoji and title.
+func Titleln(out io.Writer, emoji string, args ...any) {
+	color := fcolor.New(fcolor.Reset, fcolor.Bold)
+	titleln(out, color, emoji, args...)
+}
+
 // --- internals ---
 
 // notifyf prints a symbol and a formatted message with a trailing newline using the provided color and writer.
@@ -113,7 +131,28 @@ func notifyln(out io.Writer, col *fcolor.Color, symbol string, args ...any) {
 	handleNotifyError(err)
 }
 
-// notifyf prints a symbol and a formatted message with a trailing newline using the provided color and writer.
+// titlef prints an emoji and a formatted title message with a trailing newline using the provided color and writer.
+func titlef(out io.Writer, col *fcolor.Color, emoji, format string, args ...any) {
+	titleText := fmt.Sprintf(format, args...)
+	_, err := col.Fprintf(out, "%s %s\n", emoji, titleText)
+	handleNotifyError(err)
+}
+
+// title prints an emoji and title message without a trailing newline using the provided color and writer.
+func title(out io.Writer, col *fcolor.Color, emoji string, args ...any) {
+	titleText := fmt.Sprint(args...)
+	_, err := col.Fprint(out, emoji, " ", titleText)
+	handleNotifyError(err)
+}
+
+// titleln prints an emoji and title message with a trailing newline using the provided color and writer.
+func titleln(out io.Writer, col *fcolor.Color, emoji string, args ...any) {
+	titleText := fmt.Sprint(args...)
+	_, err := col.Fprintln(out, emoji, titleText)
+	handleNotifyError(err)
+}
+
+// handleNotifyError handles errors that occur during notification printing.
 func handleNotifyError(err error) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)

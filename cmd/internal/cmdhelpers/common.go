@@ -59,17 +59,20 @@ func NewCobraCommand(
 	runE func(*cobra.Command, *configmanager.ConfigManager, []string) error,
 	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := configmanager.NewConfigManager(fieldSelectors...)
-
-	// Create the base command
+	// Create the base command first so we can access cmd.OutOrStdout()
 	cmd := &cobra.Command{
-		Use:   use,
-		Short: short,
-		Long:  long,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runE(cmd, manager, args)
-		},
+		Use:                        use,
+		Short:                      short,
+		Long:                       long,
 		SuggestionsMinimumDistance: SuggestionsMinimumDistance,
+	}
+
+	// Create the manager with the command's writer
+	manager := configmanager.NewConfigManager(cmd.OutOrStdout(), fieldSelectors...)
+
+	// Set the RunE function after manager is created
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runE(cmd, manager, args)
 	}
 
 	// Auto-bind flags based on field selectors

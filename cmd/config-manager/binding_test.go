@@ -1,6 +1,7 @@
 package configmanager_test
 
 import (
+	"io"
 	"testing"
 	"time"
 
@@ -41,7 +42,7 @@ func runFlagNameGenerationTests(
 func setupFlagBindingTest(
 	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) *cobra.Command {
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 	cmd := &cobra.Command{Use: "test"}
 	manager.AddFlagsFromFields(cmd)
 
@@ -286,7 +287,7 @@ func testAddFlagFromFieldCases(t *testing.T, tests []struct {
 func TestGenerateFlagName(t *testing.T) {
 	t.Parallel()
 
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	tests := []flagNameTestCase{
 		{"Distribution field", &manager.Config.Spec.Distribution, "distribution"},
@@ -338,7 +339,7 @@ func testFlagNameGeneration(
 func TestGenerateShorthand(t *testing.T) {
 	t.Parallel()
 
-	manager := configmanager.NewConfigManager()
+	manager := configmanager.NewConfigManager(io.Discard)
 
 	tests := []struct {
 		name     string

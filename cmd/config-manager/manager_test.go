@@ -1,6 +1,7 @@
 package configmanager_test
 
 import (
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -69,7 +70,7 @@ func TestNewManager(t *testing.T) {
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	require.NotNil(t, manager)
 	require.NotNil(t, manager.Config)
@@ -129,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 
 			fieldSelectors := createFieldSelectorsWithName()
 
-			manager := configmanager.NewConfigManager(fieldSelectors...)
+			manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 			cluster, err := manager.LoadConfig()
 
@@ -232,7 +233,7 @@ func TestAddFlagsFromFields(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			manager := configmanager.NewConfigManager(testCase.fieldSelectors...)
+			manager := configmanager.NewConfigManager(io.Discard, testCase.fieldSelectors...)
 			cmd := &cobra.Command{
 				Use: "test",
 			}
@@ -262,7 +263,7 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := v1alpha1.NewCluster()
@@ -299,7 +300,7 @@ func testFieldValueSetting(
 		},
 	}
 
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)
@@ -423,7 +424,7 @@ invalid yaml content
 
 	// Create a manager
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
 	cluster, err := manager.LoadConfig()
@@ -469,7 +470,7 @@ spec:
 
 	// Create manager and load config
 	fieldSelectors := createFieldSelectorsWithName()
-	manager := configmanager.NewConfigManager(fieldSelectors...)
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig()
 	require.NoError(t, err)

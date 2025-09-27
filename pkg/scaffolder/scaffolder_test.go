@@ -2,6 +2,7 @@ package scaffolder_test
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestNewScaffolder(t *testing.T) {
 	t.Parallel()
 
 	cluster := createTestCluster("test-cluster")
-	scaffolder := scaffolder.NewScaffolder(cluster)
+	scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 
 	require.NotNil(t, scaffolder)
 	require.Equal(t, cluster, scaffolder.KSailConfig)
@@ -39,7 +40,7 @@ func TestScaffoldBasicOperations(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc(testCase.name)
-			scaffolder := scaffolder.NewScaffolder(cluster)
+			scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 
 			err := scaffolder.Scaffold(testCase.outputPath, testCase.force)
 
@@ -63,7 +64,7 @@ func TestScaffoldContentValidation(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.setupFunc("test-cluster")
-			scaffolder := scaffolder.NewScaffolder(cluster)
+			scaffolder := scaffolder.NewScaffolder(cluster, io.Discard)
 			generateDistributionContent(t, scaffolder, cluster, testCase.distribution)
 
 			kustomization := ktypes.Kustomization{}
@@ -94,7 +95,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 		t.Parallel()
 
 		cluster := createTestCluster("error-test")
-		scaffolderInstance := scaffolder.NewScaffolder(cluster)
+		scaffolderInstance := scaffolder.NewScaffolder(cluster, io.Discard)
 
 		// Use invalid path with null byte to trigger file system error
 		err := scaffolderInstance.Scaffold("/invalid/\x00path/", false)
@@ -109,7 +110,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 
 		// Test Tind not implemented
 		tindCluster := createTindCluster("tind-test")
-		scaffolderInstance := scaffolder.NewScaffolder(tindCluster)
+		scaffolderInstance := scaffolder.NewScaffolder(tindCluster, io.Discard)
 
 		err := scaffolderInstance.Scaffold("/tmp/test-tind/", false)
 		require.Error(t, err)
@@ -118,7 +119,7 @@ func TestScaffoldErrorHandling(t *testing.T) {
 
 		// Test Unknown distribution
 		unknownCluster := createUnknownCluster("unknown-test")
-		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster)
+		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster, io.Discard)
 
 		err = scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
 		require.Error(t, err)
@@ -148,7 +149,7 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 			t.Parallel()
 
 			cluster := testCase.clusterFunc("error-test")
-			scaffolderInstance := scaffolder.NewScaffolder(cluster)
+			scaffolderInstance := scaffolder.NewScaffolder(cluster, io.Discard)
 
 			err := scaffolderInstance.Scaffold(longPath, false)
 

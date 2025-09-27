@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -15,6 +16,7 @@ import (
 // CreateDefaultConfigManager creates a standard config manager for cmd tests that passes KSail validation.
 func CreateDefaultConfigManager() *configmanager.ConfigManager {
 	return configmanager.NewConfigManager(
+		io.Discard,
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
 			Description:  "API version",

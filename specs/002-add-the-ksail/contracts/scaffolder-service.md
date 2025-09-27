@@ -4,20 +4,16 @@
 
 ### Primary Method
 
-
 ```go
 func (s *Scaffolder) Scaffold(output string, force bool) error
 ```
 
 ## Input Contract
 
-
 ### Parameters
 
 - `output` (string): Target directory path for generated files
 - `force` (bool): Whether to overwrite existing files without conflict detection
-
-
 
 ### Scaffolder Configuration
 
@@ -32,7 +28,7 @@ if err != nil {
 
 // Scaffolder is created with the loaded cluster configuration
 
-scaffolderInstance := scaffolder.NewScaffolder(*cluster)
+scaffolderInstance := scaffolder.NewScaffolder(*cluster, os.Stdout)
 ```
 
 **ConfigManager Integration**:
@@ -48,7 +44,6 @@ scaffolderInstance := scaffolder.NewScaffolder(*cluster)
 - v1alpha1.Cluster configuration must be valid
 - Distribution must be supported (Kind, K3d, EKS)
 - Invalid input returns validation error before any file operations
-
 
 ## Output Contract
 
@@ -90,8 +85,6 @@ Returns wrapped errors with:
    - File path safety checks
 4. **Atomic Writing**: Files written atomically to prevent partial states
 
-
-
 ### File System Operations
 
 - Create directories as needed with appropriate permissions
@@ -100,7 +93,6 @@ Returns wrapped errors with:
 - Set appropriate file permissions (644 for configs, 755 for directories)
 
 ### Rollback Behavior
-
 
 On any error during generation:
 
@@ -112,7 +104,6 @@ On any error during generation:
 ## Template Contract
 
 ### Required Generators
-
 
 **Note**: Uses runtime generators from pkg/io/generator, not template files.
 
@@ -137,12 +128,10 @@ Runtime generation characteristics:
 
 ### Output Format
 
-
 - **Valid YAML**: All generated content must parse correctly
 - **Tool Compatibility**: Generated configs work with target distributions
 - **Consistent Style**: Standard formatting across all generators
 - **Documented**: Generated files include explanatory comments where helpful
-
 
 ## Performance Contract
 
@@ -167,7 +156,6 @@ Runtime generation characteristics:
 - Safe for concurrent use by multiple commands
 - No shared mutable state between operations
 
-
 ## Integration Contract
 
 ### Dependencies
@@ -177,7 +165,6 @@ Runtime generation characteristics:
 - Must respect existing file system abstractions
 - Must support existing error handling patterns
 
-
 ### Observability
 
 - Log all file operations at appropriate levels
@@ -186,7 +173,6 @@ Runtime generation characteristics:
 - Include operation context in all log messages
 
 ## Error Scenarios
-
 
 ### Template Errors
 
@@ -199,7 +185,6 @@ type TemplateError struct {
 ```
 
 ### Filesystem Errors
-
 
 ```go
 type FilesystemError struct {

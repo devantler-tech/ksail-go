@@ -3,7 +3,7 @@ package configmanager
 import (
 	"errors"
 	"fmt"
-	"os"
+	"io"
 	"reflect"
 
 	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
@@ -18,6 +18,7 @@ type ConfigManager struct {
 	fieldSelectors []FieldSelector[v1alpha1.Cluster]
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
 	configLoaded   bool              // Track if config has been actually loaded
+	Writer         io.Writer         // Writer for output notifications
 }
 
 // Compile-time interface compliance verification.
@@ -26,7 +27,10 @@ var _ configmanagerinterface.ConfigManager[v1alpha1.Cluster] = (*ConfigManager)(
 
 // NewConfigManager creates a new configuration manager with the specified field selectors.
 // Initializes Viper with all configuration including paths and environment handling.
-func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *ConfigManager {
+func NewConfigManager(
+	writer io.Writer,
+	fieldSelectors ...FieldSelector[v1alpha1.Cluster],
+) *ConfigManager {
 	viperInstance := InitializeViper()
 	config := v1alpha1.NewCluster()
 
@@ -35,6 +39,7 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 		fieldSelectors: fieldSelectors,
 		Config:         config,
 		configLoaded:   false,
+		Writer:         writer,
 	}
 
 	return manager
@@ -45,15 +50,15 @@ func NewConfigManager(fieldSelectors ...FieldSelector[v1alpha1.Cluster]) *Config
 // Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded, return it
-	fmt.Println("⏳ Loading configuration...")
+	notify.Titleln(m.Writer, "⏳ Loading configuration...")
 
 	if m.configLoaded {
-		notify.Successln(os.Stdout, "config already loaded, reusing existing config")
+		notify.Successln(m.Writer, "config already loaded, reusing existing config")
 
 		return m.Config, nil
 	}
 
-	notify.Activityln(os.Stdout, "loading ksail config")
+	notify.Activityln(m.Writer, "loading ksail config")
 
 	// Use native Viper API to read configuration
 	// All paths and environment handling are already configured in constructor
@@ -65,9 +70,9 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		notify.Activityln(os.Stdout, "using default config")
+		notify.Activityln(m.Writer, "using default config")
 	} else {
-		notify.Activityf(os.Stdout, "'%s' found", m.Viper.ConfigFileUsed())
+		notify.Activityf(m.Writer, "'%s' found", m.Viper.ConfigFileUsed())
 	}
 
 	// Unmarshal configuration using Viper's native precedence handling
@@ -86,7 +91,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		}
 	}
 
-	notify.Successln(os.Stdout, "config loaded")
+	notify.Successln(m.Writer, "config loaded")
 
 	m.configLoaded = true
 
