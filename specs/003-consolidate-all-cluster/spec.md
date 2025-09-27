@@ -28,7 +28,8 @@ As a platform engineer using the KSail CLI, I want all cluster lifecycle command
 
 1. **Given** an operator authenticated on their workstation, **When** they run `ksail cluster up`, **Then** the tool provisions a cluster exactly as the former `ksail up` command did and reports success or failure clearly.
 2. **Given** an operator exploring available operations, **When** they run `ksail cluster --help`, **Then** the CLI lists all cluster subcommands with concise explanations so the user understands available actions.
-3. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error, and `reconcile` remains available only at the top level.
+3. **Given** an operator, **When** they run `ksail cluster reconcile`, **Then** the CLI reports an unknown command error because `reconcile` is not available under the `cluster` namespace.
+4. **Given** an operator, **When** they run `ksail reconcile` (at the top level), **Then** the CLI executes the reconcile operation as before.
 
 ### Edge Cases
 
