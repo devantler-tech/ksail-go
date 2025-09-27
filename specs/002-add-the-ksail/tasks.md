@@ -81,6 +81,7 @@
 - [x] T028 [P] Compatibility testing: validate generated files work with existing KSail commands (NFR-005)
 - [x] T029 Manual validation using quickstart.md scenarios on enhanced implementation
 - [x] T030 Regression testing: ensure existing functionality still works correctly
+- [x] T031 Refine test helpers to avoid goroutine ID stack parsing while preserving CLI coverage
 
 ## Phase 6: Coverage Remediation
 

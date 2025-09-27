@@ -181,10 +181,6 @@ func TestScaffoldErrorHandling(t *testing.T) {
 func TestScaffoldGeneratorFailures(t *testing.T) {
 	t.Parallel()
 
-	// Test scenarios that might cause generator failures
-	// Use very long paths to potentially trigger path length limits
-	longPath := filepath.Join("/tmp", strings.Repeat("very-long-directory-name/", 10))
-
 	testCases := []struct {
 		distribution string
 		clusterFunc  func(string) v1alpha1.Cluster
@@ -197,6 +193,15 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.distribution+" config with problematic path", func(t *testing.T) {
 			t.Parallel()
+
+			// Test scenarios that might cause generator failures
+			// Use a deeply nested path to potentially trigger path length limits
+			longPathParts := []string{t.TempDir()}
+			for range 10 {
+				longPathParts = append(longPathParts, "very-long-directory-name")
+			}
+
+			longPath := filepath.Join(longPathParts...)
 
 			cluster := testCase.clusterFunc("error-test")
 			scaffolderInstance := scaffolder.NewScaffolder(cluster, io.Discard)

@@ -363,13 +363,13 @@ func testWithoutForceFlag(t *testing.T, tempDir string, originalModTime time.Tim
 func testWithForceFlag(t *testing.T, tempDir string, originalModTime time.Time) {
 	t.Helper()
 
-	cmd3 := cmd.NewInitCmd()
+	forceCmd := cmd.NewInitCmd()
 
 	var out3 bytes.Buffer
-	cmd3.SetOut(&out3)
-	err := cmd3.Flags().Set("output", tempDir)
+	forceCmd.SetOut(&out3)
+	err := forceCmd.Flags().Set("output", tempDir)
 	require.NoError(t, err)
-	err = cmd3.Flags().Set("force", "true")
+	err = forceCmd.Flags().Set("force", "true")
 	require.NoError(t, err)
 
 	// Set mod time to a known value in the past to deterministically check for updates
@@ -378,7 +378,7 @@ func testWithForceFlag(t *testing.T, tempDir string, originalModTime time.Time) 
 	err = os.Chtimes(ksailPath, pastModTime, pastModTime)
 	require.NoError(t, err)
 
-	err = cmd3.Execute()
+	err = forceCmd.Execute()
 	require.NoError(t, err)
 
 	// Verify files were modified (different mod time)

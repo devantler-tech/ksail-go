@@ -18,14 +18,14 @@ var (
 )
 
 func main() {
-	exitCode := runSafely()
+	exitCode := runSafelyWithArgs(os.Args[1:])
 
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
 }
 
-func runSafely() int {
+func runSafelyWithArgs(args []string) int {
 	exitCode := 0
 
 	var (
@@ -41,7 +41,7 @@ func runSafely() int {
 			}
 		}()
 
-		exitCode = run()
+		exitCode = runWithArgs(args)
 	}()
 
 	if recovered != nil {
@@ -57,7 +57,12 @@ func runSafely() int {
 // run executes the main application logic and returns an exit code.
 // This function is separated from main() to make it testable.
 func run() int {
+	return runWithArgs(os.Args[1:])
+}
+
+func runWithArgs(args []string) int {
 	rootCmd := cmd.NewRootCmd(version, commit, date)
+	rootCmd.SetArgs(args)
 
 	err := rootCmd.Execute()
 	if err != nil {
