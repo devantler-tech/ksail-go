@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 
@@ -18,30 +19,27 @@ var (
 )
 
 func main() {
-	exitCode := runSafelyWithArgs(os.Args[1:])
+	exitCode := runSafely(os.Args[1:], runWithArgs, os.Stderr)
 
 	if exitCode != 0 {
 		os.Exit(exitCode)
 	}
 }
 
-func runSafelyWithArgs(args []string) (exitCode int) {
+//nolint:nonamedreturns // Named return simplifies panic recovery logic.
+func runSafely(args []string, runner func([]string) int, errWriter io.Writer) (exitCode int) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, debug.Stack())
-			notify.Errorln(os.Stderr, panicMessage)
+			notify.Errorln(errWriter, panicMessage)
+
 			exitCode = 1
 		}
 	}()
 
-	exitCode = runWithArgs(args)
-	return exitCode
-}
+	exitCode = runner(args)
 
-// run executes the main application logic and returns an exit code.
-// This function is separated from main() to make it testable.
-func run() int {
-	return runWithArgs(os.Args[1:])
+	return exitCode
 }
 
 func runWithArgs(args []string) int {

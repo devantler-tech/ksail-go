@@ -82,11 +82,13 @@
 - [x] T029 Manual validation using quickstart.md scenarios on enhanced implementation
 - [x] T030 Regression testing: ensure existing functionality still works correctly
 - [x] T031 Refine test helpers to avoid goroutine ID stack parsing while preserving CLI coverage
+- [x] T032 [P] Resolve main package test data race by eliminating global os.Args mutation
 
 ## Phase 6: Coverage Remediation
 
 - [X] TCOV1 [P] Expand main package tests to validate `main()` and `runSafely` behavior
 - [X] TCOV2 [P] Add scaffolder generator error coverage to ensure wrap paths are exercised
+- [X] T033 [P] Refactor main package entrypoints to remove redundant wrapper functions
 
 ## Dependencies
 
