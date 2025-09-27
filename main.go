@@ -43,17 +43,28 @@ func main() {
 func runSafely() int {
 	exitCode := 0
 
-	defer func() {
-		if r := recover(); r != nil {
-			stack := debug.Stack()
-			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, stack)
-			notify.Errorln(os.Stderr, panicMessage)
+	var (
+		recovered any
+		stack     []byte
+	)
 
-			exitCode = 1
-		}
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				recovered = r
+				stack = debug.Stack()
+			}
+		}()
+
+		exitCode = run()
 	}()
 
-	exitCode = run()
+	if recovered != nil {
+		panicMessage := fmt.Sprintf("panic recovered: %v\n%s", recovered, stack)
+		notify.Errorln(os.Stderr, panicMessage)
+
+		return 1
+	}
 
 	return exitCode
 }
