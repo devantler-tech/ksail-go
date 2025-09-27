@@ -175,29 +175,34 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	return false
 }
 
+// GenerationParams groups parameters for generateWithFileHandling.
+type GenerationParams[T any] struct {
+	Gen         generator.Generator[T, yamlgenerator.Options]
+	Model       T
+	Opts        yamlgenerator.Options
+	DisplayName string
+	Force       bool
+	WrapErr     func(error) error
+}
+
 // generateWithFileHandling wraps template generation with common file existence checks and notifications.
 func generateWithFileHandling[T any](
 	s *Scaffolder,
-	gen generator.Generator[T, yamlgenerator.Options],
-	model T,
-	opts yamlgenerator.Options,
-	displayName string,
-	force bool,
-	wrapErr func(error) error,
+	params GenerationParams[T],
 ) error {
-	if s.checkFileExistsAndSkip(opts.Output, displayName, force) {
+	if s.checkFileExistsAndSkip(params.Opts.Output, params.DisplayName, params.Force) {
 		return nil
 	}
 
-	if _, err := gen.Generate(model, opts); err != nil {
-		if wrapErr != nil {
-			return wrapErr(err)
+	if _, err := params.Gen.Generate(params.Model, params.Opts); err != nil {
+		if params.WrapErr != nil {
+			return params.WrapErr(err)
 		}
 
 		return err
 	}
 
-	s.notifyFileAction(displayName, force)
+	s.notifyFileAction(params.DisplayName, params.Force)
 
 	return nil
 }
