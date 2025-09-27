@@ -17,21 +17,6 @@ var (
 	date    = "unknown"
 )
 
-// run executes the main application logic and returns an exit code.
-// This function is separated from main() to make it testable.
-func run() int {
-	rootCmd := cmd.NewRootCmd(version, commit, date)
-
-	err := rootCmd.Execute()
-	if err != nil {
-		notify.Errorln(rootCmd.ErrOrStderr(), err)
-
-		return 1
-	}
-
-	return 0
-}
-
 func main() {
 	exitCode := runSafely()
 
@@ -67,4 +52,19 @@ func runSafely() int {
 	}
 
 	return exitCode
+}
+
+// run executes the main application logic and returns an exit code.
+// This function is separated from main() to make it testable.
+func run() int {
+	rootCmd := cmd.NewRootCmd(version, commit, date)
+
+	err := rootCmd.Execute()
+	if err != nil {
+		notify.Errorln(rootCmd.ErrOrStderr(), err)
+
+		return 1
+	}
+
+	return 0
 }
