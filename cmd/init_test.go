@@ -351,8 +351,11 @@ func TestInitCmdForceFlag(t *testing.T) {
 	err = cmd3.Flags().Set("force", "true")
 	require.NoError(t, err)
 
-	// Small delay to ensure different mod time
-	time.Sleep(10 * time.Millisecond)
+	// Set mod time to a known value in the past to deterministically check for updates
+	pastModTime := originalModTime.Add(-time.Hour)
+	ksailPath := filepath.Join(tempDir, "ksail.yaml")
+	err = os.Chtimes(ksailPath, pastModTime, pastModTime)
+	require.NoError(t, err)
 
 	err = cmd3.Execute()
 	require.NoError(t, err)
