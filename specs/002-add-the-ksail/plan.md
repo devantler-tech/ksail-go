@@ -5,6 +5,7 @@
 **Input**: Feature specification from `/specs/002-add-the-ksail/spec.md`
 
 ## Execution Flow (/plan command scope)
+
 ```
 1. Load feature spec from Input path
    → If not found: ERROR "No feature spec at {path}"
@@ -27,6 +28,7 @@
 ```
 
 **IMPORTANT**: The /plan command STOPS at step 7. Phases 2-4 are executed by other commands:
+
 - Phase 2: /tasks command creates tasks.md
 - Phase 3-4: Implementation execution (manual or via tools)
 
@@ -39,6 +41,7 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 **Language/Version**: Go 1.24+ (from go.mod and constitution requirements)
 
 **Primary Dependencies**:
+
 - `github.com/spf13/cobra` for CLI framework (existing pattern)
 - `github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1` for cluster APIs
 - `github.com/devantler-tech/ksail-go/pkg/scaffolder` for file generation
@@ -63,30 +66,35 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 **Code Quality Excellence**: ✅ PASS
+
 - CLI implementation follows existing cobra patterns in codebase
 - Error handling provides actionable user guidance (FR-010)
 - golangci-lint compliance mandatory per existing workflow
 - Comprehensive godoc documentation required for new public APIs
 
 **Testing Standards (TDD-First)**: ✅ PASS
+
 - TDD approach: Contract tests for CLI interface written first
 - Unit tests for scaffolder integration with >90% coverage requirement
 - Integration tests for complete init workflow validation
 - End-to-end CLI testing for user scenarios
 
 **User Experience Consistency**: ✅ PASS
+
 - Consistent cobra CLI patterns with existing commands
 - Unified flag naming conventions (--force, --distribution)
 - Clear error messages with actionable suggestions (FR-007, FR-010)
 - Comprehensive help text explaining all options (FR-012)
 
 **Performance Requirements**: ✅ PASS
+
 - <5 second initialization meets <200ms CLI response requirement
 - <50MB memory usage during operation (within <50MB normal limit)
 - File I/O operations optimized for runtime template generation
 - Performance benchmarking for critical path operations
 
 **Post-Design Constitution Re-Check**: ✅ PASS
+
 - Design artifacts maintain all constitutional compliance
 - TDD contracts established for all components
 - User experience patterns consistent with existing commands
@@ -96,6 +104,7 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 ## Project Structure
 
 ### Documentation (this feature)
+
 ```
 specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
@@ -107,6 +116,7 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 ```
 # Option 1: Single project (DEFAULT)
 src/
@@ -146,12 +156,14 @@ ios/ or android/
 **Structure Decision**: [DEFAULT to Option 1 unless Technical Context indicates web/mobile app]
 
 ## Phase 0: Outline & Research
+
 1. **Extract unknowns from Technical Context** above:
    - For each NEEDS CLARIFICATION → research task
    - For each dependency → best practices task
    - For each integration → patterns task
 
 2. **Generate and dispatch research agents**:
+
    ```
    For each unknown in Technical Context:
      Task: "Research {unknown} for {feature context}"
@@ -167,6 +179,7 @@ ios/ or android/
 **Output**: research.md with all NEEDS CLARIFICATION resolved
 
 ## Phase 1: Design & Contracts
+
 *Prerequisites: research.md complete*
 
 1. **Extract entities from feature spec** → `data-model.md`:
@@ -200,9 +213,11 @@ ios/ or android/
 **Output**: ✅ data-model.md, ✅ contracts/cli-interface.md, ✅ contracts/scaffolder-service.md, ✅ quickstart.md, ✅ agent file updated
 
 ## Phase 2: Task Planning Approach
+
 *This section describes what the /tasks command will do - DO NOT execute during /plan*
 
 **Task Generation Strategy**:
+
 - Load `.specify/templates/tasks-template.md` as base
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - CLI contract → cobra command implementation and tests [P]
@@ -212,18 +227,21 @@ ios/ or android/
 - Template creation → embed template files [P]
 
 **Ordering Strategy**:
+
 - TDD order: Contract tests → Unit tests → Implementation → Integration tests
 - Dependency order: Data models → Services → CLI commands → Integration
 - Mark [P] for parallel execution (independent files/modules)
 - Sequential for dependent implementations
 
 **Implementation Approach**: Enhancement of existing functionality (not new development)
+
 - **Existing**: `cmd/init.go` already implements basic init command with scaffolder integration
 - **Existing**: `pkg/scaffolder` provides complete Kind/K3d/EKS project generation
 - **Existing**: Runtime template system via `pkg/io/generator` eliminates embedded files
 - **Enhancement Focus**: Add missing UX features (progress spinner, enhanced error messages, additional CLI flags)
 
 **Integration Points**:
+
 - Enhance existing `cmd/init.go` with progress feedback and additional flags
 - Extend existing `pkg/scaffolder` with conflict detection and validation
 - Use existing `cmd/config-manager` for flag handling and configuration loading
@@ -234,6 +252,7 @@ ios/ or android/
 **IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
+
 *These phases are beyond the scope of the /plan command*
 
 **Phase 3**: Task execution (/tasks command creates tasks.md)
@@ -241,18 +260,20 @@ ios/ or android/
 **Phase 5**: Validation (run tests, execute quickstart.md, performance validation)
 
 ## Complexity Tracking
+
 *Fill ONLY if Constitution Check has violations that must be justified*
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
-
+| Violation                  | Why Needed         | Simpler Alternative Rejected Because |
+|----------------------------|--------------------|--------------------------------------|
+| [e.g., 4th project]        | [current need]     | [why 3 projects insufficient]        |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient]  |
 
 ## Progress Tracking
+
 *This checklist is updated during execution flow*
 
 **Phase Status**:
+
 - [x] Phase 0: Research complete (/plan command) - ✅ research.md generated
 - [x] Phase 1: Design complete (/plan command) - ✅ data-model.md, contracts/, quickstart.md generated
 - [x] Phase 2: Task planning complete (/plan command - describe approach only) - ✅ Strategy documented
@@ -261,6 +282,7 @@ ios/ or android/
 - [ ] Phase 5: Validation passed
 
 **Gate Status**:
+
 - [x] Initial Constitution Check: PASS - ✅ All constitutional requirements validated
 - [x] Post-Design Constitution Check: PASS - ✅ Design maintains compliance
 - [x] All NEEDS CLARIFICATION resolved - ✅ No unknowns in technical context

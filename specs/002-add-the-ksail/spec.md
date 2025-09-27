@@ -6,6 +6,7 @@
 **Input**: User description: "add the ksail init command with intuitive and nice CLI UX (clear help text, actionable error messages, progress feedback, consistent flag patterns). This is important to make it easy for users to get started with ksail."
 
 **UX Metrics Definition**: Intuitive CLI UX means:
+
 - CLI response time <200ms (a constitutional requirement)
 - Error messages include specific remediation steps (NFR-004)
 - Progress feedback updates every <500ms during operations

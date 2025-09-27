@@ -7,12 +7,14 @@
 **Decision**: Use existing cobra patterns from current KSail codebase
 
 **Rationale**:
+
 - Consistency with existing commands in the repository
 - Leverages established `cmd/inputs` package for flag handling
 - Follows constitutional requirement for user experience consistency
 - Reduces learning curve for contributors familiar with current patterns
 
 **Alternatives considered**:
+
 - Custom CLI framework: Rejected due to inconsistency with existing codebase
 - Different flag patterns: Rejected to maintain UX consistency per constitution
 
@@ -21,12 +23,14 @@
 **Decision**: Extend existing `pkg/scaffolder` package
 
 **Rationale**:
+
 - Code reuse and consistency with existing scaffolding functionality
 - Leverages existing `v1alpha1.Cluster` APIs without alteration per spec constraints
 - Maintains architectural patterns already established
 - Follows constitutional code quality standards
 
 **Alternatives considered**:
+
 - New scaffolding package: Rejected due to code duplication
 - Inline scaffolding logic: Rejected due to complexity and maintainability concerns
 
@@ -53,12 +57,14 @@
 **Decision**: Use spinner with file creation messages as clarified in spec
 
 **Rationale**:
+
 - Provides encouraging feedback per FR-005 requirement
 - Balances informativeness with simplicity
 - Meets 5-second performance constraint
 - Follows clarification decision from specification
 
 **Alternatives considered**:
+
 - Silent operation: Rejected due to poor user experience
 - Progress bar: Rejected as overly complex for 5-second operation
 - Verbose logging: Rejected as potentially overwhelming for new users
@@ -68,12 +74,14 @@
 **Decision**: Fail-fast with clear, actionable error messages
 
 **Rationale**:
+
 - Abort on conflicts unless --force flag used (clarified behavior)
 - Provides actionable guidance per constitutional requirements
 - Prevents data loss through conservative approach
 - Enables easy troubleshooting for users
 
 **Alternatives considered**:
+
 - Interactive prompts: Rejected due to complexity and automation concerns
 - Automatic backups: Rejected due to added complexity and disk usage
 - Silent overwrites: Rejected due to data loss risk
@@ -83,12 +91,14 @@
 **Decision**: Use existing `v1alpha1.Cluster` APIs without modification
 
 **Rationale**:
+
 - Maintains backward compatibility
 - Follows specification constraint "DO NOT ALTER existing APIs"
 - Leverages existing validation and serialization logic
 - Reduces testing surface area
 
 **Alternatives considered**:
+
 - New API structures: Rejected due to specification constraints
 - API extensions: Rejected as unnecessary for init functionality
 - Custom configuration format: Rejected due to consistency requirements
@@ -98,12 +108,14 @@
 **Decision**: TDD with contract tests, unit tests, and integration tests
 
 **Rationale**:
+
 - Follows constitutional TDD-first requirement
 - Contract tests ensure CLI interface stability
 - Unit tests validate scaffolding logic with >90% coverage
 - Integration tests verify complete user workflows
 
 **Alternatives considered**:
+
 - Manual testing only: Rejected due to constitutional requirements
 - End-to-end tests only: Rejected due to slow feedback and maintenance overhead
 - Property-based testing: Deferred as additional enhancement beyond core requirements

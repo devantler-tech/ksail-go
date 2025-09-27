@@ -10,25 +10,25 @@ ksail init [flags]
 
 ### Flags
 
-| Flag | Short | Type | Default | Description |
-|------|-------|------|---------|-------------|
-| `--name` | `-n` | string | current-dir | Project name for configuration |
-| `--distribution` | `-d` | string | kind | Kubernetes distribution (kind, k3d, eks) |
-| `--reconciliation-tool` | `-r` | string | "" | GitOps tool (kubectl, flux) |
-| `--source-directory` | `-s` | string | "." | Target directory for files |
-| `--force` | `-f` | boolean | false | Overwrite existing files |
+| Flag                    | Short | Type    | Default     | Description                              |
+|-------------------------|-------|---------|-------------|------------------------------------------|
+| `--name`                | `-n`  | string  | current-dir | Project name for configuration           |
+| `--distribution`        | `-d`  | string  | kind        | Kubernetes distribution (kind, k3d, eks) |
+| `--reconciliation-tool` | `-r`  | string  | ""          | GitOps tool (kubectl, flux)              |
+| `--source-directory`    | `-s`  | string  | "."         | Target directory for files               |
+| `--force`               | `-f`  | boolean | false       | Overwrite existing files                 |
 
 | `--help` | `-h` | boolean | false | Show help information |
 
 ### Exit Codes
 
-| Code | Meaning | Example Scenario |
-|------|---------|------------------|
-| 0 | Success | Project initialized successfully |
-| 1 | General error | Invalid flag combination |
-| 2 | File system error | Permission denied, disk full |
-| 3 | Validation error | Invalid project name |
-| 4 | Conflict error | Existing files without --force |
+| Code | Meaning           | Example Scenario                 |
+|------|-------------------|----------------------------------|
+| 0    | Success           | Project initialized successfully |
+| 1    | General error     | Invalid flag combination         |
+| 2    | File system error | Permission denied, disk full     |
+| 3    | Validation error  | Invalid project name             |
+| 4    | Conflict error    | Existing files without --force   |
 
 ## Input Validation
 

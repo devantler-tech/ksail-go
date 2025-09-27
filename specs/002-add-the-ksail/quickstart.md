@@ -34,6 +34,7 @@ ksail init
 ```
 
 **Validation**:
+
 - Command completes in <5 seconds
 - Three files created as shown
 - Success message displays with next steps
@@ -68,6 +69,7 @@ cat k8s/kustomization.yaml
 ```
 
 **Validation**:
+
 - All files present and readable
 - YAML syntax is valid
 - Content matches expected templates
@@ -103,6 +105,7 @@ ksail init
 ```
 
 **Validation**:
+
 - Command fails with exit code 4
 - Clear error message displayed
 - No files modified
@@ -120,6 +123,7 @@ ksail init --force --distribution kind
 ```
 
 **Validation**:
+
 - Files successfully overwritten
 - Configuration updated to new options
 - Previous .sops.yaml removed if not specified
@@ -180,6 +184,7 @@ kind delete cluster --name integration-test
 ```
 
 **Validation**:
+
 - Generated kind.yaml works with kind CLI
 - Cluster creates successfully
 - KSail can connect to created cluster
@@ -197,6 +202,7 @@ time ksail init --name perf-test
 ```
 
 **Validation**:
+
 - Total time <5 seconds
 - Memory usage <50MB during operation
 - Responsive progress updates
