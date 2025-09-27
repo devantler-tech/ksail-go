@@ -175,6 +175,42 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	return false
 }
 
+// generateWithFileHandling wraps template generation with common file existence checks and notifications.
+func generateWithFileHandling[T any](
+	s *Scaffolder,
+	gen generator.Generator[T, yamlgenerator.Options],
+	model T,
+	opts yamlgenerator.Options,
+	displayName string,
+	force bool,
+	wrapErr func(error) error,
+) error {
+	if s.checkFileExistsAndSkip(opts.Output, displayName, force) {
+		return nil
+	}
+
+	if _, err := gen.Generate(model, opts); err != nil {
+		if wrapErr != nil {
+			return wrapErr(err)
+		}
+
+		return err
+	}
+
+	s.notifyFileAction(displayName, force)
+
+	return nil
+}
+
+func (s *Scaffolder) notifyFileAction(displayName string, force bool) {
+	action := "created"
+	if force {
+		action = "overwrote"
+	}
+
+	notify.Activityln(s.Writer, fmt.Sprintf("%s '%s'", action, displayName))
+}
+
 // generateKSailConfig generates the ksail.yaml configuration file.
 func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 	// Apply distribution-specific defaults to ensure consistency with generated files
@@ -185,22 +221,15 @@ func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if s.checkFileExistsAndSkip(opts.Output, "ksail.yaml", force) {
-		return nil
-	}
-
-	_, err := s.KSailYAMLGenerator.Generate(config, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err)
-	}
-
-	if force {
-		notify.Activityln(s.Writer, "overwrote 'ksail.yaml'")
-	} else {
-		notify.Activityln(s.Writer, "created 'ksail.yaml'")
-	}
-
-	return nil
+	return generateWithFileHandling(
+		s,
+		s.KSailYAMLGenerator,
+		config,
+		opts,
+		"ksail.yaml",
+		force,
+		func(err error) error { return fmt.Errorf("%w: %w", ErrKSailConfigGeneration, err) },
+	)
 }
 
 // generateDistributionConfig generates the distribution-specific configuration file.
@@ -235,22 +264,15 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if s.checkFileExistsAndSkip(opts.Output, "kind.yaml", force) {
-		return nil
-	}
-
-	_, err := s.KindGenerator.Generate(kindConfig, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err)
-	}
-
-	if force {
-		notify.Activityln(s.Writer, "overwrote 'kind.yaml'")
-	} else {
-		notify.Activityln(s.Writer, "created 'kind.yaml'")
-	}
-
-	return nil
+	return generateWithFileHandling(
+		s,
+		s.KindGenerator,
+		kindConfig,
+		opts,
+		"kind.yaml",
+		force,
+		func(err error) error { return fmt.Errorf("%w: %w", ErrKindConfigGeneration, err) },
+	)
 }
 
 // generateK3dConfig generates the k3d.yaml configuration file.
@@ -262,22 +284,15 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if s.checkFileExistsAndSkip(opts.Output, "k3d.yaml", force) {
-		return nil
-	}
-
-	_, err := s.K3dGenerator.Generate(&k3dConfig, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err)
-	}
-
-	if force {
-		notify.Activityln(s.Writer, "overwrote 'k3d.yaml'")
-	} else {
-		notify.Activityln(s.Writer, "created 'k3d.yaml'")
-	}
-
-	return nil
+	return generateWithFileHandling(
+		s,
+		s.K3dGenerator,
+		&k3dConfig,
+		opts,
+		"k3d.yaml",
+		force,
+		func(err error) error { return fmt.Errorf("%w: %w", ErrK3dConfigGeneration, err) },
+	)
 }
 
 // generateEKSConfig generates the eks.yaml configuration file.
@@ -289,22 +304,15 @@ func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
 		Force:  force,
 	}
 
-	if s.checkFileExistsAndSkip(opts.Output, "eks.yaml", force) {
-		return nil
-	}
-
-	_, err := s.EKSGenerator.Generate(eksConfig, opts)
-	if err != nil {
-		return fmt.Errorf("generate EKS config: %w", err)
-	}
-
-	if force {
-		notify.Activityln(s.Writer, "overwrote 'eks.yaml'")
-	} else {
-		notify.Activityln(s.Writer, "created 'eks.yaml'")
-	}
-
-	return nil
+	return generateWithFileHandling(
+		s,
+		s.EKSGenerator,
+		eksConfig,
+		opts,
+		"eks.yaml",
+		force,
+		func(err error) error { return fmt.Errorf("generate EKS config: %w", err) },
+	)
 }
 
 func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
@@ -343,20 +351,13 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 		Force:  force,
 	}
 
-	if s.checkFileExistsAndSkip(opts.Output, "k8s/kustomization.yaml", force) {
-		return nil
-	}
-
-	_, err := s.KustomizationGenerator.Generate(&kustomization, opts)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)
-	}
-
-	if force {
-		notify.Activityln(s.Writer, "overwrote 'k8s/kustomization.yaml'")
-	} else {
-		notify.Activityln(s.Writer, "created 'k8s/kustomization.yaml'")
-	}
-
-	return nil
+	return generateWithFileHandling(
+		s,
+		s.KustomizationGenerator,
+		&kustomization,
+		opts,
+		"k8s/kustomization.yaml",
+		force,
+		func(err error) error { return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err) },
+	)
 }

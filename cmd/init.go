@@ -77,7 +77,7 @@ func HandleInitRunE(
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
-	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project...")
+	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project... ")
 
 	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
