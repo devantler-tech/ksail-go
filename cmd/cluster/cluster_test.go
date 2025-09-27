@@ -14,18 +14,51 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 
 	cmd := cluster.NewClusterCmd()
 
-	if cmd.Short != "Manage cluster lifecycle commands" {
-		t.Fatalf(
-			"short description mismatch for parent command. want %q, got %q",
-			"Manage cluster lifecycle commands",
-			cmd.Short,
-		)
+	requireParentMetadata(t, cmd)
+
+	for name, metadata := range expectedLifecycleMetadata() {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			subcommand := findSubcommand(t, cmd, name)
+			assertSubcommandMetadata(t, subcommand, metadata)
+		})
+	}
+}
+
+func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
+	t.Parallel()
+
+	cmd := cluster.NewClusterCmd()
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected executing cluster command without subcommand to succeed, got %v", err)
 	}
 
-	expected := map[string]struct {
-		short string
-		long  string
-	}{
+	output := out.String()
+
+	if !strings.Contains(output, "Usage:") {
+		t.Fatalf("expected help output to contain Usage section, got %q", output)
+	}
+
+	if !strings.Contains(output, "Available Commands:") {
+		t.Fatalf("expected help output to list available commands, got %q", output)
+	}
+}
+
+type lifecycleMetadata struct {
+	short string
+	long  string
+}
+
+func expectedLifecycleMetadata() map[string]lifecycleMetadata {
+	return map[string]lifecycleMetadata{
 		"up": {
 			short: "Start the Kubernetes cluster",
 			long:  "Start the Kubernetes cluster defined in the project configuration.",
@@ -51,64 +84,52 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 			long:  "List all Kubernetes clusters managed by KSail.",
 		},
 	}
+}
 
-	validateSubcommandExists := func(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
-		t.Helper()
+func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
+	t.Helper()
 
-		sub := parent.Commands()
-		for _, c := range sub {
-			if c.Use == name {
-				return c
-			}
-		}
-
-		t.Fatalf("expected cluster command to include %q subcommand", name)
-
-		return nil
-	}
-
-	for use, metadata := range expected {
-		sub := validateSubcommandExists(t, cmd, use)
-
-		if sub.Short != metadata.short {
-			t.Fatalf(
-				"short description mismatch for %q. want %q, got %q",
-				use,
-				metadata.short,
-				sub.Short,
-			)
-		}
-
-		if sub.Long != metadata.long {
-			t.Fatalf(
-				"long description mismatch for %q. want %q, got %q",
-				use,
-				metadata.long,
-				sub.Long,
-			)
-		}
+	if cmd.Short != "Manage cluster lifecycle commands" {
+		t.Fatalf(
+			"short description mismatch for parent command. want %q, got %q",
+			"Manage cluster lifecycle commands",
+			cmd.Short,
+		)
 	}
 }
 
-func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
-	t.Parallel()
+func findSubcommand(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
+	t.Helper()
 
-	cmd := cluster.NewClusterCmd()
-
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	cmd.SetArgs([]string{})
-
-	if err := cmd.Execute(); err != nil {
-		t.Fatalf("expected executing cluster command without subcommand to succeed, got %v", err)
+	for _, subcommand := range parent.Commands() {
+		if subcommand.Use == name {
+			return subcommand
+		}
 	}
 
-	output := out.String()
-	if !strings.Contains(output, "Usage:") {
-		t.Fatalf("expected help output to contain Usage section, got %q", output)
+	t.Fatalf("expected cluster command to include %q subcommand", name)
+
+	return nil
+}
+
+func assertSubcommandMetadata(t *testing.T, cmd *cobra.Command, metadata lifecycleMetadata) {
+	t.Helper()
+
+	if cmd.Short != metadata.short {
+		t.Fatalf(
+			"short description mismatch for %q. want %q, got %q",
+			cmd.Use,
+			metadata.short,
+			cmd.Short,
+		)
 	}
-	if !strings.Contains(output, "Available Commands:") {
-		t.Fatalf("expected help output to list available commands, got %q", output)
+
+	if cmd.Long != metadata.long {
+		t.Fatalf(
+			"long description mismatch for %q. want %q, got %q",
+			cmd.Use,
+			metadata.long,
+			cmd.Long,
+		)
 	}
 }

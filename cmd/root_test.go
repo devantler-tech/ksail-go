@@ -97,13 +97,16 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 
 	for command, description := range expectedCommands {
 		found := false
+
 		for _, line := range lines {
 			trimmed := strings.TrimSpace(line)
 			if strings.HasPrefix(trimmed, command+" ") && strings.Contains(trimmed, description) {
 				found = true
+
 				break
 			}
 		}
+
 		if !found {
 			t.Fatalf(
 				"expected cluster help output to contain command %q with description %q, got %q",
