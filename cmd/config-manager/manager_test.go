@@ -118,6 +118,10 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
+			// Create temporary directory and change to it to isolate from existing config files
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+
 			// Set environment variables for the test
 			for key, value := range testCase.envVars {
 				t.Setenv(key, value)
@@ -283,6 +287,10 @@ func testFieldValueSetting(
 ) {
 	t.Helper()
 
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
 	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		{
 			Selector:     selector,
@@ -300,9 +308,9 @@ func testFieldValueSetting(
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNilDefault(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -317,9 +325,9 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonConvertibleTypes tests setFieldValue with non-convertible types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -334,9 +342,9 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithDirectlyAssignableTypes tests setFieldValue with directly assignable types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -351,9 +359,9 @@ func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithNonPointerField tests setFieldValue with non-pointer field.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithNonPointerField(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any { return c.Spec.Distribution }, // Return value, not pointer
@@ -368,9 +376,9 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 }
 
 // TestManager_SetFieldValueWithConvertibleTypes tests setFieldValue with convertible types.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
-	t.Parallel()
-
 	testFieldValueSetting(
 		t,
 		func(c *v1alpha1.Cluster) any {
