@@ -193,6 +193,36 @@ func TestMainFunction(t *testing.T) {
 	}, "main() simulation should not panic")
 }
 
+func TestMainExecutesWithoutExit(t *testing.T) {
+	t.Parallel()
+
+	withCommand(t, []string{"ksail"}, func() {
+		assert.NotPanics(t, func() {
+			main()
+		})
+	})
+}
+
+func TestRunSafelyReturnsZeroOnSuccess(t *testing.T) {
+	t.Parallel()
+
+	withCommand(t, []string{"ksail"}, func() {
+		exitCode := runSafely()
+
+		assert.Equal(t, 0, exitCode)
+	})
+}
+
+func TestRunSafelyReturnsErrorCode(t *testing.T) {
+	t.Parallel()
+
+	withCommand(t, []string{"ksail", "invalid-command"}, func() {
+		exitCode := runSafely()
+
+		assert.Equal(t, 1, exitCode)
+	})
+}
+
 func TestWithArgsNested(t *testing.T) {
 	t.Parallel()
 

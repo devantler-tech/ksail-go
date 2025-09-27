@@ -72,13 +72,20 @@
 - [x] T018 Integrate progress feedback with existing file generation events
 - [x] T019 Enhance existing error messages to meet NFR-005 (actionable remediation)
 - [x] T021 Update existing CLI help text to document new flags and options
-- [x] T022 Validate enhanced implementation against all spec requirements (FR-001 to FR-016)## Phase 5: Quality Assurance
+- [x] T022 Validate enhanced implementation against all spec requirements (FR-001 to FR-016)
+
+## Phase 5: Quality Assurance
 
 - [x] T023 [P] Run enhanced test suite and ensure >90% coverage maintained
 - [X] T024 [P] Run golangci-lint and ensure zero issues (constitutional requirement)
 - [x] T028 [P] Compatibility testing: validate generated files work with existing KSail commands (NFR-005)
 - [x] T029 Manual validation using quickstart.md scenarios on enhanced implementation
 - [x] T030 Regression testing: ensure existing functionality still works correctly
+
+## Phase 6: Coverage Remediation
+
+- [X] TCOV1 [P] Expand main package tests to validate `main()` and `runSafely` behavior
+- [X] TCOV2 [P] Add scaffolder generator error coverage to ensure wrap paths are exercised
 
 ## Dependencies
 

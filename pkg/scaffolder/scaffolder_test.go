@@ -39,6 +39,47 @@ func TestNewScaffolder(t *testing.T) {
 	require.NotNil(t, scaffolder.KustomizationGenerator)
 }
 
+func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		expected     string
+	}{
+		{
+			name:         "Kind",
+			distribution: v1alpha1.DistributionKind,
+			expected:     scaffolder.KindConfigFile,
+		},
+		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
+		{name: "EKS", distribution: v1alpha1.DistributionEKS, expected: scaffolder.EKSConfigFile},
+		{
+			name:         "Tind",
+			distribution: v1alpha1.DistributionTind,
+			expected:     scaffolder.TindConfigFile,
+		},
+		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			buffer := &bytes.Buffer{}
+			scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+			scaffolderInstance.KSailConfig.Spec.Distribution = testCase.distribution
+			scaffolderInstance.KSailConfig.Spec.DistributionConfig = ""
+
+			_ = scaffolderInstance.Scaffold(tempDir, false)
+
+			require.Equal(t, testCase.expected, spies.ksail.lastModel.Spec.DistributionConfig)
+		})
+	}
+}
+
 func TestScaffoldBasicOperations(t *testing.T) {
 	t.Parallel()
 
@@ -207,6 +248,104 @@ func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
 	require.ErrorIs(t, err, scaffolder.ErrKSailConfigGeneration)
 	require.Equal(t, 1, spies.ksail.callCount)
 	require.Equal(t, 0, spies.kind.callCount)
+}
+
+func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := []distributionErrorTestCase{
+		{
+			name: "Kind",
+			configure: func(spies generatorSpies) {
+				spies.kind.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionKind,
+			assertErr:    assertKindGenerationError,
+		},
+		{
+			name: "K3d",
+			configure: func(spies generatorSpies) {
+				spies.k3d.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionK3d,
+			assertErr:    assertK3dGenerationError,
+		},
+		{
+			name: "EKS",
+			configure: func(spies generatorSpies) {
+				spies.eks.returnErr = errGenerateFailure
+			},
+			distribution: v1alpha1.DistributionEKS,
+			assertErr:    assertEKSGenerationError,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runDistributionErrorTest(t, testCase)
+		})
+	}
+}
+
+type distributionErrorTestCase struct {
+	name         string
+	configure    func(generatorSpies)
+	distribution v1alpha1.Distribution
+	assertErr    func(*testing.T, error)
+}
+
+func runDistributionErrorTest(t *testing.T, test distributionErrorTestCase) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	scaffolderInstance.KSailConfig.Spec.Distribution = test.distribution
+	test.configure(spies)
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+
+	require.Error(t, err)
+	test.assertErr(t, err)
+}
+
+func assertKindGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.ErrorIs(t, err, scaffolder.ErrKindConfigGeneration)
+	require.ErrorIs(t, err, errGenerateFailure)
+}
+
+func assertK3dGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.ErrorIs(t, err, scaffolder.ErrK3dConfigGeneration)
+	require.ErrorIs(t, err, errGenerateFailure)
+}
+
+func assertEKSGenerationError(t *testing.T, err error) {
+	t.Helper()
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, errGenerateFailure)
+	require.ErrorContains(t, err, "generate EKS config")
+}
+
+func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+
+	spies.kustomization.returnErr = errGenerateFailure
+
+	err := scaffolderInstance.Scaffold(tempDir, false)
+
+	require.Error(t, err)
+	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
 }
 
 // Test case definitions.
@@ -420,11 +559,13 @@ type spyGenerator[T any] struct {
 	callCount  int
 	returnErr  error
 	lastOutput yamlgenerator.Options
+	lastModel  T
 }
 
-func (s *spyGenerator[T]) Generate(_ T, opts yamlgenerator.Options) (string, error) {
+func (s *spyGenerator[T]) Generate(model T, opts yamlgenerator.Options) (string, error) {
 	s.callCount++
 	s.lastOutput = opts
+	s.lastModel = model
 
 	return "", s.returnErr
 }
