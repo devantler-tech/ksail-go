@@ -34,7 +34,7 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
-- [ ] T002 (FR-005, FR-003) Add explicit test for `ksail cluster` (bare) help output and ensure messaging parity with legacy commands (TDD)
+- [ ] T002 (FR-005, FR-003) Add explicit test for `ksail cluster` (bare) help output and ensure messaging parity with legacy commands (TDD) (i.e., verify that help text structure, error message format, and command output are consistent with the legacy commands)
 - [ ] T003 (FR-004, FR-007) Extend root command help snapshots to assert `cluster` appears in `ksail --help` and that `cluster --help` includes all lifecycle verbs except `reconcile`.
 - [ ] T004 (FR-002, FR-003, FR-004) Create table-driven tests that confirm each lifecycle subcommand is bound under `cluster` with the same short/long descriptions as the legacy top-level commands.
 - [ ] T005 (FR-004, FR-005, FR-007) Update CLI UI/help fixtures so the quickstart snapshot and usage guidance cover `ksail cluster` invocation patterns before implementation begins.
