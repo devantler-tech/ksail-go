@@ -50,7 +50,7 @@ func NewConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded, return it
-	notify.Titleln(m.Writer, "⏳ Loading configuration...")
+	notify.Titleln(m.Writer, "⏳", "Loading configuration...")
 
 	if m.configLoaded {
 		notify.Successln(m.Writer, "config already loaded, reusing existing config")
