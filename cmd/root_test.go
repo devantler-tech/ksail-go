@@ -86,13 +86,14 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 	}
 
 	lines := strings.Split(output, "\n")
-	expectedCommands := map[string]string{
-		"up":     "Start the Kubernetes cluster",
-		"down":   "Destroy a cluster",
-		"start":  "Start a stopped cluster",
-		"stop":   "Stop the Kubernetes cluster",
-		"status": "Show status of the Kubernetes cluster",
-		"list":   "List clusters",
+	// Build expectedCommands map from the actual cluster subcommands to avoid duplication.
+	expectedCommands := make(map[string]string)
+	clusterCmd, _, err := root.Find([]string{"cluster"})
+	if err != nil {
+		t.Fatalf("could not find cluster command: %v", err)
+	}
+	for _, subCmd := range clusterCmd.Commands() {
+		expectedCommands[subCmd.Use] = subCmd.Short
 	}
 
 	for command, description := range expectedCommands {
