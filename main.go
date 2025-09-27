@@ -26,24 +26,19 @@ func main() {
 }
 
 func runSafelyWithArgs(args []string) int {
-	exitCode := 0
-
 	var (
 		recovered any
 		stack     []byte
 	)
 
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				recovered = r
-				stack = debug.Stack()
-			}
-		}()
-
-		exitCode = runWithArgs(args)
+	defer func() {
+		if r := recover(); r != nil {
+			recovered = r
+			stack = debug.Stack()
+		}
 	}()
 
+	exitCode := runWithArgs(args)
 	if recovered != nil {
 		panicMessage := fmt.Sprintf("panic recovered: %v\n%s", recovered, stack)
 		notify.Errorln(os.Stderr, panicMessage)
