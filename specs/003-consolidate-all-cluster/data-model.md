@@ -11,7 +11,7 @@
 | `ksail cluster` | `stop` | Stop a running cluster | Reuses `HandleStopRunE` |
 | `ksail cluster` | `status` | Show current cluster state | Reuses `HandleStatusRunE` |
 | `ksail cluster` | `list` | Enumerate available clusters | Reuses `HandleListRunE` |
-<!-- Note: `reconcile` is intentionally excluded from `ksail cluster` in this refactor. It will be migrated to `ksail workloads reconcile` later. -->
+> **Note:** `reconcile` is intentionally excluded from `ksail cluster` in this refactor. It will be migrated to `ksail workloads reconcile` later.
 
 ## Flags & Shared Options
 
