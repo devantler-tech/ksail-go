@@ -11,7 +11,7 @@
 | --------------- | --------------------------------------------------------------------- | ------------------- |
 | FR-001          | Expose parent `cluster` command                                       | T001, T006          |
 | FR-002          | Subcommands for all cluster lifecycle actions (excluding 'reconcile') | T004, T006, T007, T011 |
-| FR-003          | Subcommand behavior/messaging parity                                  | T002, T004, T007, T011, T012 |
+| FR-003          | Subcommand behavior/messaging parity                                  | T002, T003, T004, T007, T011, T012 |
 | FR-004          | `ksail cluster --help` guidance                                       | T003, T005, T009, T012 |
 | FR-005          | `ksail cluster` (bare) help output                                    | T002, T005, T012 |
 | FR-006          | Remove legacy top-level commands                                      | T008, T012 |
