@@ -35,7 +35,7 @@ func runSafelyWithArgs(args []string) (exitCode int) {
 	}()
 
 	exitCode = runWithArgs(args)
-	return
+	return exitCode
 }
 
 // run executes the main application logic and returns an exit code.
