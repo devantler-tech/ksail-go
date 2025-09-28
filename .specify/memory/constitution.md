@@ -1,15 +1,13 @@
 <!--
 Sync Impact Report:
-- Version change: Template → 1.0.0 (Initial constitution creation)
-- Added principles:
-  - I. Code Quality Excellence
-  - II. Testing Standards (TDD-First)
-  - III. User Experience Consistency
-  - IV. Performance Requirements
-- Added sections:
-  - Quality Gates
-  - Development Standards
-- Templates requiring updates: All templates are aligned ✅
+- Version change: 1.0.0 → 1.1.0 (performance instrumentation mandate)
+- Modified principles:
+  - IV. Performance Requirements (inline telemetry requirement)
+- Added sections: None
+- Removed sections: None
+- Templates requiring updates:
+  - .specify/templates/plan-template.md ✅
+  - .specify/templates/tasks-template.md ✅
 - Follow-up TODOs: None
 -->
 
@@ -37,7 +35,7 @@ Rationale: Users rely on KSail-Go for critical infrastructure operations. Incons
 
 ### IV. Performance Requirements
 
-Operations MUST complete within defined performance thresholds: cluster validation <100ms, configuration loading <50ms, CLI response time <200ms, memory usage <50MB during normal operations. Operations must emit lightweight and tightly integrated timing telemetry (e.g., local vs total durations) so bottlenecks can be identified without dedicated benchmarking suites. Resource consumption MUST be measured and optimized continuously.
+Operations MUST complete within defined performance thresholds: cluster validation <100ms, configuration loading <50ms, CLI response time <200ms, memory usage <50MB during normal operations. Operations MUST emit lightweight and tightly integrated timing telemetry (e.g., local vs total durations) so bottlenecks can be identified without dedicated benchmarking suites. Resource consumption MUST be measured and optimized continuously.
 
 Rationale: KSail-Go operates in developer workflows where performance directly impacts productivity. Inline instrumentation keeps the experience responsive while avoiding benchmark bloat and still exposing actionable performance signals.
 
@@ -70,4 +68,4 @@ Amendment procedure: Proposed changes require documented rationale, impact analy
 
 Compliance review: All features undergo constitutional compliance review during design phase and implementation review. Non-compliance blocks release until resolved.
 
-**Version**: 1.0.0 | **Ratified**: 2025-09-24 | **Last Amended**: 2025-09-24
+**Version**: 1.1.0 | **Ratified**: 2025-09-24 | **Last Amended**: 2025-09-28
