@@ -43,12 +43,10 @@ func runListRunningClusters(t *testing.T) {
 		func(t *testing.T, buffer *bytes.Buffer, err error) {
 			t.Helper()
 
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-			}
-
-			assertOutputContains(t, buffer.String(), "Listing running clusters")
-			assertOutputContains(t, buffer.String(), "Distribution filter: Kind")
+			assertListSuccess(t, buffer, err,
+				"Listing running clusters",
+				"Distribution filter: Kind",
+			)
 		},
 	)
 }
@@ -71,11 +69,7 @@ func runListAllFlag(t *testing.T) {
 		func(t *testing.T, buffer *bytes.Buffer, err error) {
 			t.Helper()
 
-			if err != nil {
-				t.Fatalf("expected no error, got %v", err)
-			}
-
-			assertOutputContains(t, buffer.String(), "Listing all clusters")
+			assertListSuccess(t, buffer, err, "Listing all clusters")
 		},
 	)
 }
@@ -122,6 +116,20 @@ func runListScenario(
 
 	err := HandleListRunE(cmd, manager, nil)
 	assert(t, buffer, err)
+}
+
+func assertListSuccess(t *testing.T, buffer *bytes.Buffer, err error, expectedMessages ...string) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	output := buffer.String()
+
+	for _, expected := range expectedMessages {
+		assertOutputContains(t, output, expected)
+	}
 }
 
 func configureListCommand(t *testing.T, cmd *cobra.Command) *bytes.Buffer {
