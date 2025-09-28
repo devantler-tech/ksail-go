@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
@@ -29,12 +30,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 
 	// Add all subcommands
 	cmd.AddCommand(NewInitCmd())
-	cmd.AddCommand(NewUpCmd())
-	cmd.AddCommand(NewDownCmd())
-	cmd.AddCommand(NewStartCmd())
-	cmd.AddCommand(NewStopCmd())
-	cmd.AddCommand(NewListCmd())
-	cmd.AddCommand(NewStatusCmd())
+	cmd.AddCommand(cluster.NewClusterCmd())
 	cmd.AddCommand(NewReconcileCmd())
 
 	return cmd

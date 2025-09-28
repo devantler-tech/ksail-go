@@ -1,4 +1,4 @@
-package cmd
+package cluster
 
 import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
@@ -6,15 +6,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewStartCmd creates and returns the start command.
-func NewStartCmd() *cobra.Command {
+// NewStopCmd creates and returns the stop command.
+func NewStopCmd() *cobra.Command {
 	return cmdhelpers.NewCobraCommand(
-		"start",
-		"Start a stopped cluster",
-		`Start a previously stopped cluster.`,
+		"stop",
+		"Stop the Kubernetes cluster",
+		`Stop the Kubernetes cluster without removing it.`,
 		func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
 			return cmdhelpers.StandardClusterCommandRunE(
-				"Cluster started successfully (stub implementation)",
+				"Cluster stopped successfully (stub implementation)",
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),

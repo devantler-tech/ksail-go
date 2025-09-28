@@ -3,6 +3,8 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
+	"maps"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -54,6 +56,104 @@ func TestExecuteShowsVersion(t *testing.T) {
 	_ = root.Execute()
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+func TestClusterCommandShowsHelp(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("", "", "")
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"cluster"})
+
+	err := root.Execute()
+	if err != nil {
+		t.Fatalf("expected cluster command to show help without error, got %v", err)
+	}
+
+	output := out.String()
+
+	assertHelpSnippets(t, output)
+
+	expectedCommands := clusterSubcommandMetadata(t, root)
+
+	missing := make(map[string]string, len(expectedCommands))
+	maps.Copy(missing, expectedCommands)
+
+	lines := strings.Split(output, "\n")
+	removeDocumentedCommands(lines, missing)
+
+	if len(missing) > 0 {
+		var notFound []string
+		for command, description := range missing {
+			notFound = append(notFound, command+": "+description)
+		}
+
+		t.Fatalf(
+			"expected cluster help output to include: %s, got %q",
+			strings.Join(notFound, ", "),
+			output,
+		)
+	}
+}
+
+func assertHelpSnippets(t *testing.T, output string) {
+	t.Helper()
+
+	snippets := []string{
+		"ksail cluster [command]",
+		"Available Commands:",
+	}
+
+	for _, snippet := range snippets {
+		if !strings.Contains(output, snippet) {
+			t.Fatalf("expected cluster help output to contain %q, got %q", snippet, output)
+		}
+	}
+}
+
+func clusterSubcommandMetadata(t *testing.T, root *cobra.Command) map[string]string {
+	t.Helper()
+
+	clusterCmd, _, err := root.Find([]string{"cluster"})
+	if err != nil {
+		t.Fatalf("could not find cluster command: %v", err)
+	}
+
+	metadata := make(map[string]string, len(clusterCmd.Commands()))
+
+	for _, subCmd := range clusterCmd.Commands() {
+		metadata[subCmd.Use] = subCmd.Short
+	}
+
+	return metadata
+}
+
+func removeDocumentedCommands(lines []string, missing map[string]string) {
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		fields := strings.Fields(trimmed)
+		if len(fields) == 0 {
+			continue
+		}
+
+		command := fields[0]
+
+		description, exists := missing[command]
+		if !exists {
+			continue
+		}
+
+		if strings.Contains(trimmed, description) {
+			delete(missing, command)
+		}
+	}
 }
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.

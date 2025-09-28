@@ -9,19 +9,14 @@ Implements the CLI commands and user interface for KSail using the Cobra framewo
 ## Structure
 
 - **Root Command**: `root.go` - Main CLI setup with Cobra framework and version handling
-- **Command Implementations**: Individual command files (`init.go`, `up.go`, `down.go`, etc.)
+- **Command Implementations**: Individual command files (`init.go`, `cluster/`, etc.)
 - **UI Components**: `ui/` subdirectory containing user interface utilities
 - **Internal Helpers**: `internal/` subdirectory containing command helper utilities
 
 ## Available Commands
 
 - `init` - Initialize a new KSail project
-- `up` - Start a Kubernetes cluster  
-- `down` - Destroy a cluster
-- `start` - Start a stopped cluster
-- `stop` - Stop a running cluster
-- `list` - List available clusters
-- `status` - Show cluster status
+- `cluster` - Parent namespace for cluster lifecycle commands (`up`, `down`, `start`, `stop`, `status`, `list`)
 - `reconcile` - Reconcile workloads in the cluster
 
 ## Features
@@ -48,9 +43,9 @@ go build -o ksail .
 # Use the CLI
 ./ksail --help
 ./ksail init --distribution Kind
-./ksail up
-./ksail status
-./ksail down
+./ksail cluster up
+./ksail cluster status
+./ksail cluster down
 ```
 
 This package serves as the primary user interface for KSail, providing a comprehensive command-line experience for managing Kubernetes clusters and workloads.
