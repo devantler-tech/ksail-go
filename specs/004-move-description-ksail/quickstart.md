@@ -37,7 +37,7 @@
    ./ksail workload install
    ```
 
-   - Each command should print a "Coming soon" message and exit with status 0.
+   - Each command should print the informational message (`ℹ Workload <action> coming soon.`) and exit with status 0.
 5. **Observe legacy command guidance**
 
    ```bash

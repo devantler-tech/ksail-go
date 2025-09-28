@@ -17,7 +17,7 @@ Implements the CLI commands and user interface for KSail using the Cobra framewo
 
 - `init` - Initialize a new KSail project
 - `cluster` - Parent namespace for cluster lifecycle commands (`up`, `down`, `start`, `stop`, `status`, `list`)
-- `reconcile` - Reconcile workloads in the cluster
+- `workload` - Namespace for workload-focused operations (`reconcile`, `apply`, `install` placeholders)
 
 ## Features
 
@@ -46,6 +46,8 @@ go build -o ksail .
 ./ksail cluster up
 ./ksail cluster status
 ./ksail cluster down
+./ksail workload --help
+./ksail workload reconcile
 ```
 
 This package serves as the primary user interface for KSail, providing a comprehensive command-line experience for managing Kubernetes clusters and workloads.

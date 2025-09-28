@@ -7,6 +7,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+	"github.com/devantler-tech/ksail-go/cmd/workload"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Add all subcommands
 	cmd.AddCommand(NewInitCmd())
 	cmd.AddCommand(cluster.NewClusterCmd())
-	cmd.AddCommand(NewReconcileCmd())
+	cmd.AddCommand(workload.NewWorkloadCmd())
 
 	return cmd
 }

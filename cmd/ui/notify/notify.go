@@ -18,6 +18,8 @@ const (
 	SuccessSymbol = "✔ "
 	// ActivitySymbol is the symbol used for activity messages.
 	ActivitySymbol = "► "
+	// InfoSymbol is the symbol used for informational messages.
+	InfoSymbol = "ℹ "
 )
 
 // Errorf prints a red error message to the provided writer, prefixed with a symbol.
@@ -90,6 +92,24 @@ func Activity(out io.Writer, args ...any) {
 func Activityln(out io.Writer, args ...any) {
 	color := fcolor.New(fcolor.Reset)
 	notifyln(out, color, ActivitySymbol, args...)
+}
+
+// Infof prints an informational message to the provided writer, prefixed with a symbol.
+func Infof(out io.Writer, format string, args ...any) {
+	color := fcolor.New(fcolor.FgBlue)
+	notifyf(out, color, InfoSymbol, format, args...)
+}
+
+// Info prints an informational message to the provided writer without a trailing newline, prefixed with a symbol.
+func Info(out io.Writer, args ...any) {
+	color := fcolor.New(fcolor.FgBlue)
+	notify(out, color, InfoSymbol, args...)
+}
+
+// Infoln prints an informational message to the provided writer with a trailing newline, prefixed with a symbol.
+func Infoln(out io.Writer, args ...any) {
+	color := fcolor.New(fcolor.FgBlue)
+	notifyln(out, color, InfoSymbol, args...)
 }
 
 // Titlef prints a formatted title message to the provided writer with an emoji and title.

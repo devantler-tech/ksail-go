@@ -55,3 +55,4 @@ coverage*.out
 megalinter_output.log
 tmp/
 *.out
+coverage_summary.txt

@@ -5,33 +5,33 @@
 
 ## Phase 3.1: Setup
 
-- [ ] T001 Run baseline test suite with `go test ./...` to confirm the workspace is clean before introducing new workload commands.
+- [X] T001 Run baseline test suite with `go test ./...` to confirm the workspace is clean before introducing new workload commands.
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 **Critical:** These test additions should be committed while still failing (or not compiling) until implementation lands.
 
-- [ ] T002 [P] Extend `cmd/workload/workload_test.go` with snapshot-based help coverage for the workload namespace, asserting `ksail workload --help` plus `ksail workload reconcile|apply|install --help` outputs against new fixtures under `cmd/__snapshots__/`.
-- [ ] T003 [P] In the same `cmd/workload/workload_test.go`, add placeholder command behavior tests to ensure `reconcile`, `apply`, and `install` emit the "Coming soon" message via `notify.Infoln` and exit with code 0.
-- [ ] T004 [P] Extend `cmd/root_test.go` with a regression test that running `ksail reconcile` surfaces Cobra's unknown-command error plus the guidance string from the workload migration contract.
+- [X] T002 [P] Extend `cmd/workload/workload_test.go` with snapshot-based help coverage for the workload namespace, asserting `ksail workload --help` plus `ksail workload reconcile|apply|install --help` outputs against new fixtures under `cmd/__snapshots__/`.
+- [X] T003 [P] In the same `cmd/workload/workload_test.go`, add placeholder command behavior tests to ensure `reconcile`, `apply`, and `install` emit the "Coming soon" message via `notify.Infoln` and exit with code 0.
+- [X] T004 [P] Extend `cmd/root_test.go` with a regression test that running `ksail reconcile` surfaces Cobra's unknown-command error plus the guidance string from the workload migration contract.
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [ ] T005 Implement the workload command group in `cmd/workload/workload.go`, providing `NewWorkloadCmd()` with rich help text and wiring it to internal constructors for each subcommand.
-- [ ] T006 Flesh out the workload subcommands in `cmd/workload/workload.go` (or supporting files) so `reconcile`, `apply`, and `install` each print their contract-defined "Coming soon" message using `notify.Infoln` and return success.
-- [ ] T007 Update `cmd/root.go` to register `NewWorkloadCmd()`, remove the legacy top-level reconcile registration, and adjust help ordering to surface the new namespace.
-- [ ] T008 Remove or repurpose the obsolete `cmd/reconcile.go` so no standalone root-level command remains (delete the file or convert it to a thin shim invoking the workload command constructor as appropriate).
-- [ ] T009 Enhance `runWithArgs` in `main.go` (or the closest invocation boundary) to intercept the unknown-command error for `reconcile` and append the guidance string directing users to `ksail workload reconcile`.
+- [X] T005 Implement the workload command group in `cmd/workload/workload.go`, providing `NewWorkloadCmd()` with rich help text and wiring it to internal constructors for each subcommand.
+- [X] T006 Flesh out the workload subcommands in `cmd/workload/workload.go` (or supporting files) so `reconcile`, `apply`, and `install` each print their contract-defined "Coming soon" message using `notify.Infoln` and return success.
+- [X] T007 Update `cmd/root.go` to register `NewWorkloadCmd()`, remove the legacy top-level reconcile registration, and adjust help ordering to surface the new namespace.
+- [X] T008 Remove or repurpose the obsolete `cmd/reconcile.go` so no standalone root-level command remains (delete the file or convert it to a thin shim invoking the workload command constructor as appropriate).
+- [X] T009 Enhance `runWithArgs` in `main.go` (or the closest invocation boundary) to intercept the unknown-command error for `reconcile` and append the guidance string directing users to `ksail workload reconcile`.
 
 ## Phase 3.4: Integration & Validation
 
-- [ ] T010 [P] Re-record help snapshots after implementation by running `go test ./cmd -run TestWorkloadHelp -update` and committing the generated `cmd/__snapshots__/` entries.
-- [ ] T011 Format updated Go sources with `gofmt`/`goimports`, covering `main.go`, `cmd/root.go`, and the new `cmd/workload` package.
-- [ ] T012 Run `go test ./...` to ensure the full suite (including new workload tests) passes.
-- [ ] T013 [P] Execute `golangci-lint run --timeout 5m` from the repository root to satisfy constitutional lint requirements.
-- [ ] T014 [P] Walk through the quickstart validation steps in `quickstart.md`, confirming binary build, command help listings, placeholder outputs, and the legacy guidance message.
-- [ ] T015 Update `quickstart.md` (and any affected docs) to surface the new workload namespace, subcommands, and "Coming soon" placeholders so user-facing guidance reflects FR-005 expectations.
-- [ ] T016 Review coverage output from `go test ./...` to ensure new packages maintain >90% project coverage; investigate and shore up tests if the threshold dips.
+- [X] T010 [P] Re-record help snapshots after implementation by running `go test ./cmd -run TestWorkloadHelp -update` and committing the generated `cmd/__snapshots__/` entries.
+- [X] T011 Format updated Go sources with `gofmt`/`goimports`, covering `main.go`, `cmd/root.go`, and the new `cmd/workload` package.
+- [X] T012 Run `go test ./...` to ensure the full suite (including new workload tests) passes.
+- [X] T013 [P] Execute `golangci-lint run --timeout 5m` from the repository root to satisfy constitutional lint requirements.
+- [X] T014 [P] Walk through the quickstart validation steps in `quickstart.md`, confirming binary build, command help listings, placeholder outputs, and the legacy guidance message.
+- [X] T015 Update `quickstart.md` (and any affected docs) to surface the new workload namespace, subcommands, and "Coming soon" placeholders so user-facing guidance reflects FR-005 expectations.
+- [X] T016 Review coverage output from `go test ./...` to ensure new packages maintain >90% project coverage; investigate and shore up tests if the threshold dips.
 
 ## Dependencies
 
