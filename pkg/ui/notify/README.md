@@ -11,7 +11,7 @@ Contains utilities for sending user notifications through the command-line inter
 - **Colored Output**: Uses `fatih/color` for colored terminal output
 - **Status Symbols**: Provides consistent symbols for different message types:
   - `✔` - Success messages (SuccessSymbol)
-  - `✗` - Error messages (ErrorSymbol)  
+  - `✗` - Error messages (ErrorSymbol)
   - `⚠` - Warning messages (WarningSymbol)
   - `►` - Activity messages (ActivitySymbol)
 - **Consistent Messaging**: Standardized format for CLI notifications
