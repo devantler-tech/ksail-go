@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -100,4 +101,32 @@ func TestWorkloadCommandsEmitPlaceholders(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	command := workload.NewWorkloadCmd()
+	command.SetOut(&out)
+	command.SetErr(&out)
+
+	err := command.Execute()
+	require.NoError(t, err)
+
+	output := out.String()
+	if !strings.Contains(output, "Group workload commands under a single namespace") {
+		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
+	}
+}
+
+func TestWorkloadCommandConfiguration(t *testing.T) {
+	t.Parallel()
+
+	command := workload.NewWorkloadCmd()
+
+	require.True(t, command.SilenceErrors)
+	require.True(t, command.SilenceUsage)
+	require.Equal(t, cmdhelpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }

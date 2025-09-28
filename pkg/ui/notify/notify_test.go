@@ -178,6 +178,48 @@ func TestActivityln(t *testing.T) {
 	}
 }
 
+func TestInfof(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Infof(&out, "%s", "details")
+	got := out.String()
+	want := notify.InfoSymbol + "details\n"
+
+	if got != want {
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestInfo(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Info(&out, "details")
+	got := out.String()
+	want := notify.InfoSymbol + "details"
+
+	if got != want {
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestInfoln(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.Infoln(&out, "details")
+	got := out.String()
+	want := notify.InfoSymbol + "details\n"
+
+	if got != want {
+		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
+	}
+}
+
 // errorWriter is a mock writer that always returns an error.
 type errorWriter struct{}
 
