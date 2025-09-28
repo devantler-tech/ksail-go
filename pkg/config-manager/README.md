@@ -37,11 +37,11 @@ viper := manager.GetViper()
 
 ## Implementation
 
-The KSail-specific configuration implementation has been moved to `cmd/config-manager` to avoid circular dependencies. This package now contains only the generic interface definition.
+The KSail-specific configuration implementation lives in `pkg/config-manager/ksail`, providing the concrete manager used by the CLI. This package continues to define the generic interface.
 
 ## Related Packages
 
-- **[cmd/config-manager/](../../cmd/config-manager/README.md)** - KSail-specific configuration implementation
+- **[pkg/config-manager/ksail/](./ksail/README.md)** - KSail-specific configuration implementation
 
 ---
 

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

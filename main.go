@@ -8,7 +8,7 @@ import (
 	"runtime/debug"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 )
 
 //nolint:gochecknoglobals

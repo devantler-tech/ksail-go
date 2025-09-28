@@ -100,7 +100,7 @@
 - [x] T036.1 [ENHANCEMENT] Create EKS config manager - COMPLETED: Implemented pkg/config-manager/eks with comprehensive configuration management for EKS cluster configurations, including validation integration, default config generation, error handling, and comprehensive tests
 - [x] T037 Integrate validators with existing config managers - COMPLETED: Integrated validation into Kind, K3d, and EKS config managers' LoadConfig() methods with proper error handling and formatted error messages
 - [x] T038 Add validation hooks to CLI commands - COMPLETED: Validation hooks already implemented in LoadClusterWithErrorHandling function used by all CLI commands
-- [x] T039 Update error handling in cmd/ui/notify package - COMPLETED: Error handling already properly implemented with structured validation error display and fix suggestions
+- [x] T039 Update error handling in pkg/ui/notify package - COMPLETED: Error handling already properly implemented with structured validation error display and fix suggestions
 - [x] T040 Add fail-fast behavior to config loading - COMPLETED: Fail-fast behavior already implemented in LoadClusterWithErrorHandling with detailed error reporting
 
 ## Phase 3.5: Polish

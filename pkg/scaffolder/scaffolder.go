@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	eksgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
@@ -16,6 +15,7 @@ import (
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"

@@ -22,7 +22,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command
   init        Initialize a new project
-  reconcile   Reconcile workloads in the cluster
+  workload    Manage workload operations
 
 Flags:
   -h, --help      help for ksail

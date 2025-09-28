@@ -6,9 +6,9 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/viper"
 )
 

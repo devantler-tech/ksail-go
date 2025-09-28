@@ -3,8 +3,8 @@ package cluster
 import (
 	"fmt"
 
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 

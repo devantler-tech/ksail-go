@@ -1,4 +1,4 @@
-# cmd/ui/notify
+# pkg/ui/notify
 
 This package provides notification utilities for KSail's CLI interface.
 
@@ -11,7 +11,7 @@ Contains utilities for sending user notifications through the command-line inter
 - **Colored Output**: Uses `fatih/color` for colored terminal output
 - **Status Symbols**: Provides consistent symbols for different message types:
   - `✔` - Success messages (SuccessSymbol)
-  - `✗` - Error messages (ErrorSymbol)  
+  - `✗` - Error messages (ErrorSymbol)
   - `⚠` - Warning messages (WarningSymbol)
   - `►` - Activity messages (ActivitySymbol)
 - **Consistent Messaging**: Standardized format for CLI notifications
@@ -20,7 +20,7 @@ Contains utilities for sending user notifications through the command-line inter
 ## Usage
 
 ```go
-import "github.com/devantler-tech/ksail-go/cmd/ui/notify"
+import "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 
 // Send different types of notifications
 notify.Success("Cluster created successfully")
