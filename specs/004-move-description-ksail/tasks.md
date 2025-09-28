@@ -11,8 +11,8 @@
 
 **Critical:** These test additions should be committed while still failing (or not compiling) until implementation lands.
 
-- [ ] T002 [P] Add snapshot-based help test for `ksail workload --help` in `cmd/workload/workload_help_test.go`, asserting output against a new `cmd/__snapshots__/workload_help.snap` fixture.
-- [ ] T003 [P] Add placeholder command behavior tests in `cmd/workload/workload_commands_test.go` to ensure `reconcile`, `apply`, and `install` emit the "Coming soon" message via `notify.Infoln` and exit with code 0.
+- [ ] T002 [P] Extend `cmd/workload/workload_test.go` with snapshot-based help coverage for the workload namespace, asserting `ksail workload --help` plus `ksail workload reconcile|apply|install --help` outputs against new fixtures under `cmd/__snapshots__/`.
+- [ ] T003 [P] In the same `cmd/workload/workload_test.go`, add placeholder command behavior tests to ensure `reconcile`, `apply`, and `install` emit the "Coming soon" message via `notify.Infoln` and exit with code 0.
 - [ ] T004 [P] Extend `cmd/root_test.go` with a regression test that running `ksail reconcile` surfaces Cobra's unknown-command error plus the guidance string from the workload migration contract.
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
@@ -30,6 +30,8 @@
 - [ ] T012 Run `go test ./...` to ensure the full suite (including new workload tests) passes.
 - [ ] T013 [P] Execute `golangci-lint run --timeout 5m` from the repository root to satisfy constitutional lint requirements.
 - [ ] T014 [P] Walk through the quickstart validation steps in `quickstart.md`, confirming binary build, command help listings, placeholder outputs, and the legacy guidance message.
+- [ ] T015 Update `quickstart.md` (and any affected docs) to surface the new workload namespace, subcommands, and "Coming soon" placeholders so user-facing guidance reflects FR-005 expectations.
+- [ ] T016 Review coverage output from `go test ./...` to ensure new packages maintain >90% project coverage; investigate and shore up tests if the threshold dips.
 
 ## Dependencies
 
@@ -39,6 +41,8 @@
 - T008 follows T007 so the root command no longer references the removed file.
 - T009 depends on the root wiring changes from T007 and must run before validation tasks.
 - T010–T014 run only after all core implementation tasks complete.
+- T015 depends on T005–T009 so documentation reflects final command surface; run it before closing validation.
+- T016 executes after T012 to confirm constitutional coverage expectations.
 
 ## Parallel Example
 
@@ -55,3 +59,4 @@ Launch these test-authoring tasks together before implementation:
 - Marked [P] tasks target separate files or command-line validation and can execute concurrently when their dependencies are satisfied.
 - Ensure failing tests and snapshots are committed prior to implementation, aligning with the constitution’s TDD mandate.
 - Snapshot updates (T010) should be the only point where `-update` flags are used so earlier failing tests retain their guard rails.
+- Follow the repository convention of one test file per source file—`cmd/workload/workload.go` must pair only with `cmd/workload/workload_test.go`.
