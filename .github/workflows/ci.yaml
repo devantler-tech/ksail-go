@@ -57,7 +57,7 @@ jobs:
           ./ksail cluster list
           ./ksail cluster start
           ./ksail cluster stop
-          ./ksail reconcile
+          ./ksail workload reconcile
           ./ksail cluster down
 
       - name: 🧹 Cleanup
