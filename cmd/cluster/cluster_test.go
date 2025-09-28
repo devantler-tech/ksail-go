@@ -17,10 +17,14 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 	requireParentMetadata(t, cmd)
 
 	for name, metadata := range expectedLifecycleMetadata(t) {
+		name := name
+		metadata := metadata
+
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			subcommand := findSubcommand(t, cmd, name)
+			parent := cluster.NewClusterCmd()
+			subcommand := findSubcommand(t, parent, name)
 			assertSubcommandMetadata(t, subcommand, metadata)
 		})
 	}
