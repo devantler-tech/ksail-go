@@ -1,28 +1,26 @@
-package cluster_test
+package cluster //nolint:testpackage // Needs access to unexported helpers for coverage instrumentation.
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 
-	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	"github.com/spf13/cobra"
 )
 
 func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 	t.Parallel()
 
-	cmd := cluster.NewClusterCmd()
+	metadata := expectedLifecycleMetadata(t)
+	requireParentMetadata(t, NewClusterCmd())
 
-	requireParentMetadata(t, cmd)
-
-	for name, metadata := range expectedLifecycleMetadata(t) {
+	for name, details := range metadata {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			parent := cluster.NewClusterCmd()
-			subcommand := findSubcommand(t, parent, name)
-			assertSubcommandMetadata(t, subcommand, metadata)
+			subcommand := findLifecycleSubcommand(t, name)
+			assertSubcommandMetadata(t, subcommand, details)
 		})
 	}
 }
@@ -30,28 +28,41 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
 	t.Parallel()
 
-	cmd := cluster.NewClusterCmd()
-
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	cmd.SetArgs([]string{})
+	cmd := NewClusterCmd()
+	buffer := &bytes.Buffer{}
+	cmd.SetOut(buffer)
+	cmd.SetErr(buffer)
+	cmd.SetArgs(nil)
 
 	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected executing cluster command without subcommand to succeed, got %v", err)
 	}
 
-	output := out.String()
+	assertOutputContains(t, buffer.String(), "Usage:")
+	assertOutputContains(t, buffer.String(), "Available Commands:")
+}
 
-	if !strings.Contains(output, "Usage:") {
-		t.Fatalf("expected help output to contain Usage section, got %q", output)
+//nolint:paralleltest // Alters package-level helper.
+func TestHandleClusterRunEWrapsHelpError(t *testing.T) {
+	originalRunner := helpRunner
+	helpRunner = func(*cobra.Command) error {
+		return errHelpFailure
 	}
 
-	if !strings.Contains(output, "Available Commands:") {
-		t.Fatalf("expected help output to list available commands, got %q", output)
+	defer func() {
+		helpRunner = originalRunner
+	}()
+
+	cmd := &cobra.Command{Use: "cluster"}
+
+	err := handleClusterRunE(cmd, nil, nil)
+	if !errors.Is(err, errHelpFailure) {
+		t.Fatalf("expected wrapped help failure error, got %v", err)
 	}
 }
+
+var errHelpFailure = errors.New("help failure")
 
 type lifecycleMetadata struct {
 	short string
@@ -61,18 +72,18 @@ type lifecycleMetadata struct {
 func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
 	t.Helper()
 
-	commandConstructors := []func() *cobra.Command{
-		cluster.NewUpCmd,
-		cluster.NewDownCmd,
-		cluster.NewStartCmd,
-		cluster.NewStopCmd,
-		cluster.NewStatusCmd,
-		cluster.NewListCmd,
+	constructors := []func() *cobra.Command{
+		NewUpCmd,
+		NewDownCmd,
+		NewStartCmd,
+		NewStopCmd,
+		NewStatusCmd,
+		NewListCmd,
 	}
 
-	metadata := make(map[string]lifecycleMetadata, len(commandConstructors))
+	metadata := make(map[string]lifecycleMetadata, len(constructors))
 
-	for _, constructor := range commandConstructors {
+	for _, constructor := range constructors {
 		cmd := constructor()
 		metadata[cmd.Use] = lifecycleMetadata{
 			short: cmd.Short,
@@ -86,19 +97,21 @@ func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
 func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
 	t.Helper()
 
-	if cmd.Short != "Manage cluster lifecycle commands" {
+	const expectedDescription = "Manage cluster lifecycle commands"
+
+	if cmd.Short != expectedDescription {
 		t.Fatalf(
 			"short description mismatch for parent command. want %q, got %q",
-			"Manage cluster lifecycle commands",
+			expectedDescription,
 			cmd.Short,
 		)
 	}
 }
 
-func findSubcommand(t *testing.T, parent *cobra.Command, name string) *cobra.Command {
+func findLifecycleSubcommand(t *testing.T, name string) *cobra.Command {
 	t.Helper()
 
-	for _, subcommand := range parent.Commands() {
+	for _, subcommand := range NewClusterCmd().Commands() {
 		if subcommand.Use == name {
 			return subcommand
 		}
@@ -128,5 +141,13 @@ func assertSubcommandMetadata(t *testing.T, cmd *cobra.Command, metadata lifecyc
 			metadata.long,
 			cmd.Long,
 		)
+	}
+}
+
+func assertOutputContains(t *testing.T, output, expected string) {
+	t.Helper()
+
+	if !strings.Contains(output, expected) {
+		t.Fatalf("expected output to contain %q, got %q", expected, output)
 	}
 }

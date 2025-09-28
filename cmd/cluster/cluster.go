@@ -27,9 +27,14 @@ func NewClusterCmd() *cobra.Command {
 	return cmd
 }
 
+//nolint:gochecknoglobals // Injected for testability to simulate help failures.
+var helpRunner = func(cmd *cobra.Command) error {
+	return cmd.Help()
+}
+
 func handleClusterRunE(cmd *cobra.Command, _ *configmanager.ConfigManager, _ []string) error {
 	// Cobra Help() can return an error (e.g., output stream or template issues); wrap it for clarity.
-	err := cmd.Help()
+	err := helpRunner(cmd)
 	if err != nil {
 		return fmt.Errorf("displaying cluster command help: %w", err)
 	}
