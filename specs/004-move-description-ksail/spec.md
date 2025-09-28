@@ -16,6 +16,8 @@ The reason for this is to structure align the CLI more with the expectations use
 ### Session 2025-09-28
 
 - Q: How should the legacy top-level `ksail reconcile` command behave once the workloads namespace exists? → A: Remove; show command not found.
+- Q: What should happen when someone runs `ksail workloads apply` or `ksail workloads install` before their full implementations land? → A: Show a "coming soon" message and exit with success (code 0).
+- Q: How should `ksail workloads reconcile` respond when no cluster context is configured? → A: Show a "coming soon" message and exit with success (code 0).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -41,8 +43,9 @@ A platform engineer using the ksail CLI wants workload-related operations groupe
 
 - **FR-001**: The CLI MUST introduce a `workloads` command group that is discoverable via `ksail --help` and provides a summary of workload-related actions.
 - **FR-002**: The CLI MUST expose `ksail workloads reconcile`, capturing the existing reconcile intent under the workloads namespace and clarifying that it orchestrates syncing workloads with a cluster.
-- **FR-003**: The CLI MUST expose `ksail workloads apply` to position a future capability for applying local manifests (wrapping `kubectl apply`).
-- **FR-004**: The CLI MUST expose `ksail workloads install` to position a future capability for installing Helm charts (wrapping `helm install`).
+- **FR-002a**: Until cluster-awareness is implemented, `ksail workloads reconcile` MUST fall back to a "coming soon" message and exit with success (code 0) when no cluster context is configured.
+- **FR-003**: The CLI MUST expose `ksail workloads apply` to position a future capability for applying local manifests (wrapping `kubectl apply`) and, until that iteration ships, MUST emit a "coming soon" message while exiting with success (code 0).
+- **FR-004**: The CLI MUST expose `ksail workloads install` to position a future capability for installing Helm charts (wrapping `helm install`) and, until that iteration ships, MUST emit a "coming soon" message while exiting with success (code 0).
 - **FR-005**: The CLI MUST update command help and documentation so users see the workloads namespace and its subcommands when requesting assistance or listing commands.
 - **FR-006**: The CLI MUST remove the legacy top-level `ksail reconcile` command and surface a command-not-found style message that explicitly directs users to `ksail workloads reconcile`.
 - **FR-007**: The CLI MUST communicate that detailed behaviors for `apply` and `install` will arrive in a future iteration while avoiding broken or misleading execution paths.
