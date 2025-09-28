@@ -25,7 +25,7 @@ Rationale: As a developer tool managing critical Kubernetes infrastructure, KSai
 
 ### II. Testing Standards (TDD-First)
 
-Test-Driven Development is NON-NEGOTIABLE. Tests MUST be written before implementation, following the strict Red-Green-Refactor cycle. All public APIs require contract tests, all business logic requires unit tests with >90% coverage, and all integrations require end-to-end tests. No feature ships without comprehensive test coverage.
+Test-Driven Development is NON-NEGOTIABLE. Tests MUST be written before implementation, following the strict Red-Green-Refactor cycle. All public APIs require contract tests, all business logic requires unit tests with >90% coverage, and system-level integration coverage is enforced via the CI workflows in `.github/workflows/ci.yaml`. Local development focuses on unit and contract suites, while CI system runs provide the end-to-end verification gate. No feature ships without comprehensive unit/contract coverage and green CI system tests.
 
 Rationale: Managing Kubernetes clusters involves complex state management and critical operations. Comprehensive testing prevents production failures and ensures reliable behavior across diverse deployment scenarios.
 
@@ -37,9 +37,9 @@ Rationale: Users rely on KSail-Go for critical infrastructure operations. Incons
 
 ### IV. Performance Requirements
 
-Operations MUST complete within defined performance thresholds: cluster validation <100ms, configuration loading <50ms, CLI response time <200ms, memory usage <50MB during normal operations. All performance-critical paths require benchmarking and optimization. Resource consumption MUST be measured and optimized continuously.
+Operations MUST complete within defined performance thresholds: cluster validation <100ms, configuration loading <50ms, CLI response time <200ms, memory usage <50MB during normal operations. Operations must emit lightweight and tightly integrated timing telemetry (e.g., local vs total durations) so bottlenecks can be identified without dedicated benchmarking suites. Resource consumption MUST be measured and optimized continuously.
 
-Rationale: KSail-Go operates in developer workflows where performance directly impacts productivity. Slow tools disrupt flow state and reduce adoption. Performance requirements ensure responsive, efficient operations.
+Rationale: KSail-Go operates in developer workflows where performance directly impacts productivity. Inline instrumentation keeps the experience responsive while avoiding benchmark bloat and still exposing actionable performance signals.
 
 ## Quality Gates
 
@@ -47,7 +47,7 @@ All code changes MUST pass these mandatory gates before merge:
 
 - golangci-lint run returns zero issues
 - go test ./... achieves >90% coverage with all tests passing
-- Performance benchmarks meet defined thresholds
+- Instrumented runtime telemetry demonstrates thresholds are respected
 - Manual testing of CLI workflows completes successfully
 - Documentation updates accompany feature changes
 
