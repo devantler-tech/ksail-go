@@ -11,8 +11,8 @@ const installMessage = "Workload install coming soon."
 func NewInstallCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install a Helm chart",
-		Long:  "Install a Helm chart to your cluster.",
+		Short: "Install Helm charts",
+		Long:  "Install Helm charts to provision workloads through KSail.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			notify.Infoln(cmd.OutOrStdout(), installMessage)
 

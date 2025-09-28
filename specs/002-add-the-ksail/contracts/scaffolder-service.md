@@ -33,7 +33,7 @@ scaffolderInstance := scaffolder.NewScaffolder(*cluster, os.Stdout)
 
 **ConfigManager Integration**:
 
-- Uses existing `cmd/config-manager` for loading cluster configuration
+- Uses existing `pkg/config-manager/ksail` for loading cluster configuration
 - Supports CLI flag binding via Viper: `configManager.Viper.BindPFlag()`
 - Provides standard field selectors for distribution, source directory, etc.
 - Handles configuration validation before scaffolding begins

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 

@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
-	configmanager "github.com/devantler-tech/ksail-go/cmd/config-manager"
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 

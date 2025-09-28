@@ -11,8 +11,8 @@ const reconcileMessage = "Workload reconciliation coming soon."
 func NewReconcileCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reconcile",
-		Short: "Reconcile a workload",
-		Long:  "Trigger reconciliation to sync a local workload with your cluster.",
+		Short: "Reconcile workloads with the cluster",
+		Long:  "Trigger reconciliation tooling to sync local workloads with your cluster.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			notify.Infoln(cmd.OutOrStdout(), reconcileMessage)
 

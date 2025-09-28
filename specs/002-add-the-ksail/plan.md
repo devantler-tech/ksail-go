@@ -45,7 +45,7 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 - `github.com/spf13/cobra` for CLI framework (existing pattern)
 - `github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1` for cluster APIs
 - `github.com/devantler-tech/ksail-go/pkg/scaffolder` for file generation
-- `github.com/devantler-tech/ksail-go/cmd/config-manager` for CLI input handling
+- `github.com/devantler-tech/ksail-go/pkg/config-manager/ksail` for CLI input handling
 
 **Storage**: Runtime template generation via pkg/io/generator system (no embedded files needed), output to local filesystem
 
@@ -246,7 +246,7 @@ ios/ or android/
 
 - Enhance existing `cmd/init.go` with progress feedback and additional flags
 - Extend existing `pkg/scaffolder` with conflict detection and validation
-- Use existing `cmd/config-manager` for flag handling and configuration loading
+- Use existing `pkg/config-manager/ksail` for flag handling and configuration loading
 - Leverage existing `pkg/apis/cluster/v1alpha1` APIs and validation
 
 **Estimated Output**: 30 numbered, ordered tasks in tasks.md (enhancement-focused approach building on 60% existing functionality)
