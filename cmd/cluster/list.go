@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
 )
 

@@ -1,7 +1,7 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
 )
 

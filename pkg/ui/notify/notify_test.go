@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	notify "github.com/devantler-tech/ksail-go/cmd/ui/notify"
+	notify "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 )
 
 // writer helpers no longer needed; we call *To(out, ...) variants directly

@@ -1,4 +1,4 @@
-# cmd/ui/asciiart
+# pkg/ui/asciiart
 
 This package provides ASCII art functionality for KSail's CLI interface.
 
@@ -16,7 +16,7 @@ Contains ASCII art generators and utilities for enhancing the visual presentatio
 ## Usage
 
 ```go
-import "github.com/devantler-tech/ksail-go/cmd/ui/asciiart"
+import "github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 
 // Display ASCII art in CLI
 asciiart.ShowLogo()

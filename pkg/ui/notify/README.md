@@ -1,4 +1,4 @@
-# cmd/ui/notify
+# pkg/ui/notify
 
 This package provides notification utilities for KSail's CLI interface.
 
@@ -20,7 +20,7 @@ Contains utilities for sending user notifications through the command-line inter
 ## Usage
 
 ```go
-import "github.com/devantler-tech/ksail-go/cmd/ui/notify"
+import "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 
 // Send different types of notifications
 notify.Success("Cluster created successfully")
