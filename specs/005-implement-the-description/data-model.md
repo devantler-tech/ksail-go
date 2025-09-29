@@ -49,29 +49,29 @@
 
 ## Entity: Telemetry Summary (`telemetrySummary`)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `totalDuration` | `time.Duration` | Wall-clock duration from command start to completion. |
-| `slowestStage` | `string` | Stage name with highest elapsed time. |
-| `slowestDuration` | `time.Duration` | Duration of `slowestStage`. |
-| `stageDurations` | `map[string]time.Duration` | Per-stage timing breakdown (dependencies, provisioning, readiness, kubeconfig). |
+| Field             | Type                       | Description                                                                     |
+| ----------------- | -------------------------- | ------------------------------------------------------------------------------- |
+| `totalDuration`   | `time.Duration`            | Wall-clock duration from command start to completion.                           |
+| `slowestStage`    | `string`                   | Stage name with highest elapsed time.                                           |
+| `slowestDuration` | `time.Duration`            | Duration of `slowestStage`.                                                     |
+| `stageDurations`  | `map[string]time.Duration` | Per-stage timing breakdown (dependencies, provisioning, readiness, kubeconfig). |
 
 ## Entity: Telemetry Recorder (`telemetryRecorder`)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `startedAt` | `time.Time` | Command start timestamp used for total duration. |
-| `currentStage` | `string` | Stage currently being measured. |
-| `stageStarts` | `map[string]time.Time` | Start timestamps for active stages. |
-| `stageDurations` | `map[string]time.Duration` | Accumulated durations per stage. |
-| `clock` | `func() time.Time` | Injectable clock for deterministic tests. |
+| Field            | Type                       | Description                                      |
+| ---------------- | -------------------------- | ------------------------------------------------ |
+| `startedAt`      | `time.Time`                | Command start timestamp used for total duration. |
+| `currentStage`   | `string`                   | Stage currently being measured.                  |
+| `stageStarts`    | `map[string]time.Time`     | Start timestamps for active stages.              |
+| `stageDurations` | `map[string]time.Duration` | Accumulated durations per stage.                 |
+| `clock`          | `func() time.Time`         | Injectable clock for deterministic tests.        |
 
 ## Entity: Combined Configuration Snapshot (command-local struct)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `flags` | `map[string]any` | CLI flag overrides captured from Cobra/Viper. |
-| `environment` | `map[string]any` | Environment-derived overrides (`KSAIL_` prefixed). |
-| `files` | `map[string]any` | Values loaded from `ksail.yaml` and distribution overlays (e.g., `kind.yaml`). |
-| `defaults` | `map[string]any` | Built-in defaults applied when higher precedence sources missing. |
-| `resolved` | `v1alpha1.Cluster` | Final struct after applying precedence (flags → env → files → defaults). |
+| Field         | Type               | Description                                                                    |
+| ------------- | ------------------ | ------------------------------------------------------------------------------ |
+| `flags`       | `map[string]any`   | CLI flag overrides captured from Cobra/Viper.                                  |
+| `environment` | `map[string]any`   | Environment-derived overrides (`KSAIL_` prefixed).                             |
+| `files`       | `map[string]any`   | Values loaded from `ksail.yaml` and distribution overlays (e.g., `kind.yaml`). |
+| `defaults`    | `map[string]any`   | Built-in defaults applied when higher precedence sources missing.              |
+| `resolved`    | `v1alpha1.Cluster` | Final struct after applying precedence (flags → env → files → defaults).       |
