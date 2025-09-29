@@ -19,7 +19,7 @@
    ksail cluster up --distribution Kind
    ```
 
-4. Wait for the success message summarising distribution, context, kubeconfig, and duration.
+4. Wait for the success message summarising distribution, context, kubeconfig, slowest stage, and total duration.
 5. Verify the kube context switched:
 
    ```bash
@@ -42,7 +42,7 @@
    ksail cluster up --distribution K3d
    ```
 
-4. Confirm the CLI reports success and the context `k3d-<name>` is active.
+4. Confirm the CLI reports success with the timing summary and the context `k3d-<name>` is active.
 
 ## Steps (EKS example)
 
@@ -59,7 +59,7 @@
    ksail cluster up --distribution EKS --timeout 10m
    ```
 
-4. After success, verify the context and describe cluster health:
+4. After success, verify the timing summary, confirm the context, and describe cluster health:
 
    ```bash
    kubectl cluster-info

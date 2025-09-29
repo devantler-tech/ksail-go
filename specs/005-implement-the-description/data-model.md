@@ -19,7 +19,7 @@
 | K3d (`v1alpha5.SimpleConfig`) | `k3d.NewConfigManager` | `Name`, server/agent counts, kubeconfig options. |
 | EKS (`eksctl.ClusterConfig`) | `eks.NewConfigManager` | `Metadata.Name`, `Metadata.Region`, node group definitions for scaling readiness. |
 
-## Entity: Dependency Check Result
+## Entity: Dependency Check Result (command-local struct)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -28,7 +28,7 @@
 | `awsCredentialsReady` | `bool` | True when AWS credential chain resolves (EKS only). |
 | `messages` | `[]string` | Actionable error or success messages for CLI output. |
 
-## Entity: Provisioning Outcome
+## Entity: Provisioning Outcome (command-local struct)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -39,7 +39,7 @@
 | `ready` | `bool` | Indicates readiness wait succeeded. |
 | `duration` | `time.Duration` | Total time from provisioning start to readiness success. |
 
-## Entity: Readiness Probe Configuration
+## Entity: Readiness Probe Configuration (command-local struct)
 
 | Field | Type | Description |
 |-------|------|-------------|
