@@ -9,7 +9,8 @@
 
 ### Session 2025-09-28
 
-- Q: When `ksail cluster up` is invoked and the target cluster already exists for the chosen distribution, what outcome should we guarantee? → A: Recreate only when `--force` flag is supplied.
+- Q: When `ksail cluster up` is invoked and the target cluster already exists for the chosen distribution, what outcome should we guarantee? → A: Recreate only when `--force` flag is supplied, otherwise fail with an informative error
+- Q: How are partial failures reported when infrastructure prerequisites (e.g., Docker daemon, cloud credentials) are unavailable? → A: Fail fast with clear, actionable error messages.
 - Q: Do we wait for the provisioned cluster to become Ready before reporting success? → A: Yes, wait for Ready and kubeconfig usability.
 - Q: If a required dependency (Docker daemon, AWS credentials) is missing at runtime, what should the command do? → A: Fail fast with a clear, actionable error.
 - Q: After creating or verifying a cluster, how should the command manage kubeconfig? → A: Merge/update kubeconfig and set the new context as current.
@@ -23,14 +24,8 @@ A platform engineer uses the KSail CLI to bootstrap a local or cloud Kubernetes 
 
 ### Acceptance Scenarios
 
-1. **Given** a project with a valid KSail configuration targeting the Kind distribution, **When** the engineer runs `ksail cluster up`, **Then** a Kind cluster is provisioned with the configured name, networking, and add-ons, and the command reports success.
-2. **Given** a KSail configuration targeting either K3d or EKS and containing all required credentials or connection details, **When** the engineer runs `ksail cluster up`, **Then** the corresponding K3d or EKS cluster is created or brought to an active state, and the user receives feedback on completion or actionable errors if provisioning fails.
-
-### Edge Cases
-
-- What happens when the KSail configuration omits mandatory distribution details such as cluster name or region?
-- How does the system handle a request to create a cluster that already exists according to the chosen provider when the `--force` flag is absent or present?
-- How are partial failures reported when infrastructure prerequisites (e.g., Docker daemon, cloud credentials) are unavailable?
+1. **Given** a project with a valid KSail configuration targeting a local distribution (Kind or K3d), **When** the engineer runs `ksail cluster up`, **Then** KSail provisions the cluster by creating the required containers inside the detected container engine (Docker or Podman) using the combined configuration from Viper. The user receives feedback on completion or actionable errors if provisioning fails.
+2. **Given** a KSail configuration targeting the cloud EKS distribution and containing all required credentials or connection details, **When** the engineer runs `ksail cluster up`, **Then** the EKS cluster is created or brought to an active state using the combined configuration from Viper. The user receives feedback on completion or actionable errors if provisioning fails.
 
 ## Requirements *(mandatory)*
 
