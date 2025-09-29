@@ -1,7 +1,7 @@
 
 # Implementation Plan: KSail Cluster Provisioning Command
 
-**Branch**: `005-implement-the-description` | **Date**: 2025-09-28 | **Spec**: `/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/spec.md`
+**Branch**: `005-implement-the-description` | **Date**: 2025-09-29 | **Spec**: [/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/spec.md](spec.md)
 **Input**: Feature specification from `/specs/005-implement-the-description/spec.md`
 
 ## Execution Flow (/plan command scope)
@@ -31,37 +31,37 @@
 - Phase 3-4: Implementation execution (manual or via tools)
 
 ## Summary
-
-Deliver a production-ready `ksail cluster up` command that provisions Kind, K3d, or EKS clusters using the existing KSail configuration pipeline. The command will reuse current config managers and provisioners, execute explicit dependency and readiness checks, and emit inline telemetry (slowest stage vs total runtime) through the notify/provisioner helpers—all implemented inside `cmd/cluster/up` without introducing a new orchestration package.
+Implement a production-ready `ksail cluster up` command that provisions Kind, K3d, or EKS clusters using existing provisioner packages, waits for readiness, merges kubeconfig, and emits actionable telemetry-informed feedback. The solution will reuse current lifecycle components, enforce dependency checks, and honor the configuration priority (CLI flags → environment → config files → defaults).
 
 ## Technical Context
-
-**Language/Version**: Go 1.25.1 (constitution requires ≥1.24)
-**Primary Dependencies**: Cobra CLI, Viper, `pkg/config-manager/{kind,k3d,eks}`, `pkg/provisioner/cluster/{kind,k3d,eks}`, `pkg/provisioner/containerengine`, `k8s.io/client-go`, AWS SDK v2 via eksctl wrappers, `internal/utils/path`
-**Storage**: N/A (reads project YAML configs only)
-**Testing**: `go test` (with testify mocks/helpers), go tool cover, golangci-lint; benchmarks replaced by inline telemetry validations
-**Target Platform**: macOS/Linux developer workstations provisioning local (Kind/K3d) or AWS EKS clusters
-**Project Type**: Single CLI project driven from `cmd/` and `pkg/`
-**Performance Goals**: CLI response <200 ms for dependency/validation stages, readiness capped at configurable timeout (default 5 min), telemetry must capture per-stage and total durations
-**Constraints**: Reuse existing provisioners, honour FR-007 force semantics, keep orchestration confined to `cmd/cluster/up`, fail fast on missing prerequisites, merge kubeconfig and switch context automatically, instrumentation must not spam or require extra output modes
-**Scale/Scope**: One cluster per invocation across Kind/K3d/EKS; minimal footprint for telemetry to keep UX responsive
+**Language/Version**: Go 1.24+
+**Primary Dependencies**: Cobra, Viper, sigs.k8s.io/kind, github.com/k3d-io/k3d/v5, github.com/weaveworks/eksctl, Kubernetes client-go, internal provisioner packages
+**Storage**: Local filesystem for kubeconfig and project manifests
+**Testing**: go test with testify, go-snaps for snapshots, mockery-generated mocks
+**Target Platform**: Developer workstations (macOS/Linux) managing local Docker/Podman engines and AWS accounts
+**Project Type**: single
+**Performance Goals**: CLI response under 200ms for non-provisioning steps; readiness polling completes within default 5-minute timeout; inline telemetry for stage timings
+**Constraints**: Must honor constitutional telemetry requirement, keep memory footprint <50 MB, operate within dependency prerequisites (Docker/Podman/AWS)
+**Scale/Scope**: Single cluster per invocation; supports multi-node Kind/K3d setups and existing AWS EKS clusters
 
 ## Constitution Check
+> GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+- **Code Quality Excellence**: Plan must enforce gofmt, golangci-lint, reuse existing packages, and avoid introducing debt. ✔️ Strategy: leverage internal provisioners, require lint/test gates per plan before merge.
+- **Testing Standards (TDD-First)**: All new behavior covered by pre-written unit/contract tests before implementation. ✔️ Plan includes dependency checks, readiness waiters, kubeconfig merge tests prior to code.
+- **User Experience Consistency**: Maintain Cobra UX, consistent messaging, actionable errors. ✔️ Ensure outputs go through existing notify/provisioner channels and include remediation hints.
+- **Performance Requirements**: Provisioning stages instrumented with lightweight telemetry (stage + total durations); readiness timeout respected. ✔️ Include telemetry plan and budget.
 
-- **I. Code Quality Excellence** → Plan keeps orchestration in `cmd/cluster/up` using well-factored helper functions for configuration loading, dependency checks, telemetry, and readiness, enabling focused unit coverage while avoiding new packages.
-- **II. Testing Standards (TDD-First)** → All new behaviour (dependency checks, readiness waits, telemetry summaries, CLI wiring) will start with failing tests before implementation and maintain >90 % coverage.
-- **III. User Experience Consistency** → Command continues to use existing notify/provisioner helpers, supports the clarified `--force` semantics, and surfaces actionable remediation messages.
-ios/ or android/
-- **IV. Performance Requirements** → Inline timers capture local-stage and total durations, enforcing thresholds without external benchmarks and giving operators immediate visibility into slow steps.
+Initial Constitution Check: PASS
+
+Post-Design Constitution Check: PASS (design maintains telemetry, TDD, and UX mandates)
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/005-implement-the-description/
+specs/[###-feature]/
 ├── plan.md              # This file (/plan command output)
 ├── research.md          # Phase 0 output (/plan command)
 ├── data-model.md        # Phase 1 output (/plan command)
@@ -73,110 +73,113 @@ specs/005-implement-the-description/
 ### Source Code (repository root)
 
 ```text
-cmd/
-├── cluster/
-│   ├── cluster.go
-│   └── up.go              # houses all orchestration helpers and telemetry logic
-pkg/
-├── config-manager/
-├── provisioner/
-│   └── cluster/{kind,k3d,eks}
-├── provisioner/containerengine
-├── io/
-└── validator/
+# Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
 
-internal/
-└── testutils/
+tests/
+├── contract/
+├── integration/
+└── unit/
 
-.github/
-└── workflows/ci.yaml      # enforces system-level coverage
+# Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
+
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
+
+# Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
+
+ios/ or android/
+└── [platform-specific structure]
 ```
 
-**Structure Decision**: Option 1 (single CLI). All orchestration stays inside `cmd/cluster/up` behind file-scoped helpers (config loading, dependency checks, telemetry recording, provisioning, readiness, kubeconfig management) so no new packages are introduced.
+**Structure Decision**: Option 1 (single project structure)
 
 ## Phase 0: Outline & Research
 
-- Reused provisioners/config managers confirmed to satisfy current interfaces (see `research.md`).
-- Established dependency checks via `containerengine.AutoDetect` and AWS SDK credential resolution to honour FR-009.
-- Selected client-go readiness polling (nodes Ready + namespace reachability) to meet FR-008/FR-011.
-- Validated kubeconfig merging via `clientcmd` helpers and post-provision verification.
-- Determined inline telemetry as primary performance signal: capture timestamps at dependency validation, provisioning start/stop, readiness wait, kubeconfig merge.
+1. Extract unknowns and validation topics from the Technical Context:
+   - Configuration precedence (flags → env → config files → defaults)
+   - Provisioner reuse and dependency checks per distribution
+   - Readiness verification and kubeconfig management
+   - Telemetry obligations under Constitution IV
 
-**Output**: `/specs/005-implement-the-description/research.md` (complete).
+2. Capture findings in `research.md` following the decision/rationale/alternatives format.
+   - Confirm Viper precedence satisfies the required configuration priority.
+   - Document reuse of existing provisioners (kind, k3d, eks) and dependency helpers.
+   - Validate readiness and kubeconfig merge strategy via client-go helpers.
+   - Outline telemetry recorder usage for per-stage and total timings.
+
+3. Ensure all NEEDS CLARIFICATION markers are resolved before moving forward.
+
+Output: `/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/research.md`
 
 ## Phase 1: Design & Contracts
 
-Prerequisite: research.md complete.
+Prerequisite: `research.md` complete
 
-### Orchestration Design
+1. Map domain entities and configuration inputs to `data-model.md`:
+   - Cluster specification (distribution, name, configuration priority sources)
+   - Dependency result/state objects (engine readiness, AWS credentials)
+   - Telemetry summary structures (stage durations)
 
-- Keep all orchestration logic inside `cmd/cluster/up`, introducing file-scoped helper functions (e.g., `loadConfig`, `checkDependencies`, `recordTelemetry`, `provisionCluster`, `waitForReadiness`, `finalizeKubeconfig`).
-- Define small structs within the command file (such as `dependencyCheckResult`, `telemetrySummary`) to group related data without exporting new packages.
-- CLI handler (`NewUpCommand`/`runClusterUp`) remains the entry point, wiring helpers together and delegating output to `notify` helpers.
+2. Produce CLI contract definitions for success/error outputs in `/contracts/`:
+   - Describe expected notify/provisioner messages, including timing summaries and remediation hints.
+   - Capture error contracts for missing dependencies, timeout failures, and provisioning errors.
 
-### Control Flow
+3. Create failing contract tests aligned with the above contracts.
+   - Use Go test scaffolding in `cmd/cluster` to express expected behaviours before implementation.
 
-1. Load KSail project context (`ksail.yaml` + distribution-specific overlays) via config manager interfaces.
-2. Resolve and validate dependencies: container engine availability for Kind/K3d, AWS credentials/profile for EKS.
-3. Start telemetry scope (record `commandStart`).
-4. Inspect provider state; if cluster exists and no `--force`, reuse; otherwise delete/create as needed.
-5. Capture per-stage timestamps (`dependencyDuration`, `provisionDuration`, `readinessDuration`, `kubeconfigDuration`).
-6. Merge kubeconfig and set active context using `clientcmd.ModifyConfig` or existing provisioner helpers.
-7. Wait for readiness (poll nodes and namespace) respecting timeout.
-8. On success, emit notify/provisioner output augmented with concise telemetry summary (`slowestStage`, `totalDuration`). On failure, emit actionable guidance and attempt cleanup when safe.
+4. Outline integration scenarios in `quickstart.md` mapping to acceptance criteria:
+   - Local (Kind/K3d) provisioning happy path
+   - EKS provisioning with credentials
+   - Force recreation flow and dependency failure guidance
 
-### Dependency Validation
+5. Detail telemetry instrumentation strategy:
+   - Stage boundaries (dependency check, provisioning, readiness wait, kubeconfig merge)
+   - Ensure outputs surface total vs per-stage durations consistent with Constitution IV.
 
-- Kind/K3d: use `containerengine.AutoDetect` and check for running daemon socket. Provide remediation (`Start Docker/Podman`).
-- EKS: load AWS config (`config.LoadDefaultConfig`), ensure credentials retrieved, and highlight missing profile/permission issues.
+6. Update agent guidance by running `.specify/scripts/bash/update-agent-context.sh copilot` and recording new technologies or patterns.
 
-### Runtime Instrumentation
-
-- Implement a lightweight telemetry helper struct inside `cmd/cluster/up` to capture labelled durations and compute slowest stage + total runtime.
-- Ensure telemetry respects quiet/JSON modes by embedding summary within existing notify output (e.g., `success: ... • slowest stage: readiness=3m12s • total: 3m25s`).
-- Provide hooks so tests can inject fake clocks (via function parameters or interfaces) for deterministic assertions.
-
-### Readiness Waiter
-
-- Build rest config using resolved kubeconfig context.
-- Poll every 5 s: ensure all schedulable nodes Ready and default namespace accessible; fail with timeout after configured limit.
-- Differentiate between transient API errors and fatal conditions for actionable messaging.
-
-### Kubeconfig Management
-
-- Confirm expected context exists after provisioning; create/update entries using `clientcmd.ModifyConfig` when necessary.
-- Guard writes with file locking or safe write helper from `pkg/io`.
-
-- `cmd/cluster/up_test.go`: covers flag wiring, dependency failure messaging, readiness timeout exit codes, telemetry summary content, force semantics, and kubeconfig switching (using helper functions where necessary).
-- `cmd/cluster/up_internal_test.go`: exercises file-scoped helpers for dependency checks, readiness waits (with fake clientsets), telemetry calculations, and kubeconfig persistence using temp directories.
-
-### Agent Context Update
-
-- `.specify/scripts/bash/update-agent-context.sh copilot` executed on 2025-09-28 to sync guidance with the updated plan; rerun if significant dependencies change later.
-
-**Output**: `/specs/005-implement-the-description/data-model.md`, `/specs/005-implement-the-description/contracts/`, `/specs/005-implement-the-description/quickstart.md` (all complete), plus agent context update (pending run).
+Outputs: `/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/data-model.md`, `/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/contracts/`, `/Users/ndam/git-personal/monorepo/projects/ksail-go/specs/005-implement-the-description/quickstart.md`, updated agent context file.
 
 ## Phase 2: Task Planning Approach
 
 This section describes what the /tasks command will do - DO NOT execute during /plan
 
-- Load `.specify/templates/tasks-template.md` as base.
-- Seed setup + shared fixtures tasks (command helper scaffolding, testdata for kubeconfig/AWS stubs).
-- Create failing tests for dependency checks, readiness waiter, kubeconfig manager, telemetry helper, and CLI wiring—all within the `cmd/cluster` package.
-- Add implementation tasks for helper functions, dependency logic, readiness waiter, kubeconfig updates, telemetry helper, and CLI integration inside `cmd/cluster/up.go`.
-- Include integration tasks for wiring helper seams (dependency injection via function parameters) and ensuring existing provisioners are invoked correctly.
-- Generate polish tasks for docs, gofmt/go test/go tool cover, golangci-lint, telemetry review, and manual quickstart validation capturing emitted telemetry summary.
+**Task Generation Strategy**:
+
+- Load `.specify/templates/tasks-template.md` as base
+- Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
+- Each contract → contract test task [P]
+- Each entity → model creation task [P]
+- Each user story → integration test task
+- Add instrumentation tasks to capture runtime telemetry when constitution requires it
+- Implementation tasks to make tests pass
 
 **Ordering Strategy**:
 
-- Strict TDD order: author failing tests before implementation for each component.
-- Implement helpers in dependency order (config loader → dependency checker → readiness → kubeconfig → telemetry → runner → CLI).
-- Mark independent test cases ([P]) when they target separate files.
-- Reserve polish tasks until after integration, ensuring telemetry review occurs alongside manual quickstart run.
+- TDD order: Tests before implementation
+- Dependency order: Models before services before UI
+- Mark [P] for parallel execution (independent files)
 
-**Estimated Output**: ~21 tasks (already captured in `tasks.md`) covering setup, tests, implementation, integration, telemetry, docs, and validation.
+**Estimated Output**: 25-30 numbered, ordered tasks in tasks.md
 
-**IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan.
+**IMPORTANT**: This phase is executed by the /tasks command, NOT by /plan
 
 ## Phase 3+: Future Implementation
 
@@ -204,7 +207,7 @@ This checklist is updated during execution flow
 
 - [x] Phase 0: Research complete (/plan command)
 - [x] Phase 1: Design complete (/plan command)
-- [x] Phase 2: Task planning complete (/plan command - describe approach only)
+- [ ] Phase 2: Task planning complete (/plan command - describe approach only)
 - [ ] Phase 3: Tasks generated (/tasks command)
 - [ ] Phase 4: Implementation complete
 - [ ] Phase 5: Validation passed
@@ -214,7 +217,7 @@ This checklist is updated during execution flow
 - [x] Initial Constitution Check: PASS
 - [x] Post-Design Constitution Check: PASS
 - [x] All NEEDS CLARIFICATION resolved
-- [x] Complexity deviations documented
+- [ ] Complexity deviations documented
 
 ---
 *Based on Constitution v1.1.0 - See `/memory/constitution.md`*

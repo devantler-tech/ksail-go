@@ -1,5 +1,12 @@
 # Phase 0 Research – KSail Cluster Up Command
 
+## Decision: Honour configuration priority through Viper
+
+- **Rationale**: `pkg/config-manager/ksail.InitializeViper` already establishes the precedence chain (defaults < config files < environment variables < flags) and exposes bindings for nested fields. Reusing this instance ensures the command applies overrides in the mandated order (CLI flags → env → configuration files → defaults) without duplicating merge logic.
+- **Alternatives Considered**:
+  - Implementing manual merge of config structs in the command. Rejected to avoid divergence from global behaviour and reduce maintenance burden.
+  - Introducing a bespoke config overlay layer. Rejected because Viper already handles hierarchical sources and the constitution favours minimal dependencies.
+
 ## Decision: Reuse existing distribution provisioners
 
 - **Rationale**: The repository already exposes dedicated implementations in `pkg/provisioner/cluster/{kind,k3d,eks}` that satisfy the shared `ClusterProvisioner` interface. Wiring these packages keeps logic consistent with other cluster lifecycle commands and avoids duplicating provider-specific code paths.
@@ -11,7 +18,7 @@
 
 - **Rationale**: `pkg/config-manager/{kind,k3d,eks}` already encapsulate YAML loading, defaulting, and validation against upstream schemas. Using them aligns with constitution requirements on validation and prevents bypassing safety checks the CLI depends on.
 - **Alternatives Considered**:
-  - Manually reading YAML using Viper or `io.ReadFile`. Rejected; would skip validation helpers and duplicate loader logic.
+  - Manually reading YAML using Viper or `os.ReadFile`. Rejected; would skip validation helpers and duplicate loader logic.
   - Assuming defaults only for missing config files. Rejected because users expect explicit error messaging when config is malformed.
 
 ## Decision: Dependency checks before provisioning
@@ -34,3 +41,10 @@
 - **Alternatives Considered**:
   - Writing custom kubeconfig merge logic from scratch. Rejected in favour of using `clientcmd` helpers.
   - Leaving context unchanged and printing manual steps. Rejected; contradicts clarified requirement.
+
+## Decision: Telemetry & performance instrumentation
+
+- **Rationale**: The `telemetryRecorder` helper tracks per-stage and total durations with negligible overhead. Instrumenting stages like dependency checks, provisioning, readiness wait, and kubeconfig merge satisfies the constitution’s performance mandate while keeping output actionable.
+- **Alternatives Considered**:
+  - Integrating external tracing or metrics collectors. Rejected as unnecessary for CLI workflows and would bloat dependencies.
+  - Omitting telemetry in favour of manual timing. Rejected; explicitly violates Constitution IV and weakens observability.
