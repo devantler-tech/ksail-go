@@ -61,7 +61,10 @@ func (c *ClusterProvisionerStub) Stop(ctx context.Context, name string) error {
 // List simulates cluster listing.
 func (c *ClusterProvisionerStub) List(ctx context.Context) ([]string, error) {
 	c.ListCalls++
-	return c.ListResult, c.ListError
+	if c.ListError != nil {
+		return nil, c.ListError
+	}
+	return c.ListResult, nil
 }
 
 // Exists simulates cluster existence check.
