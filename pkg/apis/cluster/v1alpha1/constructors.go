@@ -46,7 +46,6 @@ func NewClusterOptions() Options {
 	return Options{
 		Kind:      NewClusterOptionsKind(),
 		K3d:       NewClusterOptionsK3d(),
-		Tind:      NewClusterOptionsTind(),
 		Cilium:    NewClusterOptionsCilium(),
 		Kubectl:   NewClusterOptionsKubectl(),
 		Flux:      NewClusterOptionsFlux(),
@@ -64,11 +63,6 @@ func NewClusterOptionsKind() OptionsKind {
 // NewClusterOptionsK3d creates a new OptionsK3d with default values.
 func NewClusterOptionsK3d() OptionsK3d {
 	return OptionsK3d{}
-}
-
-// NewClusterOptionsTind creates a new OptionsTind with default values.
-func NewClusterOptionsTind() OptionsTind {
-	return OptionsTind{}
 }
 
 // NewClusterOptionsCilium creates a new OptionsCilium with default values.

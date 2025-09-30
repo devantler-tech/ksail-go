@@ -146,9 +146,56 @@ func (v *Validator) validateDistribution(
 	}
 }
 
+// getExpectedContextName returns the expected Kubernetes context name based on distribution.
+func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
+	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
+
+	switch config.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		return "kind-" + distributionName
+	case v1alpha1.DistributionK3d:
+		return "k3d-" + distributionName
+	default:
+		return ""
+	}
+}
+
+// getDistributionConfigName extracts the cluster name from the distribution configuration.
+func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution) string {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return v.getKindConfigName()
+	case v1alpha1.DistributionK3d:
+		return v.getK3dConfigName()
+	default:
+		return ""
+	}
+}
+
+// getKindConfigName returns the Kind configuration name if available.
+func (v *Validator) getKindConfigName() string {
+	if v.kindConfig != nil && v.kindConfig.Name != "" {
+		return v.kindConfig.Name
+	}
+
+	// Return default Kind cluster name when no config is provided
+	return "kind"
+}
+
+// getK3dConfigName returns the K3d configuration name if available.
+func (v *Validator) getK3dConfigName() string {
+	if v.k3dConfig != nil && v.k3dConfig.Name != "" {
+		return v.k3dConfig.Name
+	}
+
+	// Return default K3d cluster name when no config is provided
+	return "k3s-default"
+}
+
 // isUnsupportedDistribution checks if the distribution is not supported for context validation.
 func (v *Validator) isUnsupportedDistribution(distribution v1alpha1.Distribution) bool {
-	return distribution == v1alpha1.DistributionTind
+	// All distributions are currently supported
+	return false
 }
 
 // addUnsupportedDistributionError adds validation errors for unsupported distributions.
@@ -174,73 +221,5 @@ func (v *Validator) addUnsupportedDistributionError(
 			CurrentValue:  distribution,
 			FixSuggestion: "Report this as a bug - K3d should be supported",
 		})
-	case v1alpha1.DistributionTind:
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "Tind distribution is not yet supported for context validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind or K3d",
-		})
-	default:
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unknown distribution for context validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind or K3d",
-		})
 	}
-}
-
-// getExpectedContextName returns the expected context name for the given configuration.
-// Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted
-// from the distribution config. If no cluster name is found, "ksail-default" is used as the ultimate fallback.
-func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
-	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
-
-	switch config.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		return "kind-" + distributionName
-	case v1alpha1.DistributionK3d:
-		return "k3d-" + distributionName
-	case v1alpha1.DistributionTind:
-		// Tind context pattern would be similar to k3d
-		return "tind-" + distributionName
-	default:
-		return ""
-	}
-}
-
-// getDistributionConfigName extracts the cluster name from the distribution configuration.
-func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return v.getKindConfigName()
-	case v1alpha1.DistributionK3d:
-		return v.getK3dConfigName()
-	case v1alpha1.DistributionTind:
-		// Tind would have similar config name extraction
-		return "tind"
-	default:
-		return ""
-	}
-}
-
-// getKindConfigName returns the Kind configuration name if available.
-func (v *Validator) getKindConfigName() string {
-	if v.kindConfig != nil && v.kindConfig.Name != "" {
-		return v.kindConfig.Name
-	}
-
-	// Return default Kind cluster name when no config is provided
-	return "kind"
-}
-
-// getK3dConfigName returns the K3d configuration name if available.
-func (v *Validator) getK3dConfigName() string {
-	if v.k3dConfig != nil && v.k3dConfig.Name != "" {
-		return v.k3dConfig.Name
-	}
-
-	// Return default K3d cluster name when no config is provided
-	return "k3s-default"
 }

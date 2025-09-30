@@ -77,13 +77,11 @@ const (
 	DistributionKind Distribution = "Kind"
 	// DistributionK3d is the K3d distribution.
 	DistributionK3d Distribution = "K3d"
-	// DistributionTind is the Talos in Docker distribution.
-	DistributionTind Distribution = "Tind"
 )
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionK3d, DistributionKind, DistributionTind}
+	return []Distribution{DistributionK3d, DistributionKind}
 }
 
 // validCNIs returns supported CNI values.
@@ -186,7 +184,6 @@ func validReconciliationTools() []ReconciliationTool {
 type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
-	Tind OptionsTind `json:"talosInDocker,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
@@ -206,11 +203,6 @@ type OptionsKind struct {
 // OptionsK3d defines options specific to the K3d distribution.
 type OptionsK3d struct {
 	// Add any specific fields for the K3d distribution here.
-}
-
-// OptionsTind defines options specific to the Tind distribution.
-type OptionsTind struct {
-	// Add any specific fields for the Tind distribution here.
 }
 
 // OptionsCilium defines options for the Cilium CNI.
@@ -256,8 +248,8 @@ func (d *Distribution) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionTind)
+	return fmt.Errorf("%w: %s (valid options: %s, %s)",
+		ErrInvalidDistribution, value, DistributionKind, DistributionK3d)
 }
 
 // Set for ReconciliationTool.

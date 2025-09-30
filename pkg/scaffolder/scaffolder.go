@@ -23,7 +23,6 @@ import (
 
 // Error definitions for distribution handling.
 var (
-	ErrTindNotImplemented      = errors.New("talos-in-docker distribution is not yet implemented")
 	ErrUnknownDistribution     = errors.New("provided distribution is unknown")
 	ErrKSailConfigGeneration   = errors.New("failed to generate KSail configuration")
 	ErrKindConfigGeneration    = errors.New("failed to generate Kind configuration")
@@ -35,7 +34,6 @@ var (
 const (
 	KindConfigFile = "kind.yaml"
 	K3dConfigFile  = "k3d.yaml"
-	TindConfigFile = "tind.yaml"
 )
 
 // getExpectedContextName calculates the expected context name for a distribution using default cluster names.
@@ -53,9 +51,6 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
 
 		return "k3d-" + distributionName
-	case v1alpha1.DistributionTind:
-		// Tind is not yet implemented
-		return ""
 	default:
 		return ""
 	}
@@ -69,8 +64,6 @@ func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) strin
 		return KindConfigFile
 	case v1alpha1.DistributionK3d:
 		return K3dConfigFile
-	case v1alpha1.DistributionTind:
-		return TindConfigFile
 	default:
 		return KindConfigFile // fallback default
 	}
@@ -253,8 +246,6 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 		return s.generateKindConfig(output, force)
 	case v1alpha1.DistributionK3d:
 		return s.generateK3dConfig(output, force)
-	case v1alpha1.DistributionTind:
-		return ErrTindNotImplemented
 	default:
 		return ErrUnknownDistribution
 	}

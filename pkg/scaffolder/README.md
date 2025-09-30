@@ -54,7 +54,6 @@ The scaffold creator generates the following files based on the cluster configur
 
 - **Kind**: Generates `kind.yaml` with a basic cluster configuration
 - **K3d**: Generates `k3d.yaml` with a simple k3d cluster configuration
-- **Tind**: Not yet implemented (returns error)
 
 ---
 

@@ -53,10 +53,6 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 		},
 		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
 		{
-			name:         "Tind",
-			distribution: v1alpha1.DistributionTind,
-			expected:     scaffolder.TindConfigFile,
-		},
 		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
 	}
 
@@ -156,13 +152,6 @@ func TestScaffoldErrorHandling(t *testing.T) {
 	t.Run("distribution error paths", func(t *testing.T) {
 		t.Parallel()
 
-		// Test Tind not implemented
-		tindCluster := createTindCluster("tind-test")
-		scaffolderInstance := scaffolder.NewScaffolder(tindCluster, io.Discard)
-
-		err := scaffolderInstance.Scaffold("/tmp/test-tind/", false)
-		require.Error(t, err)
-		require.ErrorIs(t, err, scaffolder.ErrTindNotImplemented)
 		snaps.MatchSnapshot(t, err.Error())
 
 		// Test Unknown distribution
@@ -366,13 +355,6 @@ func getScaffoldTestCases() []scaffoldTestCase {
 			expectError: false,
 		},
 		{
-			name:        "Tind distribution not implemented",
-			setupFunc:   createTindCluster,
-			outputPath:  "/tmp/test-tind/",
-			force:       true,
-			expectError: true,
-		},
-		{
 			name:        "Unknown distribution",
 			setupFunc:   createUnknownCluster,
 			outputPath:  "/tmp/test-unknown/",
@@ -484,12 +466,6 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 	return c
 }
 
-func createTindCluster(name string) v1alpha1.Cluster {
-	c := createTestCluster(name)
-	c.Spec.Distribution = v1alpha1.DistributionTind
-
-	return c
-}
 
 func createUnknownCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)
