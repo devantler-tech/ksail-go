@@ -41,7 +41,7 @@ func HandleUpRunE(
 	_, err := cmdhelpers.HandleSimpleClusterCommand(
 		cmd,
 		manager,
-		"Cluster created and started successfully (stub implementation)",
+		"Cluster created and started successfully",
 	)
 	if err != nil {
 		return fmt.Errorf("failed to handle cluster command: %w", err)

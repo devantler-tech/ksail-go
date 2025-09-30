@@ -2,6 +2,10 @@ package stubs
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
+
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 )
 
 // GeneratorStub is a stub implementation of generator.Generator[T, Options] interface.
@@ -30,7 +34,19 @@ func (g *GeneratorStub[T, Options]) Generate(model T, opts Options) (string, err
 	if g.GenerateError != nil {
 		return "", g.GenerateError
 	}
-	return g.GenerateResult, nil
+	
+	content := g.GenerateResult
+	
+	// If this is a yamlgenerator.Options and has an Output path, write the file
+	if outputOpts, ok := any(opts).(yamlgenerator.Options); ok && outputOpts.Output != "" {
+		// Write the content to the file
+		err := writeStubFile(content, outputOpts.Output, outputOpts.Force)
+		if err != nil {
+			return "", err
+		}
+	}
+	
+	return content, nil
 }
 
 // WithResult configures the stub to return the specified content.
@@ -55,4 +71,21 @@ func (g *GeneratorStub[T, Options]) WithGenerationError(message string) *Generat
 // CallCount returns the number of times Generate was called.
 func (g *GeneratorStub[T, Options]) CallCount() int {
 	return g.callCount
+}
+
+// writeStubFile writes content to a file, creating directories as needed.
+func writeStubFile(content, outputPath string, force bool) error {
+	// Check if file exists and force flag
+	if _, err := os.Stat(outputPath); err == nil && !force {
+		return errors.New("file already exists and force is false")
+	}
+
+	// Create directory if it doesn't exist
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+
+	// Write the file
+	return os.WriteFile(outputPath, []byte(content), 0o644)
 }

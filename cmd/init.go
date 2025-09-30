@@ -7,7 +7,8 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
+	"github.com/devantler-tech/ksail-go/pkg/scaffolderfactory"
+	"github.com/devantler-tech/ksail-go/pkg/stubconfig"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
 )
@@ -73,8 +74,11 @@ func HandleInitRunE(
 	// Get the force flag value
 	force := configManager.Viper.GetBool("force")
 
+	// Check if stub mode is enabled
+	useStubs := stubconfig.IsStubMode(cmd)
+
 	// Create scaffolder and generate project files
-	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
+	scaffolderInstance := scaffolderfactory.NewScaffolder(*cluster, cmd.OutOrStdout(), useStubs)
 
 	cmd.Println()
 	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project... ")

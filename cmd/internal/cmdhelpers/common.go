@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/stubconfig"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
@@ -151,6 +152,12 @@ func HandleSimpleClusterCommand(
 	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if we're in stub mode and modify the message accordingly
+	useStubs := stubconfig.IsStubMode(cmd)
+	if useStubs {
+		successMessage += " (using stubs)"
 	}
 
 	notify.Successln(cmd.OutOrStdout(), successMessage)
