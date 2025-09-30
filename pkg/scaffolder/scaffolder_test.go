@@ -52,7 +52,6 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 			expected:     scaffolder.KindConfigFile,
 		},
 		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
-		{
 		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
 	}
 
@@ -152,13 +151,11 @@ func TestScaffoldErrorHandling(t *testing.T) {
 	t.Run("distribution error paths", func(t *testing.T) {
 		t.Parallel()
 
-		snaps.MatchSnapshot(t, err.Error())
-
 		// Test Unknown distribution
 		unknownCluster := createUnknownCluster("unknown-test")
-		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster, io.Discard)
+		scaffolderInstance := scaffolder.NewScaffolder(unknownCluster, io.Discard)
 
-		err = scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
+		err := scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
 		require.Error(t, err)
 		require.ErrorIs(t, err, scaffolder.ErrUnknownDistribution)
 		snaps.MatchSnapshot(t, err.Error())
@@ -465,7 +462,6 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 
 	return c
 }
-
 
 func createUnknownCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)

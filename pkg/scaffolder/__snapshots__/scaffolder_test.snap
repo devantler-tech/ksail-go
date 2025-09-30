@@ -47,10 +47,6 @@ resources: []
 ---
 
 [TestScaffoldErrorHandling/distribution_error_paths - 1]
-talos-in-docker distribution is not yet implemented
----
-
-[TestScaffoldErrorHandling/distribution_error_paths - 2]
 provided distribution is unknown
 ---
 

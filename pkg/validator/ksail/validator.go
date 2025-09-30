@@ -123,8 +123,8 @@ func (v *Validator) validateDistribution(
 			message = "distribution is required"
 			fixSuggestion = "Set spec.distribution to a supported distribution type"
 		} else {
-			message = "invalid distribution value"
-			fixSuggestion = "Use a valid distribution type: Kind or K3d"
+			message = "unknown distribution"
+			fixSuggestion = "Use a supported distribution: Kind or K3d"
 		}
 
 		result.AddError(validator.ValidationError{

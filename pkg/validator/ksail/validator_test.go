@@ -884,10 +884,10 @@ func testInvalidDistributionValue(t *testing.T) {
 
 		for _, err := range result.Errors {
 			if err.Field == specDistributionField &&
-				strings.Contains(err.Message, "invalid distribution value") {
+				strings.Contains(err.Message, "unknown distribution") {
 				found = true
 
-				assert.Contains(t, err.FixSuggestion, "Use a valid distribution type")
+				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
 
 				break
 			}
