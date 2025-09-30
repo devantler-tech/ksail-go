@@ -75,7 +75,6 @@ func TestDistributionIsValid(t *testing.T) {
 	validCases := []v1alpha1.Distribution{
 		v1alpha1.DistributionKind,
 		v1alpha1.DistributionK3d,
-		v1alpha1.DistributionEKS,
 		v1alpha1.DistributionTind,
 	}
 
@@ -313,7 +312,6 @@ func TestNewClusterOptions(t *testing.T) {
 	assert.NotNil(t, options.Kind)
 	assert.NotNil(t, options.K3d)
 	assert.NotNil(t, options.Tind)
-	assert.NotNil(t, options.EKS)
 	assert.NotNil(t, options.Cilium)
 	assert.NotNil(t, options.Kubectl)
 	assert.NotNil(t, options.Flux)
@@ -347,14 +345,6 @@ func TestNewClusterOptionsTind(t *testing.T) {
 
 	// OptionsTind is an empty struct, just verify it's created
 	assert.NotNil(t, options)
-}
-
-func TestNewClusterOptionsEKS(t *testing.T) {
-	t.Parallel()
-
-	options := v1alpha1.NewClusterOptionsEKS()
-
-	assert.Empty(t, options.AWSProfile)
 }
 
 func TestNewClusterOptionsCilium(t *testing.T) {

@@ -778,7 +778,7 @@ func TestNewValidationError(t *testing.T) {
 		"invalid distribution type",
 		"InvalidType",
 		"Kind",
-		"Use a valid distribution like Kind, K3d, or EKS",
+		"Use a valid distribution like Kind or K3d",
 		location,
 	)
 
@@ -786,7 +786,7 @@ func TestNewValidationError(t *testing.T) {
 	assert.Equal(t, "invalid distribution type", err.Message)
 	assert.Equal(t, "InvalidType", err.CurrentValue)
 	assert.Equal(t, "Kind", err.ExpectedValue)
-	assert.Equal(t, "Use a valid distribution like Kind, K3d, or EKS", err.FixSuggestion)
+	assert.Equal(t, "Use a valid distribution like Kind or K3d", err.FixSuggestion)
 	assert.Equal(t, location, err.Location)
 }
 

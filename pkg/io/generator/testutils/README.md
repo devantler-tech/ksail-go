@@ -42,7 +42,6 @@ This package is used by generator packages for testing:
 
 - `pkg/io/generator/kind`: Kind configuration generation testing
 - `pkg/io/generator/k3d`: K3d configuration generation testing
-- `pkg/io/generator/eks`: EKS configuration generation testing
 - `pkg/io/generator/yaml`: YAML generation testing
 - `pkg/io/generator/kustomization`: Kustomization file generation testing
 

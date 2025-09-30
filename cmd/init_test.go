@@ -396,7 +396,7 @@ func TestInitCmdDirectFlags(t *testing.T) {
 
 	// Test direct CLI flags functionality
 	// This test verifies that:
-	// 1. --distribution flag accepts valid values (Kind, K3d, EKS)
+	// 1. --distribution flag accepts valid values (Kind, K3d)
 	// 2. Generated files reflect the distribution choice
 	// 3. Flags integrate with ConfigManager properly
 
