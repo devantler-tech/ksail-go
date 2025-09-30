@@ -73,15 +73,9 @@ func HandleUpRunE(
 
 	fmt.Fprintln(manager.Writer)
 	notify.TitleMessage(manager.Writer, "🚀", notify.NewMessage("Provisioning cluster..."))
-
 	if err := provisionCluster(ctx, manager.Writer, tmr, provisioner, force); err != nil {
 		return err
 	}
-
-	notify.SuccessMessage(
-		manager.Writer,
-		notify.NewMessage("cluster is ready").WithTiming(tmr.Total(), tmr.Stage()),
-	)
 
 	return nil
 }
@@ -150,16 +144,6 @@ func provisionCluster(
 ) error {
 	exists, err := provisioner.Exists(ctx, "")
 	if err != nil {
-		notify.ErrorMessage(
-			writer,
-			notify.NewMessage(
-				fmt.Sprintf(
-					"failed to check cluster existence after %s",
-					tmr.Total().Round(time.Second),
-				),
-			),
-		)
-		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
 		return fmt.Errorf("failed to check cluster existence: %w", err)
 	}
 
@@ -188,19 +172,17 @@ func forceRecreateCluster(
 	tmr *timer.Timer,
 	provisioner clusterprovisioner.ClusterProvisioner,
 ) error {
-	notify.ActivityMessage(writer, notify.NewMessage("force flag set, deleting existing cluster"))
+	tmr.StartStage()
+	notify.ActivityMessage(writer, notify.NewMessage("destroying existing cluster"))
 
 	if err := provisioner.Delete(ctx, ""); err != nil {
-		notify.ErrorMessage(
-			writer,
-			notify.NewMessage(
-				fmt.Sprintf("failed to delete cluster after %s", tmr.Total().Round(time.Second)),
-			),
-		)
-		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-		return fmt.Errorf("failed to delete cluster during force recreation: %w", err)
+		return fmt.Errorf("failed to destroy cluster: %w", err)
 	}
 
+	notify.SuccessMessage(
+		writer,
+		notify.NewMessage("existing cluster destroyed").WithTiming(tmr.Total(), tmr.Stage()),
+	)
 	return nil
 }
 
@@ -211,18 +193,16 @@ func createCluster(
 	tmr *timer.Timer,
 	provisioner clusterprovisioner.ClusterProvisioner,
 ) error {
+	tmr.StartStage()
 	notify.ActivityMessage(writer, notify.NewMessage("creating cluster"))
 
 	if err := provisioner.Create(ctx, ""); err != nil {
-		notify.ErrorMessage(
-			writer,
-			notify.NewMessage(
-				fmt.Sprintf("failed to create cluster after %s", tmr.Total().Round(time.Second)),
-			),
-		)
-		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
+	notify.SuccessMessage(
+		writer,
+		notify.NewMessage("cluster created").WithTiming(tmr.Total(), tmr.Stage()),
+	)
 	return nil
 }
