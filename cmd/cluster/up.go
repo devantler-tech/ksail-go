@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -54,144 +55,29 @@ func HandleUpRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	ctx := context.Background()
-
-	// Start timing
 	tmr := timer.New()
-
-	// Load configuration (already implements precedence: flags → env → files → defaults)
+	ctx := context.Background()
 	config, err := manager.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
-
-	// Check if force flag is set (pass empty string to use config name)
 	force, _ := cmd.Flags().GetBool("force")
-
-	// Add section header for provisioning
-	fmt.Fprintln(manager.Writer)
-	notify.TitleMessage(manager.Writer, "🚀", notify.NewMessage("Provisioning cluster..."))
-
-	// Check dependencies before provisioning
-	tmr.StartStage()
-	notify.ActivityMessage(manager.Writer, notify.NewMessage("checking dependencies"))
-	err = checkDependencies(config)
+	engine, err := containerengine.GetAutoDetectedClient()
 	if err != nil {
-		notify.ErrorMessage(
-			manager.Writer,
-			notify.NewMessage(
-				fmt.Sprintf("dependency check failed after %s", tmr.Total().Round(time.Second)),
-			),
-		)
-		notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-		return fmt.Errorf("dependency check failed: %w", err)
+		return fmt.Errorf("failed to get container engine client: %w", err)
 	}
-	notify.SuccessMessage(
-		manager.Writer,
-		notify.NewMessage("dependencies checked").WithTiming(tmr.Total(), tmr.Stage()),
-	)
-
-	// Wire the correct provisioner and config manager
-	tmr.StartStage()
-	notify.ActivityMessage(manager.Writer, notify.NewMessage("setting up provisioner"))
-	provisioner, err := createProvisioner(config)
+	provisioner, err := newProvisioner(config, *engine)
 	if err != nil {
-		notify.ErrorMessage(
-			manager.Writer,
-			notify.NewMessage(
-				fmt.Sprintf(
-					"failed to create provisioner after %s",
-					tmr.Total().Round(time.Second),
-				),
-			),
-		)
-		notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
 		return fmt.Errorf("failed to create provisioner: %w", err)
 	}
 
-	// Handle force recreation or idempotent reuse
-	exists, err := provisioner.Exists(ctx, "")
-	if err != nil {
-		notify.ErrorMessage(
-			manager.Writer,
-			notify.NewMessage(
-				fmt.Sprintf(
-					"failed to check cluster existence after %s",
-					tmr.Total().Round(time.Second),
-				),
-			),
-		)
-		notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-		return fmt.Errorf("failed to check cluster existence: %w", err)
+	fmt.Fprintln(manager.Writer)
+	notify.TitleMessage(manager.Writer, "🚀", notify.NewMessage("Provisioning cluster..."))
+
+	if err := provisionCluster(ctx, manager.Writer, tmr, provisioner, force); err != nil {
+		return err
 	}
 
-	if exists && force {
-		notify.ActivityMessage(
-			manager.Writer,
-			notify.NewMessage("force flag set, deleting existing cluster"),
-		)
-		err = provisioner.Delete(ctx, "")
-		if err != nil {
-			notify.ErrorMessage(
-				manager.Writer,
-				notify.NewMessage(
-					fmt.Sprintf(
-						"failed to delete cluster after %s",
-						tmr.Total().Round(time.Second),
-					),
-				),
-			)
-			notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-			return fmt.Errorf("failed to delete cluster during force recreation: %w", err)
-		}
-		exists = false
-	}
-
-	if !exists {
-		notify.ActivityMessage(manager.Writer, notify.NewMessage("creating cluster"))
-		err = provisioner.Create(ctx, "")
-		if err != nil {
-			notify.ErrorMessage(
-				manager.Writer,
-				notify.NewMessage(
-					fmt.Sprintf(
-						"failed to create cluster after %s",
-						tmr.Total().Round(time.Second),
-					),
-				),
-			)
-			notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-			return fmt.Errorf("failed to create cluster: %w", err)
-		}
-	} else {
-		notify.ActivityMessage(manager.Writer, notify.NewMessage("cluster already exists, starting"))
-		err = provisioner.Start(ctx, "")
-		if err != nil {
-			notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("failed to start cluster after %s", tmr.Total().Round(time.Second))))
-			notify.ErrorMessage(manager.Writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
-			return fmt.Errorf("failed to start cluster: %w", err)
-		}
-	}
-
-	// Wait for readiness
-	tmr.StartStage()
-	notify.ActivityMessage(manager.Writer, notify.NewMessage("waiting for cluster readiness"))
-
-	// Placeholder for readiness polling - will be implemented in T008
-	// For now, mark as ready immediately to pass basic tests
-
-	// Merge kubeconfig and set context
-	notify.ActivityMessage(
-		manager.Writer,
-		notify.NewMessage(
-			fmt.Sprintf("updating kubeconfig at %s", config.Spec.Connection.Kubeconfig),
-		),
-	)
-
-	// Placeholder for kubeconfig merge - will be implemented in T008
-	// Kind/K3d provisioners already update kubeconfig automatically
-
-	// Emit success output with timing
 	notify.SuccessMessage(
 		manager.Writer,
 		notify.NewMessage("cluster is ready").WithTiming(tmr.Total(), tmr.Stage()),
@@ -200,71 +86,143 @@ func HandleUpRunE(
 	return nil
 }
 
-// checkDependencies verifies prerequisites are met for the selected distribution
-func checkDependencies(config *v1alpha1.Cluster) error {
-	switch config.Spec.Distribution {
-	case v1alpha1.DistributionKind, v1alpha1.DistributionK3d:
-		// Check Docker/Podman availability
-		engine, err := containerengine.GetAutoDetectedClient()
-		if err != nil {
-			return fmt.Errorf(
-				"container engine (Docker/Podman) required but not available: %w\nPlease start Docker or Podman and rerun 'ksail cluster up'",
-				err,
-			)
-		}
-		if engine == nil {
-			return fmt.Errorf(
-				"no container engine detected\nPlease install and start Docker or Podman, then rerun 'ksail cluster up'",
-			)
-		}
-	}
-	return nil
-}
-
-// createProvisioner instantiates the correct provisioner based on distribution
-func createProvisioner(config *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
+// newProvisioner creates and wires the cluster provisioner based on distribution
+func newProvisioner(
+	config *v1alpha1.Cluster,
+	engine containerengine.ContainerEngine,
+) (clusterprovisioner.ClusterProvisioner, error) {
 	switch config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		// Load Kind-specific configuration
-		kindConfigManager := kindconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
-		kindConfig, err := kindConfigManager.LoadConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load Kind configuration: %w", err)
-		}
-
-		// Wire real Kind provisioner with cluster.Provider adapter and Docker client
-		provider := kindprovisioner.NewKindProviderAdapter(cluster.NewProvider())
-		engine, err := containerengine.GetAutoDetectedClient()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get container engine client: %w", err)
-		}
-
-		return kindprovisioner.NewKindClusterProvisioner(
-			kindConfig,
-			config.Spec.Connection.Kubeconfig,
-			provider,
-			engine.Client,
-		), nil
-
+		return newKindProvisioner(config, engine)
 	case v1alpha1.DistributionK3d:
-		// Load K3d-specific configuration
-		k3dConfigManager := k3dconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
-		k3dConfig, err := k3dConfigManager.LoadConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to load K3d configuration: %w", err)
-		}
-
-		// Wire K3d provisioner with adapters
-		clientAdapter := k3dprovisioner.NewK3dClientAdapter()
-		configAdapter := k3dprovisioner.NewK3dConfigAdapter()
-
-		return k3dprovisioner.NewK3dClusterProvisioner(
-			k3dConfig,
-			clientAdapter,
-			configAdapter,
-		), nil
-
+		return newK3dProvisioner(config)
 	default:
 		return nil, fmt.Errorf("unsupported distribution: %s", config.Spec.Distribution)
 	}
+}
+
+// newKindProvisioner creates a Kind cluster provisioner
+func newKindProvisioner(
+	config *v1alpha1.Cluster,
+	engine containerengine.ContainerEngine,
+) (clusterprovisioner.ClusterProvisioner, error) {
+	kindConfigManager := kindconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+	kindConfig, err := kindConfigManager.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load Kind configuration: %w", err)
+	}
+
+	provider := kindprovisioner.NewKindProviderAdapter(cluster.NewProvider())
+
+	return kindprovisioner.NewKindClusterProvisioner(
+		kindConfig,
+		config.Spec.Connection.Kubeconfig,
+		provider,
+		engine.Client,
+	), nil
+}
+
+// newK3dProvisioner creates a K3d cluster provisioner
+func newK3dProvisioner(config *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
+	k3dConfigManager := k3dconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+	k3dConfig, err := k3dConfigManager.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load K3d configuration: %w", err)
+	}
+
+	clientAdapter := k3dprovisioner.NewK3dClientAdapter()
+	configAdapter := k3dprovisioner.NewK3dConfigAdapter()
+
+	return k3dprovisioner.NewK3dClusterProvisioner(
+		k3dConfig,
+		clientAdapter,
+		configAdapter,
+	), nil
+}
+
+// checkPrerequisites verifies prerequisites are met for the selected distribution
+func provisionCluster(
+	ctx context.Context,
+	writer io.Writer,
+	tmr *timer.Timer,
+	provisioner clusterprovisioner.ClusterProvisioner,
+	force bool,
+) error {
+	exists, err := provisioner.Exists(ctx, "")
+	if err != nil {
+		notify.ErrorMessage(
+			writer,
+			notify.NewMessage(
+				fmt.Sprintf(
+					"failed to check cluster existence after %s",
+					tmr.Total().Round(time.Second),
+				),
+			),
+		)
+		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
+		return fmt.Errorf("failed to check cluster existence: %w", err)
+	}
+
+	if exists {
+		if !force {
+			return fmt.Errorf("cluster already exists (use --force to recreate)")
+		}
+
+		if err := forceRecreateCluster(ctx, writer, tmr, provisioner); err != nil {
+			return err
+		}
+		exists = false
+	}
+
+	if !exists {
+		return createCluster(ctx, writer, tmr, provisioner)
+	}
+
+	return nil
+}
+
+// forceRecreateCluster deletes an existing cluster for force recreation
+func forceRecreateCluster(
+	ctx context.Context,
+	writer io.Writer,
+	tmr *timer.Timer,
+	provisioner clusterprovisioner.ClusterProvisioner,
+) error {
+	notify.ActivityMessage(writer, notify.NewMessage("force flag set, deleting existing cluster"))
+
+	if err := provisioner.Delete(ctx, ""); err != nil {
+		notify.ErrorMessage(
+			writer,
+			notify.NewMessage(
+				fmt.Sprintf("failed to delete cluster after %s", tmr.Total().Round(time.Second)),
+			),
+		)
+		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
+		return fmt.Errorf("failed to delete cluster during force recreation: %w", err)
+	}
+
+	return nil
+}
+
+// createCluster provisions a new cluster
+func createCluster(
+	ctx context.Context,
+	writer io.Writer,
+	tmr *timer.Timer,
+	provisioner clusterprovisioner.ClusterProvisioner,
+) error {
+	notify.ActivityMessage(writer, notify.NewMessage("creating cluster"))
+
+	if err := provisioner.Create(ctx, ""); err != nil {
+		notify.ErrorMessage(
+			writer,
+			notify.NewMessage(
+				fmt.Sprintf("failed to create cluster after %s", tmr.Total().Round(time.Second)),
+			),
+		)
+		notify.ErrorMessage(writer, notify.NewMessage(fmt.Sprintf("Error: %v", err)))
+		return fmt.Errorf("failed to create cluster: %w", err)
+	}
+
+	return nil
 }
