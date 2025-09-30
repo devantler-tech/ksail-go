@@ -1,6 +1,6 @@
 # KSail-Go
 
-KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It provides declarative cluster provisioning, workload management, and lifecycle operations for Kind, K3d, and EKS distributions.
+KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It provides declarative cluster provisioning, workload management, and lifecycle operations for Kind and K3d distributions.
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
@@ -106,9 +106,6 @@ rm -rf k8s kind.yaml ksail.yaml
 ```bash
 # Test K3d distribution
 ./ksail init --distribution K3d
-
-# Test EKS distribution
-./ksail init --distribution EKS
 ```
 
 ### System Tests
@@ -117,7 +114,6 @@ The CI runs comprehensive system tests that validate:
 
 - `init --distribution Kind`
 - `init --distribution K3d`
-- `init --distribution EKS`
 
 Each runs the complete lifecycle: init → up → status → list → start → reconcile → down
 
@@ -158,7 +154,7 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 ### Common Development Locations
 
 - **Adding new CLI commands**: `cmd/*.go` + corresponding tests
-- **Cluster provider logic**: `pkg/provisioner/cluster/{kind,k3d,eks}/`
+- **Cluster provider logic**: `pkg/provisioner/cluster/{kind,k3d}/`
 - **Configuration handling**: `pkg/config-manager/`
 - **File generation**: `pkg/io/generator/`
 - **Test utilities**: `internal/testutils/` and package-specific `testutils/`
@@ -192,7 +188,7 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 The CI pipeline (`.github/workflows/ci.yaml`) runs:
 
 1. **Standard Go CI**: Build, test, lint using reusable workflows
-2. **System Tests**: Matrix testing across Kind, K3d, and EKS distributions
+2. **System Tests**: Matrix testing across Kind and K3d distributions
 3. **Full lifecycle validation**: Each distribution tested through complete workflow
 
 ### Pre-commit Hooks
@@ -223,7 +219,6 @@ Install pre-commit hooks: `pre-commit install`
 - `github.com/spf13/cobra`: CLI framework
 - `sigs.k8s.io/kind`: Kind cluster management
 - `github.com/k3d-io/k3d/v5`: K3d cluster management
-- `github.com/weaveworks/eksctl`: EKS cluster management
 - `k8s.io/client-go`: Kubernetes client libraries
 
 ## Common Tasks Reference

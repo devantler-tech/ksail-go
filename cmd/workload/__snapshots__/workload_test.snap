@@ -1,6 +1,6 @@
 
 [TestWorkloadHelpSnapshots/apply - 1]
-Apply local Kubernetes manifests to your cluster.
+Apply manifests to the Kubernetes cluster using Kubectl.
 
 Usage:
   ksail workload apply [flags]
@@ -41,7 +41,7 @@ Use "ksail workload [command] --help" for more information about a command.
 ---
 
 [TestWorkloadHelpSnapshots/reconcile - 1]
-Trigger reconciliation tooling to sync local workloads with your cluster.
+Reconcile Flux resources to ensure workloads match desired state.
 
 Usage:
   ksail workload reconcile [flags]

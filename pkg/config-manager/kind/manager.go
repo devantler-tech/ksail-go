@@ -4,9 +4,11 @@ package kind
 
 import (
 	"fmt"
+	"io"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	kindvalidator "github.com/devantler-tech/ksail-go/pkg/validator/kind"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -15,6 +17,7 @@ import (
 // It provides file-based configuration loading without Viper dependency.
 type ConfigManager struct {
 	configPath   string
+	writer       io.Writer
 	config       *v1alpha4.Cluster
 	configLoaded bool
 }
@@ -51,11 +54,12 @@ func NewKindCluster(name, apiVersion, kind string) *v1alpha4.Cluster {
 
 // NewConfigManager creates a new configuration manager for Kind cluster configurations.
 // configPath specifies the path to the Kind configuration file to load.
-func NewConfigManager(configPath string) *ConfigManager {
+func NewConfigManager(configPath string, writer io.Writer) *ConfigManager {
 	return &ConfigManager{
 		configPath:   configPath,
 		config:       nil,
 		configLoaded: false,
+		writer:       writer,
 	}
 }
 
@@ -86,10 +90,24 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 
 	// Validate the loaded configuration
 	validator := kindvalidator.NewValidator()
+	validationResult := validator.Validate(config)
+	if !validationResult.Valid {
+		formattedWarnings := helpers.FormatValidationWarnings(validationResult)
+		for _, warning := range formattedWarnings {
+			notify.WarnMessage(m.writer, notify.NewMessage(warning))
+		}
+		formattedErrors := helpers.FormatValidationErrors(validationResult)
+		for _, errMsg := range formattedErrors {
+			notify.ErrorMessage(m.writer, notify.NewMessage(errMsg))
+		}
 
-	err = helpers.ValidateConfig(config, validator)
-	if err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+		warningLength := len(formattedWarnings)
+		errorLength := len(formattedErrors)
+		return nil, fmt.Errorf(
+			"%w: %s",
+			helpers.ErrConfigurationValidationFailed,
+			fmt.Sprintf("found %d warning(s) and %d error(s)", warningLength, errorLength),
+		)
 	}
 
 	m.config = config

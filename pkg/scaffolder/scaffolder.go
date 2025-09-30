@@ -10,7 +10,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
-	eksgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/eks"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
@@ -18,8 +17,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
@@ -31,7 +28,6 @@ var (
 	ErrKSailConfigGeneration   = errors.New("failed to generate KSail configuration")
 	ErrKindConfigGeneration    = errors.New("failed to generate Kind configuration")
 	ErrK3dConfigGeneration     = errors.New("failed to generate K3d configuration")
-	ErrEKSConfigGeneration     = errors.New("failed to generate EKS configuration")
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
 
@@ -39,13 +35,12 @@ var (
 const (
 	KindConfigFile = "kind.yaml"
 	K3dConfigFile  = "k3d.yaml"
-	EKSConfigFile  = "eks.yaml"
 	TindConfigFile = "tind.yaml"
 )
 
 // getExpectedContextName calculates the expected context name for a distribution using default cluster names.
 // This is used during scaffolding to ensure consistent context patterns between KSail config and distribution configs.
-// Returns empty string for EKS (context validation is skipped) and unsupported distributions.
+// Returns empty string for unsupported distributions.
 func getExpectedContextName(distribution v1alpha1.Distribution) string {
 	var distributionName string
 
@@ -58,9 +53,6 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
 
 		return "k3d-" + distributionName
-	case v1alpha1.DistributionEKS:
-		// EKS context validation is skipped, return empty
-		return ""
 	case v1alpha1.DistributionTind:
 		// Tind is not yet implemented
 		return ""
@@ -77,8 +69,6 @@ func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) strin
 		return KindConfigFile
 	case v1alpha1.DistributionK3d:
 		return K3dConfigFile
-	case v1alpha1.DistributionEKS:
-		return EKSConfigFile
 	case v1alpha1.DistributionTind:
 		return TindConfigFile
 	default:
@@ -92,7 +82,6 @@ type Scaffolder struct {
 	KSailYAMLGenerator     generator.Generator[v1alpha1.Cluster, yamlgenerator.Options]
 	KindGenerator          generator.Generator[*v1alpha4.Cluster, yamlgenerator.Options]
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
-	EKSGenerator           generator.Generator[*eksv1alpha5.ClusterConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
 }
@@ -102,7 +91,6 @@ func NewScaffolder(cfg v1alpha1.Cluster, writer io.Writer) *Scaffolder {
 	ksailGenerator := yamlgenerator.NewYAMLGenerator[v1alpha1.Cluster]()
 	kindGenerator := kindgenerator.NewKindGenerator()
 	k3dGenerator := k3dgenerator.NewK3dGenerator()
-	eksGenerator := eksgenerator.NewEKSGenerator()
 	kustomizationGenerator := kustomizationgenerator.NewKustomizationGenerator()
 
 	return &Scaffolder{
@@ -110,7 +98,6 @@ func NewScaffolder(cfg v1alpha1.Cluster, writer io.Writer) *Scaffolder {
 		KSailYAMLGenerator:     ksailGenerator,
 		KindGenerator:          kindGenerator,
 		K3dGenerator:           k3dGenerator,
-		EKSGenerator:           eksGenerator,
 		KustomizationGenerator: kustomizationGenerator,
 		Writer:                 writer,
 	}
@@ -165,9 +152,11 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	_, statErr := os.Stat(filePath)
 	if statErr == nil {
 		if !force {
-			notify.Warnln(
+			notify.WarnMessage(
 				s.Writer,
-				fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
+				notify.NewMessage(
+					fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
+				),
 			)
 
 			return true, true
@@ -229,7 +218,7 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 		action = "overwrote"
 	}
 
-	notify.Activityln(s.Writer, fmt.Sprintf("%s '%s'", action, displayName))
+	notify.ActivityMessage(s.Writer, notify.NewMessage(fmt.Sprintf("%s '%s'", action, displayName)))
 }
 
 // generateKSailConfig generates the ksail.yaml configuration file.
@@ -264,8 +253,6 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 		return s.generateKindConfig(output, force)
 	case v1alpha1.DistributionK3d:
 		return s.generateK3dConfig(output, force)
-	case v1alpha1.DistributionEKS:
-		return s.generateEKSConfig(output, force)
 	case v1alpha1.DistributionTind:
 		return ErrTindNotImplemented
 	default:
@@ -328,30 +315,6 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 	)
 }
 
-// generateEKSConfig generates the eks.yaml configuration file.
-func (s *Scaffolder) generateEKSConfig(output string, force bool) error {
-	eksConfig := s.createEKSConfig()
-
-	opts := yamlgenerator.Options{
-		Output: filepath.Join(output, "eks.yaml"),
-		Force:  force,
-	}
-
-	return generateWithFileHandling(
-		s,
-		GenerationParams[*eksv1alpha5.ClusterConfig]{
-			Gen:         s.EKSGenerator,
-			Model:       eksConfig,
-			Opts:        opts,
-			DisplayName: "eks.yaml",
-			Force:       force,
-			WrapErr: func(err error) error {
-				return fmt.Errorf("generate EKS config: %w", err)
-			},
-		},
-	)
-}
-
 func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 	config := k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
@@ -364,19 +327,6 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 	}
 
 	return config
-}
-
-func (s *Scaffolder) createEKSConfig() *eksv1alpha5.ClusterConfig {
-	return &eksv1alpha5.ClusterConfig{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "eksctl.io/v1alpha5",
-			Kind:       "ClusterConfig",
-		},
-		Metadata: &eksv1alpha5.ClusterMeta{
-			Name:   "eks-default",
-			Region: "eu-north-1",
-		},
-	}
 }
 
 // generateKustomizationConfig generates the kustomization.yaml file.

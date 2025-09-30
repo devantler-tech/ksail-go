@@ -47,7 +47,6 @@ func NewClusterOptions() Options {
 		Kind:      NewClusterOptionsKind(),
 		K3d:       NewClusterOptionsK3d(),
 		Tind:      NewClusterOptionsTind(),
-		EKS:       NewClusterOptionsEKS(),
 		Cilium:    NewClusterOptionsCilium(),
 		Kubectl:   NewClusterOptionsKubectl(),
 		Flux:      NewClusterOptionsFlux(),
@@ -70,13 +69,6 @@ func NewClusterOptionsK3d() OptionsK3d {
 // NewClusterOptionsTind creates a new OptionsTind with default values.
 func NewClusterOptionsTind() OptionsTind {
 	return OptionsTind{}
-}
-
-// NewClusterOptionsEKS creates a new OptionsEKS with default values.
-func NewClusterOptionsEKS() OptionsEKS {
-	return OptionsEKS{
-		AWSProfile: "",
-	}
 }
 
 // NewClusterOptionsCilium creates a new OptionsCilium with default values.

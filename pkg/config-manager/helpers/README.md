@@ -4,7 +4,7 @@ This package provides common functionality for configuration managers to elimina
 
 ## Purpose
 
-Contains shared utilities and helper functions used by various configuration managers (Kind, K3d, EKS) to avoid code duplication. This package provides the foundational configuration loading, validation, and management functionality.
+Contains shared utilities and helper functions used by various configuration managers (Kind, K3d) to avoid code duplication. This package provides the foundational configuration loading, validation, and management functionality.
 
 ## Features
 

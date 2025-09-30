@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
@@ -42,16 +41,15 @@ func HandleStatusRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	_, err := manager.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+		return err
 	}
 
-	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
-		{Label: "Context", Value: cluster.Spec.Connection.Context},
-		{Label: "Kubeconfig", Value: cluster.Spec.Connection.Kubeconfig},
-	})
+	notify.SuccessMessage(
+		cmd.OutOrStdout(),
+		notify.NewMessage("Cluster status: Running (stub implementation)"),
+	)
 
 	return nil
 }

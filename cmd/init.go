@@ -9,6 +9,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -77,7 +78,10 @@ func HandleInitRunE(
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
-	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project... ")
+	notify.TitleMessage(cmd.OutOrStdout(), "📂", notify.NewMessage("Initializing project... "))
+
+	// Track scaffolding time
+	tmr := timer.New()
 
 	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
@@ -85,7 +89,10 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	notify.Successln(cmd.OutOrStdout(), "initialized project")
+	notify.SuccessMessage(
+		cmd.OutOrStdout(),
+		notify.NewMessage("initialized project").WithTiming(tmr.Total(), tmr.Stage()),
+	)
 
 	return nil
 }

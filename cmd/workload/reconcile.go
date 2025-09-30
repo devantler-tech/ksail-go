@@ -12,9 +12,9 @@ func NewReconcileCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reconcile",
 		Short: "Reconcile workloads with the cluster",
-		Long:  "Trigger reconciliation tooling to sync local workloads with your cluster.",
+		Long:  "Reconcile Flux resources to ensure workloads match desired state.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.Infoln(cmd.OutOrStdout(), reconcileMessage)
+			notify.InfoMessage(cmd.OutOrStdout(), notify.NewMessage(reconcileMessage))
 
 			return nil
 		},

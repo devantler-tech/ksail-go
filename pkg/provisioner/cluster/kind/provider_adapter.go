@@ -1,0 +1,48 @@
+package kindprovisioner
+
+import (
+	"sigs.k8s.io/kind/pkg/cluster"
+)
+
+// KindProviderAdapter wraps sigs.k8s.io/kind/pkg/cluster.Provider to implement KindProvider interface
+type KindProviderAdapter struct {
+	provider *cluster.Provider
+}
+
+// NewKindProviderAdapter creates a new adapter wrapping the real Kind provider
+func NewKindProviderAdapter(provider *cluster.Provider) *KindProviderAdapter {
+	return &KindProviderAdapter{
+		provider: provider,
+	}
+}
+
+// Create creates a new kind cluster
+func (a *KindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
+	return a.provider.Create(name, opts...)
+}
+
+// Delete deletes a kind cluster
+func (a *KindProviderAdapter) Delete(name, kubeconfigPath string) error {
+	return a.provider.Delete(name, kubeconfigPath)
+}
+
+// List lists kind clusters
+func (a *KindProviderAdapter) List() ([]string, error) {
+	return a.provider.List()
+}
+
+// ListNodes lists nodes in a kind cluster, converting nodes.Node to string names
+func (a *KindProviderAdapter) ListNodes(name string) ([]string, error) {
+	nodesList, err := a.provider.ListNodes(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert []nodes.Node to []string by extracting node names
+	nodeNames := make([]string, len(nodesList))
+	for i, node := range nodesList {
+		nodeNames[i] = node.String()
+	}
+
+	return nodeNames, nil
+}

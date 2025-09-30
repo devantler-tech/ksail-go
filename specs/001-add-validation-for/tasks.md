@@ -261,7 +261,6 @@ Task: "Implement simplified EKS validator Validate() method in pkg/validator/eks
 
 - [x] T055 [REFACTOR] Eliminate remaining code duplication in config-manager test patterns - COMPLETED: Successfully reduced code duplication from 0.11% (2 clones) to 0% (0 clones) by extracting common test patterns into helper functions:
   - **TestCase struct**: Created common struct for test case data (Name, Result, Expected)
-  - **runFormattingTest helper**: Eliminated duplicate test execution loops in FormatValidationErrors and FormatValidationErrorsMultiline tests
   - **assertValidationError helper**: Consolidated duplicate assertion patterns for ValidateConfig error checking
   - **Result**: Achieved 0% code duplication target, all tests passing, improved maintainability
 

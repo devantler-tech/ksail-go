@@ -8,7 +8,9 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/viper"
 )
 
@@ -48,17 +50,19 @@ func NewConfigManager(
 // LoadConfig loads the configuration from files and environment variables.
 // Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
+// Validates the configuration after loading and returns detailed error messages for validation failures.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded, return it
-	notify.Titleln(m.Writer, "⏳", "Loading configuration...")
+	notify.TitleMessage(m.Writer, "⏳", notify.NewMessage("Loading configuration..."))
 
 	if m.configLoaded {
-		notify.Successln(m.Writer, "config already loaded, reusing existing config")
+		notify.SuccessMessage(
+			m.Writer,
+			notify.NewMessage("config already loaded, reusing existing config"),
+		)
 
 		return m.Config, nil
 	}
-
-	notify.Activityln(m.Writer, "loading ksail config")
 
 	// Use native Viper API to read configuration
 	// All paths and environment handling are already configured in constructor
@@ -70,9 +74,9 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		notify.Activityln(m.Writer, "using default config")
+		notify.ActivityMessage(m.Writer, notify.NewMessage("using default config"))
 	} else {
-		notify.Activityf(m.Writer, "'%s' found", m.Viper.ConfigFileUsed())
+		notify.ActivityMessage(m.Writer, notify.NewMessage(fmt.Sprintf("'%s' found", m.Viper.ConfigFileUsed())))
 	}
 
 	// Unmarshal configuration using Viper's native precedence handling
@@ -91,7 +95,29 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		}
 	}
 
-	notify.Successln(m.Writer, "config loaded")
+	// Validate the loaded configuration
+	validator := ksailvalidator.NewValidator()
+	validationResult := validator.Validate(m.Config)
+	if !validationResult.Valid {
+		formattedWarnings := helpers.FormatValidationWarnings(validationResult)
+		for _, warning := range formattedWarnings {
+			notify.WarnMessage(m.Writer, notify.NewMessage(warning))
+		}
+		formattedErrors := helpers.FormatValidationErrors(validationResult)
+		for _, errMsg := range formattedErrors {
+			notify.ErrorMessage(m.Writer, notify.NewMessage(errMsg))
+		}
+
+		warningLength := len(formattedWarnings)
+		errorLength := len(formattedErrors)
+		return nil, fmt.Errorf(
+			"%w: %s",
+			helpers.ErrConfigurationValidationFailed,
+			fmt.Sprintf("found %d warning(s) and %d error(s)", warningLength, errorLength),
+		)
+	}
+
+	notify.SuccessMessage(m.Writer, notify.NewMessage("config loaded"))
 
 	m.configLoaded = true
 
@@ -112,9 +138,4 @@ func isFieldEmpty(fieldPtr any) bool {
 	fieldVal = fieldVal.Elem()
 
 	return fieldVal.IsZero()
-}
-
-// IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
-func IsFieldEmptyForTesting(fieldPtr any) bool {
-	return isFieldEmpty(fieldPtr)
 }

@@ -49,20 +49,26 @@ func HandleListRunE(
 	// Load the full cluster configuration (Viper handles all precedence automatically)
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+		notify.ErrorMessage(
+			cmd.OutOrStdout(),
+			notify.NewMessage("Failed to load cluster configuration: "+err.Error()),
+		)
 
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	all := configManager.Viper.GetBool("all")
 	if all {
-		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
+		notify.SuccessMessage(
+			cmd.OutOrStdout(),
+			notify.NewMessage("Listing all clusters (stub implementation)"),
+		)
 	} else {
-		notify.Successln(cmd.OutOrStdout(), "Listing running clusters (stub implementation)")
+		notify.SuccessMessage(cmd.OutOrStdout(), notify.NewMessage("Listing running clusters (stub implementation)"))
 	}
 
-	notify.Activityln(cmd.OutOrStdout(),
-		"Distribution filter: "+string(cluster.Spec.Distribution))
+	notify.ActivityMessage(cmd.OutOrStdout(),
+		notify.NewMessage("Distribution filter: "+string(cluster.Spec.Distribution)))
 
 	return nil
 }

@@ -23,13 +23,15 @@ func TestHandleStatusRunE(t *testing.T) {
 		}
 
 		assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
-		assertOutputContains(t, output.String(), "Kubeconfig")
 	})
 
 	t.Run("load failure", func(t *testing.T) {
 		t.Parallel()
 
-		cmd, manager, _ := newCommandAndManager(t, "status")
+		cmd, manager, _ := newIsolatedCommandAndManager(t, "status")
+		// Don't seed config - LoadConfig will use defaults, then validation will fail
+		// Set invalid distribution without distributionConfig to trigger validation error
+		manager.Viper.Set("metadata.name", "test-cluster")
 
 		err := HandleStatusRunE(cmd, manager, nil)
 		if err == nil {

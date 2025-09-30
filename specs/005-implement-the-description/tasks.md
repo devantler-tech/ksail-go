@@ -5,23 +5,21 @@
 
 ## Phase 3.1: Setup
 
-- [ ] T001 Run `/Users/ndam/git-personal/monorepo/projects/ksail-go/scripts/run-mockery.sh` to refresh provisioner mocks before adding new tests.
+- [x] T001 Run `/Users/ndam/git-personal/monorepo/projects/ksail-go/scripts/run-mockery.sh` to refresh provisioner mocks before adding new tests.
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 
 > CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation.
 
-- [ ] T002 Create CLI contract tests covering success output and dependency failure messaging (including telemetry summary fields) in `cmd/cluster/up_contract_test.go`.
-- [ ] T003 Add Kind, K3d, EKS, and `--force` quickstart integration scenarios to `cmd/cluster/up_integration_test.go`, stubbing provisioners and asserting kubeconfig/context handling.
-- [ ] T004 Extend `cmd/cluster/up_internal_test.go` with unit tests for configuration precedence resolution, telemetry stage transitions, and readiness/kubeconfig failure paths.
+- [x] T002 Create CLI contract tests in `cmd/cluster/up_test.go` covering success output, dependency failures, validation errors, timeout behavior, and telemetry reporting per `contracts/cluster-up.md`.
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [ ] T005 Implement a configuration precedence loader in `cmd/cluster/up.go` that materialises the Combined Configuration Snapshot (flags → env → files → defaults).
-- [ ] T006 Wire distribution-specific config managers and provisioners in `cmd/cluster/up.go`, reusing existing packages and enforcing dependency checks before provisioning.
-- [ ] T007 Implement `--force` recreation semantics and idempotent reuse handling in `cmd/cluster/up.go`, coordinating `Exists`, `Delete`, `Create`, and `Start` flows.
+- [x] T005 Implement configuration precedence and validation in `cmd/cluster/up.go` that materializes the Combined Configuration Snapshot (flags → env → files → defaults).
+- [x] T006 Wire distribution-specific config managers and provisioners in `cmd/cluster/up.go`, reusing existing packages and enforcing dependency checks before provisioning.
+- [x] T007 Implement `--force` recreation semantics and idempotent reuse handling in `cmd/cluster/up.go`, coordinating `Exists`, `Delete`, `Create`, and `Start` flows.
 - [ ] T008 Integrate readiness polling and kubeconfig merge logic in `cmd/cluster/up.go`, surfacing actionable timeout/merge errors.
-- [ ] T009 Emit telemetry summaries and structured success/failure notifications in `cmd/cluster/up.go`, including slowest-stage reporting.
+- [x] T009 Emit telemetry summaries and structured success/failure notifications in `cmd/cluster/up.go`, including slowest-stage reporting.
 
 ## Phase 3.4: Integration & Verification
 
@@ -30,12 +28,12 @@
 ## Phase 3.5: Polish
 
 - [ ] T011 Run gofmt on `cmd/cluster/up.go` and execute `go test ./cmd/cluster` to confirm green build.
-- [ ] T012 [P] Update telemetry/output documentation in `README.md` (and related docs) to explain configuration precedence and stage summaries.
+- [ ] T012 [P] Update telemetry/output documentation in `README.md` to explain configuration precedence and stage summaries.
 - [ ] T013 [P] Follow `quickstart.md` scenarios manually (Kind, K3d, EKS, `--force`) capturing timing summaries for release validation.
 
 ## Dependencies
 
-- T002–T004 must complete (and initially fail) before starting T005–T010.
+- T002 must complete (and initially fail) before starting T005–T010.
 - T005 enables T006, which must finish before T007.
 - T007 must complete before T008; T008 must complete before T009.
 - T010 depends on the successful completion of T005–T009.
@@ -52,9 +50,9 @@ Task: "T013 [P] Follow quickstart.md scenarios manually (Kind, K3d, EKS, --force
 ## Validation Checklist
 
 - [x] All contracts have corresponding test tasks (T002).
-- [x] Entities and telemetry/data structures covered by test tasks (T004) and implementation tasks (T005–T009).
+- [x] Contract tests cover success output, dependency failures, validation errors, timeout behavior, and telemetry per `contracts/cluster-up.md`.
 - [x] Tests precede implementation tasks in ordering.
 - [x] Parallel tasks (T012, T013) operate on distinct artefacts.
 - [x] Each task specifies explicit file paths or scripts.
 - [x] No [P] tasks modify the same file.
-- [x] Telemetry work is captured in T002, T004, and T009.
+- [x] Telemetry work is captured in T002 and T009.

@@ -6,218 +6,292 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	notify "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 )
 
-func TestErrorf(t *testing.T) {
+// TestMessage tests the Message struct constructor and methods.
+func TestMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("NewMessage creates message with text only", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Errorf(&out, "%s: %d", "oops", 42)
-	got := out.String()
-	want := notify.ErrorSymbol + "oops: 42\n"
+		msg := notify.NewMessage("test message")
+		if msg.Text != "test message" {
+			t.Fatalf("expected text 'test message', got %q", msg.Text)
+		}
 
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
+		if msg.Elapsed != 0 {
+			t.Fatalf("expected elapsed to be 0, got %v", msg.Elapsed)
+		}
+
+		if msg.Stage != 0 {
+			t.Fatalf("expected stage to be 0, got %v", msg.Stage)
+		}
+	})
+
+	t.Run("WithElapsed sets elapsed time", func(t *testing.T) {
+		t.Parallel()
+
+		duration := 5 * time.Second
+		msg := notify.NewMessage("test").WithElapsed(duration)
+
+		if msg.Elapsed != duration {
+			t.Fatalf("expected elapsed %v, got %v", duration, msg.Elapsed)
+		}
+	})
+
+	t.Run("WithStage sets stage time", func(t *testing.T) {
+		t.Parallel()
+
+		duration := 2 * time.Second
+		msg := notify.NewMessage("test").WithStage(duration)
+
+		if msg.Stage != duration {
+			t.Fatalf("expected stage %v, got %v", duration, msg.Stage)
+		}
+	})
+
+	t.Run("WithTiming sets both elapsed and stage", func(t *testing.T) {
+		t.Parallel()
+
+		elapsed := 10 * time.Second
+		stage := 3 * time.Second
+		msg := notify.NewMessage("test").WithTiming(elapsed, stage)
+
+		if msg.Elapsed != elapsed {
+			t.Fatalf("expected elapsed %v, got %v", elapsed, msg.Elapsed)
+		}
+
+		if msg.Stage != stage {
+			t.Fatalf("expected stage %v, got %v", stage, msg.Stage)
+		}
+	})
+
+	t.Run("Format returns text only when no timing", func(t *testing.T) {
+		t.Parallel()
+
+		msg := notify.NewMessage("simple message")
+		formatted := msg.Format()
+
+		if formatted != "simple message" {
+			t.Fatalf("expected 'simple message', got %q", formatted)
+		}
+	})
+
+	t.Run("Format returns text only when only elapsed is set", func(t *testing.T) {
+		t.Parallel()
+
+		msg := notify.NewMessage("with timing").WithElapsed(5 * time.Second)
+		formatted := msg.Format()
+		expected := "with timing"
+
+		if formatted != expected {
+			t.Fatalf("expected %q, got %q", expected, formatted)
+		}
+	})
+
+	t.Run("Format includes timing when both are set", func(t *testing.T) {
+		t.Parallel()
+
+		msg := notify.NewMessage("full timing").WithTiming(10*time.Second, 3*time.Second)
+		formatted := msg.Format()
+		expected := "full timing [10s|3s]"
+
+		if formatted != expected {
+			t.Fatalf("expected %q, got %q", expected, formatted)
+		}
+	})
+}
+
+// TestFormatDuration tests duration formatting.
+func TestFormatDuration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		duration time.Duration
+		want     string
+	}{
+		{"zero duration", 0, "0s"},
+		{"milliseconds under 1s", 500 * time.Millisecond, "0s"},
+		{"seconds", 5 * time.Second, "5s"},
+		{"minutes and seconds", 2*time.Minute + 30*time.Second, "2m30s"},
+		{"hours minutes seconds", 1*time.Hour + 15*time.Minute + 45*time.Second, "1h15m45s"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := notify.FormatDuration(tt.duration)
+			if got != tt.want {
+				t.Fatalf("FormatDuration(%v) = %q, want %q", tt.duration, got, tt.want)
+			}
+		})
 	}
 }
 
-func TestError(t *testing.T) {
+// TestErrorMessage tests error message printing.
+func TestErrorMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("prints simple error message", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Error(&out, "oops")
-	got := out.String()
-	want := notify.ErrorSymbol + "oops"
+		var out bytes.Buffer
+		notify.ErrorMessage(&out, notify.NewMessage("oops"))
+		got := out.String()
+		want := notify.ErrorSymbol + "oops\n"
 
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
-	}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
+
+	t.Run("prints error message without timing when only elapsed is set", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+		msg := notify.NewMessage("failed").WithElapsed(2 * time.Second)
+		notify.ErrorMessage(&out, msg)
+		got := out.String()
+		want := notify.ErrorSymbol + "failed\n"
+
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 }
 
-func TestErrorln(t *testing.T) {
+// TestWarnMessage tests warning message printing.
+func TestWarnMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("prints simple warning", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Errorln(&out, "oops")
-	got := out.String()
-	want := notify.ErrorSymbol + "oops\n"
+		var out bytes.Buffer
+		notify.WarnMessage(&out, notify.NewMessage("careful"))
+		got := out.String()
+		want := notify.WarningSymbol + "careful\n"
 
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
-	}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
+
+	t.Run("prints warning with timing", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+		msg := notify.NewMessage("slow process").WithTiming(30*time.Second, 5*time.Second)
+		notify.WarnMessage(&out, msg)
+		got := out.String()
+		want := notify.WarningSymbol + "slow process [30s|5s]\n"
+
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 }
 
-func TestWarnf(t *testing.T) {
+// TestSuccessMessage tests success message printing.
+func TestSuccessMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("prints simple success", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Warnf(&out, "%s", "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful\n"
+		var out bytes.Buffer
+		notify.SuccessMessage(&out, notify.NewMessage("done"))
+		got := out.String()
+		want := notify.SuccessSymbol + "done\n"
 
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
+
+	t.Run("prints success without timing when only elapsed is set", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+		msg := notify.NewMessage("completed").WithElapsed(10 * time.Second)
+		notify.SuccessMessage(&out, msg)
+		got := out.String()
+		want := notify.SuccessSymbol + "completed\n"
+
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 }
 
-func TestWarn(t *testing.T) {
+// TestActivityMessage tests activity message printing.
+func TestActivityMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("prints simple activity", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Warn(&out, "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful"
+		var out bytes.Buffer
+		notify.ActivityMessage(&out, notify.NewMessage("working"))
+		got := out.String()
+		want := notify.ActivitySymbol + "working\n"
 
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
+
+	t.Run("prints activity without timing when only stage is set", func(t *testing.T) {
+		t.Parallel()
+
+		var out bytes.Buffer
+		msg := notify.NewMessage("processing").WithStage(3 * time.Second)
+		notify.ActivityMessage(&out, msg)
+		got := out.String()
+		want := notify.ActivitySymbol + "processing\n"
+
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 }
 
-func TestWarnln(t *testing.T) {
+// TestInfoMessage tests info message printing.
+func TestInfoMessage(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	t.Run("prints simple info", func(t *testing.T) {
+		t.Parallel()
 
-	notify.Warnln(&out, "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful\n"
+		var out bytes.Buffer
+		notify.InfoMessage(&out, notify.NewMessage("details"))
+		got := out.String()
+		want := notify.InfoSymbol + "details\n"
 
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 
-func TestSuccessf(t *testing.T) {
-	t.Parallel()
+	t.Run("prints info with full timing", func(t *testing.T) {
+		t.Parallel()
 
-	var out bytes.Buffer
+		var out bytes.Buffer
+		msg := notify.NewMessage("metrics").WithTiming(1*time.Minute, 15*time.Second)
+		notify.InfoMessage(&out, msg)
+		got := out.String()
+		want := notify.InfoSymbol + "metrics [1m0s|15s]\n"
 
-	notify.Successf(&out, "%s", "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestSuccess(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Success(&out, "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestSuccessln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Successln(&out, "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivityf(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activityf(&out, "%s", "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivity(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activity(&out, "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivityln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activityln(&out, "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfof(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Infof(&out, "%s", "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfo(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Info(&out, "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfoln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Infoln(&out, "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
+		if got != want {
+			t.Fatalf("expected %q, got %q", want, got)
+		}
+	})
 }
 
 // errorWriter is a mock writer that always returns an error.
@@ -240,7 +314,7 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 	// Use an errorWriter to trigger the error path in handleNotifyError
 	errWriter := errorWriter{}
 
-	notify.Error(errWriter, "test message")
+	notify.ErrorMessage(errWriter, notify.NewMessage("test message"))
 
 	// Restore stderr
 	err := writePipe.Close()
@@ -294,7 +368,7 @@ func TestTitleln(t *testing.T) {
 
 	var out bytes.Buffer
 
-	notify.Titleln(&out, "✨", "Process finished successfully")
+	notify.TitleMessage(&out, "✨", "Process finished successfully")
 	got := out.String()
 	want := "✨ Process finished successfully\n"
 
@@ -339,7 +413,7 @@ func TestTitleFunctionsWithComplexEmojis(t *testing.T) {
 
 		var out bytes.Buffer
 
-		notify.Titleln(&out, "", "No emoji title")
+		notify.TitleMessage(&out, "", "No emoji title")
 		got := out.String()
 		want := " No emoji title\n"
 
