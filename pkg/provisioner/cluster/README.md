@@ -12,19 +12,19 @@ Implements the `ClusterProvisioner` interface for managing Kubernetes clusters a
 type ClusterProvisioner interface {
     // Create creates a Kubernetes cluster
     Create(ctx context.Context, name string) error
-    
+
     // Delete deletes a Kubernetes cluster by name
     Delete(ctx context.Context, name string) error
-    
+
     // Start starts a Kubernetes cluster by name
     Start(ctx context.Context, name string) error
-    
+
     // Stop stops a Kubernetes cluster by name
     Stop(ctx context.Context, name string) error
-    
+
     // List lists all Kubernetes clusters
     List(ctx context.Context) ([]string, error)
-    
+
     // Exists checks if a Kubernetes cluster exists by name
     Exists(ctx context.Context, name string) (bool, error)
 }
@@ -39,7 +39,6 @@ type ClusterProvisioner interface {
 
 ## Subpackages
 
-- **[pkg/provisioner/cluster/eks/](./eks/README.md)** - Amazon EKS cluster provisioning
 - **[pkg/provisioner/cluster/k3d/](./k3d/README.md)** - K3d cluster provisioning
 - **[pkg/provisioner/cluster/kind/](./kind/README.md)** - Kind cluster provisioning
 

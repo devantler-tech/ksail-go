@@ -10,7 +10,7 @@ Contains validation logic specifically for KSail cluster configurations (ksail.y
 
 - **KSail Configuration Validation**: Validates KSail cluster configurations for semantic correctness
 - **Cross-Configuration Consistency**: Ensures consistency between KSail and distribution-specific configs
-- **Multi-Distribution Support**: Validates configurations for Kind, K3d, and EKS distributions
+- **Multi-Distribution Support**: Validates configurations for Kind and K3d distributions
 - **Metadata Validation**: Integrates with metadata validator for consistent validation
 - **Pre-provisioning Validation**: Catches configuration errors before attempting cluster operations
 
@@ -62,7 +62,6 @@ The validator handles configurations for:
 
 - **Kind**: Validates consistency with kind.yaml configurations
 - **K3d**: Validates consistency with k3d.yaml configurations
-- **EKS**: Validates consistency with eksctl.yaml configurations
 
 This ensures KSail configurations are valid and consistent before attempting cluster operations.
 

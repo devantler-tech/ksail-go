@@ -8,7 +8,7 @@ Contains utilities for generating KSail project files and configurations. The sc
 
 ## Features
 
-- **Multi-Distribution Support**: Scaffolds configurations for different Kubernetes distributions (Kind, K3d, EKS)
+- **Multi-Distribution Support**: Scaffolds configurations for different Kubernetes distributions (Kind, K3d)
 - **Complete Project Setup**: Generates all required files including ksail.yaml, distribution configs, and kustomization files
 - **Force Overwrite**: Option to overwrite existing files
 - **Directory Structure**: Creates proper directory structure for source files
@@ -47,14 +47,13 @@ if err != nil {
 The scaffold creator generates the following files based on the cluster configuration:
 
 - **ksail.yaml**: Main KSail cluster configuration
-- **Distribution config**: Kind, K3d, or EKS-specific configuration file
+- **Distribution config**: Kind or K3d-specific configuration file
 - **kustomization.yaml**: Kustomization file in the source directory
 
 ### Distribution-Specific Files
 
 - **Kind**: Generates `kind.yaml` with a basic cluster configuration
 - **K3d**: Generates `k3d.yaml` with a simple k3d cluster configuration
-- **EKS**: Generates `eks.yaml` with an EKS cluster configuration including node groups
 - **Tind**: Not yet implemented (returns error)
 
 ---

@@ -198,7 +198,7 @@ func testValidConfigs(t *testing.T) {
 		{
 			name:       "valid_pointer_config",
 			config:     &struct{ Name string }{Name: "test"},
-			configType: "EKS",
+			configType: "Kind",
 		},
 	}
 

@@ -71,7 +71,7 @@ func RunCreateTest(
 }
 
 // RunActionSuccess provides a generic helper for testing successful provisioner actions.
-// It eliminates code duplication between EKS and Kind test files by abstracting the common pattern:
+// It eliminates code duplication between Kind and K3d test files by abstracting the common pattern:
 // setup -> expect -> action -> assert.
 func RunActionSuccess[MockT, ProvisionerT any](
 	t *testing.T,
@@ -92,7 +92,7 @@ func RunActionSuccess[MockT, ProvisionerT any](
 }
 
 // RunCreateSuccessTest provides a standard test pattern for Create operations.
-// This eliminates duplication between EKS and Kind test files by providing the common
+// This eliminates duplication between Kind and K3d test files by providing the common
 // TestCreate_Success structure that both can use.
 // Note: The caller should call t.Parallel() for parallel execution.
 func RunCreateSuccessTest[MockT, ProvisionerT any](

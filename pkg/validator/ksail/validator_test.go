@@ -382,7 +382,6 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 	})
 }
 
-// TestKSailValidatorEKSConsistency tests EKS distribution name consistency validation.
 // TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
 func TestKSailValidatorMultipleConfigs(t *testing.T) {
 	t.Parallel()

@@ -43,7 +43,6 @@ This package is used by:
 
 - `pkg/config-manager/kind`: Kind cluster configuration management
 - `pkg/config-manager/k3d`: K3d cluster configuration management
-- `pkg/config-manager/eks`: EKS cluster configuration management
 
 This design ensures consistent behavior and reduces code duplication across all supported Kubernetes distributions.
 

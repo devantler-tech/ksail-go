@@ -4,7 +4,7 @@ This package provides interfaces and types for configuration file validation acr
 
 ## Purpose
 
-Contains the core validation interfaces, types, and shared functionality used by all validator packages. This package defines the validation contract that all specific validators (Kind, K3d, EKS, KSail, metadata) must implement.
+Contains the core validation interfaces, types, and shared functionality used by all validator packages. This package defines the validation contract that all specific validators (Kind, K3d, KSail, metadata) must implement.
 
 ## Features
 
@@ -47,7 +47,6 @@ if !result.Valid {
 
 This package provides validation for different configuration types:
 
-- `eks/`: EKS cluster configuration validation
 - `k3d/`: K3d cluster configuration validation
 - `kind/`: Kind cluster configuration validation
 - `ksail/`: KSail project configuration validation

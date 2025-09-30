@@ -4,7 +4,7 @@ This package provides testing utilities for cluster provisioner testing.
 
 ## Purpose
 
-Contains common test utilities, shared test cases, and helper functions for standardizing test patterns across cluster provisioner packages. This package provides testing infrastructure for Kind, K3d, and EKS cluster provisioning functionality.
+Contains common test utilities, shared test cases, and helper functions for standardizing test patterns across cluster provisioner packages. This package provides testing infrastructure for Kind and K3d cluster provisioning functionality.
 
 ## Features
 
@@ -41,7 +41,6 @@ This package is used by cluster provisioner packages for testing:
 
 - `pkg/provisioner/cluster/kind`: Kind cluster provisioning tests
 - `pkg/provisioner/cluster/k3d`: K3d cluster provisioning tests
-- `pkg/provisioner/cluster/eks`: EKS cluster provisioning tests
 
 This ensures consistent testing patterns and reduces code duplication across all cluster provisioner functionality.
 

@@ -50,7 +50,6 @@ This package is used by all validator packages for testing:
 
 - `pkg/validator/kind`: Kind validator testing
 - `pkg/validator/k3d`: K3d validator testing
-- `pkg/validator/eks`: EKS validator testing
 - `pkg/validator/ksail`: KSail validator testing
 - `pkg/validator/metadata`: Metadata validator testing
 

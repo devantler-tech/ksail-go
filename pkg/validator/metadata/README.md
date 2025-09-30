@@ -46,7 +46,6 @@ This package is used by all specific validator packages:
 
 - `pkg/validator/kind`: Kind configuration metadata validation
 - `pkg/validator/k3d`: K3d configuration metadata validation
-- `pkg/validator/eks`: EKS configuration metadata validation
 - `pkg/validator/ksail`: KSail configuration metadata validation
 
 ## Validation Functions
