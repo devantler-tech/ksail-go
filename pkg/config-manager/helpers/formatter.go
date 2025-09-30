@@ -94,26 +94,3 @@ func FormatValidationWarnings(result *validator.ValidationResult) []string {
 
 	return warnings
 }
-
-// ValidateConfig validates a configuration and returns an error if validation fails.
-// This function eliminates duplication between different config managers.
-//
-// Returns nil if the configuration is valid, or an error containing formatted
-// validation errors if the configuration is invalid.
-func ValidateConfig[T any](config T, validatorInstance validator.Validator[T]) error {
-	result := validatorInstance.Validate(config)
-	if !result.Valid {
-		errors := FormatValidationErrors(result)
-		// Combine all errors into a single message
-		errorMsg := ""
-		for i, err := range errors {
-			if i > 0 {
-				errorMsg += "; "
-			}
-			errorMsg += err
-		}
-		return fmt.Errorf("%w: %s", ErrConfigurationValidationFailed, errorMsg)
-	}
-
-	return nil
-}
