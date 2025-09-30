@@ -53,7 +53,10 @@ func newScaffolderWithStubs(cfg v1alpha1.Cluster, writer io.Writer) *scaffolder.
 }
 
 // newScaffolderWithRealImplementations creates a scaffolder using real implementations.
-func newScaffolderWithRealImplementations(cfg v1alpha1.Cluster, writer io.Writer) *scaffolder.Scaffolder {
+func newScaffolderWithRealImplementations(
+	cfg v1alpha1.Cluster,
+	writer io.Writer,
+) *scaffolder.Scaffolder {
 	ksailGenerator := yamlgenerator.NewYAMLGenerator[v1alpha1.Cluster]()
 	kindGenerator := kindgenerator.NewKindGenerator()
 	k3dGenerator := k3dgenerator.NewK3dGenerator()

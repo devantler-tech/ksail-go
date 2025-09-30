@@ -10,7 +10,7 @@ import (
 type DockerClientStub struct {
 	ContainerStartError error
 	ContainerStopError  error
-	
+
 	StartCalls []string
 	StopCalls  []string
 }
@@ -21,13 +21,21 @@ func NewDockerClientStub() *DockerClientStub {
 }
 
 // ContainerStart simulates container start.
-func (d *DockerClientStub) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error {
+func (d *DockerClientStub) ContainerStart(
+	ctx context.Context,
+	containerID string,
+	options container.StartOptions,
+) error {
 	d.StartCalls = append(d.StartCalls, containerID)
 	return d.ContainerStartError
 }
 
 // ContainerStop simulates container stop.
-func (d *DockerClientStub) ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error {
+func (d *DockerClientStub) ContainerStop(
+	ctx context.Context,
+	containerID string,
+	options container.StopOptions,
+) error {
 	d.StopCalls = append(d.StopCalls, containerID)
 	return d.ContainerStopError
 }

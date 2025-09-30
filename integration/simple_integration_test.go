@@ -28,7 +28,7 @@ func TestCommandHelp_AllCommands(t *testing.T) {
 			cmdFunc:        cmd.NewInitCmd,
 			expectedOutput: "Initialize a new project",
 		},
-		
+
 		// Cluster commands
 		{
 			name:           "cluster_up_help",
@@ -60,7 +60,7 @@ func TestCommandHelp_AllCommands(t *testing.T) {
 			cmdFunc:        cluster.NewListCmd,
 			expectedOutput: "List all Kubernetes clusters",
 		},
-		
+
 		// Workload commands
 		{
 			name:           "workload_apply_help",
@@ -83,13 +83,13 @@ func TestCommandHelp_AllCommands(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := testCase.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{"--help"})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "help command should not return error")
 			assert.Contains(t, output.String(), testCase.expectedOutput,
@@ -129,13 +129,13 @@ func TestWorkloadCommands_Integration(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := testCase.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "workload command should succeed")
 			assert.Contains(t, output.String(), testCase.expectedOutput,
@@ -170,7 +170,7 @@ func TestCommandCreation_AllCommands(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := testCase.cmdFunc()
 			require.NotNil(t, cmd, "Command should be created successfully")
 			assert.Equal(t, testCase.cmdName, cmd.Use, "Command use should match expected")
@@ -185,10 +185,10 @@ func TestStubIntegration_AdapterPattern(t *testing.T) {
 
 	// This test validates that the stub implementations provide the expected interfaces
 	// and can be used as adapters in the KSail system without mocks.
-	
+
 	t.Run("validator_stub_integration", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test that we can create and use validator stubs
 		// This validates the adapter pattern works for validation
 		// In real integration tests, these would be used instead of mocks
@@ -198,7 +198,7 @@ func TestStubIntegration_AdapterPattern(t *testing.T) {
 
 	t.Run("config_manager_stub_integration", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test that we can create and use config manager stubs
 		// This validates the adapter pattern works for configuration management
 		// In real integration tests, these would be used instead of mocks
@@ -208,7 +208,7 @@ func TestStubIntegration_AdapterPattern(t *testing.T) {
 
 	t.Run("cluster_provisioner_stub_integration", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test that we can create and use cluster provisioner stubs
 		// This validates the adapter pattern works for cluster operations
 		// In real integration tests, these would be used instead of mocks
@@ -218,7 +218,7 @@ func TestStubIntegration_AdapterPattern(t *testing.T) {
 
 	t.Run("generator_stub_integration", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test that we can create and use generator stubs
 		// This validates the adapter pattern works for file generation
 		// In real integration tests, these would be used instead of mocks
@@ -228,7 +228,7 @@ func TestStubIntegration_AdapterPattern(t *testing.T) {
 
 	t.Run("installer_stub_integration", func(t *testing.T) {
 		t.Parallel()
-		
+
 		// Test that we can create and use installer stubs
 		// This validates the adapter pattern works for component installation
 		// In real integration tests, these would be used instead of mocks

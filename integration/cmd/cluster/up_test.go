@@ -17,11 +17,11 @@ func TestClusterUpCommand_Success(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name            string
-		setupFunc       func(t *testing.T, tempDir string)
-		args            []string
-		expectedOutput  []string
-		validateFunc    func(t *testing.T, output string)
+		name           string
+		setupFunc      func(t *testing.T, tempDir string)
+		args           []string
+		expectedOutput []string
+		validateFunc   func(t *testing.T, output string)
 	}{
 		{
 			name: "up_with_kind_distribution",
@@ -116,37 +116,42 @@ func TestClusterUpCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Setup test environment
 			testCase.setupFunc(t, tempDir)
-			
+
 			// Create and execute cluster up command
 			upCmd := cluster.NewUpCmd()
 			var output bytes.Buffer
 			upCmd.SetOut(&output)
 			upCmd.SetErr(&output)
 			upCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err = upCmd.Execute()
-			require.NoError(t, err, "cluster up command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster up command should succeed, output: %s",
+				output.String(),
+			)
+
 			// Verify expected output strings
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
 			}
-			
+
 			// Run custom validation
 			if testCase.validateFunc != nil {
 				testCase.validateFunc(t, outputStr)
@@ -177,7 +182,11 @@ func TestClusterUpCommand_ErrorCases(t *testing.T) {
 			name: "invalid_ksail_config",
 			setupFunc: func(t *testing.T, tempDir string) {
 				// Create invalid ksail.yaml
-				err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte("invalid: yaml: content: ["), 0o600)
+				err := os.WriteFile(
+					filepath.Join(tempDir, "ksail.yaml"),
+					[]byte("invalid: yaml: content: ["),
+					0o600,
+				)
 				require.NoError(t, err)
 			},
 			args:           []string{},
@@ -209,7 +218,11 @@ metadata:
   name: ""  # Empty name should cause validation error
 spec:
   distribution: Kind`
-				err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
+				err := os.WriteFile(
+					filepath.Join(tempDir, "ksail.yaml"),
+					[]byte(configContent),
+					0o600,
+				)
 				require.NoError(t, err)
 			},
 			args:           []string{},
@@ -221,31 +234,31 @@ spec:
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Setup test environment
 			testCase.setupFunc(t, tempDir)
-			
+
 			// Create and execute cluster up command
 			upCmd := cluster.NewUpCmd()
 			var output bytes.Buffer
 			upCmd.SetOut(&output)
 			upCmd.SetErr(&output)
 			upCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command and expect an error
 			err = upCmd.Execute()
 			require.Error(t, err, "cluster up command should fail")
-			
+
 			// Verify error message contains expected text
 			if testCase.expectedErrMsg != "" {
 				assert.Contains(t, err.Error(), testCase.expectedErrMsg,
@@ -283,14 +296,14 @@ func TestClusterUpCommand_HelpAndValidation(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute cluster up command
 			upCmd := cluster.NewUpCmd()
 			var output bytes.Buffer
 			upCmd.SetOut(&output)
 			upCmd.SetErr(&output)
 			upCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err := upCmd.Execute()
 			if testCase.expectError {
@@ -298,7 +311,7 @@ func TestClusterUpCommand_HelpAndValidation(t *testing.T) {
 			} else {
 				require.NoError(t, err, "command should not return error")
 			}
-			
+
 			// Verify expected output
 			assert.Contains(t, output.String(), testCase.expectedOutput)
 		})
@@ -306,9 +319,14 @@ func TestClusterUpCommand_HelpAndValidation(t *testing.T) {
 }
 
 // createKSailConfig creates a valid ksail.yaml configuration file for testing.
-func createKSailConfig(t *testing.T, tempDir string, distribution v1alpha1.Distribution, clusterName string) {
+func createKSailConfig(
+	t *testing.T,
+	tempDir string,
+	distribution v1alpha1.Distribution,
+	clusterName string,
+) {
 	t.Helper()
-	
+
 	var context string
 	switch distribution {
 	case v1alpha1.DistributionKind:
@@ -318,7 +336,7 @@ func createKSailConfig(t *testing.T, tempDir string, distribution v1alpha1.Distr
 	case v1alpha1.DistributionEKS:
 		context = clusterName // EKS doesn't use prefix
 	}
-	
+
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 metadata:
@@ -329,7 +347,7 @@ spec:
     context: ` + context + `
     timeout: 5m
   sourceDirectory: k8s`
-	
+
 	err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
 	require.NoError(t, err)
 }

@@ -10,7 +10,7 @@ import (
 // EKSClusterCreatorStub is a stub implementation of EKSClusterCreator interface.
 type EKSClusterCreatorStub struct {
 	CreateClusterError error
-	
+
 	CreateClusterCalls int
 }
 
@@ -20,7 +20,11 @@ func NewEKSClusterCreatorStub() *EKSClusterCreatorStub {
 }
 
 // CreateCluster simulates EKS cluster creation.
-func (e *EKSClusterCreatorStub) CreateCluster(ctx context.Context, cfg *eksapi.ClusterConfig, ctl *eks.ClusterProvider) error {
+func (e *EKSClusterCreatorStub) CreateCluster(
+	ctx context.Context,
+	cfg *eksapi.ClusterConfig,
+	ctl *eks.ClusterProvider,
+) error {
 	e.CreateClusterCalls++
 	return e.CreateClusterError
 }

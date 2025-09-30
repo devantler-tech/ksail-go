@@ -7,14 +7,14 @@ import (
 // MarshallerStub is a stub implementation of marshaller.Marshaller[T] interface.
 // It provides configurable behavior for testing without external dependencies.
 type MarshallerStub[T any] struct {
-	MarshalResult      string
-	MarshalError       error
-	UnmarshalError     error
-	UnmarshalStrError  error
-	LastMarshalModel   T
-	LastUnmarshalData  []byte
-	LastUnmarshalStr   string
-	callCount          map[string]int
+	MarshalResult     string
+	MarshalError      error
+	UnmarshalError    error
+	UnmarshalStrError error
+	LastMarshalModel  T
+	LastUnmarshalData []byte
+	LastUnmarshalStr  string
+	callCount         map[string]int
 }
 
 // NewMarshallerStub creates a new MarshallerStub with default behavior.
@@ -29,7 +29,7 @@ func NewMarshallerStub[T any]() *MarshallerStub[T] {
 func (m *MarshallerStub[T]) Marshal(model T) (string, error) {
 	m.callCount["Marshal"]++
 	m.LastMarshalModel = model
-	
+
 	if m.MarshalError != nil {
 		return "", m.MarshalError
 	}

@@ -65,25 +65,30 @@ func TestClusterStartCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			testCase.setupFunc(t, tempDir)
-			
+
 			startCmd := cluster.NewStartCmd()
 			var output bytes.Buffer
 			startCmd.SetOut(&output)
 			startCmd.SetErr(&output)
 			startCmd.SetArgs(testCase.args)
-			
+
 			err = startCmd.Execute()
-			require.NoError(t, err, "cluster start command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster start command should succeed, output: %s",
+				output.String(),
+			)
+
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
@@ -144,25 +149,30 @@ func TestClusterStopCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			testCase.setupFunc(t, tempDir)
-			
+
 			stopCmd := cluster.NewStopCmd()
 			var output bytes.Buffer
 			stopCmd.SetOut(&output)
 			stopCmd.SetErr(&output)
 			stopCmd.SetArgs(testCase.args)
-			
+
 			err = stopCmd.Execute()
-			require.NoError(t, err, "cluster stop command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster stop command should succeed, output: %s",
+				output.String(),
+			)
+
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
@@ -223,25 +233,30 @@ func TestClusterStatusCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			testCase.setupFunc(t, tempDir)
-			
+
 			statusCmd := cluster.NewStatusCmd()
 			var output bytes.Buffer
 			statusCmd.SetOut(&output)
 			statusCmd.SetErr(&output)
 			statusCmd.SetArgs(testCase.args)
-			
+
 			err = statusCmd.Execute()
-			require.NoError(t, err, "cluster status command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster status command should succeed, output: %s",
+				output.String(),
+			)
+
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
@@ -302,25 +317,30 @@ func TestClusterListCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			testCase.setupFunc(t, tempDir)
-			
+
 			listCmd := cluster.NewListCmd()
 			var output bytes.Buffer
 			listCmd.SetOut(&output)
 			listCmd.SetErr(&output)
 			listCmd.SetArgs(testCase.args)
-			
+
 			err = listCmd.Execute()
-			require.NoError(t, err, "cluster list command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster list command should succeed, output: %s",
+				output.String(),
+			)
+
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
@@ -347,14 +367,14 @@ func TestClusterCommands_ErrorCases(t *testing.T) {
 		cmdTest := cmdTest
 		t.Run(cmdTest.name+"_missing_config", func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			cmd := cmdTest.cmdFunc()
 			err = cmd.Execute()
 			require.Error(t, err, cmdTest.name+" command should fail when config is missing")
@@ -363,18 +383,22 @@ func TestClusterCommands_ErrorCases(t *testing.T) {
 
 		t.Run(cmdTest.name+"_invalid_config", func(t *testing.T) {
 			t.Parallel()
-			
+
 			tempDir := t.TempDir()
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Create invalid ksail.yaml
-			err = os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte("invalid: yaml: content: ["), 0o600)
+			err = os.WriteFile(
+				filepath.Join(tempDir, "ksail.yaml"),
+				[]byte("invalid: yaml: content: ["),
+				0o600,
+			)
 			require.NoError(t, err)
-			
+
 			cmd := cmdTest.cmdFunc()
 			err = cmd.Execute()
 			require.Error(t, err, cmdTest.name+" command should fail with invalid config")
@@ -418,13 +442,13 @@ func TestClusterCommands_Help(t *testing.T) {
 		cmdTest := cmdTest
 		t.Run(cmdTest.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := cmdTest.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{"--help"})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "help command should not return error")
 			assert.Contains(t, output.String(), cmdTest.expectedOutput)

@@ -16,7 +16,7 @@ type ClusterProvisionerStub struct {
 	ListError    error
 	ExistsResult bool
 	ExistsError  error
-	
+
 	// Track calls for verification
 	CreateCalls []string
 	DeleteCalls []string

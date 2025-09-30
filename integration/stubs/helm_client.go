@@ -10,7 +10,7 @@ import (
 type HelmClientStub struct {
 	InstallError   error
 	UninstallError error
-	
+
 	InstallCalls   []string
 	UninstallCalls []string
 }

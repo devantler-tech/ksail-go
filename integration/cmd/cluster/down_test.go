@@ -102,37 +102,42 @@ func TestClusterDownCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Setup test environment
 			testCase.setupFunc(t, tempDir)
-			
+
 			// Create and execute cluster down command
 			downCmd := cluster.NewDownCmd()
 			var output bytes.Buffer
 			downCmd.SetOut(&output)
 			downCmd.SetErr(&output)
 			downCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err = downCmd.Execute()
-			require.NoError(t, err, "cluster down command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"cluster down command should succeed, output: %s",
+				output.String(),
+			)
+
 			// Verify expected output strings
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
 				assert.Contains(t, outputStr, expectedStr, "Output should contain expected string")
 			}
-			
+
 			// Run custom validation
 			if testCase.validateFunc != nil {
 				testCase.validateFunc(t, outputStr)
@@ -163,7 +168,11 @@ func TestClusterDownCommand_ErrorCases(t *testing.T) {
 			name: "invalid_ksail_config",
 			setupFunc: func(t *testing.T, tempDir string) {
 				// Create invalid ksail.yaml
-				err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte("invalid: yaml: content: ["), 0o600)
+				err := os.WriteFile(
+					filepath.Join(tempDir, "ksail.yaml"),
+					[]byte("invalid: yaml: content: ["),
+					0o600,
+				)
 				require.NoError(t, err)
 			},
 			args:           []string{},
@@ -187,7 +196,11 @@ metadata:
   name: ""  # Empty name should cause validation error
 spec:
   distribution: Kind`
-				err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
+				err := os.WriteFile(
+					filepath.Join(tempDir, "ksail.yaml"),
+					[]byte(configContent),
+					0o600,
+				)
 				require.NoError(t, err)
 			},
 			args:           []string{},
@@ -206,7 +219,11 @@ spec:
   connection:
     context: ""  # Empty context might cause validation error
     timeout: 5m`
-				err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(configContent), 0o600)
+				err := os.WriteFile(
+					filepath.Join(tempDir, "ksail.yaml"),
+					[]byte(configContent),
+					0o600,
+				)
 				require.NoError(t, err)
 			},
 			args:           []string{},
@@ -218,31 +235,31 @@ spec:
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Setup test environment
 			testCase.setupFunc(t, tempDir)
-			
+
 			// Create and execute cluster down command
 			downCmd := cluster.NewDownCmd()
 			var output bytes.Buffer
 			downCmd.SetOut(&output)
 			downCmd.SetErr(&output)
 			downCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command and expect an error
 			err = downCmd.Execute()
 			require.Error(t, err, "cluster down command should fail")
-			
+
 			// Verify error message contains expected text
 			if testCase.expectedErrMsg != "" {
 				assert.Contains(t, err.Error(), testCase.expectedErrMsg,
@@ -280,14 +297,14 @@ func TestClusterDownCommand_HelpAndValidation(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute cluster down command
 			downCmd := cluster.NewDownCmd()
 			var output bytes.Buffer
 			downCmd.SetOut(&output)
 			downCmd.SetErr(&output)
 			downCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err := downCmd.Execute()
 			if testCase.expectError {
@@ -295,7 +312,7 @@ func TestClusterDownCommand_HelpAndValidation(t *testing.T) {
 			} else {
 				require.NoError(t, err, "command should not return error")
 			}
-			
+
 			// Verify expected output
 			assert.Contains(t, output.String(), testCase.expectedOutput)
 		})

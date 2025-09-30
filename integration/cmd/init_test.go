@@ -37,7 +37,7 @@ func TestInitCommand_Success(t *testing.T) {
 				ksailContent, err := os.ReadFile(filepath.Join(tempDir, "ksail.yaml"))
 				require.NoError(t, err)
 				assert.Contains(t, string(ksailContent), "distribution: Kind")
-				
+
 				// Validate kind.yaml exists and has content
 				kindContent, err := os.ReadFile(filepath.Join(tempDir, "kind.yaml"))
 				require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestInitCommand_Success(t *testing.T) {
 				ksailContent, err := os.ReadFile(filepath.Join(tempDir, "ksail.yaml"))
 				require.NoError(t, err)
 				assert.Contains(t, string(ksailContent), "distribution: K3d")
-				
+
 				// Validate k3d.yaml exists and has content
 				k3dContent, err := os.ReadFile(filepath.Join(tempDir, "k3d.yaml"))
 				require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestInitCommand_Success(t *testing.T) {
 				ksailContent, err := os.ReadFile(filepath.Join(tempDir, "ksail.yaml"))
 				require.NoError(t, err)
 				assert.Contains(t, string(ksailContent), "distribution: EKS")
-				
+
 				// Validate eks.yaml exists and has content
 				eksContent, err := os.ReadFile(filepath.Join(tempDir, "eks.yaml"))
 				require.NoError(t, err)
@@ -97,7 +97,9 @@ func TestInitCommand_Success(t *testing.T) {
 			},
 			validateContent: func(t *testing.T, tempDir string) {
 				// Validate files are created in custom directory
-				ksailContent, err := os.ReadFile(filepath.Join(tempDir, "custom-project", "ksail.yaml"))
+				ksailContent, err := os.ReadFile(
+					filepath.Join(tempDir, "custom-project", "ksail.yaml"),
+				)
 				require.NoError(t, err)
 				assert.Contains(t, string(ksailContent), "distribution: Kind")
 			},
@@ -124,45 +126,45 @@ func TestInitCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// For force flag test, create existing files
 			if contains(testCase.args, "--force") {
 				err := os.WriteFile("ksail.yaml", []byte("existing content"), 0o600)
 				require.NoError(t, err)
 			}
-			
+
 			// Create and execute init command
 			initCmd := cmd.NewInitCmd()
 			var output bytes.Buffer
 			initCmd.SetOut(&output)
 			initCmd.SetErr(&output)
 			initCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err = initCmd.Execute()
 			require.NoError(t, err, "init command should succeed, output: %s", output.String())
-			
+
 			// Verify expected files were created
 			for _, expectedFile := range testCase.expectedFiles {
 				filePath := filepath.Join(tempDir, expectedFile)
 				assert.FileExists(t, filePath, "Expected file should exist: %s", expectedFile)
 			}
-			
+
 			// Run custom validation
 			if testCase.validateContent != nil {
 				testCase.validateContent(t, tempDir)
 			}
-			
+
 			// Verify success message in output
 			assert.Contains(t, output.String(), "Project initialized successfully")
 		})
@@ -205,33 +207,33 @@ func TestInitCommand_ErrorCases(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Change to temp directory
 			oldWd, err := os.Getwd()
 			require.NoError(t, err)
 			defer func() { _ = os.Chdir(oldWd) }()
 			err = os.Chdir(tempDir)
 			require.NoError(t, err)
-			
+
 			// Run setup function if provided
 			if testCase.setupFunc != nil {
 				testCase.setupFunc(t, tempDir)
 			}
-			
+
 			// Create and execute init command
 			initCmd := cmd.NewInitCmd()
 			var output bytes.Buffer
 			initCmd.SetOut(&output)
 			initCmd.SetErr(&output)
 			initCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command and expect an error
 			err = initCmd.Execute()
 			require.Error(t, err, "init command should fail")
-			
+
 			// Verify error message contains expected text
 			if testCase.expectedErrMsg != "" {
 				assert.Contains(t, err.Error(), testCase.expectedErrMsg,
@@ -266,18 +268,18 @@ func TestInitCommand_HelpAndVersion(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute init command
 			initCmd := cmd.NewInitCmd()
 			var output bytes.Buffer
 			initCmd.SetOut(&output)
 			initCmd.SetErr(&output)
 			initCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command (help should not return error)
 			err := initCmd.Execute()
 			require.NoError(t, err, "help command should not return error")
-			
+
 			// Verify expected output
 			assert.Contains(t, output.String(), testCase.expectedOutput)
 		})

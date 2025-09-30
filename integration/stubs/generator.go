@@ -30,13 +30,13 @@ func (g *GeneratorStub[T, Options]) Generate(model T, opts Options) (string, err
 	g.callCount++
 	g.LastModel = model
 	g.LastOptions = opts
-	
+
 	if g.GenerateError != nil {
 		return "", g.GenerateError
 	}
-	
+
 	content := g.GenerateResult
-	
+
 	// If this is a yamlgenerator.Options and has an Output path, write the file
 	if outputOpts, ok := any(opts).(yamlgenerator.Options); ok && outputOpts.Output != "" {
 		// Write the content to the file
@@ -45,7 +45,7 @@ func (g *GeneratorStub[T, Options]) Generate(model T, opts Options) (string, err
 			return "", err
 		}
 	}
-	
+
 	return content, nil
 }
 

@@ -8,13 +8,13 @@ import (
 
 // KindProviderStub is a stub implementation of KindProvider interface.
 type KindProviderStub struct {
-	CreateError    error
-	DeleteError    error
-	ListResult     []string
-	ListError      error
+	CreateError     error
+	DeleteError     error
+	ListResult      []string
+	ListError       error
 	ListNodesResult []string
-	ListNodesError error
-	
+	ListNodesError  error
+
 	CreateCalls    []string
 	DeleteCalls    []string
 	ListCalls      int

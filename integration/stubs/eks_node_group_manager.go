@@ -9,7 +9,7 @@ import (
 // EKSNodeGroupManagerStub is a stub implementation of EKSNodeGroupManager interface.
 type EKSNodeGroupManagerStub struct {
 	ScaleError error
-	
+
 	ScaleCalls int
 }
 
@@ -19,7 +19,11 @@ func NewEKSNodeGroupManagerStub() *EKSNodeGroupManagerStub {
 }
 
 // Scale simulates node group scaling.
-func (e *EKSNodeGroupManagerStub) Scale(ctx context.Context, ng *eksapi.NodeGroupBase, wait bool) error {
+func (e *EKSNodeGroupManagerStub) Scale(
+	ctx context.Context,
+	ng *eksapi.NodeGroupBase,
+	wait bool,
+) error {
 	e.ScaleCalls++
 	return e.ScaleError
 }

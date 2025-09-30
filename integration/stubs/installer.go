@@ -10,7 +10,7 @@ import (
 type InstallerStub struct {
 	InstallError   error
 	UninstallError error
-	
+
 	// Track calls for verification
 	InstallCalls   int
 	UninstallCalls int

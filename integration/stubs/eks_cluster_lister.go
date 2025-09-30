@@ -11,7 +11,7 @@ import (
 type EKSClusterListerStub struct {
 	GetClustersResult []cluster.Description
 	GetClustersError  error
-	
+
 	GetClustersCalls int
 }
 
@@ -25,7 +25,12 @@ func NewEKSClusterListerStub() *EKSClusterListerStub {
 }
 
 // GetClusters simulates EKS cluster listing.
-func (e *EKSClusterListerStub) GetClusters(ctx context.Context, provider *eks.ClusterProvider, listAllRegions bool, chunkSize int) ([]cluster.Description, error) {
+func (e *EKSClusterListerStub) GetClusters(
+	ctx context.Context,
+	provider *eks.ClusterProvider,
+	listAllRegions bool,
+	chunkSize int,
+) ([]cluster.Description, error) {
 	e.GetClustersCalls++
 	return e.GetClustersResult, e.GetClustersError
 }

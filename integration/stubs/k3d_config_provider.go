@@ -11,7 +11,7 @@ import (
 type K3dConfigProviderStub struct {
 	TransformResult *v1alpha5.ClusterConfig
 	TransformError  error
-	
+
 	TransformCalls int
 }
 
@@ -25,7 +25,12 @@ func NewK3dConfigProviderStub() *K3dConfigProviderStub {
 }
 
 // TransformSimpleToClusterConfig simulates config transformation.
-func (k *K3dConfigProviderStub) TransformSimpleToClusterConfig(ctx context.Context, runtime runtimes.Runtime, simpleConfig v1alpha5.SimpleConfig, filename string) (*v1alpha5.ClusterConfig, error) {
+func (k *K3dConfigProviderStub) TransformSimpleToClusterConfig(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	simpleConfig v1alpha5.SimpleConfig,
+	filename string,
+) (*v1alpha5.ClusterConfig, error) {
 	k.TransformCalls++
 	return k.TransformResult, k.TransformError
 }

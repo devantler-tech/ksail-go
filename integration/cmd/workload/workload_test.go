@@ -35,18 +35,23 @@ func TestWorkloadApplyCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute workload apply command
 			applyCmd := workload.NewApplyCommand()
 			var output bytes.Buffer
 			applyCmd.SetOut(&output)
 			applyCmd.SetErr(&output)
 			applyCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err := applyCmd.Execute()
-			require.NoError(t, err, "workload apply command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"workload apply command should succeed, output: %s",
+				output.String(),
+			)
+
 			// Verify expected output strings
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
@@ -81,18 +86,23 @@ func TestWorkloadInstallCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute workload install command
 			installCmd := workload.NewInstallCommand()
 			var output bytes.Buffer
 			installCmd.SetOut(&output)
 			installCmd.SetErr(&output)
 			installCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err := installCmd.Execute()
-			require.NoError(t, err, "workload install command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"workload install command should succeed, output: %s",
+				output.String(),
+			)
+
 			// Verify expected output strings
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
@@ -127,18 +137,23 @@ func TestWorkloadReconcileCommand_Success(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Create and execute workload reconcile command
 			reconcileCmd := workload.NewReconcileCommand()
 			var output bytes.Buffer
 			reconcileCmd.SetOut(&output)
 			reconcileCmd.SetErr(&output)
 			reconcileCmd.SetArgs(testCase.args)
-			
+
 			// Execute the command
 			err := reconcileCmd.Execute()
-			require.NoError(t, err, "workload reconcile command should succeed, output: %s", output.String())
-			
+			require.NoError(
+				t,
+				err,
+				"workload reconcile command should succeed, output: %s",
+				output.String(),
+			)
+
 			// Verify expected output strings
 			outputStr := output.String()
 			for _, expectedStr := range testCase.expectedOutput {
@@ -178,13 +193,13 @@ func TestWorkloadCommands_Help(t *testing.T) {
 		cmdTest := cmdTest
 		t.Run(cmdTest.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := cmdTest.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{"--help"})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "help command should not return error")
 			assert.Contains(t, output.String(), cmdTest.expectedOutput)
@@ -192,13 +207,13 @@ func TestWorkloadCommands_Help(t *testing.T) {
 
 		t.Run(cmdTest.name+"_short", func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := cmdTest.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{"-h"})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "help command should not return error")
 			assert.Contains(t, output.String(), cmdTest.expectedOutput)
@@ -238,13 +253,13 @@ func TestWorkloadCommands_Integration(t *testing.T) {
 		cmdTest := cmdTest
 		t.Run(cmdTest.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			cmd := cmdTest.cmdFunc()
 			var output bytes.Buffer
 			cmd.SetOut(&output)
 			cmd.SetErr(&output)
 			cmd.SetArgs([]string{})
-			
+
 			err := cmd.Execute()
 			require.NoError(t, err, "command should succeed")
 			assert.Contains(t, output.String(), cmdTest.expectedOutput)
@@ -278,7 +293,7 @@ func TestWorkloadCommands_MultipleExecutions(t *testing.T) {
 		cmdTest := cmdTest
 		t.Run(cmdTest.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			// Execute the same command multiple times to ensure no state issues
 			for i := 0; i < 3; i++ {
 				cmd := cmdTest.cmdFunc()
@@ -286,10 +301,15 @@ func TestWorkloadCommands_MultipleExecutions(t *testing.T) {
 				cmd.SetOut(&output)
 				cmd.SetErr(&output)
 				cmd.SetArgs([]string{})
-				
+
 				err := cmd.Execute()
 				require.NoError(t, err, "command execution %d should succeed", i+1)
-				assert.NotEmpty(t, output.String(), "output should not be empty on execution %d", i+1)
+				assert.NotEmpty(
+					t,
+					output.String(),
+					"output should not be empty on execution %d",
+					i+1,
+				)
 			}
 		})
 	}

@@ -18,7 +18,7 @@ type K3dClientProviderStub struct {
 	ClusterStopError   error
 	ClusterListResult  []*types.Cluster
 	ClusterListError   error
-	
+
 	RunCalls    int
 	DeleteCalls int
 	GetCalls    int
@@ -38,37 +38,62 @@ func NewK3dClientProviderStub() *K3dClientProviderStub {
 }
 
 // ClusterRun simulates cluster creation.
-func (k *K3dClientProviderStub) ClusterRun(ctx context.Context, runtime runtimes.Runtime, clusterConfig *v1alpha5.ClusterConfig) error {
+func (k *K3dClientProviderStub) ClusterRun(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	clusterConfig *v1alpha5.ClusterConfig,
+) error {
 	k.RunCalls++
 	return k.ClusterRunError
 }
 
 // ClusterDelete simulates cluster deletion.
-func (k *K3dClientProviderStub) ClusterDelete(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster, opts types.ClusterDeleteOpts) error {
+func (k *K3dClientProviderStub) ClusterDelete(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	cluster *types.Cluster,
+	opts types.ClusterDeleteOpts,
+) error {
 	k.DeleteCalls++
 	return k.ClusterDeleteError
 }
 
 // ClusterGet simulates cluster retrieval.
-func (k *K3dClientProviderStub) ClusterGet(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*types.Cluster, error) {
+func (k *K3dClientProviderStub) ClusterGet(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	cluster *types.Cluster,
+) (*types.Cluster, error) {
 	k.GetCalls++
 	return k.ClusterGetResult, k.ClusterGetError
 }
 
 // ClusterStart simulates cluster start.
-func (k *K3dClientProviderStub) ClusterStart(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster, opts types.ClusterStartOpts) error {
+func (k *K3dClientProviderStub) ClusterStart(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	cluster *types.Cluster,
+	opts types.ClusterStartOpts,
+) error {
 	k.StartCalls++
 	return k.ClusterStartError
 }
 
 // ClusterStop simulates cluster stop.
-func (k *K3dClientProviderStub) ClusterStop(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) error {
+func (k *K3dClientProviderStub) ClusterStop(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+	cluster *types.Cluster,
+) error {
 	k.StopCalls++
 	return k.ClusterStopError
 }
 
 // ClusterList simulates cluster listing.
-func (k *K3dClientProviderStub) ClusterList(ctx context.Context, runtime runtimes.Runtime) ([]*types.Cluster, error) {
+func (k *K3dClientProviderStub) ClusterList(
+	ctx context.Context,
+	runtime runtimes.Runtime,
+) ([]*types.Cluster, error) {
 	k.ListCalls++
 	return k.ClusterListResult, k.ClusterListError
 }
