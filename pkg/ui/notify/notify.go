@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	fcolor "github.com/fatih/color"
@@ -12,15 +13,15 @@ import (
 
 const (
 	// ErrorSymbol is the symbol used for error messages.
-	ErrorSymbol = "✗ "
+	ErrorSymbol = "✗"
 	// WarningSymbol is the symbol used for warning messages.
-	WarningSymbol = "⚠ "
+	WarningSymbol = "⚠"
 	// SuccessSymbol is the symbol used for success messages.
-	SuccessSymbol = "✔ "
+	SuccessSymbol = "✔"
 	// ActivitySymbol is the symbol used for activity messages.
-	ActivitySymbol = "► "
+	ActivitySymbol = "►"
 	// InfoSymbol is the symbol used for informational messages.
-	InfoSymbol = "ℹ "
+	InfoSymbol = "ℹ"
 )
 
 // Message represents a notification message with optional timing information.
@@ -113,7 +114,7 @@ func WarnMessage(out io.Writer, msg Message) {
 
 // printMessage prints a message with symbol and color.
 func printMessage(out io.Writer, col *fcolor.Color, symbol, message string) {
-	_, err := col.Fprintln(out, symbol+message)
+	_, err := col.Fprintln(out, strings.Join([]string{symbol, message}, " "))
 	handleNotifyError(err)
 }
 

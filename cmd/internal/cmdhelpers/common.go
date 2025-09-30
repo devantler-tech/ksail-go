@@ -3,8 +3,11 @@ package cmdhelpers
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	k3dconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/k3d"
+	kindconfig "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
@@ -146,5 +149,28 @@ func StandardContextFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 		Description:  "Kubernetes context of cluster",
 		DefaultValue: "kind-kind",
+	}
+}
+
+// LoadDistributionConfig loads the distribution-specific configuration based on the cluster distribution type.
+// It returns an interface{} that can be type asserted to *v1alpha4.Cluster (Kind) or *v1alpha5.SimpleConfig (K3d).
+func LoadDistributionConfig(config *v1alpha1.Cluster) (any, error) {
+	switch config.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		kindConfigManager := kindconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+		kindConfig, err := kindConfigManager.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load Kind configuration: %w", err)
+		}
+		return kindConfig, nil
+	case v1alpha1.DistributionK3d:
+		k3dConfigManager := k3dconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+		k3dConfig, err := k3dConfigManager.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load K3d configuration: %w", err)
+		}
+		return k3dConfig, nil
+	default:
+		return nil, fmt.Errorf("unsupported distribution: %s", config.Spec.Distribution)
 	}
 }
