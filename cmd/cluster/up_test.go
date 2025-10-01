@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//nolint:dupl // Test structure intentionally mirrors down_test for consistency
 func TestHandleUpRunE(t *testing.T) {
 	t.Parallel()
 

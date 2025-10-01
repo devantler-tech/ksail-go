@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -12,12 +14,27 @@ func NewDownCmd() *cobra.Command {
 		"down",
 		"Destroy a cluster",
 		`Destroy a cluster.`,
-		func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
-			return cmdhelpers.StandardClusterCommandRunE(
-				"cluster destroyed successfully",
-			)(cmd, manager, args)
-		},
+		HandleDownRunE,
 		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 	)
+}
+
+// HandleDownRunE handles the down command.
+// Exported for testing purposes.
+func HandleDownRunE(
+	cmd *cobra.Command,
+	manager *configmanager.ConfigManager,
+	_ []string,
+) error {
+	_, err := cmdhelpers.HandleSimpleClusterCommand(
+		cmd,
+		manager,
+		"Cluster destroyed successfully (stub implementation)",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to handle cluster command: %w", err)
+	}
+
+	return nil
 }
