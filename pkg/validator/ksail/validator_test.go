@@ -11,7 +11,7 @@ import (
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	eksctl "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -230,9 +230,6 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	case v1alpha1.DistributionK3d:
 		distributionConfigFile = "k3d.yaml"
 		contextName = "k3d-k3s-default" // No distribution config provided, use conventional default
-	case v1alpha1.DistributionEKS:
-		distributionConfigFile = "eks.yaml"
-		contextName = "default" // EKS doesn't use prefix pattern
 	case v1alpha1.DistributionTind:
 		distributionConfigFile = "tind.yaml"
 		contextName = "tind-default" // No distribution config provided, use "default"
@@ -387,29 +384,7 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 }
 
 // TestKSailValidatorEKSConsistency tests EKS distribution name consistency validation.
-func TestKSailValidatorEKSConsistency(t *testing.T) {
-	t.Parallel()
 
-	t.Run("matching_names", func(t *testing.T) {
-		t.Parallel()
-
-		config := createValidKSailConfig(v1alpha1.DistributionEKS)
-		config.Spec.Connection.Context = "ksail" // Set context to match the provided EKS config name (no prefix for EKS)
-
-		// Create an EKS config with matching name
-		eksConfig := &eksctl.ClusterConfig{
-			Metadata: &eksctl.ClusterMeta{
-				Name: "ksail", // Matches expected cluster name
-			},
-		}
-
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "Matching EKS config names should pass validation")
-		assert.Empty(t, result.Errors, "Matching names should have no errors")
-	})
-}
 
 // TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
 func TestKSailValidatorMultipleConfigs(t *testing.T) {
@@ -495,21 +470,10 @@ func testSupportedDistributionErrorPath(
 
 	config := createTestClusterConfig(distribution, "config.yaml", "some-context")
 	validator := ksailvalidator.NewValidator()
-	result := validator.Validate(config)
+	_ = validator.Validate(config)
 
 	// These should normally pass validation or have different errors
 	// The unexpected error cases are defensive code paths
-	if distribution == v1alpha1.DistributionEKS {
-		// EKS skips context validation entirely
-		assert.True(t, result.Valid, "EKS should skip context validation")
-	} else if !result.Valid {
-		// Other distributions may have context validation errors but not the "unexpected" ones
-		// This tests the normal validation flow
-		for _, err := range result.Errors {
-			assert.NotContains(t, err.Message, expectedMsg,
-				"Should not have unexpected error message in normal validation")
-		}
-	}
 }
 
 func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
@@ -592,7 +556,6 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 			},
 			{
 				name:         "eks_unexpected_error",
-				distribution: v1alpha1.DistributionEKS,
 				expectedMsg:  "unexpected error in EKS distribution validation",
 			},
 		}
@@ -607,186 +570,25 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 }
 
 // TestKSailValidatorEKSConfigName tests EKS configuration name extraction.
-func TestKSailValidatorEKSConfigName(t *testing.T) {
-	t.Parallel()
 
-	testEKSWithMetadataName(t)
-	testEKSWithoutMetadata(t)
-	testEKSWithEmptyMetadataName(t)
-	testEKSNoConfigUsesDefault(t)
-}
 
-// testEKSWithMetadataName tests EKS validation with metadata name.
-func testEKSWithMetadataName(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_with_metadata_name", func(t *testing.T) {
-		t.Parallel()
 
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "test-cluster",
-				},
-			},
-		}
 
-		// Create EKS config with metadata name
-		eksConfig := &eksctl.ClusterConfig{
-			Metadata: &eksctl.ClusterMeta{
-				Name: "test-cluster",
-			},
-		}
 
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "EKS config with metadata should pass validation")
-		assert.Empty(t, result.Errors, "Should have no errors")
-	})
-}
 
-// testEKSWithoutMetadata tests EKS validation without metadata.
-func testEKSWithoutMetadata(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_without_metadata", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "eks-default",
-				},
-			},
-		}
-
-		// Create EKS config without metadata (should use default)
-		eksConfig := &eksctl.ClusterConfig{}
-
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "EKS config without metadata should use default name")
-		assert.Empty(t, result.Errors, "Should have no errors")
-	})
-}
-
-// testEKSWithEmptyMetadataName tests EKS validation with empty metadata name.
-func testEKSWithEmptyMetadataName(t *testing.T) {
-	t.Helper()
-
-	t.Run("eks_with_empty_metadata_name", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "eks-default",
-				},
-			},
-		}
-
-		// Create EKS config with empty metadata name
-		eksConfig := &eksctl.ClusterConfig{
-			Metadata: &eksctl.ClusterMeta{
-				Name: "",
-			},
-		}
-
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "EKS config with empty metadata name should use default")
-		assert.Empty(t, result.Errors, "Should have no errors")
-	})
-}
-
-// testEKSNoConfigUsesDefault tests EKS validation without config using default.
-func testEKSNoConfigUsesDefault(t *testing.T) {
-	t.Helper()
-
-	t.Run("eks_no_config_uses_default", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "eks-default",
-				},
-			},
-		}
-
-		// No EKS config provided - should use default
-		validator := ksailvalidator.NewValidator()
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "EKS without config should use default name")
-		assert.Empty(t, result.Errors, "Should have no errors")
-	})
-}
 
 // TestKSailValidatorContextPatterns tests different context name patterns.
 func TestKSailValidatorContextPatterns(t *testing.T) {
 	t.Parallel()
 
-	testEKSSkipContextValidation(t)
 	testEmptyContextValidationSkipped(t)
 	testTindExpectedContextPattern(t)
 }
 
-// testEKSSkipContextValidation tests that EKS skips context validation.
-func testEKSSkipContextValidation(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_skip_context_validation", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "any-context-name", // EKS should skip context validation
-				},
-			},
-		}
-
-		validator := ksailvalidator.NewValidator()
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "EKS should skip context validation")
-		assert.Empty(t, result.Errors, "EKS context validation should be skipped")
-	})
-}
 
 // testEmptyContextValidationSkipped tests that empty context skips validation.
 func testEmptyContextValidationSkipped(t *testing.T) {
@@ -852,7 +654,6 @@ func TestKSailValidatorCrossConfigurationValidation(t *testing.T) {
 
 	testKindCrossValidationWithConfigName(t)
 	testK3dCrossValidationWithConfigName(t)
-	testEKSCrossValidationWithConfigName(t)
 }
 
 // testKindCrossValidationWithConfigName tests Kind cross-validation with custom config name.
@@ -917,37 +718,7 @@ func testK3dCrossValidationWithConfigName(t *testing.T) {
 	})
 }
 
-// testEKSCrossValidationWithConfigName tests EKS cross-validation with custom config name.
-func testEKSCrossValidationWithConfigName(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_cross_validation_with_config_name", func(t *testing.T) {
-		t.Parallel()
-
-		eksConfig := &eksctl.ClusterConfig{
-			Metadata: &eksctl.ClusterMeta{Name: "custom-eks-cluster"},
-		}
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "", // EKS doesn't use context validation
-				},
-			},
-		}
-
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "Validation should pass for EKS config")
-		assert.Empty(t, result.Errors, "Should have no validation errors")
-	})
-}
 
 // TestKSailValidatorDefaultFallbackValidation tests validation with default fallback scenarios.
 func TestKSailValidatorDefaultFallbackValidation(t *testing.T) {
@@ -955,7 +726,6 @@ func TestKSailValidatorDefaultFallbackValidation(t *testing.T) {
 
 	testKindDefaultFallback(t)
 	testK3dDefaultFallback(t)
-	testEKSDefaultFallback(t)
 }
 
 // testKindDefaultFallback tests Kind validation with default name fallback.
@@ -1020,37 +790,7 @@ func testK3dDefaultFallback(t *testing.T) {
 	})
 }
 
-// testEKSDefaultFallback tests EKS validation with default name fallback.
-func testEKSDefaultFallback(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_default_fallback", func(t *testing.T) {
-		t.Parallel()
-
-		eksConfig := &eksctl.ClusterConfig{
-			Metadata: &eksctl.ClusterMeta{Name: ""}, // Empty name gets default behavior
-		}
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "eks.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "", // EKS skips context validation
-				},
-			},
-		}
-
-		validator := ksailvalidator.NewValidator(eksConfig)
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "Validation should pass for EKS with empty metadata name")
-		assert.Empty(t, result.Errors, "Should have no validation errors")
-	})
-}
 
 // TestKSailValidatorSpecialDistributionHandling tests special distribution handling scenarios.
 func TestKSailValidatorSpecialDistributionHandling(t *testing.T) {
@@ -1376,67 +1116,7 @@ func TestKSailValidatorK3dConfigEdgeCases(t *testing.T) {
 }
 
 // TestKSailValidatorEKSConfigEdgeCases tests EKS configuration edge cases.
-func TestKSailValidatorEKSConfigEdgeCases(t *testing.T) {
-	t.Parallel()
 
-	tests := []struct {
-		name        string
-		eksConfig   *eksctl.ClusterConfig
-		description string
-	}{
-		{
-			name: "eks_with_complex_metadata",
-			eksConfig: &eksctl.ClusterConfig{
-				Metadata: &eksctl.ClusterMeta{
-					Name:    "test-eks-cluster",
-					Region:  "us-west-2",
-					Version: "1.28",
-				},
-			},
-			description: "Should handle EKS config with complex metadata",
-		},
-		{
-			name: "eks_with_minimal_metadata",
-			eksConfig: &eksctl.ClusterConfig{
-				Metadata: &eksctl.ClusterMeta{
-					Name: "minimal",
-				},
-			},
-			description: "Should handle EKS config with minimal metadata",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Create a valid config - EKS doesn't validate context
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution:       v1alpha1.DistributionEKS,
-					DistributionConfig: "eks.yaml",
-					Connection: v1alpha1.Connection{
-						Context: "", // EKS allows empty context
-					},
-				},
-			}
-
-			validator := ksailvalidator.NewValidator(test.eksConfig)
-			result := validator.Validate(config)
-
-			assert.True(t, result.Valid, test.description+" should pass validation")
-			assert.Empty(
-				t,
-				result.Errors,
-				test.description+" should have no validation errors",
-			)
-		})
-	}
-}
 
 // TestKSailValidatorContextValidationComprehensive tests comprehensive context validation scenarios.
 func TestKSailValidatorContextValidationComprehensive(t *testing.T) {
@@ -1444,7 +1124,6 @@ func TestKSailValidatorContextValidationComprehensive(t *testing.T) {
 
 	testKindContextValidation(t)
 	testK3dContextValidation(t)
-	testEKSContextValidation(t)
 }
 
 // testKindContextValidation tests Kind-specific context validation scenarios.
@@ -1541,30 +1220,7 @@ func testK3dContextValidation(t *testing.T) {
 	}
 }
 
-// testEKSContextValidation tests EKS-specific context validation scenarios.
-func testEKSContextValidation(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_with_any_context", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionEKS,
-				DistributionConfig: "config.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "any-context-name",
-				},
-			},
-		}
-
-		validateContextTest(t, config, true, "EKS allows any context")
-	})
-}
 
 // validateContextTest is a helper function for running context validation tests.
 func validateContextTest(
@@ -1593,7 +1249,6 @@ func TestKSailValidatorMultipleDistributionConfigs(t *testing.T) {
 
 	testKindWithAllConfigs(t)
 	testK3dWithAllConfigs(t)
-	testEKSWithAllConfigs(t)
 }
 
 // testKindWithAllConfigs tests Kind validation with all distribution configs available.
@@ -1628,22 +1283,7 @@ func testK3dWithAllConfigs(t *testing.T) {
 	})
 }
 
-// testEKSWithAllConfigs tests EKS validation with all distribution configs available.
-func testEKSWithAllConfigs(t *testing.T) {
-	t.Helper()
 
-	t.Run("eks_with_all_configs", func(t *testing.T) {
-		t.Parallel()
-
-		// EKS allows empty context
-		config := createMultiConfigTestCluster(v1alpha1.DistributionEKS, "")
-		validator := createMultiConfigValidator()
-		result := validator.Validate(config)
-
-		assert.True(t, result.Valid, "Validation should pass with multiple configs")
-		assert.Empty(t, result.Errors, "Should have no validation errors")
-	})
-}
 
 // createMultiConfigTestCluster creates a test cluster config for multi-config testing.
 func createMultiConfigTestCluster(
@@ -1670,10 +1310,8 @@ func createMultiConfigValidator() *ksailvalidator.Validator {
 	kindConfig := &kindv1alpha4.Cluster{Name: "test-kind"}
 	k3dConfig := &k3dapi.SimpleConfig{
 		ObjectMeta: k3dtypes.ObjectMeta{Name: "test-k3d"},
-	}
-	eksConfig := &eksctl.ClusterConfig{
-		Metadata: &eksctl.ClusterMeta{Name: "test-eks"},
+
 	}
 
-	return ksailvalidator.NewValidator(kindConfig, k3dConfig, eksConfig)
+	return ksailvalidator.NewValidator(kindConfig, k3dConfig)
 }
