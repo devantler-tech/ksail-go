@@ -29,6 +29,10 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
+	// Add hidden global --stub flag for integration testing
+	cmd.PersistentFlags().Bool("stub", false, "Use stub implementations for testing")
+	_ = cmd.PersistentFlags().MarkHidden("stub")
+
 	// Add all subcommands
 	cmd.AddCommand(NewInitCmd())
 	cmd.AddCommand(cluster.NewClusterCmd())

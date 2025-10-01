@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	"github.com/devantler-tech/ksail-go/integration/stubs"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
@@ -73,14 +74,23 @@ func HandleInitRunE(
 	// Get the force flag value
 	force := configManager.Viper.GetBool("force")
 
-	// Create scaffolder and generate project files
-	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
+	// Check if stub mode is enabled
+	stubMode, _ := cmd.Flags().GetBool("stub")
 
 	cmd.Println()
 	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project... ")
 
 	// Generate files individually to provide immediate feedback
-	err = scaffolderInstance.Scaffold(targetPath, force)
+	if stubMode {
+		// Use stub scaffolder for integration testing
+		stubScaffolder := stubs.NewScaffolder(*cluster, cmd.OutOrStdout())
+		err = stubScaffolder.Scaffold(targetPath, force)
+	} else {
+		// Use real scaffolder
+		scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
+		err = scaffolderInstance.Scaffold(targetPath, force)
+	}
+	
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
