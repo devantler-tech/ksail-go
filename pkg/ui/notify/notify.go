@@ -72,7 +72,7 @@ func (m Message) Format() string {
 // FormatDuration formats a duration as "2s", "45s", "1m30s", etc.
 func FormatDuration(d time.Duration) string {
 	if d < time.Second {
-		return "0s"
+		return fmt.Sprintf("%dms", d.Milliseconds())
 	}
 
 	return d.Truncate(time.Second).String()
