@@ -60,12 +60,17 @@ func (m Message) WithTiming(elapsed, stage time.Duration) Message {
 // Format returns the formatted message text with timing if present.
 func (m Message) Format() string {
 	msg := m.Text
-	if m.Elapsed > 0 && m.Stage > 0 {
-		msg += fmt.Sprintf(" [%s|%s]",
-			FormatDuration(m.Elapsed),
-			FormatDuration(m.Stage))
+	if m.Elapsed > 0 || m.Stage > 0 {
+		var timing string
+		if m.Elapsed > 0 && m.Stage > 0 {
+			timing = fmt.Sprintf("[%s|%s]", FormatDuration(m.Elapsed), FormatDuration(m.Stage))
+		} else if m.Elapsed > 0 {
+			timing = fmt.Sprintf("[%s]", FormatDuration(m.Elapsed))
+		} else if m.Stage > 0 {
+			timing = fmt.Sprintf("[|%s]", FormatDuration(m.Stage))
+		}
+		msg += " " + timing
 	}
-
 	return msg
 }
 
