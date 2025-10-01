@@ -14,7 +14,6 @@ Contains utilities for generating Kubernetes resources and configuration files f
 
 ## Subpackages
 
-- **[pkg/io/generator/eks/](./eks/README.md)** - Amazon EKS-specific resource generators
 - **[pkg/io/generator/k3d/](./k3d/README.md)** - K3d-specific resource generators  
 - **[pkg/io/generator/kind/](./kind/README.md)** - Kind-specific resource generators
 - **[pkg/io/generator/kustomization/](./kustomization/README.md)** - Kustomization file generators
