@@ -2,6 +2,7 @@
 package cmdhelpers
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -15,6 +16,9 @@ import (
 
 // SuggestionsMinimumDistance is the minimum distance for command suggestions.
 const SuggestionsMinimumDistance = 2
+
+// ErrUnsupportedDistribution is returned when the distribution is not supported.
+var ErrUnsupportedDistribution = errors.New("unsupported distribution")
 
 // NewCobraCommand creates a cobra.Command with automatic type-safe configuration binding
 // for v1alpha1.Cluster configurations. This constructor provides a unified approach to
@@ -89,7 +93,7 @@ func HandleSimpleClusterCommand(
 	// Load the full cluster configuration with validation
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	notify.SuccessMessage(cmd.OutOrStdout(), notify.NewMessage(successMessage))
@@ -158,19 +162,23 @@ func LoadDistributionConfig(config *v1alpha1.Cluster) (any, error) {
 	switch config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
 		kindConfigManager := kindconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+
 		kindConfig, err := kindConfigManager.LoadConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load Kind configuration: %w", err)
 		}
+
 		return kindConfig, nil
 	case v1alpha1.DistributionK3d:
 		k3dConfigManager := k3dconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+
 		k3dConfig, err := k3dConfigManager.LoadConfig()
 		if err != nil {
 			return nil, fmt.Errorf("failed to load K3d configuration: %w", err)
 		}
+
 		return k3dConfig, nil
 	default:
-		return nil, fmt.Errorf("unsupported distribution: %s", config.Spec.Distribution)
+		return nil, ErrUnsupportedDistribution
 	}
 }

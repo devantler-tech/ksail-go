@@ -393,7 +393,6 @@ func generateDistributionContent(
 	require.NoError(t, err)
 	snaps.MatchSnapshot(t, ksailContent)
 
-	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		// Create minimal Kind configuration without name (Kind will use defaults)
@@ -421,7 +420,6 @@ func createMinimalClusterForSnapshot(
 	}
 
 	// Only add spec fields if they differ from defaults to match original hardcoded output
-	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		// For Kind, the original hardcoded output had no spec, so return minimal cluster

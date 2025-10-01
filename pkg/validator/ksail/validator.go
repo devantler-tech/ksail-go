@@ -192,12 +192,6 @@ func (v *Validator) getK3dConfigName() string {
 	return "k3s-default"
 }
 
-// isUnsupportedDistribution checks if the distribution is not supported for context validation.
-func (v *Validator) isUnsupportedDistribution(distribution v1alpha1.Distribution) bool {
-	// All distributions are currently supported
-	return false
-}
-
 // addUnsupportedDistributionError adds validation errors for unsupported distributions.
 func (v *Validator) addUnsupportedDistributionError(
 	config *v1alpha1.Cluster,
