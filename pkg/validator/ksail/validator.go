@@ -89,16 +89,7 @@ func (v *Validator) validateContextName(
 
 	expectedContext := v.getExpectedContextName(config)
 	if expectedContext == "" {
-		// Add error for unsupported distributions
-		v.addUnsupportedDistributionError(config, result)
-
-		return
-	}
-
-	// Check for unsupported distributions that return invalid context patterns
-	if v.isUnsupportedDistribution(config.Spec.Distribution) {
-		v.addUnsupportedDistributionError(config, result)
-
+		// For EKS or unknown distributions, skip context validation
 		return
 	}
 
@@ -133,7 +124,7 @@ func (v *Validator) validateDistribution(
 			fixSuggestion = "Set spec.distribution to a supported distribution type"
 		} else {
 			message = "invalid distribution value"
-			fixSuggestion = "Use a valid distribution type: Kind, K3d, or EKS"
+			fixSuggestion = "Use a supported distribution: Kind, K3d, or EKS"
 		}
 
 		result.AddError(validator.ValidationError{
@@ -155,59 +146,6 @@ func (v *Validator) validateDistribution(
 	}
 }
 
-// isUnsupportedDistribution checks if the distribution is not supported for context validation.
-func (v *Validator) isUnsupportedDistribution(distribution v1alpha1.Distribution) bool {
-	return distribution == v1alpha1.DistributionTind
-}
-
-// addUnsupportedDistributionError adds validation errors for unsupported distributions.
-func (v *Validator) addUnsupportedDistributionError(
-	config *v1alpha1.Cluster,
-	result *validator.ValidationResult,
-) {
-	distribution := config.Spec.Distribution
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		// Kind is supported, should not reach here in normal validation flow
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unexpected error in Kind distribution validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Report this as a bug - Kind should be supported",
-		})
-	case v1alpha1.DistributionK3d:
-		// K3d is supported, should not reach here in normal validation flow
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unexpected error in K3d distribution validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Report this as a bug - K3d should be supported",
-		})
-	case v1alpha1.DistributionEKS:
-		// EKS is supported, should not reach here in normal validation flow
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unexpected error in EKS distribution validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Report this as a bug - EKS should be supported",
-		})
-	case v1alpha1.DistributionTind:
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "Tind distribution is not yet supported for context validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
-		})
-	default:
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unknown distribution for context validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
-		})
-	}
-}
-
 // getExpectedContextName returns the expected context name for the given configuration.
 // Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted
 // from the distribution config. If no cluster name is found, "ksail-default" is used as the ultimate fallback.
@@ -222,9 +160,6 @@ func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	case v1alpha1.DistributionEKS:
 		// EKS context pattern is more flexible (cluster name or ARN)
 		return distributionName
-	case v1alpha1.DistributionTind:
-		// Tind context pattern would be similar to k3d
-		return "tind-" + distributionName
 	default:
 		return ""
 	}
@@ -237,9 +172,6 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 		return v.getKindConfigName()
 	case v1alpha1.DistributionK3d:
 		return v.getK3dConfigName()
-	case v1alpha1.DistributionTind:
-		// Tind would have similar config name extraction
-		return "tind"
 	case v1alpha1.DistributionEKS:
 		// EKS cluster name extraction (not implemented in this context)
 		return "default"
