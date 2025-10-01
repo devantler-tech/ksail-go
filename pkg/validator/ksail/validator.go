@@ -8,7 +8,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/validator"
 	"github.com/devantler-tech/ksail-go/pkg/validator/metadata"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	eksctl "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -16,7 +15,6 @@ import (
 type Validator struct {
 	kindConfig *kindv1alpha4.Cluster
 	k3dConfig  *k3dapi.SimpleConfig
-	eksConfig  *eksctl.ClusterConfig
 }
 
 // NewValidator creates a new KSail configuration validator with optional distribution configurations.
@@ -31,8 +29,6 @@ func NewValidator(distributionConfigs ...any) *Validator {
 			validator.kindConfig = cfg
 		case *k3dapi.SimpleConfig:
 			validator.k3dConfig = cfg
-		case *eksctl.ClusterConfig:
-			validator.eksConfig = cfg
 		}
 	}
 

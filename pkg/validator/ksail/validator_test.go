@@ -11,7 +11,6 @@ import (
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -385,7 +384,6 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 
 // TestKSailValidatorEKSConsistency tests EKS distribution name consistency validation.
 
-
 // TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
 func TestKSailValidatorMultipleConfigs(t *testing.T) {
 	t.Parallel()
@@ -464,7 +462,7 @@ func checkDistributionError(
 func testSupportedDistributionErrorPath(
 	t *testing.T,
 	distribution v1alpha1.Distribution,
-	expectedMsg string,
+	_ string,
 ) {
 	t.Helper()
 
@@ -555,8 +553,8 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 				expectedMsg:  "unexpected error in K3d distribution validation",
 			},
 			{
-				name:         "eks_unexpected_error",
-				expectedMsg:  "unexpected error in EKS distribution validation",
+				name:        "eks_unexpected_error",
+				expectedMsg: "unexpected error in EKS distribution validation",
 			},
 		}
 
@@ -571,15 +569,6 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 
 // TestKSailValidatorEKSConfigName tests EKS configuration name extraction.
 
-
-
-
-
-
-
-
-
-
 // TestKSailValidatorContextPatterns tests different context name patterns.
 func TestKSailValidatorContextPatterns(t *testing.T) {
 	t.Parallel()
@@ -587,8 +576,6 @@ func TestKSailValidatorContextPatterns(t *testing.T) {
 	testEmptyContextValidationSkipped(t)
 	testTindExpectedContextPattern(t)
 }
-
-
 
 // testEmptyContextValidationSkipped tests that empty context skips validation.
 func testEmptyContextValidationSkipped(t *testing.T) {
@@ -718,8 +705,6 @@ func testK3dCrossValidationWithConfigName(t *testing.T) {
 	})
 }
 
-
-
 // TestKSailValidatorDefaultFallbackValidation tests validation with default fallback scenarios.
 func TestKSailValidatorDefaultFallbackValidation(t *testing.T) {
 	t.Parallel()
@@ -789,8 +774,6 @@ func testK3dDefaultFallback(t *testing.T) {
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
 }
-
-
 
 // TestKSailValidatorSpecialDistributionHandling tests special distribution handling scenarios.
 func TestKSailValidatorSpecialDistributionHandling(t *testing.T) {
@@ -1117,7 +1100,6 @@ func TestKSailValidatorK3dConfigEdgeCases(t *testing.T) {
 
 // TestKSailValidatorEKSConfigEdgeCases tests EKS configuration edge cases.
 
-
 // TestKSailValidatorContextValidationComprehensive tests comprehensive context validation scenarios.
 func TestKSailValidatorContextValidationComprehensive(t *testing.T) {
 	t.Parallel()
@@ -1220,8 +1202,6 @@ func testK3dContextValidation(t *testing.T) {
 	}
 }
 
-
-
 // validateContextTest is a helper function for running context validation tests.
 func validateContextTest(
 	t *testing.T,
@@ -1283,8 +1263,6 @@ func testK3dWithAllConfigs(t *testing.T) {
 	})
 }
 
-
-
 // createMultiConfigTestCluster creates a test cluster config for multi-config testing.
 func createMultiConfigTestCluster(
 	distribution v1alpha1.Distribution,
@@ -1310,7 +1288,6 @@ func createMultiConfigValidator() *ksailvalidator.Validator {
 	kindConfig := &kindv1alpha4.Cluster{Name: "test-kind"}
 	k3dConfig := &k3dapi.SimpleConfig{
 		ObjectMeta: k3dtypes.ObjectMeta{Name: "test-k3d"},
-
 	}
 
 	return ksailvalidator.NewValidator(kindConfig, k3dConfig)
