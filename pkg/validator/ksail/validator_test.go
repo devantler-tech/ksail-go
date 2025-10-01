@@ -382,8 +382,6 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 	})
 }
 
-// TestKSailValidatorEKSConsistency tests EKS distribution name consistency validation.
-
 // TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
 func TestKSailValidatorMultipleConfigs(t *testing.T) {
 	t.Parallel()
@@ -534,7 +532,7 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 		t.Parallel()
 
 		// Test error handling for supported distributions that shouldn't reach unsupported error logic
-		// This tests the Kind, K3d, and EKS cases in addUnsupportedDistributionError
+		// This tests the Kind and K3d cases in addUnsupportedDistributionError
 		testCases := []struct {
 			name         string
 			distribution v1alpha1.Distribution
@@ -550,10 +548,6 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 				distribution: v1alpha1.DistributionK3d,
 				expectedMsg:  "unexpected error in K3d distribution validation",
 			},
-			{
-				name:        "eks_unexpected_error",
-				expectedMsg: "unexpected error in EKS distribution validation",
-			},
 		}
 
 		for _, testCase := range testCases {
@@ -564,8 +558,6 @@ func testSupportedDistributionErrorPaths(t *testing.T) {
 		}
 	})
 }
-
-// TestKSailValidatorEKSConfigName tests EKS configuration name extraction.
 
 // TestKSailValidatorContextPatterns tests different context name patterns.
 func TestKSailValidatorContextPatterns(t *testing.T) {
@@ -1095,8 +1087,6 @@ func TestKSailValidatorK3dConfigEdgeCases(t *testing.T) {
 		})
 	}
 }
-
-// TestKSailValidatorEKSConfigEdgeCases tests EKS configuration edge cases.
 
 // TestKSailValidatorContextValidationComprehensive tests comprehensive context validation scenarios.
 func TestKSailValidatorContextValidationComprehensive(t *testing.T) {
