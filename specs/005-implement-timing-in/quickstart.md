@@ -57,7 +57,7 @@ This quickstart guide validates that the CLI command timing feature is working c
 cd /tmp/ksail-test
 
 # Run a single-stage command
-../../../../ksail init --distribution Kind
+./ksail init --distribution Kind
 
 # Expected output (timing will vary):
 # Initialized KSail project [1.2s]
