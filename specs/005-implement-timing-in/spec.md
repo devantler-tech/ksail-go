@@ -88,7 +88,8 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 ## Review & Acceptance Checklist
 
-*GATE: Automated checks run during main() execution*
+> [!IMPORTANT]
+> **GATE: Automated checks run during main() execution**
 
 ### Content Quality
 
@@ -107,7 +108,8 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 ## Execution Status
 
-*Updated by main() during processing*
+> [!IMPORTANT]
+> **Updated by main() during processing**
 
 - [x] User description parsed
 - [x] Key concepts extracted
