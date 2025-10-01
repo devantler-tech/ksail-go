@@ -462,7 +462,6 @@ func testSupportedDistributionErrorPath(
 	t.Helper()
 
 	_ = createTestClusterConfig(distribution, "config.yaml", "some-context")
-	_ = ksailvalidator.NewValidator()
 	// These should normally pass validation or have different errors
 	// The unexpected error cases are defensive code paths
 }
