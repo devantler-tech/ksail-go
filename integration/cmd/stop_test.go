@@ -16,45 +16,49 @@ func TestStopCmdIntegration(t *testing.T) {
 
 	for _, dist := range distributions {
 		t.Run("stop_with_"+dist, func(t *testing.T) {
-			// Create temporary directory for test
+			// Create minimal config file for commands that validate configuration
 			tempDir := t.TempDir()
-
-			// Change to temp directory
 			origDir, err := os.Getwd()
 			require.NoError(t, err)
-
 			t.Chdir(tempDir)
-
 			defer func() {
 				//nolint:usetesting // Cleanup requires restoring original directory
 				_ = os.Chdir(origDir)
 			}()
 
-			// First initialize project
+			// Determine correct context for distribution
+			var context string
+			if dist == "Kind" {
+				context = "kind-kind"
+			} else {
+				context = "k3d-k3s-default"
+			}
+
+			// Create minimal valid ksail.yaml
+			configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: ` + dist + `
+  distributionConfig: ` + dist + `.yaml
+  connection:
+    context: ` + context + `
+  sourceDirectory: k8s
+`
+			err = os.WriteFile("ksail.yaml", []byte(configContent), 0o600)
+			require.NoError(t, err)
+
+			// Test stop command with stub mode
 			rootCmd := cmd.NewRootCmd("test", "test", "test")
 
 			var out bytes.Buffer
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
-			rootCmd.SetArgs([]string{
-				"--stub",
-				"init",
-				"--distribution", dist,
-			})
-			err = rootCmd.Execute()
-			require.NoError(t, err, "init should succeed")
-
-			// Test stop command
-			rootCmd = cmd.NewRootCmd("test", "test", "test")
-
-			out.Reset()
-			rootCmd.SetOut(&out)
-			rootCmd.SetErr(&out)
 			rootCmd.SetArgs([]string{"--stub", "cluster", "stop"})
+			
 			err = rootCmd.Execute()
 			require.NoError(t, err, "stop should succeed for distribution %s", dist)
 
-			// Verify output
+			// Verify output contains expected message
 			output := out.String()
 			assert.Contains(t, output, "Cluster stopped successfully")
 		})
