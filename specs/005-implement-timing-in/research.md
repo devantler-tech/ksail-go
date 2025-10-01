@@ -110,7 +110,7 @@ This document consolidates research findings for implementing timing functionali
 
 - Commands use `cmd/ui/notify` package for all user-facing output
 - Success messages use `notify.Success(message)` function
-- Timing should be appended to success messages: `notify.Success(fmt.Sprintf("message %s", timing))`
+- Timing should be appended to success messages: `notify.Success(message, timing)`
 - Stage changes occur when calling `notify.Title(newStage)`
 
 **Integration Points**:
