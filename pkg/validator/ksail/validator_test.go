@@ -233,9 +233,6 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	case v1alpha1.DistributionEKS:
 		distributionConfigFile = "eks.yaml"
 		contextName = "default" // EKS doesn't use prefix pattern
-	case v1alpha1.DistributionTind:
-		distributionConfigFile = "tind.yaml"
-		contextName = "tind-default" // No distribution config provided, use "default"
 	default:
 		distributionConfigFile = "cluster.yaml"
 		contextName = "ksail"
@@ -515,28 +512,8 @@ func testSupportedDistributionErrorPath(
 func TestKSailValidatorUnsupportedDistribution(t *testing.T) {
 	t.Parallel()
 
-	testTindDistribution(t)
 	testUnknownDistribution(t)
 	testSupportedDistributionErrorPaths(t)
-}
-
-// testTindDistribution tests Tind distribution validation.
-func testTindDistribution(t *testing.T) {
-	t.Helper()
-
-	t.Run("tind_distribution", func(t *testing.T) {
-		t.Parallel()
-
-		config := createTestClusterConfig(v1alpha1.DistributionTind, "tind.yaml", "tind-default")
-		validator := ksailvalidator.NewValidator()
-		result := validator.Validate(config)
-
-		assert.False(t, result.Valid, "Tind distribution should fail validation")
-		assert.NotEmpty(t, result.Errors, "Should have validation errors")
-
-		checkDistributionError(t, result.Errors, "Tind distribution is not yet supported",
-			"Should have Tind-specific unsupported distribution error")
-	})
 }
 
 // testUnknownDistribution tests unknown distribution validation.
@@ -560,8 +537,8 @@ func testUnknownDistribution(t *testing.T) {
 		checkDistributionError(
 			t,
 			result.Errors,
-			"unknown distribution",
-			"Should have unknown distribution error",
+			"invalid distribution",
+			"Should have invalid distribution error",
 		)
 	})
 }
@@ -756,7 +733,6 @@ func TestKSailValidatorContextPatterns(t *testing.T) {
 
 	testEKSSkipContextValidation(t)
 	testEmptyContextValidationSkipped(t)
-	testTindExpectedContextPattern(t)
 }
 
 // testEKSSkipContextValidation tests that EKS skips context validation.
@@ -814,35 +790,6 @@ func testEmptyContextValidationSkipped(t *testing.T) {
 
 		assert.True(t, result.Valid, "Empty context should skip validation")
 		assert.Empty(t, result.Errors, "Empty context validation should be skipped")
-	})
-}
-
-// testTindExpectedContextPattern tests Tind context pattern validation.
-func testTindExpectedContextPattern(t *testing.T) {
-	t.Helper()
-
-	t.Run("tind_expected_context_pattern", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionTind,
-				DistributionConfig: "tind.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "tind-cluster",
-				},
-			},
-		}
-
-		validator := ksailvalidator.NewValidator()
-		result := validator.Validate(config)
-
-		assert.False(t, result.Valid, "Tind distribution should fail validation")
-		assert.NotEmpty(t, result.Errors, "Should have validation errors for Tind")
 	})
 }
 
@@ -1056,37 +1003,7 @@ func testEKSDefaultFallback(t *testing.T) {
 func TestKSailValidatorSpecialDistributionHandling(t *testing.T) {
 	t.Parallel()
 
-	testTindDistributionHandling(t)
 	testNoDistributionConfigProvided(t)
-}
-
-// testTindDistributionHandling tests validation with Tind distribution.
-func testTindDistributionHandling(t *testing.T) {
-	t.Helper()
-
-	t.Run("tind_distribution_handling", func(t *testing.T) {
-		t.Parallel()
-
-		config := &v1alpha1.Cluster{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: "ksail.dev/v1alpha1",
-				Kind:       "Cluster",
-			},
-			Spec: v1alpha1.Spec{
-				Distribution:       v1alpha1.DistributionTind,
-				DistributionConfig: "tind.yaml",
-				Connection: v1alpha1.Connection{
-					Context: "tind-cluster",
-				},
-			},
-		}
-
-		validator := ksailvalidator.NewValidator()
-		result := validator.Validate(config)
-
-		assert.False(t, result.Valid, "Tind distribution should fail validation")
-		assert.NotEmpty(t, result.Errors, "Should have validation errors for Tind")
-	})
 }
 
 // testNoDistributionConfigProvided tests validation when no distribution config is provided.
@@ -1247,7 +1164,7 @@ func testInvalidDistributionValue(t *testing.T) {
 				strings.Contains(err.Message, "invalid distribution value") {
 				found = true
 
-				assert.Contains(t, err.FixSuggestion, "Use a valid distribution type")
+				assert.Contains(t, err.FixSuggestion, "Use a supported distribution")
 
 				break
 			}

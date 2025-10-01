@@ -54,11 +54,6 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 		},
 		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
 		{name: "EKS", distribution: v1alpha1.DistributionEKS, expected: scaffolder.EKSConfigFile},
-		{
-			name:         "Tind",
-			distribution: v1alpha1.DistributionTind,
-			expected:     scaffolder.TindConfigFile,
-		},
 		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
 	}
 
@@ -158,20 +153,11 @@ func TestScaffoldErrorHandling(t *testing.T) {
 	t.Run("distribution error paths", func(t *testing.T) {
 		t.Parallel()
 
-		// Test Tind not implemented
-		tindCluster := createTindCluster("tind-test")
-		scaffolderInstance := scaffolder.NewScaffolder(tindCluster, io.Discard)
-
-		err := scaffolderInstance.Scaffold("/tmp/test-tind/", false)
-		require.Error(t, err)
-		require.ErrorIs(t, err, scaffolder.ErrTindNotImplemented)
-		snaps.MatchSnapshot(t, err.Error())
-
 		// Test Unknown distribution
 		unknownCluster := createUnknownCluster("unknown-test")
-		scaffolderInstance = scaffolder.NewScaffolder(unknownCluster, io.Discard)
+		scaffolderInstance := scaffolder.NewScaffolder(unknownCluster, io.Discard)
 
-		err = scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
+		err := scaffolderInstance.Scaffold("/tmp/test-unknown/", false)
 		require.Error(t, err)
 		require.ErrorIs(t, err, scaffolder.ErrUnknownDistribution)
 		snaps.MatchSnapshot(t, err.Error())
@@ -392,13 +378,6 @@ func getScaffoldTestCases() []scaffoldTestCase {
 			expectError: false,
 		},
 		{
-			name:        "Tind distribution not implemented",
-			setupFunc:   createTindCluster,
-			outputPath:  "/tmp/test-tind/",
-			force:       true,
-			expectError: true,
-		},
-		{
 			name:        "Unknown distribution",
 			setupFunc:   createUnknownCluster,
 			outputPath:  "/tmp/test-unknown/",
@@ -445,7 +424,6 @@ func generateDistributionContent(
 	require.NoError(t, err)
 	snaps.MatchSnapshot(t, ksailContent)
 
-	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		// Create minimal Kind configuration without name (Kind will use defaults)
@@ -487,7 +465,6 @@ func createMinimalClusterForSnapshot(
 	}
 
 	// Only add spec fields if they differ from defaults to match original hardcoded output
-	//nolint:exhaustive // We only test supported distributions here
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		// For Kind, the original hardcoded output had no spec, so return minimal cluster
@@ -542,13 +519,6 @@ func createEKSCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)
 	c.Spec.Distribution = v1alpha1.DistributionEKS
 	c.Spec.DistributionConfig = "eks.yaml"
-
-	return c
-}
-
-func createTindCluster(name string) v1alpha1.Cluster {
-	c := createTestCluster(name)
-	c.Spec.Distribution = v1alpha1.DistributionTind
 
 	return c
 }
