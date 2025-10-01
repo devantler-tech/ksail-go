@@ -68,34 +68,11 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           rm -rf "$TEST_DIR"
 
-  integration-test-status:
-    runs-on: ubuntu-latest
-    needs: [integration-test]
-    if: always()
-    steps:
-      - name: Summarize matrix result
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          echo "integration-test result: $MATRIX_RESULT"
-          case "$MATRIX_RESULT" in
-            success|skipped)
-              echo "All matrix runs succeeded or were skipped."
-              exit 0
-              ;;
-            *)
-              echo "At least one matrix run failed."
-              exit 1
-              ;;
-          esac
-        env:
-          MATRIX_RESULT: ${{ needs.integration-test.result }}
-
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
-    needs: [ci, integration-test-status]
-    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') && needs.integration-test-status.result == 'success'
+    needs: [ci, integration-test]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')
     strategy:
       matrix:
         init-args:
@@ -137,25 +114,26 @@ jobs:
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
-  system-test-status:
+  ci-status:
     runs-on: ubuntu-latest
-    needs: [system-test]
+    needs: [integration-test, system-test]
     if: always()
     steps:
-      - name: Summarize matrix result
+      - name: Summarize CI results
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "system-test result: $MATRIX_RESULT"
-          case "$MATRIX_RESULT" in
-            success|skipped)
-              echo "All matrix runs succeeded or were skipped."
-              exit 0
-              ;;
-            *)
-              echo "At least one matrix run failed."
-              exit 1
-              ;;
-          esac
+          echo "integration-test result: $INTEGRATION_TEST_RESULT"
+          echo "system-test result: $SYSTEM_TEST_RESULT"
+          
+          if [[ "$INTEGRATION_TEST_RESULT" == "success" || "$INTEGRATION_TEST_RESULT" == "skipped" ]] && \
+             [[ "$SYSTEM_TEST_RESULT" == "success" || "$SYSTEM_TEST_RESULT" == "skipped" ]]; then
+            echo "All CI tests succeeded or were skipped."
+            exit 0
+          else
+            echo "At least one CI test failed."
+            exit 1
+          fi
         env:
-          MATRIX_RESULT: ${{ needs.system-test.result }}
+          INTEGRATION_TEST_RESULT: ${{ needs.integration-test.result }}
+          SYSTEM_TEST_RESULT: ${{ needs.system-test.result }}
