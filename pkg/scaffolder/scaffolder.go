@@ -211,7 +211,7 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 		action = "overwrote"
 	}
 
-	notify.ActivityMessage(s.Writer, notify.NewMessage(action + " '" + displayName + "'"))
+	notify.ActivityMessage(s.Writer, notify.NewMessage(action+" '"+displayName+"'"))
 }
 
 // generateKSailConfig generates the ksail.yaml configuration file.
