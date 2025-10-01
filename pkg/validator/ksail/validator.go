@@ -208,5 +208,13 @@ func (v *Validator) addUnsupportedDistributionError(
 			CurrentValue:  distribution,
 			FixSuggestion: "Report this as a bug - K3d should be supported",
 		})
+	default:
+		// Handle truly unknown/unsupported distributions
+		result.AddError(validator.ValidationError{
+			Field:         "spec.distribution",
+			Message:       fmt.Sprintf("unsupported distribution: %s", distribution),
+			CurrentValue:  distribution,
+			FixSuggestion: "Use a supported distribution such as Kind or K3d",
+		})
 	}
 }
