@@ -8,7 +8,9 @@
     "go.sum",
     "go.mod",
     "package-lock.json",
-    "megalinter-reports"
+    "megalinter-reports",
+    "*-megalinter_file_names_cspell.txt",
+    "megalinter_output.log"
   ],
   "language": "en",
   "version": "0.2",
