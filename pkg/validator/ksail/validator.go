@@ -77,11 +77,6 @@ func (v *Validator) validateContextName(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Skip context validation for EKS as it doesn't rely on context names
-	if config.Spec.Distribution == v1alpha1.DistributionEKS {
-		return
-	}
-
 	if config.Spec.Connection.Context == "" {
 		// Context is optional, no validation needed if empty
 		return
@@ -183,27 +178,19 @@ func (v *Validator) addUnsupportedDistributionError(
 			CurrentValue:  distribution,
 			FixSuggestion: "Report this as a bug - K3d should be supported",
 		})
-	case v1alpha1.DistributionEKS:
-		// EKS is supported, should not reach here in normal validation flow
-		result.AddError(validator.ValidationError{
-			Field:         "spec.distribution",
-			Message:       "unexpected error in EKS distribution validation",
-			CurrentValue:  distribution,
-			FixSuggestion: "Report this as a bug - EKS should be supported",
-		})
 	case v1alpha1.DistributionTind:
 		result.AddError(validator.ValidationError{
 			Field:         "spec.distribution",
 			Message:       "Tind distribution is not yet supported for context validation",
 			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
+			FixSuggestion: "Use a supported distribution: Kind or K3d",
 		})
 	default:
 		result.AddError(validator.ValidationError{
 			Field:         "spec.distribution",
 			Message:       "unknown distribution for context validation",
 			CurrentValue:  distribution,
-			FixSuggestion: "Use a supported distribution: Kind, K3d, or EKS",
+			FixSuggestion: "Use a supported distribution: Kind or K3d",
 		})
 	}
 }
@@ -219,9 +206,6 @@ func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
 		return "k3d-" + distributionName
-	case v1alpha1.DistributionEKS:
-		// EKS context pattern is more flexible (cluster name or ARN)
-		return distributionName
 	case v1alpha1.DistributionTind:
 		// Tind context pattern would be similar to k3d
 		return "tind-" + distributionName
@@ -240,9 +224,6 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 	case v1alpha1.DistributionTind:
 		// Tind would have similar config name extraction
 		return "tind"
-	case v1alpha1.DistributionEKS:
-		// EKS cluster name extraction (not implemented in this context)
-		return "default"
 	default:
 		return ""
 	}

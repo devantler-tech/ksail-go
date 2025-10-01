@@ -79,13 +79,11 @@ const (
 	DistributionK3d Distribution = "K3d"
 	// DistributionTind is the Talos in Docker distribution.
 	DistributionTind Distribution = "Tind"
-	// DistributionEKS is the EKS distribution.
-	DistributionEKS Distribution = "EKS"
 )
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionEKS, DistributionK3d, DistributionKind, DistributionTind}
+	return []Distribution{DistributionK3d, DistributionKind, DistributionTind}
 }
 
 // validCNIs returns supported CNI values.
@@ -189,7 +187,6 @@ type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
 	Tind OptionsTind `json:"talosInDocker,omitzero"`
-	EKS  OptionsEKS  `json:"eks,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
@@ -214,14 +211,6 @@ type OptionsK3d struct {
 // OptionsTind defines options specific to the Tind distribution.
 type OptionsTind struct {
 	// Add any specific fields for the Tind distribution here.
-}
-
-// OptionsEKS defines options specific to the EKS distribution.
-// This only includes configuration that is not part of eksctl v1alpha5.ClusterConfig.
-type OptionsEKS struct {
-	// AWSProfile specifies the AWS profile to use for authentication
-	// This is not part of ClusterConfig as it's a credential/authentication setting
-	AWSProfile string `json:"awsProfile,omitzero"`
 }
 
 // OptionsCilium defines options for the Cilium CNI.
