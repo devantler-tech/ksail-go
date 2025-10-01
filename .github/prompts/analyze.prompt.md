@@ -66,10 +66,9 @@ Execution steps:
 6. Produce a Markdown report (no file writes) with sections:
 
    ### Specification Analysis Report
-
-   | ID | Category    | Severity | Location(s)      | Summary                      | Recommendation                       |
-   |----|-------------|----------|------------------|------------------------------|--------------------------------------|
-   | A1 | Duplication | HIGH     | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
+   | ID | Category | Severity | Location(s) | Summary | Recommendation |
+   |----|----------|----------|-------------|---------|----------------|
+   | A1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
    (Add one row per finding; generate stable IDs prefixed by category initial.)
 
    Additional subsections:
@@ -78,12 +77,12 @@ Execution steps:
    - Constitution Alignment Issues (if any)
    - Unmapped Tasks (if any)
    - Metrics:
-     - Total Requirements
-     - Total Tasks
-     - Coverage % (requirements with >=1 task)
-     - Ambiguity Count
-     - Duplication Count
-     - Critical Issues Count
+     * Total Requirements
+     * Total Tasks
+     * Coverage % (requirements with >=1 task)
+     * Ambiguity Count
+     * Duplication Count
+     * Critical Issues Count
 
 7. At end of report, output a concise Next Actions block:
    - If CRITICAL issues exist: Recommend resolving before `/implement`.
@@ -93,7 +92,6 @@ Execution steps:
 8. Ask the user: "Would you like me to suggest concrete remediation edits for the top N issues?" (Do NOT apply them automatically.)
 
 Behavior rules:
-
 - NEVER modify files.
 - NEVER hallucinate missing sections—if absent, report them.
 - KEEP findings deterministic: if rerun without changes, produce consistent IDs and counts.
