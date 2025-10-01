@@ -88,10 +88,16 @@ All code changes MUST pass these quality gates before merge:
 4. **Mock Generation**: `mockery` generates up-to-date mocks
 5. **Pre-commit Hooks**: Automated via pre-commit framework
 6. **System Tests**: Full lifecycle validation (CI only)
+7. **Code Coverage**: Enforced via codecov with exclusions for test utilities and stubs
 
 Mega-linter validation SHOULD be run periodically for comprehensive validation.
 
-**Rationale**: Automated quality gates catch issues before review, reduce cognitive load on reviewers, and maintain consistent code quality. The specified timeouts prevent premature cancellation of long-running validation tasks.
+**Code Coverage Exclusions**: The following directories are excluded from coverage requirements as they serve testing infrastructure purposes:
+- `**/mocks.go` - Generated mock files
+- `**/testutils/**` - Test helper utilities
+- `integration/stubs/**` - Stub implementations for integration testing (intentionally simplified for testing command flows)
+
+**Rationale**: Automated quality gates catch issues before review, reduce cognitive load on reviewers, and maintain consistent code quality. The specified timeouts prevent premature cancellation of long-running validation tasks. Code coverage exclusions focus metrics on production code while acknowledging that test infrastructure has different quality criteria.
 
 ### VII. Semantic Versioning & Conventional Commits
 

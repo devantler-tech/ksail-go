@@ -162,6 +162,17 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 - **Configuration handling**: `pkg/config-manager/`
 - **File generation**: `pkg/io/generator/`
 - **Test utilities**: `internal/testutils/` and package-specific `testutils/`
+- **Integration stubs**: `integration/stubs/` (stub implementations for testing, excluded from code coverage)
+
+### Code Coverage Policy
+
+The following directories are excluded from code coverage requirements:
+
+- `**/mocks.go` - Generated mock files from mockery
+- `**/testutils/**` - Test helper utilities
+- `integration/stubs/**` - Stub implementations for integration testing
+
+**Rationale**: Integration stubs are simplified implementations designed solely for testing command flows. They intentionally avoid complex logic and real dependencies, making code coverage metrics meaningless. These stubs are validated through integration tests that verify the overall command lifecycle rather than individual stub methods.
 
 ## Timing Expectations and Timeouts
 
