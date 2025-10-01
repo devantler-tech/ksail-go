@@ -87,7 +87,8 @@ func HandleStartRunE(
 	tmr.StartStage()
 	notify.ActivityMessage(manager.Writer, notify.NewMessage("starting cluster"))
 
-	if err := provisioner.Start(ctx, clusterName); err != nil {
+	err = provisioner.Start(ctx, clusterName)
+	if err != nil {
 		return fmt.Errorf("failed to start cluster: %w", err)
 	}
 

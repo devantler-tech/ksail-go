@@ -89,7 +89,8 @@ func HandleDownRunE(
 	tmr.StartStage()
 	notify.ActivityMessage(manager.Writer, notify.NewMessage("destroying cluster"))
 
-	if err := provisioner.Delete(ctx, clusterName); err != nil {
+	err = provisioner.Delete(ctx, clusterName)
+	if err != nil {
 		return fmt.Errorf("failed to destroy cluster: %w", err)
 	}
 

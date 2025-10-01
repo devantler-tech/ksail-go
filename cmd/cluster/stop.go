@@ -87,7 +87,8 @@ func HandleStopRunE(
 	tmr.StartStage()
 	notify.ActivityMessage(manager.Writer, notify.NewMessage("stopping cluster"))
 
-	if err := provisioner.Stop(ctx, clusterName); err != nil {
+	err = provisioner.Stop(ctx, clusterName)
+	if err != nil {
 		return fmt.Errorf("failed to stop cluster: %w", err)
 	}
 

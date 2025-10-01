@@ -82,7 +82,8 @@ func HandleUpRunE(
 
 	notify.TitleMessage(manager.Writer, "🚀", notify.NewMessage("Provisioning cluster..."))
 
-	if err := provisionCluster(ctx, manager.Writer, tmr, provisioner, force); err != nil {
+	err = provisionCluster(ctx, manager.Writer, tmr, provisioner, force)
+	if err != nil {
 		return err
 	}
 
