@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
@@ -12,6 +13,15 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/cluster"
+)
+
+var (
+	// ErrUnsupportedDistribution is returned when an unsupported distribution is specified.
+	ErrUnsupportedDistribution = errors.New("unsupported distribution")
+	// ErrEKSCredentialsRequired is returned when EKS credentials are required but not configured.
+	ErrEKSCredentialsRequired = errors.New(
+		"EKS cluster listing requires AWS credentials configuration",
+	)
 )
 
 // NewListCmd creates and returns the list command.
@@ -100,15 +110,19 @@ func listClustersForDistribution(
 	case v1alpha1.DistributionK3d:
 		return listK3dClusters(ctx)
 	case v1alpha1.DistributionEKS:
-		return listEKSClusters(ctx)
+		return listEKSClusters()
+	case v1alpha1.DistributionTind:
+		// Tind is not yet implemented
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedDistribution, distribution)
 	default:
-		return nil, fmt.Errorf("unsupported distribution: %s", distribution)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedDistribution, distribution)
 	}
 }
 
 // listKindClusters lists all kind clusters.
 func listKindClusters() ([]string, error) {
 	provider := cluster.NewProvider(cluster.ProviderWithDocker())
+
 	clusters, err := provider.List()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list kind clusters: %w", err)
@@ -120,6 +134,7 @@ func listKindClusters() ([]string, error) {
 // listK3dClusters lists all k3d clusters.
 func listK3dClusters(ctx context.Context) ([]string, error) {
 	runtime := runtimes.SelectedRuntime
+
 	clusters, err := k3dclient.ClusterList(ctx, runtime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list k3d clusters: %w", err)
@@ -134,8 +149,8 @@ func listK3dClusters(ctx context.Context) ([]string, error) {
 }
 
 // listEKSClusters lists all EKS clusters.
-func listEKSClusters(ctx context.Context) ([]string, error) {
+func listEKSClusters() ([]string, error) {
 	// For EKS, we need minimal config to create provider
-	// We'll just return an informative message since EKS requires AWS credentials
-	return []string{}, fmt.Errorf("EKS cluster listing requires AWS credentials configuration")
+	// We'll just return an informative error since EKS requires AWS credentials
+	return []string{}, ErrEKSCredentialsRequired
 }
