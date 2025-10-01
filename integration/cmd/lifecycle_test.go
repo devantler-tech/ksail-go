@@ -13,15 +13,16 @@ import (
 )
 
 // TestClusterLifecycleIntegration tests the full cluster lifecycle with stub mode.
+// Note: Not running in parallel due to potential global state interactions in config loading.
+//
+//nolint:funlen,paralleltest // Integration test intentionally covers full lifecycle and avoids parallelism
 func TestClusterLifecycleIntegration(t *testing.T) {
-	t.Parallel()
-
 	distributions := []string{"Kind", "K3d"}
 
-	for _, dist := range distributions {
-		dist := dist // capture range variable
+	for _, dist := range distributions { //nolint:paralleltest // Intentionally sequential to avoid race conditions
 		t.Run("lifecycle_"+dist, func(t *testing.T) {
-			t.Parallel()
+			// Don't run subtests in parallel either to avoid race conditions
+			// t.Parallel()
 
 			// Create temporary directory for test
 			tempDir := t.TempDir()
@@ -29,15 +30,19 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 			// Change to temp directory
 			origDir, err := os.Getwd()
 			require.NoError(t, err)
-			err = os.Chdir(tempDir)
-			require.NoError(t, err)
+
+			t.Chdir(tempDir)
+
 			defer func() {
+				//nolint:usetesting // Cleanup requires restoring original directory
 				_ = os.Chdir(origDir)
 			}()
 
 			// Step 1: Initialize project
 			t.Log("Step 1: Init")
+
 			rootCmd := cmd.NewRootCmd("test", "test", "test")
+
 			var out bytes.Buffer
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -52,7 +57,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 2: Up (create cluster)
 			t.Log("Step 2: Up")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -63,7 +70,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 3: Status
 			t.Log("Step 3: Status")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -74,7 +83,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 4: List
 			t.Log("Step 4: List")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -85,7 +96,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 5: Stop
 			t.Log("Step 5: Stop")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -96,7 +109,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 6: Start
 			t.Log("Step 6: Start")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -107,7 +122,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 7: Reconcile workload
 			t.Log("Step 7: Reconcile")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -118,7 +135,9 @@ func TestClusterLifecycleIntegration(t *testing.T) {
 
 			// Step 8: Down (destroy cluster)
 			t.Log("Step 8: Down")
+
 			rootCmd = cmd.NewRootCmd("test", "test", "test")
+
 			out.Reset()
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)

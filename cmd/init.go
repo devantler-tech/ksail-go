@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/integration/stubs"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
@@ -90,7 +91,7 @@ func HandleInitRunE(
 		scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 		err = scaffolderInstance.Scaffold(targetPath, force)
 	}
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}

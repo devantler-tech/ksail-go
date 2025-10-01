@@ -18,7 +18,6 @@ func TestInitCmdIntegration(t *testing.T) {
 	distributions := []string{"Kind", "K3d"}
 
 	for _, dist := range distributions {
-		dist := dist // capture range variable
 		t.Run("init_with_"+dist, func(t *testing.T) {
 			t.Parallel()
 
@@ -27,6 +26,7 @@ func TestInitCmdIntegration(t *testing.T) {
 
 			// Create init command
 			rootCmd := cmd.NewRootCmd("test", "test", "test")
+
 			var out bytes.Buffer
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
@@ -45,12 +45,15 @@ func TestInitCmdIntegration(t *testing.T) {
 
 			// Verify output contains expected messages
 			output := out.String()
-			assert.Contains(t, output, "Initializing project", "output should contain initialization message")
-			assert.Contains(t, output, "initialized project", "output should contain success message")
+			assert.Contains(t, output, "Initializing project",
+				"output should contain initialization message")
+			assert.Contains(t, output, "initialized project",
+				"output should contain success message")
 			assert.Contains(t, output, "STUB:", "output should indicate stub mode")
 
 			// Verify stub files were created
-			assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"), "ksail.yaml should be created")
+			assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"),
+				"ksail.yaml should be created")
 			// Distribution config files are lowercase (kind.yaml, k3d.yaml)
 			distFile := strings.ToLower(dist) + ".yaml"
 			assert.FileExists(t, filepath.Join(tempDir, distFile), "distribution config should be created")

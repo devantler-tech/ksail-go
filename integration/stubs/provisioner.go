@@ -1,4 +1,8 @@
-// Package stubs provides stub implementations for integration testing.
+// Package stubs provides stub implementations of core interfaces for integration testing.
+//
+// These stubs allow integration tests to verify command behavior and workflows
+// without requiring actual cluster provisioning or file I/O operations.
+// All stub implementations output their actions to help with debugging test failures.
 package stubs
 
 import (
@@ -24,7 +28,9 @@ func (p *ClusterProvisioner) Create(_ context.Context, name string) error {
 	if clusterName == "" {
 		clusterName = p.ClusterName
 	}
+	//nolint:forbidigo // Using fmt.Printf for test stub output
 	fmt.Printf("STUB: Creating cluster '%s'\n", clusterName)
+
 	return nil
 }
 
@@ -34,7 +40,9 @@ func (p *ClusterProvisioner) Delete(_ context.Context, name string) error {
 	if clusterName == "" {
 		clusterName = p.ClusterName
 	}
+	//nolint:forbidigo // Using fmt.Printf for test stub output
 	fmt.Printf("STUB: Deleting cluster '%s'\n", clusterName)
+
 	return nil
 }
 
@@ -44,7 +52,9 @@ func (p *ClusterProvisioner) Start(_ context.Context, name string) error {
 	if clusterName == "" {
 		clusterName = p.ClusterName
 	}
+	//nolint:forbidigo // Using fmt.Printf for test stub output
 	fmt.Printf("STUB: Starting cluster '%s'\n", clusterName)
+
 	return nil
 }
 
@@ -54,13 +64,17 @@ func (p *ClusterProvisioner) Stop(_ context.Context, name string) error {
 	if clusterName == "" {
 		clusterName = p.ClusterName
 	}
+	//nolint:forbidigo // Using fmt.Printf for test stub output
 	fmt.Printf("STUB: Stopping cluster '%s'\n", clusterName)
+
 	return nil
 }
 
 // List simulates listing all Kubernetes clusters.
 func (p *ClusterProvisioner) List(_ context.Context) ([]string, error) {
+	//nolint:forbidigo // Using fmt.Println for test stub output
 	fmt.Println("STUB: Listing clusters")
+
 	return []string{p.ClusterName}, nil
 }
 
@@ -70,6 +84,8 @@ func (p *ClusterProvisioner) Exists(_ context.Context, name string) (bool, error
 	if clusterName == "" {
 		clusterName = p.ClusterName
 	}
+	//nolint:forbidigo // Using fmt.Printf for test stub output
 	fmt.Printf("STUB: Checking if cluster '%s' exists\n", clusterName)
+
 	return true, nil
 }

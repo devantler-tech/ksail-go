@@ -20,11 +20,82 @@ jobs:
       packages: read
       pull-requests: write
 
+  integration-test:
+    runs-on: ubuntu-latest
+    # Run integration tests on both push and pull request, but only after ci job succeeds (if it runs)
+    needs: [ci]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    strategy:
+      matrix:
+        distribution:
+          - "Kind"
+          - "K3d"
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: 📦 Download dependencies
+        run: go mod download
+
+      - name: 🏗️ Build application
+        run: go build -o ksail .
+
+      - name: 🧪 Run integration test lifecycle for ${{ matrix.distribution }}
+        run: |
+          # Create temporary directory
+          TEST_DIR=$(mktemp -d)
+          cd "$TEST_DIR"
+          
+          # Run full lifecycle with --stub flag
+          $GITHUB_WORKSPACE/ksail --stub init --distribution ${{ matrix.distribution }}
+          $GITHUB_WORKSPACE/ksail --stub cluster up
+          $GITHUB_WORKSPACE/ksail --stub cluster status
+          $GITHUB_WORKSPACE/ksail --stub cluster list
+          $GITHUB_WORKSPACE/ksail --stub cluster stop
+          $GITHUB_WORKSPACE/ksail --stub cluster start
+          $GITHUB_WORKSPACE/ksail --stub workload reconcile
+          $GITHUB_WORKSPACE/ksail --stub cluster down
+          
+          # Cleanup
+          cd "$GITHUB_WORKSPACE"
+          rm -rf "$TEST_DIR"
+
+  integration-test-status:
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    if: always()
+    steps:
+      - name: Summarize matrix result
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "integration-test result: $MATRIX_RESULT"
+          case "$MATRIX_RESULT" in
+            success|skipped)
+              echo "All matrix runs succeeded or were skipped."
+              exit 0
+              ;;
+            *)
+              echo "At least one matrix run failed."
+              exit 1
+              ;;
+          esac
+        env:
+          MATRIX_RESULT: ${{ needs.integration-test.result }}
+
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
-    needs: [ci]
-    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    needs: [ci, integration-test-status]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped') && needs.integration-test-status.result == 'success'
     strategy:
       matrix:
         init-args:
