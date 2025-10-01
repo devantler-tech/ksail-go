@@ -1,0 +1,83 @@
+package kindprovisioner
+
+import (
+	"fmt"
+
+	"github.com/docker/docker/client"
+	"sigs.k8s.io/kind/pkg/cluster"
+)
+
+// DefaultKindProviderAdapter provides a production-ready implementation of KindProvider
+// that wraps the kind library's Provider.
+type DefaultKindProviderAdapter struct {
+	provider *cluster.Provider
+}
+
+// NewDefaultKindProviderAdapter creates a new instance of the default Kind provider adapter.
+// It initializes the underlying kind Provider with default options.
+func NewDefaultKindProviderAdapter() *DefaultKindProviderAdapter {
+	return &DefaultKindProviderAdapter{
+		provider: cluster.NewProvider(),
+	}
+}
+
+// Create creates a new kind cluster.
+func (a *DefaultKindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
+	err := a.provider.Create(name, opts...)
+	if err != nil {
+		return fmt.Errorf("kind create: %w", err)
+	}
+
+	return nil
+}
+
+// Delete deletes a kind cluster.
+func (a *DefaultKindProviderAdapter) Delete(name, kubeconfigPath string) error {
+	err := a.provider.Delete(name, kubeconfigPath)
+	if err != nil {
+		return fmt.Errorf("kind delete: %w", err)
+	}
+
+	return nil
+}
+
+// List lists all kind clusters.
+func (a *DefaultKindProviderAdapter) List() ([]string, error) {
+	clusters, err := a.provider.List()
+	if err != nil {
+		return nil, fmt.Errorf("kind list: %w", err)
+	}
+
+	return clusters, nil
+}
+
+// ListNodes lists all nodes in a kind cluster.
+func (a *DefaultKindProviderAdapter) ListNodes(name string) ([]string, error) {
+	nodes, err := a.provider.ListNodes(name)
+	if err != nil {
+		return nil, fmt.Errorf("kind list nodes: %w", err)
+	}
+
+	// Convert nodes.Node slice to string slice (node names)
+	nodeNames := make([]string, len(nodes))
+	for i, node := range nodes {
+		nodeNames[i] = node.String()
+	}
+
+	return nodeNames, nil
+}
+
+// NewDefaultDockerClient creates a new Docker client using environment configuration.
+// This provides a production-ready implementation for the ContainerAPIClient interface
+// required by KindClusterProvisioner.
+func NewDefaultDockerClient() (client.ContainerAPIClient, error) { //nolint:ireturn // interface required for DI
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+	}
+
+	return dockerClient, nil
+}
