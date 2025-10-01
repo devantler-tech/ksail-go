@@ -57,15 +57,18 @@ func HandleUpRunE(
 ) error {
 	tmr := timer.New()
 	ctx := context.Background()
+
 	config, err := manager.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 	force, _ := cmd.Flags().GetBool("force")
+
 	engine, err := containerengine.GetAutoDetectedClient()
 	if err != nil {
 		return fmt.Errorf("failed to get container engine client: %w", err)
 	}
+
 	provisioner, err := newProvisioner(config, *engine)
 	if err != nil {
 		return fmt.Errorf("failed to create provisioner: %w", err)
@@ -155,6 +158,7 @@ func provisionCluster(
 		if err := forceRecreateCluster(ctx, writer, tmr, provisioner); err != nil {
 			return err
 		}
+
 		exists = false
 	}
 
@@ -165,7 +169,7 @@ func provisionCluster(
 	return nil
 }
 
-// forceRecreateCluster deletes an existing cluster for force recreation
+// forceRecreateCluster deletes an existing cluster for force recreation.
 func forceRecreateCluster(
 	ctx context.Context,
 	writer io.Writer,
@@ -186,7 +190,7 @@ func forceRecreateCluster(
 	return nil
 }
 
-// createCluster provisions a new cluster
+// createCluster provisions a new cluster.
 func createCluster(
 	ctx context.Context,
 	writer io.Writer,

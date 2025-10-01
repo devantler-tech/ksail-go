@@ -32,7 +32,7 @@ func NewDownCmd() *cobra.Command {
 // HandleDownRunE handles the down command.
 // Exported for testing purposes.
 func HandleDownRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {

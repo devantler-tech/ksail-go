@@ -20,17 +20,27 @@ func NewKindProviderAdapter(provider *cluster.Provider) *KindProviderAdapter {
 
 // Create creates a new kind cluster
 func (a *KindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
-	return a.provider.Create(name, opts...)
+	if err := a.provider.Create(name, opts...); err != nil {
+		return fmt.Errorf("failed to create kind cluster %s: %w", name, err)
+	}
+	return nil
 }
 
 // Delete deletes a kind cluster
 func (a *KindProviderAdapter) Delete(name, kubeconfigPath string) error {
-	return a.provider.Delete(name, kubeconfigPath)
+	if err := a.provider.Delete(name, kubeconfigPath); err != nil {
+		return fmt.Errorf("failed to delete kind cluster %s: %w", name, err)
+	}
+	return nil
 }
 
 // List lists kind clusters
 func (a *KindProviderAdapter) List() ([]string, error) {
-	return a.provider.List()
+	res, err := a.provider.List()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list kind clusters: %w", err)
+	}
+	return res, nil
 }
 
 // ListNodes lists nodes in a kind cluster, converting nodes.Node to string names

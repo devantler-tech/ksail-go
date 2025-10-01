@@ -68,6 +68,7 @@ func HandleListRunE(
 
 	if len(clusters) == 0 {
 		notify.ActivityMessage(manager.Writer, notify.NewMessage("no clusters found"))
+
 		return nil
 	}
 

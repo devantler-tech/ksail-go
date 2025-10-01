@@ -1,4 +1,3 @@
-// Package helpers provides common functionality for config managers to eliminate duplication.
 package helpers
 
 import (

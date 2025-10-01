@@ -76,43 +76,49 @@ func FormatDuration(d time.Duration) string {
 // TitleMessage prints a title message (emoji + Message) with a trailing newline.
 func TitleMessage(out io.Writer, emoji string, msg Message) {
 	color := fcolor.New(fcolor.Reset, fcolor.Bold)
-	print(out, color, emoji, msg.Format(), true)
+	writeMessage(out, color, emoji, msg.Format(), true)
 }
 
 // SuccessMessage prints a green success message with optional timing information.
 func SuccessMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgGreen)
-	print(out, color, SuccessSymbol, msg.Format(), true)
+	writeMessage(out, color, SuccessSymbol, msg.Format(), true)
 }
 
 // ActivityMessage prints an activity message with optional timing information.
 func ActivityMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.Reset)
-	print(out, color, ActivitySymbol, msg.Format(), true)
+	writeMessage(out, color, ActivitySymbol, msg.Format(), true)
 }
 
 // ErrorMessage prints an error message with optional timing information.
 func ErrorMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgRed)
-	print(out, color, ErrorSymbol, msg.Format(), true)
+	writeMessage(out, color, ErrorSymbol, msg.Format(), true)
 }
 
 // InfoMessage prints an info message with optional timing information.
 func InfoMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgBlue)
-	print(out, color, InfoSymbol, msg.Format(), true)
+	writeMessage(out, color, InfoSymbol, msg.Format(), true)
 }
 
 // WarnMessage prints a warning message with optional timing information.
 func WarnMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgYellow)
-	print(out, color, WarningSymbol, msg.Format(), true)
+	writeMessage(out, color, WarningSymbol, msg.Format(), true)
 }
 
 // --- internals ---
 
-// print prints a message with optional newline inserting a space between symbol and message when message present.
-func print(out io.Writer, col *fcolor.Color, symbol, message string, newline bool) {
+// writeMessage prints a message with optional newline inserting a space between symbol
+// and message when message present.
+func writeMessage(
+	out io.Writer,
+	col *fcolor.Color,
+	symbol, message string,
+	newline bool,
+) { //nolint:revive // internal helper name.
 	content := symbol
 	if message != "" {
 		content += " " + message

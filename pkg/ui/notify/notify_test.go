@@ -122,13 +122,13 @@ func TestFormatDuration(t *testing.T) {
 		{"hours minutes seconds", 1*time.Hour + 15*time.Minute + 45*time.Second, "1h15m45s"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := notify.FormatDuration(tt.duration)
-			if got != tt.want {
-				t.Fatalf("FormatDuration(%v) = %q, want %q", tt.duration, got, tt.want)
+			got := notify.FormatDuration(testCase.duration)
+			if got != testCase.want {
+				t.Fatalf("FormatDuration(%v) = %q, want %q", testCase.duration, got, testCase.want)
 			}
 		})
 	}
@@ -335,7 +335,7 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 	}
 }
 
-var out bytes.Buffer
+// Removed unused global buffer 'out'.
 
 // TestTitleMessageBasic tests basic title message printing.
 func TestTitleMessageBasic(t *testing.T) {
@@ -353,24 +353,33 @@ func TestTitleMessageVariants(t *testing.T) {
 	t.Parallel()
 
 	t.Run("complex emoji", func(t *testing.T) {
+		t.Parallel()
+
 		var out bytes.Buffer
 		notify.TitleMessage(&out, "🔧⚙️", notify.NewMessage("Configuration production loaded"))
+
 		if out.String() != "🔧⚙️ Configuration production loaded\n" {
 			t.Fatalf("unexpected output: %q", out.String())
 		}
 	})
 
 	t.Run("unicode sequence", func(t *testing.T) {
+		t.Parallel()
+
 		var out bytes.Buffer
 		notify.TitleMessage(&out, "📊", notify.NewMessage("Analytics dashboard ready"))
+
 		if out.String() != "📊 Analytics dashboard ready\n" {
 			t.Fatalf("unexpected output: %q", out.String())
 		}
 	})
 
 	t.Run("empty emoji", func(t *testing.T) {
+		t.Parallel()
+
 		var out bytes.Buffer
 		notify.TitleMessage(&out, "", notify.NewMessage("No emoji title"))
+
 		if out.String() != " No emoji title\n" {
 			t.Fatalf("unexpected output: %q", out.String())
 		}

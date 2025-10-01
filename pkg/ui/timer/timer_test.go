@@ -9,6 +9,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	start := time.Now()
 	tmr := timer.New()
 
@@ -17,7 +19,10 @@ func TestNew(t *testing.T) {
 }
 
 func TestTotal(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
+
 	time.Sleep(50 * time.Millisecond)
 
 	total := tmr.Total()
@@ -26,7 +31,10 @@ func TestTotal(t *testing.T) {
 }
 
 func TestStage(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
+
 	time.Sleep(50 * time.Millisecond)
 
 	// Start a new stage
@@ -45,6 +53,8 @@ func TestStage(t *testing.T) {
 }
 
 func TestMultipleStages(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
 
 	// First stage

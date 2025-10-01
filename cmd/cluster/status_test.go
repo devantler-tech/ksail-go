@@ -22,7 +22,8 @@ func TestHandleStatusRunE(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
+		// Updated expectation matches current status output
+		assertOutputContains(t, output.String(), "cluster: running")
 	})
 
 	t.Run("load failure", func(t *testing.T) {

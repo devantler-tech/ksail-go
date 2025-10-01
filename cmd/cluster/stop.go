@@ -30,7 +30,7 @@ func NewStopCmd() *cobra.Command {
 // HandleStopRunE handles the stop command.
 // Exported for testing purposes.
 func HandleStopRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {

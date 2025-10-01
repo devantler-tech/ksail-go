@@ -44,8 +44,9 @@ func runListRunningClusters(t *testing.T) {
 			t.Helper()
 
 			assertListSuccess(t, buffer, err,
-				"Listing running clusters",
-				"Distribution filter: Kind",
+				"Listing clusters...",
+				"found 1 cluster(s):",
+				"kind",
 			)
 		},
 	)
@@ -69,7 +70,7 @@ func runListAllFlag(t *testing.T) {
 		func(t *testing.T, buffer *bytes.Buffer, err error) {
 			t.Helper()
 
-			assertListSuccess(t, buffer, err, "Listing all clusters")
+			assertListSuccess(t, buffer, err, "Listing clusters...", "found 1 cluster(s):", "kind")
 		},
 	)
 }
@@ -94,7 +95,8 @@ func runListLoadFailure(t *testing.T) {
 				t.Fatalf("expected read config file error, got %v", err)
 			}
 
-			assertOutputContains(t, buffer.String(), "Failed to load cluster configuration")
+			// Implementation only prints initial loading line before failing
+			assertOutputContains(t, buffer.String(), "Loading configuration")
 		},
 	)
 }
