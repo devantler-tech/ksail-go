@@ -38,12 +38,14 @@ func NewMessage(text string) Message {
 // WithElapsed sets the elapsed duration for the message.
 func (m Message) WithElapsed(d time.Duration) Message {
 	m.Elapsed = d
+
 	return m
 }
 
 // WithStage sets the stage duration for the message.
 func (m Message) WithStage(d time.Duration) Message {
 	m.Stage = d
+
 	return m
 }
 
@@ -51,6 +53,7 @@ func (m Message) WithStage(d time.Duration) Message {
 func (m Message) WithTiming(elapsed, stage time.Duration) Message {
 	m.Elapsed = elapsed
 	m.Stage = stage
+
 	return m
 }
 
@@ -62,6 +65,7 @@ func (m Message) Format() string {
 			FormatDuration(m.Elapsed),
 			FormatDuration(m.Stage))
 	}
+
 	return msg
 }
 
@@ -70,6 +74,7 @@ func FormatDuration(d time.Duration) string {
 	if d < time.Second {
 		return "0s"
 	}
+
 	return d.Truncate(time.Second).String()
 }
 
@@ -118,14 +123,16 @@ func writeMessage(
 	col *fcolor.Color,
 	symbol, message string,
 	newline bool,
-) { //nolint:revive // internal helper name.
+) {
 	content := symbol
 	if message != "" {
 		content += " " + message
 	}
+
 	if newline {
 		content += "\n"
 	}
+
 	_, err := col.Fprint(out, content)
 	handleNotifyError(err)
 }

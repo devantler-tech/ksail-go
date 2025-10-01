@@ -62,6 +62,7 @@ func HandleUpRunE(
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
+
 	force, _ := cmd.Flags().GetBool("force")
 
 	engine, err := containerengine.GetAutoDetectedClient()
@@ -74,8 +75,13 @@ func HandleUpRunE(
 		return fmt.Errorf("failed to create provisioner: %w", err)
 	}
 
-	fmt.Fprintln(manager.Writer)
+	_, ferr := fmt.Fprintln(manager.Writer)
+	if ferr != nil {
+		return fmt.Errorf("write failure: %w", ferr)
+	}
+
 	notify.TitleMessage(manager.Writer, "🚀", notify.NewMessage("Provisioning cluster..."))
+
 	if err := provisionCluster(ctx, manager.Writer, tmr, provisioner, force); err != nil {
 		return err
 	}
@@ -83,7 +89,7 @@ func HandleUpRunE(
 	return nil
 }
 
-// newProvisioner creates and wires the cluster provisioner based on distribution
+// newProvisioner creates and wires the cluster provisioner based on distribution.
 func newProvisioner(
 	config *v1alpha1.Cluster,
 	engine containerengine.ContainerEngine,
@@ -94,16 +100,17 @@ func newProvisioner(
 	case v1alpha1.DistributionK3d:
 		return newK3dProvisioner(config)
 	default:
-		return nil, fmt.Errorf("unsupported distribution: %s", config.Spec.Distribution)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedDistribution, config.Spec.Distribution)
 	}
 }
 
-// newKindProvisioner creates a Kind cluster provisioner
+// newKindProvisioner creates a Kind cluster provisioner.
 func newKindProvisioner(
 	config *v1alpha1.Cluster,
 	engine containerengine.ContainerEngine,
 ) (clusterprovisioner.ClusterProvisioner, error) {
 	kindConfigManager := kindconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+
 	kindConfig, err := kindConfigManager.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load Kind configuration: %w", err)
@@ -119,9 +126,10 @@ func newKindProvisioner(
 	), nil
 }
 
-// newK3dProvisioner creates a K3d cluster provisioner
+// newK3dProvisioner creates a K3d cluster provisioner.
 func newK3dProvisioner(config *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
 	k3dConfigManager := k3dconfig.NewConfigManager(config.Spec.DistributionConfig, os.Stdout)
+
 	k3dConfig, err := k3dConfigManager.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load K3d configuration: %w", err)
@@ -137,7 +145,7 @@ func newK3dProvisioner(config *v1alpha1.Cluster) (clusterprovisioner.ClusterProv
 	), nil
 }
 
-// checkPrerequisites verifies prerequisites are met for the selected distribution
+// checkPrerequisites verifies prerequisites are met for the selected distribution.
 func provisionCluster(
 	ctx context.Context,
 	writer io.Writer,
@@ -152,10 +160,11 @@ func provisionCluster(
 
 	if exists {
 		if !force {
-			return fmt.Errorf("cluster already exists (use --force to recreate)")
+			return ErrClusterAlreadyExists
 		}
 
-		if err := forceRecreateCluster(ctx, writer, tmr, provisioner); err != nil {
+		err := forceRecreateCluster(ctx, writer, tmr, provisioner)
+		if err != nil {
 			return err
 		}
 
@@ -179,7 +188,8 @@ func forceRecreateCluster(
 	tmr.StartStage()
 	notify.ActivityMessage(writer, notify.NewMessage("destroying existing cluster"))
 
-	if err := provisioner.Delete(ctx, ""); err != nil {
+	err := provisioner.Delete(ctx, "")
+	if err != nil {
 		return fmt.Errorf("failed to destroy cluster: %w", err)
 	}
 
@@ -187,6 +197,7 @@ func forceRecreateCluster(
 		writer,
 		notify.NewMessage("existing cluster destroyed").WithTiming(tmr.Total(), tmr.Stage()),
 	)
+
 	return nil
 }
 
@@ -200,7 +211,8 @@ func createCluster(
 	tmr.StartStage()
 	notify.ActivityMessage(writer, notify.NewMessage("creating cluster"))
 
-	if err := provisioner.Create(ctx, ""); err != nil {
+	err := provisioner.Create(ctx, "")
+	if err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
@@ -208,5 +220,6 @@ func createCluster(
 		writer,
 		notify.NewMessage("cluster created").WithTiming(tmr.Total(), tmr.Stage()),
 	)
+
 	return nil
 }

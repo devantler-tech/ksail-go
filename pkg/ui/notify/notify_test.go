@@ -155,6 +155,7 @@ func TestErrorMessage(t *testing.T) {
 		t.Parallel()
 
 		var out bytes.Buffer
+
 		msg := notify.NewMessage("failed").WithElapsed(2 * time.Second)
 		notify.ErrorMessage(&out, msg)
 		got := out.String()
@@ -187,6 +188,7 @@ func TestWarnMessage(t *testing.T) {
 		t.Parallel()
 
 		var out bytes.Buffer
+
 		msg := notify.NewMessage("slow process").WithTiming(30*time.Second, 5*time.Second)
 		notify.WarnMessage(&out, msg)
 		got := out.String()
@@ -219,6 +221,7 @@ func TestSuccessMessage(t *testing.T) {
 		t.Parallel()
 
 		var out bytes.Buffer
+
 		msg := notify.NewMessage("completed").WithElapsed(10 * time.Second)
 		notify.SuccessMessage(&out, msg)
 		got := out.String()
@@ -251,6 +254,7 @@ func TestActivityMessage(t *testing.T) {
 		t.Parallel()
 
 		var out bytes.Buffer
+
 		msg := notify.NewMessage("processing").WithStage(3 * time.Second)
 		notify.ActivityMessage(&out, msg)
 		got := out.String()
@@ -283,6 +287,7 @@ func TestInfoMessage(t *testing.T) {
 		t.Parallel()
 
 		var out bytes.Buffer
+
 		msg := notify.NewMessage("metrics").WithTiming(1*time.Minute, 15*time.Second)
 		notify.InfoMessage(&out, msg)
 		got := out.String()
@@ -340,10 +345,13 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 // TestTitleMessageBasic tests basic title message printing.
 func TestTitleMessageBasic(t *testing.T) {
 	t.Parallel()
+
 	var out bytes.Buffer
 	notify.TitleMessage(&out, "✨", notify.NewMessage("Process finished successfully"))
 	got := out.String()
+
 	want := "✨ Process finished successfully\n"
+
 	if got != want {
 		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}

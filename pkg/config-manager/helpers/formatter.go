@@ -1,3 +1,4 @@
+// Package helpers provides common functionality for config managers to eliminate duplication.
 package helpers
 
 import (
@@ -23,7 +24,7 @@ func FormatValidationErrors(result *validator.ValidationResult) []string {
 
 	for _, error := range result.Errors {
 		// Start msg
-		msg := fmt.Sprintf("error: %s", error.Message)
+		msg := "error: " + error.Message
 
 		// Add location information
 		if error.Location.FilePath != "" || error.Field != "" {
@@ -44,7 +45,7 @@ func FormatValidationErrors(result *validator.ValidationResult) []string {
 
 		// Add fix suggestion
 		if error.FixSuggestion != "" {
-			msg += fmt.Sprintf("\n  fix: %s", error.FixSuggestion)
+			msg += "\n  fix: " + error.FixSuggestion
 		}
 
 		errors = append(errors, msg)
@@ -66,7 +67,7 @@ func FormatValidationWarnings(result *validator.ValidationResult) []string {
 
 	for _, warning := range result.Warnings {
 		// Start msg
-		msg := fmt.Sprintf("warning: %s", warning.Message)
+		msg := "warning: " + warning.Message
 
 		// Add location information
 		if warning.Location.FilePath != "" || warning.Field != "" {
@@ -87,7 +88,7 @@ func FormatValidationWarnings(result *validator.ValidationResult) []string {
 
 		// Add fix suggestion
 		if warning.FixSuggestion != "" {
-			msg += fmt.Sprintf("\n  fix: %s", warning.FixSuggestion)
+			msg += "\n  fix: " + warning.FixSuggestion
 		}
 
 		warnings = append(warnings, msg)

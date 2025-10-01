@@ -60,16 +60,21 @@ func HandleDownRunE(
 	}
 
 	var clusterName string
+
 	switch cfg := distConfig.(type) {
 	case *v1alpha4.Cluster:
 		clusterName = cfg.Name
 	case *v1alpha5.SimpleConfig:
 		clusterName = cfg.Name
 	default:
-		return fmt.Errorf("unsupported distribution config type")
+		return ErrUnsupportedDistribution
 	}
 
-	fmt.Fprintln(manager.Writer)
+	_, ferr := fmt.Fprintln(manager.Writer)
+	if ferr != nil {
+		return fmt.Errorf("write failure: %w", ferr)
+	}
+
 	notify.TitleMessage(manager.Writer, "🔥", notify.NewMessage("Destroying cluster..."))
 
 	exists, err := provisioner.Exists(ctx, clusterName)
@@ -78,7 +83,7 @@ func HandleDownRunE(
 	}
 
 	if !exists {
-		return fmt.Errorf("cluster does not exist")
+		return ErrClusterNotFound
 	}
 
 	tmr.StartStage()

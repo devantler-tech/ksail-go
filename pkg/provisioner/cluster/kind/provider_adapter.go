@@ -6,44 +6,49 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-// KindProviderAdapter wraps sigs.k8s.io/kind/pkg/cluster.Provider to implement KindProvider interface
+// KindProviderAdapter wraps sigs.k8s.io/kind/pkg/cluster.Provider to implement KindProvider interface.
 type KindProviderAdapter struct {
 	provider *cluster.Provider
 }
 
-// NewKindProviderAdapter creates a new adapter wrapping the real Kind provider
+// NewKindProviderAdapter creates a new adapter wrapping the real Kind provider.
 func NewKindProviderAdapter(provider *cluster.Provider) *KindProviderAdapter {
 	return &KindProviderAdapter{
 		provider: provider,
 	}
 }
 
-// Create creates a new kind cluster
+// Create creates a new kind cluster.
 func (a *KindProviderAdapter) Create(name string, opts ...cluster.CreateOption) error {
-	if err := a.provider.Create(name, opts...); err != nil {
+	err := a.provider.Create(name, opts...)
+	if err != nil {
 		return fmt.Errorf("failed to create kind cluster %s: %w", name, err)
 	}
+
 	return nil
 }
 
-// Delete deletes a kind cluster
+// Delete deletes a kind cluster.
 func (a *KindProviderAdapter) Delete(name, kubeconfigPath string) error {
-	if err := a.provider.Delete(name, kubeconfigPath); err != nil {
+	err := a.provider.Delete(name, kubeconfigPath)
+	if err != nil {
 		return fmt.Errorf("failed to delete kind cluster %s: %w", name, err)
 	}
+
 	return nil
 }
 
-// List lists kind clusters
+// List lists kind clusters.
 func (a *KindProviderAdapter) List() ([]string, error) {
 	res, err := a.provider.List()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list kind clusters: %w", err)
 	}
+
 	return res, nil
 }
 
-// ListNodes lists nodes in a kind cluster, converting nodes.Node to string names
+// ListNodes lists nodes in a kind cluster, converting nodes.Node to string names.
 func (a *KindProviderAdapter) ListNodes(name string) ([]string, error) {
 	nodesList, err := a.provider.ListNodes(name)
 	if err != nil {

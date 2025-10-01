@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TestHandleUpRunE_ContractTests covers CLI contract requirements from contracts/cluster-up.md
+// TestHandleUpRunE_ContractTests covers CLI contract requirements from contracts/cluster-up.md.
 func TestHandleUpRunE_ContractTests(t *testing.T) {
 	t.Parallel()
 
@@ -27,6 +27,7 @@ func TestHandleUpRunE_ContractTests(t *testing.T) {
 		if cmd.Flags().Lookup("force") == nil {
 			cmd.Flags().Bool("force", false, "force")
 		}
+
 		_ = cmd.Flags().Set("force", "true")
 
 		err := HandleUpRunE(cmd, manager, nil)
@@ -156,6 +157,7 @@ func TestHandleUpRunE(t *testing.T) {
 		if cmd.Flags().Lookup("force") == nil {
 			cmd.Flags().Bool("force", false, "force")
 		}
+
 		_ = cmd.Flags().Set("force", "true")
 
 		err := HandleUpRunE(cmd, manager, nil)
@@ -224,6 +226,7 @@ func newIsolatedCommandAndManager(
 
 	// Create and change to temp directory
 	tempDir := t.TempDir()
+
 	err = os.Chdir(tempDir)
 	if err != nil {
 		t.Fatalf("failed to change to temp directory: %v", err)

@@ -60,12 +60,14 @@ func TestMultipleStages(t *testing.T) {
 	// First stage
 	tmr.StartStage()
 	time.Sleep(20 * time.Millisecond)
+
 	stage1 := tmr.Stage()
 	assert.GreaterOrEqual(t, stage1, 20*time.Millisecond)
 
 	// Second stage
 	tmr.StartStage()
 	time.Sleep(30 * time.Millisecond)
+
 	stage2 := tmr.Stage()
 	assert.GreaterOrEqual(t, stage2, 30*time.Millisecond)
 

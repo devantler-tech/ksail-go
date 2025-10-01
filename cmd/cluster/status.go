@@ -73,10 +73,14 @@ func HandleStatusRunE(
 	case *v1alpha5.SimpleConfig:
 		clusterName = cfg.Name
 	default:
-		return fmt.Errorf("unsupported distribution config type")
+		return ErrUnsupportedDistribution
 	}
 
-	fmt.Fprintln(manager.Writer)
+	_, ferr := fmt.Fprintln(manager.Writer)
+	if ferr != nil {
+		return fmt.Errorf("write failure: %w", ferr)
+	}
+
 	notify.TitleMessage(manager.Writer, "📊", notify.NewMessage("Checking cluster status..."))
 
 	exists, err := provisioner.Exists(ctx, clusterName)

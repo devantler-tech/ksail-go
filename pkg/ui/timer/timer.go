@@ -12,6 +12,7 @@ type Timer struct {
 // New creates a new Timer and starts tracking from the current time.
 func New() *Timer {
 	now := time.Now()
+
 	return &Timer{
 		commandStart: now,
 		stageStart:   now,

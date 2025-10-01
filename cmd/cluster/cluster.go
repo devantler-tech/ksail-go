@@ -1,11 +1,21 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
+)
+
+var (
+	// ErrUnsupportedDistribution indicates an unsupported distribution type.
+	ErrUnsupportedDistribution = errors.New("unsupported distribution config type")
+	// ErrClusterNotFound indicates the cluster does not exist.
+	ErrClusterNotFound = errors.New("cluster does not exist")
+	// ErrClusterAlreadyExists indicates the cluster already exists.
+	ErrClusterAlreadyExists = errors.New("cluster already exists (use --force to recreate)")
 )
 
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.

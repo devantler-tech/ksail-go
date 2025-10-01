@@ -30,7 +30,7 @@ func NewStartCmd() *cobra.Command {
 // HandleStartRunE handles the start command.
 // Exported for testing purposes.
 func HandleStartRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
@@ -65,10 +65,14 @@ func HandleStartRunE(
 	case *v1alpha5.SimpleConfig:
 		clusterName = cfg.Name
 	default:
-		return fmt.Errorf("unsupported distribution config type")
+		return ErrUnsupportedDistribution
 	}
 
-	fmt.Fprintln(manager.Writer)
+	_, ferr := fmt.Fprintln(manager.Writer)
+	if ferr != nil { // errcheck
+		return fmt.Errorf("write failure: %w", ferr)
+	}
+
 	notify.TitleMessage(manager.Writer, "▶️", notify.NewMessage("Starting cluster..."))
 
 	exists, err := provisioner.Exists(ctx, clusterName)
@@ -77,7 +81,7 @@ func HandleStartRunE(
 	}
 
 	if !exists {
-		return fmt.Errorf("cluster does not exist (use 'ksail cluster up' to create)")
+		return fmt.Errorf("%w (use 'ksail cluster up' to create)", ErrClusterNotFound)
 	}
 
 	tmr.StartStage()

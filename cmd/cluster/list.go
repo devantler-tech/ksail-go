@@ -58,7 +58,11 @@ func HandleListRunE(
 		return fmt.Errorf("failed to create provisioner: %w", err)
 	}
 
-	fmt.Fprintln(manager.Writer)
+	_, ferr := fmt.Fprintln(manager.Writer)
+	if ferr != nil {
+		return fmt.Errorf("write failure: %w", ferr)
+	}
+
 	notify.TitleMessage(manager.Writer, "📋", notify.NewMessage("Listing clusters..."))
 
 	clusters, err := provisioner.List(ctx)
@@ -78,7 +82,10 @@ func HandleListRunE(
 	)
 
 	for _, cluster := range clusters {
-		fmt.Fprintf(manager.Writer, "  • %s\n", cluster)
+		_, ferr := fmt.Fprintf(manager.Writer, "  • %s\n", cluster)
+		if ferr != nil {
+			return fmt.Errorf("write failure: %w", ferr)
+		}
 	}
 
 	return nil

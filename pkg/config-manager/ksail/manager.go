@@ -104,6 +104,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		for _, warning := range formattedWarnings {
 			notify.WarnMessage(m.Writer, notify.NewMessage(warning))
 		}
+
 		formattedErrors := helpers.FormatValidationErrors(validationResult)
 		for _, errMsg := range formattedErrors {
 			notify.ErrorMessage(m.Writer, notify.NewMessage(errMsg))
@@ -111,6 +112,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 		warningLength := len(formattedWarnings)
 		errorLength := len(formattedErrors)
+
 		return nil, fmt.Errorf(
 			"%w: %s",
 			helpers.ErrConfigurationValidationFailed,
