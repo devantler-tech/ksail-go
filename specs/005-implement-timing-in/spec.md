@@ -5,6 +5,16 @@
 **Status**: Draft
 **Input**: User description: "implement timing in the cli via a new package pkg/ui/timer. The timer should be used to estimate elapsed time of each command and its stages. A stage is defined by a new title. The timing must be printed in the following format [x total|x stage] where x is the time in go duration format. The timing must be printed in success messages. This is important to allow users to monitor how long commands and their individual stages take to run."
 
+## Clarifications
+
+### Session 2025-10-01
+
+- Q: When should timing information be displayed to users? → A: After each stage completes (progressive updates throughout execution)
+- Q: When a command fails mid-execution, should timing information be displayed in the error message? → A: No, only display timing on successful completion
+- Q: At what duration threshold should the format switch between time units? → A: Always use Go's default Duration.String() (e.g., "1m30s", "500ms")
+- Q: How should the timer mechanism integrate with the existing UI notification system? → A: Timer provides timing data; notify functions format and display it
+- Q: Should timing be displayed for commands with only a single stage (no explicit title changes)? → A: Yes, but simplified as `[X]` (omit redundant stage time)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### Primary User Story
@@ -13,11 +23,11 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 ### Acceptance Scenarios
 
-1. **Given** a user runs `ksail cluster up`, **When** the command completes successfully, **Then** the success message displays timing information in the format `[5m30s total|2m15s stage]` showing both total elapsed time and the time for the final stage
+1. **Given** a user runs `ksail cluster up` (multi-stage command), **When** the command completes successfully, **Then** the success message displays timing information in the format `[5m30s total|2m15s stage]` showing both total elapsed time and the time for the final stage
 
-2. **Given** a user runs `ksail init --distribution Kind`, **When** the command completes successfully, **Then** the success message displays timing in the format `[1.2s total|1.2s stage]` with appropriate precision for sub-second operations
+2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[1.2s]` with appropriate precision for sub-second operations
 
-3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** the timing for that specific stage is tracked and the cumulative total time is maintained
+3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** timing information is displayed immediately showing `[X total|Y stage]` format, allowing users to monitor progress in real-time
 
 4. **Given** a user runs any KSail command, **When** viewing the output, **Then** stage boundaries are clearly defined by title changes in the UI output
 
@@ -26,8 +36,8 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 ### Edge Cases
 
 - What happens when a command completes in less than 1 millisecond? (timing should handle sub-millisecond precision)
-- What happens when a stage has no explicit title change? (should default to tracking the command as a single stage)
-- What happens when a command fails mid-execution? (timing should still be captured up to the point of failure)
+- What happens when a stage has no explicit title change? (should default to tracking the command as a single stage and display timing in simplified `[X]` format)
+- What happens when a command fails mid-execution? (timing is tracked internally but NOT displayed to users; only successful completions show timing)
 - How does timing behave with parallel operations within a command? (timing should track wall-clock time, not cumulative CPU time)
 
 ## Requirements *(mandatory)*
@@ -38,9 +48,9 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-002**: System MUST track elapsed time for individual stages within a command, where a stage is defined by a title change in the output
 
-- **FR-003**: System MUST display timing information in success messages using the format `[X total|Y stage]` where X is total elapsed time and Y is the last stage's elapsed time
+- **FR-003**: System MUST display timing information in format `[X total|Y stage]` for multi-stage commands, and simplified format `[X]` for single-stage commands (where X is total elapsed time and Y is the last stage's elapsed time)
 
-- **FR-004**: System MUST format timing durations using Go's duration format (e.g., `1m30s`, `500ms`, `2.5s`)
+- **FR-004**: System MUST format timing durations using Go's standard Duration.String() method, which automatically produces appropriate units (e.g., "1m30s", "500ms", "2.5s")
 
 - **FR-005**: System MUST allow commands to define stage boundaries by setting new titles during execution
 
@@ -54,15 +64,23 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-010**: System MUST format timing information to be human-readable and consistent across all commands
 
-- **FR-011**: Timing information MUST be included in all success messages for all KSail commands
+- **FR-011**: Timing information MUST be displayed after each stage completes during command execution, providing progressive updates to users
 
-- **FR-012**: System MUST handle sub-second durations with appropriate precision (milliseconds for <1s operations)
+- **FR-012**: System MUST use Go's Duration.String() method which automatically handles sub-second durations with millisecond precision for operations <1s
 
 - **FR-013**: System MUST handle long-running operations (minutes, hours) with appropriate formatting
 
+- **FR-014**: System MUST display timing information progressively as each stage completes, rather than only at final command completion
+
+- **FR-015**: System MUST NOT display timing information when commands fail or exit with errors; timing display is reserved for successful completions only
+
+- **FR-016**: Timer MUST provide timing data as structured information (total duration, stage duration) that existing notification functions can format and display
+
+- **FR-017**: System MUST use simplified timing format `[X]` for single-stage commands to avoid redundant information (where total and stage time would be identical)
+
 ### Key Entities *(include if feature involves data)*
 
-- **Timer**: Represents the timing tracker for a command execution. Tracks start time, current stage start time, and provides methods to calculate elapsed durations.
+- **Timer**: Represents the timing tracker for a command execution. Tracks start time, current stage start time, and provides methods to calculate and return elapsed durations as structured data for the UI notification system to format and display.
 
 - **Stage**: Represents a logical phase within a command execution, defined by a title. Has a start time and duration once completed.
 
