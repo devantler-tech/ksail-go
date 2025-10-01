@@ -27,9 +27,9 @@ jobs:
     if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:
-        distribution:
-          - "Kind"
-          - "K3d"
+        init-args:
+          - "--distribution Kind"
+          - "--distribution K3d"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -48,25 +48,23 @@ jobs:
       - name: 🏗️ Build application
         run: go build -o ksail .
 
-      - name: 🧪 Run integration test lifecycle for ${{ matrix.distribution }}
+      - name: 🧪 Run integration test
         run: |
-          # Create temporary directory
-          TEST_DIR=$(mktemp -d)
-          cd "$TEST_DIR"
-          
-          # Run full lifecycle with --stub flag
-          $GITHUB_WORKSPACE/ksail --stub init --distribution ${{ matrix.distribution }}
-          $GITHUB_WORKSPACE/ksail --stub cluster up
-          $GITHUB_WORKSPACE/ksail --stub cluster status
-          $GITHUB_WORKSPACE/ksail --stub cluster list
-          $GITHUB_WORKSPACE/ksail --stub cluster stop
-          $GITHUB_WORKSPACE/ksail --stub cluster start
-          $GITHUB_WORKSPACE/ksail --stub workload reconcile
-          $GITHUB_WORKSPACE/ksail --stub cluster down
-          
-          # Cleanup
-          cd "$GITHUB_WORKSPACE"
-          rm -rf "$TEST_DIR"
+          ./ksail --stub init ${{ matrix.init-args }}
+          ./ksail --stub cluster up
+          ./ksail --stub cluster status
+          ./ksail --stub cluster list
+          ./ksail --stub cluster stop
+          ./ksail --stub cluster start
+          ./ksail --stub workload reconcile
+          ./ksail --stub cluster down
+
+      - name: 🧹 Cleanup
+        run: |
+          if [ -d "k8s" ]; then rm -rf "k8s"; fi
+          if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
+          if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
+          if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
   system-test:
     runs-on: ubuntu-latest
@@ -76,8 +74,8 @@ jobs:
     strategy:
       matrix:
         init-args:
-          - "init --distribution Kind"
-          - "init --distribution K3d"
+          - "--distribution Kind"
+          - "--distribution K3d"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -98,7 +96,7 @@ jobs:
 
       - name: 🧪 Run system test
         run: |
-          ./ksail ${{ matrix.init-args }}
+          ./ksail init ${{ matrix.init-args }}
           ./ksail cluster up
           ./ksail cluster status
           ./ksail cluster list

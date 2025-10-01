@@ -11,6 +11,7 @@ import (
 )
 
 // ClusterProvisioner is a stub implementation of the ClusterProvisioner interface for integration testing.
+// It provides no-op implementations that only print stub messages.
 type ClusterProvisioner struct {
 	ClusterName string
 }
@@ -24,48 +25,32 @@ func NewClusterProvisioner(clusterName string) *ClusterProvisioner {
 
 // Create simulates creating a Kubernetes cluster.
 func (p *ClusterProvisioner) Create(_ context.Context, name string) error {
-	clusterName := name
-	if clusterName == "" {
-		clusterName = p.ClusterName
-	}
 	//nolint:forbidigo // Using fmt.Printf for test stub output
-	fmt.Printf("STUB: Creating cluster '%s'\n", clusterName)
+	fmt.Printf("STUB: Create cluster (name=%s)\n", name)
 
 	return nil
 }
 
 // Delete simulates deleting a Kubernetes cluster.
 func (p *ClusterProvisioner) Delete(_ context.Context, name string) error {
-	clusterName := name
-	if clusterName == "" {
-		clusterName = p.ClusterName
-	}
 	//nolint:forbidigo // Using fmt.Printf for test stub output
-	fmt.Printf("STUB: Deleting cluster '%s'\n", clusterName)
+	fmt.Printf("STUB: Delete cluster (name=%s)\n", name)
 
 	return nil
 }
 
 // Start simulates starting a Kubernetes cluster.
 func (p *ClusterProvisioner) Start(_ context.Context, name string) error {
-	clusterName := name
-	if clusterName == "" {
-		clusterName = p.ClusterName
-	}
 	//nolint:forbidigo // Using fmt.Printf for test stub output
-	fmt.Printf("STUB: Starting cluster '%s'\n", clusterName)
+	fmt.Printf("STUB: Start cluster (name=%s)\n", name)
 
 	return nil
 }
 
 // Stop simulates stopping a Kubernetes cluster.
 func (p *ClusterProvisioner) Stop(_ context.Context, name string) error {
-	clusterName := name
-	if clusterName == "" {
-		clusterName = p.ClusterName
-	}
 	//nolint:forbidigo // Using fmt.Printf for test stub output
-	fmt.Printf("STUB: Stopping cluster '%s'\n", clusterName)
+	fmt.Printf("STUB: Stop cluster (name=%s)\n", name)
 
 	return nil
 }
@@ -73,19 +58,15 @@ func (p *ClusterProvisioner) Stop(_ context.Context, name string) error {
 // List simulates listing all Kubernetes clusters.
 func (p *ClusterProvisioner) List(_ context.Context) ([]string, error) {
 	//nolint:forbidigo // Using fmt.Println for test stub output
-	fmt.Println("STUB: Listing clusters")
+	fmt.Println("STUB: List clusters")
 
-	return []string{p.ClusterName}, nil
+	return []string{}, nil
 }
 
 // Exists simulates checking if a Kubernetes cluster exists.
 func (p *ClusterProvisioner) Exists(_ context.Context, name string) (bool, error) {
-	clusterName := name
-	if clusterName == "" {
-		clusterName = p.ClusterName
-	}
 	//nolint:forbidigo // Using fmt.Printf for test stub output
-	fmt.Printf("STUB: Checking if cluster '%s' exists\n", clusterName)
+	fmt.Printf("STUB: Check cluster exists (name=%s)\n", name)
 
 	return true, nil
 }
