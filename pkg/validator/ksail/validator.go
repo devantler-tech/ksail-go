@@ -124,7 +124,7 @@ func (v *Validator) validateDistribution(
 			Field:         "spec.distribution",
 			Message:       message,
 			CurrentValue:  distribution,
-			ExpectedValue: "one of: Kind, K3d",
+			ExpectedValue: "Kind or K3d",
 			FixSuggestion: fixSuggestion,
 		})
 	}
