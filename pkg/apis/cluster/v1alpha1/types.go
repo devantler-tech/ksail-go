@@ -248,8 +248,8 @@ func (d *Distribution) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionEKS)
+	return fmt.Errorf("%w: %s (valid options: %s, %s)",
+		ErrInvalidDistribution, value, DistributionKind, DistributionK3d)
 }
 
 // Set for ReconciliationTool.

@@ -47,7 +47,6 @@ func TestDistributionSet(t *testing.T) {
 	validCases := []struct{ input, expected string }{
 		{"Kind", "Kind"},
 		{"k3d", "K3d"},
-		{"EKS", "EKS"},
 	}
 	for _, validCase := range validCases {
 		var dist v1alpha1.Distribution
