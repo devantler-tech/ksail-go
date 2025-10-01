@@ -30,7 +30,6 @@ jobs:
         init-args:
           - "init --distribution Kind"
           - "init --distribution K3d"
-          - "init --distribution EKS"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -65,7 +64,6 @@ jobs:
           if [ -d "k8s" ]; then rm -rf "k8s"; fi
           if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
-          if [ -f "eks.yaml" ]; then rm "eks.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
   system-test-status:

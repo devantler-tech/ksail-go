@@ -17,7 +17,6 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/require"
-	eksv1alpha5 "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
@@ -53,7 +52,6 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 			expected:     scaffolder.KindConfigFile,
 		},
 		{name: "K3d", distribution: v1alpha1.DistributionK3d, expected: scaffolder.K3dConfigFile},
-		{name: "EKS", distribution: v1alpha1.DistributionEKS, expected: scaffolder.EKSConfigFile},
 		{name: "Unknown", distribution: "unknown", expected: scaffolder.KindConfigFile},
 	}
 
@@ -173,7 +171,6 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 	}{
 		{"Kind", createKindCluster},
 		{"K3d", createK3dCluster},
-		{"EKS", createEKSCluster},
 	}
 
 	for _, testCase := range testCases {
@@ -261,14 +258,6 @@ func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
 			distribution: v1alpha1.DistributionK3d,
 			assertErr:    assertK3dGenerationError,
 		},
-		{
-			name: "EKS",
-			configure: func(spies generatorSpies) {
-				spies.eks.returnErr = errGenerateFailure
-			},
-			distribution: v1alpha1.DistributionEKS,
-			assertErr:    assertEKSGenerationError,
-		},
 	}
 
 	for _, testCase := range tests {
@@ -314,14 +303,6 @@ func assertK3dGenerationError(t *testing.T, err error) {
 
 	require.ErrorIs(t, err, scaffolder.ErrK3dConfigGeneration)
 	require.ErrorIs(t, err, errGenerateFailure)
-}
-
-func assertEKSGenerationError(t *testing.T, err error) {
-	t.Helper()
-
-	require.Error(t, err)
-	require.ErrorIs(t, err, errGenerateFailure)
-	require.ErrorContains(t, err, "generate EKS config")
 }
 
 func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
@@ -371,13 +352,6 @@ func getScaffoldTestCases() []scaffoldTestCase {
 			expectError: false,
 		},
 		{
-			name:        "EKS distribution",
-			setupFunc:   createEKSCluster,
-			outputPath:  "/tmp/test-eks/",
-			force:       true,
-			expectError: false,
-		},
-		{
 			name:        "Unknown distribution",
 			setupFunc:   createUnknownCluster,
 			outputPath:  "/tmp/test-unknown/",
@@ -398,11 +372,6 @@ func getContentTestCases() []contentTestCase {
 			name:         "K3d configuration content",
 			setupFunc:    createK3dCluster,
 			distribution: v1alpha1.DistributionK3d,
-		},
-		{
-			name:         "EKS configuration content",
-			setupFunc:    createEKSCluster,
-			distribution: v1alpha1.DistributionEKS,
 		},
 	}
 }
@@ -434,20 +403,6 @@ func generateDistributionContent(
 		// Create minimal K3d configuration that matches the original hardcoded output
 		k3dContent := "apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: ksail-default\n"
 		snaps.MatchSnapshot(t, k3dContent)
-
-	case v1alpha1.DistributionEKS:
-		// Create minimal EKS configuration that matches the original hardcoded output
-		eksContent := `apiVersion: eksctl.io/v1alpha5
-kind: ClusterConfig
-metadata:
-  name: ksail-default
-  region: eu-north-1
-nodeGroups:
-- desiredCapacity: 1
-  instanceType: m5.large
-  name: ng-1
-`
-		snaps.MatchSnapshot(t, eksContent)
 	}
 }
 
@@ -474,15 +429,6 @@ func createMinimalClusterForSnapshot(
 		minimalCluster.Spec = v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionK3d,
 			DistributionConfig: "k3d.yaml",
-		}
-
-		return minimalCluster
-	case v1alpha1.DistributionEKS:
-		// For EKS, the original hardcoded output included distribution, distributionConfig, and sourceDirectory
-		minimalCluster.Spec = v1alpha1.Spec{
-			Distribution:       v1alpha1.DistributionEKS,
-			DistributionConfig: "eks.yaml",
-			SourceDirectory:    "k8s",
 		}
 
 		return minimalCluster
@@ -515,14 +461,6 @@ func createK3dCluster(name string) v1alpha1.Cluster {
 	return c
 }
 
-func createEKSCluster(name string) v1alpha1.Cluster {
-	c := createTestCluster(name)
-	c.Spec.Distribution = v1alpha1.DistributionEKS
-	c.Spec.DistributionConfig = "eks.yaml"
-
-	return c
-}
-
 func createUnknownCluster(name string) v1alpha1.Cluster {
 	c := createTestCluster(name)
 	c.Spec.Distribution = "unknown"
@@ -549,7 +487,6 @@ type generatorSpies struct {
 	ksail         *spyGenerator[v1alpha1.Cluster]
 	kind          *spyGenerator[*v1alpha4.Cluster]
 	k3d           *spyGenerator[*k3dv1alpha5.SimpleConfig]
-	eks           *spyGenerator[*eksv1alpha5.ClusterConfig]
 	kustomization *spyGenerator[*ktypes.Kustomization]
 }
 
@@ -566,14 +503,12 @@ func newScaffolderWithSpies(
 		ksail:         &spyGenerator[v1alpha1.Cluster]{},
 		kind:          &spyGenerator[*v1alpha4.Cluster]{},
 		k3d:           &spyGenerator[*k3dv1alpha5.SimpleConfig]{},
-		eks:           &spyGenerator[*eksv1alpha5.ClusterConfig]{},
 		kustomization: &spyGenerator[*ktypes.Kustomization]{},
 	}
 
 	scaffolderInstance.KSailYAMLGenerator = spies.ksail
 	scaffolderInstance.KindGenerator = spies.kind
 	scaffolderInstance.K3dGenerator = spies.k3d
-	scaffolderInstance.EKSGenerator = spies.eks
 	scaffolderInstance.KustomizationGenerator = spies.kustomization
 
 	return scaffolderInstance, spies
