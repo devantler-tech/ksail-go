@@ -47,7 +47,7 @@ func TestDistributionSet(t *testing.T) {
 	validCases := []struct{ input, expected string }{
 		{"Kind", "Kind"},
 		{"k3d", "K3d"},
-		{"TIND", "Tind"},
+		{"EKS", "EKS"},
 	}
 	for _, validCase := range validCases {
 		var dist v1alpha1.Distribution
@@ -76,7 +76,6 @@ func TestDistributionIsValid(t *testing.T) {
 		v1alpha1.DistributionKind,
 		v1alpha1.DistributionK3d,
 		v1alpha1.DistributionEKS,
-		v1alpha1.DistributionTind,
 	}
 
 	for _, dist := range validCases {
@@ -312,7 +311,6 @@ func TestNewClusterOptions(t *testing.T) {
 
 	assert.NotNil(t, options.Kind)
 	assert.NotNil(t, options.K3d)
-	assert.NotNil(t, options.Tind)
 	assert.NotNil(t, options.EKS)
 	assert.NotNil(t, options.Cilium)
 	assert.NotNil(t, options.Kubectl)
@@ -337,15 +335,6 @@ func TestNewClusterOptionsK3d(t *testing.T) {
 	options := v1alpha1.NewClusterOptionsK3d()
 
 	// OptionsK3d is an empty struct, just verify it's created
-	assert.NotNil(t, options)
-}
-
-func TestNewClusterOptionsTind(t *testing.T) {
-	t.Parallel()
-
-	options := v1alpha1.NewClusterOptionsTind()
-
-	// OptionsTind is an empty struct, just verify it's created
 	assert.NotNil(t, options)
 }
 

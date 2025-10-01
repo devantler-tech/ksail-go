@@ -97,8 +97,7 @@ Any user (developer, platform engineer, or DevOps practitioner) wants to start u
 - **FR-005**: Command MUST display a spinner with "Initializing project..." text and show each file creation below the spinner with checkmark symbols (format: "✓ Created {filename}" for each generated file)
 - **FR-006**: Command MUST offer customization options through specific CLI flags: --name (project name), --distribution (kind|k3d|eks), --reconciliation-tool (kubectl|flux), --force (boolean to overwrite existing files)
 - **FR-007**: Command MUST pass --force flag to scaffolder to control file overwrite behavior (actual conflict handling varies by generator implementation)
-- **FR-008**: System MUST support multiple Kubernetes distributions through `--distribution` flag accepting values: kind, k3d, eks.  
-  *Note: Support for "talos" is planned for a future release but is not currently available.*
+- **FR-008**: System MUST support multiple Kubernetes distributions through `--distribution` flag accepting values: kind, k3d, eks.
 - **FR-009**: Command MUST display specific next steps as console output after successful initialization: "Next steps:" followed by numbered list: "1. Run `ksail up` to create cluster", "2. Edit ksail.yaml to customize", "3. Add manifests to k8s/"
 - **FR-010**: Command MUST validate user inputs and provide actionable error messages for invalid options
 - **FR-011**: Command MUST work completely offline with no network dependencies for any initialization features
@@ -121,14 +120,14 @@ Any user (developer, platform engineer, or DevOps practitioner) wants to start u
 - **Project Configuration**: Represents the KSail project settings including name, distribution choice, and feature selections
 - **Scaffold Template**: Represents the file templates and directory structure used to generate new projects
 - **CLI Command Interface**: Represents the command-line interface including flags, arguments, and user interaction patterns
-- **Distribution Config**: Represents the specific configuration files needed for each Kubernetes distribution (Kind, K3d, Talos)
+- **Distribution Config**: Represents the specific configuration files needed for each Kubernetes distribution (Kind, K3d, EKS)
 
 ### Scope Boundaries *(what's included and excluded)*
 
 **Included in this specification**:
 
 - Basic project initialization with `ksail init` command
-- Support for Kind, K3d, and Talos distributions
+- Support for Kind, K3d, and EKS distributions
 - Basic Kustomize structure generation
 - File conflict detection and --force override capability
 - Comprehensive CLI help and error handling

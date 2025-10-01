@@ -1,8 +1,4 @@
 
-[TestScaffoldBasicOperations/Tind_distribution_not_implemented - 1]
-talos-in-docker distribution is not yet implemented
----
-
 [TestScaffoldBasicOperations/Unknown_distribution - 1]
 provided distribution is unknown
 ---
@@ -81,10 +77,6 @@ resources: []
 ---
 
 [TestScaffoldErrorHandling/distribution_error_paths - 1]
-talos-in-docker distribution is not yet implemented
----
-
-[TestScaffoldErrorHandling/distribution_error_paths - 2]
 provided distribution is unknown
 ---
 
