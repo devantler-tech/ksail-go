@@ -55,19 +55,19 @@ total, stage := timer.GetTiming()
 
 ### CR-002: GetTiming() Before Start
 
-**Requirement**: GetTiming() SHOULD handle being called before Start() gracefully (return zero durations or panic with clear message).
+**Requirement**: GetTiming() MUST return (0, 0) durations if called before Start(). It MUST NOT panic.
 
 **Expected Behavior**:
 
-- Either return (0, 0) durations
-- Or panic with descriptive error message
+- Always return (0, 0) durations if called before Start()
+- Never panic
 
 **Test Scenario**:
 
 ```go
 timer := NewTimer()
 total, stage := timer.GetTiming() // Before Start()
-// Expect: either (0, 0) or panic
+// Expect: (0, 0)
 ```
 
 ### CR-003: NewStage() Stage Transition
