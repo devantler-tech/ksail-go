@@ -340,8 +340,6 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 	}
 }
 
-// Removed unused global buffer 'out'.
-
 // TestTitleMessageBasic tests basic title message printing.
 func TestTitleMessageBasic(t *testing.T) {
 	t.Parallel()
