@@ -1,6 +1,7 @@
 package k3d_test
 
 import (
+	"io"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -100,7 +101,7 @@ func TestNewConfigManager(t *testing.T) {
 	t.Parallel()
 
 	configPath := "/path/to/config.yaml"
-	manager := k3d.NewConfigManager(configPath)
+	manager := k3d.NewConfigManager(configPath, io.Discard)
 
 	assert.NotNil(t, manager)
 }
@@ -146,7 +147,7 @@ servers: 3`,
 	testutils.RunConfigManagerTests(
 		t,
 		func(configPath string) configmanager.ConfigManager[v1alpha5.SimpleConfig] {
-			return k3d.NewConfigManager(configPath)
+			return k3d.NewConfigManager(configPath, io.Discard)
 		},
 		scenarios,
 	)

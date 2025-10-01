@@ -1,6 +1,8 @@
 package kindprovisioner
 
 import (
+	"fmt"
+
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
@@ -35,7 +37,7 @@ func (a *KindProviderAdapter) List() ([]string, error) {
 func (a *KindProviderAdapter) ListNodes(name string) ([]string, error) {
 	nodesList, err := a.provider.ListNodes(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list nodes for cluster %s: %w", name, err)
 	}
 
 	// Convert []nodes.Node to []string by extracting node names

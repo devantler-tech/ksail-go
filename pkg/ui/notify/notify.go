@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	fcolor "github.com/fatih/color"
@@ -74,47 +73,54 @@ func FormatDuration(d time.Duration) string {
 	return d.Truncate(time.Second).String()
 }
 
-// TitleMessage prints a title message with an emoji.
+// TitleMessage prints a title message (emoji + Message) with a trailing newline.
 func TitleMessage(out io.Writer, emoji string, msg Message) {
 	color := fcolor.New(fcolor.Reset, fcolor.Bold)
-	printMessage(out, color, emoji, msg.Format())
+	print(out, color, emoji, msg.Format(), true)
 }
 
 // SuccessMessage prints a green success message with optional timing information.
 func SuccessMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgGreen)
-	printMessage(out, color, SuccessSymbol, msg.Format())
+	print(out, color, SuccessSymbol, msg.Format(), true)
 }
 
 // ActivityMessage prints an activity message with optional timing information.
 func ActivityMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.Reset)
-	printMessage(out, color, ActivitySymbol, msg.Format())
+	print(out, color, ActivitySymbol, msg.Format(), true)
 }
 
 // ErrorMessage prints an error message with optional timing information.
 func ErrorMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgRed)
-	printMessage(out, color, ErrorSymbol, msg.Format())
+	print(out, color, ErrorSymbol, msg.Format(), true)
 }
 
 // InfoMessage prints an info message with optional timing information.
 func InfoMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgBlue)
-	printMessage(out, color, InfoSymbol, msg.Format())
+	print(out, color, InfoSymbol, msg.Format(), true)
 }
 
 // WarnMessage prints a warning message with optional timing information.
 func WarnMessage(out io.Writer, msg Message) {
 	color := fcolor.New(fcolor.FgYellow)
-	printMessage(out, color, WarningSymbol, msg.Format())
+	print(out, color, WarningSymbol, msg.Format(), true)
 }
 
 // --- internals ---
 
-// printMessage prints a message with symbol and color.
-func printMessage(out io.Writer, col *fcolor.Color, symbol, message string) {
-	_, err := col.Fprintln(out, strings.Join([]string{symbol, message}, " "))
+// print prints a message with optional newline inserting a space between symbol and message when message present.
+func print(out io.Writer, col *fcolor.Color, symbol, message string, newline bool) {
+	content := symbol
+	if message != "" {
+		content += " " + message
+	}
+	if newline {
+		content += "\n"
+	}
+	_, err := col.Fprint(out, content)
 	handleNotifyError(err)
 }
 

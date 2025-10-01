@@ -144,7 +144,7 @@ func TestErrorMessage(t *testing.T) {
 		var out bytes.Buffer
 		notify.ErrorMessage(&out, notify.NewMessage("oops"))
 		got := out.String()
-		want := notify.ErrorSymbol + "oops\n"
+		want := notify.ErrorSymbol + " oops\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -158,7 +158,7 @@ func TestErrorMessage(t *testing.T) {
 		msg := notify.NewMessage("failed").WithElapsed(2 * time.Second)
 		notify.ErrorMessage(&out, msg)
 		got := out.String()
-		want := notify.ErrorSymbol + "failed\n"
+		want := notify.ErrorSymbol + " failed\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -176,7 +176,7 @@ func TestWarnMessage(t *testing.T) {
 		var out bytes.Buffer
 		notify.WarnMessage(&out, notify.NewMessage("careful"))
 		got := out.String()
-		want := notify.WarningSymbol + "careful\n"
+		want := notify.WarningSymbol + " careful\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -190,7 +190,7 @@ func TestWarnMessage(t *testing.T) {
 		msg := notify.NewMessage("slow process").WithTiming(30*time.Second, 5*time.Second)
 		notify.WarnMessage(&out, msg)
 		got := out.String()
-		want := notify.WarningSymbol + "slow process [30s|5s]\n"
+		want := notify.WarningSymbol + " slow process [30s|5s]\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -208,7 +208,7 @@ func TestSuccessMessage(t *testing.T) {
 		var out bytes.Buffer
 		notify.SuccessMessage(&out, notify.NewMessage("done"))
 		got := out.String()
-		want := notify.SuccessSymbol + "done\n"
+		want := notify.SuccessSymbol + " done\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -222,7 +222,7 @@ func TestSuccessMessage(t *testing.T) {
 		msg := notify.NewMessage("completed").WithElapsed(10 * time.Second)
 		notify.SuccessMessage(&out, msg)
 		got := out.String()
-		want := notify.SuccessSymbol + "completed\n"
+		want := notify.SuccessSymbol + " completed\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -240,7 +240,7 @@ func TestActivityMessage(t *testing.T) {
 		var out bytes.Buffer
 		notify.ActivityMessage(&out, notify.NewMessage("working"))
 		got := out.String()
-		want := notify.ActivitySymbol + "working\n"
+		want := notify.ActivitySymbol + " working\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -254,7 +254,7 @@ func TestActivityMessage(t *testing.T) {
 		msg := notify.NewMessage("processing").WithStage(3 * time.Second)
 		notify.ActivityMessage(&out, msg)
 		got := out.String()
-		want := notify.ActivitySymbol + "processing\n"
+		want := notify.ActivitySymbol + " processing\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -272,7 +272,7 @@ func TestInfoMessage(t *testing.T) {
 		var out bytes.Buffer
 		notify.InfoMessage(&out, notify.NewMessage("details"))
 		got := out.String()
-		want := notify.InfoSymbol + "details\n"
+		want := notify.InfoSymbol + " details\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -286,7 +286,7 @@ func TestInfoMessage(t *testing.T) {
 		msg := notify.NewMessage("metrics").WithTiming(1*time.Minute, 15*time.Second)
 		notify.InfoMessage(&out, msg)
 		got := out.String()
-		want := notify.InfoSymbol + "metrics [1m0s|15s]\n"
+		want := notify.InfoSymbol + " metrics [1m0s|15s]\n"
 
 		if got != want {
 			t.Fatalf("expected %q, got %q", want, got)
@@ -335,90 +335,44 @@ func TestHandleNotifyErrorWithError(t *testing.T) {
 	}
 }
 
-func TestTitlef(t *testing.T) {
+var out bytes.Buffer
+
+// TestTitleMessageBasic tests basic title message printing.
+func TestTitleMessageBasic(t *testing.T) {
 	t.Parallel()
-
 	var out bytes.Buffer
-
-	notify.Titlef(&out, "🚀", "Starting %s version %s", "KSail", "v1.0.0")
-	got := out.String()
-	want := "🚀 Starting KSail version v1.0.0\n"
-
-	if got != want {
-		t.Fatalf("output mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestTitle(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Title(&out, "🎯", "Deployment complete")
-	got := out.String()
-	want := "🎯 Deployment complete"
-
-	if got != want {
-		t.Fatalf("output mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestTitleln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.TitleMessage(&out, "✨", "Process finished successfully")
+	notify.TitleMessage(&out, "✨", notify.NewMessage("Process finished successfully"))
 	got := out.String()
 	want := "✨ Process finished successfully\n"
-
 	if got != want {
 		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestTitleFunctionsWithComplexEmojis(t *testing.T) {
+func TestTitleMessageVariants(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Titlef with complex emoji", func(t *testing.T) {
-		t.Parallel()
-
+	t.Run("complex emoji", func(t *testing.T) {
 		var out bytes.Buffer
-
-		notify.Titlef(&out, "🔧⚙️", "Configuration %s loaded", "production")
-		got := out.String()
-		want := "🔧⚙️ Configuration production loaded\n"
-
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		notify.TitleMessage(&out, "🔧⚙️", notify.NewMessage("Configuration production loaded"))
+		if out.String() != "🔧⚙️ Configuration production loaded\n" {
+			t.Fatalf("unexpected output: %q", out.String())
 		}
 	})
 
-	t.Run("Title with Unicode", func(t *testing.T) {
-		t.Parallel()
-
+	t.Run("unicode sequence", func(t *testing.T) {
 		var out bytes.Buffer
-
-		notify.Title(&out, "📊", "Analytics dashboard ready")
-		got := out.String()
-		want := "📊 Analytics dashboard ready"
-
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		notify.TitleMessage(&out, "📊", notify.NewMessage("Analytics dashboard ready"))
+		if out.String() != "📊 Analytics dashboard ready\n" {
+			t.Fatalf("unexpected output: %q", out.String())
 		}
 	})
 
-	t.Run("Titleln with empty emoji", func(t *testing.T) {
-		t.Parallel()
-
+	t.Run("empty emoji", func(t *testing.T) {
 		var out bytes.Buffer
-
-		notify.TitleMessage(&out, "", "No emoji title")
-		got := out.String()
-		want := " No emoji title\n"
-
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
+		notify.TitleMessage(&out, "", notify.NewMessage("No emoji title"))
+		if out.String() != " No emoji title\n" {
+			t.Fatalf("unexpected output: %q", out.String())
 		}
 	})
 }

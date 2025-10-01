@@ -37,6 +37,7 @@ func FormatValidationErrors(result *validator.ValidationResult) []string {
 					msg += " "
 				}
 			}
+
 			if error.Field != "" {
 				msg += fmt.Sprintf("'%s'", error.Field)
 			}
@@ -79,6 +80,7 @@ func FormatValidationWarnings(result *validator.ValidationResult) []string {
 					msg += " "
 				}
 			}
+
 			if warning.Field != "" {
 				msg += fmt.Sprintf("'%s'", warning.Field)
 			}

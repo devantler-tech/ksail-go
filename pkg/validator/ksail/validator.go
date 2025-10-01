@@ -86,13 +86,6 @@ func (v *Validator) validateContextName(
 		return
 	}
 
-	// Check for unsupported distributions that return invalid context patterns
-	if v.isUnsupportedDistribution(config.Spec.Distribution) {
-		v.addUnsupportedDistributionError(config, result)
-
-		return
-	}
-
 	if config.Spec.Connection.Context != expectedContext {
 		result.AddError(validator.ValidationError{
 			Field:         "spec.connection.context",

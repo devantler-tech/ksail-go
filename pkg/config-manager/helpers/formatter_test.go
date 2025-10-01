@@ -24,7 +24,7 @@ func TestFormatValidationErrors(t *testing.T) {
 					{Field: "name", Message: "is required"},
 				},
 			},
-			expected: []string{"'name' is required"},
+			expected: []string{"error: is required\n  in: 'name'"},
 		},
 		{
 			name: "multiple errors",
@@ -36,8 +36,8 @@ func TestFormatValidationErrors(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"'name' is required",
-				"'version' is invalid",
+				"error: is required\n  in: 'name'",
+				"error: is invalid\n  in: 'version'",
 			},
 		},
 		{
@@ -65,7 +65,7 @@ func TestFormatValidationErrors(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"'spec.distribution' value is invalid\n   in: ksail.yaml:15\n   fix: use one of: Kind, K3d",
+				"error: value is invalid\n  in: ksail.yaml:15 'spec.distribution'\n  fix: use one of: Kind, K3d",
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestFormatValidationErrors(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"'metadata.name' contains invalid characters\n   in: config.yaml:3",
+				"error: contains invalid characters\n  in: config.yaml:3 'metadata.name'",
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func TestFormatValidationErrors(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"'spec.replicas' value is too high\n   fix: reduce to 10 or less",
+				"error: value is too high\n  in: 'spec.replicas'\n  fix: reduce to 10 or less",
 			},
 		},
 	}
@@ -131,7 +131,7 @@ func TestFormatValidationWarnings(t *testing.T) {
 					{Field: "deprecated", Message: "field is deprecated"},
 				},
 			},
-			expected: []string{"- warning: 'deprecated' field is deprecated"},
+			expected: []string{"warning: field is deprecated\n  in: 'deprecated'"},
 		},
 		{
 			name: "multiple warnings",
@@ -143,8 +143,8 @@ func TestFormatValidationWarnings(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"- warning: 'deprecated' field is deprecated",
-				"- warning: 'unused' field is unused",
+				"warning: field is deprecated\n  in: 'deprecated'",
+				"warning: field is unused\n  in: 'unused'",
 			},
 		},
 		{
@@ -172,7 +172,7 @@ func TestFormatValidationWarnings(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"- warning: 'spec.distribution' using deprecated value\n   in: ksail.yaml:10\n   fix: use 'Kind' instead of 'kind'",
+				"warning: using deprecated value\n  in: ksail.yaml:10 'spec.distribution'\n  fix: use 'Kind' instead of 'kind'",
 			},
 		},
 		{
@@ -191,7 +191,7 @@ func TestFormatValidationWarnings(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"- warning: 'metadata.name' name is quite long\n   in: config.yaml:5",
+				"warning: name is quite long\n  in: config.yaml:5 'metadata.name'",
 			},
 		},
 		{
@@ -207,7 +207,7 @@ func TestFormatValidationWarnings(t *testing.T) {
 				},
 			},
 			expected: []string{
-				"- warning: 'spec.timeout' value is very high\n   fix: reduce to 5m or less",
+				"warning: value is very high\n  in: 'spec.timeout'\n  fix: reduce to 5m or less",
 			},
 		},
 	}

@@ -97,6 +97,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 
 	// Validate the loaded configuration
 	validator := ksailvalidator.NewValidator()
+
 	validationResult := validator.Validate(m.Config)
 	if !validationResult.Valid {
 		formattedWarnings := helpers.FormatValidationWarnings(validationResult)

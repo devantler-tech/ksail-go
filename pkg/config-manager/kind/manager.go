@@ -90,6 +90,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
 
 	// Validate the loaded configuration
 	validator := kindvalidator.NewValidator()
+
 	validationResult := validator.Validate(config)
 	if !validationResult.Valid {
 		formattedWarnings := helpers.FormatValidationWarnings(validationResult)

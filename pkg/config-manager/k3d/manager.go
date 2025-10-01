@@ -91,6 +91,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha5.SimpleConfig, error) {
 
 	// Validate the loaded configuration
 	validator := k3dvalidator.NewValidator()
+
 	validationResult := validator.Validate(config)
 	if !validationResult.Valid {
 		formattedWarnings := helpers.FormatValidationWarnings(validationResult)

@@ -1,6 +1,7 @@
 package kind_test
 
 import (
+	"io"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -96,7 +97,7 @@ func TestNewConfigManager(t *testing.T) {
 	t.Parallel()
 
 	configPath := "/path/to/config.yaml"
-	manager := kind.NewConfigManager(configPath)
+	manager := kind.NewConfigManager(configPath, io.Discard)
 
 	assert.NotNil(t, manager)
 }
@@ -142,7 +143,7 @@ nodes:
 	testutils.RunConfigManagerTests(
 		t,
 		func(configPath string) configmanager.ConfigManager[v1alpha4.Cluster] {
-			return kind.NewConfigManager(configPath)
+			return kind.NewConfigManager(configPath, io.Discard)
 		},
 		scenarios,
 	)

@@ -66,6 +66,7 @@ func HandleStatusRunE(
 	}
 
 	var clusterName string
+
 	switch cfg := distConfig.(type) {
 	case *v1alpha4.Cluster:
 		clusterName = cfg.Name
