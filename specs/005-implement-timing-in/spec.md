@@ -1,8 +1,8 @@
 # Feature Specification: CLI Command Timing
 
-**Feature Branch**: `005-implement-timing-in`  
-**Created**: 2025-10-01  
-**Status**: Draft  
+**Feature Branch**: `005-implement-timing-in`
+**Created**: 2025-10-01
+**Status**: Draft
 **Input**: User description: "implement timing in the cli via a new package pkg/ui/timer. The timer should be used to estimate elapsed time of each command and its stages. A stage is defined by a new title. The timing must be printed in the following format [x total|x stage] where x is the time in go duration format. The timing must be printed in success messages. This is important to allow users to monitor how long commands and their individual stages take to run."
 
 ## User Scenarios & Testing *(mandatory)*
@@ -82,7 +82,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 ### Requirement Completeness
 
 - [x] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable and unambiguous  
+- [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Scope is clearly bounded
 - [x] Dependencies and assumptions identified
