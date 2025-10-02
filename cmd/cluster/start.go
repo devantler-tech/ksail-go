@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
@@ -33,7 +35,7 @@ func HandleStartRunE(
 	// Load cluster and execute
 	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	// Get timing and format
