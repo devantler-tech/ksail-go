@@ -75,8 +75,10 @@ func WriteMessage(msg Message) {
 		if emoji == "" {
 			emoji = "ℹ️" // default emoji for titles
 		}
+
 		_, err := config.color.Fprintf(msg.Writer, "%s %s\n", emoji, content)
 		handleNotifyError(err)
+
 		return
 	}
 
@@ -148,5 +150,6 @@ func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
 	if !isMultiStage || total == stage {
 		return fmt.Sprintf("[%s]", total.String())
 	}
+
 	return fmt.Sprintf("[%s total|%s stage]", total.String(), stage.String())
 }

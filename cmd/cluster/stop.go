@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -24,10 +26,14 @@ func HandleStopRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	return cmdhelpers.ExecuteTimedClusterCommand(
+	err := cmdhelpers.ExecuteTimedClusterCommand(
 		cmd,
 		manager,
 		"Cluster stopped successfully (stub implementation)",
-		false,
 	)
+	if err != nil {
+		return fmt.Errorf("failed to provision cluster stop: %w", err)
+	}
+
+	return nil
 }

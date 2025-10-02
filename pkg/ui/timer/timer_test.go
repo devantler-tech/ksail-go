@@ -12,7 +12,11 @@ import (
 
 // TestCR001_StartInitialization validates that Start() properly initializes timing.
 func TestCR001_StartInitialization(t *testing.T) {
+	t.Parallel()
+
 	t.Run("GetTiming returns near-zero durations after Start", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -22,12 +26,15 @@ func TestCR001_StartInitialization(t *testing.T) {
 		if total > 10*time.Millisecond {
 			t.Errorf("Expected total duration < 10ms after Start(), got %v", total)
 		}
+
 		if stage > 10*time.Millisecond {
 			t.Errorf("Expected stage duration < 10ms after Start(), got %v", stage)
 		}
 	})
 
 	t.Run("Multiple Start calls reset the timer", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 		time.Sleep(50 * time.Millisecond)
@@ -40,6 +47,7 @@ func TestCR001_StartInitialization(t *testing.T) {
 		if total > 10*time.Millisecond {
 			t.Errorf("Expected total duration < 10ms after second Start(), got %v", total)
 		}
+
 		if stage > 10*time.Millisecond {
 			t.Errorf("Expected stage duration < 10ms after second Start(), got %v", stage)
 		}
@@ -48,6 +56,8 @@ func TestCR001_StartInitialization(t *testing.T) {
 
 // TestCR002_GetTimingBeforeStart validates behavior when GetTiming is called before Start.
 func TestCR002_GetTimingBeforeStart(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
 
 	// Should not panic
@@ -63,6 +73,7 @@ func TestCR002_GetTimingBeforeStart(t *testing.T) {
 	if total != 0 {
 		t.Errorf("Expected total duration = 0 before Start(), got %v", total)
 	}
+
 	if stage != 0 {
 		t.Errorf("Expected stage duration = 0 before Start(), got %v", stage)
 	}
@@ -70,18 +81,24 @@ func TestCR002_GetTimingBeforeStart(t *testing.T) {
 
 // TestCR003_NewStageTransition validates that NewStage resets stage timer correctly.
 func TestCR003_NewStageTransition(t *testing.T) {
+	t.Parallel()
+
 	t.Run("NewStage resets stage timer while preserving total", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
 		// First stage
 		time.Sleep(100 * time.Millisecond)
+
 		total1, stage1 := tmr.GetTiming()
 
 		// Verify first stage timing
 		if total1 < 90*time.Millisecond || total1 > 150*time.Millisecond {
 			t.Errorf("Expected total ≈ 100ms, got %v", total1)
 		}
+
 		if stage1 < 90*time.Millisecond || stage1 > 150*time.Millisecond {
 			t.Errorf("Expected stage ≈ 100ms, got %v", stage1)
 		}
@@ -89,12 +106,14 @@ func TestCR003_NewStageTransition(t *testing.T) {
 		// Transition to new stage
 		tmr.NewStage("Stage 2")
 		time.Sleep(50 * time.Millisecond)
+
 		total2, stage2 := tmr.GetTiming()
 
 		// Total should be ~150ms, stage should be ~50ms
 		if total2 < 140*time.Millisecond || total2 > 200*time.Millisecond {
 			t.Errorf("Expected total ≈ 150ms after stage 2, got %v", total2)
 		}
+
 		if stage2 < 40*time.Millisecond || stage2 > 100*time.Millisecond {
 			t.Errorf("Expected stage ≈ 50ms after NewStage, got %v", stage2)
 		}
@@ -106,6 +125,8 @@ func TestCR003_NewStageTransition(t *testing.T) {
 	})
 
 	t.Run("Multiple NewStage calls work correctly", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -116,6 +137,7 @@ func TestCR003_NewStageTransition(t *testing.T) {
 		tmr.NewStage("Stage 3")
 
 		time.Sleep(30 * time.Millisecond)
+
 		total, stage := tmr.GetTiming()
 
 		// Total should be ~90ms
@@ -131,32 +153,39 @@ func TestCR003_NewStageTransition(t *testing.T) {
 
 // TestCR004_GetTimingReturnsCurrentState validates GetTiming can be called multiple times.
 func TestCR004_GetTimingReturnsCurrentState(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
 	tmr.Start()
 
 	// First call
 	time.Sleep(50 * time.Millisecond)
+
 	total1, stage1 := tmr.GetTiming()
 
 	// Second call (should return updated durations)
 	time.Sleep(50 * time.Millisecond)
+
 	total2, stage2 := tmr.GetTiming()
 
 	// Verify no side effects - each call returns current state
 	if total2 <= total1 {
 		t.Errorf("Expected total2 (%v) > total1 (%v)", total2, total1)
 	}
+
 	if stage2 <= stage1 {
 		t.Errorf("Expected stage2 (%v) > stage1 (%v)", stage2, stage1)
 	}
 
 	// Third call (verify consistency)
 	time.Sleep(20 * time.Millisecond)
+
 	total3, stage3 := tmr.GetTiming()
 
 	if total3 <= total2 {
 		t.Errorf("Expected total3 (%v) > total2 (%v)", total3, total2)
 	}
+
 	if stage3 <= stage2 {
 		t.Errorf("Expected stage3 (%v) > stage2 (%v)", stage3, stage2)
 	}
@@ -164,10 +193,13 @@ func TestCR004_GetTimingReturnsCurrentState(t *testing.T) {
 
 // TestCR005_SingleStageCommand validates single-stage behavior (total == stage).
 func TestCR005_SingleStageCommand(t *testing.T) {
+	t.Parallel()
+
 	tmr := timer.New()
 	tmr.Start()
 
 	time.Sleep(100 * time.Millisecond)
+
 	total, stage := tmr.GetTiming()
 
 	// Without NewStage(), total should equal stage
@@ -187,7 +219,11 @@ func TestCR005_SingleStageCommand(t *testing.T) {
 
 // TestCR006_StopMethod validates Stop() method behavior.
 func TestCR006_StopMethod(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Stop can be called without errors", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -204,6 +240,8 @@ func TestCR006_StopMethod(t *testing.T) {
 	})
 
 	t.Run("GetTiming works after Stop", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -219,6 +257,8 @@ func TestCR006_StopMethod(t *testing.T) {
 	})
 
 	t.Run("Multiple Stop calls are safe", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -254,7 +294,11 @@ func TestCR006_StopMethod(t *testing.T) {
 
 // TestCR007_DurationPrecision validates duration precision and formatting.
 func TestCR007_DurationPrecision(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Sub-millisecond operations return non-zero durations", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
@@ -265,16 +309,20 @@ func TestCR007_DurationPrecision(t *testing.T) {
 		if total <= 0 {
 			t.Errorf("Expected total > 0 for sub-millisecond operation, got %v", total)
 		}
+
 		if stage <= 0 {
 			t.Errorf("Expected stage > 0 for sub-millisecond operation, got %v", stage)
 		}
 	})
 
 	t.Run("Duration.String() formats correctly", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
 		time.Sleep(1500 * time.Millisecond)
+
 		total, _ := tmr.GetTiming()
 
 		// Verify Duration.String() produces readable format
@@ -290,10 +338,13 @@ func TestCR007_DurationPrecision(t *testing.T) {
 	})
 
 	t.Run("Millisecond precision visible", func(t *testing.T) {
+		t.Parallel()
+
 		tmr := timer.New()
 		tmr.Start()
 
 		time.Sleep(123 * time.Millisecond)
+
 		total, _ := tmr.GetTiming()
 
 		// Should be in range 100-200ms

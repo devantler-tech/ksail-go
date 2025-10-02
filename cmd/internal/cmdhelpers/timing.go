@@ -15,7 +15,6 @@ func ExecuteTimedClusterCommand(
 	cmd *cobra.Command,
 	manager *configmanager.ConfigManager,
 	successMessage string,
-	multiStage bool,
 ) error {
 	// Start timing
 	tmr := timer.New()

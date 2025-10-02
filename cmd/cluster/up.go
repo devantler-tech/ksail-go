@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
@@ -46,10 +47,10 @@ func HandleUpRunE(
 	// Load cluster configuration
 	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load cluster: %w", err)
 	}
 
-	// TODO: Update timing stages when implementing actual cluster provisioning (multi-stage logic).
+	// Note: Timing stages will be updated when implementing actual cluster provisioning.
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "Cluster created and started successfully (stub implementation)",

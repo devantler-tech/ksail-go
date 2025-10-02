@@ -30,8 +30,8 @@ type Timer interface {
 	Stop()
 }
 
-// timerImpl is the concrete implementation of the Timer interface.
-type timerImpl struct {
+// Impl is the concrete implementation of the Timer interface.
+type Impl struct {
 	startTime      time.Time
 	stageStartTime time.Time
 	currentStage   string
@@ -39,14 +39,14 @@ type timerImpl struct {
 
 // New creates a new Timer instance.
 // The timer must be started with Start() before use.
-func New() Timer {
-	return &timerImpl{}
+func New() *Impl {
+	return &Impl{}
 }
 
 // Start initializes the timer and begins tracking elapsed time.
 // Sets both total and stage start times to the current time.
 // Can be called multiple times to reset the timer.
-func (t *timerImpl) Start() {
+func (t *Impl) Start() {
 	now := time.Now()
 	t.startTime = now
 	t.stageStartTime = now
@@ -56,7 +56,7 @@ func (t *timerImpl) Start() {
 // NewStage marks a transition to a new stage with the given title.
 // Resets the stage timer while preserving total elapsed time.
 // The title is stored but not currently used in timing calculations.
-func (t *timerImpl) NewStage(title string) {
+func (t *Impl) NewStage(title string) {
 	t.stageStartTime = time.Now()
 	t.currentStage = title
 }
@@ -68,15 +68,15 @@ func (t *timerImpl) NewStage(title string) {
 //
 // If Start() has not been called, returns (0, 0).
 // Can be called multiple times without side effects.
-func (t *timerImpl) GetTiming() (total, stage time.Duration) {
+func (t *Impl) GetTiming() (time.Duration, time.Duration) {
 	// Handle case where Start() hasn't been called
 	if t.startTime.IsZero() {
 		return 0, 0
 	}
 
 	now := time.Now()
-	total = now.Sub(t.startTime)
-	stage = now.Sub(t.stageStartTime)
+	total := now.Sub(t.startTime)
+	stage := now.Sub(t.stageStartTime)
 
 	return total, stage
 }
@@ -84,6 +84,6 @@ func (t *timerImpl) GetTiming() (total, stage time.Duration) {
 // Stop signals the end of timing tracking.
 // This is a no-op in the current implementation but provided
 // for future extensibility (e.g., resource cleanup).
-func (t *timerImpl) Stop() {
+func (t *Impl) Stop() {
 	// No-op: timer state remains accessible via GetTiming()
 }

@@ -168,6 +168,7 @@ func TestWriteMessage_WithTimer(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	tmr := timer.New()
 	tmr.Start()
 
@@ -186,6 +187,7 @@ func TestWriteMessage_WithTimer(t *testing.T) {
 	if !strings.HasPrefix(got, "✔ operation complete [") {
 		t.Fatalf("output should start with success symbol and have timing, got %q", got)
 	}
+
 	if !strings.Contains(got, "ms]") && !strings.Contains(got, "µs]") {
 		t.Fatalf("output should contain timing in ms or µs, got %q", got)
 	}
@@ -203,9 +205,13 @@ func TestWriteMessage_DefaultWriter(t *testing.T) {
 	// If we get here without panicking, test passes
 }
 
-// TestFormatTiming_IR002 validates timing format consistency (IR-002)
+// TestFormatTiming_IR002 validates timing format consistency (IR-002).
 func TestFormatTiming_IR002(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Multi-stage format with different durations", func(t *testing.T) {
+		t.Parallel()
+
 		total := 5*time.Minute + 30*time.Second
 		stage := 2*time.Minute + 15*time.Second
 
@@ -218,6 +224,8 @@ func TestFormatTiming_IR002(t *testing.T) {
 	})
 
 	t.Run("Single-stage format", func(t *testing.T) {
+		t.Parallel()
+
 		duration := 1200 * time.Millisecond
 
 		result := notify.FormatTiming(duration, duration, false)
@@ -229,6 +237,8 @@ func TestFormatTiming_IR002(t *testing.T) {
 	})
 
 	t.Run("Multi-stage with equal durations treated as single-stage", func(t *testing.T) {
+		t.Parallel()
+
 		duration := 1 * time.Second
 
 		result := notify.FormatTiming(duration, duration, true)
@@ -240,6 +250,8 @@ func TestFormatTiming_IR002(t *testing.T) {
 	})
 
 	t.Run("Sub-second precision", func(t *testing.T) {
+		t.Parallel()
+
 		total := 500 * time.Millisecond
 		stage := 200 * time.Millisecond
 
@@ -252,6 +264,8 @@ func TestFormatTiming_IR002(t *testing.T) {
 	})
 
 	t.Run("Microsecond precision", func(t *testing.T) {
+		t.Parallel()
+
 		duration := 123 * time.Microsecond
 
 		result := notify.FormatTiming(duration, duration, false)
@@ -263,6 +277,8 @@ func TestFormatTiming_IR002(t *testing.T) {
 	})
 
 	t.Run("Long duration format", func(t *testing.T) {
+		t.Parallel()
+
 		total := 1*time.Hour + 23*time.Minute + 45*time.Second
 		stage := 15 * time.Minute
 

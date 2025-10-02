@@ -49,63 +49,57 @@ func NewConfigManager(
 // Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
-	// If config is already loaded, return it
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: "Loading configuration...",
-		Emoji:   "⏳",
-		Writer:  m.Writer,
-	})
+	m.notifyLoadingStart()
 
 	if m.configLoaded {
-		notify.WriteMessage(notify.Message{
-			Type:    notify.SuccessType,
-			Content: "config already loaded, reusing existing config",
-			Writer:  m.Writer,
-		})
+		m.notifyConfigReused()
 
 		return m.Config, nil
 	}
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "loading ksail config",
-		Writer:  m.Writer,
-	})
+	m.notifyLoadingConfig()
 
 	// Use native Viper API to read configuration
-	// All paths and environment handling are already configured in constructor
+	err := m.readConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal and apply defaults
+	err = m.unmarshalAndApplyDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	m.notifyLoadingComplete()
+	m.configLoaded = true
+
+	return m.Config, nil
+}
+
+func (m *ConfigManager) readConfig() error {
 	err := m.Viper.ReadInConfig()
 	if err != nil {
-		// It's okay if config file doesn't exist, we'll use defaults and environment/flags
 		var configFileNotFoundError viper.ConfigFileNotFoundError
 		if !errors.As(err, &configFileNotFoundError) {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
+			return fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		notify.WriteMessage(notify.Message{
-			Type:    notify.ActivityType,
-			Content: "using default config",
-			Writer:  m.Writer,
-		})
+		m.notifyUsingDefaults()
 	} else {
-		notify.WriteMessage(notify.Message{
-			Type:    notify.ActivityType,
-			Content: "'%s' found",
-			Args:    []any{m.Viper.ConfigFileUsed()},
-			Writer:  m.Writer,
-		})
+		m.notifyConfigFound()
 	}
 
-	// Unmarshal configuration using Viper's native precedence handling
-	// Viper will handle: config files < environment variables < flags
-	err = m.Viper.Unmarshal(m.Config)
+	return nil
+}
+
+func (m *ConfigManager) unmarshalAndApplyDefaults() error {
+	err := m.Viper.Unmarshal(m.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal configuration: %w", err)
+		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
-	// Apply field selector defaults only for fields that are still empty
-	// This ensures defaults are applied with the lowest precedence
+	// Apply field selector defaults for empty fields
 	for _, fieldSelector := range m.fieldSelectors {
 		fieldPtr := fieldSelector.Selector(m.Config)
 		if fieldPtr != nil && isFieldEmpty(fieldPtr) {
@@ -113,15 +107,57 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		}
 	}
 
+	return nil
+}
+
+func (m *ConfigManager) notifyLoadingStart() {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Loading configuration...",
+		Emoji:   "⏳",
+		Writer:  m.Writer,
+	})
+}
+
+func (m *ConfigManager) notifyConfigReused() {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "config already loaded, reusing existing config",
+		Writer:  m.Writer,
+	})
+}
+
+func (m *ConfigManager) notifyLoadingConfig() {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "loading ksail config",
+		Writer:  m.Writer,
+	})
+}
+
+func (m *ConfigManager) notifyUsingDefaults() {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "using default config",
+		Writer:  m.Writer,
+	})
+}
+
+func (m *ConfigManager) notifyConfigFound() {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "'%s' found",
+		Args:    []any{m.Viper.ConfigFileUsed()},
+		Writer:  m.Writer,
+	})
+}
+
+func (m *ConfigManager) notifyLoadingComplete() {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "config loaded",
 		Writer:  m.Writer,
 	})
-
-	m.configLoaded = true
-
-	return m.Config, nil
 }
 
 // isFieldEmpty checks if a field pointer points to an empty/zero value.
