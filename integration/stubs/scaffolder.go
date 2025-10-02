@@ -37,6 +37,7 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 
 	// Determine config file and context for the distribution
 	var configFile, context string
+
 	switch s.KSailConfig.Spec.Distribution {
 	case v1alpha1.DistributionKind:
 		configFile = "kind.yaml"

@@ -18,6 +18,7 @@ func NewStopCmd() *cobra.Command {
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 	)
 }

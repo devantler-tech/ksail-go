@@ -18,6 +18,7 @@ func NewStartCmd() *cobra.Command {
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 	)
 }

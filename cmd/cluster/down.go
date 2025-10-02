@@ -18,6 +18,7 @@ func NewDownCmd() *cobra.Command {
 			)(cmd, manager, args)
 		},
 		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 	)
 }

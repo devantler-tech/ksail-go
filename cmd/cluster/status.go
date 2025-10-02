@@ -21,6 +21,8 @@ func NewStatusCmd() *cobra.Command {
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
 		HandleStatusRunE,
+		cmdhelpers.StandardDistributionFieldSelector(),
+		cmdhelpers.StandardDistributionConfigFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
