@@ -85,70 +85,67 @@ func TestCR003_NewStageTransition(t *testing.T) {
 
 	t.Run("NewStage resets stage timer while preserving total", func(t *testing.T) {
 		t.Parallel()
-
-		tmr := timer.New()
-		tmr.Start()
-
-		// First stage
-		time.Sleep(100 * time.Millisecond)
-
-		total1, stage1 := tmr.GetTiming()
-
-		// Verify first stage timing
-		if total1 < 90*time.Millisecond || total1 > 150*time.Millisecond {
-			t.Errorf("Expected total ≈ 100ms, got %v", total1)
-		}
-
-		if stage1 < 90*time.Millisecond || stage1 > 150*time.Millisecond {
-			t.Errorf("Expected stage ≈ 100ms, got %v", stage1)
-		}
-
-		// Transition to new stage
-		tmr.NewStage("Stage 2")
-		time.Sleep(50 * time.Millisecond)
-
-		total2, stage2 := tmr.GetTiming()
-
-		// Total should be ~150ms, stage should be ~50ms
-		if total2 < 140*time.Millisecond || total2 > 200*time.Millisecond {
-			t.Errorf("Expected total ≈ 150ms after stage 2, got %v", total2)
-		}
-
-		if stage2 < 40*time.Millisecond || stage2 > 100*time.Millisecond {
-			t.Errorf("Expected stage ≈ 50ms after NewStage, got %v", stage2)
-		}
-
-		// Stage should be less than total
-		if stage2 >= total2 {
-			t.Errorf("Expected stage (%v) < total (%v)", stage2, total2)
-		}
+		testNewStageResetPreservesTotal(t)
 	})
 
 	t.Run("Multiple NewStage calls work correctly", func(t *testing.T) {
 		t.Parallel()
-
-		tmr := timer.New()
-		tmr.Start()
-
-		time.Sleep(30 * time.Millisecond)
-		tmr.NewStage("Stage 2")
-
-		time.Sleep(30 * time.Millisecond)
-		tmr.NewStage("Stage 3")
-
-		time.Sleep(30 * time.Millisecond)
-
-		total, stage := tmr.GetTiming()
-
-		// Total should be ~90ms
-		if total < 80*time.Millisecond || total > 140*time.Millisecond {
-			t.Errorf("Expected total ≈ 90ms, got %v", total)
-		}
-		// Stage should be ~30ms (last stage only)
-		if stage < 20*time.Millisecond || stage > 80*time.Millisecond {
-			t.Errorf("Expected stage ≈ 30ms, got %v", stage)
-		}
+		testMultipleNewStageCalls(t)
 	})
+}
+
+func testNewStageResetPreservesTotal(t *testing.T) {
+	t.Helper()
+
+	tmr := timer.New()
+	tmr.Start()
+
+	// First stage
+	time.Sleep(100 * time.Millisecond)
+
+	total1, stage1 := tmr.GetTiming()
+	assertDurationInRange(t, total1, 90, 150, "total ≈ 100ms")
+	assertDurationInRange(t, stage1, 90, 150, "stage ≈ 100ms")
+
+	// Transition to new stage
+	tmr.NewStage("Stage 2")
+	time.Sleep(50 * time.Millisecond)
+
+	total2, stage2 := tmr.GetTiming()
+	assertDurationInRange(t, total2, 140, 200, "total ≈ 150ms after stage 2")
+	assertDurationInRange(t, stage2, 40, 100, "stage ≈ 50ms after NewStage")
+
+	if stage2 >= total2 {
+		t.Errorf("Expected stage (%v) < total (%v)", stage2, total2)
+	}
+}
+
+func testMultipleNewStageCalls(t *testing.T) {
+	t.Helper()
+
+	tmr := timer.New()
+	tmr.Start()
+
+	time.Sleep(30 * time.Millisecond)
+	tmr.NewStage("Stage 2")
+	time.Sleep(30 * time.Millisecond)
+	tmr.NewStage("Stage 3")
+	time.Sleep(30 * time.Millisecond)
+
+	total, stage := tmr.GetTiming()
+	assertDurationInRange(t, total, 80, 140, "total ≈ 90ms")
+	assertDurationInRange(t, stage, 20, 80, "stage ≈ 30ms")
+}
+
+func assertDurationInRange(t *testing.T, duration time.Duration, minMs, maxMs int, desc string) {
+	t.Helper()
+
+	minDur := time.Duration(minMs) * time.Millisecond
+
+	maxDur := time.Duration(maxMs) * time.Millisecond
+	if duration < minDur || duration > maxDur {
+		t.Errorf("Expected %s, got %v", desc, duration)
+	}
 }
 
 // TestCR004_GetTimingReturnsCurrentState validates GetTiming can be called multiple times.
@@ -223,73 +220,73 @@ func TestCR006_StopMethod(t *testing.T) {
 
 	t.Run("Stop can be called without errors", func(t *testing.T) {
 		t.Parallel()
-
-		tmr := timer.New()
-		tmr.Start()
-
-		time.Sleep(50 * time.Millisecond)
-
-		// Should not panic
-		defer func() {
-			if r := recover(); r != nil {
-				t.Errorf("Stop() panicked: %v", r)
-			}
-		}()
-
-		tmr.Stop()
+		testStopWithoutErrors(t)
 	})
 
 	t.Run("GetTiming works after Stop", func(t *testing.T) {
 		t.Parallel()
-
-		tmr := timer.New()
-		tmr.Start()
-
-		time.Sleep(50 * time.Millisecond)
-		tmr.Stop()
-
-		total, _ := tmr.GetTiming()
-
-		// Should still return valid durations
-		if total < 40*time.Millisecond || total > 100*time.Millisecond {
-			t.Errorf("Expected duration ≈ 50ms after Stop(), got %v", total)
-		}
+		testGetTimingAfterStop(t)
 	})
 
 	t.Run("Multiple Stop calls are safe", func(t *testing.T) {
 		t.Parallel()
-
-		tmr := timer.New()
-		tmr.Start()
-
-		time.Sleep(50 * time.Millisecond)
-
-		tmr.Stop()
-		total1, stage1 := tmr.GetTiming()
-
-		tmr.Stop() // Second call
-		total2, stage2 := tmr.GetTiming()
-
-		// Durations should be similar (allowing for small time passage between calls)
-		// GetTiming() is calculated dynamically, so there will be microsecond differences
-		totalDiff := total2 - total1
-		if totalDiff < 0 || totalDiff > 10*time.Millisecond {
-			t.Errorf(
-				"Expected similar total durations after multiple Stop(), got diff=%v",
-				totalDiff,
-			)
-		}
-
-		stageDiff := stage2 - stage1
-		if stageDiff < 0 || stageDiff > 10*time.Millisecond {
-			t.Errorf(
-				"Expected similar stage durations after multiple Stop(), got stage1=%v stage2=%v diff=%v",
-				stage1,
-				stage2,
-				stageDiff,
-			)
-		}
+		testMultipleStopCalls(t)
 	})
+}
+
+func testStopWithoutErrors(t *testing.T) {
+	t.Helper()
+
+	tmr := timer.New()
+	tmr.Start()
+	time.Sleep(50 * time.Millisecond)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Stop() panicked: %v", r)
+		}
+	}()
+
+	tmr.Stop()
+}
+
+func testGetTimingAfterStop(t *testing.T) {
+	t.Helper()
+
+	tmr := timer.New()
+	tmr.Start()
+
+	time.Sleep(50 * time.Millisecond)
+	tmr.Stop()
+
+	total, _ := tmr.GetTiming()
+	assertDurationInRange(t, total, 40, 100, "duration ≈ 50ms after Stop()")
+}
+
+func testMultipleStopCalls(t *testing.T) {
+	t.Helper()
+
+	tmr := timer.New()
+	tmr.Start()
+	time.Sleep(50 * time.Millisecond)
+
+	tmr.Stop()
+	total1, stage1 := tmr.GetTiming()
+
+	tmr.Stop() // Second call
+	total2, stage2 := tmr.GetTiming()
+
+	// Durations should be similar
+	totalDiff := total2 - total1
+	if totalDiff < 0 || totalDiff > 10*time.Millisecond {
+		t.Errorf("Expected similar total durations, got diff=%v", totalDiff)
+	}
+
+	stageDiff := stage2 - stage1
+	if stageDiff < 0 || stageDiff > 10*time.Millisecond {
+		t.Errorf("Expected similar stage durations, got diff=%v (stage1=%v, stage2=%v)",
+			stageDiff, stage1, stage2)
+	}
 }
 
 // TestCR007_DurationPrecision validates duration precision and formatting.

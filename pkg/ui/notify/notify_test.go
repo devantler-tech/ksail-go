@@ -211,82 +211,90 @@ func TestFormatTiming_IR002(t *testing.T) {
 
 	t.Run("Multi-stage format with different durations", func(t *testing.T) {
 		t.Parallel()
-
-		total := 5*time.Minute + 30*time.Second
-		stage := 2*time.Minute + 15*time.Second
-
-		result := notify.FormatTiming(total, stage, true)
-		expected := "[5m30s total|2m15s stage]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testMultiStageFormat(t)
 	})
 
 	t.Run("Single-stage format", func(t *testing.T) {
 		t.Parallel()
-
-		duration := 1200 * time.Millisecond
-
-		result := notify.FormatTiming(duration, duration, false)
-		expected := "[1.2s]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testSingleStageFormat(t)
 	})
 
 	t.Run("Multi-stage with equal durations treated as single-stage", func(t *testing.T) {
 		t.Parallel()
-
-		duration := 1 * time.Second
-
-		result := notify.FormatTiming(duration, duration, true)
-		expected := "[1s]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testEqualDurationsAsSingleStage(t)
 	})
 
 	t.Run("Sub-second precision", func(t *testing.T) {
 		t.Parallel()
-
-		total := 500 * time.Millisecond
-		stage := 200 * time.Millisecond
-
-		result := notify.FormatTiming(total, stage, true)
-		expected := "[500ms total|200ms stage]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testSubSecondPrecision(t)
 	})
 
 	t.Run("Microsecond precision", func(t *testing.T) {
 		t.Parallel()
-
-		duration := 123 * time.Microsecond
-
-		result := notify.FormatTiming(duration, duration, false)
-		expected := "[123µs]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testMicrosecondPrecision(t)
 	})
 
 	t.Run("Long duration format", func(t *testing.T) {
 		t.Parallel()
-
-		total := 1*time.Hour + 23*time.Minute + 45*time.Second
-		stage := 15 * time.Minute
-
-		result := notify.FormatTiming(total, stage, true)
-		expected := "[1h23m45s total|15m0s stage]"
-
-		if result != expected {
-			t.Errorf("Expected %q, got %q", expected, result)
-		}
+		testLongDurationFormat(t)
 	})
+}
+
+func testMultiStageFormat(t *testing.T) {
+	t.Helper()
+
+	total := 5*time.Minute + 30*time.Second
+	stage := 2*time.Minute + 15*time.Second
+	assertFormattedTiming(t, total, stage, true, "[5m30s total|2m15s stage]")
+}
+
+func testSingleStageFormat(t *testing.T) {
+	t.Helper()
+
+	duration := 1200 * time.Millisecond
+	assertFormattedTiming(t, duration, duration, false, "[1.2s]")
+}
+
+func testEqualDurationsAsSingleStage(t *testing.T) {
+	t.Helper()
+
+	duration := 1 * time.Second
+	assertFormattedTiming(t, duration, duration, true, "[1s]")
+}
+
+func testSubSecondPrecision(t *testing.T) {
+	t.Helper()
+
+	total := 500 * time.Millisecond
+	stage := 200 * time.Millisecond
+	assertFormattedTiming(t, total, stage, true, "[500ms total|200ms stage]")
+}
+
+func testMicrosecondPrecision(t *testing.T) {
+	t.Helper()
+
+	duration := 123 * time.Microsecond
+	assertFormattedTiming(t, duration, duration, false, "[123µs]")
+}
+
+func testLongDurationFormat(t *testing.T) {
+	t.Helper()
+
+	total := 1*time.Hour + 23*time.Minute + 45*time.Second
+	stage := 15 * time.Minute
+	assertFormattedTiming(t, total, stage, true, "[1h23m45s total|15m0s stage]")
+}
+
+func assertFormattedTiming(
+	t *testing.T,
+	total, stage time.Duration,
+	multiStage bool,
+	expected string,
+) {
+	t.Helper()
+
+	result := notify.FormatTiming(total, stage, multiStage)
+	if result != expected {
+		t.Errorf("Expected %q, got %q", expected, result)
+	}
 }
