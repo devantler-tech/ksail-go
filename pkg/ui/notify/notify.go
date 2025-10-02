@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	fcolor "github.com/fatih/color"
 )
@@ -177,4 +178,16 @@ func handleNotifyError(err error) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)
 	}
+}
+
+// FormatTiming formats timing durations into a display string.
+// Returns "[X total|Y stage]" for multi-stage commands (when isMultiStage is true and total != stage)
+// Returns "[X]" for single-stage commands or when total == stage.
+// Uses Go's Duration.String() method for formatting.
+func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
+	// If durations are equal or not multi-stage, use simplified format
+	if !isMultiStage || total == stage {
+		return fmt.Sprintf("[%s]", total.String())
+	}
+	return fmt.Sprintf("[%s total|%s stage]", total.String(), stage.String())
 }

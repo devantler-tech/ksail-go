@@ -9,6 +9,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +49,10 @@ func HandleInitRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
 	// Bind the --output and --force flags
 	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	_ = configManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
@@ -85,7 +90,11 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	notify.Successln(cmd.OutOrStdout(), "initialized project")
+	// Get timing and format (single-stage command)
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, false)
+
+	notify.Successf(cmd.OutOrStdout(), "initialized project %s", timingStr)
 
 	return nil
 }

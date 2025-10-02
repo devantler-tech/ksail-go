@@ -1,12 +1,13 @@
 package cluster
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -38,14 +39,29 @@ func HandleUpRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	_, err := cmdhelpers.HandleSimpleClusterCommand(
-		cmd,
-		manager,
-		"Cluster created and started successfully (stub implementation)",
-	)
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
+	// Load cluster configuration
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
-		return fmt.Errorf("failed to handle cluster command: %w", err)
+		return err
 	}
+
+	// Get timing and format (single-stage for stub)
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, false)
+
+	notify.Successf(
+		cmd.OutOrStdout(),
+		"Cluster created and started successfully (stub implementation) %s",
+		timingStr,
+	)
+	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
+		{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
+		{Label: "Context", Value: cluster.Spec.Connection.Context},
+	})
 
 	return nil
 }

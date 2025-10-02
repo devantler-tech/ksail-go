@@ -1,0 +1,89 @@
+package timer
+
+import "time"
+
+// Timer tracks elapsed time for CLI command execution.
+//
+// Timer provides methods to start timing, mark stage transitions,
+// and retrieve current timing information. It is designed for
+// single-threaded CLI command execution.
+type Timer interface {
+	// Start initializes timing tracking. Sets both total and stage
+	// start times to the current time. Can be called multiple times
+	// to reset the timer.
+	Start()
+
+	// NewStage marks a stage transition with the given title.
+	// Resets the stage timer while preserving total elapsed time.
+	// The title is used for display purposes.
+	NewStage(title string)
+
+	// GetTiming returns the current elapsed durations.
+	// Returns (total, stage) where:
+	//   - total: time elapsed since Start()
+	//   - stage: time elapsed since last NewStage() or Start()
+	// Can be called multiple times without side effects.
+	GetTiming() (total, stage time.Duration)
+
+	// Stop signals completion of timing. This is optional and
+	// provided for future extensibility. Currently a no-op.
+	Stop()
+}
+
+// timerImpl is the concrete implementation of the Timer interface.
+type timerImpl struct {
+	startTime      time.Time
+	stageStartTime time.Time
+	currentStage   string
+}
+
+// New creates a new Timer instance.
+// The timer must be started with Start() before use.
+func New() Timer {
+	return &timerImpl{}
+}
+
+// Start initializes the timer and begins tracking elapsed time.
+// Sets both total and stage start times to the current time.
+// Can be called multiple times to reset the timer.
+func (t *timerImpl) Start() {
+	now := time.Now()
+	t.startTime = now
+	t.stageStartTime = now
+	t.currentStage = ""
+}
+
+// NewStage marks a transition to a new stage with the given title.
+// Resets the stage timer while preserving total elapsed time.
+// The title is stored but not currently used in timing calculations.
+func (t *timerImpl) NewStage(title string) {
+	t.stageStartTime = time.Now()
+	t.currentStage = title
+}
+
+// GetTiming returns the current elapsed durations.
+// Returns (total, stage) where:
+//   - total: time elapsed since Start() was called
+//   - stage: time elapsed since last NewStage() or Start()
+//
+// If Start() has not been called, returns (0, 0).
+// Can be called multiple times without side effects.
+func (t *timerImpl) GetTiming() (total, stage time.Duration) {
+	// Handle case where Start() hasn't been called
+	if t.startTime.IsZero() {
+		return 0, 0
+	}
+
+	now := time.Now()
+	total = now.Sub(t.startTime)
+	stage = now.Sub(t.stageStartTime)
+
+	return total, stage
+}
+
+// Stop signals the end of timing tracking.
+// This is a no-op in the current implementation but provided
+// for future extensibility (e.g., resource cleanup).
+func (t *timerImpl) Stop() {
+	// No-op: timer state remains accessible via GetTiming()
+}

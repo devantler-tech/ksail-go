@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -42,12 +43,24 @@ func HandleStatusRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
 	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	notify.Successln(cmd.OutOrStdout(), "Cluster status: Running (stub implementation)")
+	// Get timing and format
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, false)
+
+	notify.Successf(
+		cmd.OutOrStdout(),
+		"Cluster status: Running (stub implementation) %s",
+		timingStr,
+	)
 	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
 		{Label: "Context", Value: cluster.Spec.Connection.Context},
 		{Label: "Kubeconfig", Value: cluster.Spec.Connection.Kubeconfig},

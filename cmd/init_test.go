@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -93,8 +94,16 @@ func TestInitCmdExecute(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
+	// Strip timing information from output before snapshot comparison
+	// Timing format is: [Xs], [Xms], [Xµs], [Xs total|Xs stage]
+	output := out.String()
+	timingRegex := regexp.MustCompile(
+		`\s*\[\d+(\.\d+)?(µs|ms|s|m|h)(\s+total\|\d+(\.\d+)?(µs|ms|s|m|h)\s+stage)?\]`,
+	)
+	sanitizedOutput := timingRegex.ReplaceAllString(output, "")
+
 	// Capture the output as a snapshot
-	snaps.MatchSnapshot(t, out.String())
+	snaps.MatchSnapshot(t, sanitizedOutput)
 
 	// Verify files were created in temp directory, not current directory
 	assertInitFilesCreated(t, tempDir)

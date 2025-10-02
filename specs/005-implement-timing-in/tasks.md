@@ -43,12 +43,12 @@ This is a single-project Go CLI tool with the following structure:
 
 ## Phase 3.1: Setup
 
-- [ ] **T001** Create package structure for `pkg/ui/timer/`
+- [X] **T001** Create package structure for `pkg/ui/timer/`
   - Create directory: `pkg/ui/timer/`
   - Create placeholder files: `timer.go`, `timer_test.go`, `doc.go`, `README.md`
   - Initialize with package documentation
 
-- [ ] **T002** [P] Configure mockery for Timer interface
+- [X] **T002** [P] Configure mockery for Timer interface
   - Update `.mockery.yml` to include `pkg/ui/timer` interfaces
   - Verify mockery can generate mocks for Timer interface
 
@@ -58,62 +58,62 @@ This is a single-project Go CLI tool with the following structure:
 
 ### Timer Interface Contract Tests (from timer-interface.md)
 
-- [ ] **T003** [P] Contract test CR-001 (Start initialization) in `pkg/ui/timer/timer_test.go`
+- [X] **T003** [P] Contract test CR-001 (Start initialization) in `pkg/ui/timer/timer_test.go`
   - Test: Start() initializes both total and stage timers
   - Verify: GetTiming() returns durations ≈ 0 after Start()
   - Test: Multiple Start() calls reset the timer
 
-- [ ] **T004** [P] Contract test CR-002 (GetTiming before Start) in `pkg/ui/timer/timer_test.go`
+- [X] **T004** [P] Contract test CR-002 (GetTiming before Start) in `pkg/ui/timer/timer_test.go`
   - Test: GetTiming() before Start() returns (0, 0) or panics gracefully
   - Verify: Error handling is clear and predictable
 
-- [ ] **T005** [P] Contract test CR-003 (NewStage stage transition) in `pkg/ui/timer/timer_test.go`
+- [X] **T005** [P] Contract test CR-003 (NewStage stage transition) in `pkg/ui/timer/timer_test.go`
   - Test: NewStage() resets stage timer while preserving total time
   - Verify: Total continues accumulating, stage resets
   - Test: Multiple NewStage() calls work correctly
 
-- [ ] **T006** [P] Contract test CR-004 (GetTiming returns current state) in `pkg/ui/timer/timer_test.go`
+- [X] **T006** [P] Contract test CR-004 (GetTiming returns current state) in `pkg/ui/timer/timer_test.go`
   - Test: GetTiming() can be called multiple times
   - Verify: Each call returns updated durations without side effects
   - Test: Timer state is not modified by GetTiming()
 
-- [ ] **T007** [P] Contract test CR-005 (Single-stage command) in `pkg/ui/timer/timer_test.go`
+- [X] **T007** [P] Contract test CR-005 (Single-stage command) in `pkg/ui/timer/timer_test.go`
   - Test: Without NewStage() calls, total == stage
   - Verify: Single-stage timing produces equal durations
 
-- [ ] **T008** [P] Contract test CR-006 (Stop method) in `pkg/ui/timer/timer_test.go`
+- [X] **T008** [P] Contract test CR-006 (Stop method) in `pkg/ui/timer/timer_test.go`
   - Test: Stop() can be called without errors
   - Verify: Stop() doesn't affect GetTiming() results
   - Test: Multiple Stop() calls are safe
 
-- [ ] **T009** [P] Contract test CR-007 (Duration precision) in `pkg/ui/timer/timer_test.go`
+- [X] **T009** [P] Contract test CR-007 (Duration precision) in `pkg/ui/timer/timer_test.go`
   - Test: Sub-millisecond operations handled correctly
   - Verify: Duration.String() formatting matches specification
   - Test: Long-running operations (seconds/minutes) format correctly
 
 ### Notify Integration Contract Tests (from notify-integration.md)
 
-- [ ] **T010** [P] Contract test IR-001 (Timer independence) in `pkg/ui/timer/integration_test.go`
+- [X] **T010** [P] Contract test IR-001 (Timer independence) in `pkg/ui/timer/integration_test.go`
   - Test: Verify pkg/ui/timer has no imports of pkg/ui/notify
   - Use: Static analysis or import inspection
   - Verify: Clean architecture maintained
 
-- [ ] **T011** [P] Contract test IR-002 (Timing format consistency) in `pkg/ui/notify/notify_test.go`
+- [X] **T011** [P] Contract test IR-002 (Timing format consistency) in `pkg/ui/notify/notify_test.go`
   - Test: FormatTiming() produces "[X total|Y stage]" for multi-stage
   - Test: FormatTiming() produces "[X]" for single-stage
   - Verify: Uses Duration.String() formatting
 
-- [ ] **T012** [P] Contract test IR-003 (Optional timing display) in `pkg/ui/notify/notify_test.go`
+- [X] **T012** [P] Contract test IR-003 (Optional timing display) in `pkg/ui/notify/notify_test.go`
   - Test: Success() works without timing parameter
   - Test: Success() appends timing when provided
   - Test: Empty timing string handled correctly
 
-- [ ] **T013** [P] Contract test IR-004 (Command integration pattern) in `pkg/ui/timer/integration_test.go`
+- [X] **T013** [P] Contract test IR-004 (Command integration pattern) in `pkg/ui/timer/integration_test.go`
   - Test: Complete integration flow (Start → NewStage → GetTiming → Success)
   - Verify: Timer and notify work together correctly
   - Test: Multi-stage and single-stage patterns
 
-- [ ] **T014** [P] Contract test IR-005 (Error cases no timing) in `pkg/ui/timer/integration_test.go`
+- [X] **T014** [P] Contract test IR-005 (Error cases no timing) in `pkg/ui/timer/integration_test.go`
   - Test: Error paths don't display timing
   - Verify: Timer state ignored on failure
   - Test: No cleanup needed on error
@@ -122,39 +122,39 @@ This is a single-project Go CLI tool with the following structure:
 
 ### Timer Package Implementation
 
-- [ ] **T015** Implement Timer interface definition in `pkg/ui/timer/timer.go`
+- [X] **T015** Implement Timer interface definition in `pkg/ui/timer/timer.go`
   - Define Timer interface with Start(), NewStage(), GetTiming(), Stop()
   - Add comprehensive GoDoc comments
   - Define any internal types (e.g., timerImpl struct)
 
-- [ ] **T016** Implement Timer constructor in `pkg/ui/timer/timer.go`
+- [X] **T016** Implement Timer constructor in `pkg/ui/timer/timer.go`
   - Create New() function returning Timer interface
   - Initialize internal state (startTime, stageStartTime, currentStage)
   - Ensure zero-value safety
 
-- [ ] **T017** Implement Start() method in `pkg/ui/timer/timer.go`
+- [X] **T017** Implement Start() method in `pkg/ui/timer/timer.go`
   - Set startTime and stageStartTime to time.Now()
   - Handle multiple Start() calls (reset behavior)
   - Pass contract test CR-001
 
-- [ ] **T018** Implement NewStage() method in `pkg/ui/timer/timer.go`
+- [X] **T018** Implement NewStage() method in `pkg/ui/timer/timer.go`
   - Reset stageStartTime to time.Now()
   - Update currentStage with title
   - Preserve total elapsed time
   - Pass contract test CR-003
 
-- [ ] **T019** Implement GetTiming() method in `pkg/ui/timer/timer.go`
+- [X] **T019** Implement GetTiming() method in `pkg/ui/timer/timer.go`
   - Calculate total = time.Since(startTime)
   - Calculate stage = time.Since(stageStartTime)
   - Return both durations
   - Pass contract tests CR-004, CR-005, CR-007
 
-- [ ] **T020** Implement Stop() method in `pkg/ui/timer/timer.go`
+- [X] **T020** Implement Stop() method in `pkg/ui/timer/timer.go`
   - Optional cleanup for future extensibility
   - No-op implementation for now
   - Pass contract test CR-006
 
-- [ ] **T021** Add package documentation in `pkg/ui/timer/doc.go` and `pkg/ui/timer/README.md`
+- [X] **T021** Add package documentation in `pkg/ui/timer/doc.go` and `pkg/ui/timer/README.md`
   - Package-level GoDoc with examples
   - README with usage instructions
   - Code examples for single-stage and multi-stage usage
@@ -162,13 +162,13 @@ This is a single-project Go CLI tool with the following structure:
 
 ### Notify Package Updates
 
-- [ ] **T022** Implement FormatTiming() helper in `pkg/ui/notify/notify.go`
+- [X] **T022** Implement FormatTiming() helper in `pkg/ui/notify/notify.go`
   - Add FormatTiming(total, stage time.Duration, isMultiStage bool) string
   - Implement format logic: "[X]" or "[X total|Y stage]"
   - Add GoDoc comments
   - Pass contract test IR-002
 
-- [ ] **T023** Update Success() function in `pkg/ui/notify/notify.go`
+- [X] **T023** Update Success() function in `pkg/ui/notify/notify.go`
   - Add optional timing parameter: Success(message string, timing ...string)
   - Append timing to message if provided
   - Maintain backward compatibility
@@ -178,7 +178,7 @@ This is a single-project Go CLI tool with the following structure:
 
 **Note**: Each command update is parallelizable as they modify different files
 
-- [ ] **T024** [P] Add timing to `init` command in `cmd/init.go`
+- [X] **T024** [P] Add timing to `init` command in `cmd/init.go`
   - Create timer, call Start()
   - Get timing on success: total, stage := timer.GetTiming()
   - Format timing: timingStr := notify.FormatTiming(total, stage, false)
@@ -224,7 +224,7 @@ This is a single-project Go CLI tool with the following structure:
 
 ## Phase 3.5: Polish & Validation
 
-- [ ] **T032** [P] Run mockery to generate Timer interface mocks
+- [X] **T032** [P] Run mockery to generate Timer interface mocks
   - Execute: `mockery`
   - Verify: Mock files generated in `pkg/ui/timer/mocks/`
   - Commit: Generated mocks
@@ -265,7 +265,7 @@ This is a single-project Go CLI tool with the following structure:
   - Verify: All tests pass (contract tests + integration tests)
   - Fix: Any test failures
 
-- [ ] **T040** Update `.github/copilot-instructions.md` with timing feature
+- [X] **T040** Update `.github/copilot-instructions.md` with timing feature
   - Document: Timer package usage patterns
   - Document: Integration examples with CLI commands
   - Ensure: Constitutional compliance noted

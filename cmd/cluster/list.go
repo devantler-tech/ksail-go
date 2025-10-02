@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +44,10 @@ func HandleListRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
@@ -55,10 +60,19 @@ func HandleListRunE(
 	}
 
 	all := configManager.Viper.GetBool("all")
+
+	// Get timing and format
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, false)
+
 	if all {
-		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
+		notify.Successf(
+			cmd.OutOrStdout(),
+			"Listing all clusters (stub implementation) %s",
+			timingStr,
+		)
 	} else {
-		notify.Successln(cmd.OutOrStdout(), "Listing running clusters (stub implementation)")
+		notify.Successf(cmd.OutOrStdout(), "Listing running clusters (stub implementation) %s", timingStr)
 	}
 
 	notify.Activityln(cmd.OutOrStdout(),
