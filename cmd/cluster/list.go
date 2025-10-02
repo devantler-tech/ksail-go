@@ -51,17 +51,10 @@ func HandleListRunE(
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
-	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadConfig()
+	// Load cluster configuration without validation (list doesn't need validation)
+	cluster, err := cmdhelpers.LoadConfigWithErrorHandling(cmd, configManager)
 	if err != nil {
-		notify.WriteMessage(notify.Message{
-			Type:    notify.ErrorType,
-			Content: "Failed to load cluster configuration: %s",
-			Args:    []any{err.Error()},
-			Writer:  cmd.OutOrStdout(),
-		})
-
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	all := configManager.Viper.GetBool("all")

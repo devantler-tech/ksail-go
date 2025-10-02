@@ -79,9 +79,11 @@ func NewCobraCommand(
 	return cmd
 }
 
-// LoadClusterWithErrorHandling provides common error handling pattern for loading cluster configuration.
-// Exported for testing purposes.
-func LoadClusterWithErrorHandling(
+// LoadConfigWithErrorHandling loads cluster configuration with standardized error handling.
+// This helper eliminates duplication of the loading + error handling pattern.
+// Use this when you need to load configuration without validation.
+// For loading with validation, use LoadClusterWithErrorHandling instead.
+func LoadConfigWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
 ) (*v1alpha1.Cluster, error) {
@@ -95,6 +97,21 @@ func LoadClusterWithErrorHandling(
 		})
 
 		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	return cluster, nil
+}
+
+// LoadClusterWithErrorHandling loads and validates cluster configuration.
+// Exported for testing purposes.
+func LoadClusterWithErrorHandling(
+	cmd *cobra.Command,
+	configManager *configmanager.ConfigManager,
+) (*v1alpha1.Cluster, error) {
+	// Load configuration using common helper
+	cluster, err := LoadConfigWithErrorHandling(cmd, configManager)
+	if err != nil {
+		return nil, err
 	}
 
 	// Validate the loaded configuration
