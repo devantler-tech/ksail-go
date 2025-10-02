@@ -76,7 +76,7 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 
 - TDD approach: Contract tests for CLI interface written first
 - Unit tests for scaffolder integration with >90% coverage requirement
-- Integration tests for complete init workflow validation
+- Unit tests for complete init workflow validation
 - End-to-end CLI testing for user scenarios
 
 **User Experience Consistency**: ✅ PASS
@@ -199,7 +199,6 @@ ios/ or android/
    - Tests must fail (no implementation yet)
 
 4. **Extract test scenarios** from user stories:
-   - Each story → integration test scenario
    - Quickstart test = story validation steps
 
 5. **Update agent file incrementally** (O(1) operation):
@@ -225,13 +224,13 @@ ios/ or android/
 - CLI contract → cobra command implementation and tests [P]
 - Scaffolder contract → service implementation and tests [P]
 - Data model entities → struct definitions and validation [P]
-- Quickstart scenarios → integration test tasks
+- Quickstart scenarios → test tasks
 - Template creation → embed template files [P]
 
 **Ordering Strategy**:
 
-- TDD order: Contract tests → Unit tests → Implementation → Integration tests
-- Dependency order: Data models → Services → CLI commands → Integration
+- TDD order: Contract tests → Unit tests → Implementation
+- Dependency order: Data models → Services → CLI commands
 - Mark [P] for parallel execution (independent files/modules)
 - Sequential for dependent implementations
 

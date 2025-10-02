@@ -215,7 +215,7 @@ func testHandleInitRunEConfigManagerLoadError(t *testing.T) {
 
 	// This test is challenging without mocking since HandleInitRunE expects concrete type
 	// However, we can test behavior with an invalid config path that would cause load errors
-	// This is more of an integration test but still valuable for coverage
+	// This is a unit test that still provides valuable coverage
 
 	var out bytes.Buffer
 
