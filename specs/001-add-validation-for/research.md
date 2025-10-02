@@ -89,7 +89,7 @@
 **Rationale**:
 
 - Unit tests validate specific validation rules in isolation
-- Unit tests validate complete validation workflows
+- System tests validate complete validation workflows
 - Snapshot testing ensures consistent error message format
 - Mocking enables testing without file dependencies
 - Follows constitution's TDD requirement
