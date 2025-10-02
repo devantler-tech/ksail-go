@@ -1,5 +1,4 @@
 
-
 [TestInitCmdExecute - 1]
 
 📂 Initializing project...
@@ -9,6 +8,7 @@
 ✔ initialized project
 
 ---
+
 [TestInitCmdHelp - 1]
 Initialize a new project.
 
