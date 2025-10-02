@@ -398,7 +398,7 @@ func TestGetAutoDetectedClientNoEngineAvailable(t *testing.T) {
 
 	// This test documents the expected behavior when no engine is available
 	// Since we can't easily mock the real client creation in this environment,
-	// we rely on integration testing with the actual environment state
+	// we rely on system testing with the actual environment state
 
 	// The GetAutoDetectedClient function should either:
 	// 1. Return a valid engine if Docker/Podman is available and working

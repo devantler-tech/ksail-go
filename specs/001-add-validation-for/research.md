@@ -85,11 +85,11 @@
 
 ### 5. Testing Strategy
 
-**Decision**: TDD with unit tests per validator + integration tests
+**Decision**: TDD with unit tests per validator and system tests
 **Rationale**:
 
 - Unit tests validate specific validation rules in isolation
-- Integration tests validate complete validation workflows
+- System tests validate complete validation workflows
 - Snapshot testing ensures consistent error message format
 - Mocking enables testing without file dependencies
 - Follows constitution's TDD requirement
@@ -162,7 +162,7 @@
 | Error Handling      | Structured ValidationError type        | Consistency, actionability          |
 | Validation Strategy | In-memory after parsing                | Performance, testability            |
 | Integration Point   | During config loading                  | Fail-fast, consistency              |
-| Testing Approach    | TDD with unit + integration tests      | Constitution compliance             |
+| Testing Approach    | TDD with unit + system tests           | Constitution compliance             |
 | Dependencies        | Use existing project deps              | Minimize bloat, security            |
 | Coordination        | KSail orchestrates, others independent | Clear responsibilities              |
 

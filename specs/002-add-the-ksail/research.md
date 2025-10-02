@@ -105,14 +105,14 @@
 
 ### 7. Testing Strategy
 
-**Decision**: TDD with contract tests, unit tests, and integration tests
+**Decision**: TDD with contract tests, unit tests, and system tests
 
 **Rationale**:
 
 - Follows constitutional TDD-first requirement
 - Contract tests ensure CLI interface stability
 - Unit tests validate scaffolding logic with >90% coverage
-- Integration tests verify complete user workflows
+- System tests verify complete user workflows
 
 **Alternatives considered**:
 

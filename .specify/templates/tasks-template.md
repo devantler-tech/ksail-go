@@ -14,7 +14,7 @@
    → research.md: Extract decisions → setup tasks
 3. Generate tasks by category:
    → Setup: project init, dependencies, linting
-   → Tests: contract tests, integration tests
+   → Tests: contract tests, unit tests
    → Core: models, services, CLI commands
    → Integration: DB, middleware, logging
    → Polish: unit tests, performance, docs
@@ -51,8 +51,6 @@
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 - [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
 - [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 - [ ] T008 [P] User model in src/models/user.py
@@ -77,18 +75,16 @@
 - [ ] T023 Run manual-testing.md
 
 ## Dependencies
-- Tests (T004-T007) before implementation (T008-T014)
+- Tests (T004-T005) before implementation (T008-T014)
 - T008 blocks T009, T015
 - T016 blocks T018
 - Implementation before polish (T019-T023)
 
 ## Parallel Example
 ```
-# Launch T004-T007 together:
+# Launch T004-T005 together:
 Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
 Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
-Task: "Integration test registration in tests/integration/test_registration.py"
-Task: "Integration test auth in tests/integration/test_auth.py"
 ```
 
 ## Notes
@@ -109,7 +105,7 @@ Task: "Integration test auth in tests/integration/test_auth.py"
    - Relationships → service layer tasks
    
 3. **From User Stories**:
-   - Each story → integration test [P]
+   - Each story → test scenario
    - Quickstart scenarios → validation tasks
 
 4. **Ordering**:

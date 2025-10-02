@@ -79,7 +79,6 @@ src/
 
 tests/
 ├── contract/
-├── integration/
 └── unit/
 
 # [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
@@ -148,7 +147,6 @@ directories captured above]
    - Tests must fail (no implementation yet)
 
 4. **Extract test scenarios** from user stories:
-   - Each story → integration test scenario
    - Quickstart test = story validation steps
 
 5. **Update agent file incrementally** (O(1) operation):
@@ -170,7 +168,6 @@ directories captured above]
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Each contract → contract test task [P]
 - Each entity → model creation task [P] 
-- Each user story → integration test task
 - Implementation tasks to make tests pass
 
 **Ordering Strategy**:
