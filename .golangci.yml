@@ -23,9 +23,6 @@ linters:
       - ".*_mocks_.*\\.go$"
     rules:
       - linters:
-          - dupl
-        path: integration/cmd/.*_test.go
-      - linters:
           - ireturn
         path: pkg/provisioner/containerengine/engine.go
       - linters:
