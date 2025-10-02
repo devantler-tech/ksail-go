@@ -12,12 +12,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ClusterInfoField represents a field to log from cluster information.
-type ClusterInfoField struct {
-	Label string
-	Value string
-}
-
 // SuggestionsMinimumDistance is the minimum distance for command suggestions.
 const SuggestionsMinimumDistance = 2
 
@@ -85,13 +79,6 @@ func NewCobraCommand(
 	return cmd
 }
 
-// LogClusterInfo logs cluster information fields to the command output.
-func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
-	for _, field := range fields {
-		notify.Activityln(cmd.OutOrStdout(), field.Label+": "+field.Value)
-	}
-}
-
 // LoadClusterWithErrorHandling provides common error handling pattern for loading cluster configuration.
 // Exported for testing purposes.
 func LoadClusterWithErrorHandling(
@@ -141,46 +128,6 @@ func LoadClusterWithErrorHandling(
 	return cluster, nil
 }
 
-// HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
-func HandleSimpleClusterCommand(
-	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
-	successMessage string,
-) (*v1alpha1.Cluster, error) {
-	// Load the full cluster configuration using common error handling
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
-	if err != nil {
-		return nil, err
-	}
-
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, []ClusterInfoField{
-		{"Distribution", string(cluster.Spec.Distribution)},
-		{"Context", cluster.Spec.Connection.Context},
-	})
-
-	return cluster, nil
-}
-
-// StandardClusterCommandRunE creates a standard run function for cluster commands.
-// It handles the common pattern of calling HandleSimpleClusterCommand with a success message.
-func StandardClusterCommandRunE(
-	successMessage string,
-) func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
-	return func(
-		cmd *cobra.Command,
-		manager *configmanager.ConfigManager,
-		_ []string,
-	) error {
-		_, err := HandleSimpleClusterCommand(cmd, manager, successMessage)
-		if err != nil {
-			return fmt.Errorf("failed to handle cluster command: %w", err)
-		}
-
-		return nil
-	}
-}
-
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
 func StandardDistributionFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster] {
 	return configmanager.FieldSelector[v1alpha1.Cluster]{
@@ -215,22 +162,4 @@ func StandardContextFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster
 		Description:  "Kubernetes context of cluster",
 		DefaultValue: "kind-kind",
 	}
-}
-
-// ExecuteCommandWithClusterInfo loads cluster configuration and executes a command with cluster info logging.
-func ExecuteCommandWithClusterInfo(
-	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
-	successMessage string,
-	infoFieldsFunc func(*v1alpha1.Cluster) []ClusterInfoField,
-) error {
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, infoFieldsFunc(cluster))
-
-	return nil
 }

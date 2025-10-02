@@ -2,7 +2,7 @@
 
 [TestInitCmdExecute - 1]
 
-📂 Initializing project...
+📂 Initializing project... 
 ► created 'ksail.yaml'
 ► created 'kind.yaml'
 ► created 'k8s/kustomization.yaml'

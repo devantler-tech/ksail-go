@@ -44,7 +44,7 @@ func HandleUpRunE(
 	tmr.Start()
 
 	// Load cluster configuration
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
 		return err
 	}
@@ -59,10 +59,6 @@ func HandleUpRunE(
 		"Cluster created and started successfully (stub implementation) %s",
 		timingStr,
 	)
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
-		{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
-		{Label: "Context", Value: cluster.Spec.Connection.Context},
-	})
 
 	return nil
 }

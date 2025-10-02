@@ -1,12 +1,8 @@
 package cluster
 
 import (
-	"fmt"
-
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -28,29 +24,10 @@ func HandleStartRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	// Start timing
-	tmr := timer.New()
-	tmr.Start()
-
-	// Load cluster and execute
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	// Get timing and format
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
-
-	notify.Successf(
-		cmd.OutOrStdout(),
-		"Cluster started successfully (stub implementation) %s",
-		timingStr,
+	return cmdhelpers.ExecuteTimedClusterCommand(
+		cmd,
+		manager,
+		"Cluster started successfully (stub implementation)",
+		false,
 	)
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
-		{Label: "Distribution", Value: string(cluster.Spec.Distribution)},
-		{Label: "Context", Value: cluster.Spec.Connection.Context},
-	})
-
-	return nil
 }

@@ -47,7 +47,7 @@ func HandleStatusRunE(
 	tmr := timer.New()
 	tmr.Start()
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
@@ -61,10 +61,6 @@ func HandleStatusRunE(
 		"Cluster status: Running (stub implementation) %s",
 		timingStr,
 	)
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{
-		{Label: "Context", Value: cluster.Spec.Connection.Context},
-		{Label: "Kubeconfig", Value: cluster.Spec.Connection.Kubeconfig},
-	})
 
 	return nil
 }
