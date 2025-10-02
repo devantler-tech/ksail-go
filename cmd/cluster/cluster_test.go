@@ -97,7 +97,7 @@ func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
 func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
 	t.Helper()
 
-	const expectedDescription = "Manage cluster lifecycle commands"
+	const expectedDescription = "Manage cluster lifecycle"
 
 	if cmd.Short != expectedDescription {
 		t.Fatalf(

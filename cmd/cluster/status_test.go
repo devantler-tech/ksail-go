@@ -23,7 +23,8 @@ func TestHandleStatusRunE(t *testing.T) {
 		}
 
 		assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
-		assertOutputContains(t, output.String(), "Kubeconfig")
+		// Config loading messages are now printed by the config manager
+		assertOutputContains(t, output.String(), "config loaded")
 	})
 
 	t.Run("load failure", func(t *testing.T) {

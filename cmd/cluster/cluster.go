@@ -12,7 +12,7 @@ import (
 func NewClusterCmd() *cobra.Command {
 	cmd := cmdhelpers.NewCobraCommand(
 		"cluster",
-		"Manage cluster lifecycle commands",
+		"Manage cluster lifecycle",
 		`Manage lifecycle operations for local Kubernetes clusters, including provisioning, teardown, and status.`,
 		handleClusterRunE,
 	)
