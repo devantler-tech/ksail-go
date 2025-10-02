@@ -76,7 +76,7 @@ Primary requirement: Implement `ksail init` command that scaffolds new Kubernete
 
 - TDD approach: Contract tests for CLI interface written first
 - Unit tests for scaffolder integration with >90% coverage requirement
-- Unit tests for complete init workflow validation
+- System tests for complete init workflow validation
 - End-to-end CLI testing for user scenarios
 
 **User Experience Consistency**: ✅ PASS
