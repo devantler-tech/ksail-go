@@ -55,7 +55,7 @@ func TestInitCmdIntegration(t *testing.T) {
 			assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"),
 				"ksail.yaml should be created")
 			// Distribution config files are lowercase (kind.yaml, k3d.yaml)
-			distFile := strings.ToLower(dist) + ".yaml"
+			distFile := util.DistributionFileName(dist)
 			assert.FileExists(
 				t,
 				filepath.Join(tempDir, distFile),
