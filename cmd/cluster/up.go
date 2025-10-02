@@ -50,6 +50,7 @@ func HandleUpRunE(
 	}
 
 	// Get timing and format (single-stage for stub)
+	// TODO: Update timing stages when implementing actual cluster provisioning (multi-stage logic).
 	total, stage := tmr.GetTiming()
 	timingStr := notify.FormatTiming(total, stage, false)
 
