@@ -13,7 +13,6 @@ func TestNewDefaultDockerClient(t *testing.T) {
 	t.Parallel()
 
 	dockerClient, err := kindprovisioner.NewDefaultDockerClient()
-
 	// Docker may not be available in all test environments
 	if err != nil {
 		t.Skipf("Docker not available: %v", err)
@@ -27,7 +26,6 @@ func TestDefaultDockerClientImplementsInterface(t *testing.T) {
 	t.Parallel()
 
 	dockerClient, err := kindprovisioner.NewDefaultDockerClient()
-
 	// Docker may not be available in all test environments
 	if err != nil {
 		t.Skipf("Docker not available: %v", err)
