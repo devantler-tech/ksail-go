@@ -27,12 +27,13 @@ func ExecuteTimedClusterCommand(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Get timing and format
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, multiStage)
-
 	// Display success with timing
-	notify.Successf(cmd.OutOrStdout(), "%s %s", successMessage, timingStr)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: successMessage,
+		Timer:   tmr,
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

@@ -2,352 +2,205 @@ package notify_test
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"os"
+	"strings"
 	"testing"
 	"time"
 
 	notify "github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
-func TestErrorf(t *testing.T) {
+func TestWriteMessage_ErrorType(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
 
-	notify.Errorf(&out, "%s: %d", "oops", 42)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ErrorType,
+		Content: "test error",
+		Writer:  &out,
+	})
+
 	got := out.String()
-	want := notify.ErrorSymbol + "oops: 42\n"
-
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestError(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Error(&out, "oops")
-	got := out.String()
-	want := notify.ErrorSymbol + "oops"
-
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestErrorln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Errorln(&out, "oops")
-	got := out.String()
-	want := notify.ErrorSymbol + "oops\n"
-
-	if got != want {
-		t.Fatalf("stderr mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestWarnf(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Warnf(&out, "%s", "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestWarn(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Warn(&out, "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestWarnln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Warnln(&out, "careful")
-	got := out.String()
-	want := notify.WarningSymbol + "careful\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestSuccessf(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Successf(&out, "%s", "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestSuccess(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Success(&out, "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestSuccessln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Successln(&out, "done")
-	got := out.String()
-	want := notify.SuccessSymbol + "done\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivityf(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activityf(&out, "%s", "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivity(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activity(&out, "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestActivityln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Activityln(&out, "working")
-	got := out.String()
-	want := notify.ActivitySymbol + "working\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfof(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Infof(&out, "%s", "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfo(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Info(&out, "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-func TestInfoln(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Infoln(&out, "details")
-	got := out.String()
-	want := notify.InfoSymbol + "details\n"
-
-	if got != want {
-		t.Fatalf("stdout mismatch. want %q, got %q", want, got)
-	}
-}
-
-// errorWriter is a mock writer that always returns an error.
-type errorWriter struct{}
-
-var errMockWrite = errors.New("mock write error")
-
-func (ew errorWriter) Write(_ []byte) (int, error) {
-	return 0, fmt.Errorf("%w", errMockWrite)
-}
-
-func TestHandleNotifyErrorWithError(t *testing.T) {
-	t.Parallel()
-
-	// We'll capture stderr to verify the error handling
-	oldStderr := os.Stderr
-	readPipe, writePipe, _ := os.Pipe()
-	os.Stderr = writePipe
-
-	// Use an errorWriter to trigger the error path in handleNotifyError
-	errWriter := errorWriter{}
-
-	notify.Error(errWriter, "test message")
-
-	// Restore stderr
-	err := writePipe.Close()
-	if err != nil {
-		t.Fatalf("failed to close writePipe: %v", err)
-	}
-
-	os.Stderr = oldStderr
-
-	// Read what was written to stderr
-	buf := make([]byte, 1024)
-	n, _ := readPipe.Read(buf)
-	output := string(buf[:n])
-
-	expectedErrorMsg := "notify: failed to print message: mock write error\n"
-	if output != expectedErrorMsg {
-		t.Fatalf("expected stderr output %q, got %q", expectedErrorMsg, output)
-	}
-}
-
-func TestTitlef(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	notify.Titlef(&out, "🚀", "Starting %s version %s", "KSail", "v1.0.0")
-	got := out.String()
-	want := "🚀 Starting KSail version v1.0.0\n"
+	want := "✗ test error\n"
 
 	if got != want {
 		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestTitle(t *testing.T) {
+func TestWriteMessage_ErrorType_WithFormatting(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
 
-	notify.Title(&out, "🎯", "Deployment complete")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ErrorType,
+		Content: "error: %s (%d)",
+		Args:    []any{"failed", 42},
+		Writer:  &out,
+	})
+
 	got := out.String()
-	want := "🎯 Deployment complete"
+	want := "✗ error: failed (42)\n"
 
 	if got != want {
 		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestTitleln(t *testing.T) {
+func TestWriteMessage_WarningType(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
 
-	notify.Titleln(&out, "✨", "Process finished successfully")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.WarningType,
+		Content: "test warning",
+		Writer:  &out,
+	})
+
 	got := out.String()
-	want := "✨ Process finished successfully\n"
+	want := "⚠ test warning\n"
 
 	if got != want {
 		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}
 }
 
-func TestTitleFunctionsWithComplexEmojis(t *testing.T) {
+func TestWriteMessage_SuccessType(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Titlef with complex emoji", func(t *testing.T) {
-		t.Parallel()
+	var out bytes.Buffer
 
-		var out bytes.Buffer
-
-		notify.Titlef(&out, "🔧⚙️", "Configuration %s loaded", "production")
-		got := out.String()
-		want := "🔧⚙️ Configuration production loaded\n"
-
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
-		}
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "test success",
+		Writer:  &out,
 	})
 
-	t.Run("Title with Unicode", func(t *testing.T) {
-		t.Parallel()
+	got := out.String()
+	want := "✔ test success\n"
 
-		var out bytes.Buffer
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
 
-		notify.Title(&out, "📊", "Analytics dashboard ready")
-		got := out.String()
-		want := "📊 Analytics dashboard ready"
+func TestWriteMessage_ActivityType(t *testing.T) {
+	t.Parallel()
 
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
-		}
+	var out bytes.Buffer
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "test activity",
+		Writer:  &out,
 	})
 
-	t.Run("Titleln with empty emoji", func(t *testing.T) {
-		t.Parallel()
+	got := out.String()
+	want := "► test activity\n"
 
-		var out bytes.Buffer
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
 
-		notify.Titleln(&out, "", "No emoji title")
-		got := out.String()
-		want := " No emoji title\n"
+func TestWriteMessage_InfoType(t *testing.T) {
+	t.Parallel()
 
-		if got != want {
-			t.Fatalf("output mismatch. want %q, got %q", want, got)
-		}
+	var out bytes.Buffer
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.InfoType,
+		Content: "test info",
+		Writer:  &out,
 	})
+
+	got := out.String()
+	want := "ℹ test info\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestWriteMessage_TitleType(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "test title",
+		Emoji:   "🚀",
+		Writer:  &out,
+	})
+
+	got := out.String()
+	want := "🚀 test title\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestWriteMessage_TitleType_DefaultEmoji(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "test title with default emoji",
+		Writer:  &out,
+	})
+
+	got := out.String()
+	want := "ℹ️ test title with default emoji\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestWriteMessage_WithTimer(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+	tmr := timer.New()
+	tmr.Start()
+
+	// Simulate some work
+	time.Sleep(10 * time.Millisecond)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "operation complete",
+		Timer:   tmr,
+		Writer:  &out,
+	})
+
+	got := out.String()
+	// Verify it has the success symbol and timing brackets
+	if !strings.HasPrefix(got, "✔ operation complete [") {
+		t.Fatalf("output should start with success symbol and have timing, got %q", got)
+	}
+	if !strings.Contains(got, "ms]") && !strings.Contains(got, "µs]") {
+		t.Fatalf("output should contain timing in ms or µs, got %q", got)
+	}
+}
+
+func TestWriteMessage_DefaultWriter(t *testing.T) {
+	t.Parallel()
+
+	// Test that nil writer defaults to stdout (just verify no panic)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.InfoType,
+		Content: "test with default writer",
+		// Writer is nil - should default to os.Stdout
+	})
+	// If we get here without panicking, test passes
 }
 
 // TestFormatTiming_IR002 validates timing format consistency (IR-002)
@@ -418,64 +271,6 @@ func TestFormatTiming_IR002(t *testing.T) {
 
 		if result != expected {
 			t.Errorf("Expected %q, got %q", expected, result)
-		}
-	})
-}
-
-// TestSuccessWithTiming_IR003 validates optional timing display (IR-003)
-func TestSuccessWithTiming_IR003(t *testing.T) {
-	t.Run("Success without timing works as before", func(t *testing.T) {
-		var out bytes.Buffer
-
-		notify.Success(&out, "Cluster created")
-		got := out.String()
-		want := notify.SuccessSymbol + "Cluster created"
-
-		if got != want {
-			t.Errorf("Expected %q, got %q", want, got)
-		}
-	})
-
-	t.Run("Success message with timing appended manually", func(t *testing.T) {
-		var out bytes.Buffer
-
-		// Pattern: Commands will manually append timing to message
-		message := "Cluster created [5m30s total|2m15s stage]"
-		notify.Success(&out, message)
-		got := out.String()
-		want := notify.SuccessSymbol + "Cluster created [5m30s total|2m15s stage]"
-
-		if got != want {
-			t.Errorf("Expected %q, got %q", want, got)
-		}
-	})
-
-	t.Run("Successf with timing formatted in", func(t *testing.T) {
-		var out bytes.Buffer
-
-		// Pattern: Using Successf to append timing
-		timing := "[2.5s]"
-		notify.Successf(&out, "Cluster created %s", timing)
-		got := out.String()
-		want := notify.SuccessSymbol + "Cluster created [2.5s]\n"
-
-		if got != want {
-			t.Errorf("Expected %q, got %q", want, got)
-		}
-	})
-
-	t.Run("Empty timing string handled gracefully", func(t *testing.T) {
-		var out bytes.Buffer
-
-		// If timing is empty, message should still work
-		timing := ""
-		message := fmt.Sprintf("Cluster created %s", timing)
-		notify.Success(&out, message)
-		got := out.String()
-		want := notify.SuccessSymbol + "Cluster created "
-
-		if got != want {
-			t.Errorf("Expected %q, got %q", want, got)
 		}
 	})
 }

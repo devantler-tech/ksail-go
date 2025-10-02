@@ -19,11 +19,12 @@ func NewReconcileCommand() *cobra.Command {
 			tmr := timer.New()
 			tmr.Start()
 
-			// Get timing and format
-			total, stage := tmr.GetTiming()
-			timingStr := notify.FormatTiming(total, stage, false)
-
-			notify.Infof(cmd.OutOrStdout(), "%s %s", reconcileMessage, timingStr)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.InfoType,
+				Content: reconcileMessage,
+				Timer:   tmr,
+				Writer:  cmd.OutOrStdout(),
+			})
 
 			return nil
 		},

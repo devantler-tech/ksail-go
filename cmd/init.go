@@ -82,7 +82,12 @@ func HandleInitRunE(
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
-	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project...")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Initializing project...",
+		Emoji:   "📂",
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
@@ -90,11 +95,12 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	// Get timing and format (single-stage command)
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
-
-	notify.Successf(cmd.OutOrStdout(), "initialized project %s", timingStr)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "initialized project",
+		Timer:   tmr,
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

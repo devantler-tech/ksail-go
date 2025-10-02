@@ -50,15 +50,28 @@ func NewConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 	// If config is already loaded, return it
-	notify.Titleln(m.Writer, "⏳", "Loading configuration...")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Loading configuration...",
+		Emoji:   "⏳",
+		Writer:  m.Writer,
+	})
 
 	if m.configLoaded {
-		notify.Successln(m.Writer, "config already loaded, reusing existing config")
+		notify.WriteMessage(notify.Message{
+			Type:    notify.SuccessType,
+			Content: "config already loaded, reusing existing config",
+			Writer:  m.Writer,
+		})
 
 		return m.Config, nil
 	}
 
-	notify.Activityln(m.Writer, "loading ksail config")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "loading ksail config",
+		Writer:  m.Writer,
+	})
 
 	// Use native Viper API to read configuration
 	// All paths and environment handling are already configured in constructor
@@ -70,9 +83,18 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		notify.Activityln(m.Writer, "using default config")
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "using default config",
+			Writer:  m.Writer,
+		})
 	} else {
-		notify.Activityf(m.Writer, "'%s' found", m.Viper.ConfigFileUsed())
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "'%s' found",
+			Args:    []any{m.Viper.ConfigFileUsed()},
+			Writer:  m.Writer,
+		})
 	}
 
 	// Unmarshal configuration using Viper's native precedence handling
@@ -91,7 +113,11 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		}
 	}
 
-	notify.Successln(m.Writer, "config loaded")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "config loaded",
+		Writer:  m.Writer,
+	})
 
 	m.configLoaded = true
 

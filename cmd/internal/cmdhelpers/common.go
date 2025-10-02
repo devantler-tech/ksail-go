@@ -87,7 +87,12 @@ func LoadClusterWithErrorHandling(
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Failed to load cluster configuration: %s",
+			Args:    []any{err.Error()},
+			Writer:  cmd.OutOrStdout(),
+		})
 
 		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
@@ -100,19 +105,31 @@ func LoadClusterWithErrorHandling(
 	if !result.Valid {
 		// Use standardized error formatting from helpers
 		errorMessages := helpers.FormatValidationErrorsMultiline(result)
-		notify.Errorln(cmd.OutOrStdout(),
-			"Configuration validation failed:\n"+errorMessages)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Configuration validation failed:\n%s",
+			Args:    []any{errorMessages},
+			Writer:  cmd.OutOrStdout(),
+		})
 
 		// Print fix suggestions using standardized helper
 		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
 		for _, suggestion := range fixSuggestions {
-			notify.Activityln(cmd.OutOrStdout(), suggestion)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: suggestion,
+				Writer:  cmd.OutOrStdout(),
+			})
 		}
 
 		// Display warnings using standardized helper
 		warnings := helpers.FormatValidationWarnings(result)
 		for _, warning := range warnings {
-			notify.Warnln(cmd.OutOrStdout(), warning)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: warning,
+				Writer:  cmd.OutOrStdout(),
+			})
 		}
 
 		return nil, fmt.Errorf("%w with %d errors",
@@ -122,7 +139,11 @@ func LoadClusterWithErrorHandling(
 	// Display warnings even for valid configurations using standardized helper
 	warnings := helpers.FormatValidationWarnings(result)
 	for _, warning := range warnings {
-		notify.Warnln(cmd.OutOrStdout(), warning)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.WarningType,
+			Content: warning,
+			Writer:  cmd.OutOrStdout(),
+		})
 	}
 
 	return cluster, nil

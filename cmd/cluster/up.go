@@ -49,16 +49,13 @@ func HandleUpRunE(
 		return err
 	}
 
-	// Get timing and format (single-stage for stub)
 	// TODO: Update timing stages when implementing actual cluster provisioning (multi-stage logic).
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
-
-	notify.Successf(
-		cmd.OutOrStdout(),
-		"Cluster created and started successfully (stub implementation) %s",
-		timingStr,
-	)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Cluster created and started successfully (stub implementation)",
+		Timer:   tmr,
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

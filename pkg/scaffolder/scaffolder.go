@@ -145,10 +145,12 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	_, statErr := os.Stat(filePath)
 	if statErr == nil {
 		if !force {
-			notify.Warnln(
-				s.Writer,
-				fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
-			)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: "skipped '%s', file exists use --force to overwrite",
+				Args:    []any{fileName},
+				Writer:  s.Writer,
+			})
 
 			return true, true
 		}
@@ -209,7 +211,12 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 		action = "overwrote"
 	}
 
-	notify.Activityln(s.Writer, fmt.Sprintf("%s '%s'", action, displayName))
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "%s '%s'",
+		Args:    []any{action, displayName},
+		Writer:  s.Writer,
+	})
 }
 
 // generateKSailConfig generates the ksail.yaml configuration file.

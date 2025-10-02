@@ -52,15 +52,12 @@ func HandleStatusRunE(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Get timing and format
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
-
-	notify.Successf(
-		cmd.OutOrStdout(),
-		"Cluster status: Running (stub implementation) %s",
-		timingStr,
-	)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Cluster status: Running (stub implementation)",
+		Timer:   tmr,
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

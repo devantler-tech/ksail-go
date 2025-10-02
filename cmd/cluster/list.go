@@ -54,29 +54,40 @@ func HandleListRunE(
 	// Load the full cluster configuration (Viper handles all precedence automatically)
 	cluster, err := configManager.LoadConfig()
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Failed to load cluster configuration: %s",
+			Args:    []any{err.Error()},
+			Writer:  cmd.OutOrStdout(),
+		})
 
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	all := configManager.Viper.GetBool("all")
 
-	// Get timing and format
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
-
 	if all {
-		notify.Successf(
-			cmd.OutOrStdout(),
-			"Listing all clusters (stub implementation) %s",
-			timingStr,
-		)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.SuccessType,
+			Content: "Listing all clusters (stub implementation)",
+			Timer:   tmr,
+			Writer:  cmd.OutOrStdout(),
+		})
 	} else {
-		notify.Successf(cmd.OutOrStdout(), "Listing running clusters (stub implementation) %s", timingStr)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.SuccessType,
+			Content: "Listing running clusters (stub implementation)",
+			Timer:   tmr,
+			Writer:  cmd.OutOrStdout(),
+		})
 	}
 
-	notify.Activityln(cmd.OutOrStdout(),
-		"Distribution filter: "+string(cluster.Spec.Distribution))
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "Distribution filter: %s",
+		Args:    []any{string(cluster.Spec.Distribution)},
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

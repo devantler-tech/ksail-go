@@ -14,7 +14,11 @@ func NewApplyCommand() *cobra.Command {
 		Short: "Apply manifests",
 		Long:  "Apply local Kubernetes manifests to your cluster.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.Infoln(cmd.OutOrStdout(), applyMessage)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.InfoType,
+				Content: applyMessage,
+				Writer:  cmd.OutOrStdout(),
+			})
 
 			return nil
 		},
