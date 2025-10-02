@@ -138,18 +138,27 @@ func TestDefaultK3dClientAdapterClusterRun(t *testing.T) {
 func TestDefaultK3dClientAdapterUsageInProvisioner(t *testing.T) {
 	t.Parallel()
 
-	// Test that the adapter can be used with the provisioner
+	provisioner := createK3dProvisionerWithDefaultAdapters(t)
+
+	require.NotNil(t, provisioner, "provisioner should not be nil")
+}
+
+// createK3dProvisionerWithDefaultAdapters is a helper function to create a K3d provisioner
+// with default adapters, reducing code duplication across tests.
+func createK3dProvisionerWithDefaultAdapters(
+	t *testing.T,
+) *k3dprovisioner.K3dClusterProvisioner {
+	t.Helper()
+
 	simpleCfg := &v1alpha5.SimpleConfig{}
 	simpleCfg.Name = "test-cluster"
 
 	clientAdapter := k3dprovisioner.NewDefaultK3dClientAdapter()
 	configAdapter := k3dprovisioner.NewDefaultK3dConfigAdapter()
 
-	provisioner := k3dprovisioner.NewK3dClusterProvisioner(
+	return k3dprovisioner.NewK3dClusterProvisioner(
 		simpleCfg,
 		clientAdapter,
 		configAdapter,
 	)
-
-	require.NotNil(t, provisioner, "provisioner should not be nil")
 }

@@ -6,7 +6,6 @@ import (
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 func TestNewDefaultKindProviderAdapter(t *testing.T) {
@@ -71,23 +70,7 @@ func TestDefaultKindProviderAdapterDelete(t *testing.T) {
 func TestDefaultKindProviderAdapterUsageInProvisioner(t *testing.T) {
 	t.Parallel()
 
-	// Test that the adapter can be used with the provisioner
-	kindConfig := &v1alpha4.Cluster{}
-	kindConfig.Name = "test-cluster"
-
-	providerAdapter := kindprovisioner.NewDefaultKindProviderAdapter()
-
-	dockerClient, err := kindprovisioner.NewDefaultDockerClient()
-	if err != nil {
-		t.Skip("Docker client not available, skipping integration test")
-	}
-
-	provisioner := kindprovisioner.NewKindClusterProvisioner(
-		kindConfig,
-		"~/.kube/config",
-		providerAdapter,
-		dockerClient,
-	)
+	provisioner := createKindProvisionerWithDefaultAdapters(t)
 
 	require.NotNil(t, provisioner, "provisioner should not be nil")
 }

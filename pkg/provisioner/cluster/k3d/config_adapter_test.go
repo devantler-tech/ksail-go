@@ -69,18 +69,7 @@ func TestDefaultK3dConfigAdapterTransformSimpleToClusterConfig(t *testing.T) {
 func TestDefaultK3dConfigAdapterUsageInProvisioner(t *testing.T) {
 	t.Parallel()
 
-	// Test that the adapter can be used with the provisioner
-	simpleCfg := &v1alpha5.SimpleConfig{}
-	simpleCfg.Name = "test-cluster"
-
-	clientAdapter := k3dprovisioner.NewDefaultK3dClientAdapter()
-	configAdapter := k3dprovisioner.NewDefaultK3dConfigAdapter()
-
-	provisioner := k3dprovisioner.NewK3dClusterProvisioner(
-		simpleCfg,
-		clientAdapter,
-		configAdapter,
-	)
+	provisioner := createK3dProvisionerWithDefaultAdapters(t)
 
 	assert.NotNil(t, provisioner, "provisioner should not be nil")
 }

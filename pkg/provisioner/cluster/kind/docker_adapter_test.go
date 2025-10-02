@@ -38,7 +38,18 @@ func TestDefaultDockerClientImplementsInterface(t *testing.T) {
 func TestDefaultDockerClientUsageInProvisioner(t *testing.T) {
 	t.Parallel()
 
-	// Test that the Docker client can be used with the provisioner
+	provisioner := createKindProvisionerWithDefaultAdapters(t)
+
+	assert.NotNil(t, provisioner, "provisioner should not be nil")
+}
+
+// createKindProvisionerWithDefaultAdapters is a helper function to create a Kind provisioner
+// with default adapters, reducing code duplication across tests.
+func createKindProvisionerWithDefaultAdapters(
+	t *testing.T,
+) *kindprovisioner.KindClusterProvisioner {
+	t.Helper()
+
 	kindConfig := &v1alpha4.Cluster{}
 	kindConfig.Name = "test-cluster"
 
@@ -49,12 +60,10 @@ func TestDefaultDockerClientUsageInProvisioner(t *testing.T) {
 		t.Skip("Docker client not available, skipping integration test")
 	}
 
-	provisioner := kindprovisioner.NewKindClusterProvisioner(
+	return kindprovisioner.NewKindClusterProvisioner(
 		kindConfig,
 		"~/.kube/config",
 		providerAdapter,
 		dockerClient,
 	)
-
-	assert.NotNil(t, provisioner, "provisioner should not be nil")
 }
