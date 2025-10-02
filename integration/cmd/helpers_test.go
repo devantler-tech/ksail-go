@@ -18,9 +18,10 @@ func testClusterCommand(t *testing.T, testName, commandName, expectedOutput stri
 	tests := []struct {
 		distribution string
 		config       string
+		context      string
 	}{
-		{distribution: "Kind", config: "kind.yaml"},
-		{distribution: "K3d", config: "k3d.yaml"},
+		{distribution: "Kind", config: "kind.yaml", context: "kind-kind"},
+		{distribution: "K3d", config: "k3d.yaml", context: "k3d-k3s-default"},
 	}
 
 	for _, testCase := range tests {
@@ -48,6 +49,7 @@ func testClusterCommand(t *testing.T, testName, commandName, expectedOutput stri
 				commandName,
 				"--distribution", testCase.distribution,
 				"--distribution-config", testCase.config,
+				"--context", testCase.context,
 			})
 
 			err = rootCmd.Execute()
