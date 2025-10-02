@@ -3,7 +3,6 @@ package cmd_test
 import (
 	"bytes"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
@@ -54,8 +53,8 @@ func TestInitCmdIntegration(t *testing.T) {
 			// Verify stub files were created
 			assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"),
 				"ksail.yaml should be created")
-			// Distribution config files are lowercase (kind.yaml, k3d.yaml)
-			distFile := util.DistributionFileName(dist)
+			// Distribution config files match distribution name (Kind.yaml, K3d.yaml)
+			distFile := dist + ".yaml"
 			assert.FileExists(
 				t,
 				filepath.Join(tempDir, distFile),
