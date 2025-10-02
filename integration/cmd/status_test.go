@@ -11,6 +11,8 @@ import (
 )
 
 // TestStatusCmdIntegration tests the status command with stub mode.
+//
+//nolint:paralleltest // Cannot use parallel with t.Chdir()
 func TestStatusCmdIntegration(t *testing.T) {
 	tests := []struct {
 		distribution string
@@ -20,8 +22,8 @@ func TestStatusCmdIntegration(t *testing.T) {
 		{distribution: "K3d", config: "k3d.yaml"},
 	}
 
-	for _, tt := range tests {
-		t.Run("status_with_"+tt.distribution, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run("status_with_"+testCase.distribution, func(t *testing.T) {
 			// Commands now work with defaults from field selectors - no config file needed
 			tempDir := t.TempDir()
 			origDir, err := os.Getwd()
@@ -43,12 +45,17 @@ func TestStatusCmdIntegration(t *testing.T) {
 				"--stub",
 				"cluster",
 				"status",
-				"--distribution", tt.distribution,
-				"--distribution-config", tt.config,
+				"--distribution", testCase.distribution,
+				"--distribution-config", testCase.config,
 			})
 
 			err = rootCmd.Execute()
-			require.NoError(t, err, "status should succeed for distribution %s", tt.distribution)
+			require.NoError(
+				t,
+				err,
+				"status should succeed for distribution %s",
+				testCase.distribution,
+			)
 
 			// Verify output contains expected message
 			output := out.String()

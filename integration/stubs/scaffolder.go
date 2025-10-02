@@ -9,6 +9,12 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
+const (
+	// File permissions for directories and files.
+	dirPerm  = 0o750
+	filePerm = 0o600
+)
+
 // Scaffolder is a stub implementation of the Scaffolder for integration testing.
 // It creates minimal valid configuration files without using complex generators.
 type Scaffolder struct {
@@ -31,34 +37,37 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	_, _ = fmt.Fprintf(s.Writer, "STUB: Distribution: %s\n", s.KSailConfig.Spec.Distribution)
 
 	// Create output directory
-	if err := os.MkdirAll(output, 0o750); err != nil {
+	err := os.MkdirAll(output, dirPerm)
+	if err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Determine config file and context for the distribution
-	var configFile, context string
+	configFile, context := s.getDistributionConfig()
 
+	// Generate configuration content
+	ksailContent := s.generateKSailContent(configFile, context)
+
+	// Write all configuration files
+	return s.writeConfigFiles(output, configFile, ksailContent)
+}
+
+// getDistributionConfig returns the config file name and context for the distribution.
+func (s *Scaffolder) getDistributionConfig() (string, string) {
 	switch s.KSailConfig.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		configFile = "kind.yaml"
-		context = "kind-kind"
+		return "kind.yaml", "kind-kind"
 	case v1alpha1.DistributionK3d:
-		configFile = "k3d.yaml"
-		context = "k3d-k3s-default"
+		return "k3d.yaml", "k3d-k3s-default"
 	default:
-		configFile = string(s.KSailConfig.Spec.Distribution) + ".yaml"
-		context = ""
+		return string(s.KSailConfig.Spec.Distribution) + ".yaml", ""
 	}
+}
 
-	// Create minimal ksail.yaml
-	ksailContent := fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: %s
-  distributionConfig: %s
-`, s.KSailConfig.Spec.Distribution, configFile)
+// generateKSailContent generates the ksail.yaml content.
+func (s *Scaffolder) generateKSailContent(configFile, context string) string {
 	if context != "" {
-		ksailContent = fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
+		return fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
   distribution: %s
@@ -68,30 +77,59 @@ spec:
 `, s.KSailConfig.Spec.Distribution, configFile, context)
 	}
 
-	if err := os.WriteFile(filepath.Join(output, "ksail.yaml"), []byte(ksailContent), 0o600); err != nil {
+	return fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: %s
+  distributionConfig: %s
+`, s.KSailConfig.Spec.Distribution, configFile)
+}
+
+// writeConfigFiles writes all configuration files to disk.
+func (s *Scaffolder) writeConfigFiles(output, configFile, ksailContent string) error {
+	// Write ksail.yaml
+	err := os.WriteFile(filepath.Join(output, "ksail.yaml"), []byte(ksailContent), filePerm)
+	if err != nil {
 		return fmt.Errorf("failed to write ksail.yaml: %w", err)
 	}
 
-	// Create minimal distribution config file
+	// Write distribution config
 	distContent := "# Stub distribution configuration\n"
-	if err := os.WriteFile(filepath.Join(output, configFile), []byte(distContent), 0o600); err != nil {
+
+	err = os.WriteFile(filepath.Join(output, configFile), []byte(distContent), filePerm)
+	if err != nil {
 		return fmt.Errorf("failed to write distribution config: %w", err)
 	}
 
-	// Create k8s directory with minimal kustomization.yaml
-	k8sDir := filepath.Join(output, "k8s")
-	if err := os.MkdirAll(k8sDir, 0o750); err != nil {
-		return fmt.Errorf("failed to create k8s directory: %w", err)
-	}
-
-	kustomizationContent := "# Stub kustomization\n"
-	if err := os.WriteFile(filepath.Join(k8sDir, "kustomization.yaml"), []byte(kustomizationContent), 0o600); err != nil {
-		return fmt.Errorf("failed to write kustomization.yaml: %w", err)
+	// Create k8s directory and kustomization
+	err = s.writeKustomization(output)
+	if err != nil {
+		return err
 	}
 
 	_, _ = fmt.Fprintf(s.Writer, "STUB: Created ksail.yaml\n")
 	_, _ = fmt.Fprintf(s.Writer, "STUB: Created %s\n", configFile)
 	_, _ = fmt.Fprintf(s.Writer, "STUB: Created k8s/kustomization.yaml\n")
+
+	return nil
+}
+
+// writeKustomization creates the k8s directory and writes kustomization.yaml.
+func (s *Scaffolder) writeKustomization(output string) error {
+	k8sDir := filepath.Join(output, "k8s")
+
+	err := os.MkdirAll(k8sDir, dirPerm)
+	if err != nil {
+		return fmt.Errorf("failed to create k8s directory: %w", err)
+	}
+
+	kustomizationContent := "# Stub kustomization\n"
+	kustomizationPath := filepath.Join(k8sDir, "kustomization.yaml")
+
+	err = os.WriteFile(kustomizationPath, []byte(kustomizationContent), filePerm)
+	if err != nil {
+		return fmt.Errorf("failed to write kustomization.yaml: %w", err)
+	}
 
 	return nil
 }
