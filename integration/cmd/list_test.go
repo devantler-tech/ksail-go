@@ -26,7 +26,7 @@ func TestListCmdIntegration(t *testing.T) {
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
 			rootCmd.SetArgs([]string{"--stub", "cluster", "list"})
-			
+
 			err := rootCmd.Execute()
 			require.NoError(t, err, "list should succeed for distribution %s", dist)
 

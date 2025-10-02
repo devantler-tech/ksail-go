@@ -54,7 +54,7 @@ spec:
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
 			rootCmd.SetArgs([]string{"--stub", "cluster", "start"})
-			
+
 			err = rootCmd.Execute()
 			require.NoError(t, err, "start should succeed for distribution %s", dist)
 

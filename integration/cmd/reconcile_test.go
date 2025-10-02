@@ -25,7 +25,7 @@ func TestReconcileCmdIntegration(t *testing.T) {
 			rootCmd.SetOut(&out)
 			rootCmd.SetErr(&out)
 			rootCmd.SetArgs([]string{"--stub", "workload", "reconcile"})
-			
+
 			err := rootCmd.Execute()
 			require.NoError(t, err, "reconcile should succeed for distribution %s", dist)
 
