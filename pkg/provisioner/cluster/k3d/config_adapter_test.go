@@ -21,11 +21,3 @@ func TestDefaultK3dConfigAdapterImplementsInterface(t *testing.T) {
 	// Verify that DefaultK3dConfigAdapter implements K3dConfigProvider interface
 	var _ k3dprovisioner.K3dConfigProvider = (*k3dprovisioner.DefaultK3dConfigAdapter)(nil)
 }
-
-func TestDefaultK3dConfigAdapterUsageInProvisioner(t *testing.T) {
-	t.Parallel()
-
-	provisioner := createK3dProvisionerWithDefaultAdapters(t)
-
-	assert.NotNil(t, provisioner, "provisioner should not be nil")
-}

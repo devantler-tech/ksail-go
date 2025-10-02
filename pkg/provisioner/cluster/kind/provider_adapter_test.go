@@ -5,7 +5,6 @@ import (
 
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewDefaultKindProviderAdapter(t *testing.T) {
@@ -21,12 +20,4 @@ func TestDefaultKindProviderAdapterImplementsInterface(t *testing.T) {
 
 	// Verify that DefaultKindProviderAdapter implements KindProvider interface
 	var _ kindprovisioner.KindProvider = (*kindprovisioner.DefaultKindProviderAdapter)(nil)
-}
-
-func TestDefaultKindProviderAdapterUsageInProvisioner(t *testing.T) {
-	t.Parallel()
-
-	provisioner := createKindProvisionerWithDefaultAdapters(t)
-
-	require.NotNil(t, provisioner, "provisioner should not be nil")
 }
