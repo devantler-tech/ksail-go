@@ -70,21 +70,19 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-013**: System MUST handle long-running operations (minutes, hours) with appropriate formatting
 
-- **FR-014**: System MUST display timing information progressively as each stage completes, rather than only at final command completion
+- **FR-014**: System MUST NOT display timing information when commands fail or exit with errors; timing display is reserved for successful completions only
 
-- **FR-015**: System MUST NOT display timing information when commands fail or exit with errors; timing display is reserved for successful completions only
+- **FR-015**: Timer MUST provide timing data as structured information (total duration, stage duration) that existing notification functions can format and display
 
-- **FR-016**: Timer MUST provide timing data as structured information (total duration, stage duration) that existing notification functions can format and display
-
-- **FR-017**: System MUST use simplified timing format `[X]` for single-stage commands to avoid redundant information (where total and stage time would be identical)
+- **FR-016**: System MUST use simplified timing format `[X]` for single-stage commands to avoid redundant information (where total and stage time would be identical)
 
 ### Key Entities *(include if feature involves data)*
 
 - **Timer**: Represents the timing tracker for a command execution. Tracks start time, current stage start time, and provides methods to calculate and return elapsed durations as structured data for the UI notification system to format and display.
 
-- **Stage**: Represents a logical phase within a command execution, defined by a title. Has a start time and duration once completed.
+- **Stage**: Represents a logical phase within a command execution, defined by a title. This is a conceptual entity tracked as state within the Timer (via `currentStage` field and `stageStartTime`), not a separate data structure.
 
-- **Timing Metadata**: The formatted string containing total and stage timing information in the format `[X total|Y stage]`.
+- **Timing Metadata**: The formatted string containing total and stage timing information in the format `[X total|Y stage]`. Note: In technical implementation, the underlying data structure is called `TimingData` (Go struct), while this specification uses "Timing Metadata" as the user-facing concept.
 
 ## Review & Acceptance Checklist
 
