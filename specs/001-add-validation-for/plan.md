@@ -72,7 +72,7 @@ Configuration validation system for KSail that validates Kubernetes cluster conf
 
 - TDD approach: Tests written → User approved → Tests fail → Then implement
 - Contract tests for each validator interface method
-- Unit tests for complete validation workflows
+- System tests for complete validation workflows
 - Snapshot testing for CLI output consistency
 - System tests across all supported configuration types
 
