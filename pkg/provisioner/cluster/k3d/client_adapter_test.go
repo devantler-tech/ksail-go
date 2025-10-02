@@ -151,7 +151,7 @@ func createK3dProvisionerWithDefaultAdapters(
 	t.Helper()
 
 	simpleCfg := &v1alpha5.SimpleConfig{}
-	simpleCfg.Name = "test-cluster"
+	simpleCfg.Name = "test-cluster-" + t.Name()
 
 	clientAdapter := k3dprovisioner.NewDefaultK3dClientAdapter()
 	configAdapter := k3dprovisioner.NewDefaultK3dConfigAdapter()

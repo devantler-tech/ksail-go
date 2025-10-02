@@ -51,7 +51,7 @@ func createKindProvisionerWithDefaultAdapters(
 	t.Helper()
 
 	kindConfig := &v1alpha4.Cluster{}
-	kindConfig.Name = "test-cluster"
+	kindConfig.Name = "test-cluster-" + t.Name()
 
 	providerAdapter := kindprovisioner.NewDefaultKindProviderAdapter()
 
