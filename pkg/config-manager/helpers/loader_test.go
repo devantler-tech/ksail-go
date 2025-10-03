@@ -188,12 +188,14 @@ func runFormattingTest(
 	formatFunc func(*validator.ValidationResult) string,
 ) {
 	t.Helper()
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.Name, func(t *testing.T) {
+
+	for _, testCaseEntry := range tests {
+		// loop variable copy not needed in Go 1.22+
+		t.Run(testCaseEntry.Name, func(t *testing.T) {
 			t.Parallel()
-			output := formatFunc(tc.Result)
-			assert.Equal(t, tc.Expected, output)
+
+			output := formatFunc(testCaseEntry.Result)
+			assert.Equal(t, testCaseEntry.Expected, output)
 		})
 	}
 }
@@ -202,6 +204,7 @@ func runFormattingTest(
 func assertValidationError(t *testing.T, err error, expectedSubstrings ...string) {
 	t.Helper()
 	require.Error(t, err)
+
 	for _, substr := range expectedSubstrings {
 		assert.Contains(t, err.Error(), substr, "expected validation error to contain substring")
 	}

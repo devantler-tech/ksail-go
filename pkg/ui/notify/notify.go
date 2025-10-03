@@ -153,5 +153,6 @@ func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
 	if !isMultiStage {
 		return fmt.Sprintf("[stage: %s]", total.String())
 	}
+
 	return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
 }

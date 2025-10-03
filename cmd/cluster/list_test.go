@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +39,7 @@ func runListRunningClusters(t *testing.T) {
 		t,
 		func(t *testing.T, _ *cobra.Command, manager *configmanager.ConfigManager, _ *bytes.Buffer) {
 			t.Helper()
-			seedValidClusterConfig(manager)
+			testutils.SeedValidClusterConfig(manager)
 		},
 		func(t *testing.T, buffer *bytes.Buffer, err error) {
 			t.Helper()
@@ -64,7 +65,7 @@ func runListAllFlag(t *testing.T) {
 				t.Fatalf("failed to set all flag: %v", err)
 			}
 
-			seedValidClusterConfig(manager)
+			testutils.SeedValidClusterConfig(manager)
 		},
 		func(t *testing.T, buffer *bytes.Buffer, err error) {
 			t.Helper()

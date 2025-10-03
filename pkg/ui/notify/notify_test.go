@@ -259,6 +259,7 @@ func testSingleStageFormat(t *testing.T) {
 
 // Update multi-stage equal durations test expectation: still shows stage|total now.
 func testEqualDurationsAsSingleStage(t *testing.T) {
+	t.Helper()
 	// Updated: when multiStage true and durations equal, we now display both stage and total explicitly.
 	duration := 1 * time.Second
 	assertFormattedTiming(t, duration, duration, true, "[stage: 1s|total: 1s]")
