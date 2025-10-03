@@ -2,7 +2,7 @@
 
 **Feature Branch**: `005-implement-timing-in`
 **Created**: 2025-10-01
-**Status**: Draft
+**Status**: Implemented
 **Input**: User description: "implement timing in the cli via a new package pkg/ui/timer. The timer should be used to estimate elapsed time of each command and its stages. A stage is defined by a new title. The timing must be printed in the following format [stage: x|total: x] where x is the time in go duration format. The timing must be printed in success messages. This is important to allow users to monitor how long commands and their individual stages take to run."
 
 ## Clarifications
@@ -25,7 +25,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 1. **Given** a user runs `ksail cluster up` (multi-stage command), **When** the command completes successfully, **Then** the success message displays timing information in the format `[stage: 2m15s|total: 5m30s]` showing both the final stage duration and total elapsed time
 
-2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[stage: 1.2s]` with appropriate precision for sub-second operations
+2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[stage: 1.2s]` (note: implemented format includes the `stage:` label even for single-stage commands) with appropriate precision for sub-second operations
 
 3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** timing information is displayed immediately showing `[stage: X|total: Y]` format, allowing users to monitor progress in real-time
 
@@ -48,7 +48,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-002**: System MUST track elapsed time for individual stages within a command, where a stage is defined by a title change in the output
 
-- **FR-003**: System MUST display timing information in format `[stage: X|total: Y]` for multi-stage commands, and simplified format `[stage: X]` for single-stage commands (where X is the last stage's elapsed time and Y is total elapsed time)
+- **FR-003**: System MUST display timing information in format `[stage: X|total: Y]` for multi-stage commands, and simplified format `[stage: X]` for single-stage commands (where X is the last stage's elapsed time and Y is total elapsed time). (Note: Original draft proposed `[X]`; implementation standardizes on explicit `stage:` label in all cases.)
 
 - **FR-004**: System MUST format timing durations using Go's standard Duration.String() method, which automatically produces appropriate units (e.g., "1m30s", "500ms", "2.5s")
 
@@ -129,3 +129,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 **Scope Boundaries**: This specification focuses solely on timing display for successful command completions. Error scenarios, performance optimization of the timing mechanism itself, and detailed profiling/tracing are out of scope for this feature.
 
 **Testing Approach**: Acceptance tests should verify timing format correctness, stage boundary tracking, and consistent display across all commands. Performance tests should ensure the timing mechanism adds negligible overhead (<1ms) to command execution.
+
+## Implementation Alignment
+
+The implemented behavior matches all functional requirements with one intentional divergence from the original draft specification: the single-stage timing format uses `[stage: X]` instead of `[X]`. This change improves clarity and consistency across outputs. All multi-stage formats follow `[stage: X|total: Y]` as specified. Error paths correctly omit timing information. Duration formatting leverages Go's `time.Duration.String()` exactly.

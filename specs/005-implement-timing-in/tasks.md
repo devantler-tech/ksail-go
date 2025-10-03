@@ -100,7 +100,7 @@ This is a single-project Go CLI tool with the following structure:
 
 - [X] **T011** [P] Contract test IR-002 (Timing format consistency) in `pkg/ui/notify/notify_test.go`
   - Test: FormatTiming() produces "[stage: X|total: Y]" for multi-stage
-  - Test: FormatTiming() produces "[X]" for single-stage
+  - Test: FormatTiming() produces "[stage: X]" for single-stage (final implementation standardized label)
   - Verify: Uses Duration.String() formatting
 
 - [X] **T012** [P] Contract test IR-003 (Optional timing display) in `pkg/ui/notify/notify_test.go`
