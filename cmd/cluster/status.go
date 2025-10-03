@@ -59,7 +59,6 @@ func HandleStatusRunE(
 		Content:    "Cluster status: Running (stub implementation)",
 		Timer:      tmr,
 		Writer:     cmd.OutOrStdout(),
-		MultiStage: false,
 	})
 
 	return nil
