@@ -167,24 +167,25 @@ func TestWriteMessage_TitleType_DefaultEmoji(t *testing.T) {
 func TestWriteMessage_WithTimer(t *testing.T) {
 	t.Parallel()
 
+	// Updated: explicitly single-stage (MultiStage false)
 	var out bytes.Buffer
 
 	tmr := timer.New()
 	tmr.Start()
 
-	// Simulate some work
 	time.Sleep(10 * time.Millisecond)
 
 	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "operation complete",
-		Timer:   tmr,
-		Writer:  &out,
+		Type:       notify.SuccessType,
+		Content:    "operation complete",
+		Timer:      tmr,
+		Writer:     &out,
+		MultiStage: false, // explicit single-stage
 	})
 
 	got := out.String()
 	// Verify it has the success symbol and timing brackets
-	if !strings.HasPrefix(got, "✔ operation complete [") {
+	if !strings.HasPrefix(got, "✔ operation complete [stage: ") { // updated prefix
 		t.Fatalf("output should start with success symbol and have timing, got %q", got)
 	}
 
@@ -256,12 +257,11 @@ func testSingleStageFormat(t *testing.T) {
 	assertFormattedTiming(t, duration, duration, false, "[stage: 1.2s]")
 }
 
+// Update multi-stage equal durations test expectation: still shows stage|total now.
 func testEqualDurationsAsSingleStage(t *testing.T) {
-	t.Helper()
-
+	// Updated: when multiStage true and durations equal, we now display both stage and total explicitly.
 	duration := 1 * time.Second
-
-	assertFormattedTiming(t, duration, duration, true, "[stage: 1s]")
+	assertFormattedTiming(t, duration, duration, true, "[stage: 1s|total: 1s]")
 }
 
 func testSubSecondPrecision(t *testing.T) {

@@ -37,6 +37,9 @@ type Message struct {
 	Content string
 	// Timer is optional. If provided, timing information will be appended to the message.
 	Timer timer.Timer
+	// MultiStage MUST be set to true for multi-stage timers (i.e., when the command advanced stages).
+	// If false, the timing output will be rendered in single-stage form regardless of internal durations.
+	MultiStage bool
 	// Emoji is used only for TitleType messages to customize the title icon.
 	Emoji string
 	// Writer is the output destination. If nil, defaults to os.Stdout.
@@ -62,7 +65,8 @@ func WriteMessage(msg Message) {
 	// Append timing information if timer is provided
 	if msg.Timer != nil {
 		total, stage := msg.Timer.GetTiming()
-		timingStr := FormatTiming(total, stage, total != stage)
+		// Use explicit MultiStage flag only; heuristic removed to avoid accidental misclassification.
+		timingStr := FormatTiming(total, stage, msg.MultiStage)
 		content = fmt.Sprintf("%s %s", content, timingStr)
 	}
 
@@ -142,14 +146,12 @@ func handleNotifyError(err error) {
 }
 
 // FormatTiming formats timing durations into a display string using Go's Duration.String() method.
-// Returns "[stage: X|total: Y]" for multi-stage commands (when isMultiStage is true and total != stage)
-// Returns "[stage: X]" for single-stage commands or when total == stage.
+// Returns "[stage: X|total: Y]" for multi-stage commands when isMultiStage is true.
+// Returns "[stage: X]" for single-stage commands.
 // Uses Go's standard Duration.String() which provides appropriate precision automatically.
 func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
-	// If durations are equal or not multi-stage, use simplified format
-	if !isMultiStage || total == stage {
+	if !isMultiStage {
 		return fmt.Sprintf("[stage: %s]", total.String())
 	}
-
 	return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
 }
