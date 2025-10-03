@@ -80,13 +80,8 @@ func handleUpRunEWithProvisioner(
 	if provisioner != nil {
 		clusterProvisioner, clusterName, err = provisioner(cmd.Context(), cluster)
 	} else {
-		clusterProvisioner, err = cmdhelpers.CreateClusterProvisioner(cmd.Context(), cluster)
-		if err != nil {
-			return fmt.Errorf("failed to create provisioner: %w", err)
-		}
-
-		// Get cluster name from distribution config
-		clusterName, err = cmdhelpers.GetClusterNameFromConfig(cluster)
+		// Load config once and get both provisioner and cluster name
+		clusterProvisioner, clusterName, err = cmdhelpers.CreateClusterProvisionerWithName(cmd.Context(), cluster)
 	}
 
 	if err != nil {
