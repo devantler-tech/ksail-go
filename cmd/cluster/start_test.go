@@ -1,53 +1,26 @@
 package cluster //nolint:testpackage // Access internal helpers without exporting them.
 
-import (
-	"errors"
-	"strings"
-	"testing"
-
-	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
-)
+import "testing"
 
 // TestHandleStartRunE exercises the success and validation error paths for the start command.
 
 func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
 	t.Run("success", func(t *testing.T) { //nolint:paralleltest
-		cmd, manager, output := testutils.NewCommandAndManager(t, "start")
-		testutils.SeedValidClusterConfig(manager)
-
-		err := HandleStartRunE(cmd, manager, nil)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		assertOutputContains(
+		runLifecycleSuccessCase(
 			t,
-			output.String(),
+			"start",
+			HandleStartRunE,
 			"Cluster started successfully (stub implementation)",
 		)
 	})
 
 	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-		cmd, manager, _ := testutils.NewCommandAndManager(t, "start")
-		manager.Viper.Set("spec.distribution", string(v1alpha1.DistributionKind))
-
-		err := HandleStartRunE(cmd, manager, nil)
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
-
-		if !errors.Is(err, helpers.ErrConfigurationValidationFailed) {
-			t.Fatalf("expected validation error, got %v", err)
-		}
-
-		if !strings.Contains(err.Error(), "failed to execute start command") {
-			t.Fatalf("expected contextual error message, got %v", err)
-		}
-
-		if !strings.Contains(err.Error(), "failed to load cluster configuration") {
-			t.Fatalf("expected wrapped load error, got %v", err)
-		}
+		runLifecycleValidationErrorCase(
+			t,
+			"start",
+			HandleStartRunE,
+			"failed to execute start command",
+			"failed to load cluster configuration",
+		)
 	})
 }

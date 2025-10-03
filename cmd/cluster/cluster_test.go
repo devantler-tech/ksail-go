@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
@@ -150,4 +152,54 @@ func assertOutputContains(t *testing.T, output, expected string) {
 	if !strings.Contains(output, expected) {
 		t.Fatalf("expected output to contain %q, got %q", expected, output)
 	}
+}
+
+type lifecycleHandlerFunc func(*cobra.Command, *configmanager.ConfigManager, []string) error
+
+func runLifecycleSuccessCase(
+	t *testing.T,
+	use string,
+	handler lifecycleHandlerFunc,
+	expectedMessage string,
+) {
+	t.Helper()
+
+	cmd, manager, output := testutils.NewCommandAndManager(t, use)
+	testutils.SeedValidClusterConfig(manager)
+
+	err := handler(cmd, manager, nil)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	assertOutputContains(t, output.String(), expectedMessage)
+}
+
+func runLifecycleValidationErrorCase(
+	t *testing.T,
+	use string,
+	handler lifecycleHandlerFunc,
+	expectedSubstrings ...string,
+) {
+	t.Helper()
+
+	testutils.RunValidationErrorTest(t, use, func(
+		cmd *cobra.Command,
+		manager *configmanager.ConfigManager,
+		args []string,
+	) error {
+		err := handler(cmd, manager, args)
+		if err == nil {
+			t.Fatal("expected error but got nil")
+		}
+
+		message := err.Error()
+		for _, substring := range expectedSubstrings {
+			if !strings.Contains(message, substring) {
+				t.Fatalf("expected error message to contain %q, got %q", substring, message)
+			}
+		}
+
+		return err
+	})
 }
