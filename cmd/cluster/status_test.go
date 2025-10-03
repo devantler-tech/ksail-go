@@ -8,8 +8,6 @@ import (
 )
 
 func TestHandleStatusRunE(t *testing.T) {
-	t.Parallel()
-
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
@@ -28,7 +26,9 @@ func TestHandleStatusRunE(t *testing.T) {
 	})
 
 	t.Run("load failure", func(t *testing.T) {
-		t.Parallel()
+		// Create and switch to temp directory for test isolation
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
 
 		cmd, manager, _ := newCommandAndManager(t, "status")
 

@@ -12,8 +12,6 @@ import (
 )
 
 func TestHandleUpRunE(t *testing.T) {
-	t.Parallel()
-
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
@@ -29,7 +27,9 @@ func TestHandleUpRunE(t *testing.T) {
 	})
 
 	t.Run("validation error", func(t *testing.T) {
-		t.Parallel()
+		// Create and switch to temp directory for test isolation
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
 
 		cmd, manager, _ := newCommandAndManager(t, "up")
 		manager.Viper.Set("spec.distribution", string(v1alpha1.DistributionKind))
