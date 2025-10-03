@@ -64,6 +64,9 @@ func handleUpRunEWithProvisioner(
 	// Transition to provisioning stage
 	tmr.NewStage()
 
+	// Add newline before title to make it stand out
+	cmd.Println()
+
 	// Show provisioning title
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
