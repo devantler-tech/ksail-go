@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -142,91 +141,15 @@ func handleNotifyError(err error) {
 	}
 }
 
-// FormatTiming formats timing durations into a display string.
+// FormatTiming formats timing durations into a display string using Go's Duration.String() method.
 // Returns "[stage: X|total: Y]" for multi-stage commands (when isMultiStage is true and total != stage)
 // Returns "[stage: X]" for single-stage commands or when total == stage.
-// Formats durations with a maximum of 2 decimal places.
+// Uses Go's standard Duration.String() which provides appropriate precision automatically.
 func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
 	// If durations are equal or not multi-stage, use simplified format
 	if !isMultiStage || total == stage {
-		return fmt.Sprintf("[stage: %s]", formatDuration(total))
+		return fmt.Sprintf("[stage: %s]", total.String())
 	}
 
-	return fmt.Sprintf("[stage: %s|total: %s]", formatDuration(stage), formatDuration(total))
-}
-
-// formatDuration formats a duration with a maximum of 2 decimal places for sub-second durations.
-// For durations >= 1 minute, uses compound format (e.g., "5m30s", "1h23m45s").
-// For durations < 1 minute, shows with up to 2 decimals and appropriate unit.
-// Trailing zeros are removed for cleaner output.
-// Examples: 1.23s, 456.78ms, 12.34µs, 1.5s, 2s, 5m30s, 1h23m45s.
-func formatDuration(duration time.Duration) string {
-	// Handle special cases
-	if duration == 0 {
-		return "0s"
-	}
-
-	// For durations >= 1 minute, use compound format (hours, minutes, seconds)
-	if duration >= time.Minute {
-		return formatCompoundDuration(duration)
-	}
-
-	// For sub-minute durations, use decimal format with appropriate unit
-	var (
-		value float64
-		unit  string
-	)
-
-	switch {
-	case duration >= time.Second:
-		value = float64(duration) / float64(time.Second)
-		unit = "s"
-	case duration >= time.Millisecond:
-		value = float64(duration) / float64(time.Millisecond)
-		unit = "ms"
-	case duration >= time.Microsecond:
-		value = float64(duration) / float64(time.Microsecond)
-		unit = "µs"
-	default:
-		// For nanoseconds, just show the value without decimals
-		return fmt.Sprintf("%dns", duration.Nanoseconds())
-	}
-
-	// Format with 2 decimal places and trim trailing zeros
-	formatted := fmt.Sprintf("%.2f", value)
-	// Remove trailing zeros and decimal point if not needed
-	formatted = strings.TrimRight(formatted, "0")
-	formatted = strings.TrimRight(formatted, ".")
-
-	return formatted + unit
-}
-
-// formatCompoundDuration formats durations >= 1 minute in compound format (e.g., "5m30s", "1h23m45s").
-func formatCompoundDuration(duration time.Duration) string {
-	hours := duration / time.Hour
-	duration %= time.Hour
-
-	minutes := duration / time.Minute
-	duration %= time.Minute
-
-	seconds := duration / time.Second
-
-	// Build the string based on what components are present
-	var parts []string
-
-	if hours > 0 {
-		parts = append(parts, fmt.Sprintf("%dh", hours))
-	}
-
-	if minutes > 0 {
-		parts = append(parts, fmt.Sprintf("%dm", minutes))
-	}
-
-	// Always show seconds if there are hours or minutes present
-	// Only show seconds alone if it's the only component
-	if seconds > 0 || len(parts) > 0 {
-		parts = append(parts, fmt.Sprintf("%ds", seconds))
-	}
-
-	return strings.Join(parts, "")
+	return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
 }
