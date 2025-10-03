@@ -26,7 +26,7 @@ const (
 	SuccessType
 	// InfoType represents an informational message (blue, with ℹ symbol).
 	InfoType
-	// TitleType represents a title/header message (bold, with custom emoji).
+	// TitleType represents a title/header message (bold, with emoji (custom or default)).
 	TitleType
 )
 
