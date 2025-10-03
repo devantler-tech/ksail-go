@@ -115,7 +115,7 @@ func (m *ConfigManager) unmarshalAndApplyDefaults() error {
 func (m *ConfigManager) notifyLoadingStart() {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
-		Content: "Loading configuration...",
+		Content: "Load config...",
 		Emoji:   "⏳",
 		Writer:  m.Writer,
 	})

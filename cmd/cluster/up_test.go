@@ -2,11 +2,13 @@ package cluster //nolint:testpackage // Access internal helpers without exportin
 
 import (
 	"context"
+	"regexp"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -30,11 +32,16 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		// Verify the output contains expected messages
+		// Strip timing information from output before snapshot comparison
+		// Timing format is: [stage: Xs], [stage: Xms], [stage: Xµs], [stage: Xs|total: Ys]
 		outputStr := output.String()
-		assertOutputContains(t, outputStr, "🚀 Create cluster...")
-		assertOutputContains(t, outputStr, "creating cluster")
-		assertOutputContains(t, outputStr, "cluster created")
+		timingRegex := regexp.MustCompile(
+			`\s*\[(stage:\s*\d+(\.\d+)?(µs|ms|s|m|h)(\s*\|\s*total:\s*\d+(\.\d+)?(µs|ms|s|m|h))?)?\]`,
+		)
+		sanitizedOutput := timingRegex.ReplaceAllString(outputStr, "")
+
+		// Capture the output as a snapshot
+		snaps.MatchSnapshot(t, sanitizedOutput)
 
 		mockProvisioner.AssertExpectations(t)
 	})
