@@ -50,7 +50,6 @@ func HandleUpRunE(
 		return fmt.Errorf("failed to load cluster: %w", err)
 	}
 
-	// Note: Timing stages will be updated when implementing actual cluster provisioning.
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "Cluster created and started successfully (stub implementation)",
