@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestHandleUpRunE exercises success and validation error paths.
@@ -16,10 +17,12 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 		cmd, manager, output := testutils.NewCommandAndManager(t, "up")
 		testutils.SeedValidClusterConfig(manager)
 
-		// Use mock provisioner factory that doesn't require Docker
+		// Use mock provisioner that doesn't require Docker
 		mockProvisioner := &mockClusterProvisioner{}
-		factory := func(_ context.Context, _ *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error) {
-			return mockProvisioner, nil
+		mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
+
+		factory := func(_ context.Context, _ *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, string, error) {
+			return mockProvisioner, "kind", nil
 		}
 
 		err := handleUpRunEWithProvisioner(cmd, manager, factory)
@@ -29,8 +32,11 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 
 		// Verify the output contains expected messages
 		outputStr := output.String()
-		assertOutputContains(t, outputStr, "🚀 Provisioning cluster...")
-		assertOutputContains(t, outputStr, "provisioned cluster successfully")
+		assertOutputContains(t, outputStr, "🚀 Create cluster...")
+		assertOutputContains(t, outputStr, "creating cluster")
+		assertOutputContains(t, outputStr, "cluster created")
+
+		mockProvisioner.AssertExpectations(t)
 	})
 
 	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
@@ -38,29 +44,51 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 	})
 }
 
-// mockClusterProvisioner is a test mock that doesn't require Docker.
-type mockClusterProvisioner struct{}
-
-func (m *mockClusterProvisioner) Create(_ context.Context, _ string) error {
-	return nil
+// mockClusterProvisioner is a test mock using testify/mock.
+type mockClusterProvisioner struct {
+	mock.Mock
 }
 
-func (m *mockClusterProvisioner) Delete(_ context.Context, _ string) error {
-	return nil
+//nolint:wrapcheck // Test mock returning error from mock framework
+func (m *mockClusterProvisioner) Create(ctx context.Context, name string) error {
+	args := m.Called(ctx, name)
+
+	return args.Error(0)
 }
 
-func (m *mockClusterProvisioner) Start(_ context.Context, _ string) error {
-	return nil
+//nolint:wrapcheck // Test mock returning error from mock framework
+func (m *mockClusterProvisioner) Delete(ctx context.Context, name string) error {
+	args := m.Called(ctx, name)
+
+	return args.Error(0)
 }
 
-func (m *mockClusterProvisioner) Stop(_ context.Context, _ string) error {
-	return nil
+//nolint:wrapcheck // Test mock returning error from mock framework
+func (m *mockClusterProvisioner) Start(ctx context.Context, name string) error {
+	args := m.Called(ctx, name)
+
+	return args.Error(0)
 }
 
-func (m *mockClusterProvisioner) List(_ context.Context) ([]string, error) {
-	return []string{}, nil
+//nolint:wrapcheck // Test mock returning error from mock framework
+func (m *mockClusterProvisioner) Stop(ctx context.Context, name string) error {
+	args := m.Called(ctx, name)
+
+	return args.Error(0)
 }
 
-func (m *mockClusterProvisioner) Exists(_ context.Context, _ string) (bool, error) {
-	return false, nil
+//nolint:wrapcheck // Test mock returning error from mock framework
+func (m *mockClusterProvisioner) List(ctx context.Context) ([]string, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).([]string), args.Error(1) //nolint:forcetypeassert // Test mock
+}
+
+func (m *mockClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
+	args := m.Called(ctx, name)
+
+	return args.Bool(0), args.Error(1)
 }

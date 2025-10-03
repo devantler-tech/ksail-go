@@ -20,6 +20,28 @@ import (
 // ErrUnsupportedDistribution is returned when an unsupported distribution is specified.
 var ErrUnsupportedDistribution = errors.New("unsupported distribution")
 
+// GetClusterNameFromConfig extracts the cluster name from the distribution configuration.
+func GetClusterNameFromConfig(cluster *v1alpha1.Cluster) (string, error) {
+	switch cluster.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		kindConfig, err := loadKindConfig(cluster.Spec.DistributionConfig)
+		if err != nil {
+			return "", fmt.Errorf("failed to load Kind configuration: %w", err)
+		}
+
+		return kindConfig.Name, nil
+	case v1alpha1.DistributionK3d:
+		k3dConfig, err := loadK3dConfig(cluster.Spec.DistributionConfig)
+		if err != nil {
+			return "", fmt.Errorf("failed to load K3d configuration: %w", err)
+		}
+
+		return k3dConfig.Name, nil
+	default:
+		return "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
+	}
+}
+
 // CreateClusterProvisioner creates the appropriate provisioner based on the cluster distribution.
 //
 //nolint:ireturn // Factory function must return interface for flexibility

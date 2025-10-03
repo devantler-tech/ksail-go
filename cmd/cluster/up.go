@@ -67,7 +67,7 @@ func handleUpRunEWithProvisioner(
 	// Show provisioning title
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
-		Content: "Provisioning cluster...",
+		Content: "Create cluster...",
 		Emoji:   "🚀",
 		Writer:  cmd.OutOrStdout(),
 	})
@@ -75,18 +75,33 @@ func handleUpRunEWithProvisioner(
 	// Create provisioner based on distribution
 	var clusterProvisioner clusterprovisioner.ClusterProvisioner
 
+	var clusterName string
+
 	if provisioner != nil {
-		clusterProvisioner, err = provisioner(cmd.Context(), cluster)
+		clusterProvisioner, clusterName, err = provisioner(cmd.Context(), cluster)
 	} else {
 		clusterProvisioner, err = cmdhelpers.CreateClusterProvisioner(cmd.Context(), cluster)
+		if err != nil {
+			return fmt.Errorf("failed to create provisioner: %w", err)
+		}
+
+		// Get cluster name from distribution config
+		clusterName, err = cmdhelpers.GetClusterNameFromConfig(cluster)
 	}
 
 	if err != nil {
 		return fmt.Errorf("failed to create provisioner: %w", err)
 	}
 
+	// Show activity message
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "creating cluster",
+		Writer:  cmd.OutOrStdout(),
+	})
+
 	// Provision the cluster
-	err = clusterProvisioner.Create(cmd.Context(), "")
+	err = clusterProvisioner.Create(cmd.Context(), clusterName)
 	if err != nil {
 		return fmt.Errorf("failed to provision cluster: %w", err)
 	}
@@ -94,7 +109,7 @@ func handleUpRunEWithProvisioner(
 	// Display success with timing
 	notify.WriteMessage(notify.Message{
 		Type:       notify.SuccessType,
-		Content:    "provisioned cluster successfully",
+		Content:    "cluster created",
 		Timer:      tmr,
 		Writer:     cmd.OutOrStdout(),
 		MultiStage: true,
@@ -104,4 +119,5 @@ func handleUpRunEWithProvisioner(
 }
 
 // provisionerFactory is a function type for creating cluster provisioners (for testing).
-type provisionerFactory func(context.Context, *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error)
+// Returns provisioner, cluster name, and error.
+type provisionerFactory func(context.Context, *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, string, error)
