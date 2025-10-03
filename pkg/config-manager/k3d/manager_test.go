@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/k3d"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/testutils"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 )
