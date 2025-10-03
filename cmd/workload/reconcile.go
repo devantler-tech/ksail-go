@@ -2,6 +2,7 @@ package workload
 
 import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +15,16 @@ func NewReconcileCommand() *cobra.Command {
 		Short: "Reconcile workloads with the cluster",
 		Long:  "Trigger reconciliation tooling to sync local workloads with your cluster.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.Infoln(cmd.OutOrStdout(), reconcileMessage)
+			// Start timing
+			tmr := timer.New()
+			tmr.Start()
+
+			notify.WriteMessage(notify.Message{
+				Type:    notify.InfoType,
+				Content: reconcileMessage,
+				Timer:   tmr,
+				Writer:  cmd.OutOrStdout(),
+			})
 
 			return nil
 		},

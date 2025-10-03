@@ -9,6 +9,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -48,11 +49,15 @@ func HandleInitRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
 	// Bind the --output and --force flags
 	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	_ = configManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
-	cluster, err := configManager.LoadConfig()
+	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster config: %w", err)
 	}
@@ -77,7 +82,16 @@ func HandleInitRunE(
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
-	notify.Titleln(cmd.OutOrStdout(), "📂", "Initializing project... ")
+
+	// Mark new stage for scaffolding
+	tmr.NewStage()
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Initializing project...",
+		Emoji:   "📂",
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
@@ -85,7 +99,12 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
-	notify.Successln(cmd.OutOrStdout(), "initialized project")
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "initialized project",
+		Timer:   tmr,
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

@@ -1,0 +1,25 @@
+package cluster //nolint:testpackage // Access internal helpers without exporting them.
+
+import "testing"
+
+// TestHandleDownRunE exercises the success and validation error paths for the down command.
+func TestHandleDownRunE(t *testing.T) { //nolint:paralleltest
+	t.Run("success", func(t *testing.T) { //nolint:paralleltest
+		runLifecycleSuccessCase(
+			t,
+			"down",
+			HandleDownRunE,
+			"Cluster stopped and deleted successfully (stub implementation)",
+		)
+	})
+
+	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
+		runLifecycleValidationErrorCase(
+			t,
+			"down",
+			HandleDownRunE,
+			"failed to provision cluster down",
+			"failed to load cluster configuration",
+		)
+	})
+}

@@ -1,6 +1,8 @@
 package cluster
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -12,12 +14,26 @@ func NewStopCmd() *cobra.Command {
 		"stop",
 		"Stop the Kubernetes cluster",
 		`Stop the Kubernetes cluster without removing it.`,
-		func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
-			return cmdhelpers.StandardClusterCommandRunE(
-				"Cluster stopped successfully (stub implementation)",
-			)(cmd, manager, args)
-		},
+		HandleStopRunE,
 		cmdhelpers.StandardDistributionFieldSelector(),
 		cmdhelpers.StandardContextFieldSelector(),
 	)
+}
+
+// HandleStopRunE handles the stop command.
+func HandleStopRunE(
+	cmd *cobra.Command,
+	manager *configmanager.ConfigManager,
+	_ []string,
+) error {
+	err := cmdhelpers.ExecuteTimedClusterCommand(
+		cmd,
+		manager,
+		"Cluster stopped successfully (stub implementation)",
+	)
+	if err != nil {
+		return fmt.Errorf("failed to provision cluster stop: %w", err)
+	}
+
+	return nil
 }

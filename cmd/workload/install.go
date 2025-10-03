@@ -14,7 +14,11 @@ func NewInstallCommand() *cobra.Command {
 		Short: "Install Helm charts",
 		Long:  "Install Helm charts to provision workloads through KSail.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.Infoln(cmd.OutOrStdout(), installMessage)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.InfoType,
+				Content: installMessage,
+				Writer:  cmd.OutOrStdout(),
+			})
 
 			return nil
 		},

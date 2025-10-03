@@ -7,6 +7,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -43,26 +44,43 @@ func HandleListRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
-	// Load the full cluster configuration (Viper handles all precedence automatically)
-	cluster, err := configManager.LoadConfig()
+	// Load cluster configuration without validation (list doesn't need validation)
+	cluster, err := cmdhelpers.LoadConfigWithErrorHandling(cmd, configManager, tmr)
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	all := configManager.Viper.GetBool("all")
+
 	if all {
-		notify.Successln(cmd.OutOrStdout(), "Listing all clusters (stub implementation)")
+		notify.WriteMessage(notify.Message{
+			Type:    notify.SuccessType,
+			Content: "Listing all clusters (stub implementation)",
+			Timer:   tmr,
+			Writer:  cmd.OutOrStdout(),
+		})
 	} else {
-		notify.Successln(cmd.OutOrStdout(), "Listing running clusters (stub implementation)")
+		notify.WriteMessage(notify.Message{
+			Type:    notify.SuccessType,
+			Content: "Listing running clusters (stub implementation)",
+			Timer:   tmr,
+			Writer:  cmd.OutOrStdout(),
+		})
 	}
 
-	notify.Activityln(cmd.OutOrStdout(),
-		"Distribution filter: "+string(cluster.Spec.Distribution))
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "Distribution filter: %s",
+		Args:    []any{string(cluster.Spec.Distribution)},
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	return nil
 }

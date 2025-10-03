@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,7 +70,7 @@ func testLoadConfigBasicScenarios[T any](
 			configPath := setupTestConfigPath(t, scenario)
 
 			manager := newManager(configPath)
-			config, err := manager.LoadConfig()
+			config, err := manager.LoadConfig(nil)
 
 			if scenario.ShouldError {
 				require.Error(t, err)
@@ -129,13 +130,17 @@ func testLoadConfigCaching[T any](
 
 	manager := newManager(configPath)
 
+	// Create timer for testing (not used in Kind config manager currently)
+	tmr := timer.New()
+	tmr.Start()
+
 	// First call
-	config1, err := manager.LoadConfig()
+	config1, err := manager.LoadConfig(tmr)
 	require.NoError(t, err)
 	require.NotNil(t, config1)
 
 	// Second call should return the same instance (cached)
-	config2, err := manager.LoadConfig()
+	config2, err := manager.LoadConfig(tmr)
 	require.NoError(t, err)
 	require.NotNil(t, config2)
 

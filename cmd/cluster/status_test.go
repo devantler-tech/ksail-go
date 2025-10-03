@@ -1,20 +1,17 @@
 package cluster //nolint:testpackage // Requires internal access to helper functions.
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 )
 
-func TestHandleStatusRunE(t *testing.T) {
-	t.Parallel()
+// TestHandleStatusRunE exercises success and load-failure paths.
 
-	t.Run("success", func(t *testing.T) {
-		t.Parallel()
-
-		cmd, manager, output := newCommandAndManager(t, "status")
-		seedValidClusterConfig(manager)
+func TestHandleStatusRunE(t *testing.T) { //nolint:paralleltest
+	t.Run("success", func(t *testing.T) { //nolint:paralleltest
+		cmd, manager, output := testutils.NewCommandAndManager(t, "status")
+		testutils.SeedValidClusterConfig(manager)
 		manager.Viper.Set("spec.connection.context", "kind-kind")
 
 		err := HandleStatusRunE(cmd, manager, nil)
@@ -23,22 +20,12 @@ func TestHandleStatusRunE(t *testing.T) {
 		}
 
 		assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
-		assertOutputContains(t, output.String(), "Kubeconfig")
+		// Config loading messages are now printed by the config manager
+		assertOutputContains(t, output.String(), "config loaded")
 	})
 
-	t.Run("load failure", func(t *testing.T) {
-		t.Parallel()
-
-		cmd, manager, _ := newCommandAndManager(t, "status")
-
-		err := HandleStatusRunE(cmd, manager, nil)
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
-
-		if !errors.Is(err, helpers.ErrConfigurationValidationFailed) {
-			t.Fatalf("expected validation error, got %v", err)
-		}
+	t.Run("load failure", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
+		testutils.RunValidationErrorTest(t, "status", HandleStatusRunE)
 	})
 }
 
@@ -51,4 +38,28 @@ func TestNewStatusCmdIncludesTimeoutSelector(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected timeout flag to be registered, got error %v", err)
 	}
+}
+
+// TestHandleStatusRunE_Success validates the happy path behavior.
+func TestHandleStatusRunE_Success(t *testing.T) {
+	t.Parallel()
+
+	cmd, manager, output := testutils.NewCommandAndManager(t, "status")
+	testutils.SeedValidClusterConfig(manager)
+	manager.Viper.Set("spec.connection.context", "kind-kind")
+
+	err := HandleStatusRunE(cmd, manager, nil)
+	if err != nil {
+		// t.Fatalf ensures test stops immediately with context
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
+	// Config loading messages are now printed by the config manager
+	assertOutputContains(t, output.String(), "config loaded")
+}
+
+// TestHandleStatusRunE_LoadFailure validates error path when config cannot be loaded.
+func TestHandleStatusRunE_LoadFailure(t *testing.T) { //nolint:paralleltest // uses t.Chdir
+	testutils.RunValidationErrorTest(t, "status", HandleStatusRunE)
 }

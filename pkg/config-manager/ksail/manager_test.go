@@ -133,7 +133,7 @@ func TestLoadConfig(t *testing.T) {
 
 			manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-			cluster, err := manager.LoadConfig()
+			cluster, err := manager.LoadConfig(nil)
 
 			if testCase.shouldSucceed {
 				require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 				assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
 
 				// Test that subsequent calls return the same config
-				cluster2, err2 := manager.LoadConfig()
+				cluster2, err2 := manager.LoadConfig(nil)
 				require.NoError(t, err2)
 				assert.Equal(t, cluster, cluster2)
 			} else {
@@ -271,7 +271,7 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config
-	cluster, err := manager.LoadConfig()
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	// After loading, Config property should be accessible and equal to returned cluster
@@ -303,7 +303,7 @@ func testFieldValueSetting(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig()
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	assertFunc(t, cluster)
@@ -428,7 +428,7 @@ invalid yaml content
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
-	cluster, err := manager.LoadConfig()
+	cluster, err := manager.LoadConfig(nil)
 
 	// We expect this to fail with a config reading error (not ConfigFileNotFoundError)
 	if err != nil {
@@ -473,7 +473,7 @@ spec:
 	fieldSelectors := createFieldSelectorsWithName()
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig()
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 

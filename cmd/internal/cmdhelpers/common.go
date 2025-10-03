@@ -8,15 +8,10 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
-
-// ClusterInfoField represents a field to log from cluster information.
-type ClusterInfoField struct {
-	Label string
-	Value string
-}
 
 // SuggestionsMinimumDistance is the minimum distance for command suggestions.
 const SuggestionsMinimumDistance = 2
@@ -85,24 +80,43 @@ func NewCobraCommand(
 	return cmd
 }
 
-// LogClusterInfo logs cluster information fields to the command output.
-func LogClusterInfo(cmd *cobra.Command, fields []ClusterInfoField) {
-	for _, field := range fields {
-		notify.Activityln(cmd.OutOrStdout(), field.Label+": "+field.Value)
+// LoadConfigWithErrorHandling loads cluster configuration with standardized error handling.
+// This helper eliminates duplication of the loading + error handling pattern.
+// Use this when you need to load configuration without validation.
+// For loading with validation, use LoadClusterWithErrorHandling instead.
+// If timer is provided, timing information will be included in the success notification.
+func LoadConfigWithErrorHandling(
+	cmd *cobra.Command,
+	configManager *configmanager.ConfigManager,
+	tmr timer.Timer,
+) (*v1alpha1.Cluster, error) {
+	cluster, err := configManager.LoadConfig(tmr)
+	if err != nil {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Failed to load cluster configuration: %s",
+			Args:    []any{err.Error()},
+			Writer:  cmd.OutOrStdout(),
+		})
+
+		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
+
+	return cluster, nil
 }
 
-// LoadClusterWithErrorHandling provides common error handling pattern for loading cluster configuration.
+// LoadClusterWithErrorHandling loads and validates cluster configuration.
 // Exported for testing purposes.
+// If timer is provided, timing information will be included in the success notification.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
+	tmr timer.Timer,
 ) (*v1alpha1.Cluster, error) {
-	cluster, err := configManager.LoadConfig()
+	// Load configuration using common helper
+	cluster, err := LoadConfigWithErrorHandling(cmd, configManager, tmr)
 	if err != nil {
-		notify.Errorln(cmd.OutOrStdout(), "Failed to load cluster configuration: "+err.Error())
-
-		return nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+		return nil, err
 	}
 
 	// Validate the loaded configuration
@@ -113,19 +127,31 @@ func LoadClusterWithErrorHandling(
 	if !result.Valid {
 		// Use standardized error formatting from helpers
 		errorMessages := helpers.FormatValidationErrorsMultiline(result)
-		notify.Errorln(cmd.OutOrStdout(),
-			"Configuration validation failed:\n"+errorMessages)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Configuration validation failed:\n%s",
+			Args:    []any{errorMessages},
+			Writer:  cmd.OutOrStdout(),
+		})
 
 		// Print fix suggestions using standardized helper
 		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
 		for _, suggestion := range fixSuggestions {
-			notify.Activityln(cmd.OutOrStdout(), suggestion)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: suggestion,
+				Writer:  cmd.OutOrStdout(),
+			})
 		}
 
 		// Display warnings using standardized helper
 		warnings := helpers.FormatValidationWarnings(result)
 		for _, warning := range warnings {
-			notify.Warnln(cmd.OutOrStdout(), warning)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: warning,
+				Writer:  cmd.OutOrStdout(),
+			})
 		}
 
 		return nil, fmt.Errorf("%w with %d errors",
@@ -135,50 +161,14 @@ func LoadClusterWithErrorHandling(
 	// Display warnings even for valid configurations using standardized helper
 	warnings := helpers.FormatValidationWarnings(result)
 	for _, warning := range warnings {
-		notify.Warnln(cmd.OutOrStdout(), warning)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.WarningType,
+			Content: warning,
+			Writer:  cmd.OutOrStdout(),
+		})
 	}
 
 	return cluster, nil
-}
-
-// HandleSimpleClusterCommand provides common error handling and cluster loading for simple commands.
-func HandleSimpleClusterCommand(
-	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
-	successMessage string,
-) (*v1alpha1.Cluster, error) {
-	// Load the full cluster configuration using common error handling
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
-	if err != nil {
-		return nil, err
-	}
-
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, []ClusterInfoField{
-		{"Distribution", string(cluster.Spec.Distribution)},
-		{"Context", cluster.Spec.Connection.Context},
-	})
-
-	return cluster, nil
-}
-
-// StandardClusterCommandRunE creates a standard run function for cluster commands.
-// It handles the common pattern of calling HandleSimpleClusterCommand with a success message.
-func StandardClusterCommandRunE(
-	successMessage string,
-) func(cmd *cobra.Command, manager *configmanager.ConfigManager, args []string) error {
-	return func(
-		cmd *cobra.Command,
-		manager *configmanager.ConfigManager,
-		_ []string,
-	) error {
-		_, err := HandleSimpleClusterCommand(cmd, manager, successMessage)
-		if err != nil {
-			return fmt.Errorf("failed to handle cluster command: %w", err)
-		}
-
-		return nil
-	}
 }
 
 // StandardDistributionFieldSelector creates a standard field selector for distribution.
@@ -215,22 +205,4 @@ func StandardContextFieldSelector() configmanager.FieldSelector[v1alpha1.Cluster
 		Description:  "Kubernetes context of cluster",
 		DefaultValue: "kind-kind",
 	}
-}
-
-// ExecuteCommandWithClusterInfo loads cluster configuration and executes a command with cluster info logging.
-func ExecuteCommandWithClusterInfo(
-	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
-	successMessage string,
-	infoFieldsFunc func(*v1alpha1.Cluster) []ClusterInfoField,
-) error {
-	cluster, err := LoadClusterWithErrorHandling(cmd, configManager)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	notify.Successln(cmd.OutOrStdout(), successMessage)
-	LogClusterInfo(cmd, infoFieldsFunc(cluster))
-
-	return nil
 }

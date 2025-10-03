@@ -31,7 +31,11 @@ func runSafely(args []string, runner func([]string) int, errWriter io.Writer) (e
 	defer func() {
 		if r := recover(); r != nil {
 			panicMessage := fmt.Sprintf("panic recovered: %v\n%s", r, debug.Stack())
-			notify.Errorln(errWriter, panicMessage)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ErrorType,
+				Content: panicMessage,
+				Writer:  errWriter,
+			})
 
 			exitCode = 1
 		}
@@ -48,7 +52,12 @@ func runWithArgs(args []string) int {
 
 	err := rootCmd.Execute()
 	if err != nil {
-		notify.Errorln(rootCmd.ErrOrStderr(), err)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "%v",
+			Args:    []any{err},
+			Writer:  rootCmd.ErrOrStderr(),
+		})
 
 		return 1
 	}

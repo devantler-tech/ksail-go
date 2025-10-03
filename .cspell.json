@@ -226,6 +226,9 @@
     "Ulimits",
     "Underspecification",
     "underspecified",
+    "Mockability",
+    "overengineering",
+    "parallelizable",
     "unmarshal",
     "Unmarshal",
     "unmarshalling",
@@ -240,6 +243,7 @@
     "Warnln",
     "weaveworks",
     "wharfie",
+    "wrapcheck",
     "yamlgenerator",
     "yamlmarshaller"
   ]

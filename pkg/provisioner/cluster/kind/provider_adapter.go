@@ -70,7 +70,8 @@ func (a *DefaultKindProviderAdapter) ListNodes(name string) ([]string, error) {
 // NewDefaultDockerClient creates a new Docker client using environment configuration.
 // This provides a production-ready implementation for the ContainerAPIClient interface
 // required by KindClusterProvisioner.
-func NewDefaultDockerClient() (client.ContainerAPIClient, error) { //nolint:ireturn // interface required for DI
+// Returns the concrete type to satisfy ireturn linter.
+func NewDefaultDockerClient() (*client.Client, error) {
 	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),

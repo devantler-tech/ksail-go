@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
@@ -141,26 +142,28 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	filePath string,
 	fileName string,
 	force bool,
-) (bool, bool) {
-	_, statErr := os.Stat(filePath)
+) (bool, bool, time.Time) {
+	info, statErr := os.Stat(filePath)
 	if statErr == nil {
 		if !force {
-			notify.Warnln(
-				s.Writer,
-				fmt.Sprintf("skipped '%s', file exists use --force to overwrite", fileName),
-			)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: "skipped '%s', file exists use --force to overwrite",
+				Args:    []any{fileName},
+				Writer:  s.Writer,
+			})
 
-			return true, true
+			return true, true, info.ModTime()
 		}
 
-		return false, true
+		return false, true, info.ModTime()
 	}
 
-	if !errors.Is(statErr, os.ErrNotExist) && statErr != nil {
-		return false, false
+	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return false, false, time.Time{}
 	}
 
-	return false, false
+	return false, false, time.Time{}
 }
 
 // GenerationParams groups parameters for generateWithFileHandling.
@@ -179,7 +182,7 @@ func generateWithFileHandling[T any](
 	scaffolder *Scaffolder,
 	params GenerationParams[T],
 ) error {
-	skip, existed := scaffolder.checkFileExistsAndSkip(
+	skip, existed, previousModTime := scaffolder.checkFileExistsAndSkip(
 		params.Opts.Output,
 		params.DisplayName,
 		params.Force,
@@ -198,7 +201,45 @@ func generateWithFileHandling[T any](
 		return fmt.Errorf("failed to generate %s: %w", params.DisplayName, err)
 	}
 
+	if params.Force && existed {
+		err := ensureOverwriteModTime(params.Opts.Output, previousModTime)
+		if err != nil {
+			return fmt.Errorf("failed to update mod time for %s: %w", params.DisplayName, err)
+		}
+	}
+
 	scaffolder.notifyFileAction(params.DisplayName, existed)
+
+	return nil
+}
+
+func ensureOverwriteModTime(path string, previous time.Time) error {
+	if path == "" {
+		return nil
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("failed to stat %s: %w", path, err)
+	}
+
+	current := info.ModTime()
+	if previous.IsZero() || current.After(previous) {
+		return nil
+	}
+
+	// Ensure the new mod time is strictly greater than the previous timestamp.
+	newModTime := previous.Add(time.Millisecond)
+
+	now := time.Now()
+	if now.After(newModTime) {
+		newModTime = now
+	}
+
+	err = os.Chtimes(path, newModTime, newModTime)
+	if err != nil {
+		return fmt.Errorf("failed to update mod time for %s: %w", path, err)
+	}
 
 	return nil
 }
@@ -209,7 +250,12 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 		action = "overwrote"
 	}
 
-	notify.Activityln(s.Writer, fmt.Sprintf("%s '%s'", action, displayName))
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "%s '%s'",
+		Args:    []any{action, displayName},
+		Writer:  s.Writer,
+	})
 }
 
 // generateKSailConfig generates the ksail.yaml configuration file.

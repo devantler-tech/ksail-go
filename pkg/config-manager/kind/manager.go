@@ -7,6 +7,7 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	kindvalidator "github.com/devantler-tech/ksail-go/pkg/validator/kind"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -63,7 +64,8 @@ func NewConfigManager(configPath string) *ConfigManager {
 // Returns the previously loaded config if already loaded.
 // If the file doesn't exist, returns a default Kind cluster configuration.
 // Validates the configuration after loading and returns an error if validation fails.
-func (m *ConfigManager) LoadConfig() (*v1alpha4.Cluster, error) {
+// The timer parameter is accepted for interface compliance but not currently used.
+func (m *ConfigManager) LoadConfig(_ timer.Timer) (*v1alpha4.Cluster, error) {
 	// If config is already loaded, return it
 	if m.configLoaded {
 		return m.config, nil

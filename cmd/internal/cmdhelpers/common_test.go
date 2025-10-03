@@ -9,31 +9,11 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestHandleSimpleClusterCommandSuccess(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	testCmd := &cobra.Command{}
-	testCmd.SetOut(&out)
-
-	// Use the standard config manager from testutils to eliminate duplication
-	manager := testutils.CreateDefaultConfigManager()
-
-	// Test the actual exported function
-	cluster, err := cmdhelpers.HandleSimpleClusterCommand(testCmd, manager, "Test success message")
-
-	require.NoError(t, err)
-	assert.NotNil(t, cluster)
-	assert.Contains(t, out.String(), "✔ Test success message")
-	assert.Contains(t, out.String(), "► Distribution:")
-	assert.Contains(t, out.String(), "► Context:")
-}
 
 // Error testing removed - will be reimplemented with concrete types
 
@@ -101,7 +81,11 @@ func runLoadClusterTest(t *testing.T, testCase struct {
 	testCmd, out := testCase.setupCommand()
 	manager := testCase.setupManager(t)
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
+	// Create timer for testing
+	tmr := timer.New()
+	tmr.Start()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager, tmr)
 
 	if testCase.expectError {
 		require.Error(t, err)
@@ -201,90 +185,6 @@ func TestStandardContextFieldSelector(t *testing.T) {
 	assert.Equal(t, &cluster.Spec.Connection.Context, result)
 }
 
-func TestStandardClusterCommandRunE(t *testing.T) {
-	t.Parallel()
-
-	tests := getStandardClusterCommandRunETests()
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			runStandardClusterCommandRunETest(t, testCase)
-		})
-	}
-}
-
-func getStandardClusterCommandRunETests() []struct {
-	name           string
-	setupManager   func(t *testing.T) *configmanager.ConfigManager
-	setupCommand   func() *cobra.Command
-	expectError    bool
-	expectedOutput string
-	expectedErrMsg []string
-} {
-	return []struct {
-		name           string
-		setupManager   func(t *testing.T) *configmanager.ConfigManager
-		setupCommand   func() *cobra.Command
-		expectError    bool
-		expectedOutput string
-		expectedErrMsg []string
-	}{
-		{
-			name: "success",
-			setupManager: func(_ *testing.T) *configmanager.ConfigManager {
-				return testutils.CreateDefaultConfigManager()
-			},
-			setupCommand: func() *cobra.Command {
-				cmd := &cobra.Command{}
-				cmd.SetOut(&bytes.Buffer{})
-
-				return cmd
-			},
-			expectError:    false,
-			expectedOutput: "✔ Test command executed successfully",
-		},
-		// Error test cases removed for concrete type migration
-	}
-}
-
-func runStandardClusterCommandRunETest(t *testing.T, testCase struct {
-	name           string
-	setupManager   func(t *testing.T) *configmanager.ConfigManager
-	setupCommand   func() *cobra.Command
-	expectError    bool
-	expectedOutput string
-	expectedErrMsg []string
-},
-) {
-	t.Helper()
-
-	var out bytes.Buffer
-
-	testCmd := testCase.setupCommand()
-	testCmd.SetOut(&out)
-
-	manager := testCase.setupManager(t)
-	successMessage := "Test command executed successfully"
-
-	// Get the run function
-	runFunc := cmdhelpers.StandardClusterCommandRunE(successMessage)
-
-	// Execute the function
-	err := runFunc(testCmd, manager, []string{})
-
-	if testCase.expectError {
-		require.Error(t, err)
-
-		for _, expectedMsg := range testCase.expectedErrMsg {
-			assert.Contains(t, err.Error(), expectedMsg)
-		}
-	} else {
-		require.NoError(t, err)
-		assert.Contains(t, out.String(), testCase.expectedOutput)
-	}
-}
-
 // TestNewCobraCommand tests the NewCobraCommand function.
 func TestNewCobraCommand(t *testing.T) {
 	t.Parallel()
@@ -327,78 +227,6 @@ func TestNewCobraCommand(t *testing.T) {
 	assert.NotNil(t, receivedManager)
 	assert.Equal(t, cmd, receivedCmd)
 	assert.Equal(t, testArgs, receivedArgs)
-}
-
-// TestExecuteCommandWithClusterInfo tests the ExecuteCommandWithClusterInfo function.
-func TestExecuteCommandWithClusterInfo(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	manager := testutils.CreateDefaultConfigManager()
-
-	// Test successful execution
-	infoFieldsFunc := func(cluster *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
-		return []cmdhelpers.ClusterInfoField{
-			{"Distribution", string(cluster.Spec.Distribution)},
-			{"Context", cluster.Spec.Connection.Context},
-		}
-	}
-
-	err := cmdhelpers.ExecuteCommandWithClusterInfo(
-		cmd,
-		manager,
-		"Test executed successfully",
-		infoFieldsFunc,
-	)
-
-	require.NoError(t, err)
-	assert.Contains(t, out.String(), "✔ Test executed successfully")
-	assert.Contains(t, out.String(), "► Distribution:")
-	assert.Contains(t, out.String(), "► Context:")
-}
-
-// TestLogClusterInfoWithEmptyFields tests LogClusterInfo with empty fields.
-func TestLogClusterInfoWithEmptyFields(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	// Test with empty fields slice
-	cmdhelpers.LogClusterInfo(cmd, []cmdhelpers.ClusterInfoField{})
-
-	// Should not output anything
-	assert.Empty(t, out.String())
-}
-
-// TestLogClusterInfoWithMultipleFields tests LogClusterInfo with various field combinations.
-func TestLogClusterInfoWithMultipleFields(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	fields := []cmdhelpers.ClusterInfoField{
-		{"Distribution", "K3d"},
-		{"Source Directory", "deployments"},
-		{"Context", "k3d-my-cluster"},
-		{"Config File", "k3d.yaml"},
-	}
-
-	cmdhelpers.LogClusterInfo(cmd, fields)
-
-	assert.Contains(t, out.String(), "► Distribution: K3d")
-	assert.Contains(t, out.String(), "► Source Directory: deployments")
-	assert.Contains(t, out.String(), "► Context: k3d-my-cluster")
-	assert.Contains(t, out.String(), "► Config File: k3d.yaml")
 }
 
 // TestNewCobraCommandWithMultipleFieldSelectors tests command creation with multiple field selectors.
@@ -536,7 +364,11 @@ func runValidationFailureTest(t *testing.T) {
 	// Create a config manager with validation issues
 	manager := createConfigManagerWithValidationIssues()
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	// Create timer for testing
+	tmr := timer.New()
+	tmr.Start()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 
 	// Should return error due to validation failure
 	require.Error(t, err)
@@ -560,8 +392,12 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 
 		manager := testutils.CreateDefaultConfigManager()
 
+		// Create timer for testing
+		tmr := timer.New()
+		tmr.Start()
+
 		// Should handle nil command gracefully
-		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(nil, manager)
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(nil, manager, tmr)
 
 		// This should still work as the function doesn't require command output in success path
 		require.NoError(t, err)
@@ -578,7 +414,11 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 
 		manager := testutils.CreateDefaultConfigManager()
 
-		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+		// Create timer for testing
+		tmr := timer.New()
+		tmr.Start()
+
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 
 		require.NoError(t, err)
 		assert.NotNil(t, cluster)
@@ -615,63 +455,4 @@ func createConfigManagerWithValidationIssues() *configmanager.ConfigManager {
 			DefaultValue: v1alpha1.Distribution("InvalidDistribution"), // Invalid distribution
 		},
 	)
-}
-
-// TestStandardClusterCommandRunE_ErrorPath tests the error path of StandardClusterCommandRunE.
-//
-//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
-func TestStandardClusterCommandRunE_ErrorPath(t *testing.T) {
-	// Create temporary directory and change to it to isolate from existing config files
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	// Use a config manager with validation issues to trigger error path
-	manager := createConfigManagerWithValidationIssues()
-
-	// Create the run function
-	runFunc := cmdhelpers.StandardClusterCommandRunE("This should fail")
-
-	// Execute the function - should return error
-	err := runFunc(cmd, manager, []string{})
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to handle cluster command")
-}
-
-// TestExecuteCommandWithClusterInfo_ErrorPath tests error handling in ExecuteCommandWithClusterInfo.
-//
-//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
-func TestExecuteCommandWithClusterInfo_ErrorPath(t *testing.T) {
-	// Create temporary directory and change to it to isolate from existing config files
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-
-	var out bytes.Buffer
-
-	cmd := &cobra.Command{}
-	cmd.SetOut(&out)
-
-	// Use a config manager with validation issues to trigger error path
-	manager := createConfigManagerWithValidationIssues()
-
-	infoFieldsFunc := func(_ *v1alpha1.Cluster) []cmdhelpers.ClusterInfoField {
-		return []cmdhelpers.ClusterInfoField{
-			{"Test Field", "Test Value"},
-		}
-	}
-
-	err := cmdhelpers.ExecuteCommandWithClusterInfo(
-		cmd,
-		manager,
-		"This should fail",
-		infoFieldsFunc,
-	)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load cluster configuration")
 }

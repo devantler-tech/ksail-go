@@ -7,6 +7,8 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -38,14 +40,23 @@ func HandleUpRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	_, err := cmdhelpers.HandleSimpleClusterCommand(
-		cmd,
-		manager,
-		"Cluster created and started successfully (stub implementation)",
-	)
+	// Start timing
+	tmr := timer.New()
+	tmr.Start()
+
+	// Load cluster configuration
+	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 	if err != nil {
-		return fmt.Errorf("failed to handle cluster command: %w", err)
+		return fmt.Errorf("failed to load cluster: %w", err)
 	}
+
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    "Cluster created and started successfully (stub implementation)",
+		Timer:      tmr,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
+	})
 
 	return nil
 }

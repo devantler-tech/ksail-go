@@ -278,3 +278,107 @@ golangci-lint run --fix
 # Comprehensive validation
 mega-linter-runner -f go
 ```
+
+## CLI Command Timing Feature
+
+### Overview
+
+All KSail CLI commands display timing information on successful completion to help users monitor performance of cluster operations.
+
+### Timer Package (`pkg/ui/timer`)
+
+**Location**: `pkg/ui/timer/`
+**Purpose**: Provides timing tracking functionality for CLI command execution.
+
+#### Usage Pattern (Single-Stage Command)
+
+```go
+package cmd
+
+import (
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+)
+
+func HandleCommandRunE(cmd *cobra.Command, ...) error {
+	// Create and start timer
+	tmr := timer.New()
+	tmr.Start()
+
+	// Execute command logic
+	err := doSomething()
+	if err != nil {
+		// NO timing on error paths
+		return fmt.Errorf("operation failed: %w", err)
+	}
+
+	// Get timing and format (false = single-stage)
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, false)
+
+	// Display success with timing
+	notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
+	return nil
+}
+```
+
+#### Usage Pattern (Multi-Stage Command)
+
+```go
+func HandleMultiStageCommandRunE(cmd *cobra.Command, ...) error {
+	// Create and start timer
+	tmr := timer.New()
+	tmr.Start()
+
+	// Stage 1
+	notify.Titleln(cmd.OutOrStdout(), "🚀", "Starting...")
+	err := doStage1()
+	if err != nil {
+		return fmt.Errorf("stage 1 failed: %w", err)
+	}
+
+	// Transition to stage 2
+	tmr.NewStage()
+	notify.Titleln(cmd.OutOrStdout(), "📦", "Deploying...")
+	err = doStage2()
+	if err != nil {
+		return fmt.Errorf("stage 2 failed: %w", err)
+	}
+
+	// Get timing and format (true = multi-stage)
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
+	return nil
+}
+```
+
+### Timing Display Formats
+
+- **Single-stage**: `[1.2s]`
+- **Multi-stage**: `[5m30s total|2m15s stage]`
+- **Sub-second**: `[500ms]` or `[123µs]`
+- **Long durations**: `[1h23m45s total|15m0s stage]`
+
+### Constitutional Compliance
+
+- ✅ **Package-First Design**: Timer is a standalone `pkg/ui/timer` package
+- ✅ **Test-First Development**: All contract tests written before implementation
+- ✅ **Interface-Based**: Timer interface with mockery support
+- ✅ **<1ms Overhead**: Timer adds negligible performance impact
+- ✅ **Clean Architecture**: Timer has no dependency on notify (one-way integration)
+
+### Testing Timer Integration
+
+```bash
+# Run timer package tests
+go test ./pkg/ui/timer/... -v
+
+# Run notify format timing tests
+go test ./pkg/ui/notify/... -run FormatTiming -v
+
+# Test CLI command with timing
+./ksail init --distribution Kind
+# Expected output: "✔ initialized project [1.2s]"
+```

@@ -115,6 +115,101 @@ func TestFormatValidationErrors(t *testing.T) {
 	runFormattingTest(t, tests, helpers.FormatValidationErrors)
 }
 
+// ---- Test helpers (reintroduced after refactor) ----
+
+// TestCase represents a validation formatting test case.
+type TestCase struct {
+	Name     string
+	Result   *validator.ValidationResult
+	Expected string
+}
+
+// createCommonValidationResults builds a reusable map of validation results to avoid repetition.
+func createCommonValidationResults() map[string]*validator.ValidationResult {
+	results := make(map[string]*validator.ValidationResult)
+
+	// Single error
+	singleErr := validator.NewValidationResult("test.yaml")
+	singleErr.AddError(validator.ValidationError{Field: "name", Message: "is required"})
+	results["single_error"] = singleErr
+
+	// Single error with fix
+	singleErrWithFix := validator.NewValidationResult("test.yaml")
+	singleErrWithFix.AddError(
+		validator.ValidationError{
+			Field:         "name",
+			Message:       "is required",
+			FixSuggestion: "add name field",
+		},
+	)
+	results["single_error_with_fix"] = singleErrWithFix
+
+	// Multiple errors (one with fix, one without)
+	multi := validator.NewValidationResult("test.yaml")
+	multi.AddError(
+		validator.ValidationError{
+			Field:         "name",
+			Message:       "is required",
+			FixSuggestion: "add name field",
+		},
+	)
+	multi.AddError(validator.ValidationError{Field: "version", Message: "is invalid"})
+	results["multiple_errors"] = multi
+
+	// Multiple errors with fixes
+	multiWithFixes := validator.NewValidationResult("test.yaml")
+	multiWithFixes.AddError(
+		validator.ValidationError{
+			Field:         "name",
+			Message:       "is required",
+			FixSuggestion: "add name field",
+		},
+	)
+	multiWithFixes.AddError(
+		validator.ValidationError{
+			Field:         "version",
+			Message:       "is invalid",
+			FixSuggestion: "use valid version",
+		},
+	)
+	results["multiple_errors_with_fixes"] = multiWithFixes
+
+	// No errors
+	none := validator.NewValidationResult("test.yaml")
+	results["no_errors"] = none
+
+	return results
+}
+
+// runFormattingTest executes a series of formatting test cases.
+func runFormattingTest(
+	t *testing.T,
+	tests []TestCase,
+	formatFunc func(*validator.ValidationResult) string,
+) {
+	t.Helper()
+
+	for _, testCaseEntry := range tests {
+		// loop variable copy not needed in Go 1.22+
+		t.Run(testCaseEntry.Name, func(t *testing.T) {
+			t.Parallel()
+
+			output := formatFunc(testCaseEntry.Result)
+			assert.Equal(t, testCaseEntry.Expected, output)
+		})
+	}
+}
+
+// assertValidationError asserts that the error contains all expected substrings.
+func assertValidationError(t *testing.T, err error, expectedSubstrings ...string) {
+	t.Helper()
+	require.Error(t, err)
+
+	for _, substr := range expectedSubstrings {
+		assert.Contains(t, err.Error(), substr, "expected validation error to contain substring")
+	}
+}
+
 func TestFormatValidationErrorsMultiline(t *testing.T) {
 	t.Parallel()
 
