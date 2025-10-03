@@ -142,7 +142,7 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	filePath string,
 	fileName string,
 	force bool,
-) (skip bool, existed bool, modTime time.Time, err error) {
+) (bool, bool, time.Time) {
 	info, statErr := os.Stat(filePath)
 	if statErr == nil {
 		if !force {
@@ -153,17 +153,17 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 				Writer:  s.Writer,
 			})
 
-			return true, true, info.ModTime(), nil
+			return true, true, info.ModTime()
 		}
 
-		return false, true, info.ModTime(), nil
+		return false, true, info.ModTime()
 	}
 
 	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
-		return false, false, time.Time{}, nil
+		return false, false, time.Time{}
 	}
 
-	return false, false, time.Time{}, nil
+	return false, false, time.Time{}
 }
 
 // GenerationParams groups parameters for generateWithFileHandling.
@@ -182,20 +182,17 @@ func generateWithFileHandling[T any](
 	scaffolder *Scaffolder,
 	params GenerationParams[T],
 ) error {
-	skip, existed, previousModTime, err := scaffolder.checkFileExistsAndSkip(
+	skip, existed, previousModTime := scaffolder.checkFileExistsAndSkip(
 		params.Opts.Output,
 		params.DisplayName,
 		params.Force,
 	)
-	if err != nil {
-		return err
-	}
 
 	if skip {
 		return nil
 	}
 
-	_, err = params.Gen.Generate(params.Model, params.Opts)
+	_, err := params.Gen.Generate(params.Model, params.Opts)
 	if err != nil {
 		if params.WrapErr != nil {
 			return params.WrapErr(err)
@@ -205,7 +202,8 @@ func generateWithFileHandling[T any](
 	}
 
 	if params.Force && existed {
-		if err := ensureOverwriteModTime(params.Opts.Output, previousModTime); err != nil {
+		err := ensureOverwriteModTime(params.Opts.Output, previousModTime)
+		if err != nil {
 			return fmt.Errorf("failed to update mod time for %s: %w", params.DisplayName, err)
 		}
 	}
@@ -222,7 +220,7 @@ func ensureOverwriteModTime(path string, previous time.Time) error {
 
 	info, err := os.Stat(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to stat %s: %w", path, err)
 	}
 
 	current := info.ModTime()
@@ -232,12 +230,18 @@ func ensureOverwriteModTime(path string, previous time.Time) error {
 
 	// Ensure the new mod time is strictly greater than the previous timestamp.
 	newModTime := previous.Add(time.Millisecond)
+
 	now := time.Now()
 	if now.After(newModTime) {
 		newModTime = now
 	}
 
-	return os.Chtimes(path, newModTime, newModTime)
+	err = os.Chtimes(path, newModTime, newModTime)
+	if err != nil {
+		return fmt.Errorf("failed to update mod time for %s: %w", path, err)
+	}
+
+	return nil
 }
 
 func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
