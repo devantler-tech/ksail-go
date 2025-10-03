@@ -88,7 +88,7 @@ func NewCobraCommand(
 func LoadConfigWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
-	tmr *timer.Impl,
+	tmr timer.Timer,
 ) (*v1alpha1.Cluster, error) {
 	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
@@ -111,7 +111,7 @@ func LoadConfigWithErrorHandling(
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
-	tmr *timer.Impl,
+	tmr timer.Timer,
 ) (*v1alpha1.Cluster, error) {
 	// Load configuration using common helper
 	cluster, err := LoadConfigWithErrorHandling(cmd, configManager, tmr)
