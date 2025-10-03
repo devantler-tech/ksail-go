@@ -51,10 +51,11 @@ func HandleUpRunE(
 	}
 
 	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "Cluster created and started successfully (stub implementation)",
-		Timer:   tmr,
-		Writer:  cmd.OutOrStdout(),
+		Type:       notify.SuccessType,
+		Content:    "Cluster created and started successfully (stub implementation)",
+		Timer:      tmr,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
 	})
 
 	return nil
