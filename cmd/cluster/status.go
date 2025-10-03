@@ -55,10 +55,11 @@ func HandleStatusRunE(
 	}
 
 	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "Cluster status: Running (stub implementation)",
-		Timer:   tmr,
-		Writer:  cmd.OutOrStdout(),
+		Type:       notify.SuccessType,
+		Content:    "Cluster status: Running (stub implementation)",
+		Timer:      tmr,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: false,
 	})
 
 	return nil
