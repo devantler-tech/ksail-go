@@ -178,5 +178,5 @@ Task: "Compatibility testing: validate generated files work with existing KSail 
 - Runtime template generation enables offline operation per FR-011
 - Atomic file operations prevent partial state on errors (T027)
 - All CLI patterns follow existing Cobra conventions
-- Integration tests validate complete user scenarios from quickstart.md (T029)
+- Unit and system tests validate complete user scenarios from quickstart.md (T029)
 - Enhancement approach builds on existing cmd/init.go and pkg/scaffolder/ implementation

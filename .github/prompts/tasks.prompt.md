@@ -25,7 +25,7 @@ $ARGUMENTS
    - Use `.specify/templates/tasks-template.md` as the base
    - Replace example tasks with actual tasks based on:
      * **Setup tasks**: Project init, dependencies, linting
-     * **Test tasks [P]**: One per contract, one per integration scenario
+     * **Test tasks [P]**: One per contract, one per test scenario
      * **Core tasks**: One per entity, service, CLI command, endpoint
      * **Integration tasks**: DB connections, middleware, logging
      * **Polish tasks [P]**: Unit tests, performance, docs
@@ -34,7 +34,7 @@ $ARGUMENTS
    - Each contract file → contract test task marked [P]
    - Each entity in data-model → model creation task marked [P]
    - Each endpoint → implementation task (not parallel if shared files)
-   - Each user story → integration test marked [P]
+   - Each user story → test scenario marked [P]
    - Different files = can be parallel [P]
    - Same file = sequential (no [P])
 

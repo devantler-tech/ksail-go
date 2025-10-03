@@ -72,7 +72,7 @@ Configuration validation system for KSail that validates Kubernetes cluster conf
 
 - TDD approach: Tests written → User approved → Tests fail → Then implement
 - Contract tests for each validator interface method
-- Integration tests for complete validation workflows
+- System tests for complete validation workflows
 - Snapshot testing for CLI output consistency
 - System tests across all supported configuration types
 
@@ -195,7 +195,6 @@ ios/ or android/
    - Tests must fail (no implementation yet)
 
 4. **Extract test scenarios** from user stories:
-   - Each story → integration test scenario
    - Quickstart test = story validation steps
 
 5. **Update agent file incrementally** (O(1) operation):
@@ -220,7 +219,6 @@ ios/ or android/
 - Generate tasks from Phase 1 design docs (contracts, data model, quickstart)
 - Each contract → contract test task [P]
 - Each entity → model creation task [P]
-- Each user story → integration test task
 - Implementation tasks to make tests pass
 
 **Ordering Strategy**:

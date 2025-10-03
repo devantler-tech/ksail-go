@@ -215,7 +215,7 @@ type ValidationError struct {
 - Validate generated content against schemas
 - Test rollback behavior on failures
 
-### Integration Test Requirements
+### System Test Requirements
 
 - End-to-end scaffolding in temporary directories
 - Real filesystem operations with cleanup

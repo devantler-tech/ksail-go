@@ -78,10 +78,6 @@ pre-commit install
 go test ./...
 ```
 
-#### Integration Tests
-
-*KSail currently does not define integration tests.*
-
 #### System Tests
 
 System tests are configured in a GitHub Actions workflow file located at `.github/workflows/ci.yaml`. These test e2e scenarios for various providers and configurations. You are unable to run these tests locally, but they are required in CI, so breaking changes will result in failed checks.

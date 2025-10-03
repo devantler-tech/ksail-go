@@ -30,4 +30,4 @@
 - **Rationale**: Aligns with the constitution's TDD requirement and matches existing testing patterns in `cmd`.
 - **Alternatives Considered**:
   - Relying solely on manual QA: rejected per constitution (tests are mandatory).
-  - Writing only integration tests: rejected because unit-level coverage is necessary to verify error routing and placeholder behavior.
+  - Writing only system tests: rejected because unit-level coverage is necessary to verify error routing and placeholder behavior.

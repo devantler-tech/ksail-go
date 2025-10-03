@@ -161,26 +161,26 @@ ksail init --force
 sudo chmod 755 .
 ```
 
-## Integration Testing
+## System Testing
 
-### 8. Full Workflow Integration
+### 8. Full Workflow System Test
 
 ```bash
 # Initialize fresh project
 cd .. && rm -rf custom-ksail-project
-mkdir integration-test && cd integration-test
+mkdir system-test && cd system-test
 
 # Initialize with default settings
-ksail init --name integration-test
+ksail init --name system-test
 
 # Verify files work with actual tools
-kind create cluster --config kind.yaml --name integration-test
+kind create cluster --config kind.yaml --name system-test
 
 # Verify cluster creation
-kubectl cluster-info --context kind-integration-test
+kubectl cluster-info --context kind-system-test
 
 # Cleanup
-kind delete cluster --name integration-test
+kind delete cluster --name system-test
 ```
 
 **Validation**:
