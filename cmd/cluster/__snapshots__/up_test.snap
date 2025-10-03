@@ -2,9 +2,9 @@
 ⏳ Load config...
 ► loading ksail config
 ► using default config
-✔ config loaded
+✔ config loaded [stage: *]
 🚀 Create cluster...
 ► creating cluster
-✔ cluster created
+✔ cluster created [stage: *|total: *]
 
 ---

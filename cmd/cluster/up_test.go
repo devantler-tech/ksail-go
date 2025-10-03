@@ -33,12 +33,19 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 		}
 
 		// Strip timing information from output before snapshot comparison
-		// Timing format is: [stage: Xs], [stage: Xms], [stage: Xµs], [stage: Xs|total: Ys]
+		// Replace timing values with * to preserve structure: [stage: *] or [stage: *|total: *]
 		outputStr := output.String()
 		timingRegex := regexp.MustCompile(
-			`\s*\[(stage:\s*\d+(\.\d+)?(µs|ms|s|m|h)(\s*\|\s*total:\s*\d+(\.\d+)?(µs|ms|s|m|h))?)?\]`,
+			`\[(?:stage:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h)(?:\s*\|\s*total:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h))?)\]`,
 		)
-		sanitizedOutput := timingRegex.ReplaceAllString(outputStr, "")
+		sanitizedOutput := timingRegex.ReplaceAllStringFunc(outputStr, func(match string) string {
+			// Check if it's a multi-stage timing (contains |total:)
+			if regexp.MustCompile(`\|`).MatchString(match) {
+				return "[stage: *|total: *]"
+			}
+
+			return "[stage: *]"
+		})
 
 		// Capture the output as a snapshot
 		snaps.MatchSnapshot(t, sanitizedOutput)
