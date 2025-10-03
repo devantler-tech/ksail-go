@@ -117,7 +117,7 @@ type TimingData struct {
 1. **Command Start**: CLI command creates Timer, calls Start()
 2. **Stage Transition**: Command calls NewStage(title) when operation phase changes
 3. **Stage Completion**: Command calls GetTiming() to retrieve timing data
-4. **Format Display**: Notify function formats timing into "[X total|Y stage]" or "[X]"
+4. **Format Display**: Notify function formats timing into "[stage: X|total: Y]" or "[stage: X]"
 5. **Command End**: Timer goes out of scope (no persistence needed)
 
 ## Data Volume & Scale

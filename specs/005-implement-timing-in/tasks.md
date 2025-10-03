@@ -99,7 +99,7 @@ This is a single-project Go CLI tool with the following structure:
   - Verify: Clean architecture maintained
 
 - [X] **T011** [P] Contract test IR-002 (Timing format consistency) in `pkg/ui/notify/notify_test.go`
-  - Test: FormatTiming() produces "[X total|Y stage]" for multi-stage
+  - Test: FormatTiming() produces "[stage: X|total: Y]" for multi-stage
   - Test: FormatTiming() produces "[X]" for single-stage
   - Verify: Uses Duration.String() formatting
 
@@ -164,7 +164,7 @@ This is a single-project Go CLI tool with the following structure:
 
 - [X] **T022** Implement FormatTiming() helper in `pkg/ui/notify/notify.go`
   - Add FormatTiming(total, stage time.Duration, isMultiStage bool) string
-  - Implement format logic: "[X]" or "[X total|Y stage]"
+  - Implement format logic: "[stage: X]" or "[stage: X|total: Y]"
   - Add GoDoc comments
   - Pass contract test IR-002
 
@@ -238,7 +238,7 @@ This is a single-project Go CLI tool with the following structure:
 - [X] **T034** [P] Execute Scenario 1 from `quickstart.md` (multi-stage command)
   - Run: `./ksail up`
   - Verify: Timing displayed after each stage
-  - Verify: Format matches "[X total|Y stage]"
+  - Verify: Format matches "[stage: X|total: Y]"
   - Document: Any deviations from expected output
   - VALIDATED: All cluster commands show timing correctly
 

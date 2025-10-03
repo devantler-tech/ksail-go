@@ -25,12 +25,12 @@ import (
 )
 
 // FormatTiming formats timing durations into display string
-// Returns "[X total|Y stage]" for multi-stage or "[X]" for single-stage
+// Returns "[stage: X|total: Y]" for multi-stage or "[stage: X]" for single-stage
 func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
     if !isMultiStage || total == stage {
-        return fmt.Sprintf("[%s]", total.String())
+        return fmt.Sprintf("[stage: %s]", total.String())
     }
-    return fmt.Sprintf("[%s total|%s stage]", total.String(), stage.String())
+    return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
 }
 ```
 
@@ -76,8 +76,8 @@ grep -r "cmd/ui/notify" pkg/ui/timer/
 
 **Expected Behavior**:
 
-- Multi-stage: "[5m30s total|2m15s stage]"
-- Single-stage: "[1.2s]"
+- Multi-stage: "[stage: 2m15s|total: 5m30s]"
+- Single-stage: "[stage: 1.2s]"
 - Uses Go's Duration.String() method
 
 **Test Scenarios**:
@@ -85,15 +85,15 @@ grep -r "cmd/ui/notify" pkg/ui/timer/
 ```go
 // Multi-stage
 timing := FormatTiming(5*time.Minute + 30*time.Second, 2*time.Minute + 15*time.Second, true)
-// Expect: "[5m30s total|2m15s stage]"
+// Expect: "[stage: 2m15s|total: 5m30s]"
 
 // Single-stage
 timing := FormatTiming(1200*time.Millisecond, 1200*time.Millisecond, false)
-// Expect: "[1.2s]"
+// Expect: "[stage: 1.2s]"
 
 // Multi-stage with equal durations (treated as single-stage)
 timing := FormatTiming(1*time.Second, 1*time.Second, true)
-// Expect: "[1s]"
+// Expect: "[stage: 1s]"
 ```
 
 ### IR-003: Optional Timing Display

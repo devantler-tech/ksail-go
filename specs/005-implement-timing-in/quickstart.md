@@ -21,16 +21,16 @@ This quickstart guide validates that the CLI command timing feature is working c
 ./ksail cluster up
 
 # Expected output (timing values will vary):
-# Creating cluster... [2.5s total|2.5s stage]
-# Installing CNI... [4.2s total|1.7s stage]
-# Deploying controllers... [8.5s total|4.3s stage]
-# Cluster ready [10.1s total|1.6s stage]
+# Creating cluster... [stage: 2.5s|total: 2.5s]
+# Installing CNI... [stage: 1.7s|total: 4.2s]
+# Deploying controllers... [stage: 4.3s|total: 8.5s]
+# Cluster ready [stage: 1.6s|total: 10.1s]
 ```
 
 **Success Criteria**:
 
 - ✅ Timing displayed after each stage completes
-- ✅ Format matches `[X total|Y stage]` pattern
+- ✅ Format matches `[stage: X|total: Y]` pattern
 - ✅ Total time increases progressively
 - ✅ Stage time resets for each new stage
 - ✅ Final success message includes timing
@@ -66,7 +66,7 @@ cd /tmp/ksail-test
 **Success Criteria**:
 
 - ✅ Timing displayed in simplified format
-- ✅ Format matches `[X]` pattern (no "total|stage" split)
+- ✅ Format matches `[stage: X]` pattern (no "total" split for single-stage)
 - ✅ Success message includes timing
 - ✅ Sub-second precision visible (e.g., "1.2s", "500ms")
 
@@ -129,9 +129,9 @@ echo $?  # Should be non-zero (e.g., 1)
 ./ksail cluster down
 
 # Expected output (timing will vary):
-# Stopping cluster... [1.5s total|1.5s stage]
-# Deleting resources... [3.2s total|1.7s stage]
-# Cluster deleted [5.1s total|1.9s stage]
+# Stopping cluster... [stage: 1.5s|total: 1.5s]
+# Deleting resources... [stage: 1.7s|total: 3.2s]
+# Cluster deleted [stage: 1.9s|total: 5.1s]
 ```
 
 **Success Criteria**:

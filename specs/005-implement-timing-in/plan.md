@@ -36,7 +36,7 @@
 
 **Primary Requirement**: Add timing visibility to all KSail CLI commands, displaying total elapsed time and per-stage duration to help users monitor performance of cluster operations.
 
-**Technical Approach**: Create a new `pkg/ui/timer` package that provides timing tracking functionality. The timer will integrate with the existing `cmd/ui/notify` system by providing structured timing data (total duration, stage duration) that notify functions format and display. Timing will be shown progressively after each stage completes in the format `[X total|Y stage]` for multi-stage commands and `[X]` for single-stage commands, using Go's Duration.String() method for consistent formatting.
+**Technical Approach**: Create a new `pkg/ui/timer` package that provides timing tracking functionality. The timer will integrate with the existing `cmd/ui/notify` system by providing structured timing data (total duration, stage duration) that notify functions format and display. Timing will be shown progressively after each stage completes in the format `[stage: X|total: Y]` for multi-stage commands and `[stage: X]` for single-stage commands, using Go's Duration.String() method for consistent formatting.
 
 ## Technical Context
 

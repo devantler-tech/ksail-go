@@ -3,7 +3,7 @@
 **Feature Branch**: `005-implement-timing-in`
 **Created**: 2025-10-01
 **Status**: Draft
-**Input**: User description: "implement timing in the cli via a new package pkg/ui/timer. The timer should be used to estimate elapsed time of each command and its stages. A stage is defined by a new title. The timing must be printed in the following format [x total|x stage] where x is the time in go duration format. The timing must be printed in success messages. This is important to allow users to monitor how long commands and their individual stages take to run."
+**Input**: User description: "implement timing in the cli via a new package pkg/ui/timer. The timer should be used to estimate elapsed time of each command and its stages. A stage is defined by a new title. The timing must be printed in the following format [stage: x|total: x] where x is the time in go duration format. The timing must be printed in success messages. This is important to allow users to monitor how long commands and their individual stages take to run."
 
 ## Clarifications
 
@@ -23,11 +23,11 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 ### Acceptance Scenarios
 
-1. **Given** a user runs `ksail cluster up` (multi-stage command), **When** the command completes successfully, **Then** the success message displays timing information in the format `[5m30s total|2m15s stage]` showing both total elapsed time and the time for the final stage
+1. **Given** a user runs `ksail cluster up` (multi-stage command), **When** the command completes successfully, **Then** the success message displays timing information in the format `[stage: 2m15s|total: 5m30s]` showing both the final stage duration and total elapsed time
 
-2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[1.2s]` with appropriate precision for sub-second operations
+2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[stage: 1.2s]` with appropriate precision for sub-second operations
 
-3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** timing information is displayed immediately showing `[X total|Y stage]` format, allowing users to monitor progress in real-time
+3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** timing information is displayed immediately showing `[stage: X|total: Y]` format, allowing users to monitor progress in real-time
 
 4. **Given** a user runs any KSail command, **When** viewing the output, **Then** stage boundaries are clearly defined by title changes in the UI output
 
@@ -36,7 +36,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 ### Edge Cases
 
 - What happens when a command completes in less than 1 millisecond? (timing should handle sub-millisecond precision)
-- What happens when a stage has no explicit title change? (should default to tracking the command as a single stage and display timing in simplified `[X]` format)
+- What happens when a stage has no explicit title change? (should default to tracking the command as a single stage and display timing in simplified `[stage: X]` format)
 - What happens when a command fails mid-execution? (timing is tracked internally but NOT displayed to users; only successful completions show timing)
 - How does timing behave with parallel operations within a command? (timing should track wall-clock time, not cumulative CPU time)
 
@@ -48,7 +48,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-002**: System MUST track elapsed time for individual stages within a command, where a stage is defined by a title change in the output
 
-- **FR-003**: System MUST display timing information in format `[X total|Y stage]` for multi-stage commands, and simplified format `[X]` for single-stage commands (where X is total elapsed time and Y is the last stage's elapsed time)
+- **FR-003**: System MUST display timing information in format `[stage: X|total: Y]` for multi-stage commands, and simplified format `[stage: X]` for single-stage commands (where X is the last stage's elapsed time and Y is total elapsed time)
 
 - **FR-004**: System MUST format timing durations using Go's standard Duration.String() method, which automatically produces appropriate units (e.g., "1m30s", "500ms", "2.5s")
 
@@ -74,7 +74,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **FR-015**: Timer MUST provide timing data as structured information (total duration, stage duration) that existing notification functions can format and display
 
-- **FR-016**: System MUST use simplified timing format `[X]` for single-stage commands to avoid redundant information (where total and stage time would be identical)
+- **FR-016**: System MUST use simplified timing format `[stage: X]` for single-stage commands to avoid redundant information (where total and stage time would be identical)
 
 ### Key Entities *(include if feature involves data)*
 
@@ -82,7 +82,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 - **Stage**: Represents a logical phase within a command execution, defined by a title. This is a conceptual entity tracked as state within the Timer (via `currentStage` field and `stageStartTime`), not a separate data structure.
 
-- **Timing Metadata**: The formatted string containing total and stage timing information in the format `[X total|Y stage]`. Note: In technical implementation, the underlying data structure is called `TimingData` (Go struct), while this specification uses "Timing Metadata" as the user-facing concept.
+- **Timing Metadata**: The formatted string containing stage and total timing information in the format `[stage: X|total: Y]`. Note: In technical implementation, the underlying data structure is called `TimingData` (Go struct), while this specification uses "Timing Metadata" as the user-facing concept.
 
 ## Review & Acceptance Checklist
 
