@@ -1,12 +1,14 @@
 package cluster
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
@@ -40,19 +42,59 @@ func HandleUpRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	return handleUpRunEWithProvisioner(cmd, manager, nil)
+}
+
+// handleUpRunEWithProvisioner is the internal implementation that accepts an optional provisioner for testing.
+func handleUpRunEWithProvisioner(
+	cmd *cobra.Command,
+	manager *configmanager.ConfigManager,
+	provisioner provisionerFactory,
+) error {
 	// Start timing
 	tmr := timer.New()
 	tmr.Start()
 
 	// Load cluster configuration
-	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster: %w", err)
 	}
 
+	// Transition to provisioning stage
+	tmr.NewStage()
+
+	// Show provisioning title
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Provisioning cluster...",
+		Emoji:   "🚀",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	// Create provisioner based on distribution
+	var clusterProvisioner clusterprovisioner.ClusterProvisioner
+
+	if provisioner != nil {
+		clusterProvisioner, err = provisioner(cmd.Context(), cluster)
+	} else {
+		clusterProvisioner, err = cmdhelpers.CreateClusterProvisioner(cmd.Context(), cluster)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to create provisioner: %w", err)
+	}
+
+	// Provision the cluster
+	err = clusterProvisioner.Create(cmd.Context(), "")
+	if err != nil {
+		return fmt.Errorf("failed to provision cluster: %w", err)
+	}
+
+	// Display success with timing
 	notify.WriteMessage(notify.Message{
 		Type:       notify.SuccessType,
-		Content:    "Cluster created and started successfully (stub implementation)",
+		Content:    "provisioned cluster successfully",
 		Timer:      tmr,
 		Writer:     cmd.OutOrStdout(),
 		MultiStage: true,
@@ -60,3 +102,6 @@ func HandleUpRunE(
 
 	return nil
 }
+
+// provisionerFactory is a function type for creating cluster provisioners (for testing).
+type provisionerFactory func(context.Context, *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, error)
