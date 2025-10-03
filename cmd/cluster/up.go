@@ -45,7 +45,7 @@ func HandleUpRunE(
 	tmr.Start()
 
 	// Load cluster configuration
-	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster: %w", err)
 	}

@@ -52,7 +52,7 @@ func HandleListRunE(
 	_ = configManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
 	// Load cluster configuration without validation (list doesn't need validation)
-	cluster, err := cmdhelpers.LoadConfigWithErrorHandling(cmd, configManager)
+	cluster, err := cmdhelpers.LoadConfigWithErrorHandling(cmd, configManager, tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}

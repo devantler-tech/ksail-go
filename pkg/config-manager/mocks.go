@@ -5,6 +5,7 @@
 package configmanager
 
 import (
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,8 +37,8 @@ func (_m *MockConfigManager[T]) EXPECT() *MockConfigManager_Expecter[T] {
 }
 
 // LoadConfig provides a mock function for the type MockConfigManager
-func (_mock *MockConfigManager[T]) LoadConfig() (*T, error) {
-	ret := _mock.Called()
+func (_mock *MockConfigManager[T]) LoadConfig(tmr timer.Timer) (*T, error) {
+	ret := _mock.Called(tmr)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadConfig")
@@ -45,18 +46,18 @@ func (_mock *MockConfigManager[T]) LoadConfig() (*T, error) {
 
 	var r0 *T
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() (*T, error)); ok {
-		return returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(timer.Timer) (*T, error)); ok {
+		return returnFunc(tmr)
 	}
-	if returnFunc, ok := ret.Get(0).(func() *T); ok {
-		r0 = returnFunc()
+	if returnFunc, ok := ret.Get(0).(func(timer.Timer) *T); ok {
+		r0 = returnFunc(tmr)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*T)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
+	if returnFunc, ok := ret.Get(1).(func(timer.Timer) error); ok {
+		r1 = returnFunc(tmr)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -69,13 +70,20 @@ type MockConfigManager_LoadConfig_Call[T any] struct {
 }
 
 // LoadConfig is a helper method to define mock.On call
-func (_e *MockConfigManager_Expecter[T]) LoadConfig() *MockConfigManager_LoadConfig_Call[T] {
-	return &MockConfigManager_LoadConfig_Call[T]{Call: _e.mock.On("LoadConfig")}
+//   - tmr timer.Timer
+func (_e *MockConfigManager_Expecter[T]) LoadConfig(tmr interface{}) *MockConfigManager_LoadConfig_Call[T] {
+	return &MockConfigManager_LoadConfig_Call[T]{Call: _e.mock.On("LoadConfig", tmr)}
 }
 
-func (_c *MockConfigManager_LoadConfig_Call[T]) Run(run func()) *MockConfigManager_LoadConfig_Call[T] {
+func (_c *MockConfigManager_LoadConfig_Call[T]) Run(run func(tmr timer.Timer)) *MockConfigManager_LoadConfig_Call[T] {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 timer.Timer
+		if args[0] != nil {
+			arg0 = args[0].(timer.Timer)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
@@ -85,7 +93,7 @@ func (_c *MockConfigManager_LoadConfig_Call[T]) Return(v *T, err error) *MockCon
 	return _c
 }
 
-func (_c *MockConfigManager_LoadConfig_Call[T]) RunAndReturn(run func() (*T, error)) *MockConfigManager_LoadConfig_Call[T] {
+func (_c *MockConfigManager_LoadConfig_Call[T]) RunAndReturn(run func(tmr timer.Timer) (*T, error)) *MockConfigManager_LoadConfig_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

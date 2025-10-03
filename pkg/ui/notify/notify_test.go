@@ -245,21 +245,23 @@ func testMultiStageFormat(t *testing.T) {
 
 	total := 5*time.Minute + 30*time.Second
 	stage := 2*time.Minute + 15*time.Second
-	assertFormattedTiming(t, total, stage, true, "[5m30s total|2m15s stage]")
+	assertFormattedTiming(t, total, stage, true, "[stage: 2m15s|total: 5m30s]")
 }
 
 func testSingleStageFormat(t *testing.T) {
 	t.Helper()
 
 	duration := 1200 * time.Millisecond
-	assertFormattedTiming(t, duration, duration, false, "[1.2s]")
+
+	assertFormattedTiming(t, duration, duration, false, "[stage: 1.2s]")
 }
 
 func testEqualDurationsAsSingleStage(t *testing.T) {
 	t.Helper()
 
 	duration := 1 * time.Second
-	assertFormattedTiming(t, duration, duration, true, "[1s]")
+
+	assertFormattedTiming(t, duration, duration, true, "[stage: 1s]")
 }
 
 func testSubSecondPrecision(t *testing.T) {
@@ -267,14 +269,15 @@ func testSubSecondPrecision(t *testing.T) {
 
 	total := 500 * time.Millisecond
 	stage := 200 * time.Millisecond
-	assertFormattedTiming(t, total, stage, true, "[500ms total|200ms stage]")
+
+	assertFormattedTiming(t, total, stage, true, "[stage: 200ms|total: 500ms]")
 }
 
 func testMicrosecondPrecision(t *testing.T) {
 	t.Helper()
 
 	duration := 123 * time.Microsecond
-	assertFormattedTiming(t, duration, duration, false, "[123µs]")
+	assertFormattedTiming(t, duration, duration, false, "[stage: 123µs]")
 }
 
 func testLongDurationFormat(t *testing.T) {
@@ -282,7 +285,7 @@ func testLongDurationFormat(t *testing.T) {
 
 	total := 1*time.Hour + 23*time.Minute + 45*time.Second
 	stage := 15 * time.Minute
-	assertFormattedTiming(t, total, stage, true, "[1h23m45s total|15m0s stage]")
+	assertFormattedTiming(t, total, stage, true, "[stage: 15m0s|total: 1h23m45s]")
 }
 
 func assertFormattedTiming(

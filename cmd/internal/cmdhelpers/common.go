@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 )
@@ -83,11 +84,13 @@ func NewCobraCommand(
 // This helper eliminates duplication of the loading + error handling pattern.
 // Use this when you need to load configuration without validation.
 // For loading with validation, use LoadClusterWithErrorHandling instead.
+// If timer is provided, timing information will be included in the success notification.
 func LoadConfigWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
+	tmr *timer.Impl,
 ) (*v1alpha1.Cluster, error) {
-	cluster, err := configManager.LoadConfig()
+	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.ErrorType,
@@ -104,12 +107,14 @@ func LoadConfigWithErrorHandling(
 
 // LoadClusterWithErrorHandling loads and validates cluster configuration.
 // Exported for testing purposes.
+// If timer is provided, timing information will be included in the success notification.
 func LoadClusterWithErrorHandling(
 	cmd *cobra.Command,
 	configManager *configmanager.ConfigManager,
+	tmr *timer.Impl,
 ) (*v1alpha1.Cluster, error) {
 	// Load configuration using common helper
-	cluster, err := LoadConfigWithErrorHandling(cmd, configManager)
+	cluster, err := LoadConfigWithErrorHandling(cmd, configManager, tmr)
 	if err != nil {
 		return nil, err
 	}

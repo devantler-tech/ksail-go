@@ -9,6 +9,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/viper"
 )
 
@@ -48,7 +49,8 @@ func NewConfigManager(
 // LoadConfig loads the configuration from files and environment variables.
 // Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
-func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
+// If timer is provided, timing information will be included in the success notification.
+func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
 	m.notifyLoadingStart()
 
 	if m.configLoaded {
@@ -71,7 +73,7 @@ func (m *ConfigManager) LoadConfig() (*v1alpha1.Cluster, error) {
 		return nil, err
 	}
 
-	m.notifyLoadingComplete()
+	m.notifyLoadingComplete(tmr)
 	m.configLoaded = true
 
 	return m.Config, nil
@@ -152,10 +154,11 @@ func (m *ConfigManager) notifyConfigFound() {
 	})
 }
 
-func (m *ConfigManager) notifyLoadingComplete() {
+func (m *ConfigManager) notifyLoadingComplete(tmr timer.Timer) {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "config loaded",
+		Timer:   tmr,
 		Writer:  m.Writer,
 	})
 }

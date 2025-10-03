@@ -141,8 +141,8 @@ func assertDurationInRange(t *testing.T, duration time.Duration, minMs, maxMs in
 	t.Helper()
 
 	minDur := time.Duration(minMs) * time.Millisecond
-
 	maxDur := time.Duration(maxMs) * time.Millisecond
+
 	if duration < minDur || duration > maxDur {
 		t.Errorf("Expected %s, got %v", desc, duration)
 	}

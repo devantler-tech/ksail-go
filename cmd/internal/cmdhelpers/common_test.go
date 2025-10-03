@@ -9,6 +9,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,7 +81,11 @@ func runLoadClusterTest(t *testing.T, testCase struct {
 	testCmd, out := testCase.setupCommand()
 	manager := testCase.setupManager(t)
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager)
+	// Create timer for testing
+	tmr := timer.New()
+	tmr.Start()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(testCmd, manager, tmr)
 
 	if testCase.expectError {
 		require.Error(t, err)
@@ -359,7 +364,11 @@ func runValidationFailureTest(t *testing.T) {
 	// Create a config manager with validation issues
 	manager := createConfigManagerWithValidationIssues()
 
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+	// Create timer for testing
+	tmr := timer.New()
+	tmr.Start()
+
+	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 
 	// Should return error due to validation failure
 	require.Error(t, err)
@@ -383,8 +392,12 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 
 		manager := testutils.CreateDefaultConfigManager()
 
+		// Create timer for testing
+		tmr := timer.New()
+		tmr.Start()
+
 		// Should handle nil command gracefully
-		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(nil, manager)
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(nil, manager, tmr)
 
 		// This should still work as the function doesn't require command output in success path
 		require.NoError(t, err)
@@ -401,7 +414,11 @@ func TestLoadClusterWithErrorHandling_EdgeCases(t *testing.T) {
 
 		manager := testutils.CreateDefaultConfigManager()
 
-		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager)
+		// Create timer for testing
+		tmr := timer.New()
+		tmr.Start()
+
+		cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
 
 		require.NoError(t, err)
 		assert.NotNil(t, cluster)

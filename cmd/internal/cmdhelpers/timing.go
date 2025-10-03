@@ -21,7 +21,7 @@ func ExecuteTimedClusterCommand(
 	tmr.Start()
 
 	// Load cluster and execute
-	_, err := LoadClusterWithErrorHandling(cmd, manager)
+	_, err := LoadClusterWithErrorHandling(cmd, manager, tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}

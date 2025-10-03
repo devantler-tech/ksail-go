@@ -57,7 +57,7 @@ func HandleInitRunE(
 	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	_ = configManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
-	cluster, err := configManager.LoadConfig()
+	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster config: %w", err)
 	}
@@ -82,6 +82,10 @@ func HandleInitRunE(
 	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
 
 	cmd.Println()
+
+	// Mark new stage for scaffolding
+	tmr.NewStage("Initializing")
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: "Initializing project...",

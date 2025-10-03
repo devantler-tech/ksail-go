@@ -95,10 +95,10 @@ func TestInitCmdExecute(t *testing.T) {
 	}
 
 	// Strip timing information from output before snapshot comparison
-	// Timing format is: [Xs], [Xms], [Xµs], [Xs total|Xs stage]
+	// Timing format is: [stage: Xs], [stage: Xms], [stage: Xµs], [stage: Xs|total: Ys]
 	output := out.String()
 	timingRegex := regexp.MustCompile(
-		`\s*\[\d+(\.\d+)?(µs|ms|s|m|h)(\s+total\|\d+(\.\d+)?(µs|ms|s|m|h)\s+stage)?\]`,
+		`\s*\[(stage:\s*\d+(\.\d+)?(µs|ms|s|m|h)(\s*\|\s*total:\s*\d+(\.\d+)?(µs|ms|s|m|h))?)?\]`,
 	)
 	sanitizedOutput := timingRegex.ReplaceAllString(output, "")
 
