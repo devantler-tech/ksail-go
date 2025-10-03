@@ -25,7 +25,7 @@ As a KSail user, when I run any CLI command (e.g., `ksail cluster up`, `ksail in
 
 1. **Given** a user runs `ksail cluster up` (multi-stage command), **When** the command completes successfully, **Then** the success message displays timing information in the format `[stage: 2m15s|total: 5m30s]` showing both the final stage duration and total elapsed time
 
-2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[stage: 1.2s]` (note: implemented format includes the `stage:` label even for single-stage commands) with appropriate precision for sub-second operations
+2. **Given** a user runs `ksail init --distribution Kind` (single-stage command), **When** the command completes successfully, **Then** the success message displays timing in simplified format `[stage: 1.2s]` with appropriate precision for sub-second operations
 
 3. **Given** a command has multiple stages (e.g., "Initializing cluster", "Installing CNI", "Deploying workloads"), **When** each stage completes, **Then** timing information is displayed immediately showing `[stage: X|total: Y]` format, allowing users to monitor progress in real-time
 
