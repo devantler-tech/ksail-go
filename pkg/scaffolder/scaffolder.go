@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
@@ -141,8 +142,8 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 	filePath string,
 	fileName string,
 	force bool,
-) (bool, bool) {
-	_, statErr := os.Stat(filePath)
+) (skip bool, existed bool, modTime time.Time, err error) {
+	info, statErr := os.Stat(filePath)
 	if statErr == nil {
 		if !force {
 			notify.WriteMessage(notify.Message{
@@ -152,17 +153,17 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 				Writer:  s.Writer,
 			})
 
-			return true, true
+			return true, true, info.ModTime(), nil
 		}
 
-		return false, true
+		return false, true, info.ModTime(), nil
 	}
 
-	if !errors.Is(statErr, os.ErrNotExist) && statErr != nil {
-		return false, false
+	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
+		return false, false, time.Time{}, nil
 	}
 
-	return false, false
+	return false, false, time.Time{}, nil
 }
 
 // GenerationParams groups parameters for generateWithFileHandling.
@@ -181,17 +182,20 @@ func generateWithFileHandling[T any](
 	scaffolder *Scaffolder,
 	params GenerationParams[T],
 ) error {
-	skip, existed := scaffolder.checkFileExistsAndSkip(
+	skip, existed, previousModTime, err := scaffolder.checkFileExistsAndSkip(
 		params.Opts.Output,
 		params.DisplayName,
 		params.Force,
 	)
+	if err != nil {
+		return err
+	}
 
 	if skip {
 		return nil
 	}
 
-	_, err := params.Gen.Generate(params.Model, params.Opts)
+	_, err = params.Gen.Generate(params.Model, params.Opts)
 	if err != nil {
 		if params.WrapErr != nil {
 			return params.WrapErr(err)
@@ -200,9 +204,40 @@ func generateWithFileHandling[T any](
 		return fmt.Errorf("failed to generate %s: %w", params.DisplayName, err)
 	}
 
+	if params.Force && existed {
+		if err := ensureOverwriteModTime(params.Opts.Output, previousModTime); err != nil {
+			return fmt.Errorf("failed to update mod time for %s: %w", params.DisplayName, err)
+		}
+	}
+
 	scaffolder.notifyFileAction(params.DisplayName, existed)
 
 	return nil
+}
+
+func ensureOverwriteModTime(path string, previous time.Time) error {
+	if path == "" {
+		return nil
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	current := info.ModTime()
+	if previous.IsZero() || current.After(previous) {
+		return nil
+	}
+
+	// Ensure the new mod time is strictly greater than the previous timestamp.
+	newModTime := previous.Add(time.Millisecond)
+	now := time.Now()
+	if now.After(newModTime) {
+		newModTime = now
+	}
+
+	return os.Chtimes(path, newModTime, newModTime)
 }
 
 func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
