@@ -13,10 +13,9 @@ type Timer interface {
 	// to reset the timer.
 	Start()
 
-	// NewStage marks a stage transition with the given title.
+	// NewStage marks a stage transition.
 	// Resets the stage timer while preserving total elapsed time.
-	// The title is used for display purposes.
-	NewStage(title string)
+	NewStage()
 
 	// GetTiming returns the current elapsed durations.
 	// Returns (total, stage) where:
@@ -34,7 +33,6 @@ type Timer interface {
 type Impl struct {
 	startTime      time.Time
 	stageStartTime time.Time
-	currentStage   string
 }
 
 // New creates a new Timer instance.
@@ -50,15 +48,12 @@ func (t *Impl) Start() {
 	now := time.Now()
 	t.startTime = now
 	t.stageStartTime = now
-	t.currentStage = ""
 }
 
-// NewStage marks a transition to a new stage with the given title.
+// NewStage marks a transition to a new stage.
 // Resets the stage timer while preserving total elapsed time.
-// The title is stored but not currently used in timing calculations.
-func (t *Impl) NewStage(title string) {
+func (t *Impl) NewStage() {
 	t.stageStartTime = time.Now()
-	t.currentStage = title
 }
 
 // GetTiming returns the current elapsed durations.

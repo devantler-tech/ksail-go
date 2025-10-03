@@ -108,7 +108,7 @@ func testNewStageResetPreservesTotal(t *testing.T) {
 	assertDurationInRange(t, stage1, 90, 150, "stage ≈ 100ms")
 
 	// Transition to new stage
-	tmr.NewStage("Stage 2")
+	tmr.NewStage()
 	time.Sleep(50 * time.Millisecond)
 
 	total2, stage2 := tmr.GetTiming()
@@ -127,9 +127,9 @@ func testMultipleNewStageCalls(t *testing.T) {
 	tmr.Start()
 
 	time.Sleep(30 * time.Millisecond)
-	tmr.NewStage("Stage 2")
+	tmr.NewStage()
 	time.Sleep(30 * time.Millisecond)
-	tmr.NewStage("Stage 3")
+	tmr.NewStage()
 	time.Sleep(30 * time.Millisecond)
 
 	total, stage := tmr.GetTiming()

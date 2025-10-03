@@ -24,19 +24,19 @@ For commands with a single operation phase:
 package main
 
 import (
-	"fmt"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+ "fmt"
+ "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
 func main() {
-	t := timer.New()
-	t.Start()
+ t := timer.New()
+ t.Start()
 
-	// Perform your operation
-	doSomething()
+ // Perform your operation
+ doSomething()
 
-	total, _ := t.GetTiming()
-	fmt.Printf("Operation completed [%s]\n", total)
+ total, _ := t.GetTiming()
+ fmt.Printf("Operation completed [%s]\n", total)
 }
 ```
 
@@ -48,27 +48,27 @@ For commands with multiple operation phases:
 package main
 
 import (
-	"fmt"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+ "fmt"
+ "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
 func main() {
-	t := timer.New()
-	t.Start()
+ t := timer.New()
+ t.Start()
 
-	// Stage 1
-	doStage1()
+ // Stage 1
+ doStage1()
 
-	t.NewStage("Stage 2")
-	// Stage 2
-	doStage2()
+ t.NewStage()
+ // Stage 2
+ doStage2()
 
-	t.NewStage("Stage 3")
-	// Stage 3
-	doStage3()
+ t.NewStage()
+ // Stage 3
+ doStage3()
 
-	total, stage := t.GetTiming()
-	fmt.Printf("Operation completed [%s total|%s stage]\n", total, stage)
+ total, stage := t.GetTiming()
+ fmt.Printf("Operation completed [%s total|%s stage]\n", total, stage)
 }
 ```
 
@@ -80,26 +80,26 @@ The timer integrates seamlessly with the `pkg/ui/notify` package:
 package main
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+ "github.com/devantler-tech/ksail-go/pkg/ui/notify"
+ "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
 func main() {
-	t := timer.New()
-	t.Start()
+ t := timer.New()
+ t.Start()
 
-	// Perform operation
-	err := performOperation()
-	if err != nil {
-		// No timing on errors
-		notify.Error("Operation failed: %v", err)
-		return
-	}
+ // Perform operation
+ err := performOperation()
+ if err != nil {
+  // No timing on errors
+  notify.Error("Operation failed: %v", err)
+  return
+ }
 
-	// Display timing on success
-	total, stage := t.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true) // multi-stage
-	notify.Success("Operation completed " + timingStr)
+ // Display timing on success
+ total, stage := t.GetTiming()
+ timingStr := notify.FormatTiming(total, stage, true) // multi-stage
+ notify.Success("Operation completed " + timingStr)
 }
 ```
 
@@ -109,10 +109,10 @@ func main() {
 
 ```go
 type Timer interface {
-	Start()
-	NewStage(title string)
-	GetTiming() (total, stage time.Duration)
-	Stop()
+ Start()
+ NewStage(title string)
+ GetTiming() (total, stage time.Duration)
+ Stop()
 }
 ```
 
@@ -127,6 +127,7 @@ Marks a stage transition. Resets the stage timer while preserving total elapsed 
 #### GetTiming() (total, stage time.Duration)
 
 Returns current elapsed durations:
+
 - `total`: Time elapsed since Start()
 - `stage`: Time elapsed since last NewStage() or Start()
 
@@ -166,6 +167,7 @@ The timer mechanism adds <1ms overhead to command execution. Internal state mana
 ## Contributing
 
 Follow the KSail Constitution principles:
+
 - Package-first design
 - Test-first development (TDD)
 - Interface-based design

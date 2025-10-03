@@ -135,7 +135,7 @@ func RunCommand() error {
     // ... do work ...
 
     // 3. Transition to new stages
-    timer.NewStage("Deploying")
+    timer.NewStage()
     notify.Title("Deploying")
     // ... do work ...
 

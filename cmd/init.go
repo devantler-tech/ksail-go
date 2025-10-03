@@ -84,7 +84,7 @@ func HandleInitRunE(
 	cmd.Println()
 
 	// Mark new stage for scaffolding
-	tmr.NewStage("Initializing")
+	tmr.NewStage()
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,

@@ -91,8 +91,8 @@ func (_c *MockTimer_GetTiming_Call) RunAndReturn(run func() (time.Duration, time
 }
 
 // NewStage provides a mock function for the type MockTimer
-func (_mock *MockTimer) NewStage(title string) {
-	_mock.Called(title)
+func (_mock *MockTimer) NewStage() {
+	_mock.Called()
 	return
 }
 
@@ -102,20 +102,13 @@ type MockTimer_NewStage_Call struct {
 }
 
 // NewStage is a helper method to define mock.On call
-//   - title string
-func (_e *MockTimer_Expecter) NewStage(title interface{}) *MockTimer_NewStage_Call {
-	return &MockTimer_NewStage_Call{Call: _e.mock.On("NewStage", title)}
+func (_e *MockTimer_Expecter) NewStage() *MockTimer_NewStage_Call {
+	return &MockTimer_NewStage_Call{Call: _e.mock.On("NewStage")}
 }
 
-func (_c *MockTimer_NewStage_Call) Run(run func(title string)) *MockTimer_NewStage_Call {
+func (_c *MockTimer_NewStage_Call) Run(run func()) *MockTimer_NewStage_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
+		run()
 	})
 	return _c
 }
@@ -125,7 +118,7 @@ func (_c *MockTimer_NewStage_Call) Return() *MockTimer_NewStage_Call {
 	return _c
 }
 
-func (_c *MockTimer_NewStage_Call) RunAndReturn(run func(title string)) *MockTimer_NewStage_Call {
+func (_c *MockTimer_NewStage_Call) RunAndReturn(run func()) *MockTimer_NewStage_Call {
 	_c.Run(run)
 	return _c
 }

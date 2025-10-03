@@ -17,7 +17,7 @@
 //	timer := timer.New()
 //	timer.Start()
 //	// ... stage 1 ...
-//	timer.NewStage("Stage 2")
+//	timer.NewStage()
 //	// ... stage 2 ...
 //	total, stage := timer.GetTiming()
 //	fmt.Printf("Operation completed [%s total|%s stage]\n", total, stage)

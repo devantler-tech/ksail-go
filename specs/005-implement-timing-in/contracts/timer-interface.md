@@ -86,7 +86,7 @@ total, stage := timer.GetTiming() // Before Start()
 timer := NewTimer()
 timer.Start()
 time.Sleep(100 * time.Millisecond)
-timer.NewStage("Stage 2")
+timer.NewStage()
 time.Sleep(50 * time.Millisecond)
 total, stage := timer.GetTiming()
 // Expect: total ≈ 150ms, stage ≈ 50ms

@@ -338,7 +338,7 @@ func HandleMultiStageCommandRunE(cmd *cobra.Command, ...) error {
 	}
 
 	// Transition to stage 2
-	tmr.NewStage("Deploying")
+	tmr.NewStage()
 	notify.Titleln(cmd.OutOrStdout(), "📦", "Deploying...")
 	err = doStage2()
 	if err != nil {
