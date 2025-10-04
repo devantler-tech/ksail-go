@@ -1,13 +1,11 @@
 package cluster
 
 import (
-	"fmt"
 	"time"
 
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,7 +18,7 @@ func NewStatusCmd() *cobra.Command {
 		"status",
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
-		HandleStatusRunE,
+		helpers.HandleConfigLoadRunE,
 		configmanager.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
@@ -33,25 +31,4 @@ func NewStatusCmd() *cobra.Command {
 			DefaultValue: metav1.Duration{Duration: defaultStatusTimeout},
 		},
 	)
-}
-
-// HandleStatusRunE handles the status command.
-// Exported for testing purposes.
-func HandleStatusRunE(
-	_ *cobra.Command,
-	manager *configmanager.ConfigManager,
-	_ []string,
-) error {
-	// Start timing
-	tmr := timer.New()
-	tmr.Start()
-
-	// Load and validate cluster configuration
-	// Note: cluster will be used when implementing actual status checking
-	_, err := manager.LoadConfig(tmr)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	return nil
 }

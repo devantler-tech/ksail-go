@@ -46,33 +46,3 @@ func TestNewStatusCmdIncludesTimeoutSelector(t *testing.T) {
 		t.Fatalf("expected timeout flag to be registered, got error %v", err)
 	}
 }
-
-// TestHandleStatusRunE_Success validates the happy path behavior.
-func TestHandleStatusRunE_Success(t *testing.T) {
-	t.Parallel()
-
-	cmd, manager, output := testutils.NewCommandAndManager(t, "status")
-	testutils.SeedValidClusterConfig(manager)
-	manager.Viper.Set("spec.connection.context", "kind-kind")
-
-	err := HandleStatusRunE(cmd, manager, nil)
-	if err != nil {
-		// t.Fatalf ensures test stops immediately with context
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	actual := output.String()
-	if strings.Contains(actual, "stub implementation") {
-		t.Fatalf("unexpected stub output for status command: %q", actual)
-	}
-
-	// Config loading messages are now printed by the config manager
-	if !strings.Contains(actual, "config loaded") {
-		t.Fatalf("expected config manager output to include config loaded, got %q", actual)
-	}
-}
-
-// TestHandleStatusRunE_LoadFailure validates error path when config cannot be loaded.
-func TestHandleStatusRunE_LoadFailure(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-	testutils.RunValidationErrorTest(t, "status", HandleStatusRunE)
-}

@@ -1,16 +1,17 @@
 package workload_test
 
+// cspell:words cmdtestutils
+
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
@@ -71,11 +72,11 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			var out bytes.Buffer
+			cmd, out := cmdtestutils.SetupCommandWithOutput()
+			cmd.Use = testCase.name
 
-			manager := newConfigManagerWithDefaults(&out)
-
-			cmd := &cobra.Command{Use: testCase.name}
+			manager := cmdtestutils.CreateDefaultConfigManager()
+			manager.Writer = out
 
 			err := testCase.handler(cmd, manager, nil)
 			require.NoErrorf(t, err, "expected workload %s handler to succeed", testCase.name)
@@ -114,35 +115,4 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 	require.False(t, command.SilenceErrors)
 	require.False(t, command.SilenceUsage)
 	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
-}
-
-func newConfigManagerWithDefaults(writer io.Writer) *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
-		writer,
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
-			Description:  "API version",
-			DefaultValue: v1alpha1.APIVersion,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
-			Description:  "Resource kind",
-			DefaultValue: v1alpha1.Kind,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			Description:  "Path to distribution configuration file",
-			DefaultValue: "kind.yaml",
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context name",
-			DefaultValue: "kind-kind",
-		},
-	)
 }

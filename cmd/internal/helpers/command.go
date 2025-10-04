@@ -2,8 +2,11 @@
 package helpers
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -72,4 +75,24 @@ func NewCobraCommand(
 	// No else clause - when no field selectors provided, no configuration flags are added
 
 	return cmd
+}
+
+// HandleConfigLoadRunE provides a shared implementation for commands whose primary
+// responsibility is to load the cluster configuration and exit without additional
+// side effects. It centralizes timer handling and error wrapping to keep
+// individual commands focused on their specific logic.
+func HandleConfigLoadRunE(
+	_ *cobra.Command,
+	manager *configmanager.ConfigManager,
+	_ []string,
+) error {
+	tmr := timer.New()
+	tmr.Start()
+
+	_, err := manager.LoadConfig(tmr)
+	if err != nil {
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	return nil
 }
