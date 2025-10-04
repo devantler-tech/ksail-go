@@ -7,6 +7,7 @@ import (
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 	"github.com/spf13/cobra"
 )
@@ -22,10 +23,6 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		handleRootRunE,
 	)
 
-	// Silence errors and usage
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
-
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
@@ -39,12 +36,9 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 
 // Execute runs the provided root command and handles errors.
 func Execute(cmd *cobra.Command) error {
-	err := cmd.Execute()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
+	executor := errorhandler.NewExecutor()
 
-	return nil
+	return executor.Execute(cmd)
 }
 
 // --- internals ---

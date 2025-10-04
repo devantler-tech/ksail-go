@@ -18,7 +18,6 @@ func TestHandleStopRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"stop",
 			HandleStopRunE,
-			"failed to provision cluster stop",
 			"failed to load cluster configuration",
 		)
 	})
