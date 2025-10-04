@@ -125,6 +125,25 @@ func TestWriteMessage_InfoType(t *testing.T) {
 	}
 }
 
+func TestWriteMessage_MultiLineContentIndented(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "first line\nsecond line\n\nthird line",
+		Writer:  &out,
+	})
+
+	got := out.String()
+	want := "✔ first line\n  second line\n\n  third line\n"
+
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
 func TestWriteMessage_TitleType(t *testing.T) {
 	t.Parallel()
 
