@@ -56,6 +56,7 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 	handlers := []struct {
 		name    string

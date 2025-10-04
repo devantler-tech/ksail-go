@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewInstallCommand creates the workload install command.
+// NewInstallCmd creates the workload install command.
 func NewInstallCmd() *cobra.Command {
 	return helpers.NewCobraCommand(
 		"install",

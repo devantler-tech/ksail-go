@@ -38,7 +38,7 @@ func NewStatusCmd() *cobra.Command {
 // HandleStatusRunE handles the status command.
 // Exported for testing purposes.
 func HandleStatusRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {

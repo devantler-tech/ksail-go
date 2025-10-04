@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewReconcileCommand creates the workload reconcile command.
+// NewReconcileCmd creates the workload reconcile command.
 func NewReconcileCmd() *cobra.Command {
 	return helpers.NewCobraCommand(
 		"reconcile",

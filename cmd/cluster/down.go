@@ -23,7 +23,7 @@ func NewDownCmd() *cobra.Command {
 
 // HandleDownRunE handles the down command.
 func HandleDownRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {

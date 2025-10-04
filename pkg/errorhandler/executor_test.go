@@ -14,7 +14,7 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 
 	cmd := &cobra.Command{
 		Use: "test",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return nil
 		},
 	}
@@ -55,13 +55,15 @@ func TestExecutorExecuteInvalidSubcommand(t *testing.T) {
 	}
 }
 
+var errTestBoom = errors.New("boom")
+
 func TestExecutorWithCustomNormalizer(t *testing.T) {
 	t.Parallel()
 
 	cmd := &cobra.Command{
 		Use: "test",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return errors.New("boom")
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return errTestBoom
 		},
 	}
 

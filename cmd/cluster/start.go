@@ -23,7 +23,7 @@ func NewStartCmd() *cobra.Command {
 
 // HandleStartRunE handles the start command.
 func HandleStartRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {

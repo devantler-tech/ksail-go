@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewApplyCommand creates the workload apply command.
+// NewApplyCmd creates the workload apply command.
 func NewApplyCmd() *cobra.Command {
 	return helpers.NewCobraCommand(
 		"apply",
@@ -20,7 +20,6 @@ func NewApplyCmd() *cobra.Command {
 }
 
 // HandleApplyRunE handles the apply command.
-
 func HandleApplyRunE(
 	_ *cobra.Command,
 	manager *configmanager.ConfigManager,

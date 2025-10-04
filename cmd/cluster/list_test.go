@@ -84,7 +84,7 @@ func runListLoadFailure(t *testing.T) {
 			t.Helper()
 			manager.Viper.SetConfigFile(t.TempDir())
 		},
-		func(t *testing.T, buffer *bytes.Buffer, err error) {
+		func(t *testing.T, _ *bytes.Buffer, err error) {
 			t.Helper()
 
 			if err == nil {

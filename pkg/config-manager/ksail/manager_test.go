@@ -92,6 +92,9 @@ func TestNewManager(t *testing.T) {
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
+// TestLoadConfig tests the LoadConfig method with various environment variable configurations.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because testLoadConfigCase uses t.Chdir()
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -127,36 +130,51 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			// Create temporary directory and change to it to isolate from existing config files
-			tempDir := t.TempDir()
-			t.Chdir(tempDir)
-
-			// Set environment variables for the test
-			for key, value := range testCase.envVars {
-				t.Setenv(key, value)
-			}
-
-			fieldSelectors := createFieldSelectorsWithName()
-
-			manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
-
-			cluster, err := manager.LoadConfig(nil)
-
-			if testCase.shouldSucceed {
-				require.NoError(t, err)
-				require.NotNil(t, cluster)
-				assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
-
-				// Test that subsequent calls return the same config
-				cluster2, err2 := manager.LoadConfig(nil)
-				require.NoError(t, err2)
-				assert.Equal(t, cluster, cluster2)
-			} else {
-				require.Error(t, err)
-				assert.Nil(t, cluster)
-				assert.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
-			}
+			testLoadConfigCase(t, testCase)
 		})
+	}
+}
+
+// testLoadConfigCase is a helper function to test a single LoadConfig scenario.
+func testLoadConfigCase(
+	t *testing.T,
+	testCase struct {
+		name                 string
+		envVars              map[string]string
+		expectedDistribution v1alpha1.Distribution
+		shouldSucceed        bool
+	},
+) {
+	t.Helper()
+
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	// Set environment variables for the test
+	for key, value := range testCase.envVars {
+		t.Setenv(key, value)
+	}
+
+	fieldSelectors := createFieldSelectorsWithName()
+
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
+
+	cluster, err := manager.LoadConfig(nil)
+
+	if testCase.shouldSucceed {
+		require.NoError(t, err)
+		require.NotNil(t, cluster)
+		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
+
+		// Test that subsequent calls return the same config
+		cluster2, err2 := manager.LoadConfig(nil)
+		require.NoError(t, err2)
+		assert.Equal(t, cluster, cluster2)
+	} else {
+		require.Error(t, err)
+		assert.Nil(t, cluster)
+		assert.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
 	}
 }
 
@@ -620,6 +638,7 @@ func TestManager_isFieldEmpty_ValidPointerCases(t *testing.T) {
 	runIsFieldEmptyTestCases(t, tests)
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
 	tempDir := t.TempDir()
