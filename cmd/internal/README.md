@@ -15,7 +15,7 @@ Houses internal utilities and helper packages that are used by KSail's CLI comma
 
 ## Packages
 
-- **[cmd/internal/cmdhelpers/](./cmdhelpers/README.md)** - Helper utilities for CLI command implementation
+- **[cmd/internal/helpers/](./helpers/command.go)** - Helper utilities for CLI command implementation
 - **testutils/** - Testing utilities for CLI commands
 
 ## Usage
@@ -23,9 +23,10 @@ Houses internal utilities and helper packages that are used by KSail's CLI comma
 These packages are for internal use within KSail's CLI implementation:
 
 ```go
-import "github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+import helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 
 // Internal usage within CLI commands
+cmd := helpers.NewCobraCommand(...)
 ```
 
 **Note**: Packages in `cmd/internal/` are implementation details and may change without notice. External applications should not depend on these packages directly.

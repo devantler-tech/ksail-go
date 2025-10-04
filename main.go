@@ -50,7 +50,7 @@ func runWithArgs(args []string) int {
 	rootCmd := cmd.NewRootCmd(version, commit, date)
 	rootCmd.SetArgs(args)
 
-	err := rootCmd.Execute()
+	err := cmd.Execute(rootCmd)
 	if err != nil {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.ErrorType,

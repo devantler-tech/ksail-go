@@ -1,0 +1,6 @@
+- Language: Go 1.24+ (currently targeting 1.25.x).
+- Style: gofmt formatting enforced; prefer interface-driven design and timer/notify patterns for CLI UX.
+- Lint rules: golangci-lint with wrapcheck, nonamedreturns, noinlineerr, dupword, etc.; mockery-generated interfaces for testing.
+- Testing approach: table-driven tests, parallelizable where possible, use testify (`require`, `assert`).
+- Notifications: use `notify.WriteMessage` with structured messages and optional timers.
+- Configuration handling: rely on Viper; avoid direct stdout writes—use command writers.

@@ -4,6 +4,28 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
+## **CRITICAL: Always Use Serena First (#serena MCP server)**
+
+**For ALL analysis, investigation, and code understanding tasks, use Serena semantic tools:**
+
+### **Standard Serena Workflow**
+
+1. **Start with Serena memories**: Use Serena to list memories and read relevant ones for context #serena
+2. **Use semantic analysis**: Use Serena to find [symbols/functions/patterns] related to [issue] #serena
+3. **Get symbol-level insights**: Use Serena to analyze [specific function] and show all referencing symbols #serena
+4. **Create new memories**: Use Serena to write a memory about [findings] for future reference #serena
+
+### **Serena-First Examples**
+
+1. Instead of: "Search the codebase for database queries"
+   Use: "Use Serena to find all database query functions and analyze their performance patterns #serena"
+
+2. Instead of: "Find all admin functions"
+   Use: "Use Serena to get symbols overview of admin files and find capability-checking functions #serena"
+
+3. Instead of: "How do the three systems integrate?"
+   "Use: "Use Serena to read the system-integration-map memory and show cross-system dependencies #serena"
+
 ## Working Effectively
 
 ### Prerequisites
@@ -296,29 +318,29 @@ All KSail CLI commands display timing information on successful completion to he
 package cmd
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+ "github.com/devantler-tech/ksail-go/pkg/ui/notify"
+ "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
 func HandleCommandRunE(cmd *cobra.Command, ...) error {
-	// Create and start timer
-	tmr := timer.New()
-	tmr.Start()
+ // Create and start timer
+ tmr := timer.New()
+ tmr.Start()
 
-	// Execute command logic
-	err := doSomething()
-	if err != nil {
-		// NO timing on error paths
-		return fmt.Errorf("operation failed: %w", err)
-	}
+ // Execute command logic
+ err := doSomething()
+ if err != nil {
+  // NO timing on error paths
+  return fmt.Errorf("operation failed: %w", err)
+ }
 
-	// Get timing and format (false = single-stage)
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
+ // Get timing and format (false = single-stage)
+ total, stage := tmr.GetTiming()
+ timingStr := notify.FormatTiming(total, stage, false)
 
-	// Display success with timing
-	notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
-	return nil
+ // Display success with timing
+ notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
+ return nil
 }
 ```
 
@@ -326,31 +348,31 @@ func HandleCommandRunE(cmd *cobra.Command, ...) error {
 
 ```go
 func HandleMultiStageCommandRunE(cmd *cobra.Command, ...) error {
-	// Create and start timer
-	tmr := timer.New()
-	tmr.Start()
+ // Create and start timer
+ tmr := timer.New()
+ tmr.Start()
 
-	// Stage 1
-	notify.Titleln(cmd.OutOrStdout(), "🚀", "Starting...")
-	err := doStage1()
-	if err != nil {
-		return fmt.Errorf("stage 1 failed: %w", err)
-	}
+ // Stage 1
+ notify.Titleln(cmd.OutOrStdout(), "🚀", "Starting...")
+ err := doStage1()
+ if err != nil {
+  return fmt.Errorf("stage 1 failed: %w", err)
+ }
 
-	// Transition to stage 2
-	tmr.NewStage()
-	notify.Titleln(cmd.OutOrStdout(), "📦", "Deploying...")
-	err = doStage2()
-	if err != nil {
-		return fmt.Errorf("stage 2 failed: %w", err)
-	}
+ // Transition to stage 2
+ tmr.NewStage()
+ notify.Titleln(cmd.OutOrStdout(), "📦", "Deploying...")
+ err = doStage2()
+ if err != nil {
+  return fmt.Errorf("stage 2 failed: %w", err)
+ }
 
-	// Get timing and format (true = multi-stage)
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
+ // Get timing and format (true = multi-stage)
+ total, stage := tmr.GetTiming()
+ timingStr := notify.FormatTiming(total, stage, true)
 
-	notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
-	return nil
+ notify.Successf(cmd.OutOrStdout(), "operation complete %s", timingStr)
+ return nil
 }
 ```
 

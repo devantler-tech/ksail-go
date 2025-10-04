@@ -9,7 +9,6 @@ func TestHandleDownRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"down",
 			HandleDownRunE,
-			"Cluster stopped and deleted successfully (stub implementation)",
 		)
 	})
 
@@ -18,7 +17,6 @@ func TestHandleDownRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"down",
 			HandleDownRunE,
-			"failed to provision cluster down",
 			"failed to load cluster configuration",
 		)
 	})

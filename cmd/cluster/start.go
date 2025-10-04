@@ -3,36 +3,36 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
 // NewStartCmd creates and returns the start command.
 func NewStartCmd() *cobra.Command {
-	return cmdhelpers.NewCobraCommand(
+	return helpers.NewCobraCommand(
 		"start",
 		"Start a stopped cluster",
 		`Start a previously stopped cluster.`,
 		HandleStartRunE,
-		cmdhelpers.StandardDistributionFieldSelector(),
-		cmdhelpers.StandardContextFieldSelector(),
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardContextFieldSelector(),
 	)
 }
 
 // HandleStartRunE handles the start command.
 func HandleStartRunE(
-	cmd *cobra.Command,
+	_ *cobra.Command,
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	err := cmdhelpers.ExecuteTimedClusterCommand(
-		cmd,
-		manager,
-		"Cluster started successfully (stub implementation)",
-	)
+	tmr := timer.New()
+	tmr.Start()
+
+	_, err := manager.LoadConfig(tmr)
 	if err != nil {
-		return fmt.Errorf("failed to execute start command: %w", err)
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	return nil

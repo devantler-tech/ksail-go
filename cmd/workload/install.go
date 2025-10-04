@@ -1,30 +1,37 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"fmt"
+
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
-const installMessage = "Workload install coming soon."
+// NewInstallCmd creates the workload install command.
+func NewInstallCmd() *cobra.Command {
+	return helpers.NewCobraCommand(
+		"install",
+		"Install Helm charts",
+		"Install Helm charts to provision workloads through KSail.",
+		HandleInstallRunE,
+	)
+}
 
-// NewInstallCommand creates the workload install command.
-func NewInstallCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install Helm charts",
-		Long:  "Install Helm charts to provision workloads through KSail.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.InfoType,
-				Content: installMessage,
-				Writer:  cmd.OutOrStdout(),
-			})
+// HandleInstallRunE handles the install command.
+func HandleInstallRunE(
+	_ *cobra.Command,
+	manager *configmanager.ConfigManager,
+	_ []string,
+) error {
+	tmr := timer.New()
+	tmr.Start()
 
-			return nil
-		},
+	_, err := manager.LoadConfig(tmr)
+	if err != nil {
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	applyCommonCommandConfig(cmd)
-
-	return cmd
+	return nil
 }

@@ -1,36 +1,37 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"fmt"
+
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
-const reconcileMessage = "Workload reconciliation coming soon."
+// NewReconcileCmd creates the workload reconcile command.
+func NewReconcileCmd() *cobra.Command {
+	return helpers.NewCobraCommand(
+		"reconcile",
+		"Reconcile workloads with the cluster",
+		"Trigger reconciliation tooling to sync local workloads with your cluster.",
+		HandleReconcileRunE,
+	)
+}
 
-// NewReconcileCommand creates the workload reconcile command.
-func NewReconcileCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "reconcile",
-		Short: "Reconcile workloads with the cluster",
-		Long:  "Trigger reconciliation tooling to sync local workloads with your cluster.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			// Start timing
-			tmr := timer.New()
-			tmr.Start()
+// HandleReconcileRunE handles the reconcile command.
+func HandleReconcileRunE(
+	_ *cobra.Command,
+	manager *configmanager.ConfigManager,
+	_ []string,
+) error {
+	tmr := timer.New()
+	tmr.Start()
 
-			notify.WriteMessage(notify.Message{
-				Type:    notify.InfoType,
-				Content: reconcileMessage,
-				Timer:   tmr,
-				Writer:  cmd.OutOrStdout(),
-			})
-
-			return nil
-		},
+	_, err := manager.LoadConfig(tmr)
+	if err != nil {
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	applyCommonCommandConfig(cmd)
-
-	return cmd
+	return nil
 }

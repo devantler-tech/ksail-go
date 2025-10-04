@@ -3,7 +3,7 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
@@ -23,7 +23,7 @@ func NewListCmd() *cobra.Command {
 	}
 
 	// Create the command using the helper
-	cmd := cmdhelpers.NewCobraCommand(
+	cmd := helpers.NewCobraCommand(
 		"list",
 		"List clusters",
 		`List all Kubernetes clusters managed by KSail.`,
@@ -51,8 +51,8 @@ func HandleListRunE(
 	// Bind the --all flag manually since it's added after command creation
 	_ = configManager.Viper.BindPFlag("all", cmd.Flags().Lookup("all"))
 
-	// Load cluster configuration without validation (list doesn't need validation)
-	cluster, err := cmdhelpers.LoadConfigWithErrorHandling(cmd, configManager, tmr)
+	// Load cluster configuration
+	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}

@@ -10,7 +10,6 @@ func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"start",
 			HandleStartRunE,
-			"Cluster started successfully (stub implementation)",
 		)
 	})
 
@@ -19,7 +18,6 @@ func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"start",
 			HandleStartRunE,
-			"failed to execute start command",
 			"failed to load cluster configuration",
 		)
 	})
