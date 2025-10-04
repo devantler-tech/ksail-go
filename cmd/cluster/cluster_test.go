@@ -7,9 +7,12 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
+	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
+
+func TestMain(m *testing.M) { internaltestutils.RunTestMainWithSnapshotCleanup(m) }
 
 func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 	t.Parallel()
