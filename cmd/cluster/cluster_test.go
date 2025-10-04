@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
