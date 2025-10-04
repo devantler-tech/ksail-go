@@ -65,6 +65,28 @@ func handleUpRunEWithProvisioner(
 	tmr.NewStage()
 
 	// Show provisioning title
+	showProvisioningTitle(cmd)
+
+	// Create provisioner and provision cluster
+	err = provisionCluster(cmd, cluster, provisioner)
+	if err != nil {
+		return err
+	}
+
+	// Display success with timing
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    "cluster created",
+		Timer:      tmr,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
+	})
+
+	return nil
+}
+
+// showProvisioningTitle displays the provisioning stage title.
+func showProvisioningTitle(cmd *cobra.Command) {
 	cmd.Println()
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
@@ -72,15 +94,24 @@ func handleUpRunEWithProvisioner(
 		Emoji:   "🚀",
 		Writer:  cmd.OutOrStdout(),
 	})
+}
+
+// provisionCluster creates the provisioner and provisions the cluster.
+func provisionCluster(
+	cmd *cobra.Command,
+	cluster *v1alpha1.Cluster,
+	provisioner provisionerFactory,
+) error {
+	distribution := cluster.Spec.Distribution
+	distributionConfigPath := cluster.Spec.DistributionConfig
+	kubeconfigPath := cluster.Spec.Connection.Kubeconfig
 
 	// Create provisioner based on distribution
 	var clusterProvisioner clusterprovisioner.ClusterProvisioner
 
 	var clusterName string
 
-	distribution := cluster.Spec.Distribution
-	distributionConfigPath := cluster.Spec.DistributionConfig
-	kubeconfigPath := cluster.Spec.Connection.Kubeconfig
+	var err error
 
 	if provisioner != nil {
 		clusterProvisioner, clusterName, err = provisioner(
@@ -115,15 +146,6 @@ func handleUpRunEWithProvisioner(
 	if err != nil {
 		return fmt.Errorf("failed to provision cluster: %w", err)
 	}
-
-	// Display success with timing
-	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "cluster created",
-		Timer:      tmr,
-		Writer:     cmd.OutOrStdout(),
-		MultiStage: true,
-	})
 
 	return nil
 }
