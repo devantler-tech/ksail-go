@@ -1,6 +1,7 @@
 package cluster //nolint:testpackage // Requires internal access to helper functions.
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
@@ -19,9 +20,15 @@ func TestHandleStatusRunE(t *testing.T) { //nolint:paralleltest
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
+		actual := output.String()
+		if strings.Contains(actual, "stub implementation") {
+			t.Fatalf("unexpected stub output for status command: %q", actual)
+		}
+
 		// Config loading messages are now printed by the config manager
-		assertOutputContains(t, output.String(), "config loaded")
+		if !strings.Contains(actual, "config loaded") {
+			t.Fatalf("expected config manager output to include config loaded, got %q", actual)
+		}
 	})
 
 	t.Run("load failure", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
@@ -54,9 +61,15 @@ func TestHandleStatusRunE_Success(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	assertOutputContains(t, output.String(), "Cluster status: Running (stub implementation)")
+	actual := output.String()
+	if strings.Contains(actual, "stub implementation") {
+		t.Fatalf("unexpected stub output for status command: %q", actual)
+	}
+
 	// Config loading messages are now printed by the config manager
-	assertOutputContains(t, output.String(), "config loaded")
+	if !strings.Contains(actual, "config loaded") {
+		t.Fatalf("expected config manager output to include config loaded, got %q", actual)
+	}
 }
 
 // TestHandleStatusRunE_LoadFailure validates error path when config cannot be loaded.

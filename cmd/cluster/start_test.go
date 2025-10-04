@@ -10,7 +10,6 @@ func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"start",
 			HandleStartRunE,
-			"Cluster started successfully (stub implementation)",
 		)
 	})
 

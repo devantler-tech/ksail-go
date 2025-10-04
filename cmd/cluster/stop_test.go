@@ -10,7 +10,6 @@ func TestHandleStopRunE(t *testing.T) { //nolint:paralleltest
 			t,
 			"stop",
 			HandleStopRunE,
-			"Cluster stopped successfully (stub implementation)",
 		)
 	})
 

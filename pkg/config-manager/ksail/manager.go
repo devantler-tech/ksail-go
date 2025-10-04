@@ -201,8 +201,15 @@ func (m *ConfigManager) validateConfig() error {
 			})
 		}
 
-		return fmt.Errorf("%w with %d errors",
-			helpers.ErrConfigurationValidationFailed, len(result.Errors))
+		errorCount := len(result.Errors)
+		warningCount := len(result.Warnings)
+
+		return fmt.Errorf(
+			"%w with %d errors and %d warnings",
+			helpers.ErrConfigurationValidationFailed,
+			errorCount,
+			warningCount,
+		)
 	}
 
 	warnings := helpers.FormatValidationWarnings(result)

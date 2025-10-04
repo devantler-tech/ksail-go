@@ -2,6 +2,7 @@ package workload_test
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -9,7 +10,10 @@ import (
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,53 +56,32 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
-func TestWorkloadCommandsEmitPlaceholders(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		name     string
-		args     []string
-		expected string
+func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
+	handlers := []struct {
+		name    string
+		handler func(*cobra.Command, *configmanager.ConfigManager, []string) error
 	}{
-		{
-			name:     "reconcile",
-			args:     []string{"reconcile"},
-			expected: "ℹ Workload reconciliation coming soon.",
-		},
-		{
-			name:     "apply",
-			args:     []string{"apply"},
-			expected: "ℹ Workload apply coming soon.",
-		},
-		{
-			name:     "install",
-			args:     []string{"install"},
-			expected: "ℹ Workload install coming soon.",
-		},
+		{name: "reconcile", handler: workload.HandleReconcileRunE},
+		{name: "apply", handler: workload.HandleApplyRunE},
+		{name: "install", handler: workload.HandleInstallRunE},
 	}
 
-	for _, testCase := range testCases {
+	for _, testCase := range handlers {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
 			var out bytes.Buffer
 
-			command := workload.NewWorkloadCmd()
-			command.SetOut(&out)
-			command.SetErr(&out)
-			command.SetArgs(testCase.args)
+			manager := newConfigManagerWithDefaults(&out)
 
-			err := command.Execute()
-			require.NoErrorf(t, err, "expected workload %s command to succeed", testCase.name)
+			cmd := &cobra.Command{Use: testCase.name}
+
+			err := testCase.handler(cmd, manager, nil)
+			require.NoErrorf(t, err, "expected workload %s handler to succeed", testCase.name)
 
 			actual := out.String()
-			if !strings.Contains(actual, testCase.expected) {
-				t.Fatalf(
-					"expected placeholder output to contain %q, got %q",
-					testCase.expected,
-					actual,
-				)
-			}
+			require.Contains(t, actual, "config loaded")
+			require.NotContains(t, actual, "coming soon")
+			require.NotContains(t, actual, "ℹ")
 		})
 	}
 }
@@ -129,4 +112,35 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 	require.True(t, command.SilenceErrors)
 	require.True(t, command.SilenceUsage)
 	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
+}
+
+func newConfigManagerWithDefaults(writer io.Writer) *configmanager.ConfigManager {
+	return configmanager.NewConfigManager(
+		writer,
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: v1alpha1.APIVersion,
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: v1alpha1.Kind,
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution to use",
+			DefaultValue: v1alpha1.DistributionKind,
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Path to distribution configuration file",
+			DefaultValue: "kind.yaml",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+			Description:  "Kubernetes context name",
+			DefaultValue: "kind-kind",
+		},
+	)
 }
