@@ -1,0 +1,12 @@
+
+[TestHandleStartRunE/success - 1]
+⏳ Load config...
+► loading ksail config
+► using default config
+✔ config loaded [stage: *]
+
+▶️ Start cluster...
+► starting cluster
+✔ cluster started [stage: *|total: *]
+
+---
