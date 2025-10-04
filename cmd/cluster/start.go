@@ -49,20 +49,8 @@ func handleStartRunEWithProvisioner(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Transition to starting stage
-	tmr.NewStage()
-
-	// Show starting title
-	cmd.Println()
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: "Start cluster...",
-		Emoji:   "▶️",
-		Writer:  cmd.OutOrStdout(),
-	})
-
 	// Start the cluster
-	err = startCluster(cmd, cluster, provisioner)
+	err = startCluster(cmd, cluster, provisioner, tmr)
 	if err != nil {
 		return err
 	}
@@ -80,13 +68,24 @@ func handleStartRunEWithProvisioner(
 }
 
 // startCluster creates the provisioner and starts the cluster.
-//
-//nolint:dupl // Similar structure to provisionCluster in up.go but performs start operation
 func startCluster(
 	cmd *cobra.Command,
 	cluster *v1alpha1.Cluster,
 	provisioner provisionerFactory,
+	tmr timer.Timer,
 ) error {
+	// Transition to starting stage
+	tmr.NewStage()
+
+	// Show starting title
+	cmd.Println()
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Start cluster...",
+		Emoji:   "▶️",
+		Writer:  cmd.OutOrStdout(),
+	})
+
 	distribution := cluster.Spec.Distribution
 	distributionConfigPath := cluster.Spec.DistributionConfig
 	kubeconfigPath := cluster.Spec.Connection.Kubeconfig

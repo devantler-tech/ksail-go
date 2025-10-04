@@ -97,8 +97,6 @@ func showProvisioningTitle(cmd *cobra.Command) {
 }
 
 // provisionCluster creates the provisioner and provisions the cluster.
-//
-//nolint:dupl // Similar structure to startCluster in start.go but performs create operation
 func provisionCluster(
 	cmd *cobra.Command,
 	cluster *v1alpha1.Cluster,
