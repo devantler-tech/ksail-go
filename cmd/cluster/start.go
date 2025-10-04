@@ -32,10 +32,7 @@ func HandleStartRunE(
 
 	_, err := manager.LoadConfig(tmr)
 	if err != nil {
-		return fmt.Errorf(
-			"failed to load cluster configuration: %w",
-			err,
-		)
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	return nil

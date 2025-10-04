@@ -109,8 +109,8 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 
 	command := workload.NewWorkloadCmd()
 
-	require.True(t, command.SilenceErrors)
-	require.True(t, command.SilenceUsage)
+	require.False(t, command.SilenceErrors)
+	require.False(t, command.SilenceUsage)
 	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }
 
