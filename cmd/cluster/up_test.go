@@ -2,7 +2,9 @@ package cluster //nolint:testpackage // Access internal helpers without exportin
 
 import (
 	"context"
+	"errors"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
@@ -10,56 +12,112 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-// TestHandleUpRunE exercises success and validation error paths.
-
+// TestHandleUpRunE exercises success and error paths for the up command handler.
 func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
-	t.Run("success", func(t *testing.T) { //nolint:paralleltest
-		cmd, manager, output := testutils.NewCommandAndManager(t, "up")
-		testutils.SeedValidClusterConfig(manager)
+	t.Run("success", testHandleUpRunESuccess)             //nolint:paralleltest
+	t.Run("validation error", testHandleUpRunEValidation) //nolint:paralleltest // uses t.Chdir
+	t.Run("provisioner creation failure", testHandleUpRunEProvisionerCreationFailure)
+	t.Run("provision failure", testHandleUpRunEProvisionFailure)
+}
 
-		// Use mock provisioner that doesn't require Docker
-		mockProvisioner := &mockClusterProvisioner{}
-		mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
+func testHandleUpRunESuccess(t *testing.T) {
+	t.Helper()
 
-		factory := func(
-			_ context.Context,
-			_ v1alpha1.Distribution,
-			_ string,
-			_ string,
-		) (clusterprovisioner.ClusterProvisioner, string, error) {
-			return mockProvisioner, "kind", nil
+	cmd, manager, output := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	mockProvisioner := &mockClusterProvisioner{}
+	mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
+
+	factory := func(
+		_ context.Context,
+		_ v1alpha1.Distribution,
+		_ string,
+		_ string,
+	) (clusterprovisioner.ClusterProvisioner, string, error) {
+		return mockProvisioner, "kind", nil
+	}
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.NoError(t, err)
+
+	sanitizedOutput := sanitizeTimingOutput(output.String())
+	snaps.MatchSnapshot(t, sanitizedOutput)
+
+	mockProvisioner.AssertExpectations(t)
+}
+
+func testHandleUpRunEValidation(t *testing.T) {
+	t.Helper()
+
+	testutils.RunValidationErrorTest(t, "up", HandleUpRunE)
+}
+
+func testHandleUpRunEProvisionerCreationFailure(t *testing.T) {
+	t.Helper()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	expectedErr := errors.New("failed factory")
+
+	factory := func(
+		_ context.Context,
+		_ v1alpha1.Distribution,
+		_ string,
+		_ string,
+	) (clusterprovisioner.ClusterProvisioner, string, error) {
+		return nil, "", expectedErr
+	}
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create provisioner")
+	require.ErrorIs(t, err, expectedErr)
+}
+
+func testHandleUpRunEProvisionFailure(t *testing.T) {
+	t.Helper()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	provisionErr := errors.New("provision failed")
+
+	mockProvisioner := &mockClusterProvisioner{}
+	mockProvisioner.On("Create", mock.Anything, "kind").Return(provisionErr)
+
+	factory := func(
+		_ context.Context,
+		_ v1alpha1.Distribution,
+		_ string,
+		_ string,
+	) (clusterprovisioner.ClusterProvisioner, string, error) {
+		return mockProvisioner, "kind", nil
+	}
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to provision cluster")
+	require.ErrorIs(t, err, provisionErr)
+
+	mockProvisioner.AssertExpectations(t)
+}
+
+var timingRegex = regexp.MustCompile(
+	`\[(?:stage:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h)(?:\s*\|\s*total:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h))?)\]`,
+)
+
+func sanitizeTimingOutput(output string) string {
+	return timingRegex.ReplaceAllStringFunc(output, func(match string) string {
+		if strings.Contains(match, "|") {
+			return "[stage: *|total: *]"
 		}
 
-		err := handleUpRunEWithProvisioner(cmd, manager, factory)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		// Strip timing information from output before snapshot comparison
-		// Replace timing values with * to preserve structure: [stage: *] or [stage: *|total: *]
-		outputStr := output.String()
-		timingRegex := regexp.MustCompile(
-			`\[(?:stage:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h)(?:\s*\|\s*total:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h))?)\]`,
-		)
-		sanitizedOutput := timingRegex.ReplaceAllStringFunc(outputStr, func(match string) string {
-			// Check if it's a multi-stage timing (contains |total:)
-			if regexp.MustCompile(`\|`).MatchString(match) {
-				return "[stage: *|total: *]"
-			}
-
-			return "[stage: *]"
-		})
-
-		// Capture the output as a snapshot
-		snaps.MatchSnapshot(t, sanitizedOutput)
-
-		mockProvisioner.AssertExpectations(t)
-	})
-
-	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-		testutils.RunValidationErrorTest(t, "up", HandleUpRunE)
+		return "[stage: *]"
 	})
 }
 
