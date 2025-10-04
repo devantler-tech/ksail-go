@@ -97,6 +97,8 @@ func showProvisioningTitle(cmd *cobra.Command) {
 }
 
 // provisionCluster creates the provisioner and provisions the cluster.
+//
+//nolint:dupl // Intentional duplication with deleteCluster - similar lifecycle operations
 func provisionCluster(
 	cmd *cobra.Command,
 	cluster *v1alpha1.Cluster,

@@ -13,7 +13,8 @@ import (
 )
 
 // TestHandleUpRunE exercises success and validation error paths.
-
+//
+//nolint:dupl // Intentional duplication with down_test - similar test structure for lifecycle operations
 func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 	t.Run("success", func(t *testing.T) { //nolint:paralleltest
 		cmd, manager, output := testutils.NewCommandAndManager(t, "up")
