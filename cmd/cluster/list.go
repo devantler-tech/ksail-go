@@ -6,6 +6,7 @@ import (
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
@@ -44,6 +45,15 @@ func HandleListRunE(
 	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	return handleListRunEWithProvisioner(cmd, configManager, nil)
+}
+
+// handleListRunEWithProvisioner is the internal implementation that accepts an optional provisioner for testing.
+func handleListRunEWithProvisioner(
+	cmd *cobra.Command,
+	configManager *configmanager.ConfigManager,
+	provisioner provisionerFactory,
+) error {
 	// Start timing
 	tmr := timer.New()
 	tmr.Start()
@@ -59,17 +69,78 @@ func HandleListRunE(
 
 	all := configManager.Viper.GetBool("all")
 
+	// List clusters using the provisioner
+	clusters, err := listClustersUsingProvisioner(cmd, cluster, provisioner)
+	if err != nil {
+		return err
+	}
+
+	// Display results
+	displayListResults(cmd, cluster, clusters, all, tmr)
+
+	return nil
+}
+
+// listClustersUsingProvisioner creates a provisioner and lists clusters.
+func listClustersUsingProvisioner(
+	cmd *cobra.Command,
+	cluster *v1alpha1.Cluster,
+	provisioner provisionerFactory,
+) ([]string, error) {
+	// Create provisioner based on distribution
+	var clusterProvisioner clusterprovisioner.ClusterProvisioner
+
+	var err error
+
+	if provisioner != nil {
+		clusterProvisioner, _, err = provisioner(
+			cmd.Context(),
+			cluster.Spec.Distribution,
+			cluster.Spec.DistributionConfig,
+			cluster.Spec.Connection.Kubeconfig,
+		)
+	} else {
+		clusterProvisioner, _, err = clusterprovisioner.CreateClusterProvisioner(
+			cmd.Context(),
+			cluster.Spec.Distribution,
+			cluster.Spec.DistributionConfig,
+			cluster.Spec.Connection.Kubeconfig,
+		)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create provisioner: %w", err)
+	}
+
+	// List clusters using the provisioner
+	clusters, err := clusterProvisioner.List(cmd.Context())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	return clusters, nil
+}
+
+// displayListResults formats and displays the list results.
+func displayListResults(
+	cmd *cobra.Command,
+	cluster *v1alpha1.Cluster,
+	clusters []string,
+	all bool,
+	tmr timer.Timer,
+) {
+	// Display the appropriate success message
 	if all {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: "Listing all clusters (stub implementation)",
+			Content: "Listing all clusters",
 			Timer:   tmr,
 			Writer:  cmd.OutOrStdout(),
 		})
 	} else {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: "Listing running clusters (stub implementation)",
+			Content: "Listing running clusters",
 			Timer:   tmr,
 			Writer:  cmd.OutOrStdout(),
 		})
@@ -82,5 +153,21 @@ func HandleListRunE(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	return nil
+	// Display cluster names
+	if len(clusters) == 0 {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "No clusters found",
+			Writer:  cmd.OutOrStdout(),
+		})
+	} else {
+		for _, name := range clusters {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: "- %s",
+				Args:    []any{name},
+				Writer:  cmd.OutOrStdout(),
+			})
+		}
+	}
 }
