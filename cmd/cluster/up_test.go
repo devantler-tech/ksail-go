@@ -15,9 +15,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	errProvisionerFactory = errors.New("failed factory")
+	errProvisionFailed    = errors.New("provision failed")
+)
+
+func newProvisionerFactory(
+	provisioner clusterprovisioner.ClusterProvisioner,
+	distribution string,
+	factoryErr error,
+) func(context.Context, v1alpha1.Distribution, string, string) (
+	clusterprovisioner.ClusterProvisioner,
+	string,
+	error,
+) {
+	return func(
+		_ context.Context,
+		_ v1alpha1.Distribution,
+		_ string,
+		_ string,
+	) (clusterprovisioner.ClusterProvisioner, string, error) {
+		return provisioner, distribution, factoryErr
+	}
+}
+
 // TestHandleUpRunE exercises success and error paths for the up command handler.
-func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
-	t.Run("success", testHandleUpRunESuccess)             //nolint:paralleltest
+//
+//nolint:paralleltest,tparallel // validation subtest uses t.Chdir
+func TestHandleUpRunE(t *testing.T) {
+	t.Run("success", testHandleUpRunESuccess)
 	t.Run("validation error", testHandleUpRunEValidation) //nolint:paralleltest // uses t.Chdir
 	t.Run("provisioner creation failure", testHandleUpRunEProvisionerCreationFailure)
 	t.Run("provision failure", testHandleUpRunEProvisionFailure)
@@ -25,6 +51,7 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 
 func testHandleUpRunESuccess(t *testing.T) {
 	t.Helper()
+	t.Parallel()
 
 	cmd, manager, output := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
@@ -32,14 +59,7 @@ func testHandleUpRunESuccess(t *testing.T) {
 	mockProvisioner := &mockClusterProvisioner{}
 	mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
 
-	factory := func(
-		_ context.Context,
-		_ v1alpha1.Distribution,
-		_ string,
-		_ string,
-	) (clusterprovisioner.ClusterProvisioner, string, error) {
-		return mockProvisioner, "kind", nil
-	}
+	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
 
 	err := handleUpRunEWithProvisioner(cmd, manager, factory)
 	require.NoError(t, err)
@@ -58,51 +78,35 @@ func testHandleUpRunEValidation(t *testing.T) {
 
 func testHandleUpRunEProvisionerCreationFailure(t *testing.T) {
 	t.Helper()
+	t.Parallel()
 
 	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
 
-	expectedErr := errors.New("failed factory")
-
-	factory := func(
-		_ context.Context,
-		_ v1alpha1.Distribution,
-		_ string,
-		_ string,
-	) (clusterprovisioner.ClusterProvisioner, string, error) {
-		return nil, "", expectedErr
-	}
+	factory := newProvisionerFactory(nil, "", errProvisionerFactory)
 
 	err := handleUpRunEWithProvisioner(cmd, manager, factory)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to create provisioner")
-	require.ErrorIs(t, err, expectedErr)
+	require.ErrorIs(t, err, errProvisionerFactory)
 }
 
 func testHandleUpRunEProvisionFailure(t *testing.T) {
 	t.Helper()
+	t.Parallel()
 
 	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
 
-	provisionErr := errors.New("provision failed")
-
 	mockProvisioner := &mockClusterProvisioner{}
-	mockProvisioner.On("Create", mock.Anything, "kind").Return(provisionErr)
+	mockProvisioner.On("Create", mock.Anything, "kind").Return(errProvisionFailed)
 
-	factory := func(
-		_ context.Context,
-		_ v1alpha1.Distribution,
-		_ string,
-		_ string,
-	) (clusterprovisioner.ClusterProvisioner, string, error) {
-		return mockProvisioner, "kind", nil
-	}
+	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
 
 	err := handleUpRunEWithProvisioner(cmd, manager, factory)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to provision cluster")
-	require.ErrorIs(t, err, provisionErr)
+	require.ErrorIs(t, err, errProvisionFailed)
 
 	mockProvisioner.AssertExpectations(t)
 }
