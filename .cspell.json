@@ -136,6 +136,7 @@
     "fluxcd",
     "fluxinstaller",
     "forbidigo",
+    "forcetypeassert",
     "funlen",
     "generatortestutils",
     "gkampitakis",
