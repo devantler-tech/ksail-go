@@ -1,4 +1,5 @@
-package cluster //nolint:testpackage // Access internal helpers without exporting them.
+//nolint:testpackage,dupl // Access internal helpers. Test structure similar to start_test.go
+package cluster
 
 import (
 	"context"
