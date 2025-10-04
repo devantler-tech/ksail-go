@@ -1,23 +1,40 @@
 package cluster //nolint:testpackage // Access internal helpers without exporting them.
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
+	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/stretchr/testify/mock"
+)
 
 // TestHandleDownRunE exercises the success and validation error paths for the down command.
 func TestHandleDownRunE(t *testing.T) { //nolint:paralleltest
 	t.Run("success", func(t *testing.T) { //nolint:paralleltest
-		runLifecycleSuccessCase(
-			t,
-			"down",
-			HandleDownRunE,
-		)
+		cmd, manager, output := testutils.NewCommandAndManager(t, "down")
+		testutils.SeedValidClusterConfig(manager)
+
+		// Use mock provisioner that doesn't require Docker
+		mockProvisioner := &mockClusterProvisioner{}
+		mockProvisioner.On("Delete", mock.Anything, "kind").Return(nil)
+
+		factory := createProvisionerFactory(mockProvisioner)
+
+		err := handleDownRunEWithProvisioner(cmd, manager, factory)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Strip timing information from output before snapshot comparison
+		sanitizedOutput := sanitizeTimingOutput(output)
+
+		// Capture the output as a snapshot
+		snaps.MatchSnapshot(t, sanitizedOutput)
+
+		mockProvisioner.AssertExpectations(t)
 	})
 
 	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-		runLifecycleValidationErrorCase(
-			t,
-			"down",
-			HandleDownRunE,
-			"failed to load cluster configuration",
-		)
+		testutils.RunValidationErrorTest(t, "down", HandleDownRunE)
 	})
 }

@@ -1,0 +1,11 @@
+[TestHandleDownRunE/success - 1]
+⏳ Load config...
+► loading ksail config
+► using default config
+✔ config loaded [stage: *]
+
+🗑️ Delete cluster...
+► deleting cluster
+✔ cluster deleted [stage: *|total: *]
+
+---
