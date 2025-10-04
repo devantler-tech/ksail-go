@@ -12,9 +12,7 @@ import (
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,27 +57,20 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 
 //nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
-	handlers := []struct {
-		name    string
-		handler func(*cobra.Command, *configmanager.ConfigManager, []string) error
-	}{
-		{name: "reconcile", handler: workload.HandleReconcileRunE},
-		{name: "apply", handler: workload.HandleApplyRunE},
-		{name: "install", handler: workload.HandleInstallRunE},
-	}
+	commands := []string{"reconcile", "apply", "install"}
 
-	for _, testCase := range handlers {
-		t.Run(testCase.name, func(t *testing.T) {
+	for _, commandName := range commands {
+		t.Run(commandName, func(t *testing.T) {
 			t.Parallel()
 
 			cmd, out := cmdtestutils.SetupCommandWithOutput()
-			cmd.Use = testCase.name
+			cmd.Use = commandName
 
 			manager := cmdtestutils.CreateDefaultConfigManager()
 			manager.Writer = out
 
-			err := testCase.handler(cmd, manager, nil)
-			require.NoErrorf(t, err, "expected workload %s handler to succeed", testCase.name)
+			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
 			require.Contains(t, actual, "config loaded")
