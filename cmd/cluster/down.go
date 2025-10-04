@@ -6,7 +6,6 @@ import (
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
@@ -53,9 +52,6 @@ func handleDownRunEWithProvisioner(
 	// Transition to deletion stage
 	tmr.NewStage()
 
-	// Show deletion title
-	showDeletionTitle(cmd)
-
 	// Delete the cluster
 	err = deleteCluster(cmd, cluster, provisioner)
 	if err != nil {
@@ -86,43 +82,22 @@ func showDeletionTitle(cmd *cobra.Command) {
 }
 
 // deleteCluster creates the provisioner and deletes the cluster.
-//
-//nolint:dupl // Intentional duplication with provisionCluster - similar lifecycle operations
 func deleteCluster(
 	cmd *cobra.Command,
 	cluster *v1alpha1.Cluster,
 	provisioner provisionerFactory,
 ) error {
-	distribution := cluster.Spec.Distribution
-	distributionConfigPath := cluster.Spec.DistributionConfig
-	kubeconfigPath := cluster.Spec.Connection.Kubeconfig
+	// Show deletion title
+	showDeletionTitle(cmd)
 
-	// Create provisioner based on distribution
-	var clusterProvisioner clusterprovisioner.ClusterProvisioner
-
-	var clusterName string
-
-	var err error
-
-	if provisioner != nil {
-		clusterProvisioner, clusterName, err = provisioner(
-			cmd.Context(),
-			distribution,
-			distributionConfigPath,
-			kubeconfigPath,
-		)
-	} else {
-		// Load config once and get both provisioner and cluster name
-		clusterProvisioner, clusterName, err = clusterprovisioner.CreateClusterProvisioner(
-			cmd.Context(),
-			distribution,
-			distributionConfigPath,
-			kubeconfigPath,
-		)
-	}
-
+	// Create provisioner
+	clusterProvisioner, clusterName, err := createProvisionerForCluster(
+		cmd.Context(),
+		cluster,
+		provisioner,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to create provisioner: %w", err)
+		return err
 	}
 
 	// Show activity message
