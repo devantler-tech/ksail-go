@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
@@ -14,7 +14,7 @@ import (
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Create the command using the helper (no field selectors needed for root command)
-	cmd := cmdhelpers.NewCobraCommand(
+	cmd := helpers.NewCobraCommand(
 		"ksail",
 		"SDK for operating and managing K8s clusters and workloads",
 		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+

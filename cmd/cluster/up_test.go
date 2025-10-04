@@ -23,7 +23,12 @@ func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
 		mockProvisioner := &mockClusterProvisioner{}
 		mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
 
-		factory := func(_ context.Context, _ *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, string, error) {
+		factory := func(
+			_ context.Context,
+			_ v1alpha1.Distribution,
+			_ string,
+			_ string,
+		) (clusterprovisioner.ClusterProvisioner, string, error) {
 			return mockProvisioner, "kind", nil
 		}
 

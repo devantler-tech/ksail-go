@@ -1,5 +1,4 @@
-// Package pathutils provides utilities for manipulating filesystem paths.
-package pathutils
+package io
 
 import (
 	"os/user"
@@ -7,7 +6,7 @@ import (
 	"strings"
 )
 
-// ExpandHomePath expands the home directory shortcut with the full path.
+// ExpandHomePath expands a path beginning with ~/ to the user's home directory.
 func ExpandHomePath(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") {
 		usr, _ := user.Current()

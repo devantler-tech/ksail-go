@@ -3,20 +3,21 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
 // NewStopCmd creates and returns the stop command.
 func NewStopCmd() *cobra.Command {
-	return cmdhelpers.NewCobraCommand(
+	return helpers.NewCobraCommand(
 		"stop",
 		"Stop the Kubernetes cluster",
 		`Stop the Kubernetes cluster without removing it.`,
 		HandleStopRunE,
-		cmdhelpers.StandardDistributionFieldSelector(),
-		cmdhelpers.StandardContextFieldSelector(),
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardContextFieldSelector(),
 	)
 }
 
@@ -26,13 +27,15 @@ func HandleStopRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	err := cmdhelpers.ExecuteTimedClusterCommand(
-		cmd,
-		manager,
-		"Cluster stopped successfully (stub implementation)",
-	)
+	tmr := timer.New()
+	tmr.Start()
+
+	_, err := manager.LoadConfig(tmr)
 	if err != nil {
-		return fmt.Errorf("failed to provision cluster stop: %w", err)
+		return fmt.Errorf(
+			"failed to load cluster configuration: %w",
+			err,
+		)
 	}
 
 	return nil

@@ -1,6 +1,8 @@
 package configmanager_test
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +10,7 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -24,6 +27,11 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			v1alpha1.DistributionKind,
 			"Kubernetes distribution",
+		),
+		configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			"kind.yaml",
+			"Distribution config",
 		),
 		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
@@ -61,8 +69,8 @@ func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Clust
 
 // createDistributionOnlyFieldSelectors creates field selectors with only the distribution field.
 func createDistributionOnlyFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
-	// Use the first selector (distribution) from the standard field selectors
-	return createStandardFieldSelectors()[:1]
+	// Use distribution and distribution config selectors from the standard set
+	return createStandardFieldSelectors()[:2]
 }
 
 // TestNewManager tests the NewManager constructor.
@@ -93,10 +101,10 @@ func TestLoadConfig(t *testing.T) {
 		shouldSucceed        bool
 	}{
 		{
-			name:                 "LoadConfig with defaults",
+			name:                 "LoadConfig with defaults (missing distribution)",
 			envVars:              map[string]string{},
 			expectedDistribution: v1alpha1.Distribution(""),
-			shouldSucceed:        true,
+			shouldSucceed:        false,
 		},
 		{
 			name: "LoadConfig with environment variables",
@@ -111,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 			envVars: map[string]string{
 				"KSAIL_SPEC_DISTRIBUTION":       "K3d",
 				"KSAIL_SPEC_SOURCEDIRECTORY":    "custom-k8s",
-				"KSAIL_SPEC_CONNECTION_CONTEXT": "custom-context",
+				"KSAIL_SPEC_CONNECTION_CONTEXT": "k3d-k3s-default",
 			},
 			expectedDistribution: v1alpha1.DistributionK3d,
 			shouldSucceed:        true,
@@ -145,7 +153,9 @@ func TestLoadConfig(t *testing.T) {
 				require.NoError(t, err2)
 				assert.Equal(t, cluster, cluster2)
 			} else {
-				assert.Error(t, err)
+				require.Error(t, err)
+				assert.Nil(t, cluster)
+				assert.True(t, errors.Is(err, helpers.ErrConfigurationValidationFailed))
 			}
 		})
 	}
@@ -226,7 +236,13 @@ func TestAddFlagsFromFields(t *testing.T) {
 		{
 			name:           "AddFlagsFromFields with multiple selectors",
 			fieldSelectors: createStandardFieldSelectors(),
-			expectedFlags:  []string{"distribution", "source-directory", "context", "timeout"},
+			expectedFlags: []string{
+				"distribution",
+				"distribution-config",
+				"source-directory",
+				"context",
+				"timeout",
+			},
 		},
 	}
 
@@ -286,6 +302,8 @@ func testFieldValueSetting(
 	defaultValue any,
 	description string,
 	assertFunc func(*testing.T, *v1alpha1.Cluster),
+	expectValidationError bool,
+	additionalSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) {
 	t.Helper()
 
@@ -299,13 +317,26 @@ func testFieldValueSetting(
 			DefaultValue: defaultValue,
 			Description:  description,
 		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			DefaultValue: "kind.yaml",
+			Description:  "Distribution config",
+		},
 	}
+	fieldSelectors = append(fieldSelectors, additionalSelectors...)
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
 
+	if expectValidationError {
+		require.Error(t, err)
+		assertFunc(t, manager.Config)
+
+		return
+	}
+
+	require.NoError(t, err)
 	assertFunc(t, cluster)
 }
 
@@ -323,6 +354,7 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 			// When default is nil, field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -340,6 +372,7 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 			// When type is not convertible, field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -357,6 +390,7 @@ func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 			// Direct string assignment should work
 			assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 		},
+		false,
 	)
 }
 
@@ -374,6 +408,7 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 			// Non-pointer field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -393,6 +428,12 @@ func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
 			t.Helper()
 			// Converted value should be set
 			assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
+		},
+		false,
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			DefaultValue: v1alpha1.DistributionKind,
+			Description:  "Distribution",
 		},
 	)
 }
@@ -578,4 +619,46 @@ func TestManager_isFieldEmpty_ValidPointerCases(t *testing.T) {
 	}
 
 	runIsFieldEmptyTestCases(t, tests)
+}
+
+func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var out bytes.Buffer
+
+	manager := configmanager.NewConfigManager(
+		&out,
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution",
+			DefaultValue: v1alpha1.Distribution(""),
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Distribution config",
+			DefaultValue: "",
+		},
+	)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	require.Nil(t, cluster)
+	assert.Contains(t, err.Error(), "configuration validation failed")
+
+	output := out.String()
+	assert.Contains(t, output, "Configuration validation failed:")
+	assert.Contains(t, output, "distribution is required")
 }

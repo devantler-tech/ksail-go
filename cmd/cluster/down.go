@@ -3,20 +3,21 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
 // NewDownCmd creates and returns the down command.
 func NewDownCmd() *cobra.Command {
-	return cmdhelpers.NewCobraCommand(
+	return helpers.NewCobraCommand(
 		"down",
 		"Destroy a cluster",
 		`Destroy a cluster.`,
 		HandleDownRunE,
-		cmdhelpers.StandardDistributionFieldSelector(),
-		cmdhelpers.StandardContextFieldSelector(),
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardContextFieldSelector(),
 	)
 }
 
@@ -26,13 +27,15 @@ func HandleDownRunE(
 	manager *configmanager.ConfigManager,
 	_ []string,
 ) error {
-	err := cmdhelpers.ExecuteTimedClusterCommand(
-		cmd,
-		manager,
-		"Cluster stopped and deleted successfully (stub implementation)",
-	)
+	tmr := timer.New()
+	tmr.Start()
+
+	_, err := manager.LoadConfig(tmr)
 	if err != nil {
-		return fmt.Errorf("failed to provision cluster down: %w", err)
+		return fmt.Errorf(
+			"failed to load cluster configuration: %w",
+			err,
+		)
 	}
 
 	return nil

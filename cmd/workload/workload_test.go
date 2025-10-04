@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -128,5 +128,5 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 
 	require.True(t, command.SilenceErrors)
 	require.True(t, command.SilenceUsage)
-	require.Equal(t, cmdhelpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
+	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }

@@ -1,30 +1,26 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
-const applyMessage = "Workload apply coming soon."
-
 // NewApplyCommand creates the workload apply command.
-func NewApplyCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "apply",
-		Short: "Apply manifests",
-		Long:  "Apply local Kubernetes manifests to your cluster.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.InfoType,
-				Content: applyMessage,
-				Writer:  cmd.OutOrStdout(),
-			})
+func NewApplyCmd() *cobra.Command {
+	return helpers.NewCobraCommand(
+		"apply",
+		"Apply manifests",
+		"Apply local Kubernetes manifests to your cluster.",
+		HandleApplyRunE,
+	)
+}
 
-			return nil
-		},
-	}
-
-	applyCommonCommandConfig(cmd)
-
-	return cmd
+// HandleApplyRunE handles the apply command.
+func HandleApplyRunE(
+	cmd *cobra.Command,
+	_ *configmanager.ConfigManager,
+	_ []string,
+) error {
+	return nil
 }

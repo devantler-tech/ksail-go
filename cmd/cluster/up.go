@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
@@ -19,14 +19,14 @@ const defaultUpTimeout = 5 * time.Minute
 
 // NewUpCmd creates and returns the up command.
 func NewUpCmd() *cobra.Command {
-	return cmdhelpers.NewCobraCommand(
+	return helpers.NewCobraCommand(
 		"up",
 		"Start the Kubernetes cluster",
 		`Start the Kubernetes cluster defined in the project configuration.`,
 		HandleUpRunE,
-		cmdhelpers.StandardDistributionFieldSelector(),
-		cmdhelpers.StandardDistributionConfigFieldSelector(),
-		cmdhelpers.StandardContextFieldSelector(),
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Timeout },
 			Description:  "Timeout for cluster operations",
@@ -56,7 +56,7 @@ func handleUpRunEWithProvisioner(
 	tmr.Start()
 
 	// Load cluster configuration
-	cluster, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
+	cluster, err := manager.LoadConfig(tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster: %w", err)
 	}
@@ -64,10 +64,8 @@ func handleUpRunEWithProvisioner(
 	// Transition to provisioning stage
 	tmr.NewStage()
 
-	// Add newline before title to make it stand out
-	cmd.Println()
-
 	// Show provisioning title
+	cmd.Println()
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: "Create cluster...",
@@ -80,11 +78,25 @@ func handleUpRunEWithProvisioner(
 
 	var clusterName string
 
+	distribution := cluster.Spec.Distribution
+	distributionConfigPath := cluster.Spec.DistributionConfig
+	kubeconfigPath := cluster.Spec.Connection.Kubeconfig
+
 	if provisioner != nil {
-		clusterProvisioner, clusterName, err = provisioner(cmd.Context(), cluster)
+		clusterProvisioner, clusterName, err = provisioner(
+			cmd.Context(),
+			distribution,
+			distributionConfigPath,
+			kubeconfigPath,
+		)
 	} else {
 		// Load config once and get both provisioner and cluster name
-		clusterProvisioner, clusterName, err = cmdhelpers.CreateClusterProvisionerWithName(cmd.Context(), cluster)
+		clusterProvisioner, clusterName, err = clusterprovisioner.CreateClusterProvisioner(
+			cmd.Context(),
+			distribution,
+			distributionConfigPath,
+			kubeconfigPath,
+		)
 	}
 
 	if err != nil {
@@ -118,4 +130,9 @@ func handleUpRunEWithProvisioner(
 
 // provisionerFactory is a function type for creating cluster provisioners (for testing).
 // Returns provisioner, cluster name, and error.
-type provisionerFactory func(context.Context, *v1alpha1.Cluster) (clusterprovisioner.ClusterProvisioner, string, error)
+type provisionerFactory func(
+	context.Context,
+	v1alpha1.Distribution,
+	string,
+	string,
+) (clusterprovisioner.ClusterProvisioner, string, error)

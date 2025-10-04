@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,12 +16,12 @@ const defaultStatusTimeout = 5 * time.Minute
 
 // NewStatusCmd creates and returns the status command.
 func NewStatusCmd() *cobra.Command {
-	return cmdhelpers.NewCobraCommand(
+	return helpers.NewCobraCommand(
 		"status",
 		"Show status of the Kubernetes cluster",
 		`Show the current status of the Kubernetes cluster.`,
 		HandleStatusRunE,
-		cmdhelpers.StandardContextFieldSelector(),
+		configmanager.StandardContextFieldSelector(),
 		configmanager.FieldSelector[v1alpha1.Cluster]{
 			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
 			Description:  "Path to kubeconfig file",
@@ -49,17 +48,10 @@ func HandleStatusRunE(
 
 	// Load and validate cluster configuration
 	// Note: cluster will be used when implementing actual status checking
-	_, err := cmdhelpers.LoadClusterWithErrorHandling(cmd, manager, tmr)
+	_, err := manager.LoadConfig(tmr)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "Cluster status: Running (stub implementation)",
-		Timer:   tmr,
-		Writer:  cmd.OutOrStdout(),
-	})
 
 	return nil
 }

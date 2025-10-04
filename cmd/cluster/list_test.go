@@ -94,8 +94,6 @@ func runListLoadFailure(t *testing.T) {
 			if !strings.Contains(err.Error(), "failed to read config file") {
 				t.Fatalf("expected read config file error, got %v", err)
 			}
-
-			assertOutputContains(t, buffer.String(), "Failed to load cluster configuration")
 		},
 	)
 }

@@ -8,8 +8,10 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/viper"
 )
 
@@ -69,6 +71,11 @@ func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
 
 	// Unmarshal and apply defaults
 	err = m.unmarshalAndApplyDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	err = m.validateConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -161,6 +168,53 @@ func (m *ConfigManager) notifyLoadingComplete(tmr timer.Timer) {
 		Timer:   tmr,
 		Writer:  m.Writer,
 	})
+}
+
+func (m *ConfigManager) validateConfig() error {
+	validator := ksailvalidator.NewValidator()
+	result := validator.Validate(m.Config)
+
+	if !result.Valid {
+		errorMessages := helpers.FormatValidationErrorsMultiline(result)
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "Configuration validation failed:\n%s",
+			Args:    []any{errorMessages},
+			Writer:  m.Writer,
+		})
+
+		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
+		for _, suggestion := range fixSuggestions {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: suggestion,
+				Writer:  m.Writer,
+			})
+		}
+
+		warnings := helpers.FormatValidationWarnings(result)
+		for _, warning := range warnings {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: warning,
+				Writer:  m.Writer,
+			})
+		}
+
+		return fmt.Errorf("%w with %d errors",
+			helpers.ErrConfigurationValidationFailed, len(result.Errors))
+	}
+
+	warnings := helpers.FormatValidationWarnings(result)
+	for _, warning := range warnings {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.WarningType,
+			Content: warning,
+			Writer:  m.Writer,
+		})
+	}
+
+	return nil
 }
 
 // isFieldEmpty checks if a field pointer points to an empty/zero value.

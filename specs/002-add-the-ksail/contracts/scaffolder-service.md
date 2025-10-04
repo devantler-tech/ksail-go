@@ -23,7 +23,7 @@ The scaffolder is initialized with `v1alpha1.Cluster` configuration loaded by Co
 // ConfigManager loads cluster configuration with CLI flag integration
 cluster, err := configManager.LoadConfig()
 if err != nil {
-    return fmt.Errorf("failed to load cluster config: %w", err)
+    return fmt.Errorf("failed to load cluster configuration: %w", err)
 }
 
 // Scaffolder is created with the loaded cluster configuration
