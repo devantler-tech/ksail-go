@@ -59,8 +59,14 @@ func HandleStatusRunE(
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
+	// Get context, using background if not available
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	// Check cluster status
-	status, err := checkClusterStatus(cmd.Context(), cluster)
+	status, err := checkClusterStatus(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to check cluster status: %w", err)
 	}
