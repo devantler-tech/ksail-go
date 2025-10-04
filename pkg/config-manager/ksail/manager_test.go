@@ -2,7 +2,6 @@ package configmanager_test
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -155,7 +154,7 @@ func TestLoadConfig(t *testing.T) {
 			} else {
 				require.Error(t, err)
 				assert.Nil(t, cluster)
-				assert.True(t, errors.Is(err, helpers.ErrConfigurationValidationFailed))
+				assert.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
 			}
 		})
 	}
@@ -623,7 +622,6 @@ func TestManager_isFieldEmpty_ValidPointerCases(t *testing.T) {
 
 func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	// Cannot use t.Parallel() because test changes directories using t.Chdir()
-
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 

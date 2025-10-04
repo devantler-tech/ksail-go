@@ -52,6 +52,7 @@ func (e *Executor) Execute(cmd *cobra.Command) error {
 	var errBuf bytes.Buffer
 
 	originalErrWriter := cmd.ErrOrStderr()
+
 	cmd.SetErr(&errBuf)
 	defer cmd.SetErr(originalErrWriter)
 
@@ -86,6 +87,7 @@ func (e *CommandError) Error() string {
 		if strings.Contains(e.message, e.cause.Error()) {
 			return e.message
 		}
+
 		return e.message + ": " + e.cause.Error()
 	case e.message != "":
 		return e.message
@@ -101,6 +103,7 @@ func (e *CommandError) Unwrap() error {
 	if e == nil {
 		return nil
 	}
+
 	return e.cause
 }
 

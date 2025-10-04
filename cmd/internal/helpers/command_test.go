@@ -176,6 +176,7 @@ func TestNewCobraCommandWithNoFieldSelectors(t *testing.T) {
 
 	runE := func(_ *cobra.Command, _ *configmanager.ConfigManager, _ []string) error {
 		runECalled = true
+
 		return nil
 	}
 

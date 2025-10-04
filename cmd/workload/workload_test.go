@@ -69,6 +69,7 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 	for _, testCase := range handlers {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+
 			var out bytes.Buffer
 
 			manager := newConfigManagerWithDefaults(&out)

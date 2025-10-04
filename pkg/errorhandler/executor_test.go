@@ -21,7 +21,8 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 
 	executor := errorhandler.NewExecutor()
 
-	if err := executor.Execute(cmd); err != nil {
+	err := executor.Execute(cmd)
+	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 }

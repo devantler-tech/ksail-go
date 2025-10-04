@@ -76,13 +76,16 @@ func WriteMessage(msg Message) {
 
 	if strings.Contains(content, "\n") && config.symbol != "" {
 		indent := strings.Repeat(" ", len([]rune(config.symbol)))
+
 		lines := strings.Split(content, "\n")
 		for i := 1; i < len(lines); i++ {
 			if lines[i] == "" {
 				continue
 			}
+
 			lines[i] = indent + lines[i]
 		}
+
 		content = strings.Join(lines, "\n")
 	}
 
