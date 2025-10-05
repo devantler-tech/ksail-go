@@ -18,7 +18,7 @@ linters:
     - wsl
   exclusions:
     paths:
-      - ".*mocks*\\.go$"
+      - ".*mocks.*\\.go$"
     rules:
       - linters:
           - ireturn
