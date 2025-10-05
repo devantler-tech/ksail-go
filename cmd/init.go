@@ -40,8 +40,8 @@ func HandleInitRunE(
 ) error {
 	// Create command utils
 	utils, err := utils.NewCommandUtils(cmd,
-		configmanager.StandardDistributionFieldSelector(),
-		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
 		configmanager.StandardSourceDirectoryFieldSelector())
 	if err != nil {
 		return fmt.Errorf("failed to create command utils: %w", err)

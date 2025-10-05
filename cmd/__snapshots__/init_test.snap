@@ -1,26 +1,27 @@
 
 [TestInitCmdExecute - 1]
+⏳ Load config...
+► loading ksail config
+► using default config
+✔ config loaded
 
 📂 Initialize project......
-► created 'ksail.yaml'
-► created 'kind.yaml'
-► created 'k8s/kustomization.yaml'
+✚ created 'ksail.yaml'
+✚ created 'kind.yaml'
+✚ created 'k8s/kustomization.yaml'
 ✔ initialized project
 
 ---
 
 [TestInitCmdHelp - 1]
-Initialize a new project.
+Initialize a new project in the specified directory (or current directory if none specified).
 
 Usage:
   init [flags]
 
 Flags:
-  -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
-      --distribution-config string   Configuration file for the distribution (default "kind.yaml")
-  -f, --force                        Overwrite existing files
-  -h, --help                         help for init
-  -o, --output string                Output directory for the project
-  -s, --source-directory string      Directory containing workloads to deploy (default "k8s")
+  -f, --force           Overwrite existing files
+  -h, --help            help for init
+  -o, --output string   Output directory for the project
 
 ---

@@ -4,14 +4,15 @@ package workload_test
 
 import (
 	"bytes"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 )
@@ -55,21 +56,31 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 	commands := []string{"reconcile", "apply", "install"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
-			t.Parallel()
+			var out bytes.Buffer
 
-			cmd, out := cmdtestutils.SetupCommandWithOutput()
-			cmd.Use = commandName
+			tempDir := t.TempDir()
+			cmdtestutils.WriteValidKsailConfig(t, tempDir)
 
-			manager := cmdtestutils.CreateDefaultConfigManager()
-			manager.Writer = out
+			originalDir, err := os.Getwd()
+			require.NoError(t, err)
 
-			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			t.Cleanup(func() {
+				require.NoError(t, os.Chdir(originalDir))
+			})
+
+			require.NoError(t, os.Chdir(tempDir))
+
+			root := cmd.NewRootCmd("test", "test", "test")
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs([]string{"workload", commandName})
+
+			err = root.Execute()
 			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
@@ -105,5 +116,5 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 
 	require.False(t, command.SilenceErrors)
 	require.False(t, command.SilenceUsage)
-	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
+	require.Equal(t, configmanager.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }

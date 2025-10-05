@@ -10,7 +10,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -226,14 +225,39 @@ func testHandleInitRunEConfigManagerLoadError(t *testing.T) {
 
 	var out bytes.Buffer
 
+	tempDir := t.TempDir()
+	invalidConfig := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Unknown
+  distributionConfig: kind.yaml
+`
+
+	err := os.WriteFile(filepath.Join(tempDir, "ksail.yaml"), []byte(invalidConfig), 0o600)
+	require.NoError(t, err)
+
+	kindConfig := `kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kind
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "kind.yaml"), []byte(kindConfig), 0o600))
+
+	originalDir, chdirErr := os.Getwd()
+	require.NoError(t, chdirErr)
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chdir(originalDir))
+	})
+
+	require.NoError(t, os.Chdir(tempDir))
+
 	command := cmd.NewInitCmd()
 	command.SetOut(&out)
 
-	manager := configmanager.NewConfigManager(&out)
-
-	err := cmd.HandleInitRunE(command, manager, nil)
+	err = cmd.HandleInitRunE(command, nil)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to load cluster configuration")
+	require.ErrorContains(t, err, "configuration validation failed")
 }
 
 func testHandleInitRunEScaffoldError(t *testing.T) {

@@ -181,7 +181,7 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
 	output.Reset()
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
@@ -203,9 +203,8 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	manager.Config.Spec.Distribution = ""
 	manager.Config.Spec.DistributionConfig = ""
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.Error(t, err)
-	assert.Nil(t, cluster)
 	require.ErrorContains(t, err, "with 4 errors and 0 warnings")
 
 	logOutput := output.String()
@@ -241,20 +240,20 @@ func testLoadConfigCase(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 
 	if testCase.shouldSucceed {
 		require.NoError(t, err)
+		cluster := manager.GetConfig()
 		require.NotNil(t, cluster)
 		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
 
 		// Test that subsequent calls return the same config
-		cluster2, err2 := manager.LoadConfig(nil)
-		require.NoError(t, err2)
-		assert.Equal(t, cluster, cluster2)
+		err = manager.LoadConfig(nil)
+		require.NoError(t, err)
+		assert.Equal(t, cluster, manager.GetConfig())
 	} else {
 		require.Error(t, err)
-		assert.Nil(t, cluster)
 		assert.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
 	}
 }
@@ -385,9 +384,10 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
+	cluster := manager.GetConfig()
 	// After loading, Config property should be accessible and equal to returned cluster
 	assert.Equal(t, cluster, manager.Config)
 	assert.Equal(t, v1alpha1.DistributionKind, manager.Config.Spec.Distribution)
@@ -425,17 +425,17 @@ func testFieldValueSetting(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 
 	if expectValidationError {
 		require.Error(t, err)
-		assertFunc(t, manager.Config)
+		assertFunc(t, manager.GetConfig())
 
 		return
 	}
 
 	require.NoError(t, err)
-	assertFunc(t, cluster)
+	assertFunc(t, manager.GetConfig())
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
@@ -567,7 +567,7 @@ invalid yaml content
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
-	cluster, err := manager.LoadConfig(nil)
+	err = manager.LoadConfig(nil)
 
 	// We expect this to fail with a config reading error (not ConfigFileNotFoundError)
 	if err != nil {
@@ -579,9 +579,9 @@ invalid yaml content
 		assert.NotErrorAs(t, err, &configFileNotFoundError,
 			"Should not be ConfigFileNotFoundError")
 	} else {
-		t.Logf("No error occurred, cluster: %+v", cluster)
+		t.Logf("No error occurred, cluster: %+v", manager.GetConfig())
 		// If it succeeded somehow, the test should still pass
-		require.NotNil(t, cluster)
+		require.NotNil(t, manager.GetConfig())
 	}
 }
 
@@ -612,8 +612,9 @@ spec:
 	fieldSelectors := createFieldSelectorsWithName()
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err = manager.LoadConfig(nil)
 	require.NoError(t, err)
+	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 
 	// Verify config was loaded properly (this exercises the "else" branch in readConfigurationFile)
@@ -751,9 +752,8 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 		},
 	)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.Error(t, err)
-	require.Nil(t, cluster)
 	assert.Contains(t, err.Error(), "configuration validation failed")
 
 	output := out.String()
@@ -771,9 +771,9 @@ func loadConfigAndCaptureOutput(
 	output := &bytes.Buffer{}
 	manager := configmanager.NewConfigManager(output, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
-	require.NotNil(t, cluster)
+	require.NotNil(t, manager.GetConfig())
 
-	return manager, output, cluster
+	return manager, output, manager.GetConfig()
 }

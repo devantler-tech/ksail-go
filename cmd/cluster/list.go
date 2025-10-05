@@ -24,8 +24,8 @@ func NewListCmd() *cobra.Command {
 
 	utils, _ := utils.NewCommandUtils(
 		cmd,
-		configmanager.StandardDistributionFieldSelector(),
-		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
 	)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

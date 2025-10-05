@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
@@ -34,12 +35,19 @@ func TestCreateClusterProvisioner(t *testing.T) {
 
 			configPath := testCase.configProvider(t)
 
-			provisioner, clusterName, err := clusterprovisioner.CreateClusterProvisioner(
+			provisioner, distributionConfig, err := clusterprovisioner.CreateClusterProvisioner(
 				context.Background(),
 				testCase.distribution,
 				configPath,
 				"",
 			)
+			if err != nil {
+				t.Fatalf("unexpected error creating cluster provisioner: %v", err)
+			}
+			clusterName, err := configmanager.GetClusterName(distributionConfig)
+			if err != nil {
+				t.Fatalf("failed to get cluster name from config: %v", err)
+			}
 
 			testCase.assertion(t, provisioner, clusterName, err)
 		})

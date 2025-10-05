@@ -6,9 +6,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 func NewCreateCmd() *cobra.Command {
@@ -21,8 +19,8 @@ func NewCreateCmd() *cobra.Command {
 
 	utils, _ := utils.NewCommandUtils(
 		cmd,
-		configmanager.StandardDistributionFieldSelector(),
-		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
 	)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -71,9 +69,9 @@ func createCluster(utils *utils.CommandUtils, cmd *cobra.Command) error {
 		return fmt.Errorf("missing cluster provisioner dependency")
 	}
 
-	clusterName := getClusterNameFromDistributionConfig(deps.DistributionConfig)
-	if clusterName == "" {
-		return fmt.Errorf("missing cluster name in resolved dependencies")
+	clusterName, err := configmanager.GetClusterName(deps.DistributionConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster name from config: %w", err)
 	}
 
 	// Show activity message
@@ -108,15 +106,4 @@ func showProvisioningTitle(cmd *cobra.Command) {
 		Emoji:   "🚀",
 		Writer:  cmd.OutOrStdout(),
 	})
-}
-
-func getClusterNameFromDistributionConfig(any any) string {
-	switch cfg := any.(type) {
-	case *v1alpha4.Cluster:
-		return cfg.Name
-	case *v1alpha5.SimpleConfig:
-		return cfg.Name
-	default:
-		return ""
-	}
 }

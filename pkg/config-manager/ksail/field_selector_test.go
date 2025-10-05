@@ -58,7 +58,7 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 	return []standardFieldSelectorCase{
 		{
 			name:            "distribution",
-			factory:         configmanager.StandardDistributionFieldSelector,
+			factory:         configmanager.DefaultDistributionFieldSelector,
 			expectedDesc:    "Kubernetes distribution to use",
 			expectedDefault: v1alpha1.DistributionKind,
 			assertPointer:   assertDistributionSelector,
@@ -72,14 +72,14 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 		},
 		{
 			name:            "distribution config",
-			factory:         configmanager.StandardDistributionConfigFieldSelector,
+			factory:         configmanager.DefaultDistributionConfigFieldSelector,
 			expectedDesc:    "Configuration file for the distribution",
 			expectedDefault: "kind.yaml",
 			assertPointer:   assertDistributionConfigSelector,
 		},
 		{
 			name:            "context",
-			factory:         configmanager.StandardContextFieldSelector,
+			factory:         configmanager.DefaultContextFieldSelector,
 			expectedDesc:    "Kubernetes context of cluster",
 			expectedDefault: "kind-kind",
 			assertPointer:   assertContextSelector,

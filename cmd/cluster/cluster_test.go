@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +57,7 @@ func TestHandleClusterRunEWrapsHelpError(t *testing.T) {
 
 	cmd := &cobra.Command{Use: "cluster"}
 
-	err := handleClusterRunE(cmd, nil, nil)
+	err := handleClusterRunE(cmd, nil)
 	if !errors.Is(err, errHelpFailure) {
 		t.Fatalf("expected wrapped help failure error, got %v", err)
 	}
@@ -75,7 +74,7 @@ func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
 	t.Helper()
 
 	constructors := []func() *cobra.Command{
-		NewUpCmd,
+		NewCreateCmd,
 		NewDeleteCmd,
 		NewStartCmd,
 		NewStopCmd,
@@ -154,19 +153,25 @@ func assertOutputContains(t *testing.T, output, expected string) {
 	}
 }
 
-type lifecycleHandlerFunc func(*cobra.Command, *configmanager.ConfigManager, []string) error
-
 func runLifecycleSuccessCase(
 	t *testing.T,
-	use string,
-	handler lifecycleHandlerFunc,
-) {
+	commandFactory func() *cobra.Command,
+) string {
 	t.Helper()
 
-	cmd, manager, output := testutils.NewCommandAndManager(t, use)
-	testutils.SeedValidClusterConfig(manager)
+	cleanup := testutils.SetupValidWorkingDir(t)
+	t.Cleanup(cleanup)
 
-	err := handler(cmd, manager, nil)
+	command := commandFactory()
+	var output bytes.Buffer
+	command.SetOut(&output)
+	command.SetErr(&output)
+
+	if command.RunE == nil {
+		t.Fatal("command RunE must not be nil")
+	}
+
+	err := command.RunE(command, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -176,35 +181,18 @@ func runLifecycleSuccessCase(
 	assertOutputContains(t, actual, "config loaded")
 
 	if strings.Contains(actual, "stub implementation") {
-		t.Fatalf("unexpected stub output for %s command: %q", use, actual)
+		t.Fatalf("unexpected stub output for %s command: %q", command.Use, actual)
 	}
+
+	return actual
 }
 
 func runLifecycleValidationErrorCase(
 	t *testing.T,
-	use string,
-	handler lifecycleHandlerFunc,
+	commandFactory func() *cobra.Command,
 	expectedSubstrings ...string,
 ) {
 	t.Helper()
 
-	testutils.RunValidationErrorTest(t, use, func(
-		cmd *cobra.Command,
-		manager *configmanager.ConfigManager,
-		args []string,
-	) error {
-		err := handler(cmd, manager, args)
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
-
-		message := err.Error()
-		for _, substring := range expectedSubstrings {
-			if !strings.Contains(message, substring) {
-				t.Fatalf("expected error message to contain %q, got %q", substring, message)
-			}
-		}
-
-		return err
-	})
+	testutils.RunValidationErrorTest(t, commandFactory, expectedSubstrings...)
 }

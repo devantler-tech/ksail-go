@@ -35,8 +35,8 @@ func AddFlagFromField(
 	}
 }
 
-// StandardDistributionFieldSelector creates a standard field selector for distribution.
-func StandardDistributionFieldSelector() FieldSelector[v1alpha1.Cluster] {
+// DefaultDistributionFieldSelector creates a standard field selector for distribution.
+func DefaultDistributionFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		Description:  "Kubernetes distribution to use",
@@ -53,8 +53,8 @@ func StandardSourceDirectoryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
-// StandardDistributionConfigFieldSelector creates a standard field selector for distribution config.
-func StandardDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
+// DefaultDistributionConfigFieldSelector creates a standard field selector for distribution config.
+func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
 		Description:  "Configuration file for the distribution",
@@ -62,8 +62,8 @@ func StandardDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
-// StandardContextFieldSelector creates a standard field selector for kubernetes context.
-func StandardContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
+// DefaultContextFieldSelector creates a standard field selector for kubernetes context.
+func DefaultContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
 		Description:  "Kubernetes context of cluster",

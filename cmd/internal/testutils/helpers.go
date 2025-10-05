@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,6 +12,22 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
+)
+
+const (
+	defaultKsailConfigContent = `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind
+  distributionConfig: kind.yaml
+  sourceDirectory: k8s
+`
+
+	defaultKindConfigContent = `kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: kind
+`
 )
 
 // CreateConfigManagerWithFieldSelectors creates a config manager with the provided field selectors.
@@ -51,6 +68,21 @@ func CreateDefaultConfigManager() *configmanager.ConfigManager {
 			DefaultValue: "kind-kind", // Using default pattern that validator expects
 		},
 	)
+}
+
+// WriteValidKsailConfig writes a minimal but valid KSail configuration into the provided directory.
+func WriteValidKsailConfig(t *testing.T, dir string) {
+	t.Helper()
+
+	// Ensure workload directory exists for parity with ksail init output.
+	workloadDir := filepath.Join(dir, "k8s")
+	require.NoError(t, os.MkdirAll(workloadDir, 0o755))
+
+	configPath := filepath.Join(dir, "ksail.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(defaultKsailConfigContent), 0o600))
+
+	kindConfigPath := filepath.Join(dir, "kind.yaml")
+	require.NoError(t, os.WriteFile(kindConfigPath, []byte(defaultKindConfigContent), 0o600))
 }
 
 // SetupCommandWithOutput creates a standard cobra command with output buffer for cmd tests.
