@@ -78,6 +78,14 @@ type CommandError struct {
 	cause   error
 }
 
+// NewCommandError constructs a CommandError with the provided message and cause.
+func NewCommandError(message string, cause error) *CommandError {
+	return &CommandError{
+		message: message,
+		cause:   cause,
+	}
+}
+
 // Error implements the error interface.
 func (e *CommandError) Error() string {
 	switch {

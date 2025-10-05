@@ -142,14 +142,8 @@ func TestLoadConfigMissingFileNotifiesDefaults(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
-	var output bytes.Buffer
-
-	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
-
-	cluster, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
-	require.NotNil(t, cluster)
-
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
 	assert.Contains(t, output.String(), "using default config")
 }
 
@@ -168,13 +162,8 @@ func TestLoadConfigConfigFileNotifiesFound(t *testing.T) {
 	err := os.WriteFile(configPath, configContents, 0o600)
 	require.NoError(t, err)
 
-	var output bytes.Buffer
-
-	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
-
-	cluster, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
-	require.NotNil(t, cluster)
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
 
 	assert.Contains(t, output.String(), "Load config...")
 	assert.Contains(t, output.String(), "loading ksail config")
@@ -189,16 +178,10 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
-	var output bytes.Buffer
-
-	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
-
-	_, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
-
+	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
 	output.Reset()
 
-	_, err = manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
@@ -223,7 +206,7 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	cluster, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Nil(t, cluster)
-	assert.ErrorContains(t, err, "with 4 errors and 0 warnings")
+	require.ErrorContains(t, err, "with 4 errors and 0 warnings")
 
 	logOutput := output.String()
 	assert.Contains(t, logOutput, "Configuration validation failed")
@@ -776,4 +759,21 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	output := out.String()
 	assert.Contains(t, output, "Configuration validation failed:")
 	assert.Contains(t, output, "distribution is required")
+}
+
+// helper function to load config and capture output for tests.
+func loadConfigAndCaptureOutput(
+	t *testing.T,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
+) (*configmanager.ConfigManager, *bytes.Buffer, *v1alpha1.Cluster) {
+	t.Helper()
+
+	output := &bytes.Buffer{}
+	manager := configmanager.NewConfigManager(output, fieldSelectors...)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+
+	return manager, output, cluster
 }

@@ -1,13 +1,32 @@
-package errorhandler
+package errorhandler_test
 
 import (
 	"errors"
 	"strings"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/mock"
 )
+
+var (
+	errTestBoom        = errors.New("boom")
+	errOriginalFailure = errors.New("original failure")
+	errBoomOriginal    = errors.New("boom: original failure")
+	errJustCause       = errors.New("just cause")
+	errWrapped         = errors.New("wrapped")
+)
+
+type capturingNormalizer struct {
+	message string
+	called  bool
+}
+
+func (n *capturingNormalizer) Normalize(_ string) string {
+	n.called = true
+
+	return n.message
+}
 
 func TestExecutorExecuteSuccess(t *testing.T) {
 	t.Parallel()
@@ -19,7 +38,7 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 		},
 	}
 
-	executor := NewExecutor()
+	executor := errorhandler.NewExecutor()
 
 	err := executor.Execute(cmd)
 	if err != nil {
@@ -30,7 +49,7 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 func TestExecutorExecuteNilCommand(t *testing.T) {
 	t.Parallel()
 
-	executor := NewExecutor()
+	executor := errorhandler.NewExecutor()
 
 	err := executor.Execute(nil)
 	if err != nil {
@@ -45,7 +64,7 @@ func TestExecutorExecuteInvalidSubcommand(t *testing.T) {
 	root.AddCommand(&cobra.Command{Use: "valid"})
 	root.SetArgs([]string{"invalid"})
 
-	executor := NewExecutor()
+	executor := errorhandler.NewExecutor()
 
 	err := executor.Execute(root)
 	if err == nil {
@@ -66,8 +85,6 @@ func TestExecutorExecuteInvalidSubcommand(t *testing.T) {
 	}
 }
 
-var errTestBoom = errors.New("boom")
-
 func TestExecutorWithCustomNormalizer(t *testing.T) {
 	t.Parallel()
 
@@ -78,14 +95,17 @@ func TestExecutorWithCustomNormalizer(t *testing.T) {
 		},
 	}
 
-	normalizer := NewMockNormalizer(t)
-	normalizer.EXPECT().Normalize(mock.Anything).Return("custom boom")
+	normalizer := &capturingNormalizer{message: "custom boom"}
 
-	executor := NewExecutor(WithNormalizer(normalizer))
+	executor := errorhandler.NewExecutor(errorhandler.WithNormalizer(normalizer))
 
 	err := executor.Execute(cmd)
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+
+	if !normalizer.called {
+		t.Fatal("expected normalizer to be invoked")
 	}
 
 	if !strings.HasPrefix(err.Error(), "custom boom") {
@@ -98,7 +118,7 @@ func TestCommandErrorError(t *testing.T) {
 
 	cases := []struct {
 		name     string
-		err      *CommandError
+		err      *errorhandler.CommandError
 		expected string
 	}{
 		{
@@ -107,38 +127,28 @@ func TestCommandErrorError(t *testing.T) {
 			expected: "",
 		},
 		{
-			name: "message and cause concatenated when distinct",
-			err: &CommandError{
-				message: "normalized",
-				cause:   errors.New("original failure"),
-			},
+			name:     "message and cause concatenated when distinct",
+			err:      errorhandler.NewCommandError("normalized", errOriginalFailure),
 			expected: "normalized: original failure",
 		},
 		{
-			name: "message retained when already includes cause",
-			err: &CommandError{
-				message: "boom: original failure",
-				cause:   errors.New("boom: original failure"),
-			},
+			name:     "message retained when already includes cause",
+			err:      errorhandler.NewCommandError("boom: original failure", errBoomOriginal),
 			expected: "boom: original failure",
 		},
 		{
-			name: "message only when cause missing",
-			err: &CommandError{
-				message: "only message",
-			},
+			name:     "message only when cause missing",
+			err:      errorhandler.NewCommandError("only message", nil),
 			expected: "only message",
 		},
 		{
-			name: "cause only when message empty",
-			err: &CommandError{
-				cause: errors.New("just cause"),
-			},
+			name:     "cause only when message empty",
+			err:      errorhandler.NewCommandError("", errJustCause),
 			expected: "just cause",
 		},
 		{
 			name:     "empty struct returns empty string",
-			err:      &CommandError{},
+			err:      &errorhandler.CommandError{},
 			expected: "",
 		},
 	}
@@ -147,7 +157,8 @@ func TestCommandErrorError(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := testCase.err.Error()
+			actual := commandErrorString(testCase.err)
+
 			if actual != testCase.expected {
 				t.Fatalf("expected %q, got %q", testCase.expected, actual)
 			}
@@ -158,14 +169,14 @@ func TestCommandErrorError(t *testing.T) {
 func TestCommandErrorUnwrap(t *testing.T) {
 	t.Parallel()
 
-	cause := errors.New("wrapped")
-	err := &CommandError{cause: cause}
+	cause := errWrapped
+	err := errorhandler.NewCommandError("", cause)
 
 	if !errors.Is(err.Unwrap(), cause) {
 		t.Fatalf("expected unwrap to return original cause")
 	}
 
-	if (*CommandError)(nil).Unwrap() != nil {
+	if (*errorhandler.CommandError)(nil).Unwrap() != nil {
 		t.Fatalf("expected nil receiver unwrap to return nil")
 	}
 }
@@ -173,7 +184,7 @@ func TestCommandErrorUnwrap(t *testing.T) {
 func TestDefaultNormalizerNormalize(t *testing.T) {
 	t.Parallel()
 
-	normalizer := DefaultNormalizer{}
+	normalizer := errorhandler.DefaultNormalizer{}
 
 	tests := []struct {
 		name     string
@@ -202,4 +213,14 @@ func TestDefaultNormalizerNormalize(t *testing.T) {
 			}
 		})
 	}
+}
+
+func commandErrorString(err *errorhandler.CommandError) string {
+	if err == nil {
+		var cmdErr *errorhandler.CommandError
+
+		return cmdErr.Error()
+	}
+
+	return err.Error()
 }

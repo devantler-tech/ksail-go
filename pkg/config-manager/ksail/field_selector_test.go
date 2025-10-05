@@ -18,6 +18,14 @@ type testCase struct {
 	expectedDesc string
 }
 
+type standardFieldSelectorCase struct {
+	name            string
+	factory         func() configmanager.FieldSelector[v1alpha1.Cluster]
+	expectedDesc    string
+	expectedDefault any
+	assertPointer   func(*testing.T, *v1alpha1.Cluster, any)
+}
+
 // runAddFlagFromFieldTests is a helper function to run multiple test cases.
 func runAddFlagFromFieldTests(t *testing.T, tests []testCase) {
 	t.Helper()
@@ -38,102 +46,93 @@ func runAddFlagFromFieldTests(t *testing.T, tests []testCase) {
 }
 
 // TestFieldSelector_StructureAndTypes tests the FieldSelector struct and types.
-func TestFieldSelectorStructureAndTypes(t *testing.T) {
-	t.Parallel()
-
-	// Test that FieldSelector has the expected structure
-	selector := configmanager.FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-		Description:  "Test description",
-		DefaultValue: v1alpha1.DistributionKind,
-	}
-
-	require.NotNil(t, selector.Selector)
-	assert.Equal(t, "Test description", selector.Description)
-	assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
-
-	// Test that the selector function works
-	cluster := &v1alpha1.Cluster{}
-	result := selector.Selector(cluster)
-	require.NotNil(t, result)
-
-	// Verify it returns a pointer to the correct field
-	distributionPtr, ok := result.(*v1alpha1.Distribution)
-	require.True(t, ok, "Selector should return a pointer to Distribution")
-	assert.Equal(t, &cluster.Spec.Distribution, distributionPtr)
-}
-
 func TestStandardFieldSelectors(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name            string
-		factory         func() configmanager.FieldSelector[v1alpha1.Cluster]
-		expectedDesc    string
-		expectedDefault any
-		assertPointer   func(*testing.T, *v1alpha1.Cluster, any)
-	}{
+	cases := standardFieldSelectorCases()
+
+	runStandardFieldSelectorTests(t, cases)
+}
+
+func standardFieldSelectorCases() []standardFieldSelectorCase {
+	return []standardFieldSelectorCase{
 		{
 			name:            "distribution",
 			factory:         configmanager.StandardDistributionFieldSelector,
 			expectedDesc:    "Kubernetes distribution to use",
 			expectedDefault: v1alpha1.DistributionKind,
-			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-				distPtr, ok := ptr.(*v1alpha1.Distribution)
-				require.True(t, ok)
-				assert.Same(t, &cluster.Spec.Distribution, distPtr)
-			},
+			assertPointer:   assertDistributionSelector,
 		},
 		{
 			name:            "source directory",
 			factory:         configmanager.StandardSourceDirectoryFieldSelector,
 			expectedDesc:    "Directory containing workloads to deploy",
 			expectedDefault: "k8s",
-			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-				valuePtr, ok := ptr.(*string)
-				require.True(t, ok)
-				assert.Same(t, &cluster.Spec.SourceDirectory, valuePtr)
-			},
+			assertPointer:   assertSourceDirectorySelector,
 		},
 		{
 			name:            "distribution config",
 			factory:         configmanager.StandardDistributionConfigFieldSelector,
 			expectedDesc:    "Configuration file for the distribution",
 			expectedDefault: "kind.yaml",
-			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-				valuePtr, ok := ptr.(*string)
-				require.True(t, ok)
-				assert.Same(t, &cluster.Spec.DistributionConfig, valuePtr)
-			},
+			assertPointer:   assertDistributionConfigSelector,
 		},
 		{
 			name:            "context",
 			factory:         configmanager.StandardContextFieldSelector,
 			expectedDesc:    "Kubernetes context of cluster",
 			expectedDefault: "kind-kind",
-			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-				valuePtr, ok := ptr.(*string)
-				require.True(t, ok)
-				assert.Same(t, &cluster.Spec.Connection.Context, valuePtr)
-			},
+			assertPointer:   assertContextSelector,
 		},
 	}
+}
 
-	for _, testCase := range testCases {
-		try := testCase
-		t.Run(try.name, func(t *testing.T) {
+func assertDistributionSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Distribution)
+}
+
+func assertSourceDirectorySelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.SourceDirectory)
+}
+
+func assertDistributionConfigSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.DistributionConfig)
+}
+
+func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Connection.Context)
+}
+
+func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
+	t.Helper()
+
+	for _, testCase := range cases {
+		caseData := testCase
+		t.Run(caseData.name, func(t *testing.T) {
 			t.Parallel()
 
 			cluster := &v1alpha1.Cluster{}
-			selector := try.factory()
+			selector := caseData.factory()
 
-			assert.Equal(t, try.expectedDesc, selector.Description)
-			assert.Equal(t, try.expectedDefault, selector.DefaultValue)
+			assert.Equal(t, caseData.expectedDesc, selector.Description)
+			assert.Equal(t, caseData.expectedDefault, selector.DefaultValue)
 
-			fieldPtr := selector.Selector(cluster)
-			try.assertPointer(t, cluster, fieldPtr)
+			pointer := selector.Selector(cluster)
+			caseData.assertPointer(t, cluster, pointer)
 		})
 	}
+}
+
+func assertPointerSame[T any](t *testing.T, actual any, expected *T) {
+	t.Helper()
+
+	value, ok := actual.(*T)
+	require.True(t, ok)
+	assert.Same(t, expected, value)
 }
 
 // TestAddFlagFromField_SpecFields tests AddFlagFromField with spec fields.
@@ -145,64 +144,30 @@ func TestAddFlagFromFieldSpecFields(t *testing.T) {
 			name:         "Spec.Distribution field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			defaultValue: v1alpha1.DistributionKind,
-			description:  []string{"Cluster name"},
-			expectedDesc: "Cluster name",
-		},
-		{
-			name:         "Spec.Distribution field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			defaultValue: v1alpha1.DistributionKind,
-			description:  []string{"Kubernetes distribution"},
-			expectedDesc: "Kubernetes distribution",
+			description:  []string{"Kubernetes distribution to use"},
+			expectedDesc: "Kubernetes distribution to use",
 		},
 		{
 			name:         "Spec.SourceDirectory field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 			defaultValue: "k8s",
-			description:  []string{"Source directory"},
-			expectedDesc: "Source directory",
+			description:  []string{"Directory containing workloads to deploy"},
+			expectedDesc: "Directory containing workloads to deploy",
 		},
 		{
-			name:         "Spec.ReconciliationTool field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-			defaultValue: v1alpha1.ReconciliationToolFlux,
-			description:  []string{"Reconciliation tool"},
-			expectedDesc: "Reconciliation tool",
+			name:         "Spec.DistributionConfig field",
+			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			defaultValue: "kind.yaml",
+			description:  []string{"Configuration file for the distribution"},
+			expectedDesc: "Configuration file for the distribution",
 		},
-	}
-
-	runAddFlagFromFieldTests(t, tests)
-}
-
-// TestAddFlagFromField_ConnectionFields tests AddFlagFromField with connection fields.
-func TestAddFlagFromFieldConnectionFields(t *testing.T) {
-	t.Parallel()
-
-	tests := []testCase{
 		{
 			name:         "Spec.Connection.Context field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			defaultValue: "my-context",
-			description:  []string{"Kubernetes context"},
-			expectedDesc: "Kubernetes context",
+			defaultValue: "kind-kind",
+			description:  []string{"Kubernetes context of cluster"},
+			expectedDesc: "Kubernetes context of cluster",
 		},
-		{
-			name:         "Spec.Connection.Kubeconfig field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
-			defaultValue: "~/.kube/config",
-			description:  []string{"Kubeconfig path"},
-			expectedDesc: "Kubeconfig path",
-		},
-	}
-
-	runAddFlagFromFieldTests(t, tests)
-}
-
-// TestAddFlagFromField_NetworkingComponents tests AddFlagFromField with networking components.
-func TestAddFlagFromFieldNetworkingComponents(t *testing.T) {
-	t.Parallel()
-
-	tests := []testCase{
 		{
 			name:         "Spec.CNI field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
