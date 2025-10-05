@@ -201,6 +201,34 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
 }
 
+// TestLoadConfigValidationFailureMessages verifies validation error notifications.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigValidationFailureMessages(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var output bytes.Buffer
+	manager := configmanager.NewConfigManager(&output)
+
+	manager.Config.Kind = ""
+	manager.Config.APIVersion = ""
+	manager.Config.Spec.Distribution = ""
+	manager.Config.Spec.DistributionConfig = ""
+
+	cluster, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Nil(t, cluster)
+	assert.ErrorContains(t, err, "with 4 errors and 0 warnings")
+
+	logOutput := output.String()
+	assert.Contains(t, logOutput, "Configuration validation failed")
+	assert.Contains(t, logOutput, "kind is required")
+	assert.Contains(t, logOutput, "apiVersion is required")
+	assert.Contains(t, logOutput, "- spec.distribution: distribution is required")
+	assert.Contains(t, logOutput, "- spec.distributionConfig: distributionConfig is required")
+}
+
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.
 func testLoadConfigCase(
 	t *testing.T,
