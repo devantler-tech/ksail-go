@@ -3,6 +3,8 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 import (
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,10 +18,18 @@ import (
 func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newCommandWithBuffer()
-	utils := &commandutils.CommandUtils{
-		ConfigManager: configmanager.NewConfigManager(io.Discard),
+	cmd, _ := newCommandWithBuffer(t)
+
+	tmpDir := t.TempDir()
+	badConfigPath := filepath.Join(tmpDir, "ksail.yaml")
+	if err := os.WriteFile(badConfigPath, []byte(": invalid yaml"), 0o600); err != nil {
+		t.Fatalf("failed to write malformed config: %v", err)
 	}
+
+	cfgManager := configmanager.NewConfigManager(io.Discard)
+	cfgManager.Viper.SetConfigFile(badConfigPath)
+
+	utils := &commandutils.CommandUtils{ConfigManager: cfgManager}
 
 	err := HandleListRunE(cmd, utils, nil)
 	if err == nil {
@@ -30,17 +40,22 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	if !strings.Contains(message, "failed to load configuration") {
 		t.Fatalf("expected error to mention configuration load failure, got %q", message)
 	}
+
+	if !strings.Contains(message, "failed to read config file") {
+		t.Fatalf("expected config read failure to be reported, got %q", message)
+	}
 }
 
 func TestListClusters_ReturnsErrorWhenResolverFails(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newCommandWithBuffer()
+	cmd, _ := newCommandWithBuffer(t)
 
 	cfgManager := configmanager.NewConfigManager(io.Discard)
 	cfgManager.Config.Spec.Distribution = v1alpha1.Distribution("Unsupported")
 	cfgManager.Config.Spec.DistributionConfig = "ignored"
 	cfgManager.Config.Spec.Connection.Kubeconfig = "ignored"
+	cfgManager.Config.Spec.SourceDirectory = "ignored"
 
 	resolver, err := di.NewResolver(cfgManager.Config)
 	if err != nil {
@@ -61,6 +76,10 @@ func TestListClusters_ReturnsErrorWhenResolverFails(t *testing.T) {
 	if !strings.Contains(message, "failed to resolve dependencies") {
 		t.Fatalf("expected resolver error to be wrapped, got %q", message)
 	}
+
+	if !strings.Contains(message, "unsupported distribution") {
+		t.Fatalf("expected unsupported distribution to be reported, got %q", message)
+	}
 }
 
 func TestDisplayClusterList(t *testing.T) {
@@ -69,7 +88,7 @@ func TestDisplayClusterList(t *testing.T) {
 	t.Run("no clusters writes activity message", func(t *testing.T) {
 		t.Parallel()
 
-		cmd, out := newCommandWithBuffer()
+		cmd, out := newCommandWithBuffer(t)
 
 		displayClusterList(v1alpha1.DistributionKind, nil, cmd)
 
@@ -84,7 +103,7 @@ func TestDisplayClusterList(t *testing.T) {
 	t.Run("clusters are formatted per distribution", func(t *testing.T) {
 		t.Parallel()
 
-		cmd, out := newCommandWithBuffer()
+		cmd, out := newCommandWithBuffer(t)
 
 		displayClusterList(v1alpha1.DistributionK3d, []string{"alpha", "beta"}, cmd)
 
@@ -115,7 +134,9 @@ func TestBindAllFlagBindsViperState(t *testing.T) {
 	}
 }
 
-func newCommandWithBuffer() (*cobra.Command, *bytes.Buffer) {
+func newCommandWithBuffer(t *testing.T) (*cobra.Command, *bytes.Buffer) {
+	t.Helper()
+
 	tcmd := &cobra.Command{}
 	var out bytes.Buffer
 	tcmd.SetOut(&out)
