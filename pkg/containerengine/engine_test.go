@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/provisioner"
-	"github.com/devantler-tech/ksail-go/pkg/provisioner/containerengine"
+	"github.com/devantler-tech/ksail-go/pkg/containerengine"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
@@ -88,10 +87,13 @@ func assertSuccessfulEngineCreation(
 }
 
 // setupMockClientForEngineTest sets up a mock client for engine testing with server version expectations.
-func setupMockClientForEngineTest(t *testing.T, testCase nameTestCase) *provisioner.MockAPIClient {
+func setupMockClientForEngineTest(
+	t *testing.T,
+	testCase nameTestCase,
+) *containerengine.MockAPIClient {
 	t.Helper()
 
-	mockClient := provisioner.NewMockAPIClient(t)
+	mockClient := containerengine.NewMockAPIClient(t)
 	if testCase.serverVersionErr != nil {
 		mockClient.EXPECT().
 			ServerVersion(context.Background()).
@@ -106,7 +108,7 @@ func setupMockClientForEngineTest(t *testing.T, testCase nameTestCase) *provisio
 // assertDockerEngineSuccess sets up Docker client expectations and asserts successful creation.
 func assertDockerEngineSuccess(
 	t *testing.T,
-	mockClient *provisioner.MockAPIClient,
+	mockClient *containerengine.MockAPIClient,
 	overrides map[string]containerengine.ClientCreator,
 ) {
 	t.Helper()
@@ -130,7 +132,7 @@ func TestContainerEngineCheckReady(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			mockClient := provisioner.NewMockAPIClient(t)
+			mockClient := containerengine.NewMockAPIClient(t)
 			testCase.setupMock(mockClient)
 
 			engine, err := containerengine.NewContainerEngine(mockClient)
@@ -151,19 +153,19 @@ func TestContainerEngineCheckReady(t *testing.T) {
 
 func createContainerEngineTestCases() []struct {
 	name        string
-	setupMock   func(*provisioner.MockAPIClient)
+	setupMock   func(*containerengine.MockAPIClient)
 	expectReady bool
 	expectError bool
 } {
 	return []struct {
 		name        string
-		setupMock   func(*provisioner.MockAPIClient)
+		setupMock   func(*containerengine.MockAPIClient)
 		expectReady bool
 		expectError bool
 	}{
 		{
 			name: "container engine ready",
-			setupMock: func(m *provisioner.MockAPIClient) {
+			setupMock: func(m *containerengine.MockAPIClient) {
 				m.EXPECT().Ping(context.Background()).Return(completePing(), nil)
 			},
 			expectReady: true,
@@ -171,7 +173,7 @@ func createContainerEngineTestCases() []struct {
 		},
 		{
 			name: "container engine not ready",
-			setupMock: func(m *provisioner.MockAPIClient) {
+			setupMock: func(m *containerengine.MockAPIClient) {
 				m.EXPECT().Ping(context.Background()).Return(completePing(), assert.AnError)
 			},
 			expectReady: false,
@@ -260,7 +262,7 @@ func TestContainerEngineName(t *testing.T) {
 
 func TestContainerEngineGetClient(t *testing.T) {
 	t.Parallel()
-	mockClient := provisioner.NewMockAPIClient(t)
+	mockClient := containerengine.NewMockAPIClient(t)
 	engine, err := containerengine.NewContainerEngine(mockClient)
 	require.NoError(t, err)
 
@@ -271,7 +273,7 @@ func TestNewContainerEngineWithInjectedClient(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	mockClient := provisioner.NewMockAPIClient(t)
+	mockClient := containerengine.NewMockAPIClient(t)
 	mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 
 	// Act
@@ -317,7 +319,7 @@ func TestNewContainerEngineAPISignature(t *testing.T) {
 
 	t.Run("dependency injection mode", func(t *testing.T) {
 		t.Parallel()
-		mockClient := provisioner.NewMockAPIClient(t)
+		mockClient := containerengine.NewMockAPIClient(t)
 		mockClient.EXPECT().ServerVersion(context.Background()).Return(dockerVersion(), nil)
 
 		// Test that we can inject a client and detect engine type
@@ -414,7 +416,7 @@ func TestGetAutoDetectedClientDockerSuccess(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	mockClient := provisioner.NewMockAPIClient(t)
+	mockClient := containerengine.NewMockAPIClient(t)
 
 	// Create client creators using simple map
 	overrides := map[string]containerengine.ClientCreator{
@@ -457,8 +459,8 @@ func TestGetAutoDetectedClientFallbackScenarios(t *testing.T) {
 		t.Parallel()
 
 		// Test: Docker client creates but fails ping, Podman user works
-		mockDockerClient := provisioner.NewMockAPIClient(t)
-		mockPodmanClient := provisioner.NewMockAPIClient(t)
+		mockDockerClient := containerengine.NewMockAPIClient(t)
+		mockPodmanClient := containerengine.NewMockAPIClient(t)
 
 		overrides := createTestOverrides(
 			mockDockerClient, nil,
@@ -482,8 +484,8 @@ func TestGetAutoDetectedClientFallbackScenarios(t *testing.T) {
 
 		// Test: Docker creation fails entirely, then user Podman succeeds creation but fails ping,
 		// finally system Podman succeeds both creation and ping
-		mockPodmanUserClient := provisioner.NewMockAPIClient(t)
-		mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
+		mockPodmanUserClient := containerengine.NewMockAPIClient(t)
+		mockPodmanSystemClient := containerengine.NewMockAPIClient(t)
 
 		// Different client setup pattern than above test
 		overrides := map[string]containerengine.ClientCreator{
@@ -533,9 +535,9 @@ func TestGetAutoDetectedClientAllClientsCreateButNotReady(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	mockDockerClient := provisioner.NewMockAPIClient(t)
-	mockPodmanUserClient := provisioner.NewMockAPIClient(t)
-	mockPodmanSystemClient := provisioner.NewMockAPIClient(t)
+	mockDockerClient := containerengine.NewMockAPIClient(t)
+	mockPodmanUserClient := containerengine.NewMockAPIClient(t)
+	mockPodmanSystemClient := containerengine.NewMockAPIClient(t)
 
 	overrides := createTestOverrides(
 		mockDockerClient, nil,
@@ -564,7 +566,7 @@ func TestGetAutoDetectedClientPartialClientCreators(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	mockClient := provisioner.NewMockAPIClient(t)
+	mockClient := containerengine.NewMockAPIClient(t)
 
 	// Test with only Docker creator - other clients will use defaults
 	overrides := map[string]containerengine.ClientCreator{
@@ -697,7 +699,7 @@ func TestContainsHelper(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockClient := provisioner.NewMockAPIClient(t)
+			mockClient := containerengine.NewMockAPIClient(t)
 			version := createVersion(testCase.platformName, testCase.version)
 			mockClient.EXPECT().ServerVersion(context.Background()).Return(version, nil)
 

@@ -56,7 +56,7 @@ func testHandleUpRunESuccess(t *testing.T) {
 	cmd, manager, output := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
 
-	mockProvisioner := &mockClusterProvisioner{}
+	mockProvisioner := clusterprovisioner.NewMockClusterProvisioner(t)
 	mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
 
 	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
@@ -98,7 +98,7 @@ func testHandleUpRunEProvisionFailure(t *testing.T) {
 	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
 
-	mockProvisioner := &mockClusterProvisioner{}
+	mockProvisioner := clusterprovisioner.NewMockClusterProvisioner(t)
 	mockProvisioner.On("Create", mock.Anything, "kind").Return(errProvisionFailed)
 
 	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
@@ -123,53 +123,4 @@ func sanitizeTimingOutput(output string) string {
 
 		return "[stage: *]"
 	})
-}
-
-// mockClusterProvisioner is a test mock using testify/mock.
-type mockClusterProvisioner struct {
-	mock.Mock
-}
-
-//nolint:wrapcheck // Test mock returning error from mock framework
-func (m *mockClusterProvisioner) Create(ctx context.Context, name string) error {
-	args := m.Called(ctx, name)
-
-	return args.Error(0)
-}
-
-//nolint:wrapcheck // Test mock returning error from mock framework
-func (m *mockClusterProvisioner) Delete(ctx context.Context, name string) error {
-	args := m.Called(ctx, name)
-
-	return args.Error(0)
-}
-
-//nolint:wrapcheck // Test mock returning error from mock framework
-func (m *mockClusterProvisioner) Start(ctx context.Context, name string) error {
-	args := m.Called(ctx, name)
-
-	return args.Error(0)
-}
-
-//nolint:wrapcheck // Test mock returning error from mock framework
-func (m *mockClusterProvisioner) Stop(ctx context.Context, name string) error {
-	args := m.Called(ctx, name)
-
-	return args.Error(0)
-}
-
-//nolint:wrapcheck // Test mock returning error from mock framework
-func (m *mockClusterProvisioner) List(ctx context.Context) ([]string, error) {
-	args := m.Called(ctx)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-
-	return args.Get(0).([]string), args.Error(1) //nolint:forcetypeassert // Test mock
-}
-
-func (m *mockClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
-	args := m.Called(ctx, name)
-
-	return args.Bool(0), args.Error(1)
 }
