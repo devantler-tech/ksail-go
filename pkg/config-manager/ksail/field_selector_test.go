@@ -119,8 +119,8 @@ func TestStandardFieldSelectors(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		try := tc
+	for _, testCase := range testCases {
+		try := testCase
 		t.Run(try.name, func(t *testing.T) {
 			t.Parallel()
 

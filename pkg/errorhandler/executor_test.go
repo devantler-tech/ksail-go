@@ -143,13 +143,13 @@ func TestCommandErrorError(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := tc.err.Error()
-			if actual != tc.expected {
-				t.Fatalf("expected %q, got %q", tc.expected, actual)
+			actual := testCase.err.Error()
+			if actual != testCase.expected {
+				t.Fatalf("expected %q, got %q", testCase.expected, actual)
 			}
 		})
 	}
@@ -192,13 +192,13 @@ func TestDefaultNormalizerNormalize(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			actual := normalizer.Normalize(tc.input)
-			if actual != tc.expected {
-				t.Fatalf("expected %q, got %q", tc.expected, actual)
+			actual := normalizer.Normalize(testCase.input)
+			if actual != testCase.expected {
+				t.Fatalf("expected %q, got %q", testCase.expected, actual)
 			}
 		})
 	}
