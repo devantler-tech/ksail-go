@@ -12,35 +12,38 @@ import (
 )
 
 func NewCreateCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:          "create",
 		Short:        "Create a cluster",
 		Long:         `Create a Kubernetes cluster as defined by configuration.`,
-		RunE:         HandleCreateRunE,
 		SilenceUsage: true,
 	}
+
+	utils, _ := utils.NewCommandUtils(
+		cmd,
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardDistributionConfigFieldSelector(),
+	)
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return HandleCreateRunE(cmd, utils, args)
+	}
+
+	return cmd
 }
 
 // HandleCreateRunE handles the create command.
 // Exported for testing purposes.
 func HandleCreateRunE(
 	cmd *cobra.Command,
+	utils *utils.CommandUtils,
 	_ []string,
 ) error {
-	// Create command utils
-	utils, err := utils.NewCommandUtils(
-		cmd,
-		configmanager.StandardDistributionFieldSelector(),
-		configmanager.StandardDistributionConfigFieldSelector(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create command utils: %w", err)
-	}
 	// Start timing
 	utils.Timer.Start()
 
 	// Load the configuration
-	err = utils.ConfigManager.LoadConfig(utils.Timer)
+	err := utils.ConfigManager.LoadConfig(utils.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}

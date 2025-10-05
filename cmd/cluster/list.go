@@ -5,7 +5,9 @@ import (
 	"strings"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
-	"github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
 )
@@ -18,11 +20,19 @@ func NewListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List clusters",
 		Long:  `List all Kubernetes clusters managed by KSail.`,
-		RunE:  HandleListRunE,
 	}
 
-	cmd.Flags().
-		BoolP(allFlag, "a", false, "List all clusters, including those not defined in the configuration")
+	utils, _ := utils.NewCommandUtils(
+		cmd,
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardDistributionConfigFieldSelector(),
+	)
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return HandleListRunE(cmd, utils, args)
+	}
+
+	bindAllFlag(cmd, utils)
 
 	return cmd
 }
@@ -31,52 +41,78 @@ func NewListCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleListRunE(
 	cmd *cobra.Command,
+	utils *utils.CommandUtils,
 	_ []string,
 ) error {
-	// Create command utils
-	utils, err := utils.NewCommandUtils(cmd)
-	if err != nil {
-		return fmt.Errorf("failed to create command utils: %w", err)
-	}
-
-	// Bind CLI only flags
-	err = bindAllFlag(cmd, utils)
-	if err != nil {
-		return fmt.Errorf("failed to bind all flag: %w", err)
-	}
-
 	// Load cluster configuration
-	err = utils.ConfigManager.LoadConfigSilent()
+	err := utils.ConfigManager.LoadConfigSilent()
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	// Resolve dependencies
+	// List clusters
+	err = listClusters(utils, cmd)
+	if err != nil {
+		return fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	return nil
+}
+
+func listClusters(utils *utils.CommandUtils, cmd *cobra.Command) error {
 	deps, err := utils.Resolver.Resolve()
 	if err != nil {
 		return fmt.Errorf("failed to resolve dependencies: %w", err)
 	}
 
-	// List clusters
-	err = listClusters(deps, cmd)
-	if err != nil {
-		return fmt.Errorf("failed to list clusters: %w", err)
-	}
-
-	return nil
-}
-
-func listClusters(deps *di.ResolvedDependencies, cmd *cobra.Command) error {
 	clusters, err := deps.Provisioner.List(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	displayClusterList(clusters, cmd)
+	displayClusterList(utils.ConfigManager.Config.Spec.Distribution, clusters, cmd)
+
+	if utils.ConfigManager.Viper.GetBool(allFlag) {
+		// for each distribution that is not utils.ConfigManager.Config.Cluster.Distribution
+		// create a new provisioner for that distribution and list clusters
+		// You are not able to use the resolver for this.
+		distributions := []v1alpha1.Distribution{
+			v1alpha1.DistributionKind,
+			v1alpha1.DistributionK3d,
+		}
+		for _, distribution := range distributions {
+			if distribution == utils.ConfigManager.Config.Spec.Distribution {
+				continue
+			}
+			otherProv, _, err := clusterprovisioner.CreateClusterProvisioner(
+				cmd.Context(),
+				distribution,
+				utils.ConfigManager.Config.Spec.DistributionConfig,
+				utils.ConfigManager.Config.Spec.Connection.Kubeconfig,
+			)
+			if err != nil {
+				return fmt.Errorf(
+					"failed to create provisioner for distribution %s: %w",
+					distribution,
+					err,
+				)
+			}
+			otherClusters, err := otherProv.List(cmd.Context())
+			if err != nil {
+				return fmt.Errorf(
+					"failed to list clusters for distribution %s: %w",
+					distribution,
+					err,
+				)
+			}
+			displayClusterList(distribution, otherClusters, cmd)
+		}
+	}
+
 	return nil
 }
 
-func displayClusterList(clusters []string, cmd *cobra.Command) {
+func displayClusterList(distribution v1alpha1.Distribution, clusters []string, cmd *cobra.Command) {
 	if len(clusters) == 0 {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.ActivityType,
@@ -84,15 +120,14 @@ func displayClusterList(clusters []string, cmd *cobra.Command) {
 			Writer:  cmd.OutOrStdout(),
 		})
 	} else {
+		fmt.Fprint(cmd.OutOrStdout(), string(distribution)+": ")
 		fmt.Fprintln(cmd.OutOrStdout(), strings.Join(clusters, ", "))
 	}
 }
 
-func bindAllFlag(cmd *cobra.Command, utils *utils.CommandUtils) error {
+func bindAllFlag(cmd *cobra.Command, utils *utils.CommandUtils) {
+	cmd.Flags().
+		BoolP(allFlag, "a", false, "List all clusters, including those not defined in the configuration")
 	flag := cmd.Flags().Lookup(allFlag)
-	err := utils.ConfigManager.Viper.BindPFlag(allFlag, flag)
-	if err != nil {
-		return fmt.Errorf("failed to bind all flag: %w", err)
-	}
-	return nil
+	_ = utils.ConfigManager.Viper.BindPFlag(allFlag, flag)
 }
