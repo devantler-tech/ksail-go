@@ -10,27 +10,22 @@ $ARGUMENTS
 
 ## Fast-track coverage workflow
 
-1. **Prep & baseline**
-   - Locate the repository root (contains `go.mod`) and work with absolute paths.
-   - Read `CONTRIBUTING.md`, `README.md`, and `.golangci.yml` to internalize testing strategy, linting, and quality bars.
-   - Scan `report/`, `docs/`, or `notes/` (when present) for prior testing goals or metrics, and collect existing artifacts such as `coverage.out` or other reports.
-
-2. **Fix test failures first**
+1. **Fix test failures first**
    - Identify and resolve any existing test failures before proceeding with coverage improvements.
    - Ensure that all current tests pass successfully to establish a stable baseline for further enhancements.
 
-3. **Spot high-value coverage wins**
+2. **Spot high-value coverage wins**
    - Summarize coverage targets, supported test types, and architecture constraints from the prep step.
    - Record helper scripts, make targets, or workflows that relate to testing, noting their absolute paths.
    - Convert findings into actionable task buckets: organization, coverage, quality, and validation.
 
-4. **Implement well-structured tests**
+3. **Implement well-structured tests**
    - Keep one `_test.go` per source file; merge or rename duplicates when needed.
    - Add a focused test per constructor/function/method using `t.Run()` for scenarios; cap each test function at ~60 lines and delegate shared logic to helpers marked with `t.Helper()`.
    - Improve coverage through meaningful scenarios only—never alter production code.
    - Skip all `testutils` packages during analysis or test creation; those utilities are intentionally uncovered.
 
-5. **Validate outcomes**
+4. **Validate outcomes**
    - Run the relevant test, lint, and formatting commands to ensure compliance and reliability. Regression is not acceptable.
    - Ensure added tests are are actually adding code coverage.
    - Confirm testutils packages remain excluded from reports and that all changes respect Go testing best practices.
