@@ -120,26 +120,32 @@ func expectSuccess(expectedName string, expectedType any) expectation {
 	}
 }
 
-func expectErrorContains(message string) expectation {
+func expectFailure(assertion func(*testing.T, error)) expectation {
 	return func(t *testing.T, provisioner clusterprovisioner.ClusterProvisioner, clusterName string, err error) {
 		t.Helper()
 
 		require.Error(t, err)
 		assert.Nil(t, provisioner)
 		assert.Empty(t, clusterName)
-		assert.ErrorContains(t, err, message)
+
+		assertion(t, err)
 	}
 }
 
-func expectErrorIs(target error) expectation {
-	return func(t *testing.T, provisioner clusterprovisioner.ClusterProvisioner, clusterName string, err error) {
+func expectErrorContains(message string) expectation {
+	return expectFailure(func(t *testing.T, err error) {
 		t.Helper()
 
-		require.Error(t, err)
-		assert.Nil(t, provisioner)
-		assert.Empty(t, clusterName)
+		assert.ErrorContains(t, err, message)
+	})
+}
+
+func expectErrorIs(target error) expectation {
+	return expectFailure(func(t *testing.T, err error) {
+		t.Helper()
+
 		assert.ErrorIs(t, err, target)
-	}
+	})
 }
 
 func createConfigFile(t *testing.T, filename, content string) string {

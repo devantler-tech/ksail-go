@@ -121,9 +121,13 @@ func testHandleUpRunEDefaultFactoryUnsupportedDistribution(t *testing.T) {
 
 	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
 	testutils.SeedValidClusterConfig(manager)
-	manager.Viper.Set("spec.distribution", "unsupported")
 
-	err := handleUpRunEWithProvisioner(cmd, manager, nil)
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	manager.Config.Spec.Distribution = v1alpha1.Distribution("unsupported")
+
+	err = handleUpRunEWithProvisioner(cmd, manager, nil)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to create provisioner")
 	require.ErrorContains(t, err, "unsupported distribution")

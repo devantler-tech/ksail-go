@@ -2,7 +2,6 @@ package helpers_test
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/helpers"
@@ -237,50 +236,64 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 }
 
 func TestHandleConfigLoadRunE(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		tempDir := t.TempDir()
-		t.Chdir(tempDir)
+	tests := []struct {
+		name      string
+		selectors []configmanager.FieldSelector[v1alpha1.Cluster]
+		env       map[string]string
+		assert    func(*testing.T, error)
+	}{
+		{
+			name: "success",
+			selectors: []configmanager.FieldSelector[v1alpha1.Cluster]{
+				configmanager.StandardDistributionFieldSelector(),
+				configmanager.StandardDistributionConfigFieldSelector(),
+				configmanager.StandardSourceDirectoryFieldSelector(),
+			},
+			env: map[string]string{
+				"KSAIL_SPEC_DISTRIBUTION": "Kind",
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
 
-		cmd := &cobra.Command{Use: "config"}
-		cmd.SetOut(&bytes.Buffer{})
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "load error is wrapped",
+			selectors: []configmanager.FieldSelector[v1alpha1.Cluster]{
+				configmanager.StandardDistributionFieldSelector(),
+				configmanager.StandardDistributionConfigFieldSelector(),
+			},
+			env: map[string]string{
+				"KSAIL_SPEC_DISTRIBUTION": "Invalid",
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
 
-		manager := configmanager.NewConfigManager(
-			cmd.OutOrStdout(),
-			configmanager.StandardDistributionFieldSelector(),
-			configmanager.StandardDistributionConfigFieldSelector(),
-			configmanager.StandardSourceDirectoryFieldSelector(),
-		)
+				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to load cluster configuration")
+			},
+		},
+	}
 
-		t.Setenv("KSAIL_SPEC_DISTRIBUTION", "Kind")
+	for _, testCase := range tests {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
 
-		err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
-		if err != nil {
-			t.Fatalf("expected success, got %v", err)
-		}
-	})
+			cmd := &cobra.Command{Use: "config"}
+			buffer := &bytes.Buffer{}
+			cmd.SetOut(buffer)
 
-	t.Run("load error is wrapped", func(t *testing.T) {
-		tempDir := t.TempDir()
-		t.Chdir(tempDir)
+			manager := configmanager.NewConfigManager(cmd.OutOrStdout(), testCase.selectors...)
 
-		cmd := &cobra.Command{Use: "config"}
-		cmd.SetOut(&bytes.Buffer{})
+			for key, value := range testCase.env {
+				t.Setenv(key, value)
+			}
 
-		manager := configmanager.NewConfigManager(
-			cmd.OutOrStdout(),
-			configmanager.StandardDistributionFieldSelector(),
-			configmanager.StandardDistributionConfigFieldSelector(),
-		)
-
-		t.Setenv("KSAIL_SPEC_DISTRIBUTION", "Invalid")
-
-		err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-
-		if msg := err.Error(); !strings.Contains(msg, "failed to load cluster configuration") {
-			t.Fatalf("expected wrapped error message, got %q", msg)
-		}
-	})
+			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			testCase.assert(t, err)
+		})
+	}
 }
