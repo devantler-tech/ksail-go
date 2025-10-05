@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/spf13/cobra"
 )
@@ -19,8 +20,8 @@ func NewCreateCmd() *cobra.Command {
 
 	utils, _ := utils.NewCommandUtils(
 		cmd,
-		configmanager.DefaultDistributionFieldSelector(),
-		configmanager.DefaultDistributionConfigFieldSelector(),
+		ksailconfigmanager.DefaultDistributionFieldSelector(),
+		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
 	)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
