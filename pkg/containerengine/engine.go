@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/docker/docker/client"
@@ -44,6 +43,8 @@ func NewContainerEngine(apiClient client.APIClient) (*ContainerEngine, error) {
 type ClientCreator func() (client.APIClient, error)
 
 // GetDockerClient creates a Docker client using environment configuration.
+//
+//nolint:ireturn // Returning the interface enables dependency injection for tests.
 func GetDockerClient() (client.APIClient, error) {
 	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
@@ -57,6 +58,8 @@ func GetDockerClient() (client.APIClient, error) {
 }
 
 // GetPodmanUserClient creates a Podman client using the user-specific socket.
+//
+//nolint:ireturn // Returning the interface enables dependency injection for tests.
 func GetPodmanUserClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/user/1000/podman/podman.sock"),
@@ -70,6 +73,8 @@ func GetPodmanUserClient() (client.APIClient, error) {
 }
 
 // GetPodmanSystemClient creates a Podman client using the system-wide socket.
+//
+//nolint:ireturn // Returning the interface enables dependency injection for tests.
 func GetPodmanSystemClient() (client.APIClient, error) {
 	podmanClient, err := client.NewClientWithOpts(
 		client.WithHost("unix:///run/podman/podman.sock"),
@@ -91,37 +96,23 @@ func contains(s, substr string) bool {
 // It tries Docker first, then Podman with different socket configurations.
 // For testing, you can override specific creators using a map with keys:
 // "docker", "podman-user", "podman-system".
-func GetAutoDetectedClient(overrides ...map[string]ClientCreator) (*ContainerEngine, error) {
-	// Default client creators
-	creators := map[string]ClientCreator{
-		"docker":        GetDockerClient,
-		"podman-user":   GetPodmanUserClient,
-		"podman-system": GetPodmanSystemClient,
-	}
-
-	// Apply overrides for testing
-	if len(overrides) > 0 && overrides[0] != nil {
-		maps.Copy(creators, overrides[0])
+func GetAutoDetectedClient(creators ...ClientCreator) (*ContainerEngine, error) {
+	// Use default creator ordering when none are provided.
+	if len(creators) == 0 {
+		creators = []ClientCreator{
+			GetDockerClient,
+			GetPodmanUserClient,
+			GetPodmanSystemClient,
+		}
 	}
 
 	ctx := context.Background()
 
-	// Try Docker first (most common)
-	engine, err := tryCreateEngine(ctx, creators["docker"])
-	if err == nil {
-		return engine, nil
-	}
-
-	// Try Podman with Docker-compatible socket
-	engine, err = tryCreateEngine(ctx, creators["podman-user"])
-	if err == nil {
-		return engine, nil
-	}
-
-	// Try system-wide Podman socket
-	engine, err = tryCreateEngine(ctx, creators["podman-system"])
-	if err == nil {
-		return engine, nil
+	for _, create := range creators {
+		engine, err := tryCreateEngine(ctx, create)
+		if err == nil {
+			return engine, nil
+		}
 	}
 
 	return nil, ErrNoContainerEngine
