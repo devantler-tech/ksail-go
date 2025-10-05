@@ -87,59 +87,8 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 	}
 }
 
-func assertDistributionSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.Distribution)
-}
-
-func assertSourceDirectorySelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.SourceDirectory)
-}
-
-func assertDistributionConfigSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.DistributionConfig)
-}
-
-func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
-	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.Connection.Context)
-}
-
-func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
-	t.Helper()
-
-	for _, testCase := range cases {
-		caseData := testCase
-		t.Run(caseData.name, func(t *testing.T) {
-			t.Parallel()
-
-			cluster := &v1alpha1.Cluster{}
-			selector := caseData.factory()
-
-			assert.Equal(t, caseData.expectedDesc, selector.Description)
-			assert.Equal(t, caseData.expectedDefault, selector.DefaultValue)
-
-			pointer := selector.Selector(cluster)
-			caseData.assertPointer(t, cluster, pointer)
-		})
-	}
-}
-
-func assertPointerSame[T any](t *testing.T, actual any, expected *T) {
-	t.Helper()
-
-	value, ok := actual.(*T)
-	require.True(t, ok)
-	assert.Same(t, expected, value)
-}
-
-// TestAddFlagFromField_SpecFields tests AddFlagFromField with spec fields.
-func TestAddFlagFromFieldSpecFields(t *testing.T) {
-	t.Parallel()
-
-	tests := []testCase{
+func specFieldTestCases() []testCase {
+	return []testCase{
 		{
 			name:         "Spec.Distribution field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
@@ -197,8 +146,60 @@ func TestAddFlagFromFieldSpecFields(t *testing.T) {
 			expectedDesc: "Gateway controller",
 		},
 	}
+}
 
-	runAddFlagFromFieldTests(t, tests)
+func assertDistributionSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Distribution)
+}
+
+func assertSourceDirectorySelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.SourceDirectory)
+}
+
+func assertDistributionConfigSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.DistributionConfig)
+}
+
+func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Connection.Context)
+}
+
+func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
+	t.Helper()
+
+	for _, testCase := range cases {
+		caseData := testCase
+		t.Run(caseData.name, func(t *testing.T) {
+			t.Parallel()
+
+			cluster := &v1alpha1.Cluster{}
+			selector := caseData.factory()
+
+			assert.Equal(t, caseData.expectedDesc, selector.Description)
+			assert.Equal(t, caseData.expectedDefault, selector.DefaultValue)
+
+			pointer := selector.Selector(cluster)
+			caseData.assertPointer(t, cluster, pointer)
+		})
+	}
+}
+
+func assertPointerSame[T any](t *testing.T, actual any, expected *T) {
+	t.Helper()
+
+	value, ok := actual.(*T)
+	require.True(t, ok)
+	assert.Same(t, expected, value)
+}
+
+// TestAddFlagFromField_SpecFields tests AddFlagFromField with spec fields.
+func TestAddFlagFromFieldSpecFields(t *testing.T) {
+	t.Parallel()
+	runAddFlagFromFieldTests(t, specFieldTestCases())
 }
 
 // TestAddFlagFromField_DescriptionHandling tests AddFlagFromField with various description scenarios.
