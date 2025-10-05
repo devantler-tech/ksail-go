@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -12,8 +11,6 @@ import (
 )
 
 const allFlag = "all"
-
-var errAllFlagMissing = errors.New("all flag not found")
 
 // NewListCmd creates the list command for clusters.
 func NewListCmd() *cobra.Command {

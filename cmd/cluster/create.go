@@ -63,10 +63,6 @@ func createCluster(utils *utils.CommandUtils, cmd *cobra.Command) error {
 
 	showProvisioningTitle(cmd)
 
-	if deps == nil {
-		return fmt.Errorf("missing resolved dependencies")
-	}
-
 	clusterProvisioner := deps.Provisioner
 	if clusterProvisioner == nil {
 		return fmt.Errorf("missing cluster provisioner dependency")

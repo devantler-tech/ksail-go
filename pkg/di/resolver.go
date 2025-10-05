@@ -51,10 +51,6 @@ func (r *Resolver) Resolve() (*ResolvedDependencies, error) {
 		return nil, fmt.Errorf("resolve dependencies: %w", err)
 	}
 
-	if deps == nil {
-		return nil, errors.New("resolved dependencies not found in container")
-	}
-
 	return deps, nil
 }
 
