@@ -53,18 +53,37 @@ func NewConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
 func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
-	m.notifyLoadingStart()
+	return m.loadConfigWithOptions(tmr, false)
+}
+
+// LoadConfigSilent loads the configuration without outputting notifications.
+// Returns the previously loaded config if already loaded.
+func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
+	return m.loadConfigWithOptions(nil, true)
+}
+
+// loadConfigWithOptions is the internal implementation with silent option.
+func (m *ConfigManager) loadConfigWithOptions(
+	tmr timer.Timer,
+	silent bool,
+) (*v1alpha1.Cluster, error) {
+	if !silent {
+		m.notifyLoadingStart()
+	}
 
 	if m.configLoaded {
-		m.notifyConfigReused()
-
+		if !silent {
+			m.notifyConfigReused()
+		}
 		return m.Config, nil
 	}
 
-	m.notifyLoadingConfig()
+	if !silent {
+		m.notifyLoadingConfig()
+	}
 
 	// Use native Viper API to read configuration
-	err := m.readConfig()
+	err := m.readConfig(silent)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +99,15 @@ func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
 		return nil, err
 	}
 
-	m.notifyLoadingComplete(tmr)
+	if !silent {
+		m.notifyLoadingComplete(tmr)
+	}
 	m.configLoaded = true
 
 	return m.Config, nil
 }
 
-func (m *ConfigManager) readConfig() error {
+func (m *ConfigManager) readConfig(silent bool) error {
 	err := m.Viper.ReadInConfig()
 	if err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
@@ -94,9 +115,13 @@ func (m *ConfigManager) readConfig() error {
 			return fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		m.notifyUsingDefaults()
+		if !silent {
+			m.notifyUsingDefaults()
+		}
 	} else {
-		m.notifyConfigFound()
+		if !silent {
+			m.notifyConfigFound()
+		}
 	}
 
 	return nil

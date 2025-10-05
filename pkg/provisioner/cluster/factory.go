@@ -28,34 +28,34 @@ func CreateClusterProvisioner(
 	distribution v1alpha1.Distribution,
 	distributionConfigPath string,
 	kubeconfigPath string,
-) (ClusterProvisioner, string, error) {
+) (ClusterProvisioner, any, error) {
 	switch distribution {
 	case v1alpha1.DistributionKind:
-		return createKindProvisionerWithName(distributionConfigPath, kubeconfigPath)
+		return createKindProvisioner(distributionConfigPath, kubeconfigPath)
 	case v1alpha1.DistributionK3d:
-		return createK3dProvisionerWithName(distributionConfigPath)
+		return createK3dProvisioner(distributionConfigPath)
 	default:
 		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, distribution)
 	}
 }
 
-func createKindProvisionerWithName(
+func createKindProvisioner(
 	distributionConfigPath string,
 	kubeconfigPath string,
-) (*kindprovisioner.KindClusterProvisioner, string, error) {
+) (*kindprovisioner.KindClusterProvisioner, *v1alpha4.Cluster, error) {
 	kindConfigMgr := kindconfigmanager.NewConfigManager(distributionConfigPath)
 
 	kindConfig, err := kindConfigMgr.LoadConfig(nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load Kind configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load Kind configuration: %w", err)
 	}
 
 	provisioner, err := createKindProvisionerFromConfig(kindConfig, kubeconfigPath)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
-	return provisioner, kindConfig.Name, nil
+	return provisioner, kindConfig, nil
 }
 
 func createKindProvisionerFromConfig(
@@ -81,19 +81,19 @@ func createKindProvisionerFromConfig(
 	), nil
 }
 
-func createK3dProvisionerWithName(
+func createK3dProvisioner(
 	distributionConfigPath string,
-) (*k3dprovisioner.K3dClusterProvisioner, string, error) {
+) (*k3dprovisioner.K3dClusterProvisioner, *k3dv1alpha5.SimpleConfig, error) {
 	k3dConfigMgr := k3dconfigmanager.NewConfigManager(distributionConfigPath)
 
 	k3dConfig, err := k3dConfigMgr.LoadConfig(nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load K3d configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load K3d configuration: %w", err)
 	}
 
 	provisioner := createK3dProvisionerFromConfig(k3dConfig)
 
-	return provisioner, k3dConfig.Name, nil
+	return provisioner, k3dConfig, nil
 }
 
 func createK3dProvisionerFromConfig(
