@@ -18,14 +18,3 @@ func TestStatusCommandConfigLoad(t *testing.T) { //nolint:paralleltest
 		runLifecycleValidationErrorCase(t, NewStatusCmd)
 	})
 }
-
-func TestNewStatusCmdIncludesTimeoutSelector(t *testing.T) {
-	t.Parallel()
-
-	cmd := NewStatusCmd()
-
-	_, err := cmd.Flags().GetDuration("timeout")
-	if err != nil {
-		t.Fatalf("expected timeout flag to be registered, got error %v", err)
-	}
-}

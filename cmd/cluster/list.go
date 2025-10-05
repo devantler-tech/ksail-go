@@ -17,9 +17,10 @@ const allFlag = "all"
 // NewListCmd creates the list command for clusters.
 func NewListCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List clusters",
-		Long:  `List all Kubernetes clusters managed by KSail.`,
+		Use:          "list",
+		Short:        "List clusters",
+		Long:         `List all Kubernetes clusters managed by KSail.`,
+		SilenceUsage: true,
 	}
 
 	utils, _ := utils.NewCommandUtils(

@@ -9,10 +9,11 @@ import (
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.
 func NewClusterCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cluster",
-		Short: "Manage cluster lifecycle",
-		Long:  `Manage lifecycle operations for local Kubernetes clusters, including provisioning, teardown, and status.`,
-		RunE:  handleClusterRunE,
+		Use:          "cluster",
+		Short:        "Manage cluster lifecycle",
+		Long:         `Manage lifecycle operations for local Kubernetes clusters, including provisioning, teardown, and status.`,
+		RunE:         handleClusterRunE,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(NewCreateCmd())

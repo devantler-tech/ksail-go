@@ -15,16 +15,26 @@ import (
 func NewInitCmd() *cobra.Command {
 	// Create the command using the helper
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize a new project",
-		Long:  "Initialize a new project in the specified directory (or current directory if none specified).",
-		RunE:  HandleInitRunE,
+		Use:          "init",
+		Short:        "Initialize a new project",
+		Long:         "Initialize a new project in the specified directory (or current directory if none specified).",
+		SilenceUsage: true,
 	}
 
-	// Add the --output flag for specifying output directory
-	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
+	// Create command utils
+	utils, _ := utils.NewCommandUtils(cmd,
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
+		configmanager.StandardSourceDirectoryFieldSelector())
 
-	// Add the --force flag for overwriting existing files
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return HandleInitRunE(cmd, utils, args)
+	}
+
+	// Bind CLI only flags
+	_ = utils.ConfigManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
+	_ = utils.ConfigManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 
 	return cmd
@@ -36,26 +46,14 @@ func NewInitCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleInitRunE(
 	cmd *cobra.Command,
+	utils *utils.CommandUtils,
 	_ []string,
 ) error {
-	// Create command utils
-	utils, err := utils.NewCommandUtils(cmd,
-		configmanager.DefaultDistributionFieldSelector(),
-		configmanager.DefaultDistributionConfigFieldSelector(),
-		configmanager.StandardSourceDirectoryFieldSelector())
-	if err != nil {
-		return fmt.Errorf("failed to create command utils: %w", err)
-	}
-
-	// Bind CLI only flags
-	_ = utils.ConfigManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
-	_ = utils.ConfigManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
-
 	// Start timing
 	utils.Timer.Start()
 
 	// Load the configuration
-	err = utils.ConfigManager.LoadConfig(utils.Timer)
+	err := utils.ConfigManager.LoadConfig(utils.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}

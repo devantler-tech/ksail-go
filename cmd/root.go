@@ -18,7 +18,8 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 		Short: "SDK for operating and managing K8s clusters and workloads",
 		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
 			`from one simple command line tool.`,
-		RunE: handleRootRunE,
+		RunE:         handleRootRunE,
+		SilenceUsage: true,
 	}
 
 	// Set version if available

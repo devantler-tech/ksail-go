@@ -8,9 +8,10 @@ import (
 // NewStopCmd creates and returns the stop command.
 func NewStopCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "stop",
-		Short: "Stop a running cluster",
-		Long:  `Stop a running Kubernetes cluster.`,
-		RunE:  utils.HandleConfigLoadRunE,
+		Use:          "stop",
+		Short:        "Stop a running cluster",
+		Long:         `Stop a running Kubernetes cluster.`,
+		RunE:         utils.HandleConfigLoadRunE,
+		SilenceUsage: true,
 	}
 }

@@ -8,9 +8,10 @@ import (
 // NewReconcileCmd creates the workload reconcile command.
 func NewReconcileCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "reconcile",
-		Short: "Reconcile workloads with the cluster",
-		Long:  "Trigger reconciliation tooling to sync local workloads with your cluster.",
-		RunE:  utils.HandleConfigLoadRunE,
+		Use:          "reconcile",
+		Short:        "Reconcile workloads with the cluster",
+		Long:         "Trigger reconciliation tooling to sync local workloads with your cluster.",
+		RunE:         utils.HandleConfigLoadRunE,
+		SilenceUsage: true,
 	}
 }

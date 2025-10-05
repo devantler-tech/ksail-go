@@ -8,9 +8,10 @@ import (
 // NewApplyCmd creates the workload apply command.
 func NewApplyCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "apply",
-		Short: "Apply manifests",
-		Long:  "Apply local Kubernetes manifests to your cluster.",
-		RunE:  utils.HandleConfigLoadRunE,
+		Use:          "apply",
+		Short:        "Apply manifests",
+		Long:         "Apply local Kubernetes manifests to your cluster.",
+		RunE:         utils.HandleConfigLoadRunE,
+		SilenceUsage: true,
 	}
 }

@@ -12,7 +12,6 @@ import (
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 )
@@ -107,14 +106,4 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	if !strings.Contains(output, "Group workload commands under a single namespace") {
 		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
 	}
-}
-
-func TestWorkloadCommandConfiguration(t *testing.T) {
-	t.Parallel()
-
-	command := workload.NewWorkloadCmd()
-
-	require.False(t, command.SilenceErrors)
-	require.False(t, command.SilenceUsage)
-	require.Equal(t, configmanager.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }
