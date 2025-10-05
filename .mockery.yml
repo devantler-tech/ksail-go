@@ -20,6 +20,14 @@ packages:
       pkgname: clusterprovisioner
     interfaces:
       ClusterProvisioner:
+  github.com/devantler-tech/ksail-go/pkg/validator:
+    config:
+      recursive: false
+      dir: pkg/validator
+      filename: mocks.go
+      pkgname: validator
+    interfaces:
+      Validator:
   github.com/docker/docker/client:
     config:
       recursive: false

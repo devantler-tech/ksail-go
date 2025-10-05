@@ -330,24 +330,6 @@ func TestFormatValidationWarnings(t *testing.T) {
 	}
 }
 
-// Mock validator for testing ValidateConfig.
-type mockValidator struct {
-	shouldReturnValid bool
-	validationErrors  []validator.ValidationError
-}
-
-func (m *mockValidator) Validate(_ *testConfig) *validator.ValidationResult {
-	result := validator.NewValidationResult("test.yaml")
-
-	if !m.shouldReturnValid {
-		for _, err := range m.validationErrors {
-			result.AddError(err)
-		}
-	}
-
-	return result
-}
-
 func TestValidateConfig(t *testing.T) {
 	t.Parallel()
 
@@ -365,7 +347,9 @@ func testValidateConfigValid(t *testing.T) {
 		Kind:       "TestCluster",
 	}
 
-	mockVal := &mockValidator{shouldReturnValid: true}
+	validationResult := validator.NewValidationResult("test.yaml")
+	mockVal := validator.NewMockValidator[*testConfig](t)
+	mockVal.EXPECT().Validate(config).Return(validationResult)
 
 	err := helpers.ValidateConfig(config, mockVal)
 	assert.NoError(t, err)
@@ -380,16 +364,15 @@ func testValidateConfigInvalid(t *testing.T) {
 		Kind:       "TestCluster",
 	}
 
-	mockVal := &mockValidator{
-		shouldReturnValid: false,
-		validationErrors: []validator.ValidationError{
-			{
-				Field:         "name",
-				Message:       "name is required",
-				FixSuggestion: "provide a valid name",
-			},
-		},
-	}
+	validationResult := validator.NewValidationResult("test.yaml")
+	validationResult.AddError(validator.ValidationError{
+		Field:         "name",
+		Message:       "name is required",
+		FixSuggestion: "provide a valid name",
+	})
+
+	mockVal := validator.NewMockValidator[*testConfig](t)
+	mockVal.EXPECT().Validate(config).Return(validationResult)
 
 	err := helpers.ValidateConfig(config, mockVal)
 	assertValidationError(t, err, "name is required")
@@ -404,21 +387,20 @@ func testValidateConfigMultipleErrors(t *testing.T) {
 		Kind:       "TestCluster",
 	}
 
-	mockVal := &mockValidator{
-		shouldReturnValid: false,
-		validationErrors: []validator.ValidationError{
-			{
-				Field:         "name",
-				Message:       "name is required",
-				FixSuggestion: "provide a valid name",
-			},
-			{
-				Field:         "apiVersion",
-				Message:       "apiVersion is required",
-				FixSuggestion: "provide a valid API version",
-			},
-		},
-	}
+	validationResult := validator.NewValidationResult("test.yaml")
+	validationResult.AddError(validator.ValidationError{
+		Field:         "name",
+		Message:       "name is required",
+		FixSuggestion: "provide a valid name",
+	})
+	validationResult.AddError(validator.ValidationError{
+		Field:         "apiVersion",
+		Message:       "apiVersion is required",
+		FixSuggestion: "provide a valid API version",
+	})
+
+	mockVal := validator.NewMockValidator[*testConfig](t)
+	mockVal.EXPECT().Validate(config).Return(validationResult)
 
 	err := helpers.ValidateConfig(config, mockVal)
 	assertValidationError(t, err, "name is required", "apiVersion is required")
