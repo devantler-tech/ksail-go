@@ -135,6 +135,72 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+// TestLoadConfig_MissingFileNotifiesDefaults verifies notification when config file is absent.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigMissingFileNotifiesDefaults(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var output bytes.Buffer
+	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+
+	assert.Contains(t, output.String(), "using default config")
+}
+
+// TestLoadConfig_ConfigFileNotifiesFound verifies notification when config file is discovered.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigFileNotifiesFound(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configContents := []byte(
+		"apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nspec:\n  distribution: Kind\n  distributionConfig: kind.yaml\n",
+	)
+
+	err := os.WriteFile(configPath, configContents, 0o600)
+	require.NoError(t, err)
+
+	var output bytes.Buffer
+	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+
+	assert.Contains(t, output.String(), "Load config...")
+	assert.Contains(t, output.String(), "loading ksail config")
+	assert.Contains(t, output.String(), "config loaded")
+	assert.Contains(t, output.String(), "'"+configPath+"' found")
+}
+
+// TestLoadConfig_ConfigReusedNotification verifies notification when config is reused.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigReusedNotification(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var output bytes.Buffer
+	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	output.Reset()
+
+	_, err = manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
+}
+
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.
 func testLoadConfigCase(
 	t *testing.T,
