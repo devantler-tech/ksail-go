@@ -51,13 +51,13 @@ jobs:
       - name: 🧪 Run system test
         run: |
           ./ksail ${{ matrix.init-args }}
-          ./ksail cluster up
+          ./ksail cluster create
           ./ksail cluster status
           ./ksail cluster list
           ./ksail cluster start
           ./ksail cluster stop
           ./ksail workload reconcile
-          ./ksail cluster down
+          ./ksail cluster delete
 
       - name: 🧹 Cleanup
         run: |
