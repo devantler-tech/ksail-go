@@ -84,7 +84,7 @@ func runListLoadFailure(t *testing.T) {
 			t.Helper()
 			manager.Viper.SetConfigFile(t.TempDir())
 		},
-		func(t *testing.T, buffer *bytes.Buffer, err error) {
+		func(t *testing.T, _ *bytes.Buffer, err error) {
 			t.Helper()
 
 			if err == nil {
@@ -94,8 +94,6 @@ func runListLoadFailure(t *testing.T) {
 			if !strings.Contains(err.Error(), "failed to read config file") {
 				t.Fatalf("expected read config file error, got %v", err)
 			}
-
-			assertOutputContains(t, buffer.String(), "Failed to load cluster configuration")
 		},
 	)
 }

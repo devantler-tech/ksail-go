@@ -1,6 +1,7 @@
 package configmanager_test
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -24,6 +26,11 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 			v1alpha1.DistributionKind,
 			"Kubernetes distribution",
+		),
+		configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			"kind.yaml",
+			"Distribution config",
 		),
 		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
@@ -61,8 +68,8 @@ func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Clust
 
 // createDistributionOnlyFieldSelectors creates field selectors with only the distribution field.
 func createDistributionOnlyFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
-	// Use the first selector (distribution) from the standard field selectors
-	return createStandardFieldSelectors()[:1]
+	// Use distribution and distribution config selectors from the standard set
+	return createStandardFieldSelectors()[:2]
 }
 
 // TestNewManager tests the NewManager constructor.
@@ -85,6 +92,9 @@ func TestNewManager(t *testing.T) {
 }
 
 // TestManager_LoadConfig tests the LoadConfig method with different scenarios.
+// TestLoadConfig tests the LoadConfig method with various environment variable configurations.
+//
+//nolint:paralleltest // Cannot use t.Parallel() because testLoadConfigCase uses t.Chdir()
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -93,10 +103,10 @@ func TestLoadConfig(t *testing.T) {
 		shouldSucceed        bool
 	}{
 		{
-			name:                 "LoadConfig with defaults",
+			name:                 "LoadConfig with defaults (missing distribution)",
 			envVars:              map[string]string{},
 			expectedDistribution: v1alpha1.Distribution(""),
-			shouldSucceed:        true,
+			shouldSucceed:        false,
 		},
 		{
 			name: "LoadConfig with environment variables",
@@ -111,7 +121,7 @@ func TestLoadConfig(t *testing.T) {
 			envVars: map[string]string{
 				"KSAIL_SPEC_DISTRIBUTION":       "K3d",
 				"KSAIL_SPEC_SOURCEDIRECTORY":    "custom-k8s",
-				"KSAIL_SPEC_CONNECTION_CONTEXT": "custom-context",
+				"KSAIL_SPEC_CONNECTION_CONTEXT": "k3d-k3s-default",
 			},
 			expectedDistribution: v1alpha1.DistributionK3d,
 			shouldSucceed:        true,
@@ -120,34 +130,132 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			// Create temporary directory and change to it to isolate from existing config files
-			tempDir := t.TempDir()
-			t.Chdir(tempDir)
-
-			// Set environment variables for the test
-			for key, value := range testCase.envVars {
-				t.Setenv(key, value)
-			}
-
-			fieldSelectors := createFieldSelectorsWithName()
-
-			manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
-
-			cluster, err := manager.LoadConfig(nil)
-
-			if testCase.shouldSucceed {
-				require.NoError(t, err)
-				require.NotNil(t, cluster)
-				assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
-
-				// Test that subsequent calls return the same config
-				cluster2, err2 := manager.LoadConfig(nil)
-				require.NoError(t, err2)
-				assert.Equal(t, cluster, cluster2)
-			} else {
-				assert.Error(t, err)
-			}
+			testLoadConfigCase(t, testCase)
 		})
+	}
+}
+
+// TestLoadConfig_MissingFileNotifiesDefaults verifies notification when config file is absent.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigMissingFileNotifiesDefaults(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
+	assert.Contains(t, output.String(), "using default config")
+}
+
+// TestLoadConfig_ConfigFileNotifiesFound verifies notification when config file is discovered.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigFileNotifiesFound(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configContents := []byte(
+		"apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nspec:\n  distribution: Kind\n  distributionConfig: kind.yaml\n",
+	)
+
+	err := os.WriteFile(configPath, configContents, 0o600)
+	require.NoError(t, err)
+
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
+
+	assert.Contains(t, output.String(), "Load config...")
+	assert.Contains(t, output.String(), "loading ksail config")
+	assert.Contains(t, output.String(), "config loaded")
+	assert.Contains(t, output.String(), "'"+configPath+"' found")
+}
+
+// TestLoadConfig_ConfigReusedNotification verifies notification when config is reused.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigReusedNotification(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	output.Reset()
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
+}
+
+// TestLoadConfigValidationFailureMessages verifies validation error notifications.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigValidationFailureMessages(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var output bytes.Buffer
+
+	manager := configmanager.NewConfigManager(&output)
+
+	manager.Config.Kind = ""
+	manager.Config.APIVersion = ""
+	manager.Config.Spec.Distribution = ""
+	manager.Config.Spec.DistributionConfig = ""
+
+	cluster, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Nil(t, cluster)
+	require.ErrorContains(t, err, "with 4 errors and 0 warnings")
+
+	logOutput := output.String()
+	assert.Contains(t, logOutput, "Configuration validation failed")
+	assert.Contains(t, logOutput, "kind is required")
+	assert.Contains(t, logOutput, "apiVersion is required")
+	assert.Contains(t, logOutput, "- spec.distribution: distribution is required")
+	assert.Contains(t, logOutput, "- spec.distributionConfig: distributionConfig is required")
+}
+
+// testLoadConfigCase is a helper function to test a single LoadConfig scenario.
+func testLoadConfigCase(
+	t *testing.T,
+	testCase struct {
+		name                 string
+		envVars              map[string]string
+		expectedDistribution v1alpha1.Distribution
+		shouldSucceed        bool
+	},
+) {
+	t.Helper()
+
+	// Create temporary directory and change to it to isolate from existing config files
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	// Set environment variables for the test
+	for key, value := range testCase.envVars {
+		t.Setenv(key, value)
+	}
+
+	fieldSelectors := createFieldSelectorsWithName()
+
+	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
+
+	cluster, err := manager.LoadConfig(nil)
+
+	if testCase.shouldSucceed {
+		require.NoError(t, err)
+		require.NotNil(t, cluster)
+		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
+
+		// Test that subsequent calls return the same config
+		cluster2, err2 := manager.LoadConfig(nil)
+		require.NoError(t, err2)
+		assert.Equal(t, cluster, cluster2)
+	} else {
+		require.Error(t, err)
+		assert.Nil(t, cluster)
+		assert.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
 	}
 }
 
@@ -226,7 +334,13 @@ func TestAddFlagsFromFields(t *testing.T) {
 		{
 			name:           "AddFlagsFromFields with multiple selectors",
 			fieldSelectors: createStandardFieldSelectors(),
-			expectedFlags:  []string{"distribution", "source-directory", "context", "timeout"},
+			expectedFlags: []string{
+				"distribution",
+				"distribution-config",
+				"source-directory",
+				"context",
+				"timeout",
+			},
 		},
 	}
 
@@ -286,6 +400,8 @@ func testFieldValueSetting(
 	defaultValue any,
 	description string,
 	assertFunc func(*testing.T, *v1alpha1.Cluster),
+	expectValidationError bool,
+	additionalSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
 ) {
 	t.Helper()
 
@@ -299,13 +415,26 @@ func testFieldValueSetting(
 			DefaultValue: defaultValue,
 			Description:  description,
 		},
+		{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			DefaultValue: "kind.yaml",
+			Description:  "Distribution config",
+		},
 	}
+	fieldSelectors = append(fieldSelectors, additionalSelectors...)
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	cluster, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
 
+	if expectValidationError {
+		require.Error(t, err)
+		assertFunc(t, manager.Config)
+
+		return
+	}
+
+	require.NoError(t, err)
 	assertFunc(t, cluster)
 }
 
@@ -323,6 +452,7 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 			// When default is nil, field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -340,6 +470,7 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 			// When type is not convertible, field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -357,6 +488,7 @@ func TestSetFieldValueWithDirectlyAssignableTypes(t *testing.T) {
 			// Direct string assignment should work
 			assert.Equal(t, v1alpha1.DistributionK3d, cluster.Spec.Distribution)
 		},
+		false,
 	)
 }
 
@@ -374,6 +506,7 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 			// Non-pointer field should remain empty
 			assert.Empty(t, cluster.Spec.Distribution)
 		},
+		true,
 	)
 }
 
@@ -393,6 +526,12 @@ func TestSetFieldValueWithConvertibleTypes(t *testing.T) {
 			t.Helper()
 			// Converted value should be set
 			assert.Equal(t, time.Duration(5000000000), cluster.Spec.Connection.Timeout.Duration)
+		},
+		false,
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			DefaultValue: v1alpha1.DistributionKind,
+			Description:  "Distribution",
 		},
 	)
 }
@@ -578,4 +717,63 @@ func TestManager_isFieldEmpty_ValidPointerCases(t *testing.T) {
 	}
 
 	runIsFieldEmptyTestCases(t, tests)
+}
+
+//nolint:paralleltest // Cannot use t.Parallel() because test changes directories using t.Chdir()
+func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
+	// Cannot use t.Parallel() because test changes directories using t.Chdir()
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var out bytes.Buffer
+
+	manager := configmanager.NewConfigManager(
+		&out,
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
+			Description:  "API version",
+			DefaultValue: "",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
+			Description:  "Resource kind",
+			DefaultValue: "",
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			Description:  "Kubernetes distribution",
+			DefaultValue: v1alpha1.Distribution(""),
+		},
+		configmanager.FieldSelector[v1alpha1.Cluster]{
+			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+			Description:  "Distribution config",
+			DefaultValue: "",
+		},
+	)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	require.Nil(t, cluster)
+	assert.Contains(t, err.Error(), "configuration validation failed")
+
+	output := out.String()
+	assert.Contains(t, output, "Configuration validation failed:")
+	assert.Contains(t, output, "distribution is required")
+}
+
+// helper function to load config and capture output for tests.
+func loadConfigAndCaptureOutput(
+	t *testing.T,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
+) (*configmanager.ConfigManager, *bytes.Buffer, *v1alpha1.Cluster) {
+	t.Helper()
+
+	output := &bytes.Buffer{}
+	manager := configmanager.NewConfigManager(output, fieldSelectors...)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+
+	return manager, output, cluster
 }

@@ -1,30 +1,16 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/spf13/cobra"
 )
 
-const installMessage = "Workload install coming soon."
-
-// NewInstallCommand creates the workload install command.
-func NewInstallCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install Helm charts",
-		Long:  "Install Helm charts to provision workloads through KSail.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.InfoType,
-				Content: installMessage,
-				Writer:  cmd.OutOrStdout(),
-			})
-
-			return nil
-		},
-	}
-
-	applyCommonCommandConfig(cmd)
-
-	return cmd
+// NewInstallCmd creates the workload install command.
+func NewInstallCmd() *cobra.Command {
+	return helpers.NewCobraCommand(
+		"install",
+		"Install Helm charts",
+		"Install Helm charts to provision workloads through KSail.",
+		helpers.HandleConfigLoadRunE,
+	)
 }

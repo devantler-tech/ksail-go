@@ -10,6 +10,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -220,35 +221,19 @@ func testHandleInitRunESuccessWithoutOutputPath(t *testing.T) {
 }
 
 func testHandleInitRunEConfigManagerLoadError(t *testing.T) {
+	t.Helper()
 	t.Parallel()
-
-	// This test is challenging without mocking since HandleInitRunE expects concrete type
-	// However, we can test behavior with an invalid config path that would cause load errors
-	// This test exercises init flow error handling without mocks (integration-level) and provides valuable coverage.
 
 	var out bytes.Buffer
 
-	tempDir := t.TempDir()
+	command := cmd.NewInitCmd()
+	command.SetOut(&out)
 
-	// Create init command
-	testCmd := cmd.NewInitCmd()
-	testCmd.SetOut(&out)
+	manager := configmanager.NewConfigManager(&out)
 
-	// Set the --output flag to the temp directory
-	err := testCmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-
-	// Note: This test might not actually trigger the LoadConfig error path
-	// since the ConfigManager is designed to be robust and use defaults
-	// But it still tests the function with valid inputs
-	err = testCmd.Execute()
-	// In most cases this will actually succeed due to robust error handling in ConfigManager
-	// But we're testing the code path exists and compiles correctly
-	if err != nil {
-		// If there is an error, ensure it's formatted correctly
-		assert.Contains(t, err.Error(), "failed to")
-	}
-	// If no error, the command succeeded (no need to check output anymore)
+	err := cmd.HandleInitRunE(command, manager, nil)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to load cluster configuration")
 }
 
 func testHandleInitRunEScaffoldError(t *testing.T) {

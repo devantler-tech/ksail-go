@@ -1,16 +1,18 @@
 package cluster //nolint:testpackage // Access internal helpers without exporting them.
 
-import "testing"
+import (
+	"testing"
 
-// TestHandleStartRunE exercises the success and validation error paths for the start command.
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+)
 
-func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
+// TestStartCommandConfigLoad exercises the success and validation error paths for the start command.
+func TestStartCommandConfigLoad(t *testing.T) { //nolint:paralleltest
 	t.Run("success", func(t *testing.T) { //nolint:paralleltest
 		runLifecycleSuccessCase(
 			t,
 			"start",
-			HandleStartRunE,
-			"Cluster started successfully (stub implementation)",
+			helpers.HandleConfigLoadRunE,
 		)
 	})
 
@@ -18,8 +20,7 @@ func TestHandleStartRunE(t *testing.T) { //nolint:paralleltest
 		runLifecycleValidationErrorCase(
 			t,
 			"start",
-			HandleStartRunE,
-			"failed to execute start command",
+			helpers.HandleConfigLoadRunE,
 			"failed to load cluster configuration",
 		)
 	})

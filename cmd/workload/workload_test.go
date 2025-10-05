@@ -1,12 +1,15 @@
 package workload_test
 
+// cspell:words cmdtestutils
+
 import (
 	"bytes"
 	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -52,53 +55,27 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
-func TestWorkloadCommandsEmitPlaceholders(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
+func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
+	commands := []string{"reconcile", "apply", "install"}
 
-	testCases := []struct {
-		name     string
-		args     []string
-		expected string
-	}{
-		{
-			name:     "reconcile",
-			args:     []string{"reconcile"},
-			expected: "ℹ Workload reconciliation coming soon.",
-		},
-		{
-			name:     "apply",
-			args:     []string{"apply"},
-			expected: "ℹ Workload apply coming soon.",
-		},
-		{
-			name:     "install",
-			args:     []string{"install"},
-			expected: "ℹ Workload install coming soon.",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
+	for _, commandName := range commands {
+		t.Run(commandName, func(t *testing.T) {
 			t.Parallel()
 
-			var out bytes.Buffer
+			cmd, out := cmdtestutils.SetupCommandWithOutput()
+			cmd.Use = commandName
 
-			command := workload.NewWorkloadCmd()
-			command.SetOut(&out)
-			command.SetErr(&out)
-			command.SetArgs(testCase.args)
+			manager := cmdtestutils.CreateDefaultConfigManager()
+			manager.Writer = out
 
-			err := command.Execute()
-			require.NoErrorf(t, err, "expected workload %s command to succeed", testCase.name)
+			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
-			if !strings.Contains(actual, testCase.expected) {
-				t.Fatalf(
-					"expected placeholder output to contain %q, got %q",
-					testCase.expected,
-					actual,
-				)
-			}
+			require.Contains(t, actual, "config loaded")
+			require.NotContains(t, actual, "coming soon")
+			require.NotContains(t, actual, "ℹ")
 		})
 	}
 }
@@ -126,7 +103,7 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 
 	command := workload.NewWorkloadCmd()
 
-	require.True(t, command.SilenceErrors)
-	require.True(t, command.SilenceUsage)
-	require.Equal(t, cmdhelpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
+	require.False(t, command.SilenceErrors)
+	require.False(t, command.SilenceUsage)
+	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }

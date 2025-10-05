@@ -3,14 +3,14 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
 
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.
 func NewClusterCmd() *cobra.Command {
-	cmd := cmdhelpers.NewCobraCommand(
+	cmd := helpers.NewCobraCommand(
 		"cluster",
 		"Manage cluster lifecycle",
 		`Manage lifecycle operations for local Kubernetes clusters, including provisioning, teardown, and status.`,

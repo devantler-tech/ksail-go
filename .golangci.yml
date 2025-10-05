@@ -18,13 +18,8 @@ linters:
     - wsl
   exclusions:
     paths:
-      # Exclude auto-generated mock files from all linting rules
       - ".*mocks.*\\.go$"
-      - ".*_mocks_.*\\.go$"
     rules:
-      - linters:
-          - ireturn
-        path: pkg/provisioner/containerengine/engine.go
       - linters:
           - ireturn
         path: pkg/config-manager/helpers/loader.go

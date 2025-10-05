@@ -160,7 +160,6 @@ func runLifecycleSuccessCase(
 	t *testing.T,
 	use string,
 	handler lifecycleHandlerFunc,
-	expectedMessage string,
 ) {
 	t.Helper()
 
@@ -172,7 +171,13 @@ func runLifecycleSuccessCase(
 		t.Fatalf("expected no error, got %v", err)
 	}
 
-	assertOutputContains(t, output.String(), expectedMessage)
+	actual := output.String()
+
+	assertOutputContains(t, actual, "config loaded")
+
+	if strings.Contains(actual, "stub implementation") {
+		t.Fatalf("unexpected stub output for %s command: %q", use, actual)
+	}
 }
 
 func runLifecycleValidationErrorCase(

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -72,6 +73,8 @@ func WriteMessage(msg Message) {
 
 	// Get message configuration based on type
 	config := getMessageConfig(msg.Type)
+
+	content = indentMultilineContent(content, config.symbol)
 
 	// Handle TitleType specially (uses emoji instead of symbol)
 	if msg.Type == TitleType {
@@ -155,4 +158,24 @@ func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
 	}
 
 	return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
+}
+
+// indentMultilineContent indents subsequent lines of multi-line content based on the symbol width.
+func indentMultilineContent(content, symbol string) string {
+	if symbol == "" || !strings.Contains(content, "\n") {
+		return content
+	}
+
+	indent := strings.Repeat(" ", len([]rune(symbol)))
+	lines := strings.Split(content, "\n")
+
+	for i := 1; i < len(lines); i++ {
+		if lines[i] == "" {
+			continue
+		}
+
+		lines[i] = indent + lines[i]
+	}
+
+	return strings.Join(lines, "\n")
 }

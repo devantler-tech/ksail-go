@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/cmdhelpers"
+	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
@@ -17,13 +17,13 @@ import (
 func NewInitCmd() *cobra.Command {
 	// Create field selectors
 	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
-		cmdhelpers.StandardDistributionFieldSelector(),
-		cmdhelpers.StandardDistributionConfigFieldSelector(),
-		cmdhelpers.StandardSourceDirectoryFieldSelector(),
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.StandardSourceDirectoryFieldSelector(),
 	}
 
 	// Create the command using the helper
-	cmd := cmdhelpers.NewCobraCommand(
+	cmd := helpers.NewCobraCommand(
 		"init",
 		"Initialize a new project",
 		"Initialize a new project.",
@@ -59,7 +59,7 @@ func HandleInitRunE(
 
 	cluster, err := configManager.LoadConfig(tmr)
 	if err != nil {
-		return fmt.Errorf("failed to load cluster config: %w", err)
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	// Determine target path - prioritize test parameter over flag
@@ -88,7 +88,7 @@ func HandleInitRunE(
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
-		Content: "Initializing project...",
+		Content: "Initialize project......",
 		Emoji:   "📂",
 		Writer:  cmd.OutOrStdout(),
 	})

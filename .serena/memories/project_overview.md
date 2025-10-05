@@ -1,0 +1,6 @@
+- Project: KSail Go (Go-based CLI for managing Kubernetes clusters and workloads)
+- Purpose: declarative provisioning and lifecycle management for Kind, K3d, and EKS clusters via GitOps-friendly workflows.
+- Key components: Cobra-based CLI (`cmd/`), core packages for config management, provisioning, scaffolding, validation (`pkg/`), utilities in `internal/`.
+- Tooling: mockery for mocks, golangci-lint, mega-linter, Docker for integration/system tests.
+- Testing scope: unit tests under `cmd/`, `pkg/`, and integration/system tests run in CI.
+- Repository structure: `cmd/`, `pkg/`, `internal/`, `scripts/`, top-level `main.go`, with specs/docs under `specs/` and `report/`.

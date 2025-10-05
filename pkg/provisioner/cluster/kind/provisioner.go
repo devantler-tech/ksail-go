@@ -9,7 +9,7 @@ import (
 	"slices"
 	"time"
 
-	pathutils "github.com/devantler-tech/ksail-go/internal/utils/path"
+	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -73,7 +73,7 @@ func (k *KindClusterProvisioner) Create(_ context.Context, name string) error {
 func (k *KindClusterProvisioner) Delete(_ context.Context, name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	kubeconfigPath, _ := pathutils.ExpandHomePath(k.kubeConfig)
+	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
 
 	err := k.provider.Delete(target, kubeconfigPath)
 	if err != nil {

@@ -4,12 +4,13 @@ This package provides utilities for input and output operations in KSail.
 
 ## Purpose
 
-Provides safe and secure file I/O operations with built-in protection against path traversal attacks and other security vulnerabilities. The package includes utilities for reading and writing files safely within specified base directories.
+Provides safe and secure file I/O operations with built-in protection against path traversal attacks and other security vulnerabilities. The package includes utilities for reading and writing files safely within specified base directories, along with helpers for working with filesystem paths.
 
 ## Features
 
 - **Safe File Reading**: `ReadFileSafe` prevents path traversal attacks by ensuring files are within the specified base directory
 - **Path Validation**: Resolves and validates file paths to prevent access outside intended directories
+- **Home Directory Expansion**: `ExpandHomePath` converts `~/` prefixes into the user's absolute home directory while preserving other paths unchanged
 - **Security**: Protects against accidental file inclusion and malicious path manipulation
 - **Clean Path Handling**: Automatically cleans and normalizes file paths
 

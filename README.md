@@ -55,11 +55,10 @@ The KSail Go project is organized into several main packages:
   - **[pkg/apis/](./pkg/apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions
   - **[pkg/config-manager/](./pkg/config-manager/README.md)** - Configuration management utilities
   - **[pkg/installer/](./pkg/installer/README.md)** - Component installation utilities
-  - **[pkg/io/](./pkg/io/README.md)** - Safe file I/O operations with security features
+  - **[pkg/io/](./pkg/io/README.md)** - Safe file I/O operations with security features and path helpers
   - **[pkg/provisioner/](./pkg/provisioner/README.md)** - Cluster provisioning and lifecycle management
-- **[internal/](./internal/)** - Internal utility packages:
-  - **[internal/utils/k8s/](./internal/utils/k8s/README.md)** - Kubernetes utilities
-  - **[internal/utils/path/](./internal/utils/path/README.md)** - Path utilities
+- **internal/** - Internal utility packages:
+  - **[internal/testutils/](./internal/testutils/README.md)** - Shared testing utilities
 
 Each package contains detailed documentation about its purpose, features, and usage examples.
 

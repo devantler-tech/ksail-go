@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	k8sutils "github.com/devantler-tech/ksail-go/internal/utils/k8s"
 	kubectlinstaller "github.com/devantler-tech/ksail-go/pkg/installer/kubectl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -456,7 +455,7 @@ spec: {}
 // createDefaultCRD creates a default CustomResourceDefinition for testing.
 func createDefaultCRD() *apiextensionsv1.CustomResourceDefinition {
 	return &apiextensionsv1.CustomResourceDefinition{
-		ObjectMeta: k8sutils.NewEmptyObjectMeta(),
+		ObjectMeta: metav1.ObjectMeta{},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Names: createDefaultCRDNames(),
 		},

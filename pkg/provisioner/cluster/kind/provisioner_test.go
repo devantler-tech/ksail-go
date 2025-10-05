@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/provisioner"
+	"github.com/devantler-tech/ksail-go/pkg/containerengine"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
@@ -205,7 +205,7 @@ func TestStartErrorDockerStartFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start(context.Background(), "") },
 		"Start",
-		func(client *provisioner.MockContainerAPIClient) {
+		func(client *containerengine.MockContainerAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStartClusterFailed)
 		},
@@ -237,7 +237,7 @@ func TestStopErrorDockerStopFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop(context.Background(), "") },
 		"Stop",
-		func(client *provisioner.MockContainerAPIClient) {
+		func(client *containerengine.MockContainerAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStopClusterFailed)
 		},
@@ -267,11 +267,11 @@ func newProvisionerForTest(
 ) (
 	*kindprovisioner.KindClusterProvisioner,
 	*kindprovisioner.MockKindProvider,
-	*provisioner.MockContainerAPIClient,
+	*containerengine.MockContainerAPIClient,
 ) {
 	t.Helper()
 	provider := kindprovisioner.NewMockKindProvider(t)
-	client := provisioner.NewMockContainerAPIClient(t)
+	client := containerengine.NewMockContainerAPIClient(t)
 
 	cfg := &v1alpha4.Cluster{
 		Name: "cfg-name",
@@ -315,7 +315,7 @@ func runDockerOperationFailureTest(
 	t *testing.T,
 	operation func(*kindprovisioner.KindClusterProvisioner) error,
 	operationName string,
-	expectDockerCall func(*provisioner.MockContainerAPIClient),
+	expectDockerCall func(*containerengine.MockContainerAPIClient),
 	expectedErrorMsg string,
 ) {
 	t.Helper()

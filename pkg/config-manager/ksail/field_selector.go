@@ -1,8 +1,6 @@
 package configmanager
 
-import (
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-)
+import "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {
@@ -34,5 +32,41 @@ func AddFlagFromField(
 		Selector:     selector,
 		Description:  desc,
 		DefaultValue: defaultValue,
+	}
+}
+
+// StandardDistributionFieldSelector creates a standard field selector for distribution.
+func StandardDistributionFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+		Description:  "Kubernetes distribution to use",
+		DefaultValue: v1alpha1.DistributionKind,
+	}
+}
+
+// StandardSourceDirectoryFieldSelector creates a standard field selector for source directory.
+func StandardSourceDirectoryFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+		Description:  "Directory containing workloads to deploy",
+		DefaultValue: "k8s",
+	}
+}
+
+// StandardDistributionConfigFieldSelector creates a standard field selector for distribution config.
+func StandardDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
+		Description:  "Configuration file for the distribution",
+		DefaultValue: "kind.yaml",
+	}
+}
+
+// StandardContextFieldSelector creates a standard field selector for kubernetes context.
+func StandardContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+		Description:  "Kubernetes context of cluster",
+		DefaultValue: "kind-kind",
 	}
 }
