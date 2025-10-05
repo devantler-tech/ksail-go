@@ -153,3 +153,48 @@ func createConfigFile(t *testing.T, filename, content string) string {
 
 	return path
 }
+
+func TestCreateKindProvisionerDockerClientError(t *testing.T) {
+	t.Helper()
+
+	t.Setenv("DOCKER_HOST", "://")
+	t.Setenv("DOCKER_TLS_VERIFY", "")
+	t.Setenv("DOCKER_CERT_PATH", "")
+
+	configPath := createConfigFile(
+		t,
+		"kind.yaml",
+		"kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: custom-kind\n",
+	)
+
+	provisioner, clusterName, err := clusterprovisioner.CreateClusterProvisioner(
+		context.Background(),
+		v1alpha1.DistributionKind,
+		configPath,
+		"",
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, provisioner)
+	assert.Empty(t, clusterName)
+	assert.Contains(t, err.Error(), "failed to create Docker client")
+}
+
+func TestCreateK3dProvisionerInvalidConfig(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	configPath := createConfigFile(t, "k3d-invalid.yaml", ": invalid\n")
+
+	provisioner, clusterName, err := clusterprovisioner.CreateClusterProvisioner(
+		context.Background(),
+		v1alpha1.DistributionK3d,
+		configPath,
+		"",
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, provisioner)
+	assert.Empty(t, clusterName)
+	assert.Contains(t, err.Error(), "failed to load K3d configuration")
+}

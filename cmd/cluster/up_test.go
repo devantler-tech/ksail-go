@@ -47,6 +47,10 @@ func TestHandleUpRunE(t *testing.T) {
 	t.Run("validation error", testHandleUpRunEValidation) //nolint:paralleltest // uses t.Chdir
 	t.Run("provisioner creation failure", testHandleUpRunEProvisionerCreationFailure)
 	t.Run("provision failure", testHandleUpRunEProvisionFailure)
+	t.Run(
+		"default factory unsupported distribution",
+		testHandleUpRunEDefaultFactoryUnsupportedDistribution,
+	)
 }
 
 func testHandleUpRunESuccess(t *testing.T) {
@@ -109,6 +113,20 @@ func testHandleUpRunEProvisionFailure(t *testing.T) {
 	require.ErrorIs(t, err, errProvisionFailed)
 
 	mockProvisioner.AssertExpectations(t)
+}
+
+func testHandleUpRunEDefaultFactoryUnsupportedDistribution(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+	manager.Viper.Set("spec.distribution", "unsupported")
+
+	err := handleUpRunEWithProvisioner(cmd, manager, nil)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create provisioner")
+	require.ErrorContains(t, err, "unsupported distribution")
 }
 
 var timingRegex = regexp.MustCompile(

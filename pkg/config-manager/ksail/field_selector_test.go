@@ -63,6 +63,79 @@ func TestFieldSelectorStructureAndTypes(t *testing.T) {
 	assert.Equal(t, &cluster.Spec.Distribution, distributionPtr)
 }
 
+func TestStandardFieldSelectors(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name            string
+		factory         func() configmanager.FieldSelector[v1alpha1.Cluster]
+		expectedDesc    string
+		expectedDefault any
+		assertPointer   func(*testing.T, *v1alpha1.Cluster, any)
+	}{
+		{
+			name:            "distribution",
+			factory:         configmanager.StandardDistributionFieldSelector,
+			expectedDesc:    "Kubernetes distribution to use",
+			expectedDefault: v1alpha1.DistributionKind,
+			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+				distPtr, ok := ptr.(*v1alpha1.Distribution)
+				require.True(t, ok)
+				assert.Same(t, &cluster.Spec.Distribution, distPtr)
+			},
+		},
+		{
+			name:            "source directory",
+			factory:         configmanager.StandardSourceDirectoryFieldSelector,
+			expectedDesc:    "Directory containing workloads to deploy",
+			expectedDefault: "k8s",
+			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+				valuePtr, ok := ptr.(*string)
+				require.True(t, ok)
+				assert.Same(t, &cluster.Spec.SourceDirectory, valuePtr)
+			},
+		},
+		{
+			name:            "distribution config",
+			factory:         configmanager.StandardDistributionConfigFieldSelector,
+			expectedDesc:    "Configuration file for the distribution",
+			expectedDefault: "kind.yaml",
+			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+				valuePtr, ok := ptr.(*string)
+				require.True(t, ok)
+				assert.Same(t, &cluster.Spec.DistributionConfig, valuePtr)
+			},
+		},
+		{
+			name:            "context",
+			factory:         configmanager.StandardContextFieldSelector,
+			expectedDesc:    "Kubernetes context of cluster",
+			expectedDefault: "kind-kind",
+			assertPointer: func(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+				valuePtr, ok := ptr.(*string)
+				require.True(t, ok)
+				assert.Same(t, &cluster.Spec.Connection.Context, valuePtr)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		try := tc
+		t.Run(try.name, func(t *testing.T) {
+			t.Parallel()
+
+			cluster := &v1alpha1.Cluster{}
+			selector := try.factory()
+
+			assert.Equal(t, try.expectedDesc, selector.Description)
+			assert.Equal(t, try.expectedDefault, selector.DefaultValue)
+
+			fieldPtr := selector.Selector(cluster)
+			try.assertPointer(t, cluster, fieldPtr)
+		})
+	}
+}
+
 // TestAddFlagFromField_SpecFields tests AddFlagFromField with spec fields.
 func TestAddFlagFromFieldSpecFields(t *testing.T) {
 	t.Parallel()

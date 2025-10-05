@@ -135,6 +135,11 @@ func TestCommandErrorError(t *testing.T) {
 			},
 			expected: "just cause",
 		},
+		{
+			name:     "empty struct returns empty string",
+			err:      &CommandError{},
+			expected: "",
+		},
 	}
 
 	for _, tc := range cases {
