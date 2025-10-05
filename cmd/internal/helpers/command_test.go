@@ -2,6 +2,7 @@ package helpers_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/helpers"
@@ -233,4 +234,53 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	assert.Equal(t, &cluster.Spec.Connection.Context, contextResult)
 	assert.Equal(t, "Kubernetes context of cluster", contextSelector.Description)
 	assert.Equal(t, "kind-kind", contextSelector.DefaultValue)
+}
+
+func TestHandleConfigLoadRunE(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
+
+		cmd := &cobra.Command{Use: "config"}
+		cmd.SetOut(&bytes.Buffer{})
+
+		manager := configmanager.NewConfigManager(
+			cmd.OutOrStdout(),
+			configmanager.StandardDistributionFieldSelector(),
+			configmanager.StandardDistributionConfigFieldSelector(),
+			configmanager.StandardSourceDirectoryFieldSelector(),
+		)
+
+		t.Setenv("KSAIL_SPEC_DISTRIBUTION", "Kind")
+
+		err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+	})
+
+	t.Run("load error is wrapped", func(t *testing.T) {
+		tempDir := t.TempDir()
+		t.Chdir(tempDir)
+
+		cmd := &cobra.Command{Use: "config"}
+		cmd.SetOut(&bytes.Buffer{})
+
+		manager := configmanager.NewConfigManager(
+			cmd.OutOrStdout(),
+			configmanager.StandardDistributionFieldSelector(),
+			configmanager.StandardDistributionConfigFieldSelector(),
+		)
+
+		t.Setenv("KSAIL_SPEC_DISTRIBUTION", "Invalid")
+
+		err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if msg := err.Error(); !strings.Contains(msg, "failed to load cluster configuration") {
+			t.Fatalf("expected wrapped error message, got %q", msg)
+		}
+	})
 }

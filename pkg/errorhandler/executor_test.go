@@ -27,6 +27,16 @@ func TestExecutorExecuteSuccess(t *testing.T) {
 	}
 }
 
+func TestExecutorExecuteNilCommand(t *testing.T) {
+	t.Parallel()
+
+	executor := errorhandler.NewExecutor()
+
+	if err := executor.Execute(nil); err != nil {
+		t.Fatalf("expected nil command to succeed, got %v", err)
+	}
+}
+
 func TestExecutorExecuteInvalidSubcommand(t *testing.T) {
 	t.Parallel()
 
