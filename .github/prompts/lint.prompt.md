@@ -8,16 +8,17 @@ User input:
 
 $ARGUMENTS
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
+1. Collect baseline linting context:
+    - Identify the repository root (directory containing `go.mod`) and work with absolute paths.
+    - **REQUIRED**: Read `CONTRIBUTING.md`, `.golangci.yml`, `.jscpd.json`, and `.cspell.json` to understand linting, duplication, and spelling expectations.
+    - **IF AVAILABLE**: Review `README.md`, any files under `report/` (for example `report/jscpd-report.md`), and documentation under `docs/` or `notes/` that describe quality standards.
 
 2. Load and analyze the linting context:
-   - **REQUIRED**: Read tasks.md for linting-related tasks and code quality requirements
-   - **REQUIRED**: Read plan.md for tech stack, architecture, and coding standards
-   - **IF EXISTS**: Read contracts/ for API specifications and test requirements
-   - **IF EXISTS**: Read research.md for technical decisions and constraints
-   - **IF EXISTS**: Read quickstart.md for integration scenarios and quality gates
+    - Summarize mandatory code quality, style, and tooling requirements gathered in step 1.
+    - Identify helper scripts, make targets, or reusable workflows that support linting (record their absolute paths).
+    - Capture active linter configurations, thresholds, and exclusions for golangci-lint, jscpd, and cspell.
 
-3. Parse tasks.md structure and extract linting-focused tasks:
+3. Consolidate linting-focused tasks:
    - **Linting compliance tasks**: golangci-lint, code quality, style enforcement
    - **Code organization tasks**: Function length, complexity, duplication reduction
    - **Code duplication tasks**: jscpd violations, extract common functions, reduce copy-paste
@@ -53,13 +54,13 @@ $ARGUMENTS
    - **Variable naming**: Use descriptive names for longer-lived variables
 
 7. Progress tracking and validation:
-   - Report linting progress after each batch of fixes
-   - Run `golangci-lint run --timeout=5m` after each major change
-   - Run `jscpd` after duplication fixes to verify reduction
-   - Run `cspell` after spelling fixes to verify corrections
-   - Ensure `go test ./...` passes after each batch
-   - Track remaining issue count and types for all linters
-   - **IMPORTANT**: Mark completed linting tasks as [X] in tasks.md
+    - Report linting progress after each batch of fixes
+    - Run `golangci-lint run --timeout=5m` after each major change
+    - Run `jscpd` after duplication fixes to verify reduction
+    - Run `cspell` after spelling fixes to verify corrections
+    - Ensure `go test ./...` passes after each batch
+    - Track remaining issue count and types for all linters
+    - **IMPORTANT**: Maintain a running checklist in `report/linting-progress.md` (create if missing) and mark completed linting tasks as `[X]` with links or descriptions.
 
 8. Completion validation and quality gates:
    - Verify **zero golangci-lint issues** remain (`golangci-lint run` exits with code 0)

@@ -12,12 +12,28 @@ packages:
       pkgname: configmanager
     interfaces:
       ConfigManager:
+  github.com/devantler-tech/ksail-go/pkg/provisioner/cluster:
+    config:
+      recursive: false
+      dir: pkg/provisioner/cluster
+      filename: mocks.go
+      pkgname: clusterprovisioner
+    interfaces:
+      ClusterProvisioner:
+  github.com/devantler-tech/ksail-go/pkg/validator:
+    config:
+      recursive: false
+      dir: pkg/validator
+      filename: mocks.go
+      pkgname: validator
+    interfaces:
+      Validator:
   github.com/docker/docker/client:
     config:
       recursive: false
-      dir: pkg/provisioner
+      dir: pkg/containerengine
       filename: mocks.go
-      pkgname: provisioner
+      pkgname: containerengine
     interfaces:
       ContainerAPIClient:
       APIClient:

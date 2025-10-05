@@ -1,19 +1,18 @@
 package workload_test
 
+// cspell:words cmdtestutils
+
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,27 +57,20 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 
 //nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
-	handlers := []struct {
-		name    string
-		handler func(*cobra.Command, *configmanager.ConfigManager, []string) error
-	}{
-		{name: "reconcile", handler: workload.HandleReconcileRunE},
-		{name: "apply", handler: workload.HandleApplyRunE},
-		{name: "install", handler: workload.HandleInstallRunE},
-	}
+	commands := []string{"reconcile", "apply", "install"}
 
-	for _, testCase := range handlers {
-		t.Run(testCase.name, func(t *testing.T) {
+	for _, commandName := range commands {
+		t.Run(commandName, func(t *testing.T) {
 			t.Parallel()
 
-			var out bytes.Buffer
+			cmd, out := cmdtestutils.SetupCommandWithOutput()
+			cmd.Use = commandName
 
-			manager := newConfigManagerWithDefaults(&out)
+			manager := cmdtestutils.CreateDefaultConfigManager()
+			manager.Writer = out
 
-			cmd := &cobra.Command{Use: testCase.name}
-
-			err := testCase.handler(cmd, manager, nil)
-			require.NoErrorf(t, err, "expected workload %s handler to succeed", testCase.name)
+			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
 			require.Contains(t, actual, "config loaded")
@@ -114,35 +106,4 @@ func TestWorkloadCommandConfiguration(t *testing.T) {
 	require.False(t, command.SilenceErrors)
 	require.False(t, command.SilenceUsage)
 	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
-}
-
-func newConfigManagerWithDefaults(writer io.Writer) *configmanager.ConfigManager {
-	return configmanager.NewConfigManager(
-		writer,
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.APIVersion },
-			Description:  "API version",
-			DefaultValue: v1alpha1.APIVersion,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Kind },
-			Description:  "Resource kind",
-			DefaultValue: v1alpha1.Kind,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-			Description:  "Kubernetes distribution to use",
-			DefaultValue: v1alpha1.DistributionKind,
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			Description:  "Path to distribution configuration file",
-			DefaultValue: "kind.yaml",
-		},
-		configmanager.FieldSelector[v1alpha1.Cluster]{
-			Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			Description:  "Kubernetes context name",
-			DefaultValue: "kind-kind",
-		},
-	)
 }

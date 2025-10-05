@@ -2,7 +2,9 @@ package cluster //nolint:testpackage // Access internal helpers without exportin
 
 import (
 	"context"
+	"errors"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
@@ -10,56 +12,138 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
-// TestHandleUpRunE exercises success and validation error paths.
+var (
+	errProvisionerFactory = errors.New("failed factory")
+	errProvisionFailed    = errors.New("provision failed")
+)
 
-func TestHandleUpRunE(t *testing.T) { //nolint:paralleltest
-	t.Run("success", func(t *testing.T) { //nolint:paralleltest
-		cmd, manager, output := testutils.NewCommandAndManager(t, "up")
-		testutils.SeedValidClusterConfig(manager)
+func newProvisionerFactory(
+	provisioner clusterprovisioner.ClusterProvisioner,
+	distribution string,
+	factoryErr error,
+) func(context.Context, v1alpha1.Distribution, string, string) (
+	clusterprovisioner.ClusterProvisioner,
+	string,
+	error,
+) {
+	return func(
+		_ context.Context,
+		_ v1alpha1.Distribution,
+		_ string,
+		_ string,
+	) (clusterprovisioner.ClusterProvisioner, string, error) {
+		return provisioner, distribution, factoryErr
+	}
+}
 
-		// Use mock provisioner that doesn't require Docker
-		mockProvisioner := &mockClusterProvisioner{}
-		mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
+// TestHandleUpRunE exercises success and error paths for the up command handler.
+//
+//nolint:paralleltest,tparallel // validation subtest uses t.Chdir
+func TestHandleUpRunE(t *testing.T) {
+	t.Run("success", testHandleUpRunESuccess)
+	t.Run("validation error", testHandleUpRunEValidation) //nolint:paralleltest // uses t.Chdir
+	t.Run("provisioner creation failure", testHandleUpRunEProvisionerCreationFailure)
+	t.Run("provision failure", testHandleUpRunEProvisionFailure)
+	t.Run(
+		"default factory unsupported distribution",
+		testHandleUpRunEDefaultFactoryUnsupportedDistribution,
+	)
+}
 
-		factory := func(
-			_ context.Context,
-			_ v1alpha1.Distribution,
-			_ string,
-			_ string,
-		) (clusterprovisioner.ClusterProvisioner, string, error) {
-			return mockProvisioner, "kind", nil
+func testHandleUpRunESuccess(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	cmd, manager, output := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	mockProvisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+	mockProvisioner.On("Create", mock.Anything, "kind").Return(nil)
+
+	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.NoError(t, err)
+
+	sanitizedOutput := sanitizeTimingOutput(output.String())
+	snaps.MatchSnapshot(t, sanitizedOutput)
+
+	mockProvisioner.AssertExpectations(t)
+}
+
+func testHandleUpRunEValidation(t *testing.T) {
+	t.Helper()
+
+	testutils.RunValidationErrorTest(t, "up", HandleUpRunE)
+}
+
+func testHandleUpRunEProvisionerCreationFailure(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	factory := newProvisionerFactory(nil, "", errProvisionerFactory)
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create provisioner")
+	require.ErrorIs(t, err, errProvisionerFactory)
+}
+
+func testHandleUpRunEProvisionFailure(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	mockProvisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+	mockProvisioner.On("Create", mock.Anything, "kind").Return(errProvisionFailed)
+
+	factory := newProvisionerFactory(mockProvisioner, "kind", nil)
+
+	err := handleUpRunEWithProvisioner(cmd, manager, factory)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to provision cluster")
+	require.ErrorIs(t, err, errProvisionFailed)
+
+	mockProvisioner.AssertExpectations(t)
+}
+
+func testHandleUpRunEDefaultFactoryUnsupportedDistribution(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	cmd, manager, _ := testutils.NewCommandAndManager(t, "up")
+	testutils.SeedValidClusterConfig(manager)
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	manager.Config.Spec.Distribution = v1alpha1.Distribution("unsupported")
+
+	err = handleUpRunEWithProvisioner(cmd, manager, nil)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create provisioner")
+	require.ErrorContains(t, err, "unsupported distribution")
+}
+
+var timingRegex = regexp.MustCompile(
+	`\[(?:stage:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h)(?:\s*\|\s*total:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h))?)\]`,
+)
+
+func sanitizeTimingOutput(output string) string {
+	return timingRegex.ReplaceAllStringFunc(output, func(match string) string {
+		if strings.Contains(match, "|") {
+			return "[stage: *|total: *]"
 		}
 
-		err := handleUpRunEWithProvisioner(cmd, manager, factory)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		// Strip timing information from output before snapshot comparison
-		// Replace timing values with * to preserve structure: [stage: *] or [stage: *|total: *]
-		outputStr := output.String()
-		timingRegex := regexp.MustCompile(
-			`\[(?:stage:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h)(?:\s*\|\s*total:\s*\d+(?:\.\d+)?(?:µs|ms|s|m|h))?)\]`,
-		)
-		sanitizedOutput := timingRegex.ReplaceAllStringFunc(outputStr, func(match string) string {
-			// Check if it's a multi-stage timing (contains |total:)
-			if regexp.MustCompile(`\|`).MatchString(match) {
-				return "[stage: *|total: *]"
-			}
-
-			return "[stage: *]"
-		})
-
-		// Capture the output as a snapshot
-		snaps.MatchSnapshot(t, sanitizedOutput)
-
-		mockProvisioner.AssertExpectations(t)
-	})
-
-	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-		testutils.RunValidationErrorTest(t, "up", HandleUpRunE)
+		return "[stage: *]"
 	})
 }
 

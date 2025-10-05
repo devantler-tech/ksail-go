@@ -234,3 +234,65 @@ func TestStandardFieldSelectorsComprehensive(t *testing.T) {
 	assert.Equal(t, "Kubernetes context of cluster", contextSelector.Description)
 	assert.Equal(t, "kind-kind", contextSelector.DefaultValue)
 }
+
+func TestHandleConfigLoadRunE(t *testing.T) {
+	tests := []struct {
+		name      string
+		selectors []configmanager.FieldSelector[v1alpha1.Cluster]
+		env       map[string]string
+		assert    func(*testing.T, error)
+	}{
+		{
+			name: "success",
+			selectors: []configmanager.FieldSelector[v1alpha1.Cluster]{
+				configmanager.StandardDistributionFieldSelector(),
+				configmanager.StandardDistributionConfigFieldSelector(),
+				configmanager.StandardSourceDirectoryFieldSelector(),
+			},
+			env: map[string]string{
+				"KSAIL_SPEC_DISTRIBUTION": "Kind",
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "load error is wrapped",
+			selectors: []configmanager.FieldSelector[v1alpha1.Cluster]{
+				configmanager.StandardDistributionFieldSelector(),
+				configmanager.StandardDistributionConfigFieldSelector(),
+			},
+			env: map[string]string{
+				"KSAIL_SPEC_DISTRIBUTION": "Invalid",
+			},
+			assert: func(t *testing.T, err error) {
+				t.Helper()
+
+				require.Error(t, err)
+				require.ErrorContains(t, err, "failed to load cluster configuration")
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+
+			cmd := &cobra.Command{Use: "config"}
+			buffer := &bytes.Buffer{}
+			cmd.SetOut(buffer)
+
+			manager := configmanager.NewConfigManager(cmd.OutOrStdout(), testCase.selectors...)
+
+			for key, value := range testCase.env {
+				t.Setenv(key, value)
+			}
+
+			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			testCase.assert(t, err)
+		})
+	}
+}

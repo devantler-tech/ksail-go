@@ -135,6 +135,87 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+// TestLoadConfig_MissingFileNotifiesDefaults verifies notification when config file is absent.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigMissingFileNotifiesDefaults(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
+	assert.Contains(t, output.String(), "using default config")
+}
+
+// TestLoadConfig_ConfigFileNotifiesFound verifies notification when config file is discovered.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigFileNotifiesFound(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configContents := []byte(
+		"apiVersion: ksail.dev/v1alpha1\nkind: Cluster\nspec:\n  distribution: Kind\n  distributionConfig: kind.yaml\n",
+	)
+
+	err := os.WriteFile(configPath, configContents, 0o600)
+	require.NoError(t, err)
+
+	_, output, cluster := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	assert.NotNil(t, cluster)
+
+	assert.Contains(t, output.String(), "Load config...")
+	assert.Contains(t, output.String(), "loading ksail config")
+	assert.Contains(t, output.String(), "config loaded")
+	assert.Contains(t, output.String(), "'"+configPath+"' found")
+}
+
+// TestLoadConfig_ConfigReusedNotification verifies notification when config is reused.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigConfigReusedNotification(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
+	output.Reset()
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
+}
+
+// TestLoadConfigValidationFailureMessages verifies validation error notifications.
+//
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigValidationFailureMessages(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	var output bytes.Buffer
+
+	manager := configmanager.NewConfigManager(&output)
+
+	manager.Config.Kind = ""
+	manager.Config.APIVersion = ""
+	manager.Config.Spec.Distribution = ""
+	manager.Config.Spec.DistributionConfig = ""
+
+	cluster, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Nil(t, cluster)
+	require.ErrorContains(t, err, "with 4 errors and 0 warnings")
+
+	logOutput := output.String()
+	assert.Contains(t, logOutput, "Configuration validation failed")
+	assert.Contains(t, logOutput, "kind is required")
+	assert.Contains(t, logOutput, "apiVersion is required")
+	assert.Contains(t, logOutput, "- spec.distribution: distribution is required")
+	assert.Contains(t, logOutput, "- spec.distributionConfig: distributionConfig is required")
+}
+
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.
 func testLoadConfigCase(
 	t *testing.T,
@@ -678,4 +759,21 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	output := out.String()
 	assert.Contains(t, output, "Configuration validation failed:")
 	assert.Contains(t, output, "distribution is required")
+}
+
+// helper function to load config and capture output for tests.
+func loadConfigAndCaptureOutput(
+	t *testing.T,
+	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
+) (*configmanager.ConfigManager, *bytes.Buffer, *v1alpha1.Cluster) {
+	t.Helper()
+
+	output := &bytes.Buffer{}
+	manager := configmanager.NewConfigManager(output, fieldSelectors...)
+
+	cluster, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+	require.NotNil(t, cluster)
+
+	return manager, output, cluster
 }

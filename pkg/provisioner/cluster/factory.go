@@ -22,7 +22,7 @@ const defaultKubeconfigPath = "~/.kube/config"
 // CreateClusterProvisioner creates a cluster provisioner and returns the provisioner alongside the
 // cluster name resolved from the distribution configuration.
 //
-//nolint:ireturn // Factory function returns interface for testability and flexibility.
+//nolint:ireturn // Returning the interface to allow distribution-specific provisioners.
 func CreateClusterProvisioner(
 	_ context.Context,
 	distribution v1alpha1.Distribution,

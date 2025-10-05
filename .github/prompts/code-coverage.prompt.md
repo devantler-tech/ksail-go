@@ -8,16 +8,17 @@ User input:
 
 $ARGUMENTS
 
-1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute.
+1. Collect baseline testing context:
+   - Locate the repository root (directory containing `go.mod`) and use absolute paths for subsequent steps.
+   - **REQUIRED**: Read `CONTRIBUTING.md`, `README.md`, and `.golangci.yml` to understand test strategy, coding standards, and lint enforcement.
+   - **IF AVAILABLE**: Review files under `report/`, `docs/`, or `notes/` (for example prior coverage summaries or architecture notes) that describe testing goals and constraints.
 
 2. Load and analyze the test coverage context:
-   - **REQUIRED**: Read tasks.md for test-related tasks and coverage requirements
-   - **REQUIRED**: Read plan.md for test architecture and coverage targets
-   - **IF EXISTS**: Read contracts/ for test specifications and coverage requirements
-   - **IF EXISTS**: Read research.md for test strategy decisions and constraints
-   - **IF EXISTS**: Read quickstart.md for test integration scenarios
+   - Summarize coverage targets, supported test types, and architectural constraints captured in step 1.
+   - Identify helper scripts, make targets, or reusable workflows related to testing (record their absolute paths).
+   - Capture existing coverage reports such as `coverage.out` or artifacts in `report/` to establish current baselines.
 
-3. Parse tasks.md structure and extract test-focused tasks:
+3. Consolidate test-focused tasks:
    - **Test organization tasks**: Test file consolidation, structure improvements
    - **Coverage improvement tasks**: Identify low-coverage areas, add comprehensive tests
    - **Test quality tasks**: Code style, helper functions, maintainability improvements
@@ -50,7 +51,7 @@ $ARGUMENTS
    - Track test file consolidation progress
    - Monitor linting compliance improvements
    - Validate test execution time and reliability
-   - **IMPORTANT**: Mark completed test tasks as [X] in tasks.md
+   - **IMPORTANT**: Maintain a running checklist in `report/test-coverage-progress.md` (create if missing) and mark completed test tasks as `[X]` with links or descriptions.
 
 8. Test coverage validation and completion:
    - Verify all test files follow organizational standards
