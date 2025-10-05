@@ -68,10 +68,10 @@ func NewConfigManager(configPath string) *ConfigManager {
 // If the file doesn't exist, returns a default K3d cluster configuration.
 // Validates the configuration after loading and returns an error if validation fails.
 // The timer parameter is accepted for interface compliance but not currently used.
-func (m *ConfigManager) LoadConfig(_ timer.Timer) (*v1alpha5.SimpleConfig, error) {
+func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 	// If config is already loaded, return it
 	if m.configLoaded {
-		return m.config, nil
+		return nil
 	}
 
 	config, err := helpers.LoadConfigFromFile(
@@ -84,7 +84,7 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) (*v1alpha5.SimpleConfig, error
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
 	// Validate the loaded configuration
@@ -92,11 +92,16 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) (*v1alpha5.SimpleConfig, error
 
 	err = helpers.ValidateConfig(config, validator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to validate config: %w", err)
+		return fmt.Errorf("failed to validate config: %w", err)
 	}
 
 	m.config = config
 	m.configLoaded = true
 
-	return m.config, nil
+	return nil
+}
+
+// GetConfig implements configmanager.ConfigManager.
+func (m *ConfigManager) GetConfig() *v1alpha5.SimpleConfig {
+	return m.config
 }

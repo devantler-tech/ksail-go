@@ -22,6 +22,8 @@ const (
 	WarningType
 	// ActivityType represents an activity/progress message (default color, with ► symbol).
 	ActivityType
+	// GenerateType represents a file generation message (default color, with ✚ symbol).
+	GenerateType
 	// SuccessType represents a success message (green, with ✔ symbol).
 	SuccessType
 	// InfoType represents an informational message (blue, with ℹ symbol).
@@ -116,6 +118,11 @@ func getMessageConfig(msgType MessageType) messageConfig {
 	case ActivityType:
 		return messageConfig{
 			symbol: "► ",
+			color:  fcolor.New(fcolor.Reset),
+		}
+	case GenerateType:
+		return messageConfig{
+			symbol: "✚ ",
 			color:  fcolor.New(fcolor.Reset),
 		}
 	case SuccessType:

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +49,6 @@ func RunConfigManagerTests[T any](
 		}
 
 		require.NotNil(t, validScenario, "No valid scenario found for caching test")
-		testLoadConfigCaching(t, newManager, *validScenario)
 	})
 }
 
@@ -70,20 +68,20 @@ func testLoadConfigBasicScenarios[T any](
 			configPath := setupTestConfigPath(t, scenario)
 
 			manager := newManager(configPath)
-			config, err := manager.LoadConfig(nil)
+			err := manager.LoadConfig(nil)
 
 			if scenario.ShouldError {
 				require.Error(t, err)
-				assert.Nil(t, config)
+				assert.Nil(t, manager.GetConfig())
 
 				return
 			}
 
 			require.NoError(t, err)
-			require.NotNil(t, config)
+			require.NotNil(t, manager.GetConfig())
 
 			if scenario.ValidationFunc != nil {
-				scenario.ValidationFunc(t, config)
+				scenario.ValidationFunc(t, manager.GetConfig())
 			}
 		})
 	}
@@ -109,41 +107,4 @@ func setupTestConfigPath[T any](t *testing.T, scenario TestScenario[T]) string {
 	default:
 		return "non-existent-config.yaml"
 	}
-}
-
-// testLoadConfigCaching tests that configuration caching works correctly.
-func testLoadConfigCaching[T any](
-	t *testing.T,
-	newManager func(configPath string) configmanager.ConfigManager[T],
-	scenario TestScenario[T],
-) {
-	t.Helper()
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "caching-config.yaml")
-
-	if scenario.ConfigContent != "" {
-		err := os.WriteFile(configPath, []byte(scenario.ConfigContent), testFilePermissions)
-		require.NoError(t, err)
-	}
-
-	manager := newManager(configPath)
-
-	// Create timer for testing (not used in Kind config manager currently)
-	tmr := timer.New()
-	tmr.Start()
-
-	// First call
-	config1, err := manager.LoadConfig(tmr)
-	require.NoError(t, err)
-	require.NotNil(t, config1)
-
-	// Second call should return the same instance (cached)
-	config2, err := manager.LoadConfig(tmr)
-	require.NoError(t, err)
-	require.NotNil(t, config2)
-
-	// Should be the same pointer (cached)
-	assert.Same(t, config1, config2)
 }

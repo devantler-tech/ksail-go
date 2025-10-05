@@ -2,7 +2,6 @@
 package workload
 
 import (
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +16,6 @@ func NewWorkloadCmd() *cobra.Command {
 			return cmd.Help()
 		},
 	}
-
-	cmd.SuggestionsMinimumDistance = helpers.SuggestionsMinimumDistance
 
 	cmd.AddCommand(NewReconcileCmd())
 	cmd.AddCommand(NewApplyCmd())

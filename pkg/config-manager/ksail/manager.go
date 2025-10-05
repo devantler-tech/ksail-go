@@ -52,13 +52,13 @@ func NewConfigManager(
 // Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
-func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
+func (m *ConfigManager) LoadConfig(tmr timer.Timer) error {
 	return m.loadConfigWithOptions(tmr, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
 // Returns the previously loaded config if already loaded.
-func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
+func (m *ConfigManager) LoadConfigSilent() error {
 	return m.loadConfigWithOptions(nil, true)
 }
 
@@ -66,7 +66,7 @@ func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,
-) (*v1alpha1.Cluster, error) {
+) error {
 	if !silent {
 		m.notifyLoadingStart()
 	}
@@ -75,7 +75,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 		if !silent {
 			m.notifyConfigReused()
 		}
-		return m.Config, nil
+		return nil
 	}
 
 	if !silent {
@@ -85,18 +85,18 @@ func (m *ConfigManager) loadConfigWithOptions(
 	// Use native Viper API to read configuration
 	err := m.readConfig(silent)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Unmarshal and apply defaults
 	err = m.unmarshalAndApplyDefaults()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = m.validateConfig()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !silent {
@@ -104,7 +104,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 	}
 	m.configLoaded = true
 
-	return m.Config, nil
+	return nil
 }
 
 func (m *ConfigManager) readConfig(silent bool) error {
@@ -268,4 +268,9 @@ func isFieldEmpty(fieldPtr any) bool {
 // IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
 func IsFieldEmptyForTesting(fieldPtr any) bool {
 	return isFieldEmpty(fieldPtr)
+}
+
+// GetConfig implements configmanager.ConfigManager.
+func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
+	return m.Config
 }

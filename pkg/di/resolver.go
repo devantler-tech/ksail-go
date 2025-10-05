@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"go.uber.org/dig"
 )
 
@@ -25,28 +23,16 @@ type ResolvedDependencies struct {
 // Resolver provides a minimal dig-backed dependency resolver.
 type Resolver struct {
 	cluster *v1alpha1.Cluster
-	writer  io.Writer
-	timer   timer.Timer
 }
 
 // NewResolver creates a new dependency resolver instance.
-func NewResolver(cluster *v1alpha1.Cluster, writer io.Writer, tmr timer.Timer) (*Resolver, error) {
+func NewResolver(cluster *v1alpha1.Cluster) (*Resolver, error) {
 	if cluster == nil {
 		return nil, ErrClusterConfigRequired
 	}
 
-	if writer == nil {
-		writer = io.Discard
-	}
-
-	if tmr == nil {
-		tmr = timer.New()
-	}
-
 	return &Resolver{
 		cluster: cluster,
-		writer:  writer,
-		timer:   tmr,
 	}, nil
 }
 

@@ -4,32 +4,22 @@ import (
 	"fmt"
 	"os"
 
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
 func NewInitCmd() *cobra.Command {
-	// Create field selectors
-	fieldSelectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
-		configmanager.StandardDistributionFieldSelector(),
-		configmanager.StandardDistributionConfigFieldSelector(),
-		configmanager.StandardSourceDirectoryFieldSelector(),
-	}
-
 	// Create the command using the helper
-	cmd := helpers.NewCobraCommand(
-		"init",
-		"Initialize a new project",
-		"Initialize a new project.",
-		HandleInitRunE,
-		fieldSelectors...,
-	)
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize a new project",
+		Long:  "Initialize a new project in the specified directory (or current directory if none specified).",
+		RunE:  HandleInitRunE,
+	}
 
 	// Add the --output flag for specifying output directory
 	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
@@ -46,26 +36,33 @@ func NewInitCmd() *cobra.Command {
 // Exported for testing purposes.
 func HandleInitRunE(
 	cmd *cobra.Command,
-	configManager *configmanager.ConfigManager,
 	_ []string,
 ) error {
+	// Create command utils
+	utils, err := utils.NewCommandUtils(cmd,
+		configmanager.StandardDistributionFieldSelector(),
+		configmanager.StandardDistributionConfigFieldSelector(),
+		configmanager.StandardSourceDirectoryFieldSelector())
+	if err != nil {
+		return fmt.Errorf("failed to create command utils: %w", err)
+	}
+
+	// Bind CLI only flags
+	_ = utils.ConfigManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	_ = utils.ConfigManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+
 	// Start timing
-	tmr := timer.New()
-	tmr.Start()
+	utils.Timer.Start()
 
-	// Bind the --output and --force flags
-	_ = configManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
-	_ = configManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
-
-	cluster, err := configManager.LoadConfig(tmr)
+	// Load the configuration
+	err = utils.ConfigManager.LoadConfig(utils.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Determine target path - prioritize test parameter over flag
+	// Get output path
 	var targetPath string
-	// Get output path from flag
-	flagOutputPath := configManager.Viper.GetString("output")
+	flagOutputPath := utils.ConfigManager.Viper.GetString("output")
 	if flagOutputPath != "" {
 		targetPath = flagOutputPath
 	} else {
@@ -76,15 +73,18 @@ func HandleInitRunE(
 	}
 
 	// Get the force flag value
-	force := configManager.Viper.GetBool("force")
+	force := utils.ConfigManager.Viper.GetBool("force")
 
 	// Create scaffolder and generate project files
-	scaffolderInstance := scaffolder.NewScaffolder(*cluster, cmd.OutOrStdout())
+	scaffolderInstance := scaffolder.NewScaffolder(
+		*utils.ConfigManager.GetConfig(),
+		cmd.OutOrStdout(),
+	)
 
 	cmd.Println()
 
 	// Mark new stage for scaffolding
-	tmr.NewStage()
+	utils.Timer.NewStage()
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
@@ -102,7 +102,7 @@ func HandleInitRunE(
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "initialized project",
-		Timer:   tmr,
+		Timer:   utils.Timer,
 		Writer:  cmd.OutOrStdout(),
 	})
 

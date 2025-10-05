@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 	"github.com/spf13/cobra"
@@ -15,13 +13,13 @@ import (
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
 	// Create the command using the helper (no field selectors needed for root command)
-	cmd := helpers.NewCobraCommand(
-		"ksail",
-		"SDK for operating and managing K8s clusters and workloads",
-		`KSail helps you easily create, manage, and test local Kubernetes clusters and workloads `+
+	cmd := &cobra.Command{
+		Use:   "ksail",
+		Short: "SDK for operating and managing K8s clusters and workloads",
+		Long: `KSail helps you easily create, manage, and test local Kubernetes clusters and workloads ` +
 			`from one simple command line tool.`,
-		handleRootRunE,
-	)
+		RunE: handleRootRunE,
+	}
 
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
@@ -51,7 +49,6 @@ func Execute(cmd *cobra.Command) error {
 // handleRootRunE handles the root command.
 func handleRootRunE(
 	cmd *cobra.Command,
-	_ *configmanager.ConfigManager,
 	_ []string,
 ) error {
 	asciiart.PrintKSailLogo(cmd.OutOrStdout())

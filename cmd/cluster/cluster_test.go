@@ -76,7 +76,7 @@ func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
 
 	constructors := []func() *cobra.Command{
 		NewUpCmd,
-		NewDownCmd,
+		NewDeleteCmd,
 		NewStartCmd,
 		NewStopCmd,
 		NewStatusCmd,
