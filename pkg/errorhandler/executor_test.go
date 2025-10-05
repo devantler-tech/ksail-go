@@ -32,7 +32,8 @@ func TestExecutorExecuteNilCommand(t *testing.T) {
 
 	executor := NewExecutor()
 
-	if err := executor.Execute(nil); err != nil {
+	err := executor.Execute(nil)
+	if err != nil {
 		t.Fatalf("expected nil command to succeed, got %v", err)
 	}
 }
@@ -143,7 +144,6 @@ func TestCommandErrorError(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -161,7 +161,7 @@ func TestCommandErrorUnwrap(t *testing.T) {
 	cause := errors.New("wrapped")
 	err := &CommandError{cause: cause}
 
-	if err.Unwrap() != cause {
+	if !errors.Is(err.Unwrap(), cause) {
 		t.Fatalf("expected unwrap to return original cause")
 	}
 
@@ -193,7 +193,6 @@ func TestDefaultNormalizerNormalize(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

@@ -143,6 +143,7 @@ func TestLoadConfigMissingFileNotifiesDefaults(t *testing.T) {
 	t.Chdir(tempDir)
 
 	var output bytes.Buffer
+
 	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
 
 	cluster, err := manager.LoadConfig(nil)
@@ -168,6 +169,7 @@ func TestLoadConfigConfigFileNotifiesFound(t *testing.T) {
 	require.NoError(t, err)
 
 	var output bytes.Buffer
+
 	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
 
 	cluster, err := manager.LoadConfig(nil)
@@ -188,6 +190,7 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	t.Chdir(tempDir)
 
 	var output bytes.Buffer
+
 	manager := configmanager.NewConfigManager(&output, createStandardFieldSelectors()...)
 
 	_, err := manager.LoadConfig(nil)
@@ -209,6 +212,7 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	t.Chdir(tempDir)
 
 	var output bytes.Buffer
+
 	manager := configmanager.NewConfigManager(&output)
 
 	manager.Config.Kind = ""
