@@ -41,12 +41,13 @@ func TestCreateClusterProvisioner(t *testing.T) {
 				configPath,
 				"",
 			)
-			if err != nil {
-				t.Fatalf("unexpected error creating cluster provisioner: %v", err)
-			}
-			clusterName, err := configmanager.GetClusterName(distributionConfig)
-			if err != nil {
-				t.Fatalf("failed to get cluster name from config: %v", err)
+
+			var clusterName string
+			if err == nil {
+				clusterName, err = configmanager.GetClusterName(distributionConfig)
+				if err != nil {
+					t.Fatalf("failed to get cluster name from config: %v", err)
+				}
 			}
 
 			testCase.assertion(t, provisioner, clusterName, err)
