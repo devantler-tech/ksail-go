@@ -4,7 +4,6 @@ package workload_test
 
 import (
 	"bytes"
-	"os"
 	"strings"
 	"testing"
 
@@ -59,30 +58,27 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 }
 
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
+	t.Parallel()
+
 	commands := []string{"reconcile", "apply", "install"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
+			t.Parallel()
+
 			var out bytes.Buffer
 
 			tempDir := t.TempDir()
 			cmdtestutils.WriteValidKsailConfig(t, tempDir)
 
-			originalDir, err := os.Getwd()
-			require.NoError(t, err)
-
-			t.Cleanup(func() {
-				require.NoError(t, os.Chdir(originalDir))
-			})
-
-			require.NoError(t, os.Chdir(tempDir))
+			t.Chdir(tempDir)
 
 			root := cmd.NewRootCmd("test", "test", "test")
 			root.SetOut(&out)
 			root.SetErr(&out)
 			root.SetArgs([]string{"workload", commandName})
 
-			err = root.Execute()
+			err := root.Execute()
 			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
@@ -96,8 +92,8 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	t.Parallel()
 
-	rt := runtime.New(func(i do.Injector) error {
-		do.Provide(i, func(do.Injector) (timer.Timer, error) {
+	runtimeContainer := runtime.New(func(injector do.Injector) error {
+		do.Provide(injector, func(do.Injector) (timer.Timer, error) {
 			return timer.New(), nil
 		})
 
@@ -105,7 +101,8 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	})
 
 	var out bytes.Buffer
-	command := workload.NewWorkloadCmd(rt)
+
+	command := workload.NewWorkloadCmd(runtimeContainer)
 	command.SetOut(&out)
 	command.SetErr(&out)
 

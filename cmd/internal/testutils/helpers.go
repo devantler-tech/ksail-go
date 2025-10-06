@@ -70,19 +70,24 @@ func CreateDefaultConfigManager() *configmanager.ConfigManager {
 	)
 }
 
+const (
+	testDirectoryPerm = 0o750
+	testFilePerm      = 0o600
+)
+
 // WriteValidKsailConfig writes a minimal but valid KSail configuration into the provided directory.
 func WriteValidKsailConfig(t *testing.T, dir string) {
 	t.Helper()
 
 	// Ensure workload directory exists for parity with ksail init output.
 	workloadDir := filepath.Join(dir, "k8s")
-	require.NoError(t, os.MkdirAll(workloadDir, 0o755))
+	require.NoError(t, os.MkdirAll(workloadDir, testDirectoryPerm))
 
 	configPath := filepath.Join(dir, "ksail.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte(defaultKsailConfigContent), 0o600))
+	require.NoError(t, os.WriteFile(configPath, []byte(defaultKsailConfigContent), testFilePerm))
 
 	kindConfigPath := filepath.Join(dir, "kind.yaml")
-	require.NoError(t, os.WriteFile(kindConfigPath, []byte(defaultKindConfigContent), 0o600))
+	require.NoError(t, os.WriteFile(kindConfigPath, []byte(defaultKindConfigContent), testFilePerm))
 }
 
 // SetupCommandWithOutput creates a standard cobra command with output buffer for cmd tests.

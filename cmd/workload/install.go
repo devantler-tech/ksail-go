@@ -7,7 +7,7 @@ import (
 )
 
 // NewInstallCmd creates the workload install command.
-func NewInstallCmd(rt *runtime.Runtime) *cobra.Command {
+func NewInstallCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "install",
 		Short:        "Install Helm charts",
@@ -15,7 +15,7 @@ func NewInstallCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

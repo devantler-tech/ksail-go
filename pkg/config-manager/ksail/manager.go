@@ -62,6 +62,11 @@ func (m *ConfigManager) LoadConfigSilent() error {
 	return m.loadConfigWithOptions(nil, true)
 }
 
+// GetConfig implements configmanager.ConfigManager by returning the loaded cluster configuration.
+func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
+	return m.Config
+}
+
 // loadConfigWithOptions is the internal implementation with silent option.
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
@@ -75,6 +80,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 		if !silent {
 			m.notifyConfigReused()
 		}
+
 		return nil
 	}
 
@@ -102,6 +108,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 	if !silent {
 		m.notifyLoadingComplete(tmr)
 	}
+
 	m.configLoaded = true
 
 	return nil
@@ -118,10 +125,8 @@ func (m *ConfigManager) readConfig(silent bool) error {
 		if !silent {
 			m.notifyUsingDefaults()
 		}
-	} else {
-		if !silent {
-			m.notifyConfigFound()
-		}
+	} else if !silent {
+		m.notifyConfigFound()
 	}
 
 	return nil
@@ -268,9 +273,4 @@ func isFieldEmpty(fieldPtr any) bool {
 // IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
 func IsFieldEmptyForTesting(fieldPtr any) bool {
 	return isFieldEmpty(fieldPtr)
-}
-
-// GetConfig implements configmanager.ConfigManager.
-func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
-	return m.Config
 }

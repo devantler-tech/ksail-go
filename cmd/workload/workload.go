@@ -7,7 +7,7 @@ import (
 )
 
 // NewWorkloadCmd creates and returns the workload command group namespace.
-func NewWorkloadCmd(rt *runtime.Runtime) *cobra.Command {
+func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workload",
 		Short: "Manage workload operations",
@@ -19,9 +19,9 @@ func NewWorkloadCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewReconcileCmd(rt))
-	cmd.AddCommand(NewApplyCmd(rt))
-	cmd.AddCommand(NewInstallCmd(rt))
+	cmd.AddCommand(NewReconcileCmd(runtimeContainer))
+	cmd.AddCommand(NewApplyCmd(runtimeContainer))
+	cmd.AddCommand(NewInstallCmd(runtimeContainer))
 
 	return cmd
 }

@@ -7,7 +7,7 @@ import (
 )
 
 // NewStartCmd creates and returns the start command.
-func NewStartCmd(rt *runtime.Runtime) *cobra.Command {
+func NewStartCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "start",
 		Short:        "Start a stopped cluster",
@@ -15,7 +15,7 @@ func NewStartCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

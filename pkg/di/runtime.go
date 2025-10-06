@@ -1,3 +1,4 @@
+// Package di exposes shared dependency injection helpers for KSail commands.
 package di
 
 import "github.com/samber/do/v2"
@@ -18,14 +19,20 @@ func New(modules ...Module) *Runtime {
 	}
 }
 
+// Injector is an alias for the underlying DI container implementation.
+type Injector = do.Injector
+
 // Invoke builds a fresh injector, applies base and extra modules, and executes
 // the provided function.
 func (r *Runtime) Invoke(
-	fn func(do.Injector) error,
+	handler func(Injector) error,
 	extraModules ...Module,
 ) error {
 	injector := do.New()
-	defer injector.Shutdown()
+
+	defer func() {
+		_ = injector.Shutdown()
+	}()
 
 	modules := append([]Module{}, r.baseModules...)
 	modules = append(modules, extraModules...)
@@ -35,10 +42,11 @@ func (r *Runtime) Invoke(
 			continue
 		}
 
-		if err := module(injector); err != nil {
+		err := module(injector)
+		if err != nil {
 			return err
 		}
 	}
 
-	return fn(injector)
+	return handler(injector)
 }

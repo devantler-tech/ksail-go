@@ -38,6 +38,7 @@ linters:
           allow:
             - $gostd
             - github.com/devantler-tech
+            - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color
             - github.com/gkampitakis/go-snaps

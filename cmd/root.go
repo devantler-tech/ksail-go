@@ -16,7 +16,7 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	rt := runtime.New(
+	runtimeContainer := runtime.New(
 		func(i do.Injector) error {
 			do.Provide(i, func(do.Injector) (timer.Timer, error) {
 				return timer.New(), nil
@@ -47,9 +47,9 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
 	// Add all subcommands
-	cmd.AddCommand(NewInitCmd(rt))
-	cmd.AddCommand(cluster.NewClusterCmd(rt))
-	cmd.AddCommand(workload.NewWorkloadCmd(rt))
+	cmd.AddCommand(NewInitCmd(runtimeContainer))
+	cmd.AddCommand(cluster.NewClusterCmd(runtimeContainer))
+	cmd.AddCommand(workload.NewWorkloadCmd(runtimeContainer))
 
 	return cmd
 }

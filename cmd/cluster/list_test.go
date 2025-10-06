@@ -15,14 +15,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const ignoredConfigValue = "ignored"
+
 func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := newCommandWithBuffer(t)
 
 	tmpDir := t.TempDir()
+
 	badConfigPath := filepath.Join(tmpDir, "ksail.yaml")
-	if err := os.WriteFile(badConfigPath, []byte(": invalid yaml"), 0o600); err != nil {
+
+	err := os.WriteFile(badConfigPath, []byte(": invalid yaml"), 0o600)
+	if err != nil {
 		t.Fatalf("failed to write malformed config: %v", err)
 	}
 
@@ -31,7 +36,7 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 
 	deps := ListDeps{Factory: fakeFactory{}}
 
-	err := HandleListRunE(cmd, cfgManager, deps)
+	err = HandleListRunE(cmd, cfgManager, deps)
 	if err == nil {
 		t.Fatal("expected configuration load error, got nil")
 	}
@@ -53,9 +58,9 @@ func TestListClusters_ReturnsErrorWhenFactoryFails(t *testing.T) {
 
 	cfgManager := configmanager.NewConfigManager(io.Discard)
 	cfgManager.Config.Spec.Distribution = v1alpha1.Distribution("Unsupported")
-	cfgManager.Config.Spec.DistributionConfig = "ignored"
-	cfgManager.Config.Spec.Connection.Kubeconfig = "ignored"
-	cfgManager.Config.Spec.SourceDirectory = "ignored"
+	cfgManager.Config.Spec.DistributionConfig = ignoredConfigValue
+	cfgManager.Config.Spec.Connection.Kubeconfig = ignoredConfigValue
+	cfgManager.Config.Spec.SourceDirectory = ignoredConfigValue
 
 	deps := ListDeps{Factory: fakeFactory{err: clusterprovisioner.ErrUnsupportedDistribution}}
 
@@ -115,7 +120,8 @@ func TestBindAllFlagBindsViperState(t *testing.T) {
 	cfgManager := configmanager.NewConfigManager(io.Discard)
 	bindAllFlag(cmd, cfgManager)
 
-	if err := cmd.Flags().Set(allFlag, "true"); err != nil {
+	err := cmd.Flags().Set(allFlag, "true")
+	if err != nil {
 		t.Fatalf("failed to set all flag: %v", err)
 	}
 
@@ -129,6 +135,7 @@ type fakeFactory struct {
 	err         error
 }
 
+//nolint:ireturn // Tests rely on returning the interface to satisfy ListDeps contract.
 func (f fakeFactory) Create(
 	_ context.Context,
 	_ *v1alpha1.Cluster,
@@ -140,6 +147,7 @@ func newCommandWithBuffer(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 	t.Helper()
 
 	tcmd := &cobra.Command{}
+
 	var out bytes.Buffer
 	tcmd.SetOut(&out)
 	tcmd.SetErr(&out)

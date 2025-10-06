@@ -7,7 +7,7 @@ import (
 )
 
 // NewDeleteCmd creates and returns the delete command.
-func NewDeleteCmd(rt *runtime.Runtime) *cobra.Command {
+func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "delete",
 		Short:        "Destroy a cluster",
@@ -15,7 +15,7 @@ func NewDeleteCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

@@ -244,6 +244,7 @@ func testLoadConfigCase(
 
 	if testCase.shouldSucceed {
 		require.NoError(t, err)
+
 		cluster := manager.GetConfig()
 		require.NotNil(t, cluster)
 		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
@@ -614,6 +615,7 @@ spec:
 
 	err = manager.LoadConfig(nil)
 	require.NoError(t, err)
+
 	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 

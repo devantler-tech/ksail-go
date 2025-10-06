@@ -15,7 +15,7 @@ import (
 )
 
 // NewInitCmd creates and returns the init command.
-func NewInitCmd(rt *runtime.Runtime) *cobra.Command {
+func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "init",
 		Short:        "Initialize a new project",
@@ -37,14 +37,15 @@ func NewInitCmd(rt *runtime.Runtime) *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return rt.Invoke(func(injector do.Injector) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
 			tmr, err := do.Invoke[timer.Timer](injector)
 			if err != nil {
 				return fmt.Errorf("resolve timer dependency: %w", err)
 			}
 
 			deps := InitDeps{Timer: tmr}
+
 			return HandleInitRunE(cmd, cfgManager, deps)
 		})
 	}
@@ -73,6 +74,7 @@ func HandleInitRunE(
 	}
 
 	var targetPath string
+
 	flagOutputPath := cfgManager.Viper.GetString("output")
 	if flagOutputPath != "" {
 		targetPath = flagOutputPath

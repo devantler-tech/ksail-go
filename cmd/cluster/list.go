@@ -16,7 +16,7 @@ import (
 const allFlag = "all"
 
 // NewListCmd creates the list command for clusters.
-func NewListCmd(rt *runtime.Runtime) *cobra.Command {
+func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "list",
 		Short:        "List clusters",
@@ -34,8 +34,8 @@ func NewListCmd(rt *runtime.Runtime) *cobra.Command {
 
 	bindAllFlag(cmd, cfgManager)
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return rt.Invoke(func(injector do.Injector) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
 			factory, err := do.Invoke[clusterprovisioner.Factory](injector)
 			if err != nil {
 				return fmt.Errorf("resolve provisioner factory dependency: %w", err)
@@ -85,6 +85,7 @@ func listClusters(
 	cmd *cobra.Command,
 ) error {
 	clusterCfg := cfgManager.GetConfig()
+
 	provisioner, _, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
@@ -113,6 +114,7 @@ func listClusters(
 			}
 
 			defaultFactory := clusterprovisioner.DefaultFactory{}
+
 			otherProv, _, err := defaultFactory.Create(cmd.Context(), otherCluster)
 			if err != nil {
 				return fmt.Errorf(
@@ -176,8 +178,27 @@ func displayClusterList(distribution v1alpha1.Distribution, clusters []string, c
 			Writer:  cmd.OutOrStdout(),
 		})
 	} else {
-		fmt.Fprint(cmd.OutOrStdout(), string(distribution)+": ")
-		fmt.Fprintln(cmd.OutOrStdout(), strings.Join(clusters, ", "))
+		writer := cmd.OutOrStdout()
+
+		_, err := fmt.Fprint(writer, string(distribution)+": ")
+		if err != nil {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ErrorType,
+				Content: fmt.Sprintf("failed to display %s clusters", distribution),
+				Writer:  writer,
+			})
+
+			return
+		}
+
+		_, err = fmt.Fprintln(writer, strings.Join(clusters, ", "))
+		if err != nil {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ErrorType,
+				Content: fmt.Sprintf("failed to display %s clusters", distribution),
+				Writer:  writer,
+			})
+		}
 	}
 }
 

@@ -28,8 +28,10 @@ type Factory interface {
 type DefaultFactory struct{}
 
 // Create selects the correct distribution provisioner for the KSail cluster configuration.
+//
+//nolint:ireturn // Factory interface intentionally returns ClusterProvisioner implementations.
 func (DefaultFactory) Create(
-	ctx context.Context,
+	_ context.Context,
 	cluster *v1alpha1.Cluster,
 ) (ClusterProvisioner, any, error) {
 	if cluster == nil {

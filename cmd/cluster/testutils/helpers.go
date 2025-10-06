@@ -3,7 +3,6 @@ package testutils
 
 import (
 	"bytes"
-	"os"
 	"strings"
 	"testing"
 
@@ -20,20 +19,9 @@ func SetupValidWorkingDir(t *testing.T) func() {
 	tempDir := t.TempDir()
 	cmdtestutils.WriteValidKsailConfig(t, tempDir)
 
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
+	t.Chdir(tempDir)
 
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("failed to switch to temp directory: %v", err)
-	}
-
-	return func() {
-		if err := os.Chdir(originalDir); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
-	}
+	return func() {}
 }
 
 // RunValidationErrorTest executes the provided command factory in an empty directory and validates error output.
@@ -46,22 +34,10 @@ func RunValidationErrorTest(
 
 	tempDir := t.TempDir()
 
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
-
-	if err := os.Chdir(tempDir); err != nil {
-		t.Fatalf("failed to switch to temp directory: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := os.Chdir(originalDir); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
-	})
+	t.Chdir(tempDir)
 
 	command := commandFactory()
+
 	var out bytes.Buffer
 	command.SetOut(&out)
 	command.SetErr(&out)
@@ -70,7 +46,7 @@ func RunValidationErrorTest(
 		t.Fatal("command RunE must not be nil")
 	}
 
-	err = command.RunE(command, nil)
+	err := command.RunE(command, nil)
 	if err == nil {
 		t.Fatal("expected error but got nil")
 	}

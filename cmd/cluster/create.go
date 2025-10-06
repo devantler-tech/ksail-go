@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -15,7 +16,7 @@ import (
 )
 
 // NewCreateCmd wires the cluster create command using the shared runtime container.
-func NewCreateCmd(rt *runtime.Runtime) *cobra.Command {
+func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "create",
 		Short:        "Create a cluster",
@@ -31,8 +32,8 @@ func NewCreateCmd(rt *runtime.Runtime) *cobra.Command {
 	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
 	cfgManager.AddFlagsFromFields(cmd)
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return rt.Invoke(func(injector do.Injector) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
 			tmr, err := do.Invoke[timer.Timer](injector)
 			if err != nil {
 				return fmt.Errorf("resolve timer dependency: %w", err)
@@ -61,6 +62,8 @@ type CreateDeps struct {
 	Factory clusterprovisioner.Factory
 }
 
+var errMissingClusterProvisioner = errors.New("missing cluster provisioner dependency")
+
 // HandleCreateRunE executes the cluster creation workflow.
 func HandleCreateRunE(
 	cmd *cobra.Command,
@@ -77,13 +80,14 @@ func HandleCreateRunE(
 	deps.Timer.NewStage()
 
 	clusterCfg := cfgManager.GetConfig()
+
 	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
 	}
 
 	if provisioner == nil {
-		return fmt.Errorf("missing cluster provisioner dependency")
+		return errMissingClusterProvisioner
 	}
 
 	clusterName, err := configmanager.GetClusterName(distributionConfig)
@@ -99,7 +103,8 @@ func HandleCreateRunE(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	if err := provisioner.Create(cmd.Context(), clusterName); err != nil {
+	err = provisioner.Create(cmd.Context(), clusterName)
+	if err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 

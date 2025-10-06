@@ -76,16 +76,19 @@ type lifecycleMetadata struct {
 	long  string
 }
 
-func expectedLifecycleMetadata(t *testing.T, rt *runtime.Runtime) map[string]lifecycleMetadata {
+func expectedLifecycleMetadata(
+	t *testing.T,
+	runtimeContainer *runtime.Runtime,
+) map[string]lifecycleMetadata {
 	t.Helper()
 
 	constructors := []func() *cobra.Command{
-		func() *cobra.Command { return NewCreateCmd(rt) },
-		func() *cobra.Command { return NewDeleteCmd(rt) },
-		func() *cobra.Command { return NewStartCmd(rt) },
-		func() *cobra.Command { return NewStopCmd(rt) },
-		func() *cobra.Command { return NewStatusCmd(rt) },
-		func() *cobra.Command { return NewListCmd(rt) },
+		func() *cobra.Command { return NewCreateCmd(runtimeContainer) },
+		func() *cobra.Command { return NewDeleteCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStartCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStopCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStatusCmd(runtimeContainer) },
+		func() *cobra.Command { return NewListCmd(runtimeContainer) },
 	}
 
 	metadata := make(map[string]lifecycleMetadata, len(constructors))
@@ -171,6 +174,7 @@ func runLifecycleSuccessCase(
 	t.Cleanup(cleanup)
 
 	command := commandFactory()
+
 	var output bytes.Buffer
 	command.SetOut(&output)
 	command.SetErr(&output)

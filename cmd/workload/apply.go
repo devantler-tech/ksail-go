@@ -7,7 +7,7 @@ import (
 )
 
 // NewApplyCmd creates the workload apply command.
-func NewApplyCmd(rt *runtime.Runtime) *cobra.Command {
+func NewApplyCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "apply",
 		Short:        "Apply manifests",
@@ -15,7 +15,7 @@ func NewApplyCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

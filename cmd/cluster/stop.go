@@ -7,7 +7,7 @@ import (
 )
 
 // NewStopCmd creates and returns the stop command.
-func NewStopCmd(rt *runtime.Runtime) *cobra.Command {
+func NewStopCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "stop",
 		Short:        "Stop a running cluster",
@@ -15,7 +15,7 @@ func NewStopCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

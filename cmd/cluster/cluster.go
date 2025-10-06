@@ -8,21 +8,22 @@ import (
 )
 
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.
-func NewClusterCmd(rt *runtime.Runtime) *cobra.Command {
+func NewClusterCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "cluster",
-		Short:        "Manage cluster lifecycle",
-		Long:         `Manage lifecycle operations for local Kubernetes clusters, including provisioning, teardown, and status.`,
+		Use:   "cluster",
+		Short: "Manage cluster lifecycle",
+		Long: `Manage lifecycle operations for local Kubernetes clusters, including ` +
+			`provisioning, teardown, and status.`,
 		RunE:         handleClusterRunE,
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewCreateCmd(rt))
-	cmd.AddCommand(NewDeleteCmd(rt))
-	cmd.AddCommand(NewStartCmd(rt))
-	cmd.AddCommand(NewStopCmd(rt))
-	cmd.AddCommand(NewStatusCmd(rt))
-	cmd.AddCommand(NewListCmd(rt))
+	cmd.AddCommand(NewCreateCmd(runtimeContainer))
+	cmd.AddCommand(NewDeleteCmd(runtimeContainer))
+	cmd.AddCommand(NewStartCmd(runtimeContainer))
+	cmd.AddCommand(NewStopCmd(runtimeContainer))
+	cmd.AddCommand(NewStatusCmd(runtimeContainer))
+	cmd.AddCommand(NewListCmd(runtimeContainer))
 
 	return cmd
 }

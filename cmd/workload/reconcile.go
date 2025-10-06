@@ -7,7 +7,7 @@ import (
 )
 
 // NewReconcileCmd creates the workload reconcile command.
-func NewReconcileCmd(rt *runtime.Runtime) *cobra.Command {
+func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "reconcile",
 		Short:        "Reconcile workloads with the cluster",
@@ -15,7 +15,7 @@ func NewReconcileCmd(rt *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }
