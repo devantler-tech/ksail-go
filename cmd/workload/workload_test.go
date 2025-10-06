@@ -9,9 +9,11 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/require"
 )
@@ -95,7 +97,8 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 
 	var out bytes.Buffer
 
-	command := workload.NewWorkloadCmd()
+	rt := runtime.New(runtime.WithTimer(timer.New()))
+	command := workload.NewWorkloadCmd(rt)
 	command.SetOut(&out)
 	command.SetErr(&out)
 

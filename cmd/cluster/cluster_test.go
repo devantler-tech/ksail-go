@@ -7,14 +7,18 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
 func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 	t.Parallel()
 
-	metadata := expectedLifecycleMetadata(t)
-	requireParentMetadata(t, NewClusterCmd())
+	rt := newTestRuntime()
+	metadata := expectedLifecycleMetadata(t, rt)
+	requireParentMetadata(t, NewClusterCmd(rt))
 
 	for name, details := range metadata {
 		t.Run(name, func(t *testing.T) {
@@ -29,7 +33,8 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
 	t.Parallel()
 
-	cmd := NewClusterCmd()
+	rt := newTestRuntime()
+	cmd := NewClusterCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
@@ -70,16 +75,16 @@ type lifecycleMetadata struct {
 	long  string
 }
 
-func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
+func expectedLifecycleMetadata(t *testing.T, rt *runtime.Runtime) map[string]lifecycleMetadata {
 	t.Helper()
 
 	constructors := []func() *cobra.Command{
-		NewCreateCmd,
-		NewDeleteCmd,
-		NewStartCmd,
-		NewStopCmd,
-		NewStatusCmd,
-		NewListCmd,
+		func() *cobra.Command { return NewCreateCmd(rt) },
+		func() *cobra.Command { return NewDeleteCmd(rt) },
+		func() *cobra.Command { return NewStartCmd(rt) },
+		func() *cobra.Command { return NewStopCmd(rt) },
+		func() *cobra.Command { return NewStatusCmd(rt) },
+		func() *cobra.Command { return NewListCmd(rt) },
 	}
 
 	metadata := make(map[string]lifecycleMetadata, len(constructors))
@@ -112,7 +117,9 @@ func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
 func findLifecycleSubcommand(t *testing.T, name string) *cobra.Command {
 	t.Helper()
 
-	for _, subcommand := range NewClusterCmd().Commands() {
+	rt := newTestRuntime()
+
+	for _, subcommand := range NewClusterCmd(rt).Commands() {
 		if subcommand.Use == name {
 			return subcommand
 		}
@@ -195,4 +202,11 @@ func runLifecycleValidationErrorCase(
 	t.Helper()
 
 	testutils.RunValidationErrorTest(t, commandFactory, expectedSubstrings...)
+}
+
+func newTestRuntime() *runtime.Runtime {
+	return runtime.New(
+		runtime.WithTimer(timer.New()),
+		runtime.WithProvisionerFactory(clusterprovisioner.DefaultFactory{}),
+	)
 }

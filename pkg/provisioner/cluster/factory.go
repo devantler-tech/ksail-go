@@ -19,23 +19,36 @@ var ErrUnsupportedDistribution = errors.New("unsupported distribution")
 
 const defaultKubeconfigPath = "~/.kube/config"
 
-// CreateClusterProvisioner creates a cluster provisioner and returns the provisioner alongside the
-// cluster name resolved from the distribution configuration.
-//
-//nolint:ireturn // Returning the interface to allow distribution-specific provisioners.
-func CreateClusterProvisioner(
-	_ context.Context,
-	distribution v1alpha1.Distribution,
-	distributionConfigPath string,
-	kubeconfigPath string,
+// Factory creates distribution-specific cluster provisioners based on the KSail cluster configuration.
+type Factory interface {
+	Create(ctx context.Context, cluster *v1alpha1.Cluster) (ClusterProvisioner, any, error)
+}
+
+// DefaultFactory implements Factory using the existing CreateClusterProvisioner helper.
+type DefaultFactory struct{}
+
+// Create selects the correct distribution provisioner for the KSail cluster configuration.
+func (DefaultFactory) Create(
+	ctx context.Context,
+	cluster *v1alpha1.Cluster,
 ) (ClusterProvisioner, any, error) {
-	switch distribution {
+	if cluster == nil {
+		return nil, nil, fmt.Errorf(
+			"cluster configuration is required: %w",
+			ErrUnsupportedDistribution,
+		)
+	}
+
+	switch cluster.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		return createKindProvisioner(distributionConfigPath, kubeconfigPath)
+		return createKindProvisioner(
+			cluster.Spec.DistributionConfig,
+			cluster.Spec.Connection.Kubeconfig,
+		)
 	case v1alpha1.DistributionK3d:
-		return createK3dProvisioner(distributionConfigPath)
+		return createK3dProvisioner(cluster.Spec.DistributionConfig)
 	default:
-		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, distribution)
+		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
 	}
 }
 

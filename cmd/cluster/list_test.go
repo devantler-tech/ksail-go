@@ -2,16 +2,16 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	commandutils "github.com/devantler-tech/ksail-go/cmd/internal/utils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/di"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
 
@@ -29,9 +29,9 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	cfgManager := configmanager.NewConfigManager(io.Discard)
 	cfgManager.Viper.SetConfigFile(badConfigPath)
 
-	utils := &commandutils.CommandUtils{ConfigManager: cfgManager}
+	deps := ListDeps{Factory: fakeFactory{}}
 
-	err := HandleListRunE(cmd, utils, nil)
+	err := HandleListRunE(cmd, cfgManager, deps)
 	if err == nil {
 		t.Fatal("expected configuration load error, got nil")
 	}
@@ -46,7 +46,7 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	}
 }
 
-func TestListClusters_ReturnsErrorWhenResolverFails(t *testing.T) {
+func TestListClusters_ReturnsErrorWhenFactoryFails(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := newCommandWithBuffer(t)
@@ -57,24 +57,16 @@ func TestListClusters_ReturnsErrorWhenResolverFails(t *testing.T) {
 	cfgManager.Config.Spec.Connection.Kubeconfig = "ignored"
 	cfgManager.Config.Spec.SourceDirectory = "ignored"
 
-	resolver, err := di.NewResolver(cfgManager.Config)
-	if err != nil {
-		t.Fatalf("expected resolver creation to succeed, got %v", err)
-	}
+	deps := ListDeps{Factory: fakeFactory{err: clusterprovisioner.ErrUnsupportedDistribution}}
 
-	utils := &commandutils.CommandUtils{
-		ConfigManager: cfgManager,
-		Resolver:      resolver,
-	}
-
-	err = listClusters(utils, cmd)
+	err := listClusters(cfgManager, deps, cmd)
 	if err == nil {
 		t.Fatal("expected resolver failure, got nil")
 	}
 
 	message := err.Error()
-	if !strings.Contains(message, "failed to resolve dependencies") {
-		t.Fatalf("expected resolver error to be wrapped, got %q", message)
+	if !strings.Contains(message, "failed to resolve cluster provisioner") {
+		t.Fatalf("expected factory error to be wrapped, got %q", message)
 	}
 
 	if !strings.Contains(message, "unsupported distribution") {
@@ -121,17 +113,27 @@ func TestBindAllFlagBindsViperState(t *testing.T) {
 
 	cmd := &cobra.Command{Use: "list"}
 	cfgManager := configmanager.NewConfigManager(io.Discard)
-	utils := &commandutils.CommandUtils{ConfigManager: cfgManager}
-
-	bindAllFlag(cmd, utils)
+	bindAllFlag(cmd, cfgManager)
 
 	if err := cmd.Flags().Set(allFlag, "true"); err != nil {
 		t.Fatalf("failed to set all flag: %v", err)
 	}
 
-	if !utils.ConfigManager.Viper.GetBool(allFlag) {
+	if !cfgManager.Viper.GetBool(allFlag) {
 		t.Fatal("expected Viper binding to reflect updated flag state")
 	}
+}
+
+type fakeFactory struct {
+	provisioner clusterprovisioner.ClusterProvisioner
+	err         error
+}
+
+func (f fakeFactory) Create(
+	_ context.Context,
+	_ *v1alpha1.Cluster,
+) (clusterprovisioner.ClusterProvisioner, any, error) {
+	return f.provisioner, nil, f.err
 }
 
 func newCommandWithBuffer(t *testing.T) (*cobra.Command, *bytes.Buffer) {

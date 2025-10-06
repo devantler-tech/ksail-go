@@ -3,11 +3,12 @@ package cluster
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	"github.com/spf13/cobra"
 )
 
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.
-func NewClusterCmd() *cobra.Command {
+func NewClusterCmd(rt *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "cluster",
 		Short:        "Manage cluster lifecycle",
@@ -16,12 +17,12 @@ func NewClusterCmd() *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewCreateCmd())
-	cmd.AddCommand(NewDeleteCmd())
-	cmd.AddCommand(NewStartCmd())
-	cmd.AddCommand(NewStopCmd())
-	cmd.AddCommand(NewStatusCmd())
-	cmd.AddCommand(NewListCmd())
+	cmd.AddCommand(NewCreateCmd(rt))
+	cmd.AddCommand(NewDeleteCmd(rt))
+	cmd.AddCommand(NewStartCmd(rt))
+	cmd.AddCommand(NewStopCmd(rt))
+	cmd.AddCommand(NewStatusCmd(rt))
+	cmd.AddCommand(NewListCmd(rt))
 
 	return cmd
 }

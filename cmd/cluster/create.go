@@ -3,14 +3,19 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 )
 
-func NewCreateCmd() *cobra.Command {
+// NewCreateCmd wires the cluster create command using the shared runtime container.
+func NewCreateCmd(rt *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "create",
 		Short:        "Create a cluster",
@@ -18,83 +23,94 @@ func NewCreateCmd() *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	utils, _ := utils.NewCommandUtils(
-		cmd,
+	selectors := []ksailconfigmanager.FieldSelector[v1alpha1.Cluster]{
 		ksailconfigmanager.DefaultDistributionFieldSelector(),
 		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
-	)
+	}
+
+	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
+	cfgManager.AddFlagsFromFields(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return HandleCreateRunE(cmd, utils, args)
+		return rt.Invoke(cmd, func(injector do.Injector) error {
+			tmr, err := do.Invoke[timer.Timer](injector)
+			if err != nil {
+				return fmt.Errorf("resolve timer dependency: %w", err)
+			}
+
+			factory, err := do.Invoke[clusterprovisioner.Factory](injector)
+			if err != nil {
+				return fmt.Errorf("resolve provisioner factory dependency: %w", err)
+			}
+
+			deps := CreateDeps{
+				Timer:   tmr,
+				Factory: factory,
+			}
+
+			return HandleCreateRunE(cmd, cfgManager, deps)
+		})
 	}
 
 	return cmd
 }
 
-// HandleCreateRunE handles the create command.
-// Exported for testing purposes.
+// CreateDeps contains the dependencies required to handle the create command.
+type CreateDeps struct {
+	Timer   timer.Timer
+	Factory clusterprovisioner.Factory
+}
+
+// HandleCreateRunE executes the cluster creation workflow.
 func HandleCreateRunE(
 	cmd *cobra.Command,
-	utils *utils.CommandUtils,
-	_ []string,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps CreateDeps,
 ) error {
-	// Start timing
-	utils.Timer.Start()
+	deps.Timer.Start()
 
-	// Load the configuration
-	err := utils.ConfigManager.LoadConfig(utils.Timer)
+	err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Create the cluster
-	err = createCluster(utils, cmd)
+	deps.Timer.NewStage()
+
+	clusterCfg := cfgManager.GetConfig()
+	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
-		return fmt.Errorf("failed to handle create cluster: %w", err)
+		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
 	}
 
-	return nil
-}
-
-func createCluster(utils *utils.CommandUtils, cmd *cobra.Command) error {
-	utils.Timer.NewStage()
-	deps, err := utils.Resolver.Resolve()
-	if err != nil {
-		return fmt.Errorf("failed to resolve dependencies: %w", err)
-	}
-
-	showProvisioningTitle(cmd)
-
-	clusterProvisioner := deps.Provisioner
-	if clusterProvisioner == nil {
+	if provisioner == nil {
 		return fmt.Errorf("missing cluster provisioner dependency")
 	}
 
-	clusterName, err := configmanager.GetClusterName(deps.DistributionConfig)
+	clusterName, err := configmanager.GetClusterName(distributionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to get cluster name from config: %w", err)
 	}
 
-	// Show activity message
+	showProvisioningTitle(cmd)
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
 		Content: "creating cluster",
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Provision the cluster
-	err = clusterProvisioner.Create(cmd.Context(), clusterName)
-	if err != nil {
+	if err := provisioner.Create(cmd.Context(), clusterName); err != nil {
 		return fmt.Errorf("failed to create cluster: %w", err)
 	}
 
 	notify.WriteMessage(notify.Message{
 		Type:       notify.SuccessType,
 		Content:    "cluster created",
-		Timer:      utils.Timer,
+		Timer:      deps.Timer,
 		Writer:     cmd.OutOrStdout(),
 		MultiStage: true,
 	})
+
 	return nil
 }
 

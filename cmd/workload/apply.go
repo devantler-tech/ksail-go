@@ -1,17 +1,21 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/spf13/cobra"
 )
 
 // NewApplyCmd creates the workload apply command.
-func NewApplyCmd() *cobra.Command {
-	return &cobra.Command{
+func NewApplyCmd(rt *runtime.Runtime) *cobra.Command {
+	cmd := &cobra.Command{
 		Use:          "apply",
 		Short:        "Apply manifests",
 		Long:         "Apply local Kubernetes manifests to your cluster.",
-		RunE:         utils.HandleConfigLoadRunE,
 		SilenceUsage: true,
 	}
+
+	cmd.RunE = shared.NewConfigLoaderRunE(rt)
+
+	return cmd
 }

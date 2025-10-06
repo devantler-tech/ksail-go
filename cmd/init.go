@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/utils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 )
 
 // NewInitCmd creates and returns the init command.
-func NewInitCmd() *cobra.Command {
-	// Create the command using the helper
+func NewInitCmd(rt *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "init",
 		Short:        "Initialize a new project",
@@ -21,46 +23,57 @@ func NewInitCmd() *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	// Create command utils
-	utils, _ := utils.NewCommandUtils(cmd,
-		configmanager.DefaultDistributionFieldSelector(),
-		configmanager.DefaultDistributionConfigFieldSelector(),
-		configmanager.StandardSourceDirectoryFieldSelector())
-
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return HandleInitRunE(cmd, utils, args)
+	selectors := []ksailconfigmanager.FieldSelector[v1alpha1.Cluster]{
+		ksailconfigmanager.DefaultDistributionFieldSelector(),
+		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
+		ksailconfigmanager.StandardSourceDirectoryFieldSelector(),
 	}
 
-	// Bind CLI only flags
-	_ = utils.ConfigManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
+	cfgManager.AddFlagsFromFields(cmd)
+
 	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
-	_ = utils.ConfigManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
+	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return rt.Invoke(cmd, func(injector do.Injector) error {
+			tmr, err := do.Invoke[timer.Timer](injector)
+			if err != nil {
+				return fmt.Errorf("resolve timer dependency: %w", err)
+			}
+
+			deps := InitDeps{Timer: tmr}
+			return HandleInitRunE(cmd, cfgManager, deps)
+		})
+	}
 
 	return cmd
 }
 
-// HandleInitRunE handles the init command with an optional output path.
-// If outputPath is empty, uses the current working directory.
-// The variadic outputPath parameter is for testing purposes only.
-// Exported for testing purposes.
+// InitDeps captures dependencies required for the init command.
+type InitDeps struct {
+	Timer timer.Timer
+}
+
+// HandleInitRunE handles the init command.
 func HandleInitRunE(
 	cmd *cobra.Command,
-	utils *utils.CommandUtils,
-	_ []string,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps InitDeps,
 ) error {
-	// Start timing
-	utils.Timer.Start()
+	if deps.Timer != nil {
+		deps.Timer.Start()
+	}
 
-	// Load the configuration
-	err := utils.ConfigManager.LoadConfig(utils.Timer)
+	err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Get output path
 	var targetPath string
-	flagOutputPath := utils.ConfigManager.Viper.GetString("output")
+	flagOutputPath := cfgManager.Viper.GetString("output")
 	if flagOutputPath != "" {
 		targetPath = flagOutputPath
 	} else {
@@ -70,19 +83,18 @@ func HandleInitRunE(
 		}
 	}
 
-	// Get the force flag value
-	force := utils.ConfigManager.Viper.GetBool("force")
+	force := cfgManager.Viper.GetBool("force")
 
-	// Create scaffolder and generate project files
 	scaffolderInstance := scaffolder.NewScaffolder(
-		*utils.ConfigManager.GetConfig(),
+		*cfgManager.GetConfig(),
 		cmd.OutOrStdout(),
 	)
 
 	cmd.Println()
 
-	// Mark new stage for scaffolding
-	utils.Timer.NewStage()
+	if deps.Timer != nil {
+		deps.Timer.NewStage()
+	}
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
@@ -91,7 +103,6 @@ func HandleInitRunE(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Generate files individually to provide immediate feedback
 	err = scaffolderInstance.Scaffold(targetPath, force)
 	if err != nil {
 		return fmt.Errorf("failed to scaffold project files: %w", err)
@@ -100,7 +111,7 @@ func HandleInitRunE(
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "initialized project",
-		Timer:   utils.Timer,
+		Timer:   deps.Timer,
 		Writer:  cmd.OutOrStdout(),
 	})
 

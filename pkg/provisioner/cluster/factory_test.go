@@ -35,11 +35,20 @@ func TestCreateClusterProvisioner(t *testing.T) {
 
 			configPath := testCase.configProvider(t)
 
-			provisioner, distributionConfig, err := clusterprovisioner.CreateClusterProvisioner(
+			factory := clusterprovisioner.DefaultFactory{}
+			cluster := &v1alpha1.Cluster{
+				Spec: v1alpha1.Spec{
+					Distribution:       testCase.distribution,
+					DistributionConfig: configPath,
+					Connection: v1alpha1.Connection{
+						Kubeconfig: "",
+					},
+				},
+			}
+
+			provisioner, distributionConfig, err := factory.Create(
 				context.Background(),
-				testCase.distribution,
-				configPath,
-				"",
+				cluster,
 			)
 
 			var clusterName string
@@ -182,11 +191,20 @@ func TestCreateKindProvisionerDockerClientError(t *testing.T) {
 		"kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: custom-kind\n",
 	)
 
-	provisioner, clusterName, err := clusterprovisioner.CreateClusterProvisioner(
+	factory := clusterprovisioner.DefaultFactory{}
+	cluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionKind,
+			DistributionConfig: configPath,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "",
+			},
+		},
+	}
+
+	provisioner, clusterName, err := factory.Create(
 		context.Background(),
-		v1alpha1.DistributionKind,
-		configPath,
-		"",
+		cluster,
 	)
 
 	require.Error(t, err)
@@ -201,11 +219,20 @@ func TestCreateK3dProvisionerInvalidConfig(t *testing.T) {
 
 	configPath := createConfigFile(t, "k3d-invalid.yaml", ": invalid\n")
 
-	provisioner, clusterName, err := clusterprovisioner.CreateClusterProvisioner(
+	factory := clusterprovisioner.DefaultFactory{}
+	cluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionK3d,
+			DistributionConfig: configPath,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "",
+			},
+		},
+	}
+
+	provisioner, clusterName, err := factory.Create(
 		context.Background(),
-		v1alpha1.DistributionK3d,
-		configPath,
-		"",
+		cluster,
 	)
 
 	require.Error(t, err)
