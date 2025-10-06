@@ -3,8 +3,8 @@ package cluster
 import (
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 

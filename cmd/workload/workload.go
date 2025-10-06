@@ -2,7 +2,7 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 

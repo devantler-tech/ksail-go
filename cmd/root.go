@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
-	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"

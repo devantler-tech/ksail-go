@@ -1,4 +1,4 @@
-package runtime
+package di
 
 import (
 	"context"
@@ -23,7 +23,7 @@ func New(modules ...Module) *Runtime {
 	}
 }
 
-// Invoke builds a fresh Dig container for the command, applies base and extra
+// Invoke builds a fresh injector for the command, applies base and extra
 // modules, injects the command/context, and executes the provided function.
 func (r *Runtime) Invoke(
 	cmd *cobra.Command,

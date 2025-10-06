@@ -3,8 +3,8 @@ package shared
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"

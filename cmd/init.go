@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
