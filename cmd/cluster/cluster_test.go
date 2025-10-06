@@ -10,6 +10,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/runtime"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -206,7 +207,19 @@ func runLifecycleValidationErrorCase(
 
 func newTestRuntime() *runtime.Runtime {
 	return runtime.New(
-		runtime.WithTimer(timer.New()),
-		runtime.WithProvisionerFactory(clusterprovisioner.DefaultFactory{}),
+		func(i do.Injector) error {
+			do.Provide(i, func(do.Injector) (timer.Timer, error) {
+				return timer.New(), nil
+			})
+
+			return nil
+		},
+		func(i do.Injector) error {
+			do.Provide(i, func(do.Injector) (clusterprovisioner.Factory, error) {
+				return clusterprovisioner.DefaultFactory{}, nil
+			})
+
+			return nil
+		},
 	)
 }

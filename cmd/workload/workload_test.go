@@ -15,6 +15,7 @@ import (
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -95,9 +96,15 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	rt := runtime.New(func(i do.Injector) error {
+		do.Provide(i, func(do.Injector) (timer.Timer, error) {
+			return timer.New(), nil
+		})
 
-	rt := runtime.New(runtime.WithTimer(timer.New()))
+		return nil
+	})
+
+	var out bytes.Buffer
 	command := workload.NewWorkloadCmd(rt)
 	command.SetOut(&out)
 	command.SetErr(&out)
