@@ -4,14 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -24,34 +23,29 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	selectors := []ksailconfigmanager.FieldSelector[v1alpha1.Cluster]{
-		ksailconfigmanager.DefaultDistributionFieldSelector(),
-		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
-	}
+	cfgManager := ksailconfigmanager.NewCommandConfigManager(
+		cmd,
+		ksailconfigmanager.DefaultClusterFieldSelectors(),
+	)
 
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-	cfgManager.AddFlagsFromFields(cmd)
+	cmd.RunE = shared.RunEWithRuntime(
+		runtimeContainer,
+		shared.WithTimer(
+			func(cmd *cobra.Command, injector runtime.Injector, tmr timer.Timer) error {
+				factory, err := shared.ResolveClusterProvisionerFactory(injector)
+				if err != nil {
+					return fmt.Errorf("resolve provisioner factory dependency: %w", err)
+				}
 
-	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
-			tmr, err := do.Invoke[timer.Timer](injector)
-			if err != nil {
-				return fmt.Errorf("resolve timer dependency: %w", err)
-			}
+				deps := CreateDeps{
+					Timer:   tmr,
+					Factory: factory,
+				}
 
-			factory, err := do.Invoke[clusterprovisioner.Factory](injector)
-			if err != nil {
-				return fmt.Errorf("resolve provisioner factory dependency: %w", err)
-			}
-
-			deps := CreateDeps{
-				Timer:   tmr,
-				Factory: factory,
-			}
-
-			return HandleCreateRunE(cmd, cfgManager, deps)
-		})
-	}
+				return HandleCreateRunE(cmd, cfgManager, deps)
+			},
+		),
+	)
 
 	return cmd
 }

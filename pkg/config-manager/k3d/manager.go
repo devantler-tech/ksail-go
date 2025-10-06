@@ -74,7 +74,7 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 		return nil
 	}
 
-	config, err := helpers.LoadConfigFromFile(
+	config, err := helpers.LoadAndValidateConfig(
 		m.configPath,
 		func() *v1alpha5.SimpleConfig {
 			// Create default with proper APIVersion and Kind
@@ -82,17 +82,10 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 
 			return config
 		},
+		k3dvalidator.NewValidator(),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	// Validate the loaded configuration
-	validator := k3dvalidator.NewValidator()
-
-	err = helpers.ValidateConfig(config, validator)
-	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return fmt.Errorf("failed to load K3d config: %w", err)
 	}
 
 	m.config = config

@@ -70,3 +70,11 @@ func DefaultContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
 		DefaultValue: "kind-kind",
 	}
 }
+
+// DefaultClusterFieldSelectors returns the default field selectors shared by cluster commands.
+func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
+	return []FieldSelector[v1alpha1.Cluster]{
+		DefaultDistributionFieldSelector(),
+		DefaultDistributionConfigFieldSelector(),
+	}
+}

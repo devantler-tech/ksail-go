@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -23,32 +22,24 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	selectors := []ksailconfigmanager.FieldSelector[v1alpha1.Cluster]{
-		ksailconfigmanager.DefaultDistributionFieldSelector(),
-		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
-		ksailconfigmanager.StandardSourceDirectoryFieldSelector(),
-	}
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
 
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-	cfgManager.AddFlagsFromFields(cmd)
+	cfgManager := ksailconfigmanager.NewCommandConfigManager(cmd, selectors)
 
 	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
 	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
-	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
-			tmr, err := do.Invoke[timer.Timer](injector)
-			if err != nil {
-				return fmt.Errorf("resolve timer dependency: %w", err)
-			}
-
+	cmd.RunE = shared.RunEWithRuntime(
+		runtimeContainer,
+		shared.WithTimer(func(cmd *cobra.Command, _ runtime.Injector, tmr timer.Timer) error {
 			deps := InitDeps{Timer: tmr}
 
 			return HandleInitRunE(cmd, cfgManager, deps)
-		})
-	}
+		}),
+	)
 
 	return cmd
 }

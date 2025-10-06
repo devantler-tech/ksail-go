@@ -12,6 +12,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -44,6 +45,19 @@ func NewConfigManager(
 		configLoaded:   false,
 		Writer:         writer,
 	}
+
+	return manager
+}
+
+// NewCommandConfigManager constructs a ConfigManager bound to the provided Cobra command.
+// It registers the supplied field selectors, binds flags from struct fields, and writes output
+// to the command's standard output writer.
+func NewCommandConfigManager(
+	cmd *cobra.Command,
+	selectors []FieldSelector[v1alpha1.Cluster],
+) *ConfigManager {
+	manager := NewConfigManager(cmd.OutOrStdout(), selectors...)
+	manager.AddFlagsFromFields(cmd)
 
 	return manager
 }

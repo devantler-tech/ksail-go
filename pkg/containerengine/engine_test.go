@@ -571,8 +571,12 @@ func TestGetAutoDetectedClientPartialClientCreators(t *testing.T) {
 		func() (client.APIClient, error) {
 			return mockClient, nil
 		},
-		containerengine.GetPodmanUserClient,
-		containerengine.GetPodmanSystemClient,
+		func() (client.APIClient, error) {
+			return containerengine.GetPodmanUserClient()
+		},
+		func() (client.APIClient, error) {
+			return containerengine.GetPodmanSystemClient()
+		},
 	}
 
 	assertDockerEngineSuccess(t, mockClient, creators...)
@@ -707,9 +711,15 @@ func TestClientCreationAllScenarios(t *testing.T) {
 
 	// Test all client creation functions
 	clientFunctions := map[string]func() (client.APIClient, error){
-		"Docker":        containerengine.GetDockerClient,
-		"Podman user":   containerengine.GetPodmanUserClient,
-		"Podman system": containerengine.GetPodmanSystemClient,
+		"Docker": func() (client.APIClient, error) {
+			return containerengine.GetDockerClient()
+		},
+		"Podman user": func() (client.APIClient, error) {
+			return containerengine.GetPodmanUserClient()
+		},
+		"Podman system": func() (client.APIClient, error) {
+			return containerengine.GetPodmanSystemClient()
+		},
 	}
 
 	for clientName, clientFunc := range clientFunctions {

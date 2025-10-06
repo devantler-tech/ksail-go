@@ -24,13 +24,10 @@ func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	selectors := []ksailconfigmanager.FieldSelector[v1alpha1.Cluster]{
-		ksailconfigmanager.DefaultDistributionFieldSelector(),
-		ksailconfigmanager.DefaultDistributionConfigFieldSelector(),
-	}
-
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-	cfgManager.AddFlagsFromFields(cmd)
+	cfgManager := ksailconfigmanager.NewCommandConfigManager(
+		cmd,
+		ksailconfigmanager.DefaultClusterFieldSelectors(),
+	)
 
 	bindAllFlag(cmd, cfgManager)
 

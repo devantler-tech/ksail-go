@@ -178,6 +178,39 @@ func createConfigFile(t *testing.T, filename, content string) string {
 	return path
 }
 
+func assertInvalidClusterConfig(
+	t *testing.T,
+	distribution v1alpha1.Distribution,
+	configFile string,
+	configContent string,
+	expectedError string,
+) {
+	t.Helper()
+
+	configPath := createConfigFile(t, configFile, configContent)
+
+	factory := clusterprovisioner.DefaultFactory{}
+	cluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:       distribution,
+			DistributionConfig: configPath,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "",
+			},
+		},
+	}
+
+	provisioner, clusterName, err := factory.Create(
+		context.Background(),
+		cluster,
+	)
+
+	require.Error(t, err)
+	assert.Nil(t, provisioner)
+	assert.Empty(t, clusterName)
+	assert.Contains(t, err.Error(), expectedError)
+}
+
 func TestCreateKindProvisionerDockerClientError(t *testing.T) {
 	t.Helper()
 
@@ -185,58 +218,24 @@ func TestCreateKindProvisionerDockerClientError(t *testing.T) {
 	t.Setenv("DOCKER_TLS_VERIFY", "")
 	t.Setenv("DOCKER_CERT_PATH", "")
 
-	configPath := createConfigFile(
+	assertInvalidClusterConfig(
 		t,
+		v1alpha1.DistributionKind,
 		"kind.yaml",
 		"kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: custom-kind\n",
+		"failed to create Docker client",
 	)
-
-	factory := clusterprovisioner.DefaultFactory{}
-	cluster := &v1alpha1.Cluster{
-		Spec: v1alpha1.Spec{
-			Distribution:       v1alpha1.DistributionKind,
-			DistributionConfig: configPath,
-			Connection: v1alpha1.Connection{
-				Kubeconfig: "",
-			},
-		},
-	}
-
-	provisioner, clusterName, err := factory.Create(
-		context.Background(),
-		cluster,
-	)
-
-	require.Error(t, err)
-	assert.Nil(t, provisioner)
-	assert.Empty(t, clusterName)
-	assert.Contains(t, err.Error(), "failed to create Docker client")
 }
 
 func TestCreateK3dProvisionerInvalidConfig(t *testing.T) {
 	t.Helper()
 	t.Parallel()
 
-	configPath := createConfigFile(t, "k3d-invalid.yaml", ": invalid\n")
-
-	factory := clusterprovisioner.DefaultFactory{}
-	cluster := &v1alpha1.Cluster{
-		Spec: v1alpha1.Spec{
-			Distribution:       v1alpha1.DistributionK3d,
-			DistributionConfig: configPath,
-			Connection: v1alpha1.Connection{
-				Kubeconfig: "",
-			},
-		},
-	}
-
-	provisioner, clusterName, err := factory.Create(
-		context.Background(),
-		cluster,
+	assertInvalidClusterConfig(
+		t,
+		v1alpha1.DistributionK3d,
+		"k3d-invalid.yaml",
+		": invalid\n",
+		"failed to load K3d configuration",
 	)
-
-	require.Error(t, err)
-	assert.Nil(t, provisioner)
-	assert.Empty(t, clusterName)
-	assert.Contains(t, err.Error(), "failed to load K3d configuration")
 }

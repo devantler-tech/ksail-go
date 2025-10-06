@@ -71,7 +71,7 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 		return nil
 	}
 
-	config, err := helpers.LoadConfigFromFile(
+	config, err := helpers.LoadAndValidateConfig(
 		m.configPath,
 		func() *v1alpha4.Cluster {
 			// Create default with proper APIVersion and Kind
@@ -81,17 +81,10 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 
 			return config
 		},
+		kindvalidator.NewValidator(),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
-	}
-
-	// Validate the loaded configuration
-	validator := kindvalidator.NewValidator()
-
-	err = helpers.ValidateConfig(config, validator)
-	if err != nil {
-		return fmt.Errorf("failed to validate config: %w", err)
+		return fmt.Errorf("failed to load Kind config: %w", err)
 	}
 
 	m.config = config

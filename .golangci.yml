@@ -23,6 +23,9 @@ linters:
       - linters:
           - ireturn
         path: pkg/config-manager/helpers/loader.go
+      - linters:
+          - ireturn
+        path: pkg/containerengine/engine.go
   settings:
     wsl_v5:
       allow-first-in-block: true

@@ -57,15 +57,12 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
-	t.Parallel()
-
 	commands := []string{"reconcile", "apply", "install"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
-			t.Parallel()
-
 			var out bytes.Buffer
 
 			tempDir := t.TempDir()
