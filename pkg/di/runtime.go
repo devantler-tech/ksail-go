@@ -1,11 +1,6 @@
 package di
 
-import (
-	"context"
-
-	"github.com/samber/do/v2"
-	"github.com/spf13/cobra"
-)
+import "github.com/samber/do/v2"
 
 // Module registers dependencies with the DI container.
 type Module func(do.Injector) error
@@ -23,10 +18,9 @@ func New(modules ...Module) *Runtime {
 	}
 }
 
-// Invoke builds a fresh injector for the command, applies base and extra
-// modules, injects the command/context, and executes the provided function.
+// Invoke builds a fresh injector, applies base and extra modules, and executes
+// the provided function.
 func (r *Runtime) Invoke(
-	cmd *cobra.Command,
 	fn func(do.Injector) error,
 	extraModules ...Module,
 ) error {
@@ -35,7 +29,6 @@ func (r *Runtime) Invoke(
 
 	modules := append([]Module{}, r.baseModules...)
 	modules = append(modules, extraModules...)
-	modules = append(modules, provideCommand(cmd))
 
 	for _, module := range modules {
 		if module == nil {
@@ -48,21 +41,4 @@ func (r *Runtime) Invoke(
 	}
 
 	return fn(injector)
-}
-
-func provideCommand(cmd *cobra.Command) Module {
-	return func(i do.Injector) error {
-		do.ProvideValue(i, cmd)
-		do.ProvideValue(i, commandContext(cmd))
-
-		return nil
-	}
-}
-
-func commandContext(cmd *cobra.Command) context.Context {
-	if ctx := cmd.Context(); ctx != nil {
-		return ctx
-	}
-
-	return context.Background()
 }

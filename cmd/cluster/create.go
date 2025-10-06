@@ -32,7 +32,7 @@ func NewCreateCmd(rt *runtime.Runtime) *cobra.Command {
 	cfgManager.AddFlagsFromFields(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return rt.Invoke(cmd, func(injector do.Injector) error {
+		return rt.Invoke(func(injector do.Injector) error {
 			tmr, err := do.Invoke[timer.Timer](injector)
 			if err != nil {
 				return fmt.Errorf("resolve timer dependency: %w", err)

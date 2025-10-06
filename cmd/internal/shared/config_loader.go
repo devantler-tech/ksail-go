@@ -20,7 +20,7 @@ func NewConfigLoaderRunE(rt *runtime.Runtime) func(*cobra.Command, []string) err
 	return func(cmd *cobra.Command, _ []string) error {
 		cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout())
 
-		return rt.Invoke(cmd, func(injector do.Injector) error {
+		return rt.Invoke(func(injector do.Injector) error {
 			tmr, err := do.Invoke[timer.Timer](injector)
 			if err != nil {
 				return fmt.Errorf("resolve timer dependency: %w", err)
