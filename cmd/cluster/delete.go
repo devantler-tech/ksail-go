@@ -1,14 +1,11 @@
 package cluster
 
 import (
-	"errors"
-	"fmt"
+	"context"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
@@ -27,98 +24,53 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = runtime.RunEWithRuntime(
-		runtimeContainer,
-		runtime.WithTimer(
-			func(cmd *cobra.Command, injector runtime.Injector, tmr timer.Timer) error {
-				factory, err := runtime.ResolveClusterProvisionerFactory(injector)
-				if err != nil {
-					return fmt.Errorf("resolve provisioner factory dependency: %w", err)
-				}
+	config := LifecycleConfig{
+		TitleEmoji:         "🗑️",
+		TitleContent:       "Delete cluster...",
+		ActivityContent:    "deleting cluster",
+		SuccessContent:     "cluster deleted",
+		ErrorMessagePrefix: "failed to delete cluster",
+		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Delete(ctx, clusterName)
+		},
+	}
 
-				deps := DeleteDeps{
-					Timer:   tmr,
-					Factory: factory,
-				}
-
-				return HandleDeleteRunE(cmd, cfgManager, deps)
-			},
-		),
-	)
+	cmd.RunE = NewLifecycleCommandWrapper(runtimeContainer, cfgManager, config)
 
 	return cmd
 }
 
 // DeleteDeps contains the dependencies required to handle the delete command.
+// Deprecated: Use LifecycleDeps instead.
 type DeleteDeps struct {
 	Timer   timer.Timer
 	Factory clusterprovisioner.Factory
 }
 
-var errMissingClusterProvisionerForDelete = errors.New("missing cluster provisioner dependency")
+var errMissingClusterProvisionerForDelete = errMissingClusterProvisionerDependency
 
 // HandleDeleteRunE executes the cluster deletion workflow.
+// Deprecated: This function is kept for backward compatibility with tests.
 func HandleDeleteRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	deps DeleteDeps,
 ) error {
-	deps.Timer.Start()
-
-	err := cfgManager.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
+	lifecycleDeps := LifecycleDeps{
+		Timer:   deps.Timer,
+		Factory: deps.Factory,
 	}
 
-	deps.Timer.NewStage()
-
-	clusterCfg := cfgManager.GetConfig()
-
-	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
-	if err != nil {
-		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
+	config := LifecycleConfig{
+		TitleEmoji:         "🗑️",
+		TitleContent:       "Delete cluster...",
+		ActivityContent:    "deleting cluster",
+		SuccessContent:     "cluster deleted",
+		ErrorMessagePrefix: "failed to delete cluster",
+		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Delete(ctx, clusterName)
+		},
 	}
 
-	if provisioner == nil {
-		return errMissingClusterProvisionerForDelete
-	}
-
-	clusterName, err := configmanager.GetClusterName(distributionConfig)
-	if err != nil {
-		return fmt.Errorf("failed to get cluster name from config: %w", err)
-	}
-
-	showDeletionTitle(cmd)
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "deleting cluster",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	err = provisioner.Delete(cmd.Context(), clusterName)
-	if err != nil {
-		return fmt.Errorf("failed to delete cluster: %w", err)
-	}
-
-	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "cluster deleted",
-		Timer:      deps.Timer,
-		Writer:     cmd.OutOrStdout(),
-		MultiStage: true,
-	})
-
-	return nil
-}
-
-// showDeletionTitle displays the deletion stage title.
-func showDeletionTitle(cmd *cobra.Command) {
-	cmd.Println()
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: "Delete cluster...",
-		Emoji:   "🗑️",
-		Writer:  cmd.OutOrStdout(),
-	})
+	return HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, config)
 }
