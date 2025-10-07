@@ -3,6 +3,7 @@ package shared_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -122,16 +123,12 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-
 	timer := &lifecycleTimer{}
 	factory := &stubFactory{err: errFactoryError}
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := runLifecycleHandlerTest(cfgManager, deps, config)
 	if err == nil {
 		t.Fatal("expected factory error")
 	}
@@ -154,16 +151,12 @@ func TestHandleLifecycleRunE_NilProvisioner(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-
 	timer := &lifecycleTimer{}
 	factory := &stubFactory{provisioner: nil, distributionConfig: &v1alpha4.Cluster{}}
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := runLifecycleHandlerTest(cfgManager, deps, config)
 	if !errors.Is(err, shared.ErrMissingClusterProvisionerDependency) {
 		t.Fatalf("expected ErrMissingClusterProvisionerDependency, got %v", err)
 	}
@@ -173,7 +166,6 @@ func TestHandleLifecycleRunE_InvalidDistributionConfig(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-
 	timer := &lifecycleTimer{}
 	provisioner := &stubProvisioner{}
 	factory := &stubFactory{
@@ -183,10 +175,7 @@ func TestHandleLifecycleRunE_InvalidDistributionConfig(t *testing.T) {
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := runLifecycleHandlerTest(cfgManager, deps, config)
 	if err == nil {
 		t.Fatal("expected error for invalid distribution config")
 	}
@@ -200,20 +189,11 @@ func TestHandleLifecycleRunE_ActionError(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-
-	timer := &lifecycleTimer{}
 	provisioner := &stubProvisioner{createErr: errProvisionerError}
-	factory := &stubFactory{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "test-cluster"},
-	}
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps := setupLifecycleDepsWithProvisioner(provisioner)
 	config := createTestConfig()
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
-
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := runLifecycleHandlerTest(cfgManager, deps, config)
 	if err == nil {
 		t.Fatal("expected action error")
 	}
@@ -231,20 +211,16 @@ func TestHandleLifecycleRunE_Success(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-
-	timer := &lifecycleTimer{}
 	provisioner := &stubProvisioner{}
-	factory := &stubFactory{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "test-cluster"},
-	}
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps := setupLifecycleDepsWithProvisioner(provisioner)
 	config := createTestConfig()
 
-	cmd := &cobra.Command{}
-	cmd.SetOut(io.Discard)
+	timer, ok := deps.Timer.(*lifecycleTimer)
+	if !ok {
+		t.Fatal("expected timer to be *lifecycleTimer")
+	}
 
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := runLifecycleHandlerTest(cfgManager, deps, config)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -389,6 +365,32 @@ func runWrapperTest(t *testing.T, runtimeContainer *runtime.Runtime) error {
 	cmd.SetOut(io.Discard)
 
 	return runE(cmd, nil)
+}
+
+func runLifecycleHandlerTest(
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps shared.LifecycleDeps,
+	config shared.LifecycleConfig,
+) error {
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	if err != nil {
+		return fmt.Errorf("lifecycle handler: %w", err)
+	}
+
+	return nil
+}
+
+func setupLifecycleDepsWithProvisioner(provisioner *stubProvisioner) shared.LifecycleDeps {
+	timer := &lifecycleTimer{}
+	factory := &stubFactory{
+		provisioner:        provisioner,
+		distributionConfig: &v1alpha4.Cluster{Name: "test-cluster"},
+	}
+
+	return shared.LifecycleDeps{Timer: timer, Factory: factory}
 }
 
 func createTestConfig() shared.LifecycleConfig {
