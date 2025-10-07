@@ -21,12 +21,12 @@ type LifecycleAction func(ctx context.Context, provisioner clusterprovisioner.Cl
 
 // LifecycleConfig contains the configuration for a lifecycle operation.
 type LifecycleConfig struct {
-	TitleEmoji     string
-	TitleContent   string
-	ActivityContent string
-	SuccessContent  string
+	TitleEmoji         string
+	TitleContent       string
+	ActivityContent    string
+	SuccessContent     string
 	ErrorMessagePrefix string
-	Action          LifecycleAction
+	Action             LifecycleAction
 }
 
 // LifecycleDeps contains the dependencies required to handle lifecycle commands.
