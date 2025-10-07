@@ -18,7 +18,11 @@ import (
 var ErrMissingClusterProvisionerDependency = errors.New("missing cluster provisioner dependency")
 
 // LifecycleAction defines a function that performs an action on a cluster provisioner.
-type LifecycleAction func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error
+type LifecycleAction func(
+	ctx context.Context,
+	provisioner clusterprovisioner.ClusterProvisioner,
+	clusterName string,
+) error
 
 // LifecycleConfig contains the configuration for a lifecycle operation.
 type LifecycleConfig struct {

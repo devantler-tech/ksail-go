@@ -3,6 +3,7 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -60,7 +61,12 @@ func runLifecycleTest(
 	cmd, _ := testutils.NewCommand(t)
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 
-	return shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	if err != nil {
+		return fmt.Errorf("handle lifecycle: %w", err)
+	}
+
+	return nil
 }
 
 func TestLifecyclePattern_LoadConfigFailure(t *testing.T) {
