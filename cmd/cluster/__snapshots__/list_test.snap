@@ -1,0 +1,10 @@
+
+[TestNewListCmd_RunESuccess - 1]
+Kind: kind-mgmt
+
+---
+
+[TestHandleListRunE/success_displays_clusters - 1]
+Kind: alpha
+
+---

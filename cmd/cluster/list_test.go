@@ -9,11 +9,80 @@ import (
 	"strings"
 	"testing"
 
+	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) { internaltestutils.RunTestMainWithSnapshotCleanup(m) }
+
+type recordingListFactory struct {
+	provisioner clusterprovisioner.ClusterProvisioner
+	err         error
+	callCount   int
+	captured    []*v1alpha1.Cluster
+}
+
+//nolint:ireturn // Test doubles satisfy interface contract.
+func (f *recordingListFactory) Create(
+	_ context.Context,
+	cluster *v1alpha1.Cluster,
+) (clusterprovisioner.ClusterProvisioner, any, error) {
+	f.callCount++
+	f.captured = append(f.captured, cluster)
+	if f.err != nil {
+		return nil, nil, f.err
+	}
+
+	return f.provisioner, nil, nil
+}
+
+type recordingListProvisioner struct {
+	listResult []string
+	listErr    error
+	listCalls  int
+}
+
+func (p *recordingListProvisioner) Create(context.Context, string) error { return nil }
+func (p *recordingListProvisioner) Delete(context.Context, string) error { return nil }
+func (p *recordingListProvisioner) Start(context.Context, string) error  { return nil }
+func (p *recordingListProvisioner) Stop(context.Context, string) error   { return nil }
+
+func (p *recordingListProvisioner) List(context.Context) ([]string, error) {
+	p.listCalls++
+	if p.listErr != nil {
+		return nil, p.listErr
+	}
+
+	clone := append([]string(nil), p.listResult...)
+
+	return clone, nil
+}
+
+func (p *recordingListProvisioner) Exists(context.Context, string) (bool, error) {
+	return false, nil
+}
+
+func createConfigManagerWithFile(t *testing.T, writer io.Writer) *configmanager.ConfigManager {
+	t.Helper()
+
+	selectors := configmanager.DefaultClusterFieldSelectors()
+	cfgManager := configmanager.NewConfigManager(writer, selectors...)
+
+	tempDir := t.TempDir()
+	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+
+	cfgManager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
+
+	return cfgManager
+}
 
 const ignoredConfigValue = "ignored"
 
@@ -51,6 +120,42 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	}
 }
 
+func TestHandleListRunE(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success displays clusters", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, out := newCommandWithBuffer(t)
+		cfgManager := createConfigManagerWithFile(t, out)
+
+		provisioner := &recordingListProvisioner{listResult: []string{"alpha"}}
+		factory := &recordingListFactory{provisioner: provisioner}
+
+		err := HandleListRunE(cmd, cfgManager, ListDeps{Factory: factory})
+		require.NoError(t, err)
+
+		require.Equal(t, 1, factory.callCount)
+		require.Equal(t, 1, provisioner.listCalls)
+
+		snaps.MatchSnapshot(t, out.String())
+	})
+
+	t.Run("list failure wraps error", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, _ := newCommandWithBuffer(t)
+		cfgManager := createConfigManagerWithFile(t, io.Discard)
+
+		provisioner := &recordingListProvisioner{listErr: context.DeadlineExceeded}
+		factory := &recordingListFactory{provisioner: provisioner}
+
+		err := HandleListRunE(cmd, cfgManager, ListDeps{Factory: factory})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to list clusters")
+	})
+}
+
 func TestListClusters_ReturnsErrorWhenFactoryFails(t *testing.T) {
 	t.Parallel()
 
@@ -77,6 +182,39 @@ func TestListClusters_ReturnsErrorWhenFactoryFails(t *testing.T) {
 	if !strings.Contains(message, "unsupported distribution") {
 		t.Fatalf("expected unsupported distribution to be reported, got %q", message)
 	}
+}
+
+func TestListClusters_ListFailure(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := newCommandWithBuffer(t)
+	cfgManager := configmanager.NewConfigManager(io.Discard)
+	cfgManager.Config.Spec.Distribution = v1alpha1.DistributionKind
+
+	provisioner := &recordingListProvisioner{listErr: context.DeadlineExceeded}
+	factory := &recordingListFactory{provisioner: provisioner}
+
+	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to list clusters")
+	require.Equal(t, 1, provisioner.listCalls)
+}
+
+func TestListClusters_AllFlagTriggersAdditionalDistribution(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := newCommandWithBuffer(t)
+	cfgManager := createConfigManagerWithFile(t, io.Discard)
+	require.NoError(t, cfgManager.LoadConfigSilent())
+	cfgManager.Viper.Set(allFlag, true)
+
+	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
+	factory := &recordingListFactory{provisioner: provisioner}
+
+	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to list clusters for distribution K3d")
+	require.Equal(t, 1, provisioner.listCalls)
 }
 
 func TestDisplayClusterList(t *testing.T) {
@@ -111,6 +249,88 @@ func TestDisplayClusterList(t *testing.T) {
 			t.Fatalf("expected formatted cluster list. want %q, got %q", want, got)
 		}
 	})
+}
+
+func TestCloneClusterForDistribution(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil original returns nil", func(t *testing.T) {
+		t.Parallel()
+
+		clone := cloneClusterForDistribution(nil, v1alpha1.DistributionKind)
+		require.Nil(t, clone)
+	})
+
+	t.Run("distribution and config path updated", func(t *testing.T) {
+		t.Parallel()
+
+		original := &v1alpha1.Cluster{}
+		original.Spec.Distribution = v1alpha1.DistributionK3d
+		original.Spec.DistributionConfig = "custom.yaml"
+
+		clone := cloneClusterForDistribution(original, v1alpha1.DistributionKind)
+
+		require.NotNil(t, clone)
+		require.Equal(t, v1alpha1.DistributionKind, clone.Spec.Distribution)
+		require.Equal(t, "kind.yaml", clone.Spec.DistributionConfig)
+		require.Equal(t, v1alpha1.DistributionK3d, original.Spec.Distribution)
+		require.Equal(t, "custom.yaml", original.Spec.DistributionConfig)
+	})
+}
+
+func TestDefaultDistributionConfigPath(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		expected     string
+	}{
+		{name: "kind", distribution: v1alpha1.DistributionKind, expected: "kind.yaml"},
+		{name: "k3d", distribution: v1alpha1.DistributionK3d, expected: "k3d.yaml"},
+		{name: "unknown", distribution: "other", expected: "kind.yaml"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := defaultDistributionConfigPath(tc.distribution)
+			require.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+//nolint:paralleltest // Uses t.Chdir for snapshot setup.
+func TestNewListCmd_RunESuccess(t *testing.T) {
+	factory := &recordingListFactory{}
+	provisioner := &recordingListProvisioner{listResult: []string{"kind-mgmt"}}
+	factory.provisioner = provisioner
+
+	runtimeContainer := runtime.New(func(injector do.Injector) error {
+		do.Provide(injector, func(do.Injector) (clusterprovisioner.Factory, error) {
+			return factory, nil
+		})
+
+		return nil
+	})
+
+	cmd := NewListCmd(runtimeContainer)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+
+	tempDir := t.TempDir()
+	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	t.Chdir(tempDir)
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+	require.Equal(t, 1, factory.callCount)
+	require.Equal(t, 1, provisioner.listCalls)
+
+	snaps.MatchSnapshot(t, out.String())
 }
 
 func TestBindAllFlagBindsViperState(t *testing.T) {
