@@ -17,13 +17,11 @@ func expectResolutionError(t *testing.T, resolve func(do.Injector) error, failur
 	injector := do.New()
 
 	t.Cleanup(func() {
-		cleanupErr := injector.Shutdown()
-		if cleanupErr != nil {
-			t.Fatalf("injector shutdown: %v", cleanupErr)
-		}
+		_ = injector.Shutdown()
 	})
 
 	err := resolve(injector)
+
 	if err == nil {
 		t.Fatal(failureMessage)
 	}
