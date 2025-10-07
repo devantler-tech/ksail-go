@@ -1,10 +1,28 @@
 package cluster
 
 import (
+	"context"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
+
+// newDeleteLifecycleConfig creates the lifecycle configuration for cluster deletion.
+func newDeleteLifecycleConfig() shared.LifecycleConfig {
+	return shared.LifecycleConfig{
+		TitleEmoji:         "🗑️",
+		TitleContent:       "Delete cluster...",
+		ActivityContent:    "deleting cluster",
+		SuccessContent:     "cluster deleted",
+		ErrorMessagePrefix: "failed to delete cluster",
+		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Delete(ctx, clusterName)
+		},
+	}
+}
 
 // NewDeleteCmd creates and returns the delete command.
 func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
@@ -15,7 +33,16 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
+	cfgManager := ksailconfigmanager.NewCommandConfigManager(
+		cmd,
+		ksailconfigmanager.DefaultClusterFieldSelectors(),
+	)
+
+	cmd.RunE = shared.NewLifecycleCommandWrapper(
+		runtimeContainer,
+		cfgManager,
+		newDeleteLifecycleConfig(),
+	)
 
 	return cmd
 }
