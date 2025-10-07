@@ -34,11 +34,17 @@ func (p *stubProvisionerForStart) Start(_ context.Context, name string) error {
 	return p.startErr
 }
 
-func (p *stubProvisionerForStart) Create(context.Context, string) error       { return nil }
-func (p *stubProvisionerForStart) Delete(context.Context, string) error       { return nil }
-func (p *stubProvisionerForStart) Stop(context.Context, string) error         { return nil }
-func (p *stubProvisionerForStart) List(context.Context) ([]string, error)     { return nil, nil }
-func (p *stubProvisionerForStart) Exists(context.Context, string) (bool, error) { return false, nil }
+func (p *stubProvisionerForStart) Create(context.Context, string) error   { return nil }
+func (p *stubProvisionerForStart) Delete(context.Context, string) error   { return nil }
+func (p *stubProvisionerForStart) Stop(context.Context, string) error     { return nil }
+func (p *stubProvisionerForStart) List(context.Context) ([]string, error) { return nil, nil }
+
+func (p *stubProvisionerForStart) Exists(
+	context.Context,
+	string,
+) (bool, error) {
+	return false, nil
+}
 
 func TestHandleStartRunE_LoadConfigFailure(t *testing.T) {
 	t.Parallel()
