@@ -85,7 +85,7 @@ func HandleStopRunE(
 
 	clusterName, err := configmanager.GetClusterName(distributionConfig)
 	if err != nil {
-		return fmt.Errorf("failed to get cluster name from config: %w", err)
+		return fmt.Errorf("failed to get cluster name: %w", err)
 	}
 
 	showStoppingTitle(cmd)
