@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
@@ -208,5 +207,5 @@ func runLifecycleValidationErrorCase(
 }
 
 func newTestRuntime() *runtime.Runtime {
-	return shared.NewRuntime()
+	return runtime.NewRuntime()
 }

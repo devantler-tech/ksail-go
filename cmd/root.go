@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 	"github.com/spf13/cobra"
@@ -13,7 +13,7 @@ import (
 
 // NewRootCmd creates and returns the root command with version info and subcommands.
 func NewRootCmd(version, commit, date string) *cobra.Command {
-	runtimeContainer := shared.NewRuntime()
+	runtimeContainer := runtime.NewRuntime()
 
 	// Create the command using the helper (no field selectors needed for root command)
 	cmd := &cobra.Command{

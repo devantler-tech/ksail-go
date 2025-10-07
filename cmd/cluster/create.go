@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
@@ -28,11 +27,11 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = shared.RunEWithRuntime(
+	cmd.RunE = runtime.RunEWithRuntime(
 		runtimeContainer,
-		shared.WithTimer(
+		runtime.WithTimer(
 			func(cmd *cobra.Command, injector runtime.Injector, tmr timer.Timer) error {
-				factory, err := shared.ResolveClusterProvisionerFactory(injector)
+				factory, err := runtime.ResolveClusterProvisionerFactory(injector)
 				if err != nil {
 					return fmt.Errorf("resolve provisioner factory dependency: %w", err)
 				}

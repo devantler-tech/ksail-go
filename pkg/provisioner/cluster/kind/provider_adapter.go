@@ -78,5 +78,10 @@ func NewDefaultDockerClient() (*client.Client, error) {
 		return nil, fmt.Errorf("create Docker client: %w", err)
 	}
 
-	return dockerClient, nil
+	clientPtr, ok := dockerClient.(*client.Client)
+	if !ok {
+		return nil, fmt.Errorf("unexpected docker client type %T", dockerClient)
+	}
+
+	return clientPtr, nil
 }

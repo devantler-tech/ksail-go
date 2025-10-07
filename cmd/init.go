@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
@@ -32,9 +31,9 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 
-	cmd.RunE = shared.RunEWithRuntime(
+	cmd.RunE = runtime.RunEWithRuntime(
 		runtimeContainer,
-		shared.WithTimer(func(cmd *cobra.Command, _ runtime.Injector, tmr timer.Timer) error {
+		runtime.WithTimer(func(cmd *cobra.Command, _ runtime.Injector, tmr timer.Timer) error {
 			deps := InitDeps{Timer: tmr}
 
 			return HandleInitRunE(cmd, cfgManager, deps)
