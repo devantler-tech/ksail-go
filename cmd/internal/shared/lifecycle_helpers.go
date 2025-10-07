@@ -1,4 +1,4 @@
-package cluster
+package shared
 
 import (
 	"context"
@@ -14,7 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var errMissingClusterProvisionerDependency = errors.New("missing cluster provisioner dependency")
+// ErrMissingClusterProvisionerDependency is returned when the cluster provisioner is nil.
+var ErrMissingClusterProvisionerDependency = errors.New("missing cluster provisioner dependency")
 
 // LifecycleAction defines a function that performs an action on a cluster provisioner.
 type LifecycleAction func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error
@@ -85,7 +86,7 @@ func HandleLifecycleRunE(
 	}
 
 	if provisioner == nil {
-		return errMissingClusterProvisionerDependency
+		return ErrMissingClusterProvisionerDependency
 	}
 
 	clusterName, err := configmanager.GetClusterName(distributionConfig)
