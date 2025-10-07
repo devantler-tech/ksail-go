@@ -1,4 +1,4 @@
-package di
+package di //nolint:testpackage // Access runtime internals for coverage.
 
 import (
 	"errors"
@@ -9,12 +9,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errInvokeFailure = errors.New("failure")
+
+func expectResolutionError(t *testing.T, resolve func(do.Injector) error, failureMessage string) {
+	t.Helper()
+
+	injector := do.New()
+
+	t.Cleanup(func() {
+		cleanupErr := injector.Shutdown()
+		if cleanupErr != nil {
+			t.Fatalf("injector shutdown: %v", cleanupErr)
+		}
+	})
+
+	err := resolve(injector)
+	if err == nil {
+		t.Fatal(failureMessage)
+	}
+}
+
 func TestNewCopiesModules(t *testing.T) {
 	t.Parallel()
 
 	called := 0
 	mod := func(do.Injector) error {
 		called++
+
 		return nil
 	}
 
@@ -35,6 +56,7 @@ func TestRunEWithRuntimeInvokesHandler(t *testing.T) {
 
 	runtime := New(func(injector Injector) error {
 		do.Provide(injector, func(do.Injector) (string, error) { return "value", nil })
+
 		return nil
 	})
 
@@ -44,18 +66,24 @@ func TestRunEWithRuntimeInvokesHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected invoke error: %v", err)
 		}
+
 		if val != "value" {
 			t.Fatalf("expected value, got %s", val)
 		}
+
 		handled = true
+
 		return nil
 	}
 
 	cmd := &cobra.Command{}
 	runE := RunEWithRuntime(runtime, handler)
-	if err := runE(cmd, nil); err != nil {
+
+	err := runE(cmd, nil)
+	if err != nil {
 		t.Fatalf("runE returned error: %v", err)
 	}
+
 	if !handled {
 		t.Fatal("expected handler to be called")
 	}
@@ -65,13 +93,18 @@ func TestNewRuntimeRegistersDefaults(t *testing.T) {
 	t.Parallel()
 
 	runtime := NewRuntime()
+
 	err := runtime.Invoke(func(injector Injector) error {
-		if _, err := ResolveTimer(injector); err != nil {
-			t.Fatalf("resolve timer: %v", err)
+		_, timerErr := ResolveTimer(injector)
+		if timerErr != nil {
+			t.Fatalf("resolve timer: %v", timerErr)
 		}
-		if _, err := ResolveClusterProvisionerFactory(injector); err != nil {
-			t.Fatalf("resolve factory: %v", err)
+
+		_, factoryErr := ResolveClusterProvisionerFactory(injector)
+		if factoryErr != nil {
+			t.Fatalf("resolve factory: %v", factoryErr)
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -82,23 +115,21 @@ func TestNewRuntimeRegistersDefaults(t *testing.T) {
 func TestResolveTimerError(t *testing.T) {
 	t.Parallel()
 
-	injector := do.New()
-	defer injector.Shutdown()
+	expectResolutionError(t, func(injector do.Injector) error {
+		_, err := ResolveTimer(injector)
 
-	if _, err := ResolveTimer(injector); err == nil {
-		t.Fatal("expected error when timer not registered")
-	}
+		return err
+	}, "expected error when timer not registered")
 }
 
 func TestResolveClusterProvisionerFactoryError(t *testing.T) {
 	t.Parallel()
 
-	injector := do.New()
-	defer injector.Shutdown()
+	expectResolutionError(t, func(injector do.Injector) error {
+		_, err := ResolveClusterProvisionerFactory(injector)
 
-	if _, err := ResolveClusterProvisionerFactory(injector); err == nil {
-		t.Fatal("expected error when factory not registered")
-	}
+		return err
+	}, "expected error when factory not registered")
 }
 
 func TestWithTimerSuccess(t *testing.T) {
@@ -109,6 +140,7 @@ func TestWithTimerSuccess(t *testing.T) {
 		do.Provide(injector, func(do.Injector) (timer.Timer, error) {
 			return timer.New(), nil
 		})
+
 		return nil
 	})
 
@@ -116,7 +148,9 @@ func TestWithTimerSuccess(t *testing.T) {
 		if tmr == nil {
 			t.Fatal("timer should not be nil")
 		}
+
 		called = true
+
 		return nil
 	})
 
@@ -126,6 +160,7 @@ func TestWithTimerSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("wrapped handler returned error: %v", err)
 	}
+
 	if !called {
 		t.Fatal("expected handler to be called")
 	}
@@ -136,6 +171,7 @@ func TestWithTimerResolveErrorPropagates(t *testing.T) {
 
 	runtime := New()
 	wrapped := WithTimer(func(_ *cobra.Command, _ Injector, _ timer.Timer) error { return nil })
+
 	err := runtime.Invoke(func(injector Injector) error {
 		return wrapped(&cobra.Command{}, injector)
 	})
@@ -151,10 +187,12 @@ func TestRuntimeInvokeAppliesModulesAndExtra(t *testing.T) {
 
 	base := func(do.Injector) error {
 		order = append(order, "base")
+
 		return nil
 	}
 	extra := func(do.Injector) error {
 		order = append(order, "extra")
+
 		return nil
 	}
 
@@ -164,9 +202,11 @@ func TestRuntimeInvokeAppliesModulesAndExtra(t *testing.T) {
 		if len(order) != 2 {
 			t.Fatalf("expected modules to run, order: %v", order)
 		}
+
 		if order[0] != "base" || order[1] != "extra" {
 			t.Fatalf("unexpected module order: %v", order)
 		}
+
 		return nil
 	}, extra)
 	if err != nil {
@@ -179,12 +219,11 @@ func TestRuntimeInvokeNilModuleIgnored(t *testing.T) {
 
 	runtime := New(nil)
 
-	errSentinel := errors.New("failure")
 	err := runtime.Invoke(
 		func(do.Injector) error { return nil },
-		func(do.Injector) error { return errSentinel },
+		func(do.Injector) error { return errInvokeFailure },
 	)
-	if !errors.Is(err, errSentinel) {
+	if !errors.Is(err, errInvokeFailure) {
 		t.Fatalf("expected sentinel error, got %v", err)
 	}
 }

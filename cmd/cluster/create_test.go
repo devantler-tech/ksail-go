@@ -22,6 +22,11 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+var (
+	errFactoryBoom  = errors.New("factory boom")
+	errCreateFailed = errors.New("create failed")
+)
+
 type recordingTimer struct {
 	startCount    int
 	newStageCount int
@@ -41,9 +46,10 @@ type stubFactory struct {
 	callCount          int
 }
 
+//nolint:ireturn // Tests depend on returning the interface type.
 func (s *stubFactory) Create(
-	ctx context.Context,
-	cluster *v1alpha1.Cluster,
+	_ context.Context,
+	_ *v1alpha1.Cluster,
 ) (clusterprovisioner.ClusterProvisioner, any, error) {
 	s.callCount++
 	if s.err != nil {
@@ -59,7 +65,7 @@ type stubProvisioner struct {
 	receivedNames []string
 }
 
-func (p *stubProvisioner) Create(ctx context.Context, name string) error {
+func (p *stubProvisioner) Create(_ context.Context, name string) error {
 	p.createCalls++
 	p.receivedNames = append(p.receivedNames, name)
 
@@ -116,7 +122,9 @@ func TestHandleCreateRunE_LoadConfigFailure(t *testing.T) {
 
 	tempDir := t.TempDir()
 	badPath := filepath.Join(tempDir, "ksail.yaml")
-	if err := os.WriteFile(badPath, []byte(": invalid"), 0o600); err != nil {
+
+	err := os.WriteFile(badPath, []byte(": invalid"), 0o600)
+	if err != nil {
 		t.Fatalf("failed to write malformed config: %v", err)
 	}
 
@@ -125,7 +133,7 @@ func TestHandleCreateRunE_LoadConfigFailure(t *testing.T) {
 
 	deps := CreateDeps{Timer: timerStub, Factory: failingFactory}
 
-	err := HandleCreateRunE(cmd, cfgManager, deps)
+	err = HandleCreateRunE(cmd, cfgManager, deps)
 	if err == nil {
 		t.Fatal("expected configuration load error, got nil")
 	}
@@ -152,7 +160,7 @@ func TestHandleCreateRunE_FactoryFailure(t *testing.T) {
 
 	cmd, _ := newCreateCommand(t)
 	timerStub := &recordingTimer{}
-	factory := &stubFactory{err: errors.New("factory boom")}
+	factory := &stubFactory{err: errFactoryBoom}
 	cfgManager := createConfigManager(t, io.Discard)
 
 	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
@@ -220,7 +228,7 @@ func TestHandleCreateRunE_ReturnsErrorWhenProvisionerCreateFails(t *testing.T) {
 
 	cmd, _ := newCreateCommand(t)
 	timerStub := &recordingTimer{}
-	provisioner := &stubProvisioner{createErr: errors.New("create failed")}
+	provisioner := &stubProvisioner{createErr: errCreateFailed}
 	factory := &stubFactory{
 		provisioner:        provisioner,
 		distributionConfig: &v1alpha4.Cluster{Name: "kind"},
@@ -281,7 +289,10 @@ func TestHandleCreateRunE_Success(t *testing.T) {
 }
 
 func TestNewCreateCmd_RunESuccess(t *testing.T) {
+	t.Parallel()
+
 	var injectedTimer *recordingTimer
+
 	provisioner := &stubProvisioner{}
 	factory := &stubFactory{
 		provisioner:        provisioner,
@@ -308,6 +319,7 @@ func TestNewCreateCmd_RunESuccess(t *testing.T) {
 	)
 
 	cmd := NewCreateCmd(runtimeContainer)
+
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 

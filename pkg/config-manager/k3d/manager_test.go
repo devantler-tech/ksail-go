@@ -1,6 +1,8 @@
 package k3d_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -150,4 +152,44 @@ servers: 3`,
 		},
 		scenarios,
 	)
+}
+
+func TestK3dConfigManagerLoadConfig_ReusesExistingConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "k3d.yaml")
+	configContent := `apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: cached
+`
+
+	err := os.WriteFile(configPath, []byte(configContent), 0o600)
+	if err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	manager := k3d.NewConfigManager(configPath)
+
+	err = manager.LoadConfig(nil)
+	if err != nil {
+		t.Fatalf("initial LoadConfig failed: %v", err)
+	}
+
+	first := manager.GetConfig()
+
+	err = os.WriteFile(configPath, []byte("invalid: yaml: ["), 0o600)
+	if err != nil {
+		t.Fatalf("failed to overwrite config: %v", err)
+	}
+
+	err = manager.LoadConfig(nil)
+	if err != nil {
+		t.Fatalf("expected cached load to succeed, got %v", err)
+	}
+
+	if manager.GetConfig() != first {
+		t.Fatal("expected cached configuration to be reused")
+	}
 }

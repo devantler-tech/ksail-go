@@ -188,6 +188,7 @@ func displayClusterList(
 			builder.WriteString(strings.ToLower(string(distribution)))
 			builder.WriteString(": ")
 		}
+
 		builder.WriteString(strings.Join(clusters, ", "))
 		builder.WriteString("\n")
 

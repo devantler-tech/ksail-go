@@ -3,6 +3,7 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,12 +31,12 @@ type recordingListFactory struct {
 	captured    []*v1alpha1.Cluster
 }
 
-//nolint:ireturn // Test doubles satisfy interface contract.
 func (f *recordingListFactory) Create(
 	_ context.Context,
 	cluster *v1alpha1.Cluster,
 ) (clusterprovisioner.ClusterProvisioner, any, error) {
 	f.callCount++
+
 	f.captured = append(f.captured, cluster)
 	if f.err != nil {
 		return nil, nil, f.err
@@ -103,7 +104,7 @@ func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
 	cfgManager := configmanager.NewConfigManager(io.Discard)
 	cfgManager.Viper.SetConfigFile(badConfigPath)
 
-	deps := ListDeps{Factory: fakeFactory{}}
+	deps := ListDeps{Factory: &recordingListFactory{}}
 
 	err = HandleListRunE(cmd, cfgManager, deps)
 	if err == nil {
@@ -167,7 +168,9 @@ func TestListClusters_ReturnsErrorWhenFactoryFails(t *testing.T) {
 	cfgManager.Config.Spec.Connection.Kubeconfig = ignoredConfigValue
 	cfgManager.Config.Spec.SourceDirectory = ignoredConfigValue
 
-	deps := ListDeps{Factory: fakeFactory{err: clusterprovisioner.ErrUnsupportedDistribution}}
+	deps := ListDeps{Factory: &recordingListFactory{
+		err: clusterprovisioner.ErrUnsupportedDistribution,
+	}}
 
 	err := listClusters(cfgManager, deps, cmd)
 	if err == nil {
@@ -249,6 +252,39 @@ func TestDisplayClusterList(t *testing.T) {
 			t.Fatalf("expected formatted cluster list. want %q, got %q", want, got)
 		}
 	})
+
+	t.Run("distribution prefix included when requested", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, out := newCommandWithBuffer(t)
+
+		displayClusterList(v1alpha1.DistributionK3d, []string{"alpha", "beta"}, cmd, true)
+
+		got := out.String()
+		if !strings.Contains(got, "k3d: alpha, beta") {
+			t.Fatalf("expected distribution prefix in output, got %q", got)
+		}
+	})
+}
+
+type failingWriter struct{}
+
+var errListWriterFailed = errors.New("write failed")
+
+func (f failingWriter) Write(_ []byte) (int, error) {
+	return 0, errListWriterFailed
+}
+
+func TestDisplayClusterList_WriterErrorHandled(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(failingWriter{})
+	cmd.SetErr(io.Discard)
+
+	displayClusterList(v1alpha1.DistributionKind, []string{"alpha"}, cmd, false)
+
+	// Successful completion without panic is sufficient to cover error logging path.
 }
 
 func TestCloneClusterForDistribution(t *testing.T) {
@@ -292,7 +328,6 @@ func TestDefaultDistributionConfigPath(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -317,6 +352,7 @@ func TestNewListCmd_RunESuccess(t *testing.T) {
 	})
 
 	cmd := NewListCmd(runtimeContainer)
+
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
@@ -348,19 +384,6 @@ func TestBindAllFlagBindsViperState(t *testing.T) {
 	if !cfgManager.Viper.GetBool(allFlag) {
 		t.Fatal("expected Viper binding to reflect updated flag state")
 	}
-}
-
-type fakeFactory struct {
-	provisioner clusterprovisioner.ClusterProvisioner
-	err         error
-}
-
-//nolint:ireturn // Tests rely on returning the interface to satisfy ListDeps contract.
-func (f fakeFactory) Create(
-	_ context.Context,
-	_ *v1alpha1.Cluster,
-) (clusterprovisioner.ClusterProvisioner, any, error) {
-	return f.provisioner, nil, f.err
 }
 
 func newCommandWithBuffer(t *testing.T) (*cobra.Command, *bytes.Buffer) {
