@@ -39,7 +39,11 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, newDeleteLifecycleConfig())
+	cmd.RunE = shared.NewLifecycleCommandWrapper(
+		runtimeContainer,
+		cfgManager,
+		newDeleteLifecycleConfig(),
+	)
 
 	return cmd
 }

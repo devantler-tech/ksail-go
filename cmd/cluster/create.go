@@ -39,7 +39,11 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, newCreateLifecycleConfig())
+	cmd.RunE = shared.NewLifecycleCommandWrapper(
+		runtimeContainer,
+		cfgManager,
+		newCreateLifecycleConfig(),
+	)
 
 	return cmd
 }
