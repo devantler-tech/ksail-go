@@ -7,7 +7,6 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -46,28 +45,4 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	)
 
 	return cmd
-}
-
-// DeleteDeps contains the dependencies required to handle the delete command.
-// Deprecated: Use shared.LifecycleDeps instead.
-type DeleteDeps struct {
-	Timer   timer.Timer
-	Factory clusterprovisioner.Factory
-}
-
-var errMissingClusterProvisionerForDelete = shared.ErrMissingClusterProvisionerDependency
-
-// HandleDeleteRunE executes the cluster deletion workflow.
-// Deprecated: This function is kept for backward compatibility with tests.
-func HandleDeleteRunE(
-	cmd *cobra.Command,
-	cfgManager *ksailconfigmanager.ConfigManager,
-	deps DeleteDeps,
-) error {
-	lifecycleDeps := shared.LifecycleDeps{
-		Timer:   deps.Timer,
-		Factory: deps.Factory,
-	}
-
-	return shared.HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, newDeleteLifecycleConfig())
 }
