@@ -82,6 +82,7 @@ func listClusters(
 	cmd *cobra.Command,
 ) error {
 	clusterCfg := cfgManager.GetConfig()
+	includeDistribution := cfgManager.Viper.GetBool(allFlag)
 
 	provisioner, _, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
@@ -93,9 +94,9 @@ func listClusters(
 		return fmt.Errorf("failed to list clusters: %w", err)
 	}
 
-	displayClusterList(clusterCfg.Spec.Distribution, clusters, cmd)
+	displayClusterList(clusterCfg.Spec.Distribution, clusters, cmd, includeDistribution)
 
-	if cfgManager.Viper.GetBool(allFlag) {
+	if includeDistribution {
 		distributions := []v1alpha1.Distribution{
 			v1alpha1.DistributionKind,
 			v1alpha1.DistributionK3d,
@@ -130,7 +131,7 @@ func listClusters(
 				)
 			}
 
-			displayClusterList(distribution, otherClusters, cmd)
+			displayClusterList(distribution, otherClusters, cmd, true)
 		}
 	}
 
@@ -167,7 +168,12 @@ func defaultDistributionConfigPath(distribution v1alpha1.Distribution) string {
 	}
 }
 
-func displayClusterList(distribution v1alpha1.Distribution, clusters []string, cmd *cobra.Command) {
+func displayClusterList(
+	distribution v1alpha1.Distribution,
+	clusters []string,
+	cmd *cobra.Command,
+	includeDistribution bool,
+) {
 	if len(clusters) == 0 {
 		notify.WriteMessage(notify.Message{
 			Type:    notify.ActivityType,
@@ -177,18 +183,15 @@ func displayClusterList(distribution v1alpha1.Distribution, clusters []string, c
 	} else {
 		writer := cmd.OutOrStdout()
 
-		_, err := fmt.Fprint(writer, string(distribution)+": ")
-		if err != nil {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.ErrorType,
-				Content: fmt.Sprintf("failed to display %s clusters", distribution),
-				Writer:  writer,
-			})
-
-			return
+		var builder strings.Builder
+		if includeDistribution {
+			builder.WriteString(strings.ToLower(string(distribution)))
+			builder.WriteString(": ")
 		}
+		builder.WriteString(strings.Join(clusters, ", "))
+		builder.WriteString("\n")
 
-		_, err = fmt.Fprintln(writer, strings.Join(clusters, ", "))
+		_, err := fmt.Fprint(writer, builder.String())
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type:    notify.ErrorType,

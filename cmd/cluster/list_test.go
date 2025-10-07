@@ -225,7 +225,7 @@ func TestDisplayClusterList(t *testing.T) {
 
 		cmd, out := newCommandWithBuffer(t)
 
-		displayClusterList(v1alpha1.DistributionKind, nil, cmd)
+		displayClusterList(v1alpha1.DistributionKind, nil, cmd, false)
 
 		got := out.String()
 		want := "► no clusters found\n"
@@ -240,10 +240,10 @@ func TestDisplayClusterList(t *testing.T) {
 
 		cmd, out := newCommandWithBuffer(t)
 
-		displayClusterList(v1alpha1.DistributionK3d, []string{"alpha", "beta"}, cmd)
+		displayClusterList(v1alpha1.DistributionK3d, []string{"alpha", "beta"}, cmd, true)
 
 		got := out.String()
-		want := "K3d: alpha, beta\n"
+		want := "k3d: alpha, beta\n"
 
 		if got != want {
 			t.Fatalf("expected formatted cluster list. want %q, got %q", want, got)
