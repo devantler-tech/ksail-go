@@ -587,6 +587,7 @@ func TestDefaultContextFieldSelector(t *testing.T) {
 	assert.Equal(t, "kind-kind", selector.DefaultValue)
 
 	*ptr = "custom"
+
 	assert.Equal(t, "custom", cluster.Spec.Connection.Context)
 	assert.NotEmpty(t, selector.Description)
 }
