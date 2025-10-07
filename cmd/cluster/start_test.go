@@ -277,3 +277,36 @@ func TestNewStartCmd_RunESuccess(t *testing.T) {
 		t.Fatalf("expected provisioner Start to be called once, got %d", provisioner.startCalls)
 	}
 }
+
+//nolint:paralleltest
+func TestNewStartCmd_FactoryResolutionError(t *testing.T) {
+	// Runtime container with timer but no factory registered
+	runtimeContainer := runtime.New(
+		func(i runtime.Injector) error {
+			do.Provide(i, func(runtime.Injector) (timer.Timer, error) {
+				return &recordingTimer{}, nil
+			})
+
+			return nil
+		},
+	)
+
+	cmd := NewStartCmd(runtimeContainer)
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+
+	tempDir := t.TempDir()
+	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	t.Chdir(tempDir)
+
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("expected factory resolution error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "resolve provisioner factory dependency") {
+		t.Fatalf("expected factory resolution error message, got %q", err)
+	}
+}
