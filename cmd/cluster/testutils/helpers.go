@@ -12,8 +12,8 @@ import (
 
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
@@ -201,6 +201,8 @@ func CreateConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.Con
 	return cfgManager
 }
 
-var _ timer.Timer = (*RecordingTimer)(nil)
-var _ clusterprovisioner.Factory = (*StubFactory)(nil)
-var _ clusterprovisioner.ClusterProvisioner = (*StubProvisioner)(nil)
+var (
+	_ timer.Timer                           = (*RecordingTimer)(nil)
+	_ clusterprovisioner.Factory            = (*StubFactory)(nil)
+	_ clusterprovisioner.ClusterProvisioner = (*StubProvisioner)(nil)
+)
