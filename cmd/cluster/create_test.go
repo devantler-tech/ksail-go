@@ -55,4 +55,3 @@ func setupCommandTest(t *testing.T) (
 
 	return cmd, out, timerStub, factory, provisioner, cfgManager
 }
-

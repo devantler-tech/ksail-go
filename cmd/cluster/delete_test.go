@@ -28,4 +28,3 @@ func TestNewDeleteCmd(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 }
-
