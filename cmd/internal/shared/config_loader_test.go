@@ -28,11 +28,11 @@ func (r *recordingTimer) Stop()                                     {}
 const validConfigYAML = `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 metadata:
-	name: sample
+  name: sample
 spec:
-	distribution: Kind
-	distributionConfig: kind.yaml
-	sourceDirectory: k8s
+  distribution: Kind
+  distributionConfig: kind.yaml
+  sourceDirectory: k8s
 `
 
 func TestLoadConfigStartsTimer(t *testing.T) {
@@ -79,8 +79,6 @@ func TestLoadConfigReturnsWrappedError(t *testing.T) {
 }
 
 func TestNewConfigLoaderRunESuccess(t *testing.T) {
-	t.Parallel()
-
 	dir := t.TempDir()
 	writeConfig(t, filepath.Join(dir, "ksail.yaml"), validConfigYAML)
 
