@@ -2,6 +2,7 @@ package workload
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -16,60 +17,37 @@ import (
 
 // NewApplyCmd creates the workload apply command.
 func NewApplyCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a wrapper command that will lazily create the kubectl apply command
-	cmd := &cobra.Command{
-		Use:                   "apply (-f FILENAME | -k DIRECTORY)",
-		DisableFlagsInUseLine: true,
-		Short:                 "Apply manifests",
-		Long:                  "Apply local Kubernetes manifests to your cluster.",
-		SilenceUsage:          true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Load config and get kubeconfig path
-			cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout())
+	// Try to load config silently to get kubeconfig path
+	kubeconfigPath := getKubeconfigPathSilently()
 
-			kubeconfigPath, err := getKubeconfigPath(cfgManager)
-			if err != nil {
-				// If we can't load config, use default kubeconfig
-				homeDir, _ := os.UserHomeDir()
-				kubeconfigPath = filepath.Join(homeDir, ".kube", "config")
-			}
-
-			// Create IO streams for kubectl
-			ioStreams := genericiooptions.IOStreams{
-				In:     cmd.InOrStdin(),
-				Out:    cmd.OutOrStdout(),
-				ErrOut: cmd.ErrOrStderr(),
-			}
-
-			// Create applier and get the kubectl apply command
-			applier := kubectlapplier.NewApplier(ioStreams)
-			applyCmd := applier.CreateApplyCommand(kubeconfigPath)
-
-			// Transfer flags from parent command to kubectl apply command
-			applyCmd.SetArgs(args)
-			applyCmd.SetIn(cmd.InOrStdin())
-			applyCmd.SetOut(cmd.OutOrStdout())
-			applyCmd.SetErr(cmd.ErrOrStderr())
-
-			// Execute the kubectl apply command
-			return applyCmd.Execute()
-		},
-	}
-
-	// Add kubectl apply flags by creating a temporary apply command
-	// This ensures help shows correct flags even before execution
+	// Create IO streams for kubectl
 	ioStreams := genericiooptions.IOStreams{
 		In:     os.Stdin,
 		Out:    os.Stdout,
 		ErrOut: os.Stderr,
 	}
+
+	// Create applier and get the kubectl apply command directly
 	applier := kubectlapplier.NewApplier(ioStreams)
-	tempApplyCmd := applier.CreateApplyCommand("")
+	applyCmd := applier.CreateApplyCommand(kubeconfigPath)
 
-	// Copy flags from temporary kubectl apply command
-	cmd.Flags().AddFlagSet(tempApplyCmd.Flags())
+	return applyCmd
+}
 
-	return cmd
+// getKubeconfigPathSilently tries to load config and get kubeconfig path without any output.
+func getKubeconfigPathSilently() string {
+	// Use io.Discard to suppress all output
+	cfgManager := ksailconfigmanager.NewConfigManager(io.Discard)
+
+	kubeconfigPath, err := getKubeconfigPath(cfgManager)
+	if err != nil {
+		// If we can't load config, use default kubeconfig
+		homeDir, _ := os.UserHomeDir()
+
+		return filepath.Join(homeDir, ".kube", "config")
+	}
+
+	return kubeconfigPath
 }
 
 // getKubeconfigPath loads the ksail config and extracts the kubeconfig path.
