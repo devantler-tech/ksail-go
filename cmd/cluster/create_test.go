@@ -289,8 +289,6 @@ func TestHandleCreateRunE_Success(t *testing.T) {
 }
 
 func TestNewCreateCmd_RunESuccess(t *testing.T) {
-	t.Parallel()
-
 	var injectedTimer *recordingTimer
 
 	provisioner := &stubProvisioner{}
