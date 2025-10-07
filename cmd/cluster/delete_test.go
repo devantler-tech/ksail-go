@@ -2,23 +2,20 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/samber/do/v2"
-	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -27,96 +24,15 @@ var (
 	errDeleteFailed      = errors.New("delete failed")
 )
 
-type recordingTimerDelete struct {
-	startCount    int
-	newStageCount int
-}
-
-func (r *recordingTimerDelete) Start()    { r.startCount++ }
-func (r *recordingTimerDelete) NewStage() { r.newStageCount++ }
-func (r *recordingTimerDelete) GetTiming() (time.Duration, time.Duration) {
-	return 0, 0
-}
-func (r *recordingTimerDelete) Stop() {}
-
-type stubFactoryDelete struct {
-	provisioner        clusterprovisioner.ClusterProvisioner
-	distributionConfig any
-	err                error
-	callCount          int
-}
-
-//nolint:ireturn // Tests depend on returning the interface type.
-func (s *stubFactoryDelete) Create(
-	_ context.Context,
-	_ *v1alpha1.Cluster,
-) (clusterprovisioner.ClusterProvisioner, any, error) {
-	s.callCount++
-	if s.err != nil {
-		return nil, nil, s.err
-	}
-
-	return s.provisioner, s.distributionConfig, nil
-}
-
-type stubDeleteProvisioner struct {
-	deleteErr     error
-	deleteCalls   int
-	receivedNames []string
-}
-
-func (p *stubDeleteProvisioner) Create(context.Context, string) error { return nil }
-func (p *stubDeleteProvisioner) Delete(_ context.Context, name string) error {
-	p.deleteCalls++
-	p.receivedNames = append(p.receivedNames, name)
-
-	return p.deleteErr
-}
-func (p *stubDeleteProvisioner) Start(context.Context, string) error { return nil }
-func (p *stubDeleteProvisioner) Stop(context.Context, string) error  { return nil }
-func (p *stubDeleteProvisioner) List(context.Context) ([]string, error) {
-	return nil, nil
-}
-
-func (p *stubDeleteProvisioner) Exists(context.Context, string) (bool, error) {
-	return false, nil
-}
-
-func newDeleteCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
-	t.Helper()
-
-	cmd := &cobra.Command{}
-
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-
-	return cmd, &out
-}
-
-func createDeleteConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.ConfigManager {
-	t.Helper()
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(writer, selectors...)
-
-	tempDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, tempDir)
-
-	cfgManager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
-
-	return cfgManager
-}
-
 func TestHandleDeleteRunE_LoadConfigFailure(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newDeleteCommand(t)
+	cmd, _ := testutils.NewCommand(t)
 
-	timerStub := &recordingTimerDelete{}
+	timerStub := &testutils.RecordingTimer{}
 	factoryCalled := 0
-	failingFactory := &stubFactoryDelete{
-		err: nil,
+	failingFactory := &testutils.StubFactory{
+		Err: nil,
 	}
 
 	tempDir := t.TempDir()
@@ -141,12 +57,12 @@ func TestHandleDeleteRunE_LoadConfigFailure(t *testing.T) {
 		t.Fatalf("expected load error in message, got %q", err)
 	}
 
-	if timerStub.startCount != 1 {
-		t.Fatalf("expected timer Start to be called once, got %d", timerStub.startCount)
+	if timerStub.StartCount != 1 {
+		t.Fatalf("expected timer Start to be called once, got %d", timerStub.StartCount)
 	}
 
-	if timerStub.newStageCount != 0 {
-		t.Fatalf("expected timer NewStage to be skipped, got %d", timerStub.newStageCount)
+	if timerStub.NewStageCount != 0 {
+		t.Fatalf("expected timer NewStage to be skipped, got %d", timerStub.NewStageCount)
 	}
 
 	if factoryCalled != 0 {
@@ -157,10 +73,10 @@ func TestHandleDeleteRunE_LoadConfigFailure(t *testing.T) {
 func TestHandleDeleteRunE_FactoryFailure(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newDeleteCommand(t)
-	timerStub := &recordingTimerDelete{}
-	factory := &stubFactoryDelete{err: errFactoryBoomDelete}
-	cfgManager := createDeleteConfigManager(t, io.Discard)
+	cmd, _ := testutils.NewCommand(t)
+	timerStub := &testutils.RecordingTimer{}
+	factory := &testutils.StubFactory{Err: errFactoryBoomDelete}
+	cfgManager := testutils.CreateConfigManager(t, io.Discard)
 
 	err := HandleDeleteRunE(cmd, cfgManager, DeleteDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
@@ -171,25 +87,25 @@ func TestHandleDeleteRunE_FactoryFailure(t *testing.T) {
 		t.Fatalf("expected factory failure message, got %q", err)
 	}
 
-	if timerStub.newStageCount != 1 {
+	if timerStub.NewStageCount != 1 {
 		t.Fatalf(
 			"expected timer NewStage to be called before factory, got %d",
-			timerStub.newStageCount,
+			timerStub.NewStageCount,
 		)
 	}
 
-	if factory.callCount != 1 {
-		t.Fatalf("expected factory Create to be called once, got %d", factory.callCount)
+	if factory.CallCount != 1 {
+		t.Fatalf("expected factory Create to be called once, got %d", factory.CallCount)
 	}
 }
 
 func TestHandleDeleteRunE_ReturnsErrorWhenProvisionerIsNil(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newDeleteCommand(t)
-	timerStub := &recordingTimerDelete{}
-	factory := &stubFactoryDelete{}
-	cfgManager := createDeleteConfigManager(t, io.Discard)
+	cmd, _ := testutils.NewCommand(t)
+	timerStub := &testutils.RecordingTimer{}
+	factory := &testutils.StubFactory{}
+	cfgManager := testutils.CreateConfigManager(t, io.Discard)
 
 	err := HandleDeleteRunE(cmd, cfgManager, DeleteDeps{Timer: timerStub, Factory: factory})
 	if !errors.Is(err, errMissingClusterProvisionerForDelete) {
@@ -200,13 +116,13 @@ func TestHandleDeleteRunE_ReturnsErrorWhenProvisionerIsNil(t *testing.T) {
 func TestHandleDeleteRunE_ReturnsErrorWhenClusterNameFails(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newDeleteCommand(t)
-	timerStub := &recordingTimerDelete{}
-	factory := &stubFactoryDelete{
-		provisioner:        &stubDeleteProvisioner{},
-		distributionConfig: struct{}{},
+	cmd, _ := testutils.NewCommand(t)
+	timerStub := &testutils.RecordingTimer{}
+	factory := &testutils.StubFactory{
+		Provisioner:        &testutils.StubProvisioner{},
+		DistributionConfig: struct{}{},
 	}
-	cfgManager := createDeleteConfigManager(t, io.Discard)
+	cfgManager := testutils.CreateConfigManager(t, io.Discard)
 
 	err := HandleDeleteRunE(cmd, cfgManager, DeleteDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
@@ -217,22 +133,22 @@ func TestHandleDeleteRunE_ReturnsErrorWhenClusterNameFails(t *testing.T) {
 		t.Fatalf("expected cluster name failure message, got %q", err)
 	}
 
-	if factory.callCount != 1 {
-		t.Fatalf("expected factory Create to be called once, got %d", factory.callCount)
+	if factory.CallCount != 1 {
+		t.Fatalf("expected factory Create to be called once, got %d", factory.CallCount)
 	}
 }
 
 func TestHandleDeleteRunE_ReturnsErrorWhenProvisionerDeleteFails(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newDeleteCommand(t)
-	timerStub := &recordingTimerDelete{}
-	provisioner := &stubDeleteProvisioner{deleteErr: errDeleteFailed}
-	factory := &stubFactoryDelete{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "kind"},
+	cmd, _ := testutils.NewCommand(t)
+	timerStub := &testutils.RecordingTimer{}
+	provisioner := &testutils.StubProvisioner{DeleteErr: errDeleteFailed}
+	factory := &testutils.StubFactory{
+		Provisioner:        provisioner,
+		DistributionConfig: &v1alpha4.Cluster{Name: "kind"},
 	}
-	cfgManager := createDeleteConfigManager(t, io.Discard)
+	cfgManager := testutils.CreateConfigManager(t, io.Discard)
 
 	err := HandleDeleteRunE(cmd, cfgManager, DeleteDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
@@ -243,38 +159,38 @@ func TestHandleDeleteRunE_ReturnsErrorWhenProvisionerDeleteFails(t *testing.T) {
 		t.Fatalf("expected delete failure message, got %q", err)
 	}
 
-	if provisioner.deleteCalls != 1 {
-		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.deleteCalls)
+	if provisioner.DeleteCalls != 1 {
+		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.DeleteCalls)
 	}
 }
 
 func TestHandleDeleteRunE_Success(t *testing.T) {
 	t.Parallel()
 
-	cmd, out := newDeleteCommand(t)
-	timerStub := &recordingTimerDelete{}
-	provisioner := &stubDeleteProvisioner{}
-	factory := &stubFactoryDelete{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "kind"},
+	cmd, out := testutils.NewCommand(t)
+	timerStub := &testutils.RecordingTimer{}
+	provisioner := &testutils.StubProvisioner{}
+	factory := &testutils.StubFactory{
+		Provisioner:        provisioner,
+		DistributionConfig: &v1alpha4.Cluster{Name: "kind"},
 	}
-	cfgManager := createDeleteConfigManager(t, out)
+	cfgManager := testutils.CreateConfigManager(t, out)
 
 	err := HandleDeleteRunE(cmd, cfgManager, DeleteDeps{Timer: timerStub, Factory: factory})
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
 	}
 
-	if timerStub.startCount != 1 || timerStub.newStageCount != 1 {
+	if timerStub.StartCount != 1 || timerStub.NewStageCount != 1 {
 		t.Fatalf(
 			"expected timer Start/NewStage to be called once, got %d/%d",
-			timerStub.startCount,
-			timerStub.newStageCount,
+			timerStub.StartCount,
+			timerStub.NewStageCount,
 		)
 	}
 
-	if provisioner.deleteCalls != 1 {
-		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.deleteCalls)
+	if provisioner.DeleteCalls != 1 {
+		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.DeleteCalls)
 	}
 
 	output := out.String()
@@ -289,18 +205,18 @@ func TestHandleDeleteRunE_Success(t *testing.T) {
 
 //nolint:paralleltest
 func TestNewDeleteCmd_RunESuccess(t *testing.T) {
-	var injectedTimer *recordingTimerDelete
+	var injectedTimer *testutils.RecordingTimer
 
-	provisioner := &stubDeleteProvisioner{}
-	factory := &stubFactoryDelete{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "kind"},
+	provisioner := &testutils.StubProvisioner{}
+	factory := &testutils.StubFactory{
+		Provisioner:        provisioner,
+		DistributionConfig: &v1alpha4.Cluster{Name: "kind"},
 	}
 
 	runtimeContainer := runtime.New(
 		func(i runtime.Injector) error {
 			do.Provide(i, func(runtime.Injector) (timer.Timer, error) {
-				injectedTimer = &recordingTimerDelete{}
+				injectedTimer = &testutils.RecordingTimer{}
 
 				return injectedTimer, nil
 			})
@@ -334,15 +250,15 @@ func TestNewDeleteCmd_RunESuccess(t *testing.T) {
 		t.Fatal("expected timer to be injected")
 	}
 
-	if injectedTimer.startCount == 0 {
-		t.Fatalf("expected timer Start to be called, got %d", injectedTimer.startCount)
+	if injectedTimer.StartCount == 0 {
+		t.Fatalf("expected timer Start to be called, got %d", injectedTimer.StartCount)
 	}
 
-	if factory.callCount != 1 {
-		t.Fatalf("expected factory Create to be called once, got %d", factory.callCount)
+	if factory.CallCount != 1 {
+		t.Fatalf("expected factory Create to be called once, got %d", factory.CallCount)
 	}
 
-	if provisioner.deleteCalls != 1 {
-		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.deleteCalls)
+	if provisioner.DeleteCalls != 1 {
+		t.Fatalf("expected provisioner Delete to be called once, got %d", provisioner.DeleteCalls)
 	}
 }
