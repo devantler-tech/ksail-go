@@ -23,6 +23,12 @@ linters:
       - linters:
           - ireturn
         path: pkg/config-manager/helpers/loader.go
+      - linters:
+          - ireturn
+        path: pkg/containerengine/engine.go
+      - linters:
+          - ireturn
+        path: cmd/cluster/list_test.go
   settings:
     wsl_v5:
       allow-first-in-block: true
@@ -38,6 +44,7 @@ linters:
           allow:
             - $gostd
             - github.com/devantler-tech
+            - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color
             - github.com/gkampitakis/go-snaps

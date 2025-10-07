@@ -1,16 +1,21 @@
 package workload
 
 import (
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 
 // NewInstallCmd creates the workload install command.
-func NewInstallCmd() *cobra.Command {
-	return helpers.NewCobraCommand(
-		"install",
-		"Install Helm charts",
-		"Install Helm charts to provision workloads through KSail.",
-		helpers.HandleConfigLoadRunE,
-	)
+func NewInstallCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "install",
+		Short:        "Install Helm charts",
+		Long:         "Install Helm charts to provision workloads through KSail.",
+		SilenceUsage: true,
+	}
+
+	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
+
+	return cmd
 }

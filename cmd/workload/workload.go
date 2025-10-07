@@ -2,12 +2,12 @@
 package workload
 
 import (
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 
 // NewWorkloadCmd creates and returns the workload command group namespace.
-func NewWorkloadCmd() *cobra.Command {
+func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workload",
 		Short: "Manage workload operations",
@@ -16,13 +16,12 @@ func NewWorkloadCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},
+		SilenceUsage: true,
 	}
 
-	cmd.SuggestionsMinimumDistance = helpers.SuggestionsMinimumDistance
-
-	cmd.AddCommand(NewReconcileCmd())
-	cmd.AddCommand(NewApplyCmd())
-	cmd.AddCommand(NewInstallCmd())
+	cmd.AddCommand(NewReconcileCmd(runtimeContainer))
+	cmd.AddCommand(NewApplyCmd(runtimeContainer))
+	cmd.AddCommand(NewInstallCmd(runtimeContainer))
 
 	return cmd
 }

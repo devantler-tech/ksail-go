@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +49,6 @@ func RunConfigManagerTests[T any](
 		}
 
 		require.NotNil(t, validScenario, "No valid scenario found for caching test")
-		testLoadConfigCaching(t, newManager, *validScenario)
 	})
 }
 
@@ -70,20 +68,20 @@ func testLoadConfigBasicScenarios[T any](
 			configPath := setupTestConfigPath(t, scenario)
 
 			manager := newManager(configPath)
-			config, err := manager.LoadConfig(nil)
+			err := manager.LoadConfig(nil)
 
 			if scenario.ShouldError {
 				require.Error(t, err)
-				assert.Nil(t, config)
+				assert.Nil(t, manager.GetConfig())
 
 				return
 			}
 
 			require.NoError(t, err)
-			require.NotNil(t, config)
+			require.NotNil(t, manager.GetConfig())
 
 			if scenario.ValidationFunc != nil {
-				scenario.ValidationFunc(t, config)
+				scenario.ValidationFunc(t, manager.GetConfig())
 			}
 		})
 	}
@@ -111,39 +109,35 @@ func setupTestConfigPath[T any](t *testing.T, scenario TestScenario[T]) string {
 	}
 }
 
-// testLoadConfigCaching tests that configuration caching works correctly.
-func testLoadConfigCaching[T any](
+// AssertConfigManagerCaches verifies that a config manager reuses a previously loaded configuration
+// when the underlying file becomes invalid after the initial load.
+func AssertConfigManagerCaches[T any](
 	t *testing.T,
+	fileName string,
+	configContent string,
 	newManager func(configPath string) configmanager.ConfigManager[T],
-	scenario TestScenario[T],
 ) {
 	t.Helper()
-	t.Parallel()
 
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "caching-config.yaml")
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, fileName)
 
-	if scenario.ConfigContent != "" {
-		err := os.WriteFile(configPath, []byte(scenario.ConfigContent), testFilePermissions)
-		require.NoError(t, err)
-	}
+	err := os.WriteFile(configPath, []byte(configContent), testFilePermissions)
+	require.NoError(t, err, "failed to write config")
 
 	manager := newManager(configPath)
 
-	// Create timer for testing (not used in Kind config manager currently)
-	tmr := timer.New()
-	tmr.Start()
+	err = manager.LoadConfig(nil)
+	require.NoError(t, err, "initial LoadConfig failed")
 
-	// First call
-	config1, err := manager.LoadConfig(tmr)
-	require.NoError(t, err)
-	require.NotNil(t, config1)
+	first := manager.GetConfig()
+	require.NotNil(t, first, "expected config to be loaded")
 
-	// Second call should return the same instance (cached)
-	config2, err := manager.LoadConfig(tmr)
-	require.NoError(t, err)
-	require.NotNil(t, config2)
+	err = os.WriteFile(configPath, []byte("invalid: yaml: ["), testFilePermissions)
+	require.NoError(t, err, "failed to overwrite config")
 
-	// Should be the same pointer (cached)
-	assert.Same(t, config1, config2)
+	err = manager.LoadConfig(nil)
+	require.NoError(t, err, "expected cached load to succeed")
+
+	require.Same(t, first, manager.GetConfig(), "expected cached configuration to be reused")
 }

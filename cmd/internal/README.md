@@ -15,7 +15,7 @@ Houses internal utilities and helper packages that are used by KSail's CLI comma
 
 ## Packages
 
-- **[cmd/internal/helpers/](./helpers/command.go)** - Helper utilities for CLI command implementation
+- **cmd/internal/utils/** - Helper utilities for CLI command implementation
 - **testutils/** - Testing utilities for CLI commands
 
 ## Usage

@@ -22,6 +22,14 @@ func createDefaultConfig() *testConfig {
 	return &testConfig{Name: "default", APIVersion: "test/v1", Kind: "TestCluster"}
 }
 
+type stubValidator[T any] struct {
+	result *validator.ValidationResult
+}
+
+func (s stubValidator[T]) Validate(_ T) *validator.ValidationResult {
+	return s.result
+}
+
 func TestLoadConfigFromFile(t *testing.T) {
 	t.Parallel()
 
@@ -318,6 +326,16 @@ func TestFormatValidationWarnings(t *testing.T) {
 			},
 			expected: []string{},
 		},
+		{
+			name: "includes field path context",
+			result: &validator.ValidationResult{
+				Valid: true,
+				Warnings: []validator.ValidationError{
+					{Field: "spec.example", Message: "check"},
+				},
+			},
+			expected: []string{"Warning - spec.example: check"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -404,4 +422,46 @@ func testValidateConfigMultipleErrors(t *testing.T) {
 
 	err := helpers.ValidateConfig(config, mockVal)
 	assertValidationError(t, err, "name is required", "apiVersion is required")
+}
+
+func TestLoadConfigFromFilePermissionError(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	configContent := "name: blocked"
+	require.NoError(t, os.WriteFile(path, []byte(configContent), 0o600))
+	require.NoError(t, os.Chmod(path, 0))
+
+	t.Cleanup(func() {
+		_ = os.Chmod(path, 0o600)
+	})
+
+	_, err := helpers.LoadConfigFromFile(path, createDefaultConfig)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read config file")
+}
+
+func TestLoadAndValidateConfigErrors(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	configContent := "name: ok"
+	require.NoError(t, os.WriteFile(path, []byte(configContent), 0o600))
+
+	invalid := &validator.ValidationResult{
+		Valid:  false,
+		Errors: []validator.ValidationError{{Field: "name"}},
+	}
+
+	_, err := helpers.LoadAndValidateConfig(
+		path,
+		createDefaultConfig,
+		stubValidator[*testConfig]{result: invalid},
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to validate config")
 }

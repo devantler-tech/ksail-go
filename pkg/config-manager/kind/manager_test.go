@@ -147,3 +147,19 @@ nodes:
 		scenarios,
 	)
 }
+
+func TestKindConfigManagerLoadConfig_ReusesExistingConfig(t *testing.T) {
+	t.Parallel()
+
+	testutils.AssertConfigManagerCaches[v1alpha4.Cluster](
+		t,
+		"kind.yaml",
+		`apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+name: cached
+`,
+		func(configPath string) configmanager.ConfigManager[v1alpha4.Cluster] {
+			return kind.NewConfigManager(configPath)
+		},
+	)
+}

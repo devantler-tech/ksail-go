@@ -19,43 +19,58 @@ var ErrUnsupportedDistribution = errors.New("unsupported distribution")
 
 const defaultKubeconfigPath = "~/.kube/config"
 
-// CreateClusterProvisioner creates a cluster provisioner and returns the provisioner alongside the
-// cluster name resolved from the distribution configuration.
+// Factory creates distribution-specific cluster provisioners based on the KSail cluster configuration.
+type Factory interface {
+	Create(ctx context.Context, cluster *v1alpha1.Cluster) (ClusterProvisioner, any, error)
+}
+
+// DefaultFactory implements Factory using the existing CreateClusterProvisioner helper.
+type DefaultFactory struct{}
+
+// Create selects the correct distribution provisioner for the KSail cluster configuration.
 //
-//nolint:ireturn // Returning the interface to allow distribution-specific provisioners.
-func CreateClusterProvisioner(
+//nolint:ireturn // Factory interface intentionally returns ClusterProvisioner implementations.
+func (DefaultFactory) Create(
 	_ context.Context,
-	distribution v1alpha1.Distribution,
-	distributionConfigPath string,
-	kubeconfigPath string,
-) (ClusterProvisioner, string, error) {
-	switch distribution {
+	cluster *v1alpha1.Cluster,
+) (ClusterProvisioner, any, error) {
+	if cluster == nil {
+		return nil, nil, fmt.Errorf(
+			"cluster configuration is required: %w",
+			ErrUnsupportedDistribution,
+		)
+	}
+
+	switch cluster.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		return createKindProvisionerWithName(distributionConfigPath, kubeconfigPath)
+		return createKindProvisioner(
+			cluster.Spec.DistributionConfig,
+			cluster.Spec.Connection.Kubeconfig,
+		)
 	case v1alpha1.DistributionK3d:
-		return createK3dProvisionerWithName(distributionConfigPath)
+		return createK3dProvisioner(cluster.Spec.DistributionConfig)
 	default:
-		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, distribution)
+		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
 	}
 }
 
-func createKindProvisionerWithName(
+func createKindProvisioner(
 	distributionConfigPath string,
 	kubeconfigPath string,
-) (*kindprovisioner.KindClusterProvisioner, string, error) {
+) (*kindprovisioner.KindClusterProvisioner, *v1alpha4.Cluster, error) {
 	kindConfigMgr := kindconfigmanager.NewConfigManager(distributionConfigPath)
 
-	kindConfig, err := kindConfigMgr.LoadConfig(nil)
+	err := kindConfigMgr.LoadConfig(nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load Kind configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load Kind configuration: %w", err)
 	}
 
-	provisioner, err := createKindProvisionerFromConfig(kindConfig, kubeconfigPath)
+	provisioner, err := createKindProvisionerFromConfig(kindConfigMgr.GetConfig(), kubeconfigPath)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
-	return provisioner, kindConfig.Name, nil
+	return provisioner, kindConfigMgr.GetConfig(), nil
 }
 
 func createKindProvisionerFromConfig(
@@ -81,19 +96,19 @@ func createKindProvisionerFromConfig(
 	), nil
 }
 
-func createK3dProvisionerWithName(
+func createK3dProvisioner(
 	distributionConfigPath string,
-) (*k3dprovisioner.K3dClusterProvisioner, string, error) {
+) (*k3dprovisioner.K3dClusterProvisioner, *k3dv1alpha5.SimpleConfig, error) {
 	k3dConfigMgr := k3dconfigmanager.NewConfigManager(distributionConfigPath)
 
-	k3dConfig, err := k3dConfigMgr.LoadConfig(nil)
+	err := k3dConfigMgr.LoadConfig(nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to load K3d configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to load K3d configuration: %w", err)
 	}
 
-	provisioner := createK3dProvisionerFromConfig(k3dConfig)
+	provisioner := createK3dProvisionerFromConfig(k3dConfigMgr.GetConfig())
 
-	return provisioner, k3dConfig.Name, nil
+	return provisioner, k3dConfigMgr.GetConfig(), nil
 }
 
 func createK3dProvisionerFromConfig(

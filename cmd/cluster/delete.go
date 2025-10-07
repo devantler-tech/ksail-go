@@ -6,12 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// NewStopCmd creates and returns the stop command.
-func NewStopCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
+// NewDeleteCmd creates and returns the delete command.
+func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "stop",
-		Short:        "Stop a running cluster",
-		Long:         `Stop a running Kubernetes cluster.`,
+		Use:          "delete",
+		Short:        "Destroy a cluster",
+		Long:         `Destroy a cluster.`,
 		SilenceUsage: true,
 	}
 

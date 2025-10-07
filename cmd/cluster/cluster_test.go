@@ -7,15 +7,16 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 
 func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 	t.Parallel()
 
-	metadata := expectedLifecycleMetadata(t)
-	requireParentMetadata(t, NewClusterCmd())
+	rt := newTestRuntime()
+	metadata := expectedLifecycleMetadata(t, rt)
+	requireParentMetadata(t, NewClusterCmd(rt))
 
 	for name, details := range metadata {
 		t.Run(name, func(t *testing.T) {
@@ -30,7 +31,8 @@ func TestNewClusterCmdRegistersLifecycleCommands(t *testing.T) {
 func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
 	t.Parallel()
 
-	cmd := NewClusterCmd()
+	rt := newTestRuntime()
+	cmd := NewClusterCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
@@ -58,7 +60,7 @@ func TestHandleClusterRunEWrapsHelpError(t *testing.T) {
 
 	cmd := &cobra.Command{Use: "cluster"}
 
-	err := handleClusterRunE(cmd, nil, nil)
+	err := handleClusterRunE(cmd, nil)
 	if !errors.Is(err, errHelpFailure) {
 		t.Fatalf("expected wrapped help failure error, got %v", err)
 	}
@@ -71,16 +73,19 @@ type lifecycleMetadata struct {
 	long  string
 }
 
-func expectedLifecycleMetadata(t *testing.T) map[string]lifecycleMetadata {
+func expectedLifecycleMetadata(
+	t *testing.T,
+	runtimeContainer *runtime.Runtime,
+) map[string]lifecycleMetadata {
 	t.Helper()
 
 	constructors := []func() *cobra.Command{
-		NewUpCmd,
-		NewDownCmd,
-		NewStartCmd,
-		NewStopCmd,
-		NewStatusCmd,
-		NewListCmd,
+		func() *cobra.Command { return NewCreateCmd(runtimeContainer) },
+		func() *cobra.Command { return NewDeleteCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStartCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStopCmd(runtimeContainer) },
+		func() *cobra.Command { return NewStatusCmd(runtimeContainer) },
+		func() *cobra.Command { return NewListCmd(runtimeContainer) },
 	}
 
 	metadata := make(map[string]lifecycleMetadata, len(constructors))
@@ -113,7 +118,9 @@ func requireParentMetadata(t *testing.T, cmd *cobra.Command) {
 func findLifecycleSubcommand(t *testing.T, name string) *cobra.Command {
 	t.Helper()
 
-	for _, subcommand := range NewClusterCmd().Commands() {
+	rt := newTestRuntime()
+
+	for _, subcommand := range NewClusterCmd(rt).Commands() {
 		if subcommand.Use == name {
 			return subcommand
 		}
@@ -154,19 +161,26 @@ func assertOutputContains(t *testing.T, output, expected string) {
 	}
 }
 
-type lifecycleHandlerFunc func(*cobra.Command, *configmanager.ConfigManager, []string) error
-
 func runLifecycleSuccessCase(
 	t *testing.T,
-	use string,
-	handler lifecycleHandlerFunc,
-) {
+	commandFactory func() *cobra.Command,
+) string {
 	t.Helper()
 
-	cmd, manager, output := testutils.NewCommandAndManager(t, use)
-	testutils.SeedValidClusterConfig(manager)
+	cleanup := testutils.SetupValidWorkingDir(t)
+	t.Cleanup(cleanup)
 
-	err := handler(cmd, manager, nil)
+	command := commandFactory()
+
+	var output bytes.Buffer
+	command.SetOut(&output)
+	command.SetErr(&output)
+
+	if command.RunE == nil {
+		t.Fatal("command RunE must not be nil")
+	}
+
+	err := command.RunE(command, nil)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -176,35 +190,22 @@ func runLifecycleSuccessCase(
 	assertOutputContains(t, actual, "config loaded")
 
 	if strings.Contains(actual, "stub implementation") {
-		t.Fatalf("unexpected stub output for %s command: %q", use, actual)
+		t.Fatalf("unexpected stub output for %s command: %q", command.Use, actual)
 	}
+
+	return actual
 }
 
 func runLifecycleValidationErrorCase(
 	t *testing.T,
-	use string,
-	handler lifecycleHandlerFunc,
+	commandFactory func() *cobra.Command,
 	expectedSubstrings ...string,
 ) {
 	t.Helper()
 
-	testutils.RunValidationErrorTest(t, use, func(
-		cmd *cobra.Command,
-		manager *configmanager.ConfigManager,
-		args []string,
-	) error {
-		err := handler(cmd, manager, args)
-		if err == nil {
-			t.Fatal("expected error but got nil")
-		}
+	testutils.RunValidationErrorTest(t, commandFactory, expectedSubstrings...)
+}
 
-		message := err.Error()
-		for _, substring := range expectedSubstrings {
-			if !strings.Contains(message, substring) {
-				t.Fatalf("expected error message to contain %q, got %q", substring, message)
-			}
-		}
-
-		return err
-	})
+func newTestRuntime() *runtime.Runtime {
+	return runtime.NewRuntime()
 }

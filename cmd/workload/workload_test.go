@@ -8,11 +8,13 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	helpers "github.com/devantler-tech/ksail-go/cmd/internal/helpers"
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/samber/do/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,21 +57,25 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest,tparallel // Cannot use t.Parallel() because test changes directories using t.Chdir()
+//nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 	commands := []string{"reconcile", "apply", "install"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
-			t.Parallel()
+			var out bytes.Buffer
 
-			cmd, out := cmdtestutils.SetupCommandWithOutput()
-			cmd.Use = commandName
+			tempDir := t.TempDir()
+			cmdtestutils.WriteValidKsailConfig(t, tempDir)
 
-			manager := cmdtestutils.CreateDefaultConfigManager()
-			manager.Writer = out
+			t.Chdir(tempDir)
 
-			err := helpers.HandleConfigLoadRunE(cmd, manager, nil)
+			root := cmd.NewRootCmd("test", "test", "test")
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs([]string{"workload", commandName})
+
+			err := root.Execute()
 			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
 
 			actual := out.String()
@@ -83,9 +89,17 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	t.Parallel()
 
+	runtimeContainer := runtime.New(func(injector do.Injector) error {
+		do.Provide(injector, func(do.Injector) (timer.Timer, error) {
+			return timer.New(), nil
+		})
+
+		return nil
+	})
+
 	var out bytes.Buffer
 
-	command := workload.NewWorkloadCmd()
+	command := workload.NewWorkloadCmd(runtimeContainer)
 	command.SetOut(&out)
 	command.SetErr(&out)
 
@@ -96,14 +110,4 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	if !strings.Contains(output, "Group workload commands under a single namespace") {
 		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
 	}
-}
-
-func TestWorkloadCommandConfiguration(t *testing.T) {
-	t.Parallel()
-
-	command := workload.NewWorkloadCmd()
-
-	require.False(t, command.SilenceErrors)
-	require.False(t, command.SilenceUsage)
-	require.Equal(t, helpers.SuggestionsMinimumDistance, command.SuggestionsMinimumDistance)
 }

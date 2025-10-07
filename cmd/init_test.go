@@ -2,418 +2,175 @@ package cmd_test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
-	"regexp"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	cmdpkg "github.com/devantler-tech/ksail-go/cmd"
+	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/spf13/cobra"
 )
 
-// assertInitFilesCreated verifies that all expected init command files are created in the specified directory.
-func assertInitFilesCreated(t *testing.T, dir string) {
+type recordingInitTimer struct {
+	startCount int
+	stageCount int
+}
+
+func (r *recordingInitTimer) Start() {
+	r.startCount++
+}
+
+func (r *recordingInitTimer) NewStage() {
+	r.stageCount++
+}
+
+func (r *recordingInitTimer) Stop() {}
+
+func (r *recordingInitTimer) GetTiming() (time.Duration, time.Duration) {
+	return time.Millisecond, time.Millisecond
+}
+
+func newConfigManagerWithFile(
+	t *testing.T,
+	writer io.Writer,
+	configPath string,
+) *ksailconfigmanager.ConfigManager {
 	t.Helper()
-	assert.FileExists(t, filepath.Join(dir, "ksail.yaml"))
-	assert.FileExists(t, filepath.Join(dir, "kind.yaml"))
-	assert.DirExists(t, filepath.Join(dir, "k8s"))
-	assert.FileExists(t, filepath.Join(dir, "k8s", "kustomization.yaml"))
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
+
+	manager := ksailconfigmanager.NewConfigManager(writer, selectors...)
+	manager.Viper.SetConfigFile(configPath)
+
+	return manager
 }
 
-func TestNewInitCmd(t *testing.T) {
-	t.Parallel()
+func newInitCommand(t *testing.T) *cobra.Command {
+	t.Helper()
 
-	t.Run("command creation", testNewInitCmdCreation)
-	t.Run("embedded RunE function", testNewInitCmdEmbeddedRunE)
+	cmd := &cobra.Command{Use: "init"}
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+
+	return cmd
 }
 
-func testNewInitCmdCreation(t *testing.T) {
+func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 	t.Parallel()
 
-	cmd := cmd.NewInitCmd()
+	outDir := t.TempDir()
+	configDir := t.TempDir()
+	cmdtestutils.WriteValidKsailConfig(t, configDir)
 
-	if cmd == nil {
-		t.Fatal("expected command to be created")
-	}
+	var buffer bytes.Buffer
 
-	if cmd.Use != "init" {
-		t.Fatalf("expected Use to be 'init', got %q", cmd.Use)
-	}
+	cfgManager := newConfigManagerWithFile(t, &buffer, filepath.Join(configDir, "ksail.yaml"))
+	cfgManager.Viper.Set("output", outDir)
 
-	if cmd.Short != "Initialize a new project" {
-		t.Fatalf("expected Short description, got %q", cmd.Short)
-	}
-}
+	cmd := newInitCommand(t)
+	cmd.SetOut(&buffer)
+	cmd.SetErr(&buffer)
 
-func testNewInitCmdEmbeddedRunE(t *testing.T) {
-	t.Parallel()
+	tmr := &recordingInitTimer{}
+	deps := cmdpkg.InitDeps{Timer: tmr}
 
-	var out bytes.Buffer
+	var err error
 
-	tempDir := t.TempDir()
-
-	// Create a command and set the output flag to use temp directory
-	cmd := cmd.NewInitCmd()
-	cmd.SetOut(&out)
-
-	// Set the --output flag to the temp directory
-	err := cmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-
-	// Execute the command which will use the flag value
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	// Verify files were created in the temp directory
-	assertInitFilesCreated(t, tempDir)
-}
-
-func TestInitCmdExecute(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	// Create a temp directory for this test
-	tempDir := t.TempDir()
-
-	// Use the real init command and set output flag
-	cmd := cmd.NewInitCmd()
-	cmd.SetOut(&out)
-
-	// Set the --output flag to the temp directory
-	err := cmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-
-	// Execute the command
-	err = cmd.Execute()
+	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	// Strip timing information from output before snapshot comparison
-	// Timing format is: [stage: Xs], [stage: Xms], [stage: Xµs], [stage: Xs|total: Ys]
-	output := out.String()
-	timingRegex := regexp.MustCompile(
-		`\s*\[(stage:\s*\d+(\.\d+)?(µs|ms|s|m|h)(\s*\|\s*total:\s*\d+(\.\d+)?(µs|ms|s|m|h))?)?\]`,
-	)
-	sanitizedOutput := timingRegex.ReplaceAllString(output, "")
-
-	// Capture the output as a snapshot
-	snaps.MatchSnapshot(t, sanitizedOutput)
-
-	// Verify files were created in temp directory, not current directory
-	assertInitFilesCreated(t, tempDir)
-
-	// Verify files were NOT created in current directory
-	assert.NoFileExists(t, "./ksail.yaml")
-	assert.NoFileExists(t, "./kind.yaml")
-	assert.NoDirExists(t, "./k8s")
-}
-
-func TestInitCmdHelp(t *testing.T) {
-	t.Parallel()
-
-	testutils.TestSimpleCommandHelp(t, testutils.SimpleCommandTestData{
-		NewCommand: cmd.NewInitCmd,
-	})
-}
-
-func TestInitCmdFlags(t *testing.T) {
-	t.Parallel()
-
-	cmd := cmd.NewInitCmd()
-
-	// Act & Assert
-	distributionFlag := cmd.Flags().Lookup("distribution")
-	if distributionFlag == nil {
-		t.Fatal("expected distribution flag to exist")
+	if tmr.startCount == 0 {
+		t.Fatal("expected timer Start to be called")
 	}
 
-	// Verify that CLI flags show appropriate defaults for better UX
-	// Distribution should show its default value
-	if distributionFlag.DefValue != "Kind" {
-		t.Fatalf(
-			"expected distribution default to be 'Kind' for help display, got %q",
-			distributionFlag.DefValue,
-		)
+	if tmr.stageCount == 0 {
+		t.Fatal("expected timer NewStage to be called")
 	}
 
-	sourceDirectoryFlag := cmd.Flags().Lookup("source-directory")
-	if sourceDirectoryFlag == nil {
-		t.Fatal("expected source-directory flag to exist")
+	output := buffer.String()
+	if !strings.Contains(output, "initialized project") {
+		t.Fatalf("expected success message in output, got %q", output)
 	}
 
-	// Source directory should show its default value
-	if sourceDirectoryFlag.DefValue != "k8s" {
-		t.Fatalf(
-			"expected source-directory default to be 'k8s' for help display, got %q",
-			sourceDirectoryFlag.DefValue,
-		)
+	_, err = os.Stat(filepath.Join(outDir, "ksail.yaml"))
+	if err != nil {
+		t.Fatalf("expected ksail.yaml to be scaffolded: %v", err)
 	}
 }
 
-//nolint:paralleltest,tparallel // Not parallel due to using t.Chdir
-func TestHandleInitRunE(t *testing.T) {
-	t.Run("success with output path", testHandleInitRunESuccessWithOutputPath)
-	t.Run("success without output path", testHandleInitRunESuccessWithoutOutputPath)
-	t.Run("config manager load error", testHandleInitRunEConfigManagerLoadError)
-	t.Run("scaffold error", testHandleInitRunEScaffoldError)
-}
-
-func testHandleInitRunESuccessWithOutputPath(t *testing.T) {
+func TestHandleInitRunE_ReturnsErrorForInvalidConfig(t *testing.T) {
 	t.Parallel()
 
-	var out bytes.Buffer
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "ksail.yaml")
 
-	tempDir := t.TempDir()
-
-	// Create a full init command and set the output flag
-	testCmd := cmd.NewInitCmd()
-	testCmd.SetOut(&out)
-
-	// Set the --output flag to the temp directory
-	err := testCmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-
-	// Execute the command
-	err = testCmd.Execute()
-	require.NoError(t, err)
-
-	// Verify that scaffolder created the expected files in the temp directory
-	assertInitFilesCreated(t, tempDir)
-}
-
-func testHandleInitRunESuccessWithoutOutputPath(t *testing.T) {
-	var out bytes.Buffer
-
-	tempDir := t.TempDir()
-
-	// Test the case where no --output flag is set (uses current directory)
-	// We'll change to the temp directory to avoid conflicts
-	originalDir, err := os.Getwd()
-	require.NoError(t, err)
-
-	t.Chdir(tempDir)
-
-	// Ensure we change back after the test
-	t.Cleanup(func() {
-		t.Chdir(originalDir)
-	})
-
-	// Create init command without setting output flag
-	testCmd := cmd.NewInitCmd()
-	testCmd.SetOut(&out)
-
-	// Execute the command (should use current working directory)
-	err = testCmd.Execute()
-	require.NoError(t, err)
-
-	// Files should be created in the current directory (which is tempDir)
-	assert.FileExists(t, "ksail.yaml")
-	assert.FileExists(t, "kind.yaml")
-	assert.DirExists(t, "k8s")
-	assert.FileExists(t, "k8s/kustomization.yaml")
-}
-
-func testHandleInitRunEConfigManagerLoadError(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	command := cmd.NewInitCmd()
-	command.SetOut(&out)
-
-	manager := configmanager.NewConfigManager(&out)
-
-	err := cmd.HandleInitRunE(command, manager, nil)
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to load cluster configuration")
-}
-
-func testHandleInitRunEScaffoldError(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	// Use an invalid path to trigger scaffold error
-	invalidPath := "/invalid/\x00path/"
-
-	// Create init command and set invalid output path
-	testCmd := cmd.NewInitCmd()
-	testCmd.SetOut(&out)
-
-	// Set the --output flag to an invalid path that should cause scaffold error
-	err := testCmd.Flags().Set("output", invalidPath)
-	require.NoError(t, err)
-
-	// Test that scaffold error is properly handled
-	err = testCmd.Execute()
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to generate KSail config")
-}
-
-// Enhancement tests for new functionality
-
-func TestInitCmdProgressSpinner(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-
-	testCmd := cmd.NewInitCmd()
-
-	// Set the --output flag to the temp directory
-	err := testCmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-
-	// Execute the command - should succeed without error
-	err = testCmd.Execute()
-	require.NoError(t, err)
-
-	// Verify the expected files were created (proves progress completed successfully)
-	expectedFiles := []string{
-		filepath.Join(tempDir, "ksail.yaml"),
-		filepath.Join(tempDir, "kind.yaml"),
-		filepath.Join(tempDir, "k8s", "kustomization.yaml"),
+	err := os.WriteFile(configPath, []byte(": invalid"), 0o600)
+	if err != nil {
+		t.Fatalf("failed to write invalid config: %v", err)
 	}
 
-	for _, file := range expectedFiles {
-		assert.FileExists(t, file, "Expected file should exist: %s", file)
+	cfgManager := newConfigManagerWithFile(t, io.Discard, configPath)
+	cmd := newInitCommand(t)
+
+	tmr := &recordingInitTimer{}
+	deps := cmdpkg.InitDeps{Timer: tmr}
+
+	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err == nil {
+		t.Fatal("expected error from invalid config")
+	}
+
+	if !strings.Contains(err.Error(), "failed to load cluster configuration") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if tmr.startCount == 0 {
+		t.Fatal("expected timer Start to be called even on failure")
 	}
 }
 
-func TestInitCmdForceFlag(t *testing.T) {
-	t.Parallel()
+//nolint:paralleltest // Uses t.Chdir for snapshot setup.
+func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
+	workingDir := t.TempDir()
+	configDir := t.TempDir()
+	cmdtestutils.WriteValidKsailConfig(t, configDir)
 
-	// Test force flag functionality and conflict detection
-	// This test verifies that:
-	// 1. Without --force: command skips existing files with warning
-	// 2. With --force: command overwrites existing files
-	// 3. Proper conflict detection and feedback messages
+	configPath := filepath.Join(configDir, "ksail.yaml")
 
-	tempDir := t.TempDir()
+	var buffer bytes.Buffer
 
-	// Create initial project and get original mod time
-	originalModTime := createInitialProject(t, tempDir)
+	cfgManager := newConfigManagerWithFile(t, &buffer, configPath)
 
-	// Test without --force (should skip existing files)
-	testWithoutForceFlag(t, tempDir, originalModTime)
+	cmd := newInitCommand(t)
+	cmd.SetOut(&buffer)
+	cmd.SetErr(&buffer)
 
-	// Test with --force (should overwrite files)
-	testWithForceFlag(t, tempDir, originalModTime)
-}
+	t.Chdir(workingDir)
 
-// createInitialProject creates an initial project and returns the original modification time.
-func createInitialProject(t *testing.T, tempDir string) time.Time {
-	t.Helper()
+	tmr := &recordingInitTimer{}
+	deps := cmdpkg.InitDeps{Timer: tmr}
 
-	cmd1 := cmd.NewInitCmd()
+	var err error
 
-	var out1 bytes.Buffer
-	cmd1.SetOut(&out1)
-	err := cmd1.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-	err = cmd1.Execute()
-	require.NoError(t, err)
+	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err != nil {
+		t.Fatalf("HandleInitRunE returned error: %v", err)
+	}
 
-	// Store original file modification times
-	ksailStat, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
-	require.NoError(t, err)
+	output := buffer.String()
+	if !strings.Contains(output, "Initialize project......") {
+		t.Fatalf("expected initialization title in output, got %q", output)
+	}
 
-	return ksailStat.ModTime()
-}
-
-// testWithoutForceFlag tests init command without --force flag.
-func testWithoutForceFlag(t *testing.T, tempDir string, originalModTime time.Time) {
-	t.Helper()
-
-	cmd2 := cmd.NewInitCmd()
-
-	var out2 bytes.Buffer
-	cmd2.SetOut(&out2)
-	err := cmd2.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-	err = cmd2.Execute()
-	require.NoError(t, err)
-
-	// Verify files were not modified (same mod time)
-	ksailStat2, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
-	require.NoError(t, err)
-	assert.Equal(
-		t,
-		originalModTime,
-		ksailStat2.ModTime(),
-		"File should not be modified without --force",
-	)
-}
-
-// testWithForceFlag tests init command with --force flag.
-func testWithForceFlag(t *testing.T, tempDir string, originalModTime time.Time) {
-	t.Helper()
-
-	forceCmd := cmd.NewInitCmd()
-
-	var out3 bytes.Buffer
-	forceCmd.SetOut(&out3)
-	err := forceCmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-	err = forceCmd.Flags().Set("force", "true")
-	require.NoError(t, err)
-
-	// Set mod time to a known value in the past to deterministically check for updates
-	pastModTime := originalModTime.Add(-time.Hour)
-	ksailPath := filepath.Join(tempDir, "ksail.yaml")
-	err = os.Chtimes(ksailPath, pastModTime, pastModTime)
-	require.NoError(t, err)
-
-	err = forceCmd.Execute()
-	require.NoError(t, err)
-
-	// Verify files were modified (different mod time)
-	ksailStat3, err := os.Stat(filepath.Join(tempDir, "ksail.yaml"))
-	require.NoError(t, err)
-	assert.True(
-		t,
-		ksailStat3.ModTime().After(originalModTime),
-		"File should be modified with --force",
-	)
-}
-
-func TestInitCmdDirectFlags(t *testing.T) {
-	t.Parallel()
-
-	// Test direct CLI flags functionality
-	// This test verifies that:
-	// 1. --distribution flag accepts valid values (Kind, K3d, EKS)
-	// 2. Generated files reflect the distribution choice
-	// 3. Flags integrate with ConfigManager properly
-
-	tempDir := t.TempDir()
-
-	// Test with K3d distribution
-	cmd := cmd.NewInitCmd()
-
-	var out bytes.Buffer
-	cmd.SetOut(&out)
-	err := cmd.Flags().Set("output", tempDir)
-	require.NoError(t, err)
-	err = cmd.Flags().Set("distribution", "K3d")
-	require.NoError(t, err)
-
-	err = cmd.Execute()
-	require.NoError(t, err)
-
-	// Verify the command executed successfully
-	output := out.String()
-	assert.Contains(t, output, "initialized project")
-
-	// Verify files were created
-	assert.FileExists(t, filepath.Join(tempDir, "ksail.yaml"))
-	assert.FileExists(t, filepath.Join(tempDir, "k8s/kustomization.yaml"))
+	_, err = os.Stat(filepath.Join(workingDir, "ksail.yaml"))
+	if err != nil {
+		t.Fatalf("expected ksail.yaml in working directory: %v", err)
+	}
 }

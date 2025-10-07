@@ -2,6 +2,9 @@ package notify_test
 
 import (
 	"bytes"
+	"errors"
+	"io"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -320,5 +323,47 @@ func assertFormattedTiming(
 	result := notify.FormatTiming(total, stage, multiStage)
 	if result != expected {
 		t.Errorf("Expected %q, got %q", expected, result)
+	}
+}
+
+type failingWriter struct{}
+
+var errNotifyWriterFailed = errors.New("write failed")
+
+func (f failingWriter) Write(_ []byte) (int, error) {
+	return 0, errNotifyWriterFailed
+}
+
+func TestWriteMessage_HandleNotifyError(t *testing.T) {
+	t.Parallel()
+
+	origStderr := os.Stderr
+
+	pipeReader, pipeWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+
+	defer func() { _ = pipeReader.Close() }()
+
+	os.Stderr = pipeWriter
+
+	defer func() { os.Stderr = origStderr }()
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "should fallback",
+		Writer:  failingWriter{},
+	})
+
+	_ = pipeWriter.Close()
+
+	data, readErr := io.ReadAll(pipeReader)
+	if readErr != nil {
+		t.Fatalf("failed to read stderr: %v", readErr)
+	}
+
+	if !strings.Contains(string(data), "notify: failed to print message") {
+		t.Fatalf("expected error log, got %q", string(data))
 	}
 }

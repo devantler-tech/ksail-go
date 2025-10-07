@@ -151,3 +151,20 @@ servers: 3`,
 		scenarios,
 	)
 }
+
+func TestK3dConfigManagerLoadConfig_ReusesExistingConfig(t *testing.T) {
+	t.Parallel()
+
+	testutils.AssertConfigManagerCaches[v1alpha5.SimpleConfig](
+		t,
+		"k3d.yaml",
+		`apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: cached
+`,
+		func(configPath string) configmanager.ConfigManager[v1alpha5.SimpleConfig] {
+			return k3d.NewConfigManager(configPath)
+		},
+	)
+}

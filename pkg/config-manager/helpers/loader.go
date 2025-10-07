@@ -147,3 +147,28 @@ func ValidateConfig[T any](config T, validatorInstance validator.Validator[T]) e
 
 	return nil
 }
+
+// LoadAndValidateConfig loads a configuration from disk and validates it using the provided validator.
+// This helper combines LoadConfigFromFile and ValidateConfig to reduce duplication across config managers.
+// It returns the loaded configuration or an error if loading or validation fails.
+func LoadAndValidateConfig[T any](
+	configPath string,
+	createDefault func() T,
+	validatorInstance validator.Validator[T],
+) (T, error) {
+	config, err := LoadConfigFromFile(configPath, createDefault)
+	if err != nil {
+		var zero T
+
+		return zero, fmt.Errorf("failed to load config: %w", err)
+	}
+
+	err = ValidateConfig(config, validatorInstance)
+	if err != nil {
+		var zero T
+
+		return zero, fmt.Errorf("failed to validate config: %w", err)
+	}
+
+	return config, nil
+}

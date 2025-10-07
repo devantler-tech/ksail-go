@@ -28,8 +28,8 @@ jobs:
     strategy:
       matrix:
         init-args:
-          - "init --distribution Kind"
-          - "init --distribution K3d"
+          - "--distribution Kind"
+          - "--distribution K3d"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -48,16 +48,37 @@ jobs:
       - name: 🏗️ Build application
         run: go build -o ksail .
 
-      - name: 🧪 Run system test
+      - name: 🧪 ksail init ${{ matrix.init-args }}"
         run: |
-          ./ksail ${{ matrix.init-args }}
-          ./ksail cluster up
+          ./ksail init ${{ matrix.init-args }}
+
+      - name: 🧪 ksail cluster create
+        run: |
+          ./ksail cluster create
+
+      - name: 🧪 ksail cluster status
+        run: |
           ./ksail cluster status
+
+      - name: 🧪 ksail cluster list
+        run: |
           ./ksail cluster list
+
+      - name: 🧪 ksail cluster start
+        run: |
           ./ksail cluster start
+
+      - name: 🧪 ksail cluster stop
+        run: |
           ./ksail cluster stop
+
+      - name: 🧪 ksail workload reconcile
+        run: |
           ./ksail workload reconcile
-          ./ksail cluster down
+
+      - name: 🧪 ksail cluster delete
+        run: |
+          ./ksail cluster delete
 
       - name: 🧹 Cleanup
         run: |

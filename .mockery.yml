@@ -20,6 +20,7 @@ packages:
       pkgname: clusterprovisioner
     interfaces:
       ClusterProvisioner:
+      Factory:
   github.com/devantler-tech/ksail-go/pkg/validator:
     config:
       recursive: false

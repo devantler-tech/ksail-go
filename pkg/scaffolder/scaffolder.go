@@ -251,7 +251,7 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 	}
 
 	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
+		Type:    notify.GenerateType,
 		Content: "%s '%s'",
 		Args:    []any{action, displayName},
 		Writer:  s.Writer,
@@ -379,7 +379,7 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			Gen:         s.KustomizationGenerator,
 			Model:       &kustomization,
 			Opts:        opts,
-			DisplayName: "k8s/kustomization.yaml",
+			DisplayName: filepath.Join(s.KSailConfig.Spec.SourceDirectory, "kustomization.yaml"),
 			Force:       force,
 			WrapErr: func(err error) error {
 				return fmt.Errorf("%w: %w", ErrKustomizationGeneration, err)

@@ -12,6 +12,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
@@ -48,45 +49,86 @@ func NewConfigManager(
 	return manager
 }
 
+// NewCommandConfigManager constructs a ConfigManager bound to the provided Cobra command.
+// It registers the supplied field selectors, binds flags from struct fields, and writes output
+// to the command's standard output writer.
+func NewCommandConfigManager(
+	cmd *cobra.Command,
+	selectors []FieldSelector[v1alpha1.Cluster],
+) *ConfigManager {
+	manager := NewConfigManager(cmd.OutOrStdout(), selectors...)
+	manager.AddFlagsFromFields(cmd)
+
+	return manager
+}
+
 // LoadConfig loads the configuration from files and environment variables.
 // Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
-func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
-	m.notifyLoadingStart()
+func (m *ConfigManager) LoadConfig(tmr timer.Timer) error {
+	return m.loadConfigWithOptions(tmr, false)
+}
 
-	if m.configLoaded {
-		m.notifyConfigReused()
+// LoadConfigSilent loads the configuration without outputting notifications.
+// Returns the previously loaded config if already loaded.
+func (m *ConfigManager) LoadConfigSilent() error {
+	return m.loadConfigWithOptions(nil, true)
+}
 
-		return m.Config, nil
+// GetConfig implements configmanager.ConfigManager by returning the loaded cluster configuration.
+func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
+	return m.Config
+}
+
+// loadConfigWithOptions is the internal implementation with silent option.
+func (m *ConfigManager) loadConfigWithOptions(
+	tmr timer.Timer,
+	silent bool,
+) error {
+	if !silent {
+		m.notifyLoadingStart()
 	}
 
-	m.notifyLoadingConfig()
+	if m.configLoaded {
+		if !silent {
+			m.notifyConfigReused()
+		}
+
+		return nil
+	}
+
+	if !silent {
+		m.notifyLoadingConfig()
+	}
 
 	// Use native Viper API to read configuration
-	err := m.readConfig()
+	err := m.readConfig(silent)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Unmarshal and apply defaults
 	err = m.unmarshalAndApplyDefaults()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = m.validateConfig()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	m.notifyLoadingComplete(tmr)
+	if !silent {
+		m.notifyLoadingComplete(tmr)
+	}
+
 	m.configLoaded = true
 
-	return m.Config, nil
+	return nil
 }
 
-func (m *ConfigManager) readConfig() error {
+func (m *ConfigManager) readConfig(silent bool) error {
 	err := m.Viper.ReadInConfig()
 	if err != nil {
 		var configFileNotFoundError viper.ConfigFileNotFoundError
@@ -94,8 +136,10 @@ func (m *ConfigManager) readConfig() error {
 			return fmt.Errorf("failed to read config file: %w", err)
 		}
 
-		m.notifyUsingDefaults()
-	} else {
+		if !silent {
+			m.notifyUsingDefaults()
+		}
+	} else if !silent {
 		m.notifyConfigFound()
 	}
 
