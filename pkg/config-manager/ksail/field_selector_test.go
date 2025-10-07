@@ -527,3 +527,66 @@ func testFieldSelector(
 	assert.Equal(t, "Test description", fieldSelector.Description)
 	assert.Equal(t, "default-value", fieldSelector.DefaultValue)
 }
+
+func TestAddFlagFromFieldUsesOptionalDescription(t *testing.T) {
+	t.Parallel()
+
+	selector := configmanager.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+		v1alpha1.DistributionKind,
+	)
+
+	assert.Empty(t, selector.Description)
+
+	withDescription := configmanager.AddFlagFromField(
+		func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+		v1alpha1.DistributionKind,
+		"Distribution help",
+	)
+
+	assert.Equal(t, "Distribution help", withDescription.Description)
+}
+
+func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
+	t.Parallel()
+
+	selectors := configmanager.DefaultClusterFieldSelectors()
+	require.Len(t, selectors, 2)
+
+	cluster := v1alpha1.NewCluster()
+
+	for _, selector := range selectors {
+		field := selector.Selector(cluster)
+
+		if distribution, ok := field.(*v1alpha1.Distribution); ok {
+			assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
+
+			*distribution = v1alpha1.DistributionK3d
+			assert.Equal(t, v1alpha1.DistributionK3d, *distribution)
+
+			continue
+		}
+
+		pathPtr, ok := field.(*string)
+		require.True(t, ok, "selector did not return supported pointer type")
+		assert.Equal(t, "kind.yaml", selector.DefaultValue)
+
+		*pathPtr = "custom.yaml"
+		assert.Equal(t, "custom.yaml", *pathPtr)
+	}
+}
+
+func TestDefaultContextFieldSelector(t *testing.T) {
+	t.Parallel()
+
+	selector := configmanager.DefaultContextFieldSelector()
+	cluster := v1alpha1.NewCluster()
+
+	ptr, ok := selector.Selector(cluster).(*string)
+	require.True(t, ok, "expected selector to return *string")
+	assert.Equal(t, "kind-kind", selector.DefaultValue)
+
+	*ptr = "custom"
+	assert.Equal(t, "custom", cluster.Spec.Connection.Context)
+	assert.NotEmpty(t, selector.Description)
+}

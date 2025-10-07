@@ -1,8 +1,6 @@
 package kind_test
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -153,38 +151,15 @@ nodes:
 func TestKindConfigManagerLoadConfig_ReusesExistingConfig(t *testing.T) {
 	t.Parallel()
 
-	dir := t.TempDir()
-	configPath := filepath.Join(dir, "kind.yaml")
-	configContent := `apiVersion: kind.x-k8s.io/v1alpha4
+	testutils.AssertConfigManagerCaches[v1alpha4.Cluster](
+		t,
+		"kind.yaml",
+		`apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: cached
-`
-
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	if err != nil {
-		t.Fatalf("failed to write config: %v", err)
-	}
-
-	manager := kind.NewConfigManager(configPath)
-
-	err = manager.LoadConfig(nil)
-	if err != nil {
-		t.Fatalf("initial LoadConfig failed: %v", err)
-	}
-
-	first := manager.GetConfig()
-
-	err = os.WriteFile(configPath, []byte("invalid: yaml: ["), 0o600)
-	if err != nil {
-		t.Fatalf("failed to overwrite config: %v", err)
-	}
-
-	err = manager.LoadConfig(nil)
-	if err != nil {
-		t.Fatalf("expected cached load to succeed, got %v", err)
-	}
-
-	if manager.GetConfig() != first {
-		t.Fatal("expected cached configuration to be reused")
-	}
+`,
+		func(configPath string) configmanager.ConfigManager[v1alpha4.Cluster] {
+			return kind.NewConfigManager(configPath)
+		},
+	)
 }

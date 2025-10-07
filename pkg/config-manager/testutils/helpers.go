@@ -108,3 +108,36 @@ func setupTestConfigPath[T any](t *testing.T, scenario TestScenario[T]) string {
 		return "non-existent-config.yaml"
 	}
 }
+
+// AssertConfigManagerCaches verifies that a config manager reuses a previously loaded configuration
+// when the underlying file becomes invalid after the initial load.
+func AssertConfigManagerCaches[T any](
+	t *testing.T,
+	fileName string,
+	configContent string,
+	newManager func(configPath string) configmanager.ConfigManager[T],
+) {
+	t.Helper()
+
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, fileName)
+
+	err := os.WriteFile(configPath, []byte(configContent), testFilePermissions)
+	require.NoError(t, err, "failed to write config")
+
+	manager := newManager(configPath)
+
+	err = manager.LoadConfig(nil)
+	require.NoError(t, err, "initial LoadConfig failed")
+
+	first := manager.GetConfig()
+	require.NotNil(t, first, "expected config to be loaded")
+
+	err = os.WriteFile(configPath, []byte("invalid: yaml: ["), testFilePermissions)
+	require.NoError(t, err, "failed to overwrite config")
+
+	err = manager.LoadConfig(nil)
+	require.NoError(t, err, "expected cached load to succeed")
+
+	require.Same(t, first, manager.GetConfig(), "expected cached configuration to be reused")
+}
