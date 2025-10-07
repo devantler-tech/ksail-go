@@ -11,6 +11,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
+func newCreateLifecycleConfig() shared.LifecycleConfig {
+	return shared.LifecycleConfig{
+		TitleEmoji:         "🚀",
+		TitleContent:       "Create cluster...",
+		ActivityContent:    "creating cluster",
+		SuccessContent:     "cluster created",
+		ErrorMessagePrefix: "failed to create cluster",
+		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Create(ctx, clusterName)
+		},
+	}
+}
+
 // NewCreateCmd wires the cluster create command using the shared runtime container.
 func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,18 +39,7 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	config := shared.LifecycleConfig{
-		TitleEmoji:         "🚀",
-		TitleContent:       "Create cluster...",
-		ActivityContent:    "creating cluster",
-		SuccessContent:     "cluster created",
-		ErrorMessagePrefix: "failed to create cluster",
-		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-			return provisioner.Create(ctx, clusterName)
-		},
-	}
-
-	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, config)
+	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, newCreateLifecycleConfig())
 
 	return cmd
 }
@@ -62,16 +65,5 @@ func HandleCreateRunE(
 		Factory: deps.Factory,
 	}
 
-	config := shared.LifecycleConfig{
-		TitleEmoji:         "🚀",
-		TitleContent:       "Create cluster...",
-		ActivityContent:    "creating cluster",
-		SuccessContent:     "cluster created",
-		ErrorMessagePrefix: "failed to create cluster",
-		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-			return provisioner.Create(ctx, clusterName)
-		},
-	}
-
-	return shared.HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, config)
+	return shared.HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, newCreateLifecycleConfig())
 }

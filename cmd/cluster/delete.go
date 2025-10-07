@@ -11,6 +11,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newDeleteLifecycleConfig creates the lifecycle configuration for cluster deletion.
+func newDeleteLifecycleConfig() shared.LifecycleConfig {
+	return shared.LifecycleConfig{
+		TitleEmoji:         "🗑️",
+		TitleContent:       "Delete cluster...",
+		ActivityContent:    "deleting cluster",
+		SuccessContent:     "cluster deleted",
+		ErrorMessagePrefix: "failed to delete cluster",
+		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Delete(ctx, clusterName)
+		},
+	}
+}
+
 // NewDeleteCmd creates and returns the delete command.
 func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,18 +39,7 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	config := shared.LifecycleConfig{
-		TitleEmoji:         "🗑️",
-		TitleContent:       "Delete cluster...",
-		ActivityContent:    "deleting cluster",
-		SuccessContent:     "cluster deleted",
-		ErrorMessagePrefix: "failed to delete cluster",
-		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-			return provisioner.Delete(ctx, clusterName)
-		},
-	}
-
-	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, config)
+	cmd.RunE = shared.NewLifecycleCommandWrapper(runtimeContainer, cfgManager, newDeleteLifecycleConfig())
 
 	return cmd
 }
@@ -62,16 +65,5 @@ func HandleDeleteRunE(
 		Factory: deps.Factory,
 	}
 
-	config := shared.LifecycleConfig{
-		TitleEmoji:         "🗑️",
-		TitleContent:       "Delete cluster...",
-		ActivityContent:    "deleting cluster",
-		SuccessContent:     "cluster deleted",
-		ErrorMessagePrefix: "failed to delete cluster",
-		Action: func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-			return provisioner.Delete(ctx, clusterName)
-		},
-	}
-
-	return shared.HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, config)
+	return shared.HandleLifecycleRunE(cmd, cfgManager, lifecycleDeps, newDeleteLifecycleConfig())
 }
