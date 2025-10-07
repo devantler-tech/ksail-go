@@ -288,6 +288,7 @@ func TestHandleCreateRunE_Success(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
 func TestNewCreateCmd_RunESuccess(t *testing.T) {
 	var injectedTimer *recordingTimer
 

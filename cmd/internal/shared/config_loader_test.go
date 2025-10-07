@@ -78,6 +78,7 @@ func TestLoadConfigReturnsWrappedError(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
 func TestNewConfigLoaderRunESuccess(t *testing.T) {
 	dir := t.TempDir()
 	writeConfig(t, filepath.Join(dir, "ksail.yaml"), validConfigYAML)

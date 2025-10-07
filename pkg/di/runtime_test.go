@@ -21,7 +21,6 @@ func expectResolutionError(t *testing.T, resolve func(do.Injector) error, failur
 	})
 
 	err := resolve(injector)
-
 	if err == nil {
 		t.Fatal(failureMessage)
 	}
