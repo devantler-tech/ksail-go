@@ -59,7 +59,8 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 
 //nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
-	commands := []string{"reconcile", "apply", "install"}
+	// Note: "apply" is excluded as it's a full kubectl wrapper, not a config-only placeholder
+	commands := []string{"reconcile", "install"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
