@@ -20,7 +20,8 @@
     "**/*.svg",
     "**/*.zip",
     "**/*.bin",
-    "**/*mocks*.go"
+    "**/*mocks*.go",
+    "**/*_test.go"
   ],
   "reporters": ["html", "markdown"],
   "threshold": 0
