@@ -3,7 +3,7 @@ module github.com/devantler-tech/ksail-go
 go 1.24.0
 
 require (
-	github.com/docker/docker v28.5.0+incompatible
+	github.com/docker/docker v28.5.1+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
 	github.com/gkampitakis/go-snaps v0.5.15
@@ -11,6 +11,7 @@ require (
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/mittwald/go-helm-client v0.12.18
 	github.com/opencontainers/image-spec v1.1.1
+	github.com/samber/do/v2 v2.0.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -143,7 +144,6 @@ require (
 	github.com/rubenv/sql-migrate v1.8.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
-	github.com/samber/do/v2 v2.0.0 // indirect
 	github.com/samber/go-type-to-string v1.8.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
