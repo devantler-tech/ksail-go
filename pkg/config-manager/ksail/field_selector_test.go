@@ -315,9 +315,9 @@ func TestAddFlagFromFieldEnumTypes(t *testing.T) {
 			expectedType: "v1alpha1.Distribution",
 		},
 		{
-			name:         "ReconciliationTool enum",
-			defaultValue: v1alpha1.ReconciliationToolFlux,
-			expectedType: "v1alpha1.ReconciliationTool",
+			name:         "GitOpsEngine enum",
+			defaultValue: v1alpha1.GitOpsEngineNone,
+			expectedType: "v1alpha1.GitOpsEngine",
 		},
 		{
 			name:         "CNI enum",
@@ -415,8 +415,8 @@ func TestFieldSelectorSpecBasicFields(t *testing.T) {
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 		},
 		{
-			name:     "Spec.ReconciliationTool",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
+			name:     "Spec.GitOpsEngine",
+			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
 		},
 	}
 
