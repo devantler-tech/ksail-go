@@ -30,6 +30,8 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "namespace", args: []string{"workload", "--help"}},
 		{name: "reconcile", args: []string{"workload", "reconcile", "--help"}},
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
+		{name: "create", args: []string{"workload", "create", "--help"}},
+		{name: "delete", args: []string{"workload", "delete", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
 		{name: "install", args: []string{"workload", "install", "--help"}},
 	}

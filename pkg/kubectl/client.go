@@ -6,6 +6,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
+	"k8s.io/kubectl/pkg/cmd/create"
+	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
@@ -66,4 +68,51 @@ func (c *Client) CreateEditCommand(kubeConfigPath string) *cobra.Command {
 	editCmd.Long = "Edit a Kubernetes resource from the default editor."
 
 	return editCmd
+}
+
+// CreateDeleteCommand creates a kubectl delete command with all its flags and behavior.
+func (c *Client) CreateDeleteCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the delete command using kubectl's NewCmdDelete
+	deleteCmd := delete.NewCmdDelete(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	deleteCmd.Use = "delete"
+	deleteCmd.Short = "Delete resources"
+	deleteCmd.Long = "Delete Kubernetes resources by file names, stdin, resources and names, " +
+		"or by resources and label selector."
+
+	return deleteCmd
+}
+
+// CreateCreateCommand creates a kubectl create command with all its flags and behavior.
+func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the create command using kubectl's NewCmdCreate
+	createCmd := create.NewCmdCreate(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	createCmd.Use = "create"
+	createCmd.Short = "Create resources"
+	createCmd.Long = "Create Kubernetes resources from files or stdin."
+
+	return createCmd
 }
