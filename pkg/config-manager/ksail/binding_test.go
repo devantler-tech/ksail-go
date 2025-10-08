@@ -84,14 +84,14 @@ func getBasicFieldTests() []struct {
 			expectedType: "string",
 		},
 		{
-			name: "ReconciliationTool field",
+			name: "GitOpsEngine field",
 			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.ReconciliationTool },
-				v1alpha1.ReconciliationToolFlux,
-				"Reconciliation tool",
+				func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
+				v1alpha1.GitOpsEngineNone,
+				"GitOps engine",
 			),
-			expectedFlag: "reconciliation-tool",
-			expectedType: "ReconciliationTool",
+			expectedFlag: "gitops-engine",
+			expectedType: "GitOpsEngine",
 		},
 	}
 }
@@ -298,9 +298,9 @@ func TestGenerateFlagName(t *testing.T) {
 		},
 		{"SourceDirectory field", &manager.Config.Spec.SourceDirectory, "source-directory"},
 		{
-			"ReconciliationTool field",
-			&manager.Config.Spec.ReconciliationTool,
-			"reconciliation-tool",
+			"GitOpsEngine field",
+			&manager.Config.Spec.GitOpsEngine,
+			"gitops-engine",
 		},
 		{"Context field", &manager.Config.Spec.Connection.Context, "context"},
 		{"Kubeconfig field", &manager.Config.Spec.Connection.Kubeconfig, "kubeconfig"},
@@ -372,9 +372,9 @@ func TestGenerateShorthand(t *testing.T) {
 			expected: "s",
 		},
 		{
-			name:     "reconciliation-tool flag",
-			flagName: "reconciliation-tool",
-			expected: "r",
+			name:     "gitops-engine flag",
+			flagName: "gitops-engine",
+			expected: "g",
 		},
 		{
 			name:     "distribution-config flag (no shorthand)",
