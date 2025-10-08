@@ -412,5 +412,3 @@ func testCmdFactoryError(
 		t.Fatalf("expected factory resolution error message, got %q", err)
 	}
 }
-
-
