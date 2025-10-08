@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
+	"k8s.io/kubectl/pkg/cmd/get"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -42,4 +43,27 @@ func (c *Client) CreateApplyCommand(kubeConfigPath string) *cobra.Command {
 	applyCmd.Long = "Apply local Kubernetes manifests to your cluster."
 
 	return applyCmd
+}
+
+// CreateGetCommand creates a kubectl get command with all its flags and behavior.
+func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the get command using kubectl's NewCmdGet
+	getCmd := get.NewCmdGet("ksail", factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	getCmd.Use = "get"
+	getCmd.Short = "Get resources"
+	getCmd.Long = "Display one or many Kubernetes resources from your cluster."
+
+	return getCmd
 }

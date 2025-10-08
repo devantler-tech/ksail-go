@@ -84,3 +84,68 @@ func TestCreateApplyCommandHasFlags(t *testing.T) {
 	require.NotNil(t, flags.Lookup("server-side"), "expected --server-side flag to be present")
 	require.NotNil(t, flags.Lookup("prune"), "expected --prune flag to be present")
 }
+
+func TestCreateGetCommand(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		kubeConfigPath string
+	}{
+		{
+			name:           "with kubeconfig path",
+			kubeConfigPath: "/path/to/kubeconfig",
+		},
+		{
+			name:           "without kubeconfig path",
+			kubeConfigPath: "",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ioStreams := createTestIOStreams()
+
+			client := kubectl.NewClient(ioStreams)
+			cmd := client.CreateGetCommand(testCase.kubeConfigPath)
+
+			require.NotNil(t, cmd, "expected get command to be created")
+			require.Equal(t, "get", cmd.Use, "expected command Use to be 'get'")
+			require.Equal(t, "Get resources", cmd.Short, "expected command Short description")
+			require.Equal(
+				t,
+				"Display one or many Kubernetes resources from your cluster.",
+				cmd.Long,
+				"expected command Long description",
+			)
+		})
+	}
+}
+
+func TestCreateGetCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateGetCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl get flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
+	require.NotNil(t, flags.Lookup("watch"), "expected --watch flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("all-namespaces"),
+		"expected --all-namespaces flag to be present",
+	)
+	require.NotNil(
+		t,
+		flags.Lookup("field-selector"),
+		"expected --field-selector flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
+	require.NotNil(t, flags.Lookup("show-labels"), "expected --show-labels flag to be present")
+}
