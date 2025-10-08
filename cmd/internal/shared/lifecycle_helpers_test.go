@@ -46,7 +46,6 @@ type stubFactory struct {
 	callCount          int
 }
 
-//nolint:ireturn // Test double must return interface type.
 func (s *stubFactory) Create(
 	_ context.Context,
 	_ *v1alpha1.Cluster,
