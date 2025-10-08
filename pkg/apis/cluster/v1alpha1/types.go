@@ -163,17 +163,14 @@ const (
 type GitOpsEngine string
 
 const (
-	// GitOpsEngineFlux is the Flux GitOps engine.
-	GitOpsEngineFlux GitOpsEngine = "Flux"
-	// GitOpsEngineArgoCD is the ArgoCD GitOps engine.
-	GitOpsEngineArgoCD GitOpsEngine = "ArgoCD"
+	// GitOpsEngineNone is no GitOps engine.
+	GitOpsEngineNone GitOpsEngine = "None"
 )
 
 // validGitOpsEngines enumerates supported GitOps engine values.
 func validGitOpsEngines() []GitOpsEngine {
 	return []GitOpsEngine{
-		GitOpsEngineFlux,
-		GitOpsEngineArgoCD,
+		GitOpsEngineNone,
 	}
 }
 
@@ -255,11 +252,10 @@ func (d *GitOpsEngine) Set(value string) error {
 	}
 
 	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s)",
+		"%w: %s (valid options: %s)",
 		ErrInvalidGitOpsEngine,
 		value,
-		GitOpsEngineFlux,
-		GitOpsEngineArgoCD,
+		GitOpsEngineNone,
 	)
 }
 

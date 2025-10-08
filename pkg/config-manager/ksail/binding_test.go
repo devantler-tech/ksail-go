@@ -87,7 +87,7 @@ func getBasicFieldTests() []struct {
 			name: "GitOpsEngine field",
 			fieldSelector: configmanager.AddFlagFromField(
 				func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
-				v1alpha1.GitOpsEngineFlux,
+				v1alpha1.GitOpsEngineNone,
 				"GitOps engine",
 			),
 			expectedFlag: "gitops-engine",

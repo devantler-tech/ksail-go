@@ -32,7 +32,7 @@ func TestClusterDirectCreation(t *testing.T) {
 			CSI:               v1alpha1.CSILocalPathStorage,
 			IngressController: v1alpha1.IngressControllerTraefik,
 			GatewayController: v1alpha1.GatewayControllerCilium,
-			GitOpsEngine:      v1alpha1.GitOpsEngineFlux,
+			GitOpsEngine:      v1alpha1.GitOpsEngineNone,
 		},
 	}
 
@@ -96,8 +96,9 @@ func TestGitOpsEngineSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
-		{"FLUX", "Flux"},
-		{"ArgoCD", "ArgoCD"},
+		{"None", "None"},
+		{"none", "None"},
+		{"NONE", "None"},
 	}
 	for _, validCase := range validCases {
 		var tool v1alpha1.GitOpsEngine
@@ -240,8 +241,8 @@ func TestStringAndTypeMethods(t *testing.T) {
 	assert.Equal(t, "Kind", dist.String())
 	assert.Equal(t, "Distribution", dist.Type())
 
-	tool := v1alpha1.GitOpsEngineFlux
-	assert.Equal(t, "Flux", tool.String())
+	tool := v1alpha1.GitOpsEngineNone
+	assert.Equal(t, "None", tool.String())
 	assert.Equal(t, "GitOpsEngine", tool.Type())
 
 	cni := v1alpha1.CNIDefault

@@ -316,7 +316,7 @@ func TestAddFlagFromFieldEnumTypes(t *testing.T) {
 		},
 		{
 			name:         "GitOpsEngine enum",
-			defaultValue: v1alpha1.GitOpsEngineFlux,
+			defaultValue: v1alpha1.GitOpsEngineNone,
 			expectedType: "v1alpha1.GitOpsEngine",
 		},
 		{
