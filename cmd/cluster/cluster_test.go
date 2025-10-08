@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
@@ -158,51 +157,6 @@ func assertOutputContains(t *testing.T, output, expected string) {
 	if !strings.Contains(output, expected) {
 		t.Fatalf("expected output to contain %q, got %q", expected, output)
 	}
-}
-
-func runLifecycleSuccessCase(
-	t *testing.T,
-	commandFactory func() *cobra.Command,
-) string {
-	t.Helper()
-
-	cleanup := testutils.SetupValidWorkingDir(t)
-	t.Cleanup(cleanup)
-
-	command := commandFactory()
-
-	var output bytes.Buffer
-	command.SetOut(&output)
-	command.SetErr(&output)
-
-	if command.RunE == nil {
-		t.Fatal("command RunE must not be nil")
-	}
-
-	err := command.RunE(command, nil)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	actual := output.String()
-
-	assertOutputContains(t, actual, "config loaded")
-
-	if strings.Contains(actual, "stub implementation") {
-		t.Fatalf("unexpected stub output for %s command: %q", command.Use, actual)
-	}
-
-	return actual
-}
-
-func runLifecycleValidationErrorCase(
-	t *testing.T,
-	commandFactory func() *cobra.Command,
-	expectedSubstrings ...string,
-) {
-	t.Helper()
-
-	testutils.RunValidationErrorTest(t, commandFactory, expectedSubstrings...)
 }
 
 func newTestRuntime() *runtime.Runtime {
