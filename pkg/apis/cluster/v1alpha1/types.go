@@ -14,8 +14,8 @@ import (
 // ErrInvalidDistribution is returned when an invalid distribution is specified.
 var ErrInvalidDistribution = errors.New("invalid distribution")
 
-// ErrInvalidReconciliationTool is returned when an invalid reconciliation tool is specified.
-var ErrInvalidReconciliationTool = errors.New("invalid reconciliation tool")
+// ErrInvalidGitOpsEngine is returned when an invalid GitOps engine is specified.
+var ErrInvalidGitOpsEngine = errors.New("invalid GitOps engine")
 
 // ErrInvalidCNI is returned when an invalid CNI is specified.
 var ErrInvalidCNI = errors.New("invalid CNI")
@@ -56,10 +56,10 @@ type Spec struct {
 	Distribution       Distribution       `json:"distribution,omitzero"`
 	CNI                CNI                `json:"cni,omitzero"`
 	CSI                CSI                `json:"csi,omitzero"`
-	IngressController  IngressController  `json:"ingressController,omitzero"`
-	GatewayController  GatewayController  `json:"gatewayController,omitzero"`
-	ReconciliationTool ReconciliationTool `json:"reconciliationTool,omitzero"`
-	Options            Options            `json:"options,omitzero"`
+	IngressController IngressController `json:"ingressController,omitzero"`
+	GatewayController GatewayController `json:"gatewayController,omitzero"`
+	GitOpsEngine      GitOpsEngine      `json:"gitOpsEngine,omitzero"`
+	Options           Options           `json:"options,omitzero"`
 }
 
 // Connection defines connection options for a KSail cluster.
@@ -159,24 +159,21 @@ const (
 	GatewayControllerNone GatewayController = "None"
 )
 
-// ReconciliationTool defines the Deployment Tool options for a KSail cluster.
-type ReconciliationTool string
+// GitOpsEngine defines the GitOps Engine options for a KSail cluster.
+type GitOpsEngine string
 
 const (
-	// ReconciliationToolKubectl is the kubectl reconciliation tool.
-	ReconciliationToolKubectl ReconciliationTool = "Kubectl"
-	// ReconciliationToolFlux is the Flux reconciliation tool.
-	ReconciliationToolFlux ReconciliationTool = "Flux"
-	// ReconciliationToolArgoCD is the ArgoCD reconciliation tool.
-	ReconciliationToolArgoCD ReconciliationTool = "ArgoCD"
+	// GitOpsEngineFlux is the Flux GitOps engine.
+	GitOpsEngineFlux GitOpsEngine = "Flux"
+	// GitOpsEngineArgoCD is the ArgoCD GitOps engine.
+	GitOpsEngineArgoCD GitOpsEngine = "ArgoCD"
 )
 
-// validReconciliationTools enumerates supported reconciliation tool values.
-func validReconciliationTools() []ReconciliationTool {
-	return []ReconciliationTool{
-		ReconciliationToolKubectl,
-		ReconciliationToolFlux,
-		ReconciliationToolArgoCD,
+// validGitOpsEngines enumerates supported GitOps engine values.
+func validGitOpsEngines() []GitOpsEngine {
+	return []GitOpsEngine{
+		GitOpsEngineFlux,
+		GitOpsEngineArgoCD,
 	}
 }
 
@@ -187,9 +184,8 @@ type Options struct {
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
-	Kubectl OptionsKubectl `json:"kubectl,omitzero"`
-	Flux    OptionsFlux    `json:"flux,omitzero"`
-	ArgoCD  OptionsArgoCD  `json:"argocd,omitzero"`
+	Flux   OptionsFlux   `json:"flux,omitzero"`
+	ArgoCD OptionsArgoCD `json:"argocd,omitzero"`
 
 	Helm      OptionsHelm      `json:"helm,omitzero"`
 	Kustomize OptionsKustomize `json:"kustomize,omitzero"`
@@ -208,11 +204,6 @@ type OptionsK3d struct {
 // OptionsCilium defines options for the Cilium CNI.
 type OptionsCilium struct {
 	// Add any specific fields for the Cilium CNI here.
-}
-
-// OptionsKubectl defines options for the kubectl deployment tool.
-type OptionsKubectl struct {
-	// Add any specific fields for the Kubectl distribution here.
 }
 
 // OptionsFlux defines options for the Flux deployment tool.
@@ -252,10 +243,10 @@ func (d *Distribution) Set(value string) error {
 		ErrInvalidDistribution, value, DistributionKind, DistributionK3d)
 }
 
-// Set for ReconciliationTool.
-func (d *ReconciliationTool) Set(value string) error {
+// Set for GitOpsEngine.
+func (d *GitOpsEngine) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
-	for _, tool := range validReconciliationTools() {
+	for _, tool := range validGitOpsEngines() {
 		if strings.EqualFold(value, string(tool)) {
 			*d = tool
 
@@ -264,12 +255,11 @@ func (d *ReconciliationTool) Set(value string) error {
 	}
 
 	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidReconciliationTool,
+		"%w: %s (valid options: %s, %s)",
+		ErrInvalidGitOpsEngine,
 		value,
-		ReconciliationToolKubectl,
-		ReconciliationToolFlux,
-		ReconciliationToolArgoCD,
+		GitOpsEngineFlux,
+		GitOpsEngineArgoCD,
 	)
 }
 
@@ -361,14 +351,14 @@ func (d *Distribution) Type() string {
 	return "Distribution"
 }
 
-// String returns the string representation of the ReconciliationTool.
-func (d *ReconciliationTool) String() string {
+// String returns the string representation of the GitOpsEngine.
+func (d *GitOpsEngine) String() string {
 	return string(*d)
 }
 
-// Type returns the type of the ReconciliationTool.
-func (d *ReconciliationTool) Type() string {
-	return "ReconciliationTool"
+// Type returns the type of the GitOpsEngine.
+func (d *GitOpsEngine) Type() string {
+	return "GitOpsEngine"
 }
 
 // String returns the string representation of the CNI.

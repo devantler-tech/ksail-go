@@ -28,11 +28,11 @@ func TestClusterDirectCreation(t *testing.T) {
 				Context:    "test-ctx",
 				Timeout:    metav1.Duration{Duration: time.Duration(10) * time.Minute},
 			},
-			CNI:                v1alpha1.CNICilium,
-			CSI:                v1alpha1.CSILocalPathStorage,
-			IngressController:  v1alpha1.IngressControllerTraefik,
-			GatewayController:  v1alpha1.GatewayControllerCilium,
-			ReconciliationTool: v1alpha1.ReconciliationToolFlux,
+			CNI:               v1alpha1.CNICilium,
+			CSI:               v1alpha1.CSILocalPathStorage,
+			IngressController: v1alpha1.IngressControllerTraefik,
+			GatewayController: v1alpha1.GatewayControllerCilium,
+			GitOpsEngine:      v1alpha1.GitOpsEngineFlux,
 		},
 	}
 
@@ -92,29 +92,28 @@ func TestDistributionIsValid(t *testing.T) {
 	}
 }
 
-func TestReconciliationToolSet(t *testing.T) {
+func TestGitOpsEngineSet(t *testing.T) {
 	t.Parallel()
 
 	validCases := []struct{ input, expected string }{
-		{"kubectl", "Kubectl"},
 		{"FLUX", "Flux"},
 		{"ArgoCD", "ArgoCD"},
 	}
 	for _, validCase := range validCases {
-		var tool v1alpha1.ReconciliationTool
+		var tool v1alpha1.GitOpsEngine
 
 		require.NoError(t, tool.Set(validCase.input))
 	}
 
 	err := func() error {
-		var tool v1alpha1.ReconciliationTool
+		var tool v1alpha1.GitOpsEngine
 
 		return tool.Set("invalid")
 	}()
 	testutils.AssertErrWrappedContains(
 		t,
 		err,
-		v1alpha1.ErrInvalidReconciliationTool,
+		v1alpha1.ErrInvalidGitOpsEngine,
 		"invalid",
 		"Set(invalid)",
 	)
@@ -241,9 +240,9 @@ func TestStringAndTypeMethods(t *testing.T) {
 	assert.Equal(t, "Kind", dist.String())
 	assert.Equal(t, "Distribution", dist.Type())
 
-	tool := v1alpha1.ReconciliationToolKubectl
-	assert.Equal(t, "Kubectl", tool.String())
-	assert.Equal(t, "ReconciliationTool", tool.Type())
+	tool := v1alpha1.GitOpsEngineFlux
+	assert.Equal(t, "Flux", tool.String())
+	assert.Equal(t, "GitOpsEngine", tool.Type())
 
 	cni := v1alpha1.CNIDefault
 	assert.Equal(t, "Default", cni.String())
@@ -288,7 +287,7 @@ func TestNewClusterSpec(t *testing.T) {
 	assert.Equal(t, v1alpha1.CSI(""), spec.CSI)
 	assert.Equal(t, v1alpha1.IngressController(""), spec.IngressController)
 	assert.Equal(t, v1alpha1.GatewayController(""), spec.GatewayController)
-	assert.Equal(t, v1alpha1.ReconciliationTool(""), spec.ReconciliationTool)
+	assert.Equal(t, v1alpha1.GitOpsEngine(""), spec.GitOpsEngine)
 	assert.NotNil(t, spec.Options)
 }
 
@@ -310,7 +309,6 @@ func TestNewClusterOptions(t *testing.T) {
 	assert.NotNil(t, options.Kind)
 	assert.NotNil(t, options.K3d)
 	assert.NotNil(t, options.Cilium)
-	assert.NotNil(t, options.Kubectl)
 	assert.NotNil(t, options.Flux)
 	assert.NotNil(t, options.ArgoCD)
 	assert.NotNil(t, options.Helm)
@@ -343,15 +341,6 @@ func TestNewClusterOptionsCilium(t *testing.T) {
 	options := v1alpha1.NewClusterOptionsCilium()
 
 	// OptionsCilium is an empty struct, just verify it's created
-	assert.NotNil(t, options)
-}
-
-func TestNewClusterOptionsKubectl(t *testing.T) {
-	t.Parallel()
-
-	options := v1alpha1.NewClusterOptionsKubectl()
-
-	// OptionsKubectl is an empty struct, just verify it's created
 	assert.NotNil(t, options)
 }
 
