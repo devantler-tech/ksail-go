@@ -12,7 +12,10 @@ import (
 // ComponentStatusProvider describes a provider that can retrieve component statuses.
 type ComponentStatusProvider interface {
 	// GetComponentStatuses retrieves all component statuses from the cluster.
-	GetComponentStatuses(ctx context.Context, clientset *kubernetes.Clientset) ([]corev1.ComponentStatus, error)
+	GetComponentStatuses(
+		ctx context.Context,
+		clientset *kubernetes.Clientset,
+	) ([]corev1.ComponentStatus, error)
 }
 
 // DefaultComponentStatusProvider is the default implementation of ComponentStatusProvider.

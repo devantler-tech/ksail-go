@@ -67,7 +67,9 @@ func (p *DefaultClientProvider) buildConfig(kubeconfig, context string) (*rest.C
 }
 
 // buildConfigFromKubeconfig builds config from a kubeconfig file.
-func (p *DefaultClientProvider) buildConfigFromKubeconfig(kubeconfig, context string) (*rest.Config, error) {
+func (p *DefaultClientProvider) buildConfigFromKubeconfig(
+	kubeconfig, context string,
+) (*rest.Config, error) {
 	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig}
 	configOverrides := &clientcmd.ConfigOverrides{}
 
@@ -75,7 +77,10 @@ func (p *DefaultClientProvider) buildConfigFromKubeconfig(kubeconfig, context st
 		configOverrides.CurrentContext = context
 	}
 
-	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		loadingRules,
+		configOverrides,
+	)
 
 	config, err := clientConfig.ClientConfig()
 	if err != nil {

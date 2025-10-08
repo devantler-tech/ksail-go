@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/mock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	"github.com/spf13/cobra"
 )
 
 // TestStatusCommandMetadata verifies the status command has correct metadata.
@@ -206,7 +205,9 @@ type mockClientProvider struct {
 	mock.Mock
 }
 
-func (m *mockClientProvider) CreateClient(kubeconfig, context string) (*kubernetes.Clientset, error) {
+func (m *mockClientProvider) CreateClient(
+	kubeconfig, context string,
+) (*kubernetes.Clientset, error) {
 	args := m.Called(kubeconfig, context)
 
 	if args.Get(0) == nil {
@@ -258,4 +259,3 @@ func (m *mockTimer) GetTiming() (time.Duration, time.Duration) {
 func (m *mockTimer) Stop() {
 	m.Called()
 }
-
