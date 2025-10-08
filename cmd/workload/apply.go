@@ -6,10 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	kubectlapplier "github.com/devantler-tech/ksail-go/pkg/applier/kubectl"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/kubectl"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
@@ -27,11 +27,18 @@ func NewApplyCmd(_ *runtime.Runtime) *cobra.Command {
 		ErrOut: os.Stderr,
 	}
 
-	// Create applier and get the kubectl apply command directly
-	applier := kubectlapplier.NewApplier(ioStreams)
-	applyCmd := applier.CreateApplyCommand(kubeconfigPath)
+	// Create kubectl client and get the apply command directly
+	client := kubectl.NewClient(ioStreams)
+	applyCmd := client.CreateApplyCommand(kubeconfigPath)
 
 	return applyCmd
+}
+
+// getDefaultKubeconfigPath returns the default kubeconfig path.
+func getDefaultKubeconfigPath() string {
+	homeDir, _ := os.UserHomeDir()
+
+	return filepath.Join(homeDir, ".kube", "config")
 }
 
 // getKubeconfigPathSilently tries to load config and get kubeconfig path without any output.
@@ -42,9 +49,7 @@ func getKubeconfigPathSilently() string {
 	kubeconfigPath, err := getKubeconfigPath(cfgManager)
 	if err != nil {
 		// If we can't load config, use default kubeconfig
-		homeDir, _ := os.UserHomeDir()
-
-		return filepath.Join(homeDir, ".kube", "config")
+		return getDefaultKubeconfigPath()
 	}
 
 	return kubeconfigPath
@@ -65,8 +70,7 @@ func getKubeconfigPath(cfgManager *ksailconfigmanager.ConfigManager) (string, er
 
 	kubeconfigPath := clusterCfg.Spec.Connection.Kubeconfig
 	if kubeconfigPath == "" {
-		homeDir, _ := os.UserHomeDir()
-		kubeconfigPath = filepath.Join(homeDir, ".kube", "config")
+		kubeconfigPath = getDefaultKubeconfigPath()
 	}
 
 	// Expand home path
