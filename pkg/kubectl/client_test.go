@@ -9,14 +9,19 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
-func TestNewClient(t *testing.T) {
-	t.Parallel()
-
-	ioStreams := genericiooptions.IOStreams{
+// createTestIOStreams creates IO streams for testing.
+func createTestIOStreams() genericiooptions.IOStreams {
+	return genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &bytes.Buffer{},
 		ErrOut: &bytes.Buffer{},
 	}
+}
+
+func TestNewClient(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
 
 	client := kubectl.NewClient(ioStreams)
 
@@ -44,11 +49,7 @@ func TestCreateApplyCommand(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ioStreams := genericiooptions.IOStreams{
-				In:     &bytes.Buffer{},
-				Out:    &bytes.Buffer{},
-				ErrOut: &bytes.Buffer{},
-			}
+			ioStreams := createTestIOStreams()
 
 			client := kubectl.NewClient(ioStreams)
 			cmd := client.CreateApplyCommand(testCase.kubeConfigPath)
@@ -69,11 +70,7 @@ func TestCreateApplyCommand(t *testing.T) {
 func TestCreateApplyCommandHasFlags(t *testing.T) {
 	t.Parallel()
 
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
+	ioStreams := createTestIOStreams()
 
 	client := kubectl.NewClient(ioStreams)
 	cmd := client.CreateApplyCommand("/path/to/kubeconfig")
