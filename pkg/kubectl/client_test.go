@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/kubectl"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
@@ -28,8 +29,15 @@ func TestNewClient(t *testing.T) {
 	require.NotNil(t, client, "expected client to be created")
 }
 
-func TestCreateApplyCommand(t *testing.T) {
-	t.Parallel()
+// testCommandCreation is a helper function to test command creation with various kubeconfig paths.
+func testCommandCreation(
+	t *testing.T,
+	createCmd func(*kubectl.Client, string) *cobra.Command,
+	expectedUse string,
+	expectedShort string,
+	expectedLong string,
+) {
+	t.Helper()
 
 	tests := []struct {
 		name           string
@@ -50,21 +58,27 @@ func TestCreateApplyCommand(t *testing.T) {
 			t.Parallel()
 
 			ioStreams := createTestIOStreams()
-
 			client := kubectl.NewClient(ioStreams)
-			cmd := client.CreateApplyCommand(testCase.kubeConfigPath)
+			cmd := createCmd(client, testCase.kubeConfigPath)
 
-			require.NotNil(t, cmd, "expected apply command to be created")
-			require.Equal(t, "apply", cmd.Use, "expected command Use to be 'apply'")
-			require.Equal(t, "Apply manifests", cmd.Short, "expected command Short description")
-			require.Equal(
-				t,
-				"Apply local Kubernetes manifests to your cluster.",
-				cmd.Long,
-				"expected command Long description",
-			)
+			require.NotNil(t, cmd, "expected command to be created")
+			require.Equal(t, expectedUse, cmd.Use, "expected command Use to be '%s'", expectedUse)
+			require.Equal(t, expectedShort, cmd.Short, "expected command Short description")
+			require.Equal(t, expectedLong, cmd.Long, "expected command Long description")
 		})
 	}
+}
+
+func TestCreateApplyCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateApplyCommand(path) },
+		"apply",
+		"Apply manifests",
+		"Apply local Kubernetes manifests to your cluster.",
+	)
 }
 
 func TestCreateApplyCommandHasFlags(t *testing.T) {
@@ -88,40 +102,13 @@ func TestCreateApplyCommandHasFlags(t *testing.T) {
 func TestCreateCreateCommand(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		kubeConfigPath string
-	}{
-		{
-			name:           "with kubeconfig path",
-			kubeConfigPath: "/path/to/kubeconfig",
-		},
-		{
-			name:           "without kubeconfig path",
-			kubeConfigPath: "",
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			ioStreams := createTestIOStreams()
-
-			client := kubectl.NewClient(ioStreams)
-			cmd := client.CreateCreateCommand(testCase.kubeConfigPath)
-
-			require.NotNil(t, cmd, "expected create command to be created")
-			require.Equal(t, "create", cmd.Use, "expected command Use to be 'create'")
-			require.Equal(t, "Create resources", cmd.Short, "expected command Short description")
-			require.Equal(
-				t,
-				"Create Kubernetes resources from files or stdin.",
-				cmd.Long,
-				"expected command Long description",
-			)
-		})
-	}
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateCreateCommand(path) },
+		"create",
+		"Create resources",
+		"Create Kubernetes resources from files or stdin.",
+	)
 }
 
 func TestCreateCreateCommandHasFlags(t *testing.T) {
