@@ -34,7 +34,13 @@ func HandleCreateRunE(
 		ErrorPrefix:     "failed to create cluster",
 	}
 
-	return ExecuteLifecycleCommand(cmd, cfgManager, deps, config, func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-		return provisioner.Create(ctx, clusterName)
-	})
+	return ExecuteLifecycleCommand(
+		cmd,
+		cfgManager,
+		deps,
+		config,
+		func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Create(ctx, clusterName)
+		},
+	)
 }

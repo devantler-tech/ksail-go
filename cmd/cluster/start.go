@@ -34,7 +34,13 @@ func HandleStartRunE(
 		ErrorPrefix:     "failed to start cluster",
 	}
 
-	return ExecuteLifecycleCommand(cmd, cfgManager, deps, config, func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
-		return provisioner.Start(ctx, clusterName)
-	})
+	return ExecuteLifecycleCommand(
+		cmd,
+		cfgManager,
+		deps,
+		config,
+		func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error {
+			return provisioner.Start(ctx, clusterName)
+		},
+	)
 }

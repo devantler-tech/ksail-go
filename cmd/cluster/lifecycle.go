@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
@@ -13,8 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var errMissingClusterProvisioner = errors.New("missing cluster provisioner dependency")
+
 // LifecycleOperation defines a function that performs an operation on a cluster provisioner.
-type LifecycleOperation func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error
+type LifecycleOperation func(
+	ctx context.Context,
+	provisioner clusterprovisioner.ClusterProvisioner,
+	clusterName string,
+) error
 
 // LifecycleConfig contains configuration for lifecycle command execution.
 type LifecycleConfig struct {
@@ -99,7 +106,7 @@ func ExecuteLifecycleCommand(
 	}
 
 	if provisioner == nil {
-		return fmt.Errorf("missing cluster provisioner dependency")
+		return errMissingClusterProvisioner
 	}
 
 	clusterName, err := configmanager.GetClusterName(distributionConfig)
