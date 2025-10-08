@@ -43,4 +43,6 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		cfgManager,
 		newCreateLifecycleConfig(),
 	)
+
+	return cmd
 }
