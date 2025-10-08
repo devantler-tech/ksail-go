@@ -7,14 +7,14 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 )
 
-func TestNewCreateCmd(t *testing.T) {
+func TestNewDeleteCmd(t *testing.T) {
 	t.Parallel()
 
 	runtimeContainer := runtime.NewRuntime()
-	cmd := NewCreateCmd(runtimeContainer)
+	cmd := NewDeleteCmd(runtimeContainer)
 
-	if cmd.Use != "create" {
-		t.Fatalf("expected Use to be 'create', got %q", cmd.Use)
+	if cmd.Use != "delete" {
+		t.Fatalf("expected Use to be 'delete', got %q", cmd.Use)
 	}
 
 	if cmd.Short == "" {
