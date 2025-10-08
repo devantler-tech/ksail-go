@@ -138,7 +138,7 @@ func (m *ConfigManager) getFieldMappings() map[any]string {
 		&m.Config.Spec.Connection.Context:    "context",
 		&m.Config.Spec.Connection.Kubeconfig: "kubeconfig",
 		&m.Config.Spec.Connection.Timeout:    "timeout",
-		&m.Config.Spec.ReconciliationTool:    "reconciliation-tool",
+		&m.Config.Spec.GitOpsEngine:          "gitops-engine",
 		&m.Config.Spec.CNI:                   "cni",
 		&m.Config.Spec.CSI:                   "csi",
 		&m.Config.Spec.IngressController:     "ingress-controller",
@@ -169,8 +169,8 @@ func (m *ConfigManager) GenerateShorthand(flagName string) string {
 		return "t"
 	case "source-directory":
 		return "s"
-	case "reconciliation-tool":
-		return "r"
+	case "gitops-engine":
+		return "g"
 	case "distribution-config":
 		return ""
 	default:
@@ -211,7 +211,7 @@ func (m *ConfigManager) setPflagValueDefault(pflagValue interface {
 	switch val := defaultValue.(type) {
 	case v1alpha1.Distribution:
 		_ = pflagValue.Set(string(val))
-	case v1alpha1.ReconciliationTool:
+	case v1alpha1.GitOpsEngine:
 		_ = pflagValue.Set(string(val))
 	case v1alpha1.CNI:
 		_ = pflagValue.Set(string(val))

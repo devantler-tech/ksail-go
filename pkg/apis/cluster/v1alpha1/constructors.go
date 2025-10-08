@@ -27,7 +27,7 @@ func NewClusterSpec() Spec {
 		CSI:                "",
 		IngressController:  "",
 		GatewayController:  "",
-		ReconciliationTool: "",
+		GitOpsEngine:       "",
 		Options:            NewClusterOptions(),
 	}
 }
@@ -47,7 +47,6 @@ func NewClusterOptions() Options {
 		Kind:      NewClusterOptionsKind(),
 		K3d:       NewClusterOptionsK3d(),
 		Cilium:    NewClusterOptionsCilium(),
-		Kubectl:   NewClusterOptionsKubectl(),
 		Flux:      NewClusterOptionsFlux(),
 		ArgoCD:    NewClusterOptionsArgoCD(),
 		Helm:      NewClusterOptionsHelm(),
@@ -68,11 +67,6 @@ func NewClusterOptionsK3d() OptionsK3d {
 // NewClusterOptionsCilium creates a new OptionsCilium with default values.
 func NewClusterOptionsCilium() OptionsCilium {
 	return OptionsCilium{}
-}
-
-// NewClusterOptionsKubectl creates a new OptionsKubectl with default values.
-func NewClusterOptionsKubectl() OptionsKubectl {
-	return OptionsKubectl{}
 }
 
 // NewClusterOptionsFlux creates a new OptionsFlux with default values.
