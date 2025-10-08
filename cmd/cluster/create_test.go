@@ -131,7 +131,7 @@ func TestHandleCreateRunE_LoadConfigFailure(t *testing.T) {
 	cfgManager := ksailconfigmanager.NewConfigManager(io.Discard)
 	cfgManager.Viper.SetConfigFile(badPath)
 
-	deps := CreateDeps{Timer: timerStub, Factory: failingFactory}
+	deps := LifecycleDeps{Timer: timerStub, Factory: failingFactory}
 
 	err = HandleCreateRunE(cmd, cfgManager, deps)
 	if err == nil {
@@ -163,7 +163,7 @@ func TestHandleCreateRunE_FactoryFailure(t *testing.T) {
 	factory := &stubFactory{err: errFactoryBoom}
 	cfgManager := createConfigManager(t, io.Discard)
 
-	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
+	err := HandleCreateRunE(cmd, cfgManager, LifecycleDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
 		t.Fatal("expected factory error, got nil")
 	}
@@ -192,8 +192,12 @@ func TestHandleCreateRunE_ReturnsErrorWhenProvisionerIsNil(t *testing.T) {
 	factory := &stubFactory{}
 	cfgManager := createConfigManager(t, io.Discard)
 
-	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
-	if !errors.Is(err, errMissingClusterProvisioner) {
+	err := HandleCreateRunE(cmd, cfgManager, LifecycleDeps{Timer: timerStub, Factory: factory})
+	if err == nil {
+		t.Fatal("expected missing provisioner error, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "missing cluster provisioner dependency") {
 		t.Fatalf("expected missing provisioner error, got %v", err)
 	}
 }
@@ -209,7 +213,7 @@ func TestHandleCreateRunE_ReturnsErrorWhenClusterNameFails(t *testing.T) {
 	}
 	cfgManager := createConfigManager(t, io.Discard)
 
-	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
+	err := HandleCreateRunE(cmd, cfgManager, LifecycleDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
 		t.Fatal("expected cluster name error, got nil")
 	}
@@ -235,7 +239,7 @@ func TestHandleCreateRunE_ReturnsErrorWhenProvisionerCreateFails(t *testing.T) {
 	}
 	cfgManager := createConfigManager(t, io.Discard)
 
-	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
+	err := HandleCreateRunE(cmd, cfgManager, LifecycleDeps{Timer: timerStub, Factory: factory})
 	if err == nil {
 		t.Fatal("expected provisioner create error, got nil")
 	}
@@ -261,7 +265,7 @@ func TestHandleCreateRunE_Success(t *testing.T) {
 	}
 	cfgManager := createConfigManager(t, out)
 
-	err := HandleCreateRunE(cmd, cfgManager, CreateDeps{Timer: timerStub, Factory: factory})
+	err := HandleCreateRunE(cmd, cfgManager, LifecycleDeps{Timer: timerStub, Factory: factory})
 	if err != nil {
 		t.Fatalf("expected success, got %v", err)
 	}
