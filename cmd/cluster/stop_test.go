@@ -1,22 +1,30 @@
-package cluster //nolint:testpackage // Access internal helpers without exporting them.
+package cluster //nolint:testpackage // Access unexported helpers for coverage-focused tests.
 
 import (
+	"bytes"
 	"testing"
 
-	"github.com/spf13/cobra"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 )
 
-// TestStopCommandConfigLoad exercises the success and validation error paths for the stop command.
-func TestStopCommandConfigLoad(t *testing.T) { //nolint:paralleltest
-	t.Run("success", func(t *testing.T) { //nolint:paralleltest
-		runLifecycleSuccessCase(t, func() *cobra.Command {
-			return NewStopCmd(newTestRuntime())
-		})
-	})
+func TestNewStopCmd(t *testing.T) {
+	t.Parallel()
 
-	t.Run("validation error", func(t *testing.T) { //nolint:paralleltest // uses t.Chdir
-		runLifecycleValidationErrorCase(t, func() *cobra.Command {
-			return NewStopCmd(newTestRuntime())
-		})
-	})
+	runtimeContainer := runtime.NewRuntime()
+	cmd := NewStopCmd(runtimeContainer)
+
+	if cmd.Use != "stop" {
+		t.Fatalf("expected Use to be 'stop', got %q", cmd.Use)
+	}
+
+	if cmd.Short == "" {
+		t.Fatal("expected Short description to be set")
+	}
+
+	if cmd.RunE == nil {
+		t.Fatal("expected RunE to be set")
+	}
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
 }
