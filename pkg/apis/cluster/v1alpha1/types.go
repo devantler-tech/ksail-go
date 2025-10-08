@@ -50,16 +50,16 @@ type Cluster struct {
 
 // Spec defines the desired state of a KSail cluster.
 type Spec struct {
-	DistributionConfig string             `json:"distributionConfig,omitzero"`
-	SourceDirectory    string             `json:"sourceDirectory,omitzero"`
-	Connection         Connection         `json:"connection,omitzero"`
-	Distribution       Distribution       `json:"distribution,omitzero"`
-	CNI                CNI                `json:"cni,omitzero"`
-	CSI                CSI                `json:"csi,omitzero"`
-	IngressController IngressController `json:"ingressController,omitzero"`
-	GatewayController GatewayController `json:"gatewayController,omitzero"`
-	GitOpsEngine      GitOpsEngine      `json:"gitOpsEngine,omitzero"`
-	Options           Options           `json:"options,omitzero"`
+	DistributionConfig string            `json:"distributionConfig,omitzero"`
+	SourceDirectory    string            `json:"sourceDirectory,omitzero"`
+	Connection         Connection        `json:"connection,omitzero"`
+	Distribution       Distribution      `json:"distribution,omitzero"`
+	CNI                CNI               `json:"cni,omitzero"`
+	CSI                CSI               `json:"csi,omitzero"`
+	IngressController  IngressController `json:"ingressController,omitzero"`
+	GatewayController  GatewayController `json:"gatewayController,omitzero"`
+	GitOpsEngine       GitOpsEngine      `json:"gitOpsEngine,omitzero"`
+	Options            Options           `json:"options,omitzero"`
 }
 
 // Connection defines connection options for a KSail cluster.
