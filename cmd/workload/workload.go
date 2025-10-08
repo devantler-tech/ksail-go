@@ -21,6 +21,7 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 	cmd.AddCommand(NewReconcileCmd(runtimeContainer))
 	cmd.AddCommand(NewApplyCmd(runtimeContainer))
+	cmd.AddCommand(NewCreateCmd(runtimeContainer))
 	cmd.AddCommand(NewInstallCmd(runtimeContainer))
 
 	return cmd

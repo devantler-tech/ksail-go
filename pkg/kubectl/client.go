@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
+	"k8s.io/kubectl/pkg/cmd/create"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -42,4 +43,27 @@ func (c *Client) CreateApplyCommand(kubeConfigPath string) *cobra.Command {
 	applyCmd.Long = "Apply local Kubernetes manifests to your cluster."
 
 	return applyCmd
+}
+
+// CreateCreateCommand creates a kubectl create command with all its flags and behavior.
+func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the create command using kubectl's NewCmdCreate
+	createCmd := create.NewCmdCreate(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	createCmd.Use = "create"
+	createCmd.Short = "Create resources"
+	createCmd.Long = "Create Kubernetes resources from files or stdin."
+
+	return createCmd
 }
