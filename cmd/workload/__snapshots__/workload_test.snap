@@ -142,6 +142,7 @@ Usage:
 
 Available Commands:
   apply       Apply manifests
+  create      Create resources
   delete      Delete resources
   install     Install Helm charts
   reconcile   Reconcile workloads with the cluster
