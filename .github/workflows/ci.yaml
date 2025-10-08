@@ -56,10 +56,6 @@ jobs:
         run: |
           ./ksail cluster create
 
-      - name: 🧪 ksail cluster status
-        run: |
-          ./ksail cluster status
-
       - name: 🧪 ksail cluster list
         run: |
           ./ksail cluster list

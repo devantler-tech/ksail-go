@@ -84,7 +84,6 @@ func expectedLifecycleMetadata(
 		func() *cobra.Command { return NewDeleteCmd(runtimeContainer) },
 		func() *cobra.Command { return NewStartCmd(runtimeContainer) },
 		func() *cobra.Command { return NewStopCmd(runtimeContainer) },
-		func() *cobra.Command { return NewStatusCmd(runtimeContainer) },
 		func() *cobra.Command { return NewListCmd(runtimeContainer) },
 	}
 
