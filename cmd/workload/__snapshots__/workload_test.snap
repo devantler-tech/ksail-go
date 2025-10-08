@@ -82,6 +82,7 @@ Usage:
 
 Available Commands:
   apply       Apply manifests
+  create      Create resources
   install     Install Helm charts
   reconcile   Reconcile workloads with the cluster
 
