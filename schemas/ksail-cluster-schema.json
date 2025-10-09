@@ -3,26 +3,32 @@
   "$id": "https://raw.githubusercontent.com/devantler/ksail-go/main/schemas/ksail-cluster-schema.json",
   "properties": {
     "kind": {
-      "type": "string"
+      "type": "string",
+      "description": "Kind of the resource (always 'Cluster' for KSail configurations)"
     },
     "apiVersion": {
-      "type": "string"
+      "type": "string",
+      "description": "API version of the KSail cluster configuration"
     },
     "spec": {
       "properties": {
         "distributionConfig": {
-          "type": "string"
+          "type": "string",
+          "description": "Configuration file for the distribution"
         },
         "sourceDirectory": {
-          "type": "string"
+          "type": "string",
+          "description": "Directory containing workloads to deploy"
         },
         "connection": {
           "properties": {
             "kubeconfig": {
-              "type": "string"
+              "type": "string",
+              "description": "Path to the kubeconfig file"
             },
             "context": {
-              "type": "string"
+              "type": "string",
+              "description": "Kubernetes context of the cluster"
             },
             "timeout": {
               "properties": {
@@ -31,29 +37,37 @@
                 }
               },
               "additionalProperties": false,
-              "type": "object"
+              "type": "object",
+              "description": "Timeout for cluster operations"
             }
           },
           "additionalProperties": false,
-          "type": "object"
+          "type": "object",
+          "description": "Connection settings for the Kubernetes cluster"
         },
         "distribution": {
-          "type": "string"
+          "type": "string",
+          "description": "Kubernetes distribution to use (Kind, K3d, or EKS)"
         },
         "cni": {
-          "type": "string"
+          "type": "string",
+          "description": "Container Network Interface to use"
         },
         "csi": {
-          "type": "string"
+          "type": "string",
+          "description": "Container Storage Interface to use"
         },
         "ingressController": {
-          "type": "string"
+          "type": "string",
+          "description": "Ingress controller to install"
         },
         "gatewayController": {
-          "type": "string"
+          "type": "string",
+          "description": "Gateway API controller to install"
         },
         "gitOpsEngine": {
-          "type": "string"
+          "type": "string",
+          "description": "GitOps engine to use for deployment"
         },
         "options": {
           "properties": {
@@ -94,11 +108,13 @@
             }
           },
           "additionalProperties": false,
-          "type": "object"
+          "type": "object",
+          "description": "Distribution-specific and tool-specific options"
         }
       },
       "additionalProperties": false,
-      "type": "object"
+      "type": "object",
+      "description": "Specification of the desired cluster state"
     }
   },
   "additionalProperties": false,
