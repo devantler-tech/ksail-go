@@ -32,6 +32,7 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
 		{name: "create", args: []string{"workload", "create", "--help"}},
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
+		{name: "describe", args: []string{"workload", "describe", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
 		{name: "explain", args: []string{"workload", "explain", "--help"}},
 		{name: "install", args: []string{"workload", "install", "--help"}},
