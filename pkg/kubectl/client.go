@@ -10,6 +10,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
 	"k8s.io/kubectl/pkg/cmd/rollout"
+	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -139,4 +140,27 @@ func (c *Client) CreateRolloutCommand(kubeConfigPath string) *cobra.Command {
 	rolloutCmd.Long = "Manage the rollout of one or many resources."
 
 	return rolloutCmd
+}
+
+// CreateScaleCommand creates a kubectl scale command with all its flags and behavior.
+func (c *Client) CreateScaleCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the scale command using kubectl's NewCmdScale
+	scaleCmd := scale.NewCmdScale(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	scaleCmd.Use = "scale"
+	scaleCmd.Short = "Scale resources"
+	scaleCmd.Long = "Set a new size for a deployment, replica set, replication controller, or stateful set."
+
+	return scaleCmd
 }
