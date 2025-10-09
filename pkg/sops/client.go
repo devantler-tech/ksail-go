@@ -1,4 +1,17 @@
 // Package sops provides a sops client implementation for executing sops commands.
+//
+// # Implementation Note
+//
+// This package uses exec to run the sops binary rather than importing sops as a Go library.
+// This is intentional because:
+//
+//  1. SOPS uses urfave/cli v1, which is incompatible with Cobra
+//  2. SOPS doesn't export an app builder - all commands are defined in a 2500+ line main.go
+//  3. The only stable API SOPS provides is for decryption (github.com/getsops/sops/v3/decrypt)
+//  4. Wrapping urfave/cli apps in Cobra requires significant code duplication and is fragile
+//
+// A generic urfave/cli to Cobra wrapper is provided in pkg/cliwrapper for other use cases,
+// but for SOPS specifically, the exec approach is cleaner and more maintainable.
 package sops
 
 import (
