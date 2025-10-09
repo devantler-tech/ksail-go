@@ -69,8 +69,6 @@ func TestSopsAppCommands(t *testing.T) {
 			t.Errorf("command %q should have an action", cmd.Name)
 		}
 
-		if !cmd.SkipFlagParsing {
-			t.Errorf("command %q should have SkipFlagParsing set to true", cmd.Name)
-		}
+		// Note: SkipFlagParsing is not used anymore since we're handling flags properly
 	}
 }

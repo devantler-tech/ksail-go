@@ -2,20 +2,32 @@
 package builder
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 
+	"github.com/getsops/sops/v3"         //nolint:depguard // Required for SOPS operations
+	"github.com/getsops/sops/v3/age"     //nolint:depguard // Required for age encryption
+	"github.com/getsops/sops/v3/pgp"     //nolint:depguard // Required for PGP encryption
 	"github.com/getsops/sops/v3/version" //nolint:depguard // Required for sops version info
 	"github.com/urfave/cli"              //nolint:depguard // This package wraps urfave/cli apps
+
+	"github.com/devantler-tech/ksail-go/pkg/sops/operations"
+)
+
+var (
+	// ErrNotImplemented is returned when a command is not yet implemented.
+	ErrNotImplemented = errors.New("command not yet implemented with Go libraries")
+	// ErrNoInputFile is returned when no input file is specified.
+	ErrNoInputFile = errors.New("no input file specified")
+	// ErrNoEncryptionKeys is returned when no encryption keys are specified.
+	ErrNoEncryptionKeys = errors.New("no encryption keys specified (use --age or --pgp)")
 )
 
 // NewSopsApp creates a urfave/cli app that wraps SOPS functionality.
 // This app can be wrapped with pkg/cliwrapper to integrate with Cobra.
 //
-// Note: This is a pragmatic implementation that delegates to the sops binary
-// for actual operations, wrapped in a urfave/cli structure for compatibility.
+// Note: This implementation uses SOPS Go libraries directly for operations.
 func NewSopsApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "cipher"
@@ -41,12 +53,10 @@ or in the SOPS_AGE_RECIPIENTS environment variable.
 To encrypt or decrypt using PGP, specify the PGP fingerprint in the
 -p flag or in the SOPS_PGP_FP environment variable.`
 
-	// Default action - delegate to sops binary
-	app.Action = func(c *cli.Context) error {
-		return executeSopsBinary(c.Args())
-	}
+	// Default action
+	app.Action = cli.ShowAppHelp
 
-	// Define subcommands that delegate to sops
+	// Define subcommands that use SOPS libraries
 	app.Commands = createSopsCommands()
 
 	return app
@@ -58,98 +68,144 @@ func createSopsCommands() []cli.Command {
 		{
 			Name:  "encrypt",
 			Usage: "encrypt a file, and output the results to stdout",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"encrypt"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "age, a",
+					Usage: "comma separated list of age recipients",
+				},
+				cli.StringFlag{
+					Name:  "pgp, p",
+					Usage: "comma separated list of PGP fingerprints",
+				},
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
 			},
-			SkipFlagParsing: true,
+			Action: handleEncrypt,
 		},
 		{
 			Name:  "decrypt",
 			Usage: "decrypt a file, and output the results to stdout",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"decrypt"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
 			},
-			SkipFlagParsing: true,
+			Action: handleDecrypt,
 		},
 		{
 			Name:  "rotate",
 			Usage: "generate a new data encryption key and reencrypt all values with the new key",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"rotate"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 		{
 			Name:  "edit",
 			Usage: "edit an encrypted file",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"edit"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 		{
 			Name:  "set",
 			Usage: "set a specific key or branch in the input document",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"set"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 		{
 			Name:  "unset",
 			Usage: "unset a specific key or branch in the input document",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"unset"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 		{
 			Name:  "updatekeys",
 			Usage: "update the keys of SOPS files using the config file",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"updatekeys"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 		{
 			Name:  "groups",
 			Usage: "modify the groups on a SOPS file",
-			Action: func(c *cli.Context) error {
-				args := append([]string{"groups"}, c.Args()...)
-
-				return executeSopsBinary(args)
+			Action: func(_ *cli.Context) error {
+				return ErrNotImplemented
 			},
-			SkipFlagParsing: true,
 		},
 	}
 }
 
-// executeSopsBinary executes the sops binary with the provided arguments.
-func executeSopsBinary(args []string) error {
-	ctx := context.Background()
-	sopsCmd := exec.CommandContext(ctx, "sops", args...)
-	sopsCmd.Stdin = os.Stdin
-	sopsCmd.Stdout = os.Stdout
-	sopsCmd.Stderr = os.Stderr
+func handleEncrypt(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
 
-	err := sopsCmd.Run()
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+
+	// Parse key groups from flags
+	keyGroups, err := parseKeyGroups(cliCtx)
 	if err != nil {
-		return fmt.Errorf("sops command execution failed: %w", err)
+		return fmt.Errorf("failed to parse key groups: %w", err)
+	}
+
+	if len(keyGroups) == 0 {
+		return ErrNoEncryptionKeys
+	}
+
+	// Encrypt file
+	err = operations.EncryptFileToWriter(inputFile, keyGroups, outputFormat, os.Stdout)
+	if err != nil {
+		return fmt.Errorf("encryption failed: %w", err)
 	}
 
 	return nil
+}
+
+func handleDecrypt(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+
+	// Decrypt file
+	err := operations.DecryptFileToWriter(inputFile, outputFormat, os.Stdout)
+	if err != nil {
+		return fmt.Errorf("decryption failed: %w", err)
+	}
+
+	return nil
+}
+
+func parseKeyGroups(cliCtx *cli.Context) ([]sops.KeyGroup, error) {
+	var keyGroup sops.KeyGroup
+
+	// Parse age recipients
+	ageRecipients := cliCtx.String("age")
+	if ageRecipients != "" {
+		masterKey := &age.MasterKey{
+			Recipient: ageRecipients,
+		}
+		keyGroup = append(keyGroup, masterKey)
+	}
+
+	// Parse PGP fingerprints
+	pgpFingerprints := cliCtx.String("pgp")
+	if pgpFingerprints != "" {
+		masterKey := pgp.NewMasterKeyFromFingerprint(pgpFingerprints)
+		keyGroup = append(keyGroup, masterKey)
+	}
+
+	if len(keyGroup) == 0 {
+		return nil, nil
+	}
+
+	return []sops.KeyGroup{keyGroup}, nil
 }
