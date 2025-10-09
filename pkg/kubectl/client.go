@@ -9,6 +9,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/exec"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -115,4 +116,27 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
 
 	return createCmd
+}
+
+// CreateExecCommand creates a kubectl exec command with all its flags and behavior.
+func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the exec command using kubectl's NewCmdExec
+	execCmd := exec.NewCmdExec(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	execCmd.Use = "exec"
+	execCmd.Short = "Execute a command in a container"
+	execCmd.Long = "Execute a command in a container in a pod."
+
+	return execCmd
 }
