@@ -151,93 +151,85 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 }
 
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
-	t.Parallel()
+	// NOT parallel - modifies global os.Args
 
-	// Save original args and capture them during test
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
-		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
-	require.NotNil(t, cmd)
 
-	// Execute the command
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	// Verify os.Args were set correctly
-	require.Contains(t, capturedArgs, "k9s")
-	require.Contains(t, capturedArgs, "--kubeconfig")
-	require.Contains(t, capturedArgs, "/test/kubeconfig")
+	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
 }
 
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
-	t.Parallel()
+	// NOT parallel - modifies global os.Args
 
-	// Save original args and capture them during test
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
-		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-
 	cmd := client.CreateConnectCommand("")
-	require.NotNil(t, cmd)
 
-	// Execute the command
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	// Verify os.Args only contains k9s (no kubeconfig)
-	require.Contains(t, capturedArgs, "k9s")
-	require.NotContains(t, capturedArgs, "--kubeconfig")
+	assertArgsContain(t, capturedArgs, "k9s")
+	assertArgsNotContain(t, capturedArgs, "--kubeconfig")
 }
 
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
-	t.Parallel()
+	// NOT parallel - modifies global os.Args
 
-	// Save original args and capture them during test
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
-		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
-	require.NotNil(t, cmd)
 
-	// Execute the command with additional arguments
 	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
 	require.NoError(t, err)
 
-	// Verify os.Args contains all arguments
-	require.Contains(t, capturedArgs, "k9s")
-	require.Contains(t, capturedArgs, "--kubeconfig")
-	require.Contains(t, capturedArgs, "/test/kubeconfig")
-	require.Contains(t, capturedArgs, "--namespace")
-	require.Contains(t, capturedArgs, "default")
-	require.Contains(t, capturedArgs, "--readonly")
+	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
+		"--namespace", "default", "--readonly")
+}
+
+// assertArgsContain is a helper to assert that all expected values are in the args slice.
+func assertArgsContain(t *testing.T, args []string, expected ...string) {
+	t.Helper()
+	for _, exp := range expected {
+		require.Contains(t, args, exp, "expected args to contain %q", exp)
+	}
+}
+
+// assertArgsNotContain is a helper to assert that values are not in the args slice.
+func assertArgsNotContain(t *testing.T, args []string, notExpected ...string) {
+	t.Helper()
+	for _, notExp := range notExpected {
+		require.NotContains(t, args, notExp, "expected args to not contain %q", notExp)
+	}
 }
 
 func TestRunK9s_OsArgsRestored(t *testing.T) {
-	t.Parallel()
+	// NOT parallel - modifies global os.Args
 
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Once()
