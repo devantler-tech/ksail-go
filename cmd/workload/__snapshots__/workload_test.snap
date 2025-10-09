@@ -222,10 +222,27 @@ Flags:
 Install Helm charts to provision workloads through KSail.
 
 Usage:
-  ksail workload install [flags]
+  ksail workload install [RELEASE_NAME] [CHART] [flags]
+
+Examples:
+  # Install a chart from a repository
+  ksail workload install my-release stable/nginx-ingress
+
+  # Install a chart with a specific version
+  ksail workload install my-release stable/nginx-ingress --version 1.2.3
+
+  # Install a chart with custom values
+  ksail workload install my-release stable/nginx-ingress --values values.yaml
+
+  # Install an OCI chart
+  ksail workload install my-release oci://registry/repo/chart
 
 Flags:
-  -h, --help   help for install
+  -h, --help               help for install
+  -n, --namespace string   Namespace to install the chart into (default "default")
+      --timeout duration   Timeout for the install operation (default 5m0s)
+      --values string      Path to values file
+      --version string     Version of the chart to install
 
 ---
 
