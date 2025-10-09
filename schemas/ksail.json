@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksail.dev/schemas/ksail.json",
+  "properties": {
+    "kind": {
+      "type": "string"
+    },
+    "apiVersion": {
+      "type": "string"
+    },
+    "spec": {
+      "properties": {
+        "distributionConfig": {
+          "type": "string"
+        },
+        "sourceDirectory": {
+          "type": "string"
+        },
+        "connection": {
+          "properties": {
+            "kubeconfig": {
+              "type": "string"
+            },
+            "context": {
+              "type": "string"
+            },
+            "timeout": {
+              "properties": {
+                "Duration": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "Duration"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "kubeconfig",
+            "context",
+            "timeout"
+          ]
+        },
+        "distribution": {
+          "type": "string"
+        },
+        "cni": {
+          "type": "string"
+        },
+        "csi": {
+          "type": "string"
+        },
+        "ingressController": {
+          "type": "string"
+        },
+        "gatewayController": {
+          "type": "string"
+        },
+        "gitOpsEngine": {
+          "type": "string"
+        },
+        "options": {
+          "properties": {
+            "kind": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "k3d": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "cilium": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "flux": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "argocd": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "helm": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "kustomize": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "kind",
+            "k3d",
+            "cilium",
+            "flux",
+            "argocd",
+            "helm",
+            "kustomize"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "distributionConfig",
+        "sourceDirectory",
+        "connection",
+        "distribution",
+        "cni",
+        "csi",
+        "ingressController",
+        "gatewayController",
+        "gitOpsEngine",
+        "options"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "spec"
+  ],
+  "title": "KSail Cluster Configuration",
+  "description": "Schema for KSail cluster configuration (ksail.yaml)"
+}
