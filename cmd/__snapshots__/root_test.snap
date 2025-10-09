@@ -18,7 +18,7 @@ Usage:
   ksail [command]
 
 Available Commands:
-  cipher      Manage encryption and decryption with SOPS
+  cipher      sops - encrypted file editor with AWS KMS, GCP KMS, Azure Key Vault, age, and GPG support
   cluster     Manage cluster lifecycle
   completion  Generate the autocompletion script for the specified shell
   help        Help about any command

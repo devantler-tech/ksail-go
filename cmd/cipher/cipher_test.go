@@ -22,9 +22,9 @@ func TestNewCipherCmd(t *testing.T) {
 		t.Errorf("expected Use to be 'cipher', got %q", cmd.Use)
 	}
 
-	expectedShort := "Manage encryption and decryption with SOPS"
-	if cmd.Short != expectedShort {
-		t.Errorf("expected Short to be %q, got %q", expectedShort, cmd.Short)
+	// Verify the short description is set (wrapped from urfave/cli app)
+	if cmd.Short == "" {
+		t.Error("expected Short description to be set")
 	}
 }
 
