@@ -10,6 +10,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// setupConfigFile is a helper function that writes a config file to a temp directory
+// and changes to that directory.
+func setupConfigFile(t *testing.T, configContent string) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	err := os.WriteFile(configPath, []byte(configContent), 0o600)
+	require.NoError(t, err)
+
+	t.Chdir(tempDir)
+}
+
 func TestGetDefaultKubeconfigPath(t *testing.T) {
 	t.Parallel()
 
@@ -70,9 +83,6 @@ func TestGetKubeconfigPathSilentlyWithNoConfig(t *testing.T) {
 
 //nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestGetKubeconfigPathSilentlyWithEmptyKubeconfigInConfig(t *testing.T) {
-	// Create temp directory with config that has empty kubeconfig field
-	tempDir := t.TempDir()
-
 	// Write a minimal ksail.yaml with empty kubeconfig
 	configContent := `apiVersion: v1alpha1
 kind: Cluster
@@ -83,12 +93,7 @@ spec:
   connection:
     kubeconfig: ""
 `
-	configPath := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	// Change to temp directory
-	t.Chdir(tempDir)
+	setupConfigFile(t, configContent)
 
 	path := shared.GetKubeconfigPathSilently()
 
@@ -106,9 +111,6 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestGetKubeconfigPathSilentlyWithTildePath(t *testing.T) {
-	// Create temp directory with config that uses tilde path
-	tempDir := t.TempDir()
-
 	// Write a ksail.yaml with tilde in kubeconfig path
 	configContent := `apiVersion: v1alpha1
 kind: Cluster
@@ -119,12 +121,7 @@ spec:
   connection:
     kubeconfig: "~/.kube/custom-config"
 `
-	configPath := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	// Change to temp directory
-	t.Chdir(tempDir)
+	setupConfigFile(t, configContent)
 
 	path := shared.GetKubeconfigPathSilently()
 
