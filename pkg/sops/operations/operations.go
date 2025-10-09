@@ -320,6 +320,7 @@ func UnsetValue(inputPath string, treePath []interface{}, outputFormat string) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to unset value: %w", err)
 	}
+
 	tree.Branches[0] = newBranch
 
 	// Re-encrypt
