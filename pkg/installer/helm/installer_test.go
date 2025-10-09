@@ -39,7 +39,9 @@ func TestHelmInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := helminstaller.NewMockHelmClient(t)
-	client.EXPECT().InstallChart(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	client.EXPECT().
+		InstallChart(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil)
 
 	installer := helminstaller.NewHelmInstaller(
 		client,
@@ -60,7 +62,9 @@ func TestHelmInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
 	client := helminstaller.NewMockHelmClient(t)
-	client.EXPECT().InstallChart(mock.Anything, mock.Anything, mock.Anything).Return(nil, assert.AnError)
+	client.EXPECT().
+		InstallChart(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, assert.AnError)
 
 	installer := helminstaller.NewHelmInstaller(
 		client,

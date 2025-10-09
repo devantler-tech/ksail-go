@@ -15,6 +15,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	// expectedInstallArgs is the number of required arguments for the install command.
+	expectedInstallArgs = 2
+	// defaultTimeout is the default timeout for helm install operations.
+	defaultTimeout = 5 * time.Minute
+)
+
 // installFlags holds the flags for the install command.
 type installFlags struct {
 	releaseName string
@@ -33,7 +40,7 @@ func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 		Use:   "install [RELEASE_NAME] [CHART]",
 		Short: "Install Helm charts",
 		Long:  "Install Helm charts to provision workloads through KSail.",
-		Args:  cobra.ExactArgs(2),
+		Args:  cobra.ExactArgs(expectedInstallArgs),
 		Example: `  # Install a chart from a repository
   ksail workload install my-release stable/nginx-ingress
 
@@ -54,10 +61,21 @@ func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&flags.namespace, "namespace", "n", "default", "Namespace to install the chart into")
+	cmd.Flags().StringVarP(
+		&flags.namespace,
+		"namespace",
+		"n",
+		"default",
+		"Namespace to install the chart into",
+	)
 	cmd.Flags().StringVar(&flags.version, "version", "", "Version of the chart to install")
 	cmd.Flags().StringVar(&flags.valuesFile, "values", "", "Path to values file")
-	cmd.Flags().DurationVar(&flags.timeout, "timeout", 5*time.Minute, "Timeout for the install operation")
+	cmd.Flags().DurationVar(
+		&flags.timeout,
+		"timeout",
+		defaultTimeout,
+		"Timeout for the install operation",
+	)
 
 	return cmd
 }
@@ -77,30 +95,15 @@ func runInstall(out io.Writer, flags *installFlags) error {
 	kubeconfigPath := getKubeconfigPathSilently()
 
 	// Read values file if provided
-	valuesYaml := ""
-	if flags.valuesFile != "" {
-		content, err := os.ReadFile(flags.valuesFile)
-		if err != nil {
-			return fmt.Errorf("failed to read values file: %w", err)
-		}
-		valuesYaml = string(content)
+	valuesYaml, err := readValuesFile(flags.valuesFile)
+	if err != nil {
+		return err
 	}
 
-	// Read kubeconfig file
-	kubeconfigBytes, err := os.ReadFile(kubeconfigPath)
+	// Create helm client
+	client, err := createHelmClient(kubeconfigPath, flags.namespace)
 	if err != nil {
-		return fmt.Errorf("failed to read kubeconfig file: %w", err)
-	}
-
-	// Create helm client using KubeConfClientOptions
-	client, err := helmclient.NewClientFromKubeConf(&helmclient.KubeConfClientOptions{
-		Options: &helmclient.Options{
-			Namespace: flags.namespace,
-		},
-		KubeConfig: kubeconfigBytes,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create helm client: %w", err)
+		return err
 	}
 
 	// Create installer
@@ -116,6 +119,7 @@ func runInstall(out io.Writer, flags *installFlags) error {
 
 	// Install chart
 	ctx := context.Background()
+
 	err = installer.Install(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to install chart: %w", err)
@@ -130,4 +134,41 @@ func runInstall(out io.Writer, flags *installFlags) error {
 	})
 
 	return nil
+}
+
+func readValuesFile(valuesFile string) (string, error) {
+	if valuesFile == "" {
+		return "", nil
+	}
+
+	// #nosec G304 -- valuesFile is a user-provided path for configuration
+	content, err := os.ReadFile(valuesFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to read values file: %w", err)
+	}
+
+	return string(content), nil
+}
+
+//nolint:ireturn // Returning interface is intentional for testing flexibility
+func createHelmClient(kubeconfigPath, namespace string) (helminstaller.HelmClient, error) {
+	// Read kubeconfig file
+	// #nosec G304 -- kubeconfigPath is derived from config or default path
+	kubeconfigBytes, err := os.ReadFile(kubeconfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read kubeconfig file: %w", err)
+	}
+
+	// Create helm client using KubeConfClientOptions
+	client, err := helmclient.NewClientFromKubeConf(&helmclient.KubeConfClientOptions{
+		Options: &helmclient.Options{
+			Namespace: namespace,
+		},
+		KubeConfig: kubeconfigBytes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create helm client: %w", err)
+	}
+
+	return client, nil
 }
