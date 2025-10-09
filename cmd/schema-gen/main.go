@@ -32,7 +32,7 @@ func run(args []string) error {
 	schema := reflector.Reflect(&v1alpha1.Cluster{})
 
 	// Set the schema ID and title
-	schema.ID = "https://ksail.dev/schemas/ksail.json"
+	schema.ID = "https://ksail.dev/schemas/ksail-cluster-schema.json"
 	schema.Title = "KSail Cluster Configuration"
 	schema.Description = "Schema for KSail cluster configuration (ksail.yaml)"
 
@@ -42,8 +42,8 @@ func run(args []string) error {
 		return fmt.Errorf("error marshaling schema: %w", err)
 	}
 
-	// Determine output path - default to schemas/ksail.json
-	outputPath := "schemas/ksail.json"
+	// Determine output path - default to schemas/ksail-cluster-schema.json
+	outputPath := "schemas/ksail-cluster-schema.json"
 	if len(args) > 0 {
 		outputPath = args[0]
 	}

@@ -35,7 +35,7 @@ func TestRunGeneratesSchema(t *testing.T) {
 
 	// Verify key schema properties
 	assert.Equal(t, "https://json-schema.org/draft/2020-12/schema", schema["$schema"])
-	assert.Equal(t, "https://ksail.dev/schemas/ksail.json", schema["$id"])
+	assert.Equal(t, "https://ksail.dev/schemas/ksail-cluster-schema.json", schema["$id"])
 	assert.Equal(t, "KSail Cluster Configuration", schema["title"])
 	assert.Equal(t, "Schema for KSail cluster configuration (ksail.yaml)", schema["description"])
 
@@ -59,7 +59,7 @@ func TestRunGeneratesSchemaWithDefaultPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the schema file was created at default location
-	defaultPath := filepath.Join(tempDir, "schemas", "ksail.json")
+	defaultPath := filepath.Join(tempDir, "schemas", "ksail-cluster-schema.json")
 	require.FileExists(t, defaultPath)
 
 	// Verify the schema is valid JSON
