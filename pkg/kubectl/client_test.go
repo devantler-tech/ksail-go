@@ -323,3 +323,47 @@ func TestCreateScaleCommandHasFlags(t *testing.T) {
 	)
 	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
 }
+
+func TestCreateRolloutCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateRolloutCommand(path) },
+		"rollout",
+		"Manage the rollout of a resource",
+		"Manage the rollout of one or many resources.",
+	)
+}
+
+func TestCreateRolloutCommandHasSubcommands(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateRolloutCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl rollout subcommands are present
+	subcommands := cmd.Commands()
+	require.NotEmpty(t, subcommands, "expected rollout command to have subcommands")
+
+	// Check for rollout subcommands
+	subcommandNames := make(map[string]bool)
+	for _, subcmd := range subcommands {
+		subcommandNames[subcmd.Name()] = true
+	}
+
+	expectedSubcommands := []string{
+		"history",
+		"pause",
+		"restart",
+		"resume",
+		"status",
+		"undo",
+	}
+
+	for _, expected := range expectedSubcommands {
+		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
+	}
+}
