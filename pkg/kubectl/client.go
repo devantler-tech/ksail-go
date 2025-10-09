@@ -9,6 +9,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/explain"
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -117,6 +118,29 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
 
 	return createCmd
+}
+
+// CreateExplainCommand creates a kubectl explain command with all its flags and behavior.
+func (c *Client) CreateExplainCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the explain command using kubectl's NewCmdExplain
+	explainCmd := explain.NewCmdExplain("ksail", factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	explainCmd.Use = "explain"
+	explainCmd.Short = "Get documentation for a resource"
+	explainCmd.Long = "Get documentation for Kubernetes resources, including field descriptions and structure."
+
+	return explainCmd
 }
 
 // CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
