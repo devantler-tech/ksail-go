@@ -222,3 +222,33 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateExposeCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExposeCommand(path) },
+		"expose",
+		"Expose a resource as a service",
+		"Expose a resource as a new Kubernetes service.",
+	)
+}
+
+func TestCreateExposeCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExposeCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl expose flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("port"), "expected --port flag to be present")
+	require.NotNil(t, flags.Lookup("protocol"), "expected --protocol flag to be present")
+	require.NotNil(t, flags.Lookup("target-port"), "expected --target-port flag to be present")
+	require.NotNil(t, flags.Lookup("name"), "expected --name flag to be present")
+	require.NotNil(t, flags.Lookup("type"), "expected --type flag to be present")
+	require.NotNil(t, flags.Lookup("external-ip"), "expected --external-ip flag to be present")
+}

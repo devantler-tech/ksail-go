@@ -9,6 +9,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/expose"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -115,4 +116,27 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
 
 	return createCmd
+}
+
+// CreateExposeCommand creates a kubectl expose command with all its flags and behavior.
+func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the expose command using kubectl's NewCmdExposeService
+	exposeCmd := expose.NewCmdExposeService(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	exposeCmd.Use = "expose"
+	exposeCmd.Short = "Expose a resource as a service"
+	exposeCmd.Long = "Expose a resource as a new Kubernetes service."
+
+	return exposeCmd
 }
