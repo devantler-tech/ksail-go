@@ -9,18 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockK9sExecutor is a mock implementation of Executor for testing.
-type MockK9sExecutor struct {
-	ExecuteCalled    bool
-	OsArgsWhenCalled []string
-}
-
-func (m *MockK9sExecutor) Execute() {
-	m.ExecuteCalled = true
-	m.OsArgsWhenCalled = make([]string, len(os.Args))
-	copy(m.OsArgsWhenCalled, os.Args)
-}
-
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
@@ -31,7 +19,7 @@ func TestNewClient(t *testing.T) {
 func TestNewClientWithExecutor(t *testing.T) {
 	t.Parallel()
 
-	mockExecutor := &MockK9sExecutor{}
+	mockExecutor := k9s.NewMockExecutor(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	require.NotNil(t, client, "expected client to be created")
 }
@@ -165,7 +153,16 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	mockExecutor := &MockK9sExecutor{}
+	// Save original args and capture them during test
+	var capturedArgs []string
+	
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		// Capture os.Args when Execute is called
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+	
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
@@ -175,19 +172,25 @@ func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	// Verify the executor was called
-	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
-
 	// Verify os.Args were set correctly
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "/test/kubeconfig")
+	require.Contains(t, capturedArgs, "k9s")
+	require.Contains(t, capturedArgs, "--kubeconfig")
+	require.Contains(t, capturedArgs, "/test/kubeconfig")
 }
 
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	mockExecutor := &MockK9sExecutor{}
+	// Save original args and capture them during test
+	var capturedArgs []string
+	
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		// Capture os.Args when Execute is called
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+	
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("")
@@ -197,18 +200,24 @@ func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	// Verify the executor was called
-	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
-
 	// Verify os.Args only contains k9s (no kubeconfig)
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
-	require.NotContains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
+	require.Contains(t, capturedArgs, "k9s")
+	require.NotContains(t, capturedArgs, "--kubeconfig")
 }
 
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	t.Parallel()
 
-	mockExecutor := &MockK9sExecutor{}
+	// Save original args and capture them during test
+	var capturedArgs []string
+	
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		// Capture os.Args when Execute is called
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+	
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
@@ -218,22 +227,21 @@ func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
 	require.NoError(t, err)
 
-	// Verify the executor was called
-	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
-
 	// Verify os.Args contains all arguments
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "/test/kubeconfig")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--namespace")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "default")
-	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--readonly")
+	require.Contains(t, capturedArgs, "k9s")
+	require.Contains(t, capturedArgs, "--kubeconfig")
+	require.Contains(t, capturedArgs, "/test/kubeconfig")
+	require.Contains(t, capturedArgs, "--namespace")
+	require.Contains(t, capturedArgs, "default")
+	require.Contains(t, capturedArgs, "--readonly")
 }
 
 func TestRunK9s_OsArgsRestored(t *testing.T) {
 	t.Parallel()
 
-	mockExecutor := &MockK9sExecutor{}
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Once()
+	
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	// Save original os.Args
