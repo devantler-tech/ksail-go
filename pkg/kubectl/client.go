@@ -13,6 +13,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/explain"
 	"k8s.io/kubectl/pkg/cmd/expose"
 	"k8s.io/kubectl/pkg/cmd/get"
+	"k8s.io/kubectl/pkg/cmd/logs"
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -189,6 +190,30 @@ func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
 	getCmd.Long = "Display one or many Kubernetes resources from your cluster."
 
 	return getCmd
+}
+
+// CreateLogsCommand creates a kubectl logs command with all its flags and behavior.
+func (c *Client) CreateLogsCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the logs command using kubectl's NewCmdLogs
+	logsCmd := logs.NewCmdLogs(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	logsCmd.Use = "logs"
+	logsCmd.Short = "Print container logs"
+	logsCmd.Long = "Print the logs for a container in a pod or specified resource. " +
+		"If the pod has only one container, the container name is optional."
+
+	return logsCmd
 }
 
 // CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
