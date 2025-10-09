@@ -28,7 +28,7 @@
             },
             "context": {
               "type": "string",
-              "description": "Kubernetes context of the cluster"
+              "description": "Kubernetes context of cluster"
             },
             "timeout": {
               "properties": {
@@ -47,7 +47,7 @@
         },
         "distribution": {
           "type": "string",
-          "description": "Kubernetes distribution to use (Kind, K3d, or EKS)"
+          "description": "Kubernetes distribution to use"
         },
         "cni": {
           "type": "string",

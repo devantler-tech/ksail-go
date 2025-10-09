@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	"github.com/invopop/jsonschema"
 )
 
@@ -17,7 +19,7 @@ const (
 )
 
 // addPropertyDescriptions adds human-readable descriptions to schema properties.
-// Descriptions are based on CLI flag descriptions used in the config manager.
+// Descriptions are dynamically extracted from field selectors in the config manager.
 func addPropertyDescriptions(schema *jsonschema.Schema) {
 	// Add descriptions to top-level properties
 	if schema.Properties != nil {
@@ -37,46 +39,184 @@ func addPropertyDescriptions(schema *jsonschema.Schema) {
 }
 
 // addSpecPropertyDescriptions adds descriptions to spec properties.
-//
-//nolint:cyclop // Function complexity is acceptable for property description mapping
+// Descriptions are extracted dynamically from field selectors defined in the config manager.
 func addSpecPropertyDescriptions(specSchema *jsonschema.Schema) {
 	if specSchema.Properties == nil {
 		return
 	}
 
-	descriptions := map[string]string{
-		"distribution":       "Kubernetes distribution to use (Kind, K3d, or EKS)",
-		"distributionConfig": "Configuration file for the distribution",
-		"sourceDirectory":    "Directory containing workloads to deploy",
-		"connection":         "Connection settings for the Kubernetes cluster",
-		"cni":                "Container Network Interface to use",
-		"csi":                "Container Storage Interface to use",
-		"ingressController":  "Ingress controller to install",
-		"gatewayController":  "Gateway API controller to install",
-		"gitOpsEngine":       "GitOps engine to use for deployment",
-		"options":            "Distribution-specific and tool-specific options",
-	}
+	// Get descriptions from field selectors
+	fieldDescriptions := extractFieldDescriptions()
 
-	for fieldName, description := range descriptions {
-		if prop, ok := specSchema.Properties.Get(fieldName); ok && prop != nil {
+	// Apply descriptions to properties
+	for fieldPath, description := range fieldDescriptions {
+		if prop, ok := specSchema.Properties.Get(fieldPath); ok && prop != nil {
 			prop.Description = description
 		}
 	}
 
-	// Add descriptions for connection properties
-	if connProp, ok := specSchema.Properties.Get("connection"); ok &&
-		connProp != nil && connProp.Properties != nil {
-		if kubeconfig, ok := connProp.Properties.Get("kubeconfig"); ok && kubeconfig != nil {
-			kubeconfig.Description = "Path to the kubeconfig file"
+	// Add descriptions for nested connection properties
+	addConnectionPropertyDescriptions(specSchema)
+}
+
+// extractFieldDescriptions extracts field descriptions from all available field selectors.
+func extractFieldDescriptions() map[string]string {
+	descriptions := make(map[string]string)
+
+	// Create a sample cluster to use with field selectors
+	cluster := &v1alpha1.Cluster{}
+
+	// Get all standard field selectors
+	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
+		configmanager.StandardSourceDirectoryFieldSelector(),
+		configmanager.DefaultContextFieldSelector(),
+	}
+
+	// Extract field paths and descriptions from selectors
+	for _, selector := range selectors {
+		if selector.Description == "" {
+			continue
 		}
 
-		if context, ok := connProp.Properties.Get("context"); ok && context != nil {
-			context.Description = "Kubernetes context of the cluster"
+		// Get the field pointer from the selector
+		fieldPtr := selector.Selector(cluster)
+
+		// Determine the field path by inspecting the pointer
+		fieldPath := getFieldPath(cluster, fieldPtr)
+		if fieldPath != "" {
+			descriptions[fieldPath] = selector.Description
+		}
+	}
+
+	// Add additional descriptions for fields not covered by standard selectors
+	// These are fields that don't have CLI flags but need descriptions
+	additionalDescriptions := map[string]string{
+		"connection":        "Connection settings for the Kubernetes cluster",
+		"cni":               "Container Network Interface to use",
+		"csi":               "Container Storage Interface to use",
+		"ingressController": "Ingress controller to install",
+		"gatewayController": "Gateway API controller to install",
+		"gitOpsEngine":      "GitOps engine to use for deployment",
+		"options":           "Distribution-specific and tool-specific options",
+	}
+
+	for key, desc := range additionalDescriptions {
+		if _, exists := descriptions[key]; !exists {
+			descriptions[key] = desc
+		}
+	}
+
+	return descriptions
+}
+
+// getFieldPath determines the JSON field name for a given field pointer.
+func getFieldPath(cluster *v1alpha1.Cluster, fieldPtr any) string {
+	// Map field pointers to their JSON field names
+	switch fieldPtr {
+	case &cluster.Spec.Distribution:
+		return "distribution"
+	case &cluster.Spec.DistributionConfig:
+		return "distributionConfig"
+	case &cluster.Spec.SourceDirectory:
+		return "sourceDirectory"
+	case &cluster.Spec.Connection.Context:
+		return "context"
+	case &cluster.Spec.Connection.Kubeconfig:
+		return "kubeconfig"
+	case &cluster.Spec.Connection.Timeout:
+		return "timeout"
+	}
+
+	// If we can't determine the field path, try reflection as a fallback
+	return getFieldPathByReflection(cluster, fieldPtr)
+}
+
+// getFieldPathByReflection uses reflection to find the field path.
+func getFieldPathByReflection(cluster *v1alpha1.Cluster, fieldPtr any) string {
+	clusterVal := reflect.ValueOf(cluster).Elem()
+	ptrVal := reflect.ValueOf(fieldPtr)
+
+	// Check if it's a pointer
+	if ptrVal.Kind() != reflect.Ptr {
+		return ""
+	}
+
+	// Try to find the field in Spec
+	specVal := clusterVal.FieldByName("Spec")
+	if !specVal.IsValid() {
+		return ""
+	}
+
+	return findFieldInStruct(specVal, ptrVal.Pointer())
+}
+
+//nolint:nestif,intrange // Reflection code requires complex nested conditions
+func findFieldInStruct(structVal reflect.Value, targetPtr uintptr) string {
+	structType := structVal.Type()
+
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Field(i)
+		fieldType := structType.Field(i)
+
+		// Check if this field's address matches
+		if field.CanAddr() && field.Addr().Pointer() == targetPtr {
+			// Get JSON tag name
+			jsonTag := fieldType.Tag.Get("json")
+			if jsonTag != "" {
+				// Parse the tag (e.g., "fieldName,omitzero")
+				if idx := len(jsonTag); idx > 0 {
+					for j, c := range jsonTag {
+						if c == ',' {
+							return jsonTag[:j]
+						}
+					}
+
+					return jsonTag
+				}
+			}
+
+			return fieldType.Name
 		}
 
-		if timeout, ok := connProp.Properties.Get("timeout"); ok && timeout != nil {
-			timeout.Description = "Timeout for cluster operations"
+		// Recursively search in nested structs
+		if field.Kind() == reflect.Struct {
+			result := findFieldInStruct(field, targetPtr)
+			if result != "" {
+				return result
+			}
 		}
+	}
+
+	return ""
+}
+
+// addConnectionPropertyDescriptions adds descriptions for connection properties.
+//
+//nolint:cyclop // Function complexity is acceptable for property description mapping
+func addConnectionPropertyDescriptions(specSchema *jsonschema.Schema) {
+	connProp, ok := specSchema.Properties.Get("connection")
+	if !ok || connProp == nil || connProp.Properties == nil {
+		return
+	}
+
+	// Get the context field selector for its description
+	contextSelector := configmanager.DefaultContextFieldSelector()
+
+	if kubeconfig, ok := connProp.Properties.Get("kubeconfig"); ok && kubeconfig != nil {
+		kubeconfig.Description = "Path to the kubeconfig file"
+	}
+
+	if context, ok := connProp.Properties.Get("context"); ok && context != nil {
+		// Use the description from the field selector
+		if contextSelector.Description != "" {
+			context.Description = contextSelector.Description
+		}
+	}
+
+	if timeout, ok := connProp.Properties.Get("timeout"); ok && timeout != nil {
+		timeout.Description = "Timeout for cluster operations"
 	}
 }
 
@@ -105,7 +245,7 @@ func run(args []string) error {
 	// These are metadata fields that are validated by the KSail validator
 	schema.Required = []string{"apiVersion", "kind"}
 
-	// Add descriptions to properties
+	// Add descriptions to properties dynamically from field selectors
 	addPropertyDescriptions(schema)
 
 	// Marshal to JSON with indentation
