@@ -10,6 +10,8 @@ import (
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/explain"
+	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
@@ -119,6 +121,7 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	return createCmd
 }
 
+
 // CreateDescribeCommand creates a kubectl describe command with all its flags and behavior.
 func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
 	// Create config flags with kubeconfig path
@@ -140,6 +143,52 @@ func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
 	describeCmd.Long = "Show details of a specific resource or group of resources."
 
 	return describeCmd
+}
+
+// CreateExplainCommand creates a kubectl explain command with all its flags and behavior.
+func (c *Client) CreateExplainCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the explain command using kubectl's NewCmdExplain
+	explainCmd := explain.NewCmdExplain("ksail", factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	explainCmd.Use = "explain"
+	explainCmd.Short = "Get documentation for a resource"
+	explainCmd.Long = "Get documentation for Kubernetes resources, including field descriptions and structure."
+
+	return explainCmd
+}
+
+// CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
+func (c *Client) CreateRolloutCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the rollout command using kubectl's NewCmdRollout
+	rolloutCmd := rollout.NewCmdRollout(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	rolloutCmd.Use = "rollout"
+	rolloutCmd.Short = "Manage the rollout of a resource"
+	rolloutCmd.Long = "Manage the rollout of one or many resources."
+
+	return rolloutCmd
 }
 
 // CreateScaleCommand creates a kubectl scale command with all its flags and behavior.

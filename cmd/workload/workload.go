@@ -12,7 +12,7 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		Use:   "workload",
 		Short: "Manage workload operations",
 		Long: "Group workload commands under a single namespace to reconcile, " +
-			"apply, create, delete, describe, edit, install, or scale workloads.",
+			"apply, create, delete, describe, edit, explain, install, rollout, or scale workloads.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},
@@ -25,7 +25,9 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewDeleteCmd(runtimeContainer))
 	cmd.AddCommand(NewDescribeCmd(runtimeContainer))
 	cmd.AddCommand(NewEditCmd(runtimeContainer))
+	cmd.AddCommand(NewExplainCmd(runtimeContainer))
 	cmd.AddCommand(NewInstallCmd(runtimeContainer))
+	cmd.AddCommand(NewRolloutCmd(runtimeContainer))
 	cmd.AddCommand(NewScaleCmd(runtimeContainer))
 
 	return cmd
