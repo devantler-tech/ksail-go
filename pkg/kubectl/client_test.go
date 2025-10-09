@@ -367,3 +367,62 @@ func TestCreateRolloutCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateDescribeCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateDescribeCommand(path) },
+		"describe",
+		"Describe resources",
+		"Show details of a specific resource or group of resources.",
+	)
+}
+
+func TestCreateDescribeCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateDescribeCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl describe flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("show-events"),
+		"expected --show-events flag to be present",
+	)
+}
+
+func TestCreateExplainCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExplainCommand(path) },
+		"explain",
+		"Get documentation for a resource",
+		"Get documentation for Kubernetes resources, including field descriptions and structure.",
+	)
+}
+
+func TestCreateExplainCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExplainCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl explain flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("api-version"), "expected --api-version flag to be present")
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
+}
