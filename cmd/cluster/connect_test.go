@@ -188,7 +188,7 @@ spec:
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
-	
+
 	// Verify that kubeconfig is empty in config
 	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig path to be empty before defaulting")
