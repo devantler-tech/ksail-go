@@ -180,6 +180,44 @@ Flags:
 
 ---
 
+[TestWorkloadHelpSnapshots/describe - 1]
+Show details of a specific resource or group of resources.
+
+Usage:
+  ksail workload describe
+
+Examples:
+  # Describe a node
+  kubectl describe nodes kubernetes-node-emt8.c.myproject.internal
+  
+  # Describe a pod
+  kubectl describe pods/nginx
+  
+  # Describe a pod identified by type and name in "pod.json"
+  kubectl describe -f pod.json
+  
+  # Describe all pods
+  kubectl describe pods
+  
+  # Describe pods by label name=myLabel
+  kubectl describe pods -l name=myLabel
+  
+  # Describe all pods managed by the 'frontend' replication controller
+  # (rc-created pods get the name of the rc as a prefix in the pod name)
+  kubectl describe pods frontend
+
+Flags:
+  -A, --all-namespaces     If present, list the requested object(s) across all namespaces. Namespace in current context is ignored even if specified with --namespace.
+      --chunk-size int     Return large lists in chunks rather than all at once. Pass 0 to disable. This flag is beta and may change in the future. (default 500)
+  -f, --filename strings   Filename, directory, or URL to files containing the resource to describe
+  -h, --help               help for describe
+  -k, --kustomize string   Process the kustomization directory. This flag can't be used together with -f or -R.
+  -R, --recursive          Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
+  -l, --selector string    Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+      --show-events        If true, display events related to the described object. (default true)
+
+---
+
 [TestWorkloadHelpSnapshots/install - 1]
 Install Helm charts to provision workloads through KSail.
 
@@ -192,7 +230,7 @@ Flags:
 ---
 
 [TestWorkloadHelpSnapshots/namespace - 1]
-Group workload commands under a single namespace to reconcile, apply, create, delete, edit, install, scale, or view logs for workloads.
+Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, explain, get, logs, rollout, scale, or install workloads.
 
 Usage:
   ksail workload [flags]
@@ -202,10 +240,14 @@ Available Commands:
   apply       Apply manifests
   create      Create resources
   delete      Delete resources
+  describe    Describe resources
   edit        Edit a resource
+  explain     Get documentation for a resource
+  get         Get resources
   install     Install Helm charts
   logs        Print container logs
   reconcile   Reconcile workloads with the cluster
+  rollout     Manage the rollout of a resource
   scale       Scale resources
 
 Flags:
@@ -265,6 +307,115 @@ Flags:
       --windows-line-endings          Defaults to the line ending native to your platform.
 
 ---
+
+[TestWorkloadHelpSnapshots/explain - 1]
+Get documentation for Kubernetes resources, including field descriptions and structure.
+
+Usage:
+  ksail workload explain
+
+Examples:
+  # Get the documentation of the resource and its fields
+  kubectl explain pods
+  
+  # Get all the fields in the resource
+  kubectl explain pods --recursive
+  
+  # Get the explanation for deployment in supported api versions
+  kubectl explain deployments --api-version=apps/v1
+  
+  # Get the documentation of a specific field of a resource
+  kubectl explain pods.spec.containers
+  
+  # Get the documentation of resources in different format
+  kubectl explain deployment --output=plaintext-openapiv2
+
+Flags:
+      --api-version string   Get different explanations for particular API version (API group/version)
+  -h, --help                 help for explain
+  -o, --output string        Format in which to render the schema (plaintext, plaintext-openapiv2) (default "plaintext")
+      --recursive            Print the fields of fields (Currently only 1 level deep)
+
+---
+
+[TestWorkloadHelpSnapshots/get - 1]
+Display one or many Kubernetes resources from your cluster.
+
+Usage:
+  ksail workload get
+
+Examples:
+  # List all pods in ps output format
+  kubectl get pods
+  
+  # List all pods in ps output format with more information (such as node name)
+  kubectl get pods -o wide
+  
+  # List a single replication controller with specified NAME in ps output format
+  kubectl get replicationcontroller web
+  
+  # List deployments in JSON output format, in the "v1" version of the "apps" API group
+  kubectl get deployments.v1.apps -o json
+  
+  # List a single pod in JSON output format
+  kubectl get -o json pod web-pod-13je7
+  
+  # List a pod identified by type and name specified in "pod.yaml" in JSON output format
+  kubectl get -f pod.yaml -o json
+  
+  # List resources from a directory with kustomization.yaml - e.g. dir/kustomization.yaml
+  kubectl get -k dir/
+  
+  # Return only the phase value of the specified pod
+  kubectl get -o template pod/web-pod-13je7 --template={{.status.phase}}
+  
+  # List resource information in custom columns
+  kubectl get pod test-pod -o custom-columns=CONTAINER:.spec.containers[0].name,IMAGE:.spec.containers[0].image
+  
+  # List all replication controllers and services together in ps output format
+  kubectl get rc,services
+  
+  # List one or more resources by their type and names
+  kubectl get rc/web service/frontend pods/web-pod-13je7
+  
+  # List the 'status' subresource for a single pod
+  kubectl get pod web-pod-13je7 --subresource status
+  
+  # List all deployments in namespace 'backend'
+  kubectl get deployments.apps --namespace backend
+  
+  # List all pods existing in all namespaces
+  kubectl get pods --all-namespaces
+
+Flags:
+  -A, --all-namespaces                If present, list the requested object(s) across all namespaces. Namespace in current context is ignored even if specified with --namespace.
+      --allow-missing-template-keys   If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
+      --chunk-size int                Return large lists in chunks rather than all at once. Pass 0 to disable. This flag is beta and may change in the future. (default 500)
+      --field-selector string         Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -f, --filename strings              Filename, directory, or URL to files identifying the resource to get from a server.
+  -h, --help                          help for get
+      --ignore-not-found              If set to true, suppresses NotFound error for specific objects that do not exist. Using this flag with commands that query for collections of resources has no effect when no resources are found.
+  -k, --kustomize string              Process the kustomization directory. This flag can't be used together with -f or -R.
+  -L, --label-columns strings         Accepts a comma separated list of labels that are going to be presented as columns. Names are case-sensitive. You can also use multiple flag options like -L label1 -L label2...
+      --no-headers                    When using the default or custom-column output format, don't print headers (default print headers).
+  -o, --output string                 Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file, custom-columns, custom-columns-file, wide). See custom columns [https://kubernetes.io/docs/reference/kubectl/#custom-columns], golang template [http://golang.org/pkg/text/template/#pkg-overview] and jsonpath template [https://kubernetes.io/docs/reference/kubectl/jsonpath/].
+      --output-watch-events           Output watch event objects when --watch or --watch-only is used. Existing objects are output as initial ADDED events.
+      --raw string                    Raw URI to request from the server.  Uses the transport specified by the kubeconfig file.
+  -R, --recursive                     Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
+  -l, --selector string               Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+      --server-print                  If true, have the server return the appropriate table output. Supports extension APIs and CRDs. (default true)
+      --show-kind                     If present, list the resource type for the requested object(s).
+      --show-labels                   When printing, show all labels as the last column (default hide labels column)
+      --show-managed-fields           If true, keep the managedFields when printing objects in JSON or YAML format.
+      --sort-by string                If non-empty, sort list types using this field specification.  The field specification is expressed as a JSONPath expression (e.g. '{.metadata.name}'). The field in the API resource specified by this JSONPath expression must be an integer or a string.
+      --subresource string            If specified, gets the subresource of the requested object.
+      --template string               Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+  -w, --watch                         After listing/getting the requested object, watch for changes.
+      --watch-only                    Watch for changes to the requested object(s), without listing/getting first.
+
+---
+
+
 
 [TestWorkloadHelpSnapshots/logs - 1]
 Print the logs for a container in a pod or specified resource. If the pod has only one container, the container name is optional.
@@ -347,7 +498,6 @@ Flags:
       --timestamps                         Include timestamps on each line in the log output
 
 ---
-
 [TestWorkloadHelpSnapshots/scale - 1]
 Set a new size for a deployment, replica set, replication controller, or stateful set.
 
@@ -386,5 +536,40 @@ Flags:
       --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
       --template string                Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
       --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
+
+---
+
+[TestWorkloadHelpSnapshots/rollout - 1]
+Manage the rollout of one or many resources.
+
+Usage:
+  ksail workload rollout
+  ksail workload rollout [command]
+
+Examples:
+  # Rollback to the previous deployment
+  kubectl rollout undo deployment/abc
+  
+  # Check the rollout status of a daemonset
+  kubectl rollout status daemonset/foo
+  
+  # Restart a deployment
+  kubectl rollout restart deployment/abc
+  
+  # Restart deployments with the 'app=nginx' label
+  kubectl rollout restart deployment --selector=app=nginx
+
+Available Commands:
+  history     View rollout history
+  pause       Mark the provided resource as paused
+  restart     Restart a resource
+  resume      Resume a paused resource
+  status      Show the status of the rollout
+  undo        Undo a previous rollout
+
+Flags:
+  -h, --help   help for rollout
+
+Use "ksail workload rollout [command] --help" for more information about a command.
 
 ---
