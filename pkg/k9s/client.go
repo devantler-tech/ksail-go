@@ -8,12 +8,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Client wraps k9s command functionality.
-type Client struct{}
+// Executor defines the interface for executing k9s.
+type Executor interface {
+	Execute()
+}
 
-// NewClient creates a new k9s client instance.
+// DefaultK9sExecutor is the default implementation that calls k9s directly.
+type DefaultK9sExecutor struct{}
+
+// Execute calls the k9s cmd.Execute function.
+func (e *DefaultK9sExecutor) Execute() {
+	k9scmd.Execute()
+}
+
+// Client wraps k9s command functionality.
+type Client struct {
+	executor Executor
+}
+
+// NewClient creates a new k9s client instance with the default executor.
 func NewClient() *Client {
-	return &Client{}
+	return &Client{
+		executor: &DefaultK9sExecutor{},
+	}
+}
+
+// NewClientWithExecutor creates a new k9s client with a custom executor for testing.
+func NewClientWithExecutor(executor Executor) *Client {
+	return &Client{
+		executor: executor,
+	}
 }
 
 // CreateConnectCommand creates a k9s command with all its flags and behavior.
@@ -53,8 +77,8 @@ func (c *Client) runK9s(kubeConfigPath string, args []string) error {
 	// Set os.Args for k9s to parse
 	os.Args = k9sArgs
 
-	// Execute k9s directly using its cmd package
-	k9scmd.Execute()
+	// Execute k9s using the executor (allows mocking for tests)
+	c.executor.Execute()
 
 	return nil
 }

@@ -2,16 +2,37 @@ package k9s_test
 
 import (
 	"bytes"
+	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/k9s"
 	"github.com/stretchr/testify/require"
 )
 
+// MockK9sExecutor is a mock implementation of Executor for testing.
+type MockK9sExecutor struct {
+	ExecuteCalled    bool
+	OsArgsWhenCalled []string
+}
+
+func (m *MockK9sExecutor) Execute() {
+	m.ExecuteCalled = true
+	m.OsArgsWhenCalled = make([]string, len(os.Args))
+	copy(m.OsArgsWhenCalled, os.Args)
+}
+
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
 	client := k9s.NewClient()
+	require.NotNil(t, client, "expected client to be created")
+}
+
+func TestNewClientWithExecutor(t *testing.T) {
+	t.Parallel()
+
+	mockExecutor := &MockK9sExecutor{}
+	client := k9s.NewClientWithExecutor(mockExecutor)
 	require.NotNil(t, client, "expected client to be created")
 }
 
@@ -139,4 +160,90 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 	cmdWithArgs.SetArgs([]string{"--namespace", "test", "--readonly"})
 	require.NotNil(t, cmdWithArgs)
 	require.NotNil(t, cmdWithArgs.RunE)
+}
+
+func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
+	t.Parallel()
+
+	mockExecutor := &MockK9sExecutor{}
+	client := k9s.NewClientWithExecutor(mockExecutor)
+
+	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	require.NotNil(t, cmd)
+
+	// Execute the command
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	// Verify the executor was called
+	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
+
+	// Verify os.Args were set correctly
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "/test/kubeconfig")
+}
+
+func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
+	t.Parallel()
+
+	mockExecutor := &MockK9sExecutor{}
+	client := k9s.NewClientWithExecutor(mockExecutor)
+
+	cmd := client.CreateConnectCommand("")
+	require.NotNil(t, cmd)
+
+	// Execute the command
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	// Verify the executor was called
+	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
+
+	// Verify os.Args only contains k9s (no kubeconfig)
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
+	require.NotContains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
+}
+
+func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
+	t.Parallel()
+
+	mockExecutor := &MockK9sExecutor{}
+	client := k9s.NewClientWithExecutor(mockExecutor)
+
+	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	require.NotNil(t, cmd)
+
+	// Execute the command with additional arguments
+	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
+	require.NoError(t, err)
+
+	// Verify the executor was called
+	require.True(t, mockExecutor.ExecuteCalled, "expected executor to be called")
+
+	// Verify os.Args contains all arguments
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "k9s")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--kubeconfig")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "/test/kubeconfig")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--namespace")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "default")
+	require.Contains(t, mockExecutor.OsArgsWhenCalled, "--readonly")
+}
+
+func TestRunK9s_OsArgsRestored(t *testing.T) {
+	t.Parallel()
+
+	mockExecutor := &MockK9sExecutor{}
+	client := k9s.NewClientWithExecutor(mockExecutor)
+
+	// Save original os.Args
+	originalArgs := make([]string, len(os.Args))
+	copy(originalArgs, os.Args)
+
+	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	err := cmd.RunE(cmd, []string{"--namespace", "test"})
+	require.NoError(t, err)
+
+	// Verify os.Args is restored after execution
+	require.Equal(t, originalArgs, os.Args, "expected os.Args to be restored")
 }
