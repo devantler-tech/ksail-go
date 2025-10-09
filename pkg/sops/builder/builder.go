@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/devantler-tech/ksail-go/pkg/sops/operations"
 	"github.com/getsops/sops/v3"         //nolint:depguard // Required for SOPS operations
@@ -25,6 +26,10 @@ var (
 	ErrInvalidSetArgs   = errors.New("usage: set <file> <key> <value>")
 	// ErrInvalidUnsetArgs is returned when unset command has invalid arguments.
 	ErrInvalidUnsetArgs = errors.New("usage: unset <file> <key>")
+	// ErrNoEditor is returned when EDITOR environment variable is not set.
+	ErrNoEditor         = errors.New("EDITOR environment variable not set")
+	// ErrInvalidGroupIndex is returned when group index is invalid.
+	ErrInvalidGroupIndex = errors.New("invalid group index")
 )
 
 // NewSopsApp creates a urfave/cli app that wraps SOPS functionality.
@@ -116,9 +121,13 @@ func createSopsCommands() []cli.Command {
 		{
 			Name:  "edit",
 			Usage: "edit an encrypted file",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
 			},
+			Action: handleEdit,
 		},
 		{
 			Name:  "set",
@@ -152,16 +161,74 @@ func createSopsCommands() []cli.Command {
 		},
 		{
 			Name:  "updatekeys",
-			Usage: "update the keys of SOPS files using the config file",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Usage: "update the keys of SOPS files",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
+				cli.BoolFlag{
+					Name:  "in-place, i",
+					Usage: "write output back to the same file instead of stdout",
+				},
+				cli.StringFlag{
+					Name:  "add-age",
+					Usage: "add age recipient to key groups",
+				},
+				cli.StringFlag{
+					Name:  "add-pgp",
+					Usage: "add PGP fingerprint to key groups",
+				},
 			},
+			Action: handleUpdateKeys,
 		},
 		{
 			Name:  "groups",
 			Usage: "modify the groups on a SOPS file",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Subcommands: []cli.Command{
+				{
+					Name:  "add",
+					Usage: "add a new key group to a SOPS file",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "output-type",
+							Usage: "output format (json, yaml, dotenv, binary)",
+						},
+						cli.BoolFlag{
+							Name:  "in-place, i",
+							Usage: "write output back to the same file instead of stdout",
+						},
+						cli.StringFlag{
+							Name:  "age",
+							Usage: "age recipient for the new group",
+						},
+						cli.StringFlag{
+							Name:  "pgp",
+							Usage: "PGP fingerprint for the new group",
+						},
+					},
+					Action: handleGroupsAdd,
+				},
+				{
+					Name:  "delete",
+					Usage: "delete a key group from a SOPS file",
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "output-type",
+							Usage: "output format (json, yaml, dotenv, binary)",
+						},
+						cli.BoolFlag{
+							Name:  "in-place, i",
+							Usage: "write output back to the same file instead of stdout",
+						},
+						cli.IntFlag{
+							Name:  "group-index",
+							Usage: "index of the group to delete (0-based)",
+							Value: 0,
+						},
+					},
+					Action: handleGroupsDelete,
+				},
 			},
 		},
 	}
@@ -313,6 +380,194 @@ func handleUnset(cliCtx *cli.Context) error {
 		err := operations.UnsetValueToWriter(inputFile, treePath, outputFormat, os.Stdout)
 		if err != nil {
 			return fmt.Errorf("unset failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleEdit(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+
+	// Check for EDITOR environment variable
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return ErrNoEditor
+	}
+
+	// Decrypt file for editing
+	plaintext, dataKey, err := operations.EditFile(inputFile, outputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt file for editing: %w", err)
+	}
+
+	// Create temporary file
+	tmpFile, err := os.CreateTemp("", "sops-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	defer func() {
+		_ = os.Remove(tmpPath)
+	}()
+
+	// Write plaintext to temp file
+	_, err = tmpFile.Write(plaintext)
+	if err != nil {
+		_ = tmpFile.Close()
+		return fmt.Errorf("failed to write temp file: %w", err)
+	}
+	_ = tmpFile.Close()
+
+	// Launch editor
+	cmd := exec.Command(editor, tmpPath) //nolint:gosec // Editor is from EDITOR env var, user controlled
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("editor failed: %w", err)
+	}
+
+	// Read edited content
+	editedContent, err := os.ReadFile(tmpPath)
+	if err != nil {
+		return fmt.Errorf("failed to read edited file: %w", err)
+	}
+
+	// Re-encrypt with original data key
+	encrypted, err := operations.ReencryptFile(inputFile, editedContent, dataKey, outputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to re-encrypt file: %w", err)
+	}
+
+	// Write back to original file
+	const fileMode = 0600
+	err = os.WriteFile(inputFile, encrypted, fileMode)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+func handleUpdateKeys(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+
+	// Parse new keys from flags
+	newKeyGroups, err := parseKeyGroups(cliCtx)
+	if err != nil {
+		return fmt.Errorf("failed to parse key groups: %w", err)
+	}
+
+	if len(newKeyGroups) == 0 {
+		return ErrNoEncryptionKeys
+	}
+
+	// Update keys
+	output, err := operations.UpdateKeysFile(inputFile, newKeyGroups, outputFormat)
+	if err != nil {
+		return fmt.Errorf("updatekeys failed: %w", err)
+	}
+
+	if inPlace {
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, output, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		_, err = os.Stdout.Write(output)
+		if err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleGroupsAdd(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+
+	// Parse new group from flags
+	newKeyGroups, err := parseKeyGroups(cliCtx)
+	if err != nil {
+		return fmt.Errorf("failed to parse key group: %w", err)
+	}
+
+	if len(newKeyGroups) == 0 {
+		return ErrNoEncryptionKeys
+	}
+
+	// Add the group
+	output, err := operations.AddKeyGroup(inputFile, newKeyGroups[0], outputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to add group: %w", err)
+	}
+
+	if inPlace {
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, output, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		_, err = os.Stdout.Write(output)
+		if err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleGroupsDelete(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+	groupIndex := cliCtx.Int("group-index")
+
+	if groupIndex < 0 {
+		return ErrInvalidGroupIndex
+	}
+
+	// Delete the group
+	output, err := operations.DeleteKeyGroup(inputFile, groupIndex, outputFormat)
+	if err != nil {
+		return fmt.Errorf("failed to delete group: %w", err)
+	}
+
+	if inPlace {
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, output, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		_, err = os.Stdout.Write(output)
+		if err != nil {
+			return fmt.Errorf("failed to write output: %w", err)
 		}
 	}
 

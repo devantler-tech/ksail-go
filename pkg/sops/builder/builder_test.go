@@ -65,7 +65,12 @@ func TestSopsAppCommands(t *testing.T) {
 			t.Errorf("command %q should have usage text", cmd.Name)
 		}
 
-		if cmd.Action == nil {
+		// Groups has subcommands instead of an action
+		if cmd.Name == "groups" {
+			if len(cmd.Subcommands) == 0 {
+				t.Errorf("command %q should have subcommands", cmd.Name)
+			}
+		} else if cmd.Action == nil {
 			t.Errorf("command %q should have an action", cmd.Name)
 		}
 
