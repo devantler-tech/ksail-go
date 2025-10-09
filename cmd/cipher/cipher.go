@@ -10,5 +10,6 @@ import (
 // NewCipherCmd creates the cipher command that integrates with SOPS.
 func NewCipherCmd(_ *runtime.Runtime) *cobra.Command {
 	client := sops.NewClient()
+
 	return client.CreateCipherCommand()
 }

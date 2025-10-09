@@ -2,11 +2,17 @@
 package sops
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 )
+
+// ErrSopsExecution is returned when sops command execution fails.
+var ErrSopsExecution = errors.New("sops command execution failed")
 
 // Client wraps sops command functionality.
 type Client struct{}
@@ -24,7 +30,7 @@ func (c *Client) CreateCipherCommand() *cobra.Command {
 		Long: "Cipher command provides access to all SOPS (Secrets OPerationS) functionality " +
 			"for encrypting and decrypting files. All subcommands and flags are passed directly to sops.",
 		DisableFlagParsing: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			return c.executeSops(args)
 		},
 		SilenceUsage: true,
@@ -35,10 +41,16 @@ func (c *Client) CreateCipherCommand() *cobra.Command {
 
 // executeSops runs the sops binary with the provided arguments.
 func (c *Client) executeSops(args []string) error {
-	sopsCmd := exec.Command("sops", args...)
+	ctx := context.Background()
+	sopsCmd := exec.CommandContext(ctx, "sops", args...)
 	sopsCmd.Stdin = os.Stdin
 	sopsCmd.Stdout = os.Stdout
 	sopsCmd.Stderr = os.Stderr
 
-	return sopsCmd.Run()
+	err := sopsCmd.Run()
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrSopsExecution, err)
+	}
+
+	return nil
 }
