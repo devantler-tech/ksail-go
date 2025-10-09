@@ -54,7 +54,12 @@ func TestCreateConnectCommand(t *testing.T) {
 			require.NotNil(t, cmd, "expected command to be created")
 			require.Equal(t, "connect", cmd.Use, "expected Use to be 'connect'")
 			require.Equal(t, "Connect to cluster with k9s", cmd.Short, "expected Short description")
-			require.Contains(t, cmd.Long, "Launch k9s terminal UI", "expected Long description to mention k9s")
+			require.Contains(
+				t,
+				cmd.Long,
+				"Launch k9s terminal UI",
+				"expected Long description to mention k9s",
+			)
 			require.True(t, cmd.DisableFlagParsing, "expected DisableFlagParsing to be true")
 			require.True(t, cmd.SilenceUsage, "expected SilenceUsage to be true")
 		})

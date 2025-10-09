@@ -27,8 +27,6 @@ func TestNewConnectCmd(t *testing.T) {
 }
 
 func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
-	t.Parallel()
-
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
@@ -42,20 +40,16 @@ spec:
     kubeconfig: ` + kubeConfigPath + `
 `
 	configFile := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configFile, []byte(configContent), 0600)
+
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err, "failed to write config file")
 
 	// Change to temp directory
-	originalDir, err := os.Getwd()
-	require.NoError(t, err, "failed to get working directory")
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-	err = os.Chdir(tempDir)
-	require.NoError(t, err, "failed to change directory")
+	t.Chdir(tempDir)
 
 	// Create a command and config manager
 	cmd := &cobra.Command{}
+
 	var outBuf bytes.Buffer
 	cmd.SetOut(&outBuf)
 
@@ -66,12 +60,15 @@ spec:
 	// We expect an error because k9s won't be found, but config should be loaded successfully
 	err = HandleConnectRunE(cmd, cfgManager, []string{})
 	require.Error(t, err, "expected error when k9s binary not found")
-	require.Contains(t, err.Error(), "execute k9s", "expected error to indicate k9s execution failure")
+	require.Contains(
+		t,
+		err.Error(),
+		"execute k9s",
+		"expected error to indicate k9s execution failure",
+	)
 }
 
 func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
-	t.Parallel()
-
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 
@@ -82,20 +79,16 @@ spec:
   distribution: Kind
 `
 	configFile := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configFile, []byte(configContent), 0600)
+
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err, "failed to write config file")
 
 	// Change to temp directory
-	originalDir, err := os.Getwd()
-	require.NoError(t, err, "failed to get working directory")
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-	err = os.Chdir(tempDir)
-	require.NoError(t, err, "failed to change directory")
+	t.Chdir(tempDir)
 
 	// Create a command and config manager
 	cmd := &cobra.Command{}
+
 	var outBuf bytes.Buffer
 	cmd.SetOut(&outBuf)
 
@@ -106,32 +99,31 @@ spec:
 	// We expect an error because k9s won't be found, but this tests that default kubeconfig is used
 	err = HandleConnectRunE(cmd, cfgManager, []string{})
 	require.Error(t, err, "expected error when k9s binary not found")
-	require.Contains(t, err.Error(), "execute k9s", "expected error to indicate k9s execution failure")
+	require.Contains(
+		t,
+		err.Error(),
+		"execute k9s",
+		"expected error to indicate k9s execution failure",
+	)
 }
 
 func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
-	t.Parallel()
-
 	// Create a temporary directory with invalid config
 	tempDir := t.TempDir()
 
 	// Create an invalid configuration file
 	configContent := `invalid yaml content [[[`
 	configFile := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configFile, []byte(configContent), 0600)
+
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err, "failed to write config file")
 
 	// Change to temp directory
-	originalDir, err := os.Getwd()
-	require.NoError(t, err, "failed to get working directory")
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-	err = os.Chdir(tempDir)
-	require.NoError(t, err, "failed to change directory")
+	t.Chdir(tempDir)
 
 	// Create a command and config manager
 	cmd := &cobra.Command{}
+
 	var outBuf bytes.Buffer
 	cmd.SetOut(&outBuf)
 
@@ -141,5 +133,10 @@ func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
 	// Run should fail to load config
 	err = HandleConnectRunE(cmd, cfgManager, []string{})
 	require.Error(t, err, "expected error when config is invalid")
-	require.Contains(t, err.Error(), "load configuration", "expected error to indicate config loading failure")
+	require.Contains(
+		t,
+		err.Error(),
+		"load configuration",
+		"expected error to indicate config loading failure",
+	)
 }

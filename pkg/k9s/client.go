@@ -3,6 +3,7 @@ package k9s
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -52,10 +53,16 @@ func (c *Client) runK9s(ctx context.Context, kubeConfigPath string, args []strin
 	// Append all additional arguments passed by user
 	k9sArgs = append(k9sArgs, args...)
 
+	// #nosec G204 -- k9sBinaryPath is controlled by NewClient, not user input
 	k9sCmd := exec.CommandContext(ctx, c.k9sBinaryPath, k9sArgs...)
 	k9sCmd.Stdin = os.Stdin
 	k9sCmd.Stdout = os.Stdout
 	k9sCmd.Stderr = os.Stderr
 
-	return k9sCmd.Run()
+	err := k9sCmd.Run()
+	if err != nil {
+		return fmt.Errorf("run k9s: %w", err)
+	}
+
+	return nil
 }

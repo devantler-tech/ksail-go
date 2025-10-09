@@ -12,7 +12,7 @@ import (
 )
 
 // NewConnectCmd creates the connect command for clusters.
-func NewConnectCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
+func NewConnectCmd(_ *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
 		Short: "Connect to cluster with k9s",
@@ -64,6 +64,7 @@ func HandleConnectRunE(
 		if err != nil {
 			return fmt.Errorf("get home directory: %w", err)
 		}
+
 		kubeConfigPath = filepath.Join(homeDir, ".kube", "config")
 	}
 
@@ -78,7 +79,8 @@ func HandleConnectRunE(
 	k9sCmd.SetArgs(args)
 
 	// Execute k9s command
-	if err := k9sCmd.Execute(); err != nil {
+	err = k9sCmd.Execute()
+	if err != nil {
 		return fmt.Errorf("execute k9s: %w", err)
 	}
 
