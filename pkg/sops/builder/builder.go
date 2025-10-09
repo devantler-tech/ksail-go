@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/devantler-tech/ksail-go/pkg/sops/operations"
 	"github.com/getsops/sops/v3"         //nolint:depguard // Required for SOPS operations
 	"github.com/getsops/sops/v3/age"     //nolint:depguard // Required for age encryption
 	"github.com/getsops/sops/v3/pgp"     //nolint:depguard // Required for PGP encryption
 	"github.com/getsops/sops/v3/version" //nolint:depguard // Required for sops version info
 	"github.com/urfave/cli"              //nolint:depguard // This package wraps urfave/cli apps
-
-	"github.com/devantler-tech/ksail-go/pkg/sops/operations"
 )
 
 var (
