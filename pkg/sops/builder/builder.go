@@ -16,11 +16,15 @@ import (
 
 var (
 	// ErrNotImplemented is returned when a command is not yet implemented.
-	ErrNotImplemented = errors.New("command not yet implemented with Go libraries")
+	ErrNotImplemented   = errors.New("command not yet implemented with Go libraries")
 	// ErrNoInputFile is returned when no input file is specified.
-	ErrNoInputFile = errors.New("no input file specified")
+	ErrNoInputFile      = errors.New("no input file specified")
 	// ErrNoEncryptionKeys is returned when no encryption keys are specified.
 	ErrNoEncryptionKeys = errors.New("no encryption keys specified (use --age or --pgp)")
+	// ErrInvalidSetArgs is returned when set command has invalid arguments.
+	ErrInvalidSetArgs   = errors.New("usage: set <file> <key> <value>")
+	// ErrInvalidUnsetArgs is returned when unset command has invalid arguments.
+	ErrInvalidUnsetArgs = errors.New("usage: unset <file> <key>")
 )
 
 // NewSopsApp creates a urfave/cli app that wraps SOPS functionality.
@@ -97,9 +101,17 @@ func createSopsCommands() []cli.Command {
 		{
 			Name:  "rotate",
 			Usage: "generate a new data encryption key and reencrypt all values with the new key",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
+				cli.BoolFlag{
+					Name:  "in-place, i",
+					Usage: "write output back to the same file instead of stdout",
+				},
 			},
+			Action: handleRotate,
 		},
 		{
 			Name:  "edit",
@@ -111,16 +123,32 @@ func createSopsCommands() []cli.Command {
 		{
 			Name:  "set",
 			Usage: "set a specific key or branch in the input document",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
+				cli.BoolFlag{
+					Name:  "in-place, i",
+					Usage: "write output back to the same file instead of stdout",
+				},
 			},
+			Action: handleSet,
 		},
 		{
 			Name:  "unset",
 			Usage: "unset a specific key or branch in the input document",
-			Action: func(_ *cli.Context) error {
-				return ErrNotImplemented
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "output-type",
+					Usage: "output format (json, yaml, dotenv, binary)",
+				},
+				cli.BoolFlag{
+					Name:  "in-place, i",
+					Usage: "write output back to the same file instead of stdout",
+				},
 			},
+			Action: handleUnset,
 		},
 		{
 			Name:  "updatekeys",
@@ -178,6 +206,114 @@ func handleDecrypt(cliCtx *cli.Context) error {
 	err := operations.DecryptFileToWriter(inputFile, outputFormat, os.Stdout)
 	if err != nil {
 		return fmt.Errorf("decryption failed: %w", err)
+	}
+
+	return nil
+}
+
+func handleRotate(cliCtx *cli.Context) error {
+	if cliCtx.NArg() < 1 {
+		return ErrNoInputFile
+	}
+
+	inputFile := cliCtx.Args().First()
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+
+	if inPlace {
+		// Rotate and write back to the same file
+		rotated, err := operations.RotateFile(inputFile, outputFormat)
+		if err != nil {
+			return fmt.Errorf("rotation failed: %w", err)
+		}
+
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, rotated, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		// Rotate and output to stdout
+		err := operations.RotateFileToWriter(inputFile, outputFormat, os.Stdout)
+		if err != nil {
+			return fmt.Errorf("rotation failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleSet(cliCtx *cli.Context) error {
+	const minSetArgs = 3
+	if cliCtx.NArg() < minSetArgs {
+		return ErrInvalidSetArgs
+	}
+
+	inputFile := cliCtx.Args().Get(0)
+	key := cliCtx.Args().Get(1)
+	const valueArgIdx = 2
+	value := cliCtx.Args().Get(valueArgIdx)
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+
+	// Parse tree path (simple implementation - just use the key as a single path element)
+	treePath := []interface{}{key}
+
+	if inPlace {
+		// Set and write back to the same file
+		modified, err := operations.SetValue(inputFile, treePath, value, outputFormat)
+		if err != nil {
+			return fmt.Errorf("set failed: %w", err)
+		}
+
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, modified, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		// Set and output to stdout
+		err := operations.SetValueToWriter(inputFile, treePath, value, outputFormat, os.Stdout)
+		if err != nil {
+			return fmt.Errorf("set failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func handleUnset(cliCtx *cli.Context) error {
+	const minUnsetArgs = 2
+	if cliCtx.NArg() < minUnsetArgs {
+		return ErrInvalidUnsetArgs
+	}
+
+	inputFile := cliCtx.Args().Get(0)
+	key := cliCtx.Args().Get(1)
+	outputFormat := cliCtx.String("output-type")
+	inPlace := cliCtx.Bool("in-place")
+
+	// Parse tree path (simple implementation - just use the key as a single path element)
+	treePath := []interface{}{key}
+
+	if inPlace {
+		// Unset and write back to the same file
+		modified, err := operations.UnsetValue(inputFile, treePath, outputFormat)
+		if err != nil {
+			return fmt.Errorf("unset failed: %w", err)
+		}
+
+		const fileMode = 0600
+		err = os.WriteFile(inputFile, modified, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to write file: %w", err)
+		}
+	} else {
+		// Unset and output to stdout
+		err := operations.UnsetValueToWriter(inputFile, treePath, outputFormat, os.Stdout)
+		if err != nil {
+			return fmt.Errorf("unset failed: %w", err)
+		}
 	}
 
 	return nil
