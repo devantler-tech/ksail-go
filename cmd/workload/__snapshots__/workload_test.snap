@@ -245,8 +245,8 @@ Available Commands:
   explain     Get documentation for a resource
   expose      Expose a resource as a service
   get         Get resources
-  logs        Print container logs
   install     Install Helm charts
+  logs        Print container logs
   reconcile   Reconcile workloads with the cluster
   rollout     Manage the rollout of a resource
   scale       Scale resources
