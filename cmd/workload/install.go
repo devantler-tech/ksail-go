@@ -3,6 +3,7 @@ package workload
 import (
 	"os"
 
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/helm"
 	"github.com/spf13/cobra"
@@ -11,7 +12,7 @@ import (
 // NewInstallCmd creates the workload install command.
 func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 	// Try to load config silently to get kubeconfig path
-	kubeconfigPath := getKubeconfigPathSilently()
+	kubeconfigPath := shared.GetKubeconfigPathSilently()
 
 	// Create helm client and get the install command directly
 	client := helm.NewClient(os.Stdout, os.Stderr, kubeconfigPath)
