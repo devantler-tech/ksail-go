@@ -17,6 +17,14 @@ const (
 )
 
 func main() {
+	err := run(os.Args[1:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(args []string) error {
 	// Generate JSON schema from the Cluster type
 	reflector := jsonschema.Reflector{
 		DoNotReference: true,
@@ -31,14 +39,13 @@ func main() {
 	// Marshal to JSON with indentation
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling schema: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error marshaling schema: %w", err)
 	}
 
 	// Determine output path - default to schemas/ksail.json
 	outputPath := "schemas/ksail.json"
-	if len(os.Args) > 1 {
-		outputPath = os.Args[1]
+	if len(args) > 0 {
+		outputPath = args[0]
 	}
 
 	// Ensure the directory exists
@@ -46,16 +53,16 @@ func main() {
 
 	err = os.MkdirAll(dir, dirPermissions)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating directory %s: %v\n", dir, err)
-		os.Exit(1)
+		return fmt.Errorf("error creating directory %s: %w", dir, err)
 	}
 
 	// Write the schema to the file
 	err = os.WriteFile(outputPath, schemaJSON, filePermissions)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing schema to %s: %v\n", outputPath, err)
-		os.Exit(1)
+		return fmt.Errorf("error writing schema to %s: %w", outputPath, err)
 	}
 
-	fmt.Printf("JSON schema generated successfully: %s\n", outputPath)
+	_, _ = fmt.Fprintf(os.Stdout, "JSON schema generated successfully: %s\n", outputPath)
+
+	return nil
 }
