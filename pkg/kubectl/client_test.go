@@ -236,7 +236,6 @@ func TestCreateDescribeCommand(t *testing.T) {
 }
 
 func TestCreateExplainCommand(t *testing.T) {
-
 	t.Parallel()
 
 	testCommandCreation(
@@ -247,7 +246,6 @@ func TestCreateExplainCommand(t *testing.T) {
 		"Get documentation for Kubernetes resources, including field descriptions and structure.",
 	)
 }
-
 
 func TestCreateDescribeCommandHasFlags(t *testing.T) {
 	t.Parallel()
