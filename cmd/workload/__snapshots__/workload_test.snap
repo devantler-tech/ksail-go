@@ -415,8 +415,6 @@ Flags:
 
 ---
 
-
-
 [TestWorkloadHelpSnapshots/logs - 1]
 Print the logs for a container in a pod or specified resource. If the pod has only one container, the container name is optional.
 

@@ -191,8 +191,6 @@ func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
 	return getCmd
 }
 
-// CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
-
 // CreateLogsCommand creates a kubectl logs command with all its flags and behavior.
 func (c *Client) CreateLogsCommand(kubeConfigPath string) *cobra.Command {
 	// Create config flags with kubeconfig path
