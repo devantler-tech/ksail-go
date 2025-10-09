@@ -222,3 +222,34 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateLogsCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateLogsCommand(path) },
+		"logs",
+		"Print container logs",
+		"Print the logs for a container in a pod or specified resource. "+
+			"If the pod has only one container, the container name is optional.",
+	)
+}
+
+func TestCreateLogsCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateLogsCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl logs flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("follow"), "expected --follow flag to be present")
+	require.NotNil(t, flags.Lookup("previous"), "expected --previous flag to be present")
+	require.NotNil(t, flags.Lookup("container"), "expected --container flag to be present")
+	require.NotNil(t, flags.Lookup("timestamps"), "expected --timestamps flag to be present")
+	require.NotNil(t, flags.Lookup("tail"), "expected --tail flag to be present")
+	require.NotNil(t, flags.Lookup("since"), "expected --since flag to be present")
+}

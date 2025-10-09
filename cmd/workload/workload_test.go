@@ -34,6 +34,7 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
 		{name: "install", args: []string{"workload", "install", "--help"}},
+		{name: "logs", args: []string{"workload", "logs", "--help"}},
 	}
 
 	for _, testCase := range testCases {
@@ -117,5 +118,9 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 
 	if !strings.Contains(output, "edit") {
 		t.Fatalf("expected help output to mention edit command, got %q", output)
+	}
+
+	if !strings.Contains(output, "logs") {
+		t.Fatalf("expected help output to mention logs command, got %q", output)
 	}
 }

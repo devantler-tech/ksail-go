@@ -9,6 +9,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/logs"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -115,4 +116,28 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
 
 	return createCmd
+}
+
+// CreateLogsCommand creates a kubectl logs command with all its flags and behavior.
+func (c *Client) CreateLogsCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the logs command using kubectl's NewCmdLogs
+	logsCmd := logs.NewCmdLogs(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	logsCmd.Use = "logs"
+	logsCmd.Short = "Print container logs"
+	logsCmd.Long = "Print the logs for a container in a pod or specified resource. " +
+		"If the pod has only one container, the container name is optional."
+
+	return logsCmd
 }
