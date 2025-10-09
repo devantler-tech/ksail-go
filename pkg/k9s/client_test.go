@@ -155,14 +155,14 @@ func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 
 	// Save original args and capture them during test
 	var capturedArgs []string
-	
+
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
 		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
-	
+
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
@@ -183,14 +183,14 @@ func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 
 	// Save original args and capture them during test
 	var capturedArgs []string
-	
+
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
 		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
-	
+
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("")
@@ -210,14 +210,14 @@ func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 
 	// Save original args and capture them during test
 	var capturedArgs []string
-	
+
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Run(func() {
 		// Capture os.Args when Execute is called
 		capturedArgs = make([]string, len(os.Args))
 		copy(capturedArgs, os.Args)
 	}).Once()
-	
+
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	cmd := client.CreateConnectCommand("/test/kubeconfig")
@@ -241,7 +241,7 @@ func TestRunK9s_OsArgsRestored(t *testing.T) {
 
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Once()
-	
+
 	client := k9s.NewClientWithExecutor(mockExecutor)
 
 	// Save original os.Args
