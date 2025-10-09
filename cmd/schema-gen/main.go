@@ -27,7 +27,8 @@ func main() {
 func run(args []string) error {
 	// Generate JSON schema from the Cluster type
 	reflector := jsonschema.Reflector{
-		DoNotReference: true,
+		DoNotReference:             true,
+		RequiredFromJSONSchemaTags: true,
 	}
 	schema := reflector.Reflect(&v1alpha1.Cluster{})
 

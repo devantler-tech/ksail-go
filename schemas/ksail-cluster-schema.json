@@ -31,19 +31,11 @@
                 }
               },
               "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "Duration"
-              ]
+              "type": "object"
             }
           },
           "additionalProperties": false,
-          "type": "object",
-          "required": [
-            "kubeconfig",
-            "context",
-            "timeout"
-          ]
+          "type": "object"
         },
         "distribution": {
           "type": "string"
@@ -102,39 +94,15 @@
             }
           },
           "additionalProperties": false,
-          "type": "object",
-          "required": [
-            "kind",
-            "k3d",
-            "cilium",
-            "flux",
-            "argocd",
-            "helm",
-            "kustomize"
-          ]
+          "type": "object"
         }
       },
       "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "distributionConfig",
-        "sourceDirectory",
-        "connection",
-        "distribution",
-        "cni",
-        "csi",
-        "ingressController",
-        "gatewayController",
-        "gitOpsEngine",
-        "options"
-      ]
+      "type": "object"
     }
   },
   "additionalProperties": false,
   "type": "object",
-  "required": [
-    "spec"
-  ],
   "title": "KSail Cluster Configuration",
   "description": "Schema for KSail cluster configuration (ksail.yaml)"
 }
