@@ -69,7 +69,7 @@ func HandleConnectRunE(
 	}
 
 	// Create k9s client and command
-	k9sClient := k9s.NewClient("")
+	k9sClient := k9s.NewClient()
 	k9sCmd := k9sClient.CreateConnectCommand(kubeConfigPath)
 
 	// Transfer the context from parent command

@@ -57,16 +57,13 @@ spec:
 	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
 	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
 
-	// Run with a non-existent k9s binary to test config loading without actually running k9s
-	// We expect an error because k9s won't be found, but config should be loaded successfully
-	err = HandleConnectRunE(cmd, cfgManager, []string{})
-	require.Error(t, err, "expected error when k9s binary not found")
-	require.Contains(
-		t,
-		err.Error(),
-		"execute k9s",
-		"expected error to indicate k9s execution failure",
-	)
+	// Load config to verify it works
+	err = cfgManager.LoadConfigSilent()
+	require.NoError(t, err, "expected config to load successfully")
+
+	cfg := cfgManager.GetConfig()
+	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig,
+		"expected kubeconfig path to be loaded from config")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
@@ -97,16 +94,13 @@ spec:
 	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
 	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
 
-	// Run with a non-existent k9s binary
-	// We expect an error because k9s won't be found, but this tests that default kubeconfig is used
-	err = HandleConnectRunE(cmd, cfgManager, []string{})
-	require.Error(t, err, "expected error when k9s binary not found")
-	require.Contains(
-		t,
-		err.Error(),
-		"execute k9s",
-		"expected error to indicate k9s execution failure",
-	)
+	// Load config to verify it works
+	err = cfgManager.LoadConfigSilent()
+	require.NoError(t, err, "expected config to load successfully")
+
+	cfg := cfgManager.GetConfig()
+	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
+		"expected kubeconfig path to be empty, will use default")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
