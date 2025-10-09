@@ -37,6 +37,10 @@ func run(args []string) error {
 	schema.Title = "KSail Cluster Configuration"
 	schema.Description = "Schema for KSail cluster configuration (ksail.yaml)"
 
+	// Mark apiVersion and kind as required fields
+	// These are metadata fields that are validated by the KSail validator
+	schema.Required = []string{"apiVersion", "kind"}
+
 	// Marshal to JSON with indentation
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {

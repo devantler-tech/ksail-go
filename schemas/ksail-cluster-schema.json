@@ -103,6 +103,10 @@
   },
   "additionalProperties": false,
   "type": "object",
+  "required": [
+    "apiVersion",
+    "kind"
+  ],
   "title": "KSail Cluster Configuration",
   "description": "Schema for KSail cluster configuration (ksail.yaml)"
 }
