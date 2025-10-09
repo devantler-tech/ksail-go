@@ -1,6 +1,0 @@
-# Configuration for pre-commit.ci
-# See https://pre-commit.ci/ for more information
-
-# Skip the generate-schema hook on pre-commit.ci for now
-# It requires Go 1.24+ and pre-commit.ci doesn't support specifying Go version
-skip: [generate-schema]
