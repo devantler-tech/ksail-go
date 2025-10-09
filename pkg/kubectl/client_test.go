@@ -99,6 +99,51 @@ func TestCreateApplyCommandHasFlags(t *testing.T) {
 	require.NotNil(t, flags.Lookup("prune"), "expected --prune flag to be present")
 }
 
+func TestCreateEditCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateEditCommand(path) },
+		"edit",
+		"Edit a resource",
+		"Edit a Kubernetes resource from the default editor.",
+	)
+}
+
+func TestCreateEditCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateEditCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl edit flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
+	require.NotNil(t, flags.Lookup("output-patch"), "expected --output-patch flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("windows-line-endings"),
+		"expected --windows-line-endings flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("validate"), "expected --validate flag to be present")
+}
+
+func TestCreateDeleteCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateDeleteCommand(path) },
+		"delete",
+		"Delete resources",
+		"Delete Kubernetes resources by file names, stdin, resources and names, or by resources and label selector.",
+	)
+}
+
 func TestCreateCreateCommand(t *testing.T) {
 	t.Parallel()
 
@@ -109,6 +154,24 @@ func TestCreateCreateCommand(t *testing.T) {
 		"Create resources",
 		"Create Kubernetes resources from files or stdin.",
 	)
+}
+
+func TestCreateDeleteCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateDeleteCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl delete flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("force"), "expected --force flag to be present")
+	require.NotNil(t, flags.Lookup("grace-period"), "expected --grace-period flag to be present")
+	require.NotNil(t, flags.Lookup("all"), "expected --all flag to be present")
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
 }
 
 func TestCreateCreateCommandHasFlags(t *testing.T) {

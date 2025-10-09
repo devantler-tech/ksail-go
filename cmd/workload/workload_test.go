@@ -31,6 +31,8 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "reconcile", args: []string{"workload", "reconcile", "--help"}},
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
 		{name: "create", args: []string{"workload", "create", "--help"}},
+		{name: "delete", args: []string{"workload", "delete", "--help"}},
+		{name: "edit", args: []string{"workload", "edit", "--help"}},
 		{name: "get", args: []string{"workload", "get", "--help"}},
 		{name: "install", args: []string{"workload", "install", "--help"}},
 	}
@@ -112,5 +114,9 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	output := out.String()
 	if !strings.Contains(output, "Group workload commands under a single namespace") {
 		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
+	}
+
+	if !strings.Contains(output, "edit") {
+		t.Fatalf("expected help output to mention edit command, got %q", output)
 	}
 }

@@ -120,6 +120,151 @@ Use "ksail workload create [command] --help" for more information about a comman
 
 ---
 
+[TestWorkloadHelpSnapshots/delete - 1]
+Delete Kubernetes resources by file names, stdin, resources and names, or by resources and label selector.
+
+Usage:
+  ksail workload delete
+
+Examples:
+  # Delete a pod using the type and name specified in pod.json
+  kubectl delete -f ./pod.json
+  
+  # Delete resources from a directory containing kustomization.yaml - e.g. dir/kustomization.yaml
+  kubectl delete -k dir
+  
+  # Delete resources from all files that end with '.json'
+  kubectl delete -f '*.json'
+  
+  # Delete a pod based on the type and name in the JSON passed into stdin
+  cat pod.json | kubectl delete -f -
+  
+  # Delete pods and services with same names "baz" and "foo"
+  kubectl delete pod,service baz foo
+  
+  # Delete pods and services with label name=myLabel
+  kubectl delete pods,services -l name=myLabel
+  
+  # Delete a pod with minimal delay
+  kubectl delete pod foo --now
+  
+  # Force delete a pod on a dead node
+  kubectl delete pod foo --force
+  
+  # Delete all pods
+  kubectl delete pods --all
+  
+  # Delete all pods only if the user confirms the deletion
+  kubectl delete pods --all --interactive
+
+Flags:
+      --all                             Delete all resources, in the namespace of the specified resource types.
+  -A, --all-namespaces                  If present, list the requested object(s) across all namespaces. Namespace in current context is ignored even if specified with --namespace.
+      --cascade string[="background"]   Must be "background", "orphan", or "foreground". Selects the deletion cascading strategy for the dependents (e.g. Pods created by a ReplicationController). Defaults to background. (default "background")
+      --dry-run string[="unchanged"]    Must be "none", "server", or "client". If client strategy, only print the object that would be sent, without sending it. If server strategy, submit server-side request without persisting the resource. (default "none")
+      --field-selector string           Selector (field query) to filter on, supports '=', '==', and '!='.(e.g. --field-selector key1=value1,key2=value2). The server only supports a limited number of field queries per type.
+  -f, --filename strings                containing the resource to delete.
+      --force                           If true, immediately remove resources from API and bypass graceful deletion. Note that immediate deletion of some resources may result in inconsistency or data loss and requires confirmation.
+      --grace-period int                Period of time in seconds given to the resource to terminate gracefully. Ignored if negative. Set to 1 for immediate shutdown. Can only be set to 0 when --force is true (force deletion). (default -1)
+  -h, --help                            help for delete
+      --ignore-not-found                Treat "resource not found" as a successful delete. Defaults to "true" when --all is specified.
+  -i, --interactive                     If true, delete resource only when user confirms.
+  -k, --kustomize string                Process a kustomization directory. This flag can't be used together with -f or -R.
+      --now                             If true, resources are signaled for immediate shutdown (same as --grace-period=1).
+  -o, --output string                   Output mode. Use "-o name" for shorter output (resource/name).
+      --raw string                      Raw URI to DELETE to the server.  Uses the transport specified by the kubeconfig file.
+  -R, --recursive                       Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
+  -l, --selector string                 Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+      --timeout duration                The length of time to wait before giving up on a delete, zero means determine a timeout from the size of the object
+      --wait                            If true, wait for resources to be gone before returning. This waits for finalizers. (default true)
+
+---
+
+[TestWorkloadHelpSnapshots/install - 1]
+Install Helm charts to provision workloads through KSail.
+
+Usage:
+  ksail workload install [flags]
+
+Flags:
+  -h, --help   help for install
+
+---
+
+[TestWorkloadHelpSnapshots/namespace - 1]
+Group workload commands under a single namespace to reconcile, apply, create, delete, edit, get, or install workloads.
+
+Usage:
+  ksail workload [flags]
+  ksail workload [command]
+
+Available Commands:
+  apply       Apply manifests
+  create      Create resources
+  delete      Delete resources
+  edit        Edit a resource
+  get         Get resources
+  install     Install Helm charts
+  reconcile   Reconcile workloads with the cluster
+
+Flags:
+  -h, --help   help for workload
+
+Use "ksail workload [command] --help" for more information about a command.
+
+---
+
+[TestWorkloadHelpSnapshots/reconcile - 1]
+Trigger reconciliation tooling to sync local workloads with your cluster.
+
+Usage:
+  ksail workload reconcile [flags]
+
+Flags:
+  -h, --help   help for reconcile
+
+---
+
+[TestWorkloadHelpSnapshots/edit - 1]
+Edit a Kubernetes resource from the default editor.
+
+Usage:
+  ksail workload edit
+
+Examples:
+  # Edit the service named 'registry'
+  kubectl edit svc/registry
+  
+  # Use an alternative editor
+  KUBE_EDITOR="nano" kubectl edit svc/registry
+  
+  # Edit the job 'myjob' in JSON using the v1 API format
+  kubectl edit job.v1.batch/myjob -o json
+  
+  # Edit the deployment 'mydeployment' in YAML and save the modified config in its annotation
+  kubectl edit deployment/mydeployment -o yaml --save-config
+  
+  # Edit the 'status' subresource for the 'mydeployment' deployment
+  kubectl edit deployment mydeployment --subresource='status'
+
+Flags:
+      --allow-missing-template-keys   If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
+      --field-manager string          Name of the manager used to track field ownership. (default "kubectl-edit")
+  -f, --filename strings              Filename, directory, or URL to files to use to edit the resource
+  -h, --help                          help for edit
+  -k, --kustomize string              Process the kustomization directory. This flag can't be used together with -f or -R.
+  -o, --output string                 Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
+      --output-patch                  Output the patch if the resource is edited.
+  -R, --recursive                     Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
+      --save-config                   If true, the configuration of current object will be saved in its annotation. Otherwise, the annotation will be unchanged. This flag is useful when you want to perform kubectl apply on this object in the future.
+      --show-managed-fields           If true, keep the managedFields when printing objects in JSON or YAML format.
+      --subresource string            If specified, edit will operate on the subresource of the requested object.
+      --template string               Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+      --validate string[="strict"]    Must be one of: strict (or true), warn, ignore (or false). "true" or "strict" will use a schema to validate the input and fail the request if invalid. It will perform server side validation if ServerSideFieldValidation is enabled on the api-server, but will fall back to less reliable client-side validation if not. "warn" will warn about unknown or duplicate fields without blocking the request if server-side field validation is enabled on the API server, and behave as "ignore" otherwise. "false" or "ignore" will not perform any schema validation, silently dropping any unknown or duplicate fields. (default "strict")
+      --windows-line-endings          Defaults to the line ending native to your platform.
+
+---
+
 [TestWorkloadHelpSnapshots/get - 1]
 Display one or many Kubernetes resources from your cluster.
 
@@ -197,45 +342,3 @@ Flags:
 
 ---
 
-[TestWorkloadHelpSnapshots/install - 1]
-Install Helm charts to provision workloads through KSail.
-
-Usage:
-  ksail workload install [flags]
-
-Flags:
-  -h, --help   help for install
-
----
-
-[TestWorkloadHelpSnapshots/namespace - 1]
-Group workload commands under a single namespace to reconcile, apply, or install workloads.
-
-Usage:
-  ksail workload [flags]
-  ksail workload [command]
-
-Available Commands:
-  apply       Apply manifests
-  create      Create resources
-  get         Get resources
-  install     Install Helm charts
-  reconcile   Reconcile workloads with the cluster
-
-Flags:
-  -h, --help   help for workload
-
-Use "ksail workload [command] --help" for more information about a command.
-
----
-
-[TestWorkloadHelpSnapshots/reconcile - 1]
-Trigger reconciliation tooling to sync local workloads with your cluster.
-
-Usage:
-  ksail workload reconcile [flags]
-
-Flags:
-  -h, --help   help for reconcile
-
----
