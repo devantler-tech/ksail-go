@@ -222,3 +222,36 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateDescribeCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateDescribeCommand(path) },
+		"describe",
+		"Describe resources",
+		"Show details of a specific resource or group of resources.",
+	)
+}
+
+func TestCreateDescribeCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateDescribeCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl describe flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("all-namespaces"),
+		"expected --all-namespaces flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("show-events"), "expected --show-events flag to be present")
+}

@@ -8,6 +8,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/apply"
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
+	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
@@ -115,4 +116,27 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
 
 	return createCmd
+}
+
+// CreateDescribeCommand creates a kubectl describe command with all its flags and behavior.
+func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the describe command using kubectl's NewCmdDescribe
+	describeCmd := describe.NewCmdDescribe("ksail", factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	describeCmd.Use = "describe"
+	describeCmd.Short = "Describe resources"
+	describeCmd.Long = "Show details of a specific resource or group of resources."
+
+	return describeCmd
 }

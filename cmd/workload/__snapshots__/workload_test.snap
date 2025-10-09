@@ -192,7 +192,7 @@ Flags:
 ---
 
 [TestWorkloadHelpSnapshots/namespace - 1]
-Group workload commands under a single namespace to reconcile, apply, create, delete, edit, or install workloads.
+Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, or install workloads.
 
 Usage:
   ksail workload [flags]
@@ -202,6 +202,7 @@ Available Commands:
   apply       Apply manifests
   create      Create resources
   delete      Delete resources
+  describe    Describe resources
   edit        Edit a resource
   install     Install Helm charts
   reconcile   Reconcile workloads with the cluster
