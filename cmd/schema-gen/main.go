@@ -57,5 +57,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, _ = fmt.Fprintf(os.Stdout, "JSON schema generated successfully: %s\n", outputPath)
+	fmt.Printf("JSON schema generated successfully: %s\n", outputPath)
 }
