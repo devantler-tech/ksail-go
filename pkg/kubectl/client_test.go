@@ -223,64 +223,80 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 	}
 }
 
-func TestCreateDescribeCommand(t *testing.T) {
+func TestCreateGetCommand(t *testing.T) {
 	t.Parallel()
 
 	testCommandCreation(
 		t,
-		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateDescribeCommand(path) },
-		"describe",
-		"Describe resources",
-		"Show details of a specific resource or group of resources.",
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateGetCommand(path) },
+		"get",
+		"Get resources",
+		"Display one or many Kubernetes resources from your cluster.",
 	)
 }
 
-func TestCreateExplainCommand(t *testing.T) {
-	t.Parallel()
-
-	testCommandCreation(
-		t,
-		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExplainCommand(path) },
-		"explain",
-		"Get documentation for a resource",
-		"Get documentation for Kubernetes resources, including field descriptions and structure.",
-	)
-}
-
-func TestCreateDescribeCommandHasFlags(t *testing.T) {
+func TestCreateGetCommandHasFlags(t *testing.T) {
 	t.Parallel()
 
 	ioStreams := createTestIOStreams()
 
 	client := kubectl.NewClient(ioStreams)
-	cmd := client.CreateDescribeCommand("/path/to/kubeconfig")
+	cmd := client.CreateGetCommand("/path/to/kubeconfig")
 
-	// Verify that kubectl describe flags are present
+	// Verify that kubectl get flags are present
 	flags := cmd.Flags()
 	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
 	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
-	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
+	require.NotNil(t, flags.Lookup("watch"), "expected --watch flag to be present")
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
 	require.NotNil(
 		t,
 		flags.Lookup("all-namespaces"),
 		"expected --all-namespaces flag to be present",
 	)
-	require.NotNil(t, flags.Lookup("show-events"), "expected --show-events flag to be present")
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("field-selector"),
+		"expected --field-selector flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("show-labels"), "expected --show-labels flag to be present")
 }
 
-func TestCreateExplainCommandHasFlags(t *testing.T) {
+func TestCreateScaleCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateScaleCommand(path) },
+		"scale",
+		"Scale resources",
+		"Set a new size for a deployment, replica set, replication controller, or stateful set.",
+	)
+}
+
+func TestCreateScaleCommandHasFlags(t *testing.T) {
 	t.Parallel()
 
 	ioStreams := createTestIOStreams()
 
 	client := kubectl.NewClient(ioStreams)
-	cmd := client.CreateExplainCommand("/path/to/kubeconfig")
+	cmd := client.CreateScaleCommand("/path/to/kubeconfig")
 
-	// Verify that kubectl explain flags are present
+	// Verify that kubectl scale flags are present
 	flags := cmd.Flags()
-	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
-	require.NotNil(t, flags.Lookup("api-version"), "expected --api-version flag to be present")
-	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
+	require.NotNil(t, flags.Lookup("replicas"), "expected --replicas flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("current-replicas"),
+		"expected --current-replicas flag to be present",
+	)
+	require.NotNil(
+		t,
+		flags.Lookup("resource-version"),
+		"expected --resource-version flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
 }
 
 func TestCreateRolloutCommand(t *testing.T) {
@@ -327,38 +343,61 @@ func TestCreateRolloutCommandHasSubcommands(t *testing.T) {
 	}
 }
 
-func TestCreateScaleCommand(t *testing.T) {
+func TestCreateDescribeCommand(t *testing.T) {
 	t.Parallel()
 
 	testCommandCreation(
 		t,
-		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateScaleCommand(path) },
-		"scale",
-		"Scale resources",
-		"Set a new size for a deployment, replica set, replication controller, or stateful set.",
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateDescribeCommand(path) },
+		"describe",
+		"Describe resources",
+		"Show details of a specific resource or group of resources.",
 	)
 }
 
-func TestCreateScaleCommandHasFlags(t *testing.T) {
+func TestCreateDescribeCommandHasFlags(t *testing.T) {
 	t.Parallel()
 
 	ioStreams := createTestIOStreams()
 
 	client := kubectl.NewClient(ioStreams)
-	cmd := client.CreateScaleCommand("/path/to/kubeconfig")
+	cmd := client.CreateDescribeCommand("/path/to/kubeconfig")
 
-	// Verify that kubectl scale flags are present
+	// Verify that kubectl describe flags are present
 	flags := cmd.Flags()
-	require.NotNil(t, flags.Lookup("replicas"), "expected --replicas flag to be present")
+	require.NotNil(t, flags.Lookup("filename"), "expected --filename flag to be present")
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("selector"), "expected --selector flag to be present")
 	require.NotNil(
 		t,
-		flags.Lookup("current-replicas"),
-		"expected --current-replicas flag to be present",
+		flags.Lookup("show-events"),
+		"expected --show-events flag to be present",
 	)
-	require.NotNil(
+}
+
+func TestCreateExplainCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
 		t,
-		flags.Lookup("resource-version"),
-		"expected --resource-version flag to be present",
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExplainCommand(path) },
+		"explain",
+		"Get documentation for a resource",
+		"Get documentation for Kubernetes resources, including field descriptions and structure.",
 	)
-	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
+}
+
+func TestCreateExplainCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExplainCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl explain flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("api-version"), "expected --api-version flag to be present")
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
 }

@@ -11,6 +11,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
 	"k8s.io/kubectl/pkg/cmd/explain"
+	"k8s.io/kubectl/pkg/cmd/get"
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -49,6 +50,29 @@ func (c *Client) CreateApplyCommand(kubeConfigPath string) *cobra.Command {
 	applyCmd.Long = "Apply local Kubernetes manifests to your cluster."
 
 	return applyCmd
+}
+
+// CreateCreateCommand creates a kubectl create command with all its flags and behavior.
+func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the create command using kubectl's NewCmdCreate
+	createCmd := create.NewCmdCreate(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	createCmd.Use = "create"
+	createCmd.Short = "Create resources"
+	createCmd.Long = "Create Kubernetes resources from files or stdin."
+
+	return createCmd
 }
 
 // CreateEditCommand creates a kubectl edit command with all its flags and behavior.
@@ -98,29 +122,6 @@ func (c *Client) CreateDeleteCommand(kubeConfigPath string) *cobra.Command {
 	return deleteCmd
 }
 
-// CreateCreateCommand creates a kubectl create command with all its flags and behavior.
-func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
-	// Create config flags with kubeconfig path
-	configFlags := genericclioptions.NewConfigFlags(true)
-	if kubeConfigPath != "" {
-		configFlags.KubeConfig = &kubeConfigPath
-	}
-
-	// Create factory for kubectl command
-	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
-	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-
-	// Create the create command using kubectl's NewCmdCreate
-	createCmd := create.NewCmdCreate(factory, c.ioStreams)
-
-	// Customize command metadata to fit ksail context
-	createCmd.Use = "create"
-	createCmd.Short = "Create resources"
-	createCmd.Long = "Create Kubernetes resources from files or stdin."
-
-	return createCmd
-}
-
 // CreateDescribeCommand creates a kubectl describe command with all its flags and behavior.
 func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
 	// Create config flags with kubeconfig path
@@ -132,7 +133,6 @@ func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
 	// Create factory for kubectl command
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
 	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
-
 	// Create the describe command using kubectl's NewCmdDescribe
 	describeCmd := describe.NewCmdDescribe("ksail", factory, c.ioStreams)
 
@@ -165,6 +165,29 @@ func (c *Client) CreateExplainCommand(kubeConfigPath string) *cobra.Command {
 	explainCmd.Long = "Get documentation for Kubernetes resources, including field descriptions and structure."
 
 	return explainCmd
+}
+
+// CreateGetCommand creates a kubectl get command with all its flags and behavior.
+func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the get command using kubectl's NewCmdGet
+	getCmd := get.NewCmdGet("ksail", factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	getCmd.Use = "get"
+	getCmd.Short = "Get resources"
+	getCmd.Long = "Display one or many Kubernetes resources from your cluster."
+
+	return getCmd
 }
 
 // CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
