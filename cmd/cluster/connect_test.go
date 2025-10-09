@@ -26,6 +26,7 @@ func TestNewConnectCmd(t *testing.T) {
 	require.NotNil(t, cmd.RunE, "expected RunE to be set")
 }
 
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -68,6 +69,7 @@ spec:
 	)
 }
 
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -107,6 +109,7 @@ spec:
 	)
 }
 
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
 	// Create a temporary directory with invalid config
 	tempDir := t.TempDir()
