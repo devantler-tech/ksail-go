@@ -222,3 +222,39 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateScaleCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateScaleCommand(path) },
+		"scale",
+		"Scale resources",
+		"Set a new size for a deployment, replica set, replication controller, or stateful set.",
+	)
+}
+
+func TestCreateScaleCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateScaleCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl scale flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("replicas"), "expected --replicas flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("current-replicas"),
+		"expected --current-replicas flag to be present",
+	)
+	require.NotNil(
+		t,
+		flags.Lookup("resource-version"),
+		"expected --resource-version flag to be present",
+	)
+	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
+}
