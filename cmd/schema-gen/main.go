@@ -33,7 +33,7 @@ func run(args []string) error {
 	schema := reflector.Reflect(&v1alpha1.Cluster{})
 
 	// Set the schema ID and title
-	schema.ID = "https://ksail.dev/schemas/ksail-cluster-schema.json"
+	schema.ID = "https://raw.githubusercontent.com/devantler/ksail-go/main/schemas/ksail-cluster-schema.json"
 	schema.Title = "KSail Cluster Configuration"
 	schema.Description = "Schema for KSail cluster configuration (ksail.yaml)"
 

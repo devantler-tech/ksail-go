@@ -35,7 +35,11 @@ func TestRunGeneratesSchema(t *testing.T) {
 
 	// Verify key schema properties
 	assert.Equal(t, "https://json-schema.org/draft/2020-12/schema", schema["$schema"])
-	assert.Equal(t, "https://ksail.dev/schemas/ksail-cluster-schema.json", schema["$id"])
+	assert.Equal(
+		t,
+		"https://raw.githubusercontent.com/devantler/ksail-go/main/schemas/ksail-cluster-schema.json",
+		schema["$id"],
+	)
 	assert.Equal(t, "KSail Cluster Configuration", schema["title"])
 	assert.Equal(t, "Schema for KSail cluster configuration (ksail.yaml)", schema["description"])
 
