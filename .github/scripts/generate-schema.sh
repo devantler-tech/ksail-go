@@ -8,7 +8,7 @@ set -e
 echo "Generating JSON schema for KSail configuration..."
 
 # Run the schema generator
-cd "$(git rev-parse --show-toplevel)" || exit 1
+pushd "$(git rev-parse --show-toplevel)" > /dev/null || exit 1
 go run ./cmd/schema-gen
-
+popd > /dev/null
 echo "JSON schema generation completed successfully"
