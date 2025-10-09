@@ -11,6 +11,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
 	"k8s.io/kubectl/pkg/cmd/explain"
+	"k8s.io/kubectl/pkg/cmd/expose"
 	"k8s.io/kubectl/pkg/cmd/get"
 	"k8s.io/kubectl/pkg/cmd/logs"
 	"k8s.io/kubectl/pkg/cmd/rollout"
@@ -259,4 +260,27 @@ func (c *Client) CreateScaleCommand(kubeConfigPath string) *cobra.Command {
 	scaleCmd.Long = "Set a new size for a deployment, replica set, replication controller, or stateful set."
 
 	return scaleCmd
+}
+
+// CreateExposeCommand creates a kubectl expose command with all its flags and behavior.
+func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the expose command using kubectl's NewCmdExposeService
+	exposeCmd := expose.NewCmdExposeService(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	exposeCmd.Use = "expose"
+	exposeCmd.Short = "Expose a resource as a service"
+	exposeCmd.Long = "Expose a resource as a new Kubernetes service."
+
+	return exposeCmd
 }
