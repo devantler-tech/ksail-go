@@ -222,3 +222,30 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 		require.True(t, subcommandNames[expected], "expected subcommand %q to be present", expected)
 	}
 }
+
+func TestCreateExplainCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExplainCommand(path) },
+		"explain",
+		"Get documentation for a resource",
+		"Get documentation for Kubernetes resources, including field descriptions and structure.",
+	)
+}
+
+func TestCreateExplainCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExplainCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl explain flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("recursive"), "expected --recursive flag to be present")
+	require.NotNil(t, flags.Lookup("api-version"), "expected --api-version flag to be present")
+	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
+}
