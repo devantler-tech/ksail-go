@@ -13,6 +13,10 @@ pushd "$(git rev-parse --show-toplevel)" > /dev/null || exit 1
 # Set GOPROXY to direct to avoid proxy issues in CI environments
 export GOPROXY=direct
 
+# Use local Go toolchain instead of trying to download a specific version
+# This is important for CI environments that may not have the exact Go version
+export GOTOOLCHAIN=local
+
 # Ensure dependencies are downloaded
 go mod download
 
