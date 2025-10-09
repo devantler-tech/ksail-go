@@ -150,9 +150,9 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 	require.NotNil(t, cmdWithArgs.RunE)
 }
 
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
@@ -170,9 +170,9 @@ func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
 }
 
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
@@ -191,9 +191,9 @@ func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	assertArgsNotContain(t, capturedArgs, "--kubeconfig")
 }
 
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
@@ -215,6 +215,7 @@ func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 // assertArgsContain is a helper to assert that all expected values are in the args slice.
 func assertArgsContain(t *testing.T, args []string, expected ...string) {
 	t.Helper()
+
 	for _, exp := range expected {
 		require.Contains(t, args, exp, "expected args to contain %q", exp)
 	}
@@ -223,14 +224,15 @@ func assertArgsContain(t *testing.T, args []string, expected ...string) {
 // assertArgsNotContain is a helper to assert that values are not in the args slice.
 func assertArgsNotContain(t *testing.T, args []string, notExpected ...string) {
 	t.Helper()
+
 	for _, notExp := range notExpected {
 		require.NotContains(t, args, notExp, "expected args to not contain %q", notExp)
 	}
 }
 
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_OsArgsRestored(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-
 	mockExecutor := k9s.NewMockExecutor(t)
 	mockExecutor.EXPECT().Execute().Once()
 
