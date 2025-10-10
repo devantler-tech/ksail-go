@@ -19,7 +19,7 @@ The KSail Go project is organized into several main directories:
 
 - **[cmd/](./cmd/README.md)** - CLI implementation using Cobra framework:
   - **cmd/cipher/** - SOPS cipher management commands
-  - **cmd/cluster/** - Cluster lifecycle commands (up, down, start, stop, reconcile)
+  - **cmd/cluster/** - Cluster lifecycle commands (create, delete, start, stop, connect, info, list)
   - **cmd/workload/** - Workload management commands (logs, etc.)
   - **[cmd/internal/](./cmd/internal/README.md)** - Internal command utilities and helpers
 

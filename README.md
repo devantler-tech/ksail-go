@@ -46,7 +46,7 @@ ksail --help
 
 ## Documentation
 
-For information about the project structure and how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Related Projects
 
