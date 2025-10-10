@@ -6,6 +6,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
+	"k8s.io/kubectl/pkg/cmd/clusterinfo"
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/describe"
@@ -284,6 +285,26 @@ func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
 	exposeCmd.Long = "Expose a resource as a new Kubernetes service."
 
 	return exposeCmd
+}
+
+// CreateClusterInfoCommand creates a kubectl cluster-info command with all its flags and behavior.
+func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create the cluster-info command using kubectl's NewCmdClusterInfo
+	clusterInfoCmd := clusterinfo.NewCmdClusterInfo(configFlags, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	clusterInfoCmd.Use = "info"
+	clusterInfoCmd.Short = "Display cluster information"
+	clusterInfoCmd.Long = "Display addresses of the control plane and services with label " +
+		"kubernetes.io/cluster-service=true."
+
+	return clusterInfoCmd
 }
 
 // CreateExecCommand creates a kubectl exec command with all its flags and behavior.

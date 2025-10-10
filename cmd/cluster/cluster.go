@@ -23,6 +23,7 @@ func NewClusterCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewStartCmd(runtimeContainer))
 	cmd.AddCommand(NewStopCmd(runtimeContainer))
 	cmd.AddCommand(NewListCmd(runtimeContainer))
+	cmd.AddCommand(NewInfoCmd(runtimeContainer))
 
 	return cmd
 }

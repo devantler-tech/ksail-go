@@ -256,6 +256,39 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 	}
 }
 
+func TestCreateClusterInfoCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateClusterInfoCommand(path) },
+		"info",
+		"Display cluster information",
+		"Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
+	)
+}
+
+func TestCreateClusterInfoCommandHasSubcommands(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateClusterInfoCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl cluster-info subcommands are present
+	subcommands := cmd.Commands()
+	require.NotEmpty(t, subcommands, "expected cluster-info command to have subcommands")
+
+	// Check for the dump subcommand
+	subcommandNames := make(map[string]bool)
+	for _, subcmd := range subcommands {
+		subcommandNames[subcmd.Name()] = true
+	}
+
+	require.True(t, subcommandNames["dump"], "expected dump subcommand to be present")
+}
+
 func TestCreateExposeCommand(t *testing.T) {
 	t.Parallel()
 
