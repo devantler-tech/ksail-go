@@ -157,39 +157,28 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
-
-	runCommandTest(t, cmd, []string{})
-
-	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
+	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "", []string{},
+		[]string{"k9s", "--kubeconfig", "/test/kubeconfig"}, nil)
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("", "")
-
-	runCommandTest(t, cmd, []string{})
-
-	assertArgsContain(t, *capturedArgs, "k9s")
-	assertArgsNotContain(t, *capturedArgs, "--kubeconfig")
+	testRunK9sWithMockExecutor(t, "", "", []string{},
+		[]string{"k9s"}, []string{"--kubeconfig"})
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
-
-	runCommandTest(t, cmd, []string{"--namespace", "default", "--readonly"})
-
-	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
-		"--namespace", "default", "--readonly")
+	testRunK9sWithMockExecutor(
+		t,
+		"/test/kubeconfig",
+		"",
+		[]string{"--namespace", "default", "--readonly"},
+		[]string{"k9s", "--kubeconfig", "/test/kubeconfig", "--namespace", "default", "--readonly"},
+		nil,
+	)
 }
 
 // assertArgsContain is a helper to assert that all expected values are in the args slice.
@@ -234,6 +223,30 @@ func runCommandTest(t *testing.T, cmd *cobra.Command, args []string) {
 	require.NoError(t, err)
 }
 
+// testRunK9sWithMockExecutor is a helper that tests k9s command execution with a mock executor.
+// It verifies that the command args contain expected values and optionally don't contain notExpected values.
+func testRunK9sWithMockExecutor(
+	t *testing.T,
+	kubeconfig, context string,
+	cmdArgs, expectedArgs, notExpectedArgs []string,
+) {
+	t.Helper()
+
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
+	client := k9s.NewClientWithExecutor(mockExecutor)
+	cmd := client.CreateConnectCommand(kubeconfig, context)
+
+	runCommandTest(t, cmd, cmdArgs)
+
+	if len(expectedArgs) > 0 {
+		assertArgsContain(t, *capturedArgs, expectedArgs...)
+	}
+
+	if len(notExpectedArgs) > 0 {
+		assertArgsNotContain(t, *capturedArgs, notExpectedArgs...)
+	}
+}
+
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_OsArgsRestored(t *testing.T) {
 	// NOT parallel - modifies global os.Args
@@ -257,45 +270,29 @@ func TestRunK9s_OsArgsRestored(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithContext(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig", "my-context")
-
-	runCommandTest(t, cmd, []string{})
-
-	assertArgsContain(
-		t,
-		*capturedArgs,
-		"k9s",
-		"--kubeconfig",
-		"/test/kubeconfig",
-		"--context",
-		"my-context",
-	)
+	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "my-context", []string{},
+		[]string{"k9s", "--kubeconfig", "/test/kubeconfig", "--context", "my-context"}, nil)
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithoutContext(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
-
-	runCommandTest(t, cmd, []string{})
-
-	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
-	assertArgsNotContain(t, *capturedArgs, "--context")
+	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "", []string{},
+		[]string{"k9s", "--kubeconfig", "/test/kubeconfig"}, []string{"--context"})
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithContextAndAdditionalArgs(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	mockExecutor, capturedArgs := setupMockExecutorTest(t)
-	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig", "prod-cluster")
-
-	runCommandTest(t, cmd, []string{"--namespace", "default", "--readonly"})
-
-	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
-		"--context", "prod-cluster", "--namespace", "default", "--readonly")
+	testRunK9sWithMockExecutor(
+		t,
+		"/test/kubeconfig",
+		"prod-cluster",
+		[]string{"--namespace", "default", "--readonly"},
+		[]string{
+			"k9s", "--kubeconfig", "/test/kubeconfig", "--context", "prod-cluster",
+			"--namespace", "default", "--readonly",
+		},
+		nil,
+	)
 }

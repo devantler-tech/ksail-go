@@ -118,7 +118,7 @@ func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
-func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
+func TestHandleConnectRunE_DefaultKubeconfig(t *testing.T) {
 	configContent := createKSailConfigYAML("", "")
 	cfgManager := setupTestConfig(t, configContent)
 
@@ -127,6 +127,14 @@ func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
 	cfg := cfgManager.GetConfig()
 	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig path to be empty, will use default")
+
+	// Verify default path can be constructed
+	homeDir, err := os.UserHomeDir()
+	require.NoError(t, err, "expected to get home directory")
+	require.NotEmpty(t, homeDir, "expected home directory to be non-empty")
+
+	expectedPath := filepath.Join(homeDir, ".kube", "config")
+	require.NotEmpty(t, expectedPath, "expected default kubeconfig path to be constructed")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
@@ -142,25 +150,6 @@ func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
 		"load configuration",
 		"expected error to indicate config loading failure",
 	)
-}
-
-//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
-func TestHandleConnectRunE_WithDefaultKubeconfigPath(t *testing.T) {
-	configContent := createKSailConfigYAML("", "")
-	cfgManager := setupTestConfig(t, configContent)
-
-	loadConfigAndVerifyNoError(t, cfgManager)
-
-	cfg := cfgManager.GetConfig()
-	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
-		"expected kubeconfig path to be empty before defaulting")
-
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err, "expected to get home directory")
-	require.NotEmpty(t, homeDir, "expected home directory to be non-empty")
-
-	expectedPath := filepath.Join(homeDir, ".kube", "config")
-	require.NotEmpty(t, expectedPath, "expected default kubeconfig path to be constructed")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
