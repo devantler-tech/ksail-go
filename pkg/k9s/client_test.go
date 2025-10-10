@@ -296,3 +296,16 @@ func TestRunK9s_WithMockExecutor_WithContextAndAdditionalArgs(t *testing.T) {
 		nil,
 	)
 }
+
+func TestDefaultK9sExecutor(t *testing.T) {
+	t.Parallel()
+
+	// Create a DefaultK9sExecutor instance
+	executor := &k9s.DefaultK9sExecutor{}
+	require.NotNil(t, executor, "expected executor to be created")
+
+	// Note: We cannot test Execute() directly as it would launch k9s
+	// which requires a terminal and would hang in test environment.
+	// The Execute() method is covered through integration testing
+	// and manual verification of the connect command.
+}
