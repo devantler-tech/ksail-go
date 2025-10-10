@@ -84,6 +84,7 @@ func expectedLifecycleMetadata(
 		func() *cobra.Command { return NewStartCmd(runtimeContainer) },
 		func() *cobra.Command { return NewStopCmd(runtimeContainer) },
 		func() *cobra.Command { return NewListCmd(runtimeContainer) },
+		func() *cobra.Command { return NewInfoCmd(runtimeContainer) },
 	}
 
 	metadata := make(map[string]lifecycleMetadata, len(constructors))
