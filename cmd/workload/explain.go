@@ -10,10 +10,10 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
-// NewEditCmd creates the workload edit command.
+// NewExplainCmd creates the workload explain command.
 // The runtime parameter is kept for consistency with other workload command constructors,
 // though it's currently unused as this command wraps kubectl directly.
-func NewEditCmd(_ *runtime.Runtime) *cobra.Command {
+func NewExplainCmd(_ *runtime.Runtime) *cobra.Command {
 	// Try to load config silently to get kubeconfig path
 	kubeconfigPath := shared.GetKubeconfigPathSilently()
 
@@ -24,9 +24,9 @@ func NewEditCmd(_ *runtime.Runtime) *cobra.Command {
 		ErrOut: os.Stderr,
 	}
 
-	// Create kubectl client and get the edit command directly
+	// Create kubectl client and get the explain command directly
 	client := kubectl.NewClient(ioStreams)
-	editCmd := client.CreateEditCommand(kubeconfigPath)
+	explainCmd := client.CreateExplainCommand(kubeconfigPath)
 
-	return editCmd
+	return explainCmd
 }
