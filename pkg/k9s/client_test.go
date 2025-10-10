@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/k9s"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,6 +90,17 @@ func TestCreateConnectCommandStructure(t *testing.T) {
 	require.NotNil(t, cmd, "command should be properly structured")
 }
 
+// verifyCommandMetadata is a helper to verify basic command structure.
+func verifyCommandMetadata(t *testing.T, cmd *cobra.Command) {
+	t.Helper()
+
+	require.NotNil(t, cmd, "expected command to be created")
+	require.NotNil(t, cmd.RunE, "expected RunE to be set")
+	require.Equal(t, "connect", cmd.Use)
+	require.Equal(t, "Connect to cluster with k9s", cmd.Short)
+	require.True(t, cmd.SilenceUsage)
+}
+
 func TestCreateConnectCommand_WithKubeconfig(t *testing.T) {
 	t.Parallel()
 
@@ -96,13 +108,7 @@ func TestCreateConnectCommand_WithKubeconfig(t *testing.T) {
 	kubeConfigPath := "/test/path/to/kubeconfig"
 	cmd := client.CreateConnectCommand(kubeConfigPath, "")
 
-	require.NotNil(t, cmd, "expected command to be created")
-	require.NotNil(t, cmd.RunE, "expected RunE to be set")
-
-	// Verify the command metadata
-	require.Equal(t, "connect", cmd.Use)
-	require.Equal(t, "Connect to cluster with k9s", cmd.Short)
-	require.True(t, cmd.SilenceUsage)
+	verifyCommandMetadata(t, cmd)
 }
 
 func TestCreateConnectCommand_WithoutKubeconfig(t *testing.T) {
@@ -111,13 +117,7 @@ func TestCreateConnectCommand_WithoutKubeconfig(t *testing.T) {
 	client := k9s.NewClient()
 	cmd := client.CreateConnectCommand("", "")
 
-	require.NotNil(t, cmd, "expected command to be created")
-	require.NotNil(t, cmd.RunE, "expected RunE to be set")
-
-	// Verify the command metadata
-	require.Equal(t, "connect", cmd.Use)
-	require.Equal(t, "Connect to cluster with k9s", cmd.Short)
-	require.True(t, cmd.SilenceUsage)
+	verifyCommandMetadata(t, cmd)
 }
 
 func TestCreateConnectCommand_WithArgs(t *testing.T) {
@@ -126,8 +126,7 @@ func TestCreateConnectCommand_WithArgs(t *testing.T) {
 	client := k9s.NewClient()
 	cmd := client.CreateConnectCommand("/path/to/kubeconfig", "")
 
-	require.NotNil(t, cmd, "expected command to be created")
-	require.NotNil(t, cmd.RunE, "expected RunE to be set")
+	verifyCommandMetadata(t, cmd)
 
 	// Set some args to pass through
 	cmd.SetArgs([]string{"--namespace", "default"})
@@ -143,19 +142,16 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 
 	// Test with kubeconfig path
 	cmdWithConfig := client.CreateConnectCommand("/test/kubeconfig", "")
-	require.NotNil(t, cmdWithConfig)
-	require.NotNil(t, cmdWithConfig.RunE)
+	verifyCommandMetadata(t, cmdWithConfig)
 
 	// Test without kubeconfig path
 	cmdWithoutConfig := client.CreateConnectCommand("", "")
-	require.NotNil(t, cmdWithoutConfig)
-	require.NotNil(t, cmdWithoutConfig.RunE)
+	verifyCommandMetadata(t, cmdWithoutConfig)
 
 	// Test with args
 	cmdWithArgs := client.CreateConnectCommand("/test/kubeconfig", "my-context")
 	cmdWithArgs.SetArgs([]string{"--namespace", "test", "--readonly"})
-	require.NotNil(t, cmdWithArgs)
-	require.NotNil(t, cmdWithArgs.RunE)
+	verifyCommandMetadata(t, cmdWithArgs)
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification

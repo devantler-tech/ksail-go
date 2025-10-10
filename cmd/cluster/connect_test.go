@@ -43,29 +43,21 @@ func TestNewConnectCmd_RunECallsHandler(t *testing.T) {
 	require.NotNil(t, cmd.RunE, "RunE should be callable")
 }
 
-//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
-func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
-	// Create a temporary directory for the test
-	tempDir := t.TempDir()
-	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
+// setupTestConfig creates a test config file and returns the config manager.
+func setupTestConfig(
+	t *testing.T,
+	configContent string,
+) *ksailconfigmanager.ConfigManager {
+	t.Helper()
 
-	// Create a minimal ksail.yaml configuration
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  connection:
-    kubeconfig: ` + kubeConfigPath + `
-`
+	tempDir := t.TempDir()
 	configFile := filepath.Join(tempDir, "ksail.yaml")
 
 	err := os.WriteFile(configFile, []byte(configContent), 0o600)
 	require.NoError(t, err, "failed to write config file")
 
-	// Change to temp directory
 	t.Chdir(tempDir)
 
-	// Create a command and config manager
 	cmd := &cobra.Command{}
 
 	var outBuf bytes.Buffer
@@ -74,8 +66,24 @@ spec:
 	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
 	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
 
-	// Load config to verify it works
-	err = cfgManager.LoadConfigSilent()
+	return cfgManager
+}
+
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
+func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
+
+	configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind
+  connection:
+    kubeconfig: ` + kubeConfigPath + `
+`
+	cfgManager := setupTestConfig(t, configContent)
+
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
@@ -85,34 +93,14 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
-	// Create a temporary directory for the test
-	tempDir := t.TempDir()
-
-	// Create a minimal ksail.yaml configuration without kubeConfigPath
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
   distribution: Kind
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Load config to verify it works
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
@@ -122,30 +110,10 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
-	// Create a temporary directory with invalid config
-	tempDir := t.TempDir()
-
-	// Create an invalid configuration file
 	configContent := `invalid yaml content [[[`
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Run should fail to load config
-	err = HandleConnectRunE(cmd, cfgManager, []string{})
+	err := HandleConnectRunE(&cobra.Command{}, cfgManager, []string{})
 	require.Error(t, err, "expected error when config is invalid")
 	require.Contains(
 		t,
@@ -157,59 +125,33 @@ func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithDefaultKubeconfigPath(t *testing.T) {
-	// Create a temporary directory for the test
-	tempDir := t.TempDir()
-
-	// Create a minimal ksail.yaml configuration without kubeconfig
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
   distribution: Kind
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Load config first to verify the path logic
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
-
-	// Verify that kubeconfig is empty in config
 	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig path to be empty before defaulting")
 
-	// Verify home directory can be obtained
 	homeDir, err := os.UserHomeDir()
 	require.NoError(t, err, "expected to get home directory")
 	require.NotEmpty(t, homeDir, "expected home directory to be non-empty")
 
-	// Verify the default path would be constructed correctly
 	expectedPath := filepath.Join(homeDir, ".kube", "config")
 	require.NotEmpty(t, expectedPath, "expected default kubeconfig path to be constructed")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithCustomKubeconfigPath(t *testing.T) {
-	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	customKubeConfigPath := filepath.Join(tempDir, "custom-kubeconfig")
 
-	// Create a minimal ksail.yaml configuration with custom kubeconfig
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
@@ -217,25 +159,9 @@ spec:
   connection:
     kubeconfig: ` + customKubeConfigPath + `
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Load config to verify the custom path
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
@@ -245,11 +171,9 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithAdditionalArgs(t *testing.T) {
-	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
 
-	// Create a minimal ksail.yaml configuration
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
@@ -257,40 +181,21 @@ spec:
   connection:
     kubeconfig: ` + kubeConfigPath + `
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Verify we can load config and it would pass args
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
-	// Test that args would be passed through
 	args := []string{"--namespace", "default", "--readonly"}
 	require.NotNil(t, args, "expected args to be passable")
 }
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithContext(t *testing.T) {
-	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
-	contextName := "kind-kind" // Use Kind standard context pattern
+	contextName := "kind-kind"
 
-	// Create a minimal ksail.yaml configuration with context
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
@@ -299,25 +204,9 @@ spec:
     kubeconfig: ` + kubeConfigPath + `
     context: ` + contextName + `
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Load config to verify the context is loaded
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
@@ -327,11 +216,9 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithoutContext(t *testing.T) {
-	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
 
-	// Create a minimal ksail.yaml configuration without context
 	configContent := `apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
@@ -339,25 +226,9 @@ spec:
   connection:
     kubeconfig: ` + kubeConfigPath + `
 `
-	configFile := filepath.Join(tempDir, "ksail.yaml")
+	cfgManager := setupTestConfig(t, configContent)
 
-	err := os.WriteFile(configFile, []byte(configContent), 0o600)
-	require.NoError(t, err, "failed to write config file")
-
-	// Change to temp directory
-	t.Chdir(tempDir)
-
-	// Create a command and config manager
-	cmd := &cobra.Command{}
-
-	var outBuf bytes.Buffer
-	cmd.SetOut(&outBuf)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
-
-	// Load config to verify context is empty
-	err = cfgManager.LoadConfigSilent()
+	err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
