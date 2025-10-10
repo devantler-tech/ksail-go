@@ -11,6 +11,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/exec"
 	"k8s.io/kubectl/pkg/cmd/explain"
 	"k8s.io/kubectl/pkg/cmd/expose"
 	"k8s.io/kubectl/pkg/cmd/get"
@@ -304,4 +305,27 @@ func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command 
 		"kubernetes.io/cluster-service=true."
 
 	return clusterInfoCmd
+}
+
+// CreateExecCommand creates a kubectl exec command with all its flags and behavior.
+func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the exec command using kubectl's NewCmdExec
+	execCmd := exec.NewCmdExec(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	execCmd.Use = "exec"
+	execCmd.Short = "Execute a command in a container"
+	execCmd.Long = "Execute a command in a container in a pod."
+
+	return execCmd
 }

@@ -132,6 +132,39 @@ func TestCreateEditCommandHasFlags(t *testing.T) {
 	require.NotNil(t, flags.Lookup("validate"), "expected --validate flag to be present")
 }
 
+func TestCreateExecCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExecCommand(path) },
+		"exec",
+		"Execute a command in a container",
+		"Execute a command in a container in a pod.",
+	)
+}
+
+func TestCreateExecCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExecCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl exec flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("container"), "expected --container flag to be present")
+	require.NotNil(t, flags.Lookup("stdin"), "expected --stdin flag to be present")
+	require.NotNil(t, flags.Lookup("tty"), "expected --tty flag to be present")
+	require.NotNil(t, flags.Lookup("quiet"), "expected --quiet flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("pod-running-timeout"),
+		"expected --pod-running-timeout flag to be present",
+	)
+}
+
 func TestCreateDeleteCommand(t *testing.T) {
 	t.Parallel()
 
