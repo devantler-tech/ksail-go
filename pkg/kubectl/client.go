@@ -2,6 +2,8 @@
 package kubectl
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
@@ -33,6 +35,13 @@ func NewClient(ioStreams genericiooptions.IOStreams) *Client {
 	}
 }
 
+// replaceKubectlInExamples replaces "kubectl" with "ksail workload" in command examples.
+func replaceKubectlInExamples(cmd *cobra.Command) {
+	if cmd.Example != "" {
+		cmd.Example = strings.ReplaceAll(cmd.Example, "kubectl", "ksail workload")
+	}
+}
+
 // CreateApplyCommand creates a kubectl apply command with all its flags and behavior.
 func (c *Client) CreateApplyCommand(kubeConfigPath string) *cobra.Command {
 	// Create config flags with kubeconfig path
@@ -46,12 +55,13 @@ func (c *Client) CreateApplyCommand(kubeConfigPath string) *cobra.Command {
 	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	// Create the apply command using kubectl's NewCmdApply
-	applyCmd := apply.NewCmdApply("ksail", factory, c.ioStreams)
+	applyCmd := apply.NewCmdApply("ksail workload", factory, c.ioStreams)
 
 	// Customize command metadata to fit ksail context
 	applyCmd.Use = "apply"
 	applyCmd.Short = "Apply manifests"
 	applyCmd.Long = "Apply local Kubernetes manifests to your cluster."
+	replaceKubectlInExamples(applyCmd)
 
 	return applyCmd
 }
@@ -75,6 +85,7 @@ func (c *Client) CreateCreateCommand(kubeConfigPath string) *cobra.Command {
 	createCmd.Use = "create"
 	createCmd.Short = "Create resources"
 	createCmd.Long = "Create Kubernetes resources from files or stdin."
+	replaceKubectlInExamples(createCmd)
 
 	return createCmd
 }
@@ -98,6 +109,7 @@ func (c *Client) CreateEditCommand(kubeConfigPath string) *cobra.Command {
 	editCmd.Use = "edit"
 	editCmd.Short = "Edit a resource"
 	editCmd.Long = "Edit a Kubernetes resource from the default editor."
+	replaceKubectlInExamples(editCmd)
 
 	return editCmd
 }
@@ -122,6 +134,7 @@ func (c *Client) CreateDeleteCommand(kubeConfigPath string) *cobra.Command {
 	deleteCmd.Short = "Delete resources"
 	deleteCmd.Long = "Delete Kubernetes resources by file names, stdin, resources and names, " +
 		"or by resources and label selector."
+	replaceKubectlInExamples(deleteCmd)
 
 	return deleteCmd
 }
@@ -138,12 +151,13 @@ func (c *Client) CreateDescribeCommand(kubeConfigPath string) *cobra.Command {
 	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
 	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 	// Create the describe command using kubectl's NewCmdDescribe
-	describeCmd := describe.NewCmdDescribe("ksail", factory, c.ioStreams)
+	describeCmd := describe.NewCmdDescribe("ksail workload", factory, c.ioStreams)
 
 	// Customize command metadata to fit ksail context
 	describeCmd.Use = "describe"
 	describeCmd.Short = "Describe resources"
 	describeCmd.Long = "Show details of a specific resource or group of resources."
+	replaceKubectlInExamples(describeCmd)
 
 	return describeCmd
 }
@@ -161,12 +175,13 @@ func (c *Client) CreateExplainCommand(kubeConfigPath string) *cobra.Command {
 	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	// Create the explain command using kubectl's NewCmdExplain
-	explainCmd := explain.NewCmdExplain("ksail", factory, c.ioStreams)
+	explainCmd := explain.NewCmdExplain("ksail workload", factory, c.ioStreams)
 
 	// Customize command metadata to fit ksail context
 	explainCmd.Use = "explain"
 	explainCmd.Short = "Get documentation for a resource"
 	explainCmd.Long = "Get documentation for Kubernetes resources, including field descriptions and structure."
+	replaceKubectlInExamples(explainCmd)
 
 	return explainCmd
 }
@@ -184,12 +199,13 @@ func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
 	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	// Create the get command using kubectl's NewCmdGet
-	getCmd := get.NewCmdGet("ksail", factory, c.ioStreams)
+	getCmd := get.NewCmdGet("ksail workload", factory, c.ioStreams)
 
 	// Customize command metadata to fit ksail context
 	getCmd.Use = "get"
 	getCmd.Short = "Get resources"
 	getCmd.Long = "Display one or many Kubernetes resources from your cluster."
+	replaceKubectlInExamples(getCmd)
 
 	return getCmd
 }
@@ -214,6 +230,7 @@ func (c *Client) CreateLogsCommand(kubeConfigPath string) *cobra.Command {
 	logsCmd.Short = "Print container logs"
 	logsCmd.Long = "Print the logs for a container in a pod or specified resource. " +
 		"If the pod has only one container, the container name is optional."
+	replaceKubectlInExamples(logsCmd)
 
 	return logsCmd
 }
@@ -237,6 +254,7 @@ func (c *Client) CreateRolloutCommand(kubeConfigPath string) *cobra.Command {
 	rolloutCmd.Use = "rollout"
 	rolloutCmd.Short = "Manage the rollout of a resource"
 	rolloutCmd.Long = "Manage the rollout of one or many resources."
+	replaceKubectlInExamples(rolloutCmd)
 
 	return rolloutCmd
 }
@@ -260,6 +278,7 @@ func (c *Client) CreateScaleCommand(kubeConfigPath string) *cobra.Command {
 	scaleCmd.Use = "scale"
 	scaleCmd.Short = "Scale resources"
 	scaleCmd.Long = "Set a new size for a deployment, replica set, replication controller, or stateful set."
+	replaceKubectlInExamples(scaleCmd)
 
 	return scaleCmd
 }
@@ -283,6 +302,7 @@ func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
 	exposeCmd.Use = "expose"
 	exposeCmd.Short = "Expose a resource as a service"
 	exposeCmd.Long = "Expose a resource as a new Kubernetes service."
+	replaceKubectlInExamples(exposeCmd)
 
 	return exposeCmd
 }
@@ -326,6 +346,7 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 	execCmd.Use = "exec"
 	execCmd.Short = "Execute a command in a container"
 	execCmd.Long = "Execute a command in a container in a pod."
+	replaceKubectlInExamples(execCmd)
 
 	return execCmd
 }
