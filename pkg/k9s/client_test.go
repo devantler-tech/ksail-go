@@ -30,14 +30,22 @@ func TestCreateConnectCommand(t *testing.T) {
 	tests := []struct {
 		name           string
 		kubeConfigPath string
+		context        string
 	}{
 		{
 			name:           "with kubeconfig path",
 			kubeConfigPath: "/path/to/kubeconfig",
+			context:        "",
 		},
 		{
 			name:           "without kubeconfig path",
 			kubeConfigPath: "",
+			context:        "",
+		},
+		{
+			name:           "with context",
+			kubeConfigPath: "/path/to/kubeconfig",
+			context:        "my-context",
 		},
 	}
 
@@ -46,7 +54,7 @@ func TestCreateConnectCommand(t *testing.T) {
 			t.Parallel()
 
 			client := k9s.NewClient()
-			cmd := client.CreateConnectCommand(testCase.kubeConfigPath)
+			cmd := client.CreateConnectCommand(testCase.kubeConfigPath, testCase.context)
 
 			require.NotNil(t, cmd, "expected command to be created")
 			require.Equal(t, "connect", cmd.Use, "expected Use to be 'connect'")
@@ -66,7 +74,7 @@ func TestCreateConnectCommandStructure(t *testing.T) {
 	t.Parallel()
 
 	client := k9s.NewClient()
-	cmd := client.CreateConnectCommand("")
+	cmd := client.CreateConnectCommand("", "")
 
 	// Verify RunE is set
 	require.NotNil(t, cmd.RunE, "expected RunE to be set")
@@ -86,7 +94,7 @@ func TestCreateConnectCommand_WithKubeconfig(t *testing.T) {
 
 	client := k9s.NewClient()
 	kubeConfigPath := "/test/path/to/kubeconfig"
-	cmd := client.CreateConnectCommand(kubeConfigPath)
+	cmd := client.CreateConnectCommand(kubeConfigPath, "")
 
 	require.NotNil(t, cmd, "expected command to be created")
 	require.NotNil(t, cmd.RunE, "expected RunE to be set")
@@ -101,7 +109,7 @@ func TestCreateConnectCommand_WithoutKubeconfig(t *testing.T) {
 	t.Parallel()
 
 	client := k9s.NewClient()
-	cmd := client.CreateConnectCommand("")
+	cmd := client.CreateConnectCommand("", "")
 
 	require.NotNil(t, cmd, "expected command to be created")
 	require.NotNil(t, cmd.RunE, "expected RunE to be set")
@@ -116,7 +124,7 @@ func TestCreateConnectCommand_WithArgs(t *testing.T) {
 	t.Parallel()
 
 	client := k9s.NewClient()
-	cmd := client.CreateConnectCommand("/path/to/kubeconfig")
+	cmd := client.CreateConnectCommand("/path/to/kubeconfig", "")
 
 	require.NotNil(t, cmd, "expected command to be created")
 	require.NotNil(t, cmd.RunE, "expected RunE to be set")
@@ -134,17 +142,17 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 	client := k9s.NewClient()
 
 	// Test with kubeconfig path
-	cmdWithConfig := client.CreateConnectCommand("/test/kubeconfig")
+	cmdWithConfig := client.CreateConnectCommand("/test/kubeconfig", "")
 	require.NotNil(t, cmdWithConfig)
 	require.NotNil(t, cmdWithConfig.RunE)
 
 	// Test without kubeconfig path
-	cmdWithoutConfig := client.CreateConnectCommand("")
+	cmdWithoutConfig := client.CreateConnectCommand("", "")
 	require.NotNil(t, cmdWithoutConfig)
 	require.NotNil(t, cmdWithoutConfig.RunE)
 
 	// Test with args
-	cmdWithArgs := client.CreateConnectCommand("/test/kubeconfig")
+	cmdWithArgs := client.CreateConnectCommand("/test/kubeconfig", "my-context")
 	cmdWithArgs.SetArgs([]string{"--namespace", "test", "--readonly"})
 	require.NotNil(t, cmdWithArgs)
 	require.NotNil(t, cmdWithArgs.RunE)
@@ -162,7 +170,7 @@ func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
@@ -182,7 +190,7 @@ func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("")
+	cmd := client.CreateConnectCommand("", "")
 
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
@@ -203,7 +211,7 @@ func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	}).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 
 	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
 	require.NoError(t, err)
@@ -242,10 +250,80 @@ func TestRunK9s_OsArgsRestored(t *testing.T) {
 	originalArgs := make([]string, len(os.Args))
 	copy(originalArgs, os.Args)
 
-	cmd := client.CreateConnectCommand("/test/kubeconfig")
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 	err := cmd.RunE(cmd, []string{"--namespace", "test"})
 	require.NoError(t, err)
 
 	// Verify os.Args is restored after execution
 	require.Equal(t, originalArgs, os.Args, "expected os.Args to be restored")
+}
+
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+func TestRunK9s_WithMockExecutor_WithContext(t *testing.T) {
+	// NOT parallel - modifies global os.Args
+	var capturedArgs []string
+
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+
+	client := k9s.NewClientWithExecutor(mockExecutor)
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "my-context")
+
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	assertArgsContain(
+		t,
+		capturedArgs,
+		"k9s",
+		"--kubeconfig",
+		"/test/kubeconfig",
+		"--context",
+		"my-context",
+	)
+}
+
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+func TestRunK9s_WithMockExecutor_WithoutContext(t *testing.T) {
+	// NOT parallel - modifies global os.Args
+	var capturedArgs []string
+
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+
+	client := k9s.NewClientWithExecutor(mockExecutor)
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
+
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
+	assertArgsNotContain(t, capturedArgs, "--context")
+}
+
+//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+func TestRunK9s_WithMockExecutor_WithContextAndAdditionalArgs(t *testing.T) {
+	// NOT parallel - modifies global os.Args
+	var capturedArgs []string
+
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+
+	client := k9s.NewClientWithExecutor(mockExecutor)
+	cmd := client.CreateConnectCommand("/test/kubeconfig", "prod-cluster")
+
+	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
+	require.NoError(t, err)
+
+	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
+		"--context", "prod-cluster", "--namespace", "default", "--readonly")
 }

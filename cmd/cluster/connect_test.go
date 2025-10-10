@@ -282,3 +282,85 @@ spec:
 	args := []string{"--namespace", "default", "--readonly"}
 	require.NotNil(t, args, "expected args to be passable")
 }
+
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
+func TestHandleConnectRunE_WithContext(t *testing.T) {
+	// Create a temporary directory for the test
+	tempDir := t.TempDir()
+	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
+	contextName := "kind-kind" // Use Kind standard context pattern
+
+	// Create a minimal ksail.yaml configuration with context
+	configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind
+  connection:
+    kubeconfig: ` + kubeConfigPath + `
+    context: ` + contextName + `
+`
+	configFile := filepath.Join(tempDir, "ksail.yaml")
+
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
+	require.NoError(t, err, "failed to write config file")
+
+	// Change to temp directory
+	t.Chdir(tempDir)
+
+	// Create a command and config manager
+	cmd := &cobra.Command{}
+
+	var outBuf bytes.Buffer
+	cmd.SetOut(&outBuf)
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
+
+	// Load config to verify the context is loaded
+	err = cfgManager.LoadConfigSilent()
+	require.NoError(t, err, "expected config to load successfully")
+
+	cfg := cfgManager.GetConfig()
+	require.Equal(t, contextName, cfg.Spec.Connection.Context,
+		"expected context to be loaded from config")
+}
+
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
+func TestHandleConnectRunE_WithoutContext(t *testing.T) {
+	// Create a temporary directory for the test
+	tempDir := t.TempDir()
+	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
+
+	// Create a minimal ksail.yaml configuration without context
+	configContent := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind
+  connection:
+    kubeconfig: ` + kubeConfigPath + `
+`
+	configFile := filepath.Join(tempDir, "ksail.yaml")
+
+	err := os.WriteFile(configFile, []byte(configContent), 0o600)
+	require.NoError(t, err, "failed to write config file")
+
+	// Change to temp directory
+	t.Chdir(tempDir)
+
+	// Create a command and config manager
+	cmd := &cobra.Command{}
+
+	var outBuf bytes.Buffer
+	cmd.SetOut(&outBuf)
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout(), selectors...)
+
+	// Load config to verify context is empty
+	err = cfgManager.LoadConfigSilent()
+	require.NoError(t, err, "expected config to load successfully")
+
+	cfg := cfgManager.GetConfig()
+	require.Empty(t, cfg.Spec.Connection.Context,
+		"expected context to be empty when not specified in config")
+}

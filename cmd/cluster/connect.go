@@ -68,9 +68,12 @@ func HandleConnectRunE(
 		kubeConfigPath = filepath.Join(homeDir, ".kube", "config")
 	}
 
+	// Get context from config
+	context := cfg.Spec.Connection.Context
+
 	// Create k9s client and command
 	k9sClient := k9s.NewClient()
-	k9sCmd := k9sClient.CreateConnectCommand(kubeConfigPath)
+	k9sCmd := k9sClient.CreateConnectCommand(kubeConfigPath, context)
 
 	// Transfer the context from parent command
 	k9sCmd.SetContext(cmd.Context())

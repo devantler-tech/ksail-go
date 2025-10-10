@@ -41,13 +41,13 @@ func NewClientWithExecutor(executor Executor) *Client {
 }
 
 // CreateConnectCommand creates a k9s command with all its flags and behavior.
-func (c *Client) CreateConnectCommand(kubeConfigPath string) *cobra.Command {
+func (c *Client) CreateConnectCommand(kubeConfigPath, context string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "connect",
 		Short: "Connect to cluster with k9s",
 		Long:  "Launch k9s terminal UI to interactively manage your Kubernetes cluster.",
 		RunE: func(_ *cobra.Command, args []string) error {
-			return c.runK9s(kubeConfigPath, args)
+			return c.runK9s(kubeConfigPath, context, args)
 		},
 		SilenceUsage: true,
 	}
@@ -55,7 +55,7 @@ func (c *Client) CreateConnectCommand(kubeConfigPath string) *cobra.Command {
 	return cmd
 }
 
-func (c *Client) runK9s(kubeConfigPath string, args []string) error {
+func (c *Client) runK9s(kubeConfigPath, context string, args []string) error {
 	// Set up os.Args to pass flags to k9s
 	originalArgs := os.Args
 
@@ -69,6 +69,11 @@ func (c *Client) runK9s(kubeConfigPath string, args []string) error {
 	// Add kubeconfig flag if provided
 	if kubeConfigPath != "" {
 		k9sArgs = append(k9sArgs, "--kubeconfig", kubeConfigPath)
+	}
+
+	// Add context flag if provided
+	if context != "" {
+		k9sArgs = append(k9sArgs, "--context", context)
 	}
 
 	// Append all additional arguments passed by user
