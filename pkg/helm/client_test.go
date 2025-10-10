@@ -5,79 +5,70 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/helm"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// createTestClient creates a helm client with test buffers for the given kubeconfig path.
+func createTestClient(kubeConfigPath string) *helm.Client {
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	client := helm.NewClient(outBuf, errBuf, kubeConfigPath)
+
+	return client
+}
+
+// validateInstallCommand validates the basic properties of an install command.
+func validateInstallCommand(t *testing.T, cmd *cobra.Command) {
+	t.Helper()
+	require.NotNil(t, cmd, "expected command to be created")
+	assert.Equal(t, "install [NAME] [CHART]", cmd.Use, "expected command Use")
+	assert.Equal(t, "Install Helm charts", cmd.Short, "expected command Short description")
+	assert.Contains(
+		t,
+		cmd.Long,
+		"Install Helm charts to provision workloads through KSail",
+		"expected command Long description",
+	)
+}
+
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		kubeConfigPath string
-	}{
-		{
-			name:           "with kubeconfig path",
-			kubeConfigPath: "/path/to/kubeconfig",
-		},
-		{
-			name:           "without kubeconfig path",
-			kubeConfigPath: "",
-		},
-	}
+	t.Run("with kubeconfig path", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+		client := createTestClient("/path/to/kubeconfig")
+		require.NotNil(t, client, "expected client to be created")
+	})
 
-			outBuf := &bytes.Buffer{}
-			errBuf := &bytes.Buffer{}
+	t.Run("without kubeconfig path", func(t *testing.T) {
+		t.Parallel()
 
-			client := helm.NewClient(outBuf, errBuf, testCase.kubeConfigPath)
-
-			require.NotNil(t, client, "expected client to be created")
-		})
-	}
+		client := createTestClient("")
+		require.NotNil(t, client, "expected client to be created")
+	})
 }
 
 func TestCreateInstallCommand(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name           string
-		kubeConfigPath string
-	}{
-		{
-			name:           "with kubeconfig path",
-			kubeConfigPath: "/path/to/kubeconfig",
-		},
-		{
-			name:           "without kubeconfig path",
-			kubeConfigPath: "",
-		},
-	}
+	t.Run("with kubeconfig path", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+		client := createTestClient("/path/to/kubeconfig")
+		cmd := client.CreateInstallCommand()
+		validateInstallCommand(t, cmd)
+	})
 
-			outBuf := &bytes.Buffer{}
-			errBuf := &bytes.Buffer{}
+	t.Run("without kubeconfig path", func(t *testing.T) {
+		t.Parallel()
 
-			client := helm.NewClient(outBuf, errBuf, testCase.kubeConfigPath)
-			cmd := client.CreateInstallCommand()
-
-			require.NotNil(t, cmd, "expected command to be created")
-			assert.Equal(t, "install [NAME] [CHART]", cmd.Use, "expected command Use")
-			assert.Equal(t, "Install Helm charts", cmd.Short, "expected command Short description")
-			assert.Contains(
-				t,
-				cmd.Long,
-				"Install Helm charts to provision workloads through KSail",
-				"expected command Long description",
-			)
-		})
-	}
+		client := createTestClient("")
+		cmd := client.CreateInstallCommand()
+		validateInstallCommand(t, cmd)
+	})
 }
 
 func TestCreateInstallCommandHasBasicFlags(t *testing.T) {
