@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/mock"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -38,46 +38,6 @@ func (r *lifecycleTimer) NewStage()                                 { r.newStage
 func (r *lifecycleTimer) GetTiming() (time.Duration, time.Duration) { return 0, 0 }
 func (r *lifecycleTimer) Stop()                                     {}
 
-// stubFactory implements clusterprovisioner.Factory for testing.
-type stubFactory struct {
-	provisioner        clusterprovisioner.ClusterProvisioner
-	distributionConfig any
-	err                error
-	callCount          int
-}
-
-func (s *stubFactory) Create(
-	_ context.Context,
-	_ *v1alpha1.Cluster,
-) (clusterprovisioner.ClusterProvisioner, any, error) {
-	s.callCount++
-	if s.err != nil {
-		return nil, nil, s.err
-	}
-
-	return s.provisioner, s.distributionConfig, nil
-}
-
-// stubProvisioner implements clusterprovisioner.ClusterProvisioner for testing.
-type stubProvisioner struct {
-	createErr   error
-	createCalls int
-}
-
-func (p *stubProvisioner) Create(_ context.Context, _ string) error {
-	p.createCalls++
-
-	return p.createErr
-}
-
-func (p *stubProvisioner) Delete(_ context.Context, _ string) error { return nil }
-func (p *stubProvisioner) Start(_ context.Context, _ string) error  { return nil }
-func (p *stubProvisioner) Stop(_ context.Context, _ string) error   { return nil }
-func (p *stubProvisioner) List(_ context.Context) ([]string, error) { return nil, nil }
-func (p *stubProvisioner) Exists(_ context.Context, _ string) (bool, error) {
-	return false, nil
-}
-
 func TestHandleLifecycleRunE_ConfigLoadError(t *testing.T) {
 	t.Parallel()
 
@@ -93,7 +53,7 @@ func TestHandleLifecycleRunE_ConfigLoadError(t *testing.T) {
 	cfgManager.Viper.SetConfigFile(badPath)
 
 	timer := &lifecycleTimer{}
-	factory := &stubFactory{}
+	factory := clusterprovisioner.NewMockFactory(t)
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
@@ -123,7 +83,8 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 
 	cfgManager := createValidConfigManager(t)
 	timer := &lifecycleTimer{}
-	factory := &stubFactory{err: errFactoryError}
+	factory := clusterprovisioner.NewMockFactory(t)
+	factory.On("Create", mock.Anything, mock.Anything).Return(nil, nil, errFactoryError).Once()
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
@@ -141,9 +102,7 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 			timer.started, timer.newStageCalls)
 	}
 
-	if factory.callCount != 1 {
-		t.Errorf("expected factory.callCount=1, got %d", factory.callCount)
-	}
+	factory.AssertNumberOfCalls(t, "Create", 1)
 }
 
 func TestHandleLifecycleRunE_NilProvisioner(t *testing.T) {
@@ -151,7 +110,8 @@ func TestHandleLifecycleRunE_NilProvisioner(t *testing.T) {
 
 	cfgManager := createValidConfigManager(t)
 	timer := &lifecycleTimer{}
-	factory := &stubFactory{provisioner: nil, distributionConfig: &v1alpha4.Cluster{}}
+	factory := clusterprovisioner.NewMockFactory(t)
+	factory.On("Create", mock.Anything, mock.Anything).Return(nil, &v1alpha4.Cluster{}, nil).Once()
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
@@ -166,11 +126,9 @@ func TestHandleLifecycleRunE_InvalidDistributionConfig(t *testing.T) {
 
 	cfgManager := createValidConfigManager(t)
 	timer := &lifecycleTimer{}
-	provisioner := &stubProvisioner{}
-	factory := &stubFactory{
-		provisioner:        provisioner,
-		distributionConfig: struct{}{}, // Invalid type
-	}
+	provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+	factory := clusterprovisioner.NewMockFactory(t)
+	factory.On("Create", mock.Anything, mock.Anything).Return(provisioner, struct{}{}, nil).Once()
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
 	config := shared.LifecycleConfig{}
 
@@ -188,8 +146,9 @@ func TestHandleLifecycleRunE_ActionError(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-	provisioner := &stubProvisioner{createErr: errProvisionerError}
-	deps := setupLifecycleDepsWithProvisioner(provisioner)
+	provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+	provisioner.On("Create", mock.Anything, mock.Anything).Return(errProvisionerError).Once()
+	deps := setupLifecycleDepsWithProvisioner(t, provisioner)
 	config := createTestConfig()
 
 	err := runLifecycleHandlerTest(cfgManager, deps, config)
@@ -201,17 +160,16 @@ func TestHandleLifecycleRunE_ActionError(t *testing.T) {
 		t.Fatalf("expected 'test failed' in error, got: %v", err)
 	}
 
-	if provisioner.createCalls != 1 {
-		t.Errorf("expected createCalls=1, got %d", provisioner.createCalls)
-	}
+	provisioner.AssertNumberOfCalls(t, "Create", 1)
 }
 
 func TestHandleLifecycleRunE_Success(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-	provisioner := &stubProvisioner{}
-	deps := setupLifecycleDepsWithProvisioner(provisioner)
+	provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+	provisioner.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
+	deps := setupLifecycleDepsWithProvisioner(t, provisioner)
 	config := createTestConfig()
 
 	timer, ok := deps.Timer.(*lifecycleTimer)
@@ -229,9 +187,7 @@ func TestHandleLifecycleRunE_Success(t *testing.T) {
 			timer.started, timer.newStageCalls)
 	}
 
-	if provisioner.createCalls != 1 {
-		t.Errorf("expected createCalls=1, got %d", provisioner.createCalls)
-	}
+	provisioner.AssertNumberOfCalls(t, "Create", 1)
 }
 
 //nolint:paralleltest // Changes working directory
@@ -243,9 +199,9 @@ func TestNewLifecycleCommandWrapper_Success(t *testing.T) {
 
 	var capturedTimer *lifecycleTimer
 
-	var capturedFactory *stubFactory
+	var capturedFactory *clusterprovisioner.MockFactory
 
-	runtimeContainer := createTestRuntimeWithDeps(&capturedTimer, &capturedFactory)
+	runtimeContainer := createTestRuntimeWithDeps(t, &capturedTimer, &capturedFactory)
 
 	cfgManager := ksailconfigmanager.NewConfigManager(io.Discard)
 	config := createTestLifecycleConfig()
@@ -265,14 +221,16 @@ func TestNewLifecycleCommandWrapper_Success(t *testing.T) {
 		t.Error("expected timer to be resolved and started")
 	}
 
-	if capturedFactory == nil || capturedFactory.callCount != 1 {
-		t.Error("expected factory to be resolved and called")
+	if capturedFactory == nil {
+		t.Fatal("expected factory to be resolved")
 	}
+	capturedFactory.AssertNumberOfCalls(t, "Create", 1)
 }
 
 func createTestRuntimeWithDeps(
+	t *testing.T,
 	capturedTimer **lifecycleTimer,
-	capturedFactory **stubFactory,
+	capturedFactory **clusterprovisioner.MockFactory,
 ) *runtime.Runtime {
 	return runtime.New(
 		func(injector runtime.Injector) error {
@@ -287,10 +245,12 @@ func createTestRuntimeWithDeps(
 		},
 		func(injector runtime.Injector) error {
 			do.Provide(injector, func(do.Injector) (clusterprovisioner.Factory, error) {
-				factory := &stubFactory{
-					provisioner:        &stubProvisioner{},
-					distributionConfig: &v1alpha4.Cluster{Name: "test"},
-				}
+				provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+				provisioner.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
+				
+				factory := clusterprovisioner.NewMockFactory(t)
+				factory.On("Create", mock.Anything, mock.Anything).
+					Return(provisioner, &v1alpha4.Cluster{Name: "test"}, nil).Maybe()
 				*capturedFactory = factory
 
 				return factory, nil
@@ -382,12 +342,16 @@ func runLifecycleHandlerTest(
 	return nil
 }
 
-func setupLifecycleDepsWithProvisioner(provisioner *stubProvisioner) shared.LifecycleDeps {
+func setupLifecycleDepsWithProvisioner(
+	t *testing.T,
+	provisioner clusterprovisioner.ClusterProvisioner,
+) shared.LifecycleDeps {
+	t.Helper()
+	
 	timer := &lifecycleTimer{}
-	factory := &stubFactory{
-		provisioner:        provisioner,
-		distributionConfig: &v1alpha4.Cluster{Name: "test-cluster"},
-	}
+	factory := clusterprovisioner.NewMockFactory(t)
+	factory.On("Create", mock.Anything, mock.Anything).
+		Return(provisioner, &v1alpha4.Cluster{Name: "test-cluster"}, nil).Maybe()
 
 	return shared.LifecycleDeps{Timer: timer, Factory: factory}
 }
