@@ -1,24 +1,21 @@
 package workload
 
 import (
-	"fmt"
-	"io"
 	"os"
-	"path/filepath"
 
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/kubectl"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // NewApplyCmd creates the workload apply command.
+// The runtime parameter is kept for consistency with other workload command constructors,
+// though it's currently unused as this command wraps kubectl directly.
 func NewApplyCmd(_ *runtime.Runtime) *cobra.Command {
 	// Try to load config silently to get kubeconfig path
-	kubeconfigPath := getKubeconfigPathSilently()
+	kubeconfigPath := shared.GetKubeconfigPathSilently()
 
 	// Create IO streams for kubectl
 	ioStreams := genericiooptions.IOStreams{
@@ -32,52 +29,4 @@ func NewApplyCmd(_ *runtime.Runtime) *cobra.Command {
 	applyCmd := client.CreateApplyCommand(kubeconfigPath)
 
 	return applyCmd
-}
-
-// getDefaultKubeconfigPath returns the default kubeconfig path.
-func getDefaultKubeconfigPath() string {
-	homeDir, _ := os.UserHomeDir()
-
-	return filepath.Join(homeDir, ".kube", "config")
-}
-
-// getKubeconfigPathSilently tries to load config and get kubeconfig path without any output.
-func getKubeconfigPathSilently() string {
-	// Use io.Discard to suppress all output
-	cfgManager := ksailconfigmanager.NewConfigManager(io.Discard)
-
-	kubeconfigPath, err := getKubeconfigPath(cfgManager)
-	if err != nil {
-		// If we can't load config, use default kubeconfig
-		return getDefaultKubeconfigPath()
-	}
-
-	return kubeconfigPath
-}
-
-// getKubeconfigPath loads the ksail config and extracts the kubeconfig path.
-func getKubeconfigPath(cfgManager *ksailconfigmanager.ConfigManager) (string, error) {
-	// Create a minimal timer for config loading
-	tmr := timer.New()
-	tmr.Start()
-
-	err := cfgManager.LoadConfig(tmr)
-	if err != nil {
-		return "", fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	clusterCfg := cfgManager.GetConfig()
-
-	kubeconfigPath := clusterCfg.Spec.Connection.Kubeconfig
-	if kubeconfigPath == "" {
-		kubeconfigPath = getDefaultKubeconfigPath()
-	}
-
-	// Expand home path
-	expandedPath, err := iopath.ExpandHomePath(kubeconfigPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to expand home path: %w", err)
-	}
-
-	return expandedPath, nil
 }

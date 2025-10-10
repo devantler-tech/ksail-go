@@ -1,4 +1,3 @@
-// Package shared provides reusable helpers for command wiring.
 package shared
 
 import (

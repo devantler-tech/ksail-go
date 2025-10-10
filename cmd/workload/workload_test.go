@@ -32,9 +32,15 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
 		{name: "create", args: []string{"workload", "create", "--help"}},
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
+		{name: "describe", args: []string{"workload", "describe", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
 		{name: "exec", args: []string{"workload", "exec", "--help"}},
+		{name: "explain", args: []string{"workload", "explain", "--help"}},
+		{name: "expose", args: []string{"workload", "expose", "--help"}},
+		{name: "get", args: []string{"workload", "get", "--help"}},
 		{name: "install", args: []string{"workload", "install", "--help"}},
+		{name: "logs", args: []string{"workload", "logs", "--help"}},
+		{name: "rollout", args: []string{"workload", "rollout", "--help"}},
 		{name: "scale", args: []string{"workload", "scale", "--help"}},
 	}
 
@@ -64,8 +70,8 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 
 //nolint:paralleltest // Uses t.Chdir which is incompatible with parallel tests.
 func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
-	// Note: "apply" is excluded as it's a full kubectl wrapper, not a config-only placeholder
-	commands := []string{"reconcile", "install"}
+	// Note: "apply" and "install" are excluded as they are full implementations with kubectl/helm wrappers
+	commands := []string{"reconcile"}
 
 	for _, commandName := range commands {
 		t.Run(commandName, func(t *testing.T) {
@@ -115,6 +121,10 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	output := out.String()
 	if !strings.Contains(output, "Group workload commands under a single namespace") {
 		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
+	}
+
+	if !strings.Contains(output, "logs") {
+		t.Fatalf("expected help output to mention logs command, got %q", output)
 	}
 
 	if !strings.Contains(output, "edit") {
