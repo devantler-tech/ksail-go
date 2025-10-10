@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/devantler-tech/ksail-go/pkg/registry"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
@@ -12,9 +13,10 @@ import (
 
 // K3dClusterProvisioner implements provisioning for k3d clusters.
 type K3dClusterProvisioner struct {
-	simpleCfg      *v1alpha5.SimpleConfig
-	clientProvider K3dClientProvider
-	configProvider K3dConfigProvider
+	simpleCfg       *v1alpha5.SimpleConfig
+	clientProvider  K3dClientProvider
+	configProvider  K3dConfigProvider
+	registryManager *registry.Manager
 }
 
 // NewK3dClusterProvisioner constructs a k3d provisioner instance.
@@ -23,14 +25,17 @@ func NewK3dClusterProvisioner(
 	clientProvider K3dClientProvider,
 	configProvider K3dConfigProvider,
 ) *K3dClusterProvisioner {
+	// Note: registry manager will be nil initially since we don't have a Docker client here
+	// It would need to be injected if we want to support registry creation for K3d
 	return &K3dClusterProvisioner{
-		simpleCfg:      simpleCfg,
-		clientProvider: clientProvider,
-		configProvider: configProvider,
+		simpleCfg:       simpleCfg,
+		clientProvider:  clientProvider,
+		configProvider:  configProvider,
+		registryManager: nil,
 	}
 }
 
-// Create provisions a k3d cluster using the loaded SimpleConfig.
+// Create provisions a k3d cluster using the loaded SimpleConfig and creates any configured mirror registries.
 func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	runtime := runtimes.SelectedRuntime
 
@@ -41,6 +46,9 @@ func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	}
 
 	k.simpleCfg.Name = target
+
+	// K3d has native registry support, so we'll let K3d handle registry creation
+	// If registries are specified in the config, K3d will create them automatically
 
 	// Transform SimpleConfig -> ClusterConfig
 	clusterCfg, err := k.configProvider.TransformSimpleToClusterConfig(
