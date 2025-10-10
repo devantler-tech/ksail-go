@@ -224,6 +224,7 @@ func TestNewLifecycleCommandWrapper_Success(t *testing.T) {
 	if capturedFactory == nil {
 		t.Fatal("expected factory to be resolved")
 	}
+
 	capturedFactory.AssertNumberOfCalls(t, "Create", 1)
 }
 
@@ -232,6 +233,8 @@ func createTestRuntimeWithDeps(
 	capturedTimer **lifecycleTimer,
 	capturedFactory **clusterprovisioner.MockFactory,
 ) *runtime.Runtime {
+	t.Helper()
+
 	return runtime.New(
 		func(injector runtime.Injector) error {
 			do.Provide(injector, func(do.Injector) (timer.Timer, error) {
@@ -247,7 +250,7 @@ func createTestRuntimeWithDeps(
 			do.Provide(injector, func(do.Injector) (clusterprovisioner.Factory, error) {
 				provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
 				provisioner.On("Create", mock.Anything, mock.Anything).Return(nil).Maybe()
-				
+
 				factory := clusterprovisioner.NewMockFactory(t)
 				factory.On("Create", mock.Anything, mock.Anything).
 					Return(provisioner, &v1alpha4.Cluster{Name: "test"}, nil).Maybe()
@@ -347,7 +350,7 @@ func setupLifecycleDepsWithProvisioner(
 	provisioner clusterprovisioner.ClusterProvisioner,
 ) shared.LifecycleDeps {
 	t.Helper()
-	
+
 	timer := &lifecycleTimer{}
 	factory := clusterprovisioner.NewMockFactory(t)
 	factory.On("Create", mock.Anything, mock.Anything).
