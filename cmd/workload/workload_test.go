@@ -34,6 +34,7 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
 		{name: "describe", args: []string{"workload", "describe", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
+		{name: "exec", args: []string{"workload", "exec", "--help"}},
 		{name: "explain", args: []string{"workload", "explain", "--help"}},
 		{name: "expose", args: []string{"workload", "expose", "--help"}},
 		{name: "get", args: []string{"workload", "get", "--help"}},
@@ -128,5 +129,9 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 
 	if !strings.Contains(output, "edit") {
 		t.Fatalf("expected help output to mention edit command, got %q", output)
+	}
+
+	if !strings.Contains(output, "exec") {
+		t.Fatalf("expected help output to mention exec command, got %q", output)
 	}
 }
