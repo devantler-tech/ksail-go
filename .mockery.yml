@@ -12,6 +12,14 @@ packages:
       pkgname: configmanager
     interfaces:
       ConfigManager:
+  github.com/devantler-tech/ksail-go/pkg/k9s:
+    config:
+      recursive: false
+      dir: pkg/k9s
+      filename: mocks_test.go
+      pkgname: k9s
+    interfaces:
+      Executor:
   github.com/devantler-tech/ksail-go/pkg/provisioner/cluster:
     config:
       recursive: false

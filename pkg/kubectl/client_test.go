@@ -132,6 +132,39 @@ func TestCreateEditCommandHasFlags(t *testing.T) {
 	require.NotNil(t, flags.Lookup("validate"), "expected --validate flag to be present")
 }
 
+func TestCreateExecCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExecCommand(path) },
+		"exec",
+		"Execute a command in a container",
+		"Execute a command in a container in a pod.",
+	)
+}
+
+func TestCreateExecCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExecCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl exec flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("container"), "expected --container flag to be present")
+	require.NotNil(t, flags.Lookup("stdin"), "expected --stdin flag to be present")
+	require.NotNil(t, flags.Lookup("tty"), "expected --tty flag to be present")
+	require.NotNil(t, flags.Lookup("quiet"), "expected --quiet flag to be present")
+	require.NotNil(
+		t,
+		flags.Lookup("pod-running-timeout"),
+		"expected --pod-running-timeout flag to be present",
+	)
+}
+
 func TestCreateDeleteCommand(t *testing.T) {
 	t.Parallel()
 
@@ -223,6 +256,69 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 	}
 }
 
+func TestCreateClusterInfoCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateClusterInfoCommand(path) },
+		"info",
+		"Display cluster information",
+		"Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
+	)
+}
+
+func TestCreateClusterInfoCommandHasSubcommands(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateClusterInfoCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl cluster-info subcommands are present
+	subcommands := cmd.Commands()
+	require.NotEmpty(t, subcommands, "expected cluster-info command to have subcommands")
+
+	// Check for the dump subcommand
+	subcommandNames := make(map[string]bool)
+	for _, subcmd := range subcommands {
+		subcommandNames[subcmd.Name()] = true
+	}
+
+	require.True(t, subcommandNames["dump"], "expected dump subcommand to be present")
+}
+
+func TestCreateExposeCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExposeCommand(path) },
+		"expose",
+		"Expose a resource as a service",
+		"Expose a resource as a new Kubernetes service.",
+	)
+}
+
+func TestCreateExposeCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExposeCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl expose flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("port"), "expected --port flag to be present")
+	require.NotNil(t, flags.Lookup("protocol"), "expected --protocol flag to be present")
+	require.NotNil(t, flags.Lookup("target-port"), "expected --target-port flag to be present")
+	require.NotNil(t, flags.Lookup("name"), "expected --name flag to be present")
+	require.NotNil(t, flags.Lookup("type"), "expected --type flag to be present")
+	require.NotNil(t, flags.Lookup("external-ip"), "expected --external-ip flag to be present")
+}
+
 func TestCreateGetCommand(t *testing.T) {
 	t.Parallel()
 
@@ -297,6 +393,37 @@ func TestCreateScaleCommandHasFlags(t *testing.T) {
 		"expected --resource-version flag to be present",
 	)
 	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
+}
+
+func TestCreateLogsCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateLogsCommand(path) },
+		"logs",
+		"Print container logs",
+		"Print the logs for a container in a pod or specified resource. "+
+			"If the pod has only one container, the container name is optional.",
+	)
+}
+
+func TestCreateLogsCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateLogsCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl logs flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("follow"), "expected --follow flag to be present")
+	require.NotNil(t, flags.Lookup("previous"), "expected --previous flag to be present")
+	require.NotNil(t, flags.Lookup("container"), "expected --container flag to be present")
+	require.NotNil(t, flags.Lookup("timestamps"), "expected --timestamps flag to be present")
+	require.NotNil(t, flags.Lookup("tail"), "expected --tail flag to be present")
+	require.NotNil(t, flags.Lookup("since"), "expected --since flag to be present")
 }
 
 func TestCreateRolloutCommand(t *testing.T) {

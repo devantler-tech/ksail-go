@@ -47,6 +47,7 @@ linters:
           allow:
             - $gostd
             - github.com/devantler-tech
+            - github.com/derailed/k9s
             - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color
@@ -59,5 +60,6 @@ linters:
             - github.com/spf13/pflag
             - github.com/spf13/viper
             - github.com/stretchr/testify
+            - helm.sh/helm
             - k8s.io
             - sigs.k8s.io

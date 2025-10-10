@@ -6,12 +6,16 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
+	"k8s.io/kubectl/pkg/cmd/clusterinfo"
 	"k8s.io/kubectl/pkg/cmd/create"
 	"k8s.io/kubectl/pkg/cmd/delete"
 	"k8s.io/kubectl/pkg/cmd/describe"
 	"k8s.io/kubectl/pkg/cmd/edit"
+	"k8s.io/kubectl/pkg/cmd/exec"
 	"k8s.io/kubectl/pkg/cmd/explain"
+	"k8s.io/kubectl/pkg/cmd/expose"
 	"k8s.io/kubectl/pkg/cmd/get"
+	"k8s.io/kubectl/pkg/cmd/logs"
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -190,6 +194,30 @@ func (c *Client) CreateGetCommand(kubeConfigPath string) *cobra.Command {
 	return getCmd
 }
 
+// CreateLogsCommand creates a kubectl logs command with all its flags and behavior.
+func (c *Client) CreateLogsCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the logs command using kubectl's NewCmdLogs
+	logsCmd := logs.NewCmdLogs(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	logsCmd.Use = "logs"
+	logsCmd.Short = "Print container logs"
+	logsCmd.Long = "Print the logs for a container in a pod or specified resource. " +
+		"If the pod has only one container, the container name is optional."
+
+	return logsCmd
+}
+
 // CreateRolloutCommand creates a kubectl rollout command with all its flags and behavior.
 func (c *Client) CreateRolloutCommand(kubeConfigPath string) *cobra.Command {
 	// Create config flags with kubeconfig path
@@ -234,4 +262,70 @@ func (c *Client) CreateScaleCommand(kubeConfigPath string) *cobra.Command {
 	scaleCmd.Long = "Set a new size for a deployment, replica set, replication controller, or stateful set."
 
 	return scaleCmd
+}
+
+// CreateExposeCommand creates a kubectl expose command with all its flags and behavior.
+func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the expose command using kubectl's NewCmdExposeService
+	exposeCmd := expose.NewCmdExposeService(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	exposeCmd.Use = "expose"
+	exposeCmd.Short = "Expose a resource as a service"
+	exposeCmd.Long = "Expose a resource as a new Kubernetes service."
+
+	return exposeCmd
+}
+
+// CreateClusterInfoCommand creates a kubectl cluster-info command with all its flags and behavior.
+func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create the cluster-info command using kubectl's NewCmdClusterInfo
+	clusterInfoCmd := clusterinfo.NewCmdClusterInfo(configFlags, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	clusterInfoCmd.Use = "info"
+	clusterInfoCmd.Short = "Display cluster information"
+	clusterInfoCmd.Long = "Display addresses of the control plane and services with label " +
+		"kubernetes.io/cluster-service=true."
+
+	return clusterInfoCmd
+}
+
+// CreateExecCommand creates a kubectl exec command with all its flags and behavior.
+func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create factory for kubectl command
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(configFlags)
+	factory := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	// Create the exec command using kubectl's NewCmdExec
+	execCmd := exec.NewCmdExec(factory, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	execCmd.Use = "exec"
+	execCmd.Short = "Execute a command in a container"
+	execCmd.Long = "Execute a command in a container in a pod."
+
+	return execCmd
 }
