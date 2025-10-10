@@ -223,6 +223,36 @@ func TestCreateCreateCommandHasSubcommands(t *testing.T) {
 	}
 }
 
+func TestCreateExposeCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateExposeCommand(path) },
+		"expose",
+		"Expose a resource as a service",
+		"Expose a resource as a new Kubernetes service.",
+	)
+}
+
+func TestCreateExposeCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateExposeCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl expose flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("port"), "expected --port flag to be present")
+	require.NotNil(t, flags.Lookup("protocol"), "expected --protocol flag to be present")
+	require.NotNil(t, flags.Lookup("target-port"), "expected --target-port flag to be present")
+	require.NotNil(t, flags.Lookup("name"), "expected --name flag to be present")
+	require.NotNil(t, flags.Lookup("type"), "expected --type flag to be present")
+	require.NotNil(t, flags.Lookup("external-ip"), "expected --external-ip flag to be present")
+}
+
 func TestCreateGetCommand(t *testing.T) {
 	t.Parallel()
 
@@ -297,6 +327,37 @@ func TestCreateScaleCommandHasFlags(t *testing.T) {
 		"expected --resource-version flag to be present",
 	)
 	require.NotNil(t, flags.Lookup("timeout"), "expected --timeout flag to be present")
+}
+
+func TestCreateLogsCommand(t *testing.T) {
+	t.Parallel()
+
+	testCommandCreation(
+		t,
+		func(c *kubectl.Client, path string) *cobra.Command { return c.CreateLogsCommand(path) },
+		"logs",
+		"Print container logs",
+		"Print the logs for a container in a pod or specified resource. "+
+			"If the pod has only one container, the container name is optional.",
+	)
+}
+
+func TestCreateLogsCommandHasFlags(t *testing.T) {
+	t.Parallel()
+
+	ioStreams := createTestIOStreams()
+
+	client := kubectl.NewClient(ioStreams)
+	cmd := client.CreateLogsCommand("/path/to/kubeconfig")
+
+	// Verify that kubectl logs flags are present
+	flags := cmd.Flags()
+	require.NotNil(t, flags.Lookup("follow"), "expected --follow flag to be present")
+	require.NotNil(t, flags.Lookup("previous"), "expected --previous flag to be present")
+	require.NotNil(t, flags.Lookup("container"), "expected --container flag to be present")
+	require.NotNil(t, flags.Lookup("timestamps"), "expected --timestamps flag to be present")
+	require.NotNil(t, flags.Lookup("tail"), "expected --tail flag to be present")
+	require.NotNil(t, flags.Lookup("since"), "expected --since flag to be present")
 }
 
 func TestCreateRolloutCommand(t *testing.T) {
