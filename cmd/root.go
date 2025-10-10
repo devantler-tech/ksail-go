@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
@@ -32,6 +33,7 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd.AddCommand(NewInitCmd(runtimeContainer))
 	cmd.AddCommand(cluster.NewClusterCmd(runtimeContainer))
 	cmd.AddCommand(workload.NewWorkloadCmd(runtimeContainer))
+	cmd.AddCommand(cipher.NewCipherCmd(runtimeContainer))
 
 	return cmd
 }
