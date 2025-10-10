@@ -11,7 +11,44 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/sops"
+	"github.com/spf13/cobra"
 )
+
+// setupMockSops creates a mock sops binary with the provided script content.
+func setupMockSops(t *testing.T, scriptContent string) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	mockSopsPath := filepath.Join(tempDir, "sops")
+
+	//nolint:gosec // This is a test file with safe permissions for executables
+	err := os.WriteFile(mockSopsPath, []byte(scriptContent), 0o755)
+	if err != nil {
+		t.Fatalf("failed to create mock sops: %v", err)
+	}
+
+	// Save original PATH and modify it to include our mock
+	originalPath := os.Getenv("PATH")
+	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+originalPath)
+}
+
+// setupCommandWithBuffers creates a cipher command with output buffers.
+func setupCommandWithBuffers(
+	ctx context.Context,
+	client *sops.Client,
+	args []string,
+) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
+	cmd := client.CreateCipherCommand()
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+
+	cmd.SetOut(outBuf)
+	cmd.SetErr(errBuf)
+	cmd.SetContext(ctx)
+	cmd.SetArgs(args)
+
+	return cmd, outBuf, errBuf
+}
 
 func TestNewClient(t *testing.T) {
 	t.Parallel()
@@ -98,41 +135,26 @@ func TestCipherCommand_SopsNotFound(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Setenv()
 func TestCipherCommand_WithMockSops(t *testing.T) {
 	// Cannot use t.Parallel() with t.Setenv()
 
-	// Create a temporary directory for our mock sops binary
-	tempDir := t.TempDir()
-	mockSopsPath := filepath.Join(tempDir, "sops")
-
-	// Create a simple shell script that acts as a mock sops
+	// Create mock sops binary
 	mockScript := `#!/bin/sh
 echo "SOPS mock version 1.0.0"
 exit 0
 `
-	//nolint:gosec // This is a test file with safe permissions for executables
-	err := os.WriteFile(mockSopsPath, []byte(mockScript), 0o755)
-	if err != nil {
-		t.Fatalf("failed to create mock sops: %v", err)
-	}
-
-	// Save original PATH and modify it to include our mock
-	originalPath := os.Getenv("PATH")
-
-	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+originalPath)
+	setupMockSops(t, mockScript)
 
 	// Create and execute command
 	client := sops.NewClient()
-	cmd := client.CreateCipherCommand()
+	cmd, outBuf, _ := setupCommandWithBuffers(
+		context.Background(),
+		client,
+		[]string{"--version"},
+	)
 
-	var outBuf, errBuf bytes.Buffer
-
-	cmd.SetOut(&outBuf)
-	cmd.SetErr(&errBuf)
-	cmd.SetContext(context.Background())
-	cmd.SetArgs([]string{"--version"})
-
-	err = cmd.Execute()
+	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error executing mock sops: %v", err)
 	}
@@ -143,41 +165,26 @@ exit 0
 	}
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Setenv()
 func TestCipherCommand_SopsExecutionFailure(t *testing.T) {
 	// Cannot use t.Parallel() with t.Setenv()
-
-	// Create a temporary directory for our failing mock sops binary
-	tempDir := t.TempDir()
-	mockSopsPath := filepath.Join(tempDir, "sops")
 
 	// Create a script that exits with error
 	mockScript := `#!/bin/sh
 echo "Error: invalid command" >&2
 exit 1
 `
-	//nolint:gosec // This is a test file with safe permissions for executables
-	err := os.WriteFile(mockSopsPath, []byte(mockScript), 0o755)
-	if err != nil {
-		t.Fatalf("failed to create mock sops: %v", err)
-	}
-
-	// Save original PATH and modify it to include our mock
-	originalPath := os.Getenv("PATH")
-
-	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+originalPath)
+	setupMockSops(t, mockScript)
 
 	// Create and execute command
 	client := sops.NewClient()
-	cmd := client.CreateCipherCommand()
+	cmd, _, _ := setupCommandWithBuffers(
+		context.Background(),
+		client,
+		[]string{"--invalid-flag"},
+	)
 
-	var outBuf, errBuf bytes.Buffer
-
-	cmd.SetOut(&outBuf)
-	cmd.SetErr(&errBuf)
-	cmd.SetContext(context.Background())
-	cmd.SetArgs([]string{"--invalid-flag"})
-
-	err = cmd.Execute()
+	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error when sops execution fails")
 	}
@@ -225,14 +232,11 @@ func TestCipherCommand_RealSops(t *testing.T) {
 	t.Logf("Testing with sops at: %s", sopsPath)
 
 	client := sops.NewClient()
-	cmd := client.CreateCipherCommand()
-
-	var outBuf, errBuf bytes.Buffer
-
-	cmd.SetOut(&outBuf)
-	cmd.SetErr(&errBuf)
-	cmd.SetContext(context.Background())
-	cmd.SetArgs([]string{"--version"})
+	cmd, outBuf, errBuf := setupCommandWithBuffers(
+		context.Background(),
+		client,
+		[]string{"--version"},
+	)
 
 	err = cmd.Execute()
 	if err != nil {
@@ -298,12 +302,9 @@ func TestCipherCommand_CommandProperties(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Cannot use t.Parallel() with t.Setenv()
 func TestCipherCommand_OutputStreams(t *testing.T) {
 	// Cannot use t.Parallel() with t.Setenv()
-
-	// Create a temporary directory for our mock sops binary
-	tempDir := t.TempDir()
-	mockSopsPath := filepath.Join(tempDir, "sops")
 
 	// Create a script that writes to both stdout and stderr
 	const stderrFd = 2
@@ -314,29 +315,17 @@ echo "stderr output" >&%d
 exit 0
 `, stderrFd)
 
-	//nolint:gosec // This is a test file with safe permissions for executables
-	err := os.WriteFile(mockSopsPath, []byte(mockScript), 0o755)
-	if err != nil {
-		t.Fatalf("failed to create mock sops: %v", err)
-	}
-
-	// Save original PATH and modify it to include our mock
-	originalPath := os.Getenv("PATH")
-
-	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+originalPath)
+	setupMockSops(t, mockScript)
 
 	// Create and execute command
 	client := sops.NewClient()
-	cmd := client.CreateCipherCommand()
+	cmd, outBuf, errBuf := setupCommandWithBuffers(
+		context.Background(),
+		client,
+		[]string{"test"},
+	)
 
-	var outBuf, errBuf bytes.Buffer
-
-	cmd.SetOut(&outBuf)
-	cmd.SetErr(&errBuf)
-	cmd.SetContext(context.Background())
-	cmd.SetArgs([]string{"test"})
-
-	err = cmd.Execute()
+	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
