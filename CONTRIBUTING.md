@@ -11,6 +11,44 @@ To get started with contributing to ksail, you'll need to set up your developmen
 
 To understand the codebase it is recommended to read the `.github/copilot-instructions.md` file, which provides an overview of the project structure and key components. You can also use GitHub Copilot to assist you in navigating the codebase and understanding its functionality.
 
+## Project Structure
+
+The KSail Go project is organized into several main directories:
+
+### Command-Line Interface
+
+- **[cmd/](./cmd/README.md)** - CLI implementation using Cobra framework:
+  - **cmd/cipher/** - SOPS cipher management commands
+  - **cmd/cluster/** - Cluster lifecycle commands (up, down, start, stop, reconcile)
+  - **cmd/workload/** - Workload management commands (logs, etc.)
+  - **[cmd/internal/](./cmd/internal/README.md)** - Internal command utilities and helpers
+
+### Core Packages
+
+- **[pkg/](./pkg/)** - Core business logic packages:
+  - **[pkg/apis/](./pkg/apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions and custom resource types
+  - **[pkg/config-manager/](./pkg/config-manager/README.md)** - Configuration management for KSail and distribution configs
+  - **[pkg/containerengine/](./pkg/containerengine/README.md)** - Container engine abstraction (Docker, Podman)
+  - **pkg/di/** - Dependency injection helpers for commands
+  - **pkg/errorhandler/** - Centralized error handling and formatting
+  - **pkg/helm/** - Helm client implementation
+  - **[pkg/installer/](./pkg/installer/README.md)** - Component installation utilities (kubectl, Flux, etc.)
+  - **[pkg/io/](./pkg/io/README.md)** - Safe file I/O operations with security features
+  - **[pkg/k9s/](./pkg/k9s/README.md)** - k9s terminal UI integration
+  - **pkg/kubectl/** - kubectl client implementation
+  - **[pkg/provisioner/](./pkg/provisioner/README.md)** - Cluster provisioning and lifecycle management
+  - **[pkg/scaffolder/](./pkg/scaffolder/README.md)** - Project scaffolding and file generation
+  - **pkg/sops/** - SOPS encryption client implementation
+  - **[pkg/ui/](./pkg/ui/README.md)** - User interface utilities (notifications, ASCII art, timing)
+  - **[pkg/validator/](./pkg/validator/README.md)** - Configuration validation utilities
+
+### Internal Packages
+
+- **internal/** - Internal utility packages:
+  - **[internal/testutils/](./internal/testutils/README.md)** - Shared testing utilities and helpers
+
+Each package contains detailed documentation about its purpose, features, and usage examples. Packages in `pkg/` are part of KSail's public API, while packages in `internal/` and `cmd/internal/` are for internal use only.
+
 ### Prerequisites
 
 Before you begin, ensure you have the following installed:
