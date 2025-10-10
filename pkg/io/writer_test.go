@@ -598,10 +598,9 @@ func runErrorTestsWithTwoParams(
 			content, outputPath, force := test.setupTest(t)
 			result, err := testFunc(content, outputPath, force)
 
-			require.Error(t, err, functionName+"()")
-			assert.Empty(t, result, functionName+"() result on error")
-			testutils.AssertErrContains(t, err, test.expectedErrMessage,
-				functionName+"() error message")
+			require.Error(t, err, functionName)
+			assert.Empty(t, result, functionName+" result on error")
+			testutils.AssertErrContains(t, err, test.expectedErrMessage, functionName)
 		})
 	}
 }
