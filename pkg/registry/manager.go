@@ -13,7 +13,6 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/go-connections/nat"
-	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 const (
@@ -21,8 +20,8 @@ const (
 	DefaultRegistryImage = "registry:3"
 )
 
-// RegistryConfig describes a registry container configuration.
-type RegistryConfig struct {
+// Config describes a registry container configuration.
+type Config struct {
 	Name     string // Container name
 	HostPort string // Host port to bind (e.g., "5000")
 	Image    string // Registry image (default: registry:3)
@@ -36,13 +35,13 @@ type Manager struct {
 // ContainerAPIClient defines the Docker API methods needed for registry management.
 // This combines container and image operations needed for registry lifecycle.
 type ContainerAPIClient interface {
-	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
 	ContainerCreate(
 		ctx context.Context,
 		config *container.Config,
 		hostConfig *container.HostConfig,
 		networkingConfig *network.NetworkingConfig,
-		platform *v1.Platform,
+		platform interface{},
 		containerName string,
 	) (container.CreateResponse, error)
 	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
@@ -59,7 +58,7 @@ func NewManager(dockerClient ContainerAPIClient) *Manager {
 
 // CreateRegistry creates a Docker registry container if it doesn't already exist.
 // Returns nil if the registry already exists or was successfully created.
-func (m *Manager) CreateRegistry(ctx context.Context, cfg RegistryConfig) error {
+func (m *Manager) CreateRegistry(ctx context.Context, cfg Config) error {
 	if cfg.Image == "" {
 		cfg.Image = DefaultRegistryImage
 	}
@@ -153,7 +152,10 @@ func (m *Manager) pullImage(ctx context.Context, imageName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to pull image: %w", err)
 	}
-	defer reader.Close()
+
+	defer func() {
+		_ = reader.Close()
+	}()
 
 	// Consume the reader to ensure the pull completes
 	_, err = io.Copy(io.Discard, reader)

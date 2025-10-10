@@ -2,18 +2,23 @@ package registry_test
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/containerengine"
 	"github.com/devantler-tech/ksail-go/pkg/registry"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	errTestListFailed   = errors.New("list error")
+	errTestPullFailed   = errTestPullFailed
+	errTestCreateFailed = errors.New("create error")
 )
 
 // TestCreateRegistry_Success tests successful registry creation.
@@ -23,14 +28,14 @@ func TestCreateRegistrySuccess(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 		Image:    registry.DefaultRegistryImage,
 	}
 
 	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]types.Container{}, nil)
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
 
 	// Mock successful image pull
 	mockClient.On("ImagePull", ctx, cfg.Image, mock.Anything).
@@ -56,7 +61,7 @@ func TestCreateRegistryAlreadyExists(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 	}
@@ -83,13 +88,13 @@ func TestCreateRegistryListError(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 	}
 
 	// Mock list error
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]types.Container{}, errors.New("list error"))
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, errors.New("list error"))
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -105,14 +110,14 @@ func TestCreateRegistryDefaultImage(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 		// Image not specified
 	}
 
 	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]types.Container{}, nil)
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
 
 	// Mock successful image pull with default image
 	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
@@ -138,17 +143,17 @@ func TestCreateRegistryPullError(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 	}
 
 	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]types.Container{}, nil)
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
 
 	// Mock image pull error
 	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
-		Return(nil, errors.New("pull error"))
+		Return(nil, errTestPullFailed)
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -164,13 +169,13 @@ func TestCreateRegistryCreateError(t *testing.T) {
 	mockClient := containerengine.NewMockAPIClient(t)
 	ctx := context.Background()
 
-	cfg := registry.RegistryConfig{
+	cfg := registry.Config{
 		Name:     "test-registry",
 		HostPort: "5000",
 	}
 
 	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]types.Container{}, nil)
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
 
 	// Mock successful image pull
 	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
