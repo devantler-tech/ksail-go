@@ -219,13 +219,39 @@ Flags:
 ---
 
 [TestWorkloadHelpSnapshots/install - 1]
-Install Helm charts to provision workloads through KSail.
+Install Helm charts to provision workloads through KSail. This command works like 'helm install' with all its options.
 
 Usage:
-  ksail workload install [flags]
+  ksail workload install [NAME] [CHART] [flags]
 
 Flags:
-  -h, --help   help for install
+      --atomic                       if set, the installation deletes on failure
+      --cert-file string             SSL certificate file
+      --create-namespace             create the release namespace if not present
+      --dependency-update            update dependencies if missing
+      --description string           add a custom description
+      --devel                        use development versions
+      --disable-openapi-validation   disable OpenAPI Schema validation
+      --dry-run string               simulate an install
+      --force                        force resource updates through a replacement strategy
+  -g, --generate-name                generate the name
+  -h, --help                         help for install
+      --insecure-skip-tls-verify     skip TLS checks
+      --key-file string              SSL key file
+      --name-template string         specify template used to name the release
+  -n, --namespace string             namespace scope (default "default")
+      --no-hooks                     prevent hooks from running
+      --password string              chart repository password
+      --plain-http                   use insecure HTTP
+      --render-subchart-notes        render subchart notes
+      --replace                      re-use the name
+      --repo string                  chart repository url
+      --skip-crds                    skip CRD installation
+      --timeout duration             time to wait for operations (default 5m0s)
+      --username string              chart repository username
+      --version string               specify chart version
+      --wait                         wait until resources are ready
+      --wait-for-jobs                wait for jobs to complete
 
 ---
 
