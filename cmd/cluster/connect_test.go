@@ -69,22 +69,48 @@ func setupTestConfig(
 	return cfgManager
 }
 
+// loadConfigAndVerifyNoError is a helper that loads config and asserts no error occurred.
+func loadConfigAndVerifyNoError(t *testing.T, cfgManager *ksailconfigmanager.ConfigManager) {
+	t.Helper()
+
+	err := cfgManager.LoadConfigSilent()
+	require.NoError(t, err, "expected config to load successfully")
+}
+
+// createKSailConfigYAML is a helper that creates a ksail.yaml config string.
+func createKSailConfigYAML(kubeconfig, context string) string {
+	config := `apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind`
+
+	if kubeconfig != "" || context != "" {
+		config += `
+  connection:`
+
+		if kubeconfig != "" {
+			config += `
+    kubeconfig: ` + kubeconfig
+		}
+
+		if context != "" {
+			config += `
+    context: ` + context
+		}
+	}
+
+	return config
+}
+
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
 
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  connection:
-    kubeconfig: ` + kubeConfigPath + `
-`
+	configContent := createKSailConfigYAML(kubeConfigPath, "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig,
@@ -93,15 +119,10 @@ spec:
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_UsesDefaultKubeconfig(t *testing.T) {
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-`
+	configContent := createKSailConfigYAML("", "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
 	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
@@ -125,15 +146,10 @@ func TestHandleConnectRunE_ConfigLoadError(t *testing.T) {
 
 //nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
 func TestHandleConnectRunE_WithDefaultKubeconfigPath(t *testing.T) {
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-`
+	configContent := createKSailConfigYAML("", "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
 	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
@@ -152,17 +168,10 @@ func TestHandleConnectRunE_WithCustomKubeconfigPath(t *testing.T) {
 	tempDir := t.TempDir()
 	customKubeConfigPath := filepath.Join(tempDir, "custom-kubeconfig")
 
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  connection:
-    kubeconfig: ` + customKubeConfigPath + `
-`
+	configContent := createKSailConfigYAML(customKubeConfigPath, "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
 	require.Equal(t, customKubeConfigPath, cfg.Spec.Connection.Kubeconfig,
@@ -174,17 +183,10 @@ func TestHandleConnectRunE_WithAdditionalArgs(t *testing.T) {
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
 
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  connection:
-    kubeconfig: ` + kubeConfigPath + `
-`
+	configContent := createKSailConfigYAML(kubeConfigPath, "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	args := []string{"--namespace", "default", "--readonly"}
 	require.NotNil(t, args, "expected args to be passable")
@@ -196,18 +198,10 @@ func TestHandleConnectRunE_WithContext(t *testing.T) {
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
 	contextName := "kind-kind"
 
-	configContent := `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  connection:
-    kubeconfig: ` + kubeConfigPath + `
-    context: ` + contextName + `
-`
+	configContent := createKSailConfigYAML(kubeConfigPath, contextName)
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
+	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
 	require.Equal(t, contextName, cfg.Spec.Connection.Context,

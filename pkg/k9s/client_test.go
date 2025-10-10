@@ -157,62 +157,38 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 
-	err := cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{})
 
-	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
+	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("", "")
 
-	err := cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{})
 
-	assertArgsContain(t, capturedArgs, "k9s")
-	assertArgsNotContain(t, capturedArgs, "--kubeconfig")
+	assertArgsContain(t, *capturedArgs, "k9s")
+	assertArgsNotContain(t, *capturedArgs, "--kubeconfig")
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 
-	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{"--namespace", "default", "--readonly"})
 
-	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
+	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
 		"--namespace", "default", "--readonly")
 }
 
@@ -232,6 +208,30 @@ func assertArgsNotContain(t *testing.T, args []string, notExpected ...string) {
 	for _, notExp := range notExpected {
 		require.NotContains(t, args, notExp, "expected args to not contain %q", notExp)
 	}
+}
+
+// setupMockExecutorTest creates a mock executor that captures os.Args during execution.
+// Returns the mock executor and a pointer to the captured args slice.
+func setupMockExecutorTest(t *testing.T) (*k9s.MockExecutor, *[]string) {
+	t.Helper()
+
+	var capturedArgs []string
+
+	mockExecutor := k9s.NewMockExecutor(t)
+	mockExecutor.EXPECT().Execute().Run(func() {
+		capturedArgs = make([]string, len(os.Args))
+		copy(capturedArgs, os.Args)
+	}).Once()
+
+	return mockExecutor, &capturedArgs
+}
+
+// runCommandTest executes a command's RunE function and asserts no error occurred.
+func runCommandTest(t *testing.T, cmd *cobra.Command, args []string) {
+	t.Helper()
+
+	err := cmd.RunE(cmd, args)
+	require.NoError(t, err)
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
@@ -257,23 +257,15 @@ func TestRunK9s_OsArgsRestored(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithContext(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "my-context")
 
-	err := cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{})
 
 	assertArgsContain(
 		t,
-		capturedArgs,
+		*capturedArgs,
 		"k9s",
 		"--kubeconfig",
 		"/test/kubeconfig",
@@ -285,41 +277,25 @@ func TestRunK9s_WithMockExecutor_WithContext(t *testing.T) {
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithoutContext(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 
-	err := cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{})
 
-	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
-	assertArgsNotContain(t, capturedArgs, "--context")
+	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig")
+	assertArgsNotContain(t, *capturedArgs, "--context")
 }
 
 //nolint:paralleltest // Cannot run in parallel due to os.Args modification
 func TestRunK9s_WithMockExecutor_WithContextAndAdditionalArgs(t *testing.T) {
 	// NOT parallel - modifies global os.Args
-	var capturedArgs []string
-
-	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
-
+	mockExecutor, capturedArgs := setupMockExecutorTest(t)
 	client := k9s.NewClientWithExecutor(mockExecutor)
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "prod-cluster")
 
-	err := cmd.RunE(cmd, []string{"--namespace", "default", "--readonly"})
-	require.NoError(t, err)
+	runCommandTest(t, cmd, []string{"--namespace", "default", "--readonly"})
 
-	assertArgsContain(t, capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
+	assertArgsContain(t, *capturedArgs, "k9s", "--kubeconfig", "/test/kubeconfig",
 		"--context", "prod-cluster", "--namespace", "default", "--readonly")
 }
