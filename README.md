@@ -1,5 +1,6 @@
 [![codecov](https://codecov.io/gh/devantler-tech/ksail-go/graph/badge.svg?token=HSUfhaiXwq)](https://codecov.io/gh/devantler-tech/ksail-go)
 [![CI - Go](https://github.com/devantler-tech/ksail-go/actions/workflows/ci.yaml/badge.svg)](https://github.com/devantler-tech/ksail-go/actions/workflows/ci.yaml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/devantler-tech/ksail-go.svg)](https://pkg.go.dev/github.com/devantler-tech/ksail-go)
 
 # ksail
 
@@ -50,17 +51,17 @@ ksail --help
 
 The KSail Go project is organized into several main packages:
 
-- **[cmd/](./cmd/README.md)** - Command-line interface implementation using Cobra framework
-- **[pkg/](./pkg/)** - Core business logic packages:
-  - **[pkg/apis/](./pkg/apis/cluster/v1alpha1/README.md)** - Kubernetes API definitions
-  - **[pkg/config-manager/](./pkg/config-manager/README.md)** - Configuration management utilities
-  - **[pkg/installer/](./pkg/installer/README.md)** - Component installation utilities
-  - **[pkg/io/](./pkg/io/README.md)** - Safe file I/O operations with security features and path helpers
-  - **[pkg/provisioner/](./pkg/provisioner/README.md)** - Cluster provisioning and lifecycle management
+- **cmd/** - Command-line interface implementation using Cobra framework
+- **pkg/** - Core business logic packages:
+  - **pkg/apis/** - Kubernetes API definitions
+  - **pkg/config-manager/** - Configuration management utilities
+  - **pkg/installer/** - Component installation utilities
+  - **pkg/io/** - Safe file I/O operations with security features and path helpers
+  - **pkg/provisioner/** - Cluster provisioning and lifecycle management
 - **internal/** - Internal utility packages:
-  - **[internal/testutils/](./internal/testutils/README.md)** - Shared testing utilities
+  - **internal/testutils/** - Shared testing utilities
 
-Each package contains detailed documentation about its purpose, features, and usage examples.
+For detailed package documentation, see [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
 
 ## Related Projects
 
