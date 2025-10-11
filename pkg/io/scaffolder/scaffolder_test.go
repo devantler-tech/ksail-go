@@ -14,7 +14,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
+	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/mock"
@@ -531,6 +531,7 @@ func newScaffolderWithMocks(
 		"Generate",
 		mock.MatchedBy(func(model v1alpha1.Cluster) bool {
 			mocks.ksailLastModel = model
+
 			return true
 		}),
 		mock.Anything,
