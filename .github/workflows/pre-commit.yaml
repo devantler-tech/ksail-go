@@ -16,4 +16,4 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - uses: pre-commit/action@2f1f4526ddac8d4e5de6502f8d0c0c96622f086f # v3.0.1
+      - uses: pre-commit/action@2c7b3805e2f6a8003d7da6cd07e8e9d2a8f9c6f9 # v3.0.1
