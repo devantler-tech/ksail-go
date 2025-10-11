@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/helm"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
