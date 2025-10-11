@@ -8,7 +8,7 @@ import (
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"

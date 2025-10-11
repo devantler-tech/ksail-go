@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/installer/flux"
+	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

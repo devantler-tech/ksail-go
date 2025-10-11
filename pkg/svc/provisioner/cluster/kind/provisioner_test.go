@@ -7,8 +7,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/client/docker"
-	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
-	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
+	clustertestutils "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
