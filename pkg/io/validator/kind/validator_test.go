@@ -3,9 +3,9 @@ package kind_test
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/validator"
-	kindvalidator "github.com/devantler-tech/ksail-go/pkg/validator/kind"
-	"github.com/devantler-tech/ksail-go/pkg/validator/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
+	kindvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/kind"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator/testutils"
 	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 

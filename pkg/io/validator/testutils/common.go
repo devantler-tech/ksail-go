@@ -4,7 +4,7 @@ package testutils
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/validator"
-	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/ksail"
 	k3dtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"

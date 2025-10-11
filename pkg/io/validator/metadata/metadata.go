@@ -1,7 +1,7 @@
 // Package metadata provides shared metadata validation utilities used across multiple validators.
 package metadata
 
-import "github.com/devantler-tech/ksail-go/pkg/validator"
+import "github.com/devantler-tech/ksail-go/pkg/io/validator"
 
 // ValidateMetadata validates Kind and APIVersion fields using provided expected values.
 func ValidateMetadata(
