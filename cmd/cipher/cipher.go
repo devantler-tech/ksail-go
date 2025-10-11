@@ -2,8 +2,8 @@
 package cipher
 
 import (
-	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/client/sops"
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
 
