@@ -1,5 +1,5 @@
-// Package containerengine provides unified container engine detection and management.
-package containerengine
+// Package docker provides unified container engine detection and management.
+package docker
 
 import (
 	"context"

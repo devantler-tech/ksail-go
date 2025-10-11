@@ -2,7 +2,7 @@
 // github.com/vektra/mockery
 // template: testify
 
-package containerengine
+package docker
 
 import (
 	"context"

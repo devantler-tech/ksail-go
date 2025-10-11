@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/containerengine"
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/testutils"
 	"github.com/stretchr/testify/assert"
@@ -205,7 +205,7 @@ func TestStartErrorDockerStartFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start(context.Background(), "") },
 		"Start",
-		func(client *containerengine.MockContainerAPIClient) {
+		func(client *docker.MockContainerAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStartClusterFailed)
 		},
@@ -237,7 +237,7 @@ func TestStopErrorDockerStopFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop(context.Background(), "") },
 		"Stop",
-		func(client *containerengine.MockContainerAPIClient) {
+		func(client *docker.MockContainerAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStopClusterFailed)
 		},
@@ -267,11 +267,11 @@ func newProvisionerForTest(
 ) (
 	*kindprovisioner.KindClusterProvisioner,
 	*kindprovisioner.MockKindProvider,
-	*containerengine.MockContainerAPIClient,
+	*docker.MockContainerAPIClient,
 ) {
 	t.Helper()
 	provider := kindprovisioner.NewMockKindProvider(t)
-	client := containerengine.NewMockContainerAPIClient(t)
+	client := docker.NewMockContainerAPIClient(t)
 
 	cfg := &v1alpha4.Cluster{
 		Name: "cfg-name",
@@ -315,7 +315,7 @@ func runDockerOperationFailureTest(
 	t *testing.T,
 	operation func(*kindprovisioner.KindClusterProvisioner) error,
 	operationName string,
-	expectDockerCall func(*containerengine.MockContainerAPIClient),
+	expectDockerCall func(*docker.MockContainerAPIClient),
 	expectedErrorMsg string,
 ) {
 	t.Helper()
