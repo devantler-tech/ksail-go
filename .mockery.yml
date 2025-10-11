@@ -37,10 +37,10 @@ packages:
     interfaces:
       ClusterProvisioner:
       Factory:
-  github.com/devantler-tech/ksail-go/pkg/validator:
+  github.com/devantler-tech/ksail-go/pkg/io/validator:
     config:
       recursive: false
-      dir: pkg/validator
+      dir: pkg/io/validator
       filename: mocks.go
       pkgname: validator
     interfaces:
