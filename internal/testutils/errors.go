@@ -1,15 +1,11 @@
 package testutils
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// ErrTestConfigLoadError is a static test error to comply with err113 and allow reuse across packages.
-var ErrTestConfigLoadError = errors.New("test config load error")
 
 // AssertErrWrappedContains verifies that an error exists, wraps a target error,
 // and optionally contains a given substring in its message. "ctx" describes the calling context.
