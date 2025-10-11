@@ -527,13 +527,14 @@ func newScaffolderWithMocks(
 	}
 
 	// Set up default successful return for ksail generator with model capturing
-	mocks.ksail.On("Generate", mock.Anything, mock.Anything).
-		Run(func(args mock.Arguments) {
-			if model, ok := args.Get(0).(v1alpha1.Cluster); ok {
-				mocks.ksailLastModel = model
-			}
-		}).
-		Return("", nil).Maybe()
+	mocks.ksail.On(
+		"Generate",
+		mock.MatchedBy(func(model v1alpha1.Cluster) bool {
+			mocks.ksailLastModel = model
+			return true
+		}),
+		mock.Anything,
+	).Return("", nil).Maybe()
 
 	// Set up default successful returns for other generators
 	mocks.kind.On("Generate", mock.Anything, mock.Anything).Return("", nil).Maybe()
