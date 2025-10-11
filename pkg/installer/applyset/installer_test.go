@@ -31,7 +31,7 @@ var (
 	errCreateFailed           = errors.New("create failed")
 )
 
-// testSetup provides common setup for kubectl installer tests.
+// testSetup provides common setup for ApplySet installer tests.
 func testSetup(
 	t *testing.T,
 ) (*applysetinstaller.MockCustomResourceDefinitionInterface, *applysetinstaller.MockResourceInterface) {
@@ -42,7 +42,7 @@ func testSetup(
 	return apiExtClient, dynClient
 }
 
-// createTestInstaller creates a kubectl installer with common test configuration.
+// createTestInstaller creates an ApplySet installer with common test configuration.
 func createTestInstaller(
 	apiExtClient apiextensionsv1client.CustomResourceDefinitionInterface,
 	dynClient dynamic.ResourceInterface,
