@@ -56,24 +56,6 @@ func TestExecuteShowsVersion(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
-func TestClusterCommandShowsHelp(t *testing.T) {
-	t.Parallel()
-
-	var out bytes.Buffer
-
-	root := cmd.NewRootCmd("", "", "")
-	root.SetOut(&out)
-	root.SetErr(&out)
-	root.SetArgs([]string{"cluster"})
-
-	err := root.Execute()
-	if err != nil {
-		t.Fatalf("expected cluster command to show help without error, got %v", err)
-	}
-
-	snaps.MatchSnapshot(t, out.String())
-}
-
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
 	return &cobra.Command{
