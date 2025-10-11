@@ -7,8 +7,8 @@ import (
 
 	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/validator/k3d"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
