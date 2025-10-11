@@ -241,12 +241,16 @@ func TestExtractRegistriesFromKind_ComplexContainerdPatch(t *testing.T) {
 
 	// Find the k3d-registry entry
 	found := false
+
 	for _, reg := range registries {
 		if reg.Name == "k3d-registry" {
 			found = true
+
 			assert.Equal(t, "5000", reg.HostPort)
+
 			break
 		}
 	}
+
 	assert.True(t, found, "Should find k3d-registry in complex patch")
 }

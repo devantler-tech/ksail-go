@@ -2,6 +2,7 @@ package registry_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/containerengine"
 	"github.com/devantler-tech/ksail-go/pkg/registry"
 	"github.com/docker/docker/api/types/container"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ import (
 
 var (
 	errTestListFailed   = errors.New("list error")
-	errTestPullFailed   = errTestPullFailed
+	errTestPullFailed   = errors.New("pull error")
 	errTestCreateFailed = errors.New("create error")
 )
 
@@ -67,7 +67,7 @@ func TestCreateRegistryAlreadyExists(t *testing.T) {
 	}
 
 	// Mock container exists
-	existingContainers := []types.Container{
+	existingContainers := []container.Summary{
 		{Names: []string{"/test-registry"}},
 	}
 	mockClient.On("ContainerList", ctx, mock.Anything).Return(existingContainers, nil)
@@ -95,7 +95,7 @@ func TestCreateRegistryListError(t *testing.T) {
 
 	// Mock list error
 	mockClient.On("ContainerList", ctx, mock.Anything).
-		Return([]container.Summary{}, errors.New("list error"))
+		Return([]container.Summary{}, errTestListFailed)
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -184,7 +184,7 @@ func TestCreateRegistryCreateError(t *testing.T) {
 
 	// Mock container create error
 	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, cfg.Name).
-		Return(container.CreateResponse{}, errors.New("create error"))
+		Return(container.CreateResponse{}, errTestCreateFailed)
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)

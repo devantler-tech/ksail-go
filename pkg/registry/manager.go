@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -28,28 +29,11 @@ type Config struct {
 
 // Manager handles Docker registry container lifecycle.
 type Manager struct {
-	client ContainerAPIClient
-}
-
-// ContainerAPIClient defines the Docker API methods needed for registry management.
-// This combines container and image operations needed for registry lifecycle.
-type ContainerAPIClient interface {
-	ContainerList(ctx context.Context, options container.ListOptions) ([]container.Summary, error)
-	ContainerCreate(
-		ctx context.Context,
-		config *container.Config,
-		hostConfig *container.HostConfig,
-		networkingConfig *network.NetworkingConfig,
-		platform interface{},
-		containerName string,
-	) (container.CreateResponse, error)
-	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
-	ImagePull(ctx context.Context, refStr string, options image.PullOptions) (io.ReadCloser, error)
+	client client.APIClient
 }
 
 // NewManager creates a new registry manager with the provided Docker client.
-// The client must implement both container and image API methods.
-func NewManager(dockerClient ContainerAPIClient) *Manager {
+func NewManager(dockerClient client.APIClient) *Manager {
 	return &Manager{
 		client: dockerClient,
 	}

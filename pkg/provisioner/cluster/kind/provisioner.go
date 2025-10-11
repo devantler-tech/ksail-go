@@ -79,23 +79,6 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 	return nil
 }
 
-// createMirrorRegistries extracts and creates mirror registries from Kind config.
-func (k *KindClusterProvisioner) createMirrorRegistries(ctx context.Context) error {
-	registries, err := registry.ExtractRegistriesFromKind(k.kindConfig)
-	if err != nil {
-		return fmt.Errorf("failed to extract registries: %w", err)
-	}
-
-	for _, reg := range registries {
-		err := k.registryManager.CreateRegistry(ctx, reg)
-		if err != nil {
-			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
-		}
-	}
-
-	return nil
-}
-
 // Delete deletes a kind cluster.
 func (k *KindClusterProvisioner) Delete(_ context.Context, name string) error {
 	target := setName(name, k.kindConfig.Name)
@@ -199,6 +182,23 @@ func (k *KindClusterProvisioner) Exists(_ context.Context, name string) (bool, e
 	}
 
 	return false, nil
+}
+
+// createMirrorRegistries extracts and creates mirror registries from Kind config.
+func (k *KindClusterProvisioner) createMirrorRegistries(ctx context.Context) error {
+	registries, err := registry.ExtractRegistriesFromKind(k.kindConfig)
+	if err != nil {
+		return fmt.Errorf("failed to extract registries: %w", err)
+	}
+
+	for _, reg := range registries {
+		err := k.registryManager.CreateRegistry(ctx, reg)
+		if err != nil {
+			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
+		}
+	}
+
+	return nil
 }
 
 // --- internals ---
