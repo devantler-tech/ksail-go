@@ -59,6 +59,16 @@ mockery
 go test ./...
 ```
 
+## Project Structure
+
+The repository is organized into three main directories:
+
+- **[cmd/](./cmd/README.md)** - CLI command implementations
+- **[pkg/](./pkg/README.md)** - Public packages (importable by external projects)
+- **[internal/](./internal/testutils/README.md)** - Internal packages (not importable externally)
+
+Each directory contains its own README with detailed information about its contents and purpose.
+
 ## CI
 
 ### Pre-commit Hooks

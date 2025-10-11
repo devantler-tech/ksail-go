@@ -141,7 +141,7 @@ The CI runs comprehensive system tests that validate:
 - `init --distribution K3d`
 - `init --distribution EKS`
 
-Each runs the complete lifecycle: init → up → status → list → start → reconcile → down
+Each runs the complete lifecycle: init → create → info → list → start → stop → delete
 
 ## Project Structure and Navigation
 
@@ -150,8 +150,10 @@ Each runs the complete lifecycle: init → up → status → list → start → 
 ```txt
 /home/runner/work/ksail-go/ksail-go/
 ├── cmd/                    # CLI commands using Cobra framework
-│   ├── *.go               # Command implementations (init.go, up.go, down.go, etc.)
-│   ├── ui/                # User interface utilities
+│   ├── *.go               # Command implementations (init.go, root.go, etc.)
+│   ├── cipher/            # Cipher command implementations
+│   ├── cluster/           # Cluster command implementations (create.go, delete.go, etc.)
+│   ├── workload/          # Workload command implementations
 │   └── internal/          # Command helper utilities
 ├── pkg/                   # Core business logic packages
 │   ├── apis/              # Kubernetes API definitions

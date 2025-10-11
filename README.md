@@ -47,21 +47,7 @@ ksail --help
 
 ## Documentation
 
-## Structure
-
-The KSail Go project is organized into several main packages:
-
-- **cmd/** - Command-line interface implementation using Cobra framework
-- **pkg/** - Core business logic packages:
-  - **pkg/apis/** - Kubernetes API definitions
-  - **pkg/config-manager/** - Configuration management utilities
-  - **pkg/installer/** - Component installation utilities
-  - **pkg/io/** - Safe file I/O operations with security features and path helpers
-  - **pkg/provisioner/** - Cluster provisioning and lifecycle management
-- **internal/** - Internal utility packages:
-  - **internal/testutils/** - Shared testing utilities
-
-For detailed package documentation, see [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
+For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Related Projects
 
