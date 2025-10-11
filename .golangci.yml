@@ -32,6 +32,9 @@ linters:
       - linters:
           - ireturn
         path: cmd/internal/shared/lifecycle_helpers_test.go
+      - linters:
+          - nlreturn
+        path: pkg/scaffolder/scaffolder_test.go
   settings:
     wsl_v5:
       allow-first-in-block: true
