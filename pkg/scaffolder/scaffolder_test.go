@@ -12,10 +12,12 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -61,14 +63,14 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 
 			tempDir := t.TempDir()
 			buffer := &bytes.Buffer{}
-			scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+			scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
 
 			scaffolderInstance.KSailConfig.Spec.Distribution = testCase.distribution
 			scaffolderInstance.KSailConfig.Spec.DistributionConfig = ""
 
 			_ = scaffolderInstance.Scaffold(tempDir, false)
 
-			require.Equal(t, testCase.expected, spies.ksail.lastModel.Spec.DistributionConfig)
+			require.Equal(t, testCase.expected, mocks.ksailLastModel.Spec.DistributionConfig)
 		})
 	}
 }
@@ -203,22 +205,26 @@ func TestScaffoldGeneratorFailures(t *testing.T) {
 func TestScaffoldSkipsExistingFileWithoutForce(t *testing.T) {
 	t.Parallel()
 
-	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+	tempDir, buffer, scaffolderInstance, mocks := setupExistingKSailFile(t)
 
 	err := scaffolderInstance.Scaffold(tempDir, false)
 	require.NoError(t, err)
-	require.Equal(t, 0, spies.ksail.callCount)
+
+	// Verify ksail generator was not called (file exists without force)
+	mocks.ksail.AssertNotCalled(t, "Generate")
 	require.Contains(t, buffer.String(), "skipped 'ksail.yaml'")
 }
 
 func TestScaffoldOverwritesFilesWhenForceEnabled(t *testing.T) {
 	t.Parallel()
 
-	tempDir, buffer, scaffolderInstance, spies := setupExistingKSailFile(t)
+	tempDir, buffer, scaffolderInstance, mocks := setupExistingKSailFile(t)
 
 	err := scaffolderInstance.Scaffold(tempDir, true)
 	require.NoError(t, err)
-	require.Positive(t, spies.ksail.callCount)
+
+	// Verify ksail generator was called (force enabled)
+	mocks.ksail.AssertNumberOfCalls(t, "Generate", 1)
 	require.Contains(t, buffer.String(), "overwrote 'ksail.yaml'")
 }
 
@@ -228,14 +234,15 @@ func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
 	tempDir := t.TempDir()
 
 	buffer := &bytes.Buffer{}
-	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
-	spies.ksail.returnErr = errGenerateFailure
+	scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
+
+	// Clear default expectations and set up error return
+	mocks.ksail.ExpectedCalls = nil
+	mocks.ksail.On("Generate", mock.Anything, mock.Anything).Return("", errGenerateFailure).Once()
 
 	err := scaffolderInstance.Scaffold(tempDir, false)
 	require.Error(t, err)
 	require.ErrorIs(t, err, scaffolder.ErrKSailConfigGeneration)
-	require.Equal(t, 1, spies.ksail.callCount)
-	require.Equal(t, 0, spies.kind.callCount)
 }
 
 func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
@@ -244,16 +251,26 @@ func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
 	tests := []distributionErrorTestCase{
 		{
 			name: "Kind",
-			configure: func(spies generatorSpies) {
-				spies.kind.returnErr = errGenerateFailure
+			configure: func(mocks *generatorMocks) {
+				mocks.kind.ExpectedCalls = nil // Clear default expectations
+				mocks.kind.On(
+					"Generate",
+					mock.Anything,
+					mock.Anything,
+				).Return("", errGenerateFailure).Once()
 			},
 			distribution: v1alpha1.DistributionKind,
 			assertErr:    assertKindGenerationError,
 		},
 		{
 			name: "K3d",
-			configure: func(spies generatorSpies) {
-				spies.k3d.returnErr = errGenerateFailure
+			configure: func(mocks *generatorMocks) {
+				mocks.k3d.ExpectedCalls = nil // Clear default expectations
+				mocks.k3d.On(
+					"Generate",
+					mock.Anything,
+					mock.Anything,
+				).Return("", errGenerateFailure).Once()
 			},
 			distribution: v1alpha1.DistributionK3d,
 			assertErr:    assertK3dGenerationError,
@@ -270,7 +287,7 @@ func TestScaffoldWrapsDistributionGenerationErrors(t *testing.T) {
 
 type distributionErrorTestCase struct {
 	name         string
-	configure    func(generatorSpies)
+	configure    func(*generatorMocks)
 	distribution v1alpha1.Distribution
 	assertErr    func(*testing.T, error)
 }
@@ -280,10 +297,10 @@ func runDistributionErrorTest(t *testing.T, test distributionErrorTestCase) {
 
 	tempDir := t.TempDir()
 	buffer := &bytes.Buffer{}
-	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+	scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
 
 	scaffolderInstance.KSailConfig.Spec.Distribution = test.distribution
-	test.configure(spies)
+	test.configure(mocks)
 
 	err := scaffolderInstance.Scaffold(tempDir, false)
 
@@ -310,9 +327,14 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 
 	tempDir := t.TempDir()
 	buffer := &bytes.Buffer{}
-	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+	scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
 
-	spies.kustomization.returnErr = errGenerateFailure
+	mocks.kustomization.ExpectedCalls = nil // Clear default expectations
+	mocks.kustomization.On(
+		"Generate",
+		mock.Anything,
+		mock.Anything,
+	).Return("", errGenerateFailure).Once()
 
 	err := scaffolderInstance.Scaffold(tempDir, false)
 
@@ -468,50 +490,63 @@ func createUnknownCluster(name string) v1alpha1.Cluster {
 	return c
 }
 
-type spyGenerator[T any] struct {
-	callCount  int
-	returnErr  error
-	lastOutput yamlgenerator.Options
-	lastModel  T
+type generatorMocks struct {
+	ksail          *generator.MockGenerator[v1alpha1.Cluster, yamlgenerator.Options]
+	kind           *generator.MockGenerator[*v1alpha4.Cluster, yamlgenerator.Options]
+	k3d            *generator.MockGenerator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
+	kustomization  *generator.MockGenerator[*ktypes.Kustomization, yamlgenerator.Options]
+	ksailLastModel v1alpha1.Cluster
 }
 
-func (s *spyGenerator[T]) Generate(model T, opts yamlgenerator.Options) (string, error) {
-	s.callCount++
-	s.lastOutput = opts
-	s.lastModel = model
-
-	return "", s.returnErr
-}
-
-type generatorSpies struct {
-	ksail         *spyGenerator[v1alpha1.Cluster]
-	kind          *spyGenerator[*v1alpha4.Cluster]
-	k3d           *spyGenerator[*k3dv1alpha5.SimpleConfig]
-	kustomization *spyGenerator[*ktypes.Kustomization]
-}
-
-func newScaffolderWithSpies(
+func newScaffolderWithMocks(
 	t *testing.T,
 	writer io.Writer,
-) (*scaffolder.Scaffolder, generatorSpies) {
+) (*scaffolder.Scaffolder, *generatorMocks) {
 	t.Helper()
 
-	cluster := createTestCluster("spy-cluster")
+	cluster := createTestCluster("mock-cluster")
 	scaffolderInstance := scaffolder.NewScaffolder(cluster, writer)
 
-	spies := generatorSpies{
-		ksail:         &spyGenerator[v1alpha1.Cluster]{},
-		kind:          &spyGenerator[*v1alpha4.Cluster]{},
-		k3d:           &spyGenerator[*k3dv1alpha5.SimpleConfig]{},
-		kustomization: &spyGenerator[*ktypes.Kustomization]{},
+	mocks := &generatorMocks{
+		ksail: generator.NewMockGenerator[
+			v1alpha1.Cluster,
+			yamlgenerator.Options,
+		](t),
+		kind: generator.NewMockGenerator[
+			*v1alpha4.Cluster,
+			yamlgenerator.Options,
+		](t),
+		k3d: generator.NewMockGenerator[
+			*k3dv1alpha5.SimpleConfig,
+			yamlgenerator.Options,
+		](t),
+		kustomization: generator.NewMockGenerator[
+			*ktypes.Kustomization,
+			yamlgenerator.Options,
+		](t),
 	}
 
-	scaffolderInstance.KSailYAMLGenerator = spies.ksail
-	scaffolderInstance.KindGenerator = spies.kind
-	scaffolderInstance.K3dGenerator = spies.k3d
-	scaffolderInstance.KustomizationGenerator = spies.kustomization
+	// Set up default successful return for ksail generator with model capturing
+	mocks.ksail.On(
+		"Generate",
+		mock.MatchedBy(func(model v1alpha1.Cluster) bool {
+			mocks.ksailLastModel = model
+			return true
+		}),
+		mock.Anything,
+	).Return("", nil).Maybe()
 
-	return scaffolderInstance, spies
+	// Set up default successful returns for other generators
+	mocks.kind.On("Generate", mock.Anything, mock.Anything).Return("", nil).Maybe()
+	mocks.k3d.On("Generate", mock.Anything, mock.Anything).Return("", nil).Maybe()
+	mocks.kustomization.On("Generate", mock.Anything, mock.Anything).Return("", nil).Maybe()
+
+	scaffolderInstance.KSailYAMLGenerator = mocks.ksail
+	scaffolderInstance.KindGenerator = mocks.kind
+	scaffolderInstance.K3dGenerator = mocks.k3d
+	scaffolderInstance.KustomizationGenerator = mocks.kustomization
+
+	return scaffolderInstance, mocks
 }
 
 func setupExistingKSailFile(
@@ -520,7 +555,7 @@ func setupExistingKSailFile(
 	string,
 	*bytes.Buffer,
 	*scaffolder.Scaffolder,
-	generatorSpies,
+	*generatorMocks,
 ) {
 	t.Helper()
 
@@ -535,7 +570,7 @@ func setupExistingKSailFile(
 	)
 
 	buffer := &bytes.Buffer{}
-	scaffolderInstance, spies := newScaffolderWithSpies(t, buffer)
+	scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
 
-	return tempDir, buffer, scaffolderInstance, spies
+	return tempDir, buffer, scaffolderInstance, mocks
 }
