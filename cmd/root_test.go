@@ -74,7 +74,6 @@ func TestClusterCommandShowsHelp(t *testing.T) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
-
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.
 func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobra.Command {
 	return &cobra.Command{
