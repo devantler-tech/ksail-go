@@ -8,13 +8,13 @@
 
 **What is KSail?**
 
-KSail is a CLI tool for managing local Kubernetes clusters and workloads with a single, unified interface. It wraps popular tools like Kind, K3d, and eksctl, providing a consistent experience across different distributions—no more juggling multiple CLIs or memorizing different syntaxes.
+KSail is a CLI tool for managing local Kubernetes clusters and workloads with a single, unified interface. It wraps popular tools like Kind and K3d, providing a consistent experience across different distributions—no more juggling multiple CLIs or memorizing different syntaxes.
 
 **Why KSail?**
 
 Setting up local Kubernetes environments typically means learning multiple tools, each with their own commands and configuration formats. KSail eliminates this friction by providing:
 
-- A single command-line interface for Kind, K3d, and EKS clusters
+- A single command-line interface for Kind and K3d clusters
 - Declarative configuration for reproducible environments
 - Integrated workload and secrets management
 - Fast cluster lifecycle operations (create, start, stop, delete)
@@ -70,7 +70,7 @@ ksail workload reconcile
 ksail cluster delete
 ```
 
-For detailed command reference, run `ksail --help` or see the [Documentation](#documentation) section.
+For detailed command reference, run `ksail --help`.
 
 ## Documentation
 
