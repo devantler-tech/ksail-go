@@ -7,8 +7,8 @@ import (
 	"reflect"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"

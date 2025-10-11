@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

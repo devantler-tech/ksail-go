@@ -11,7 +11,7 @@ import (
 
 	cmdpkg "github.com/devantler-tech/ksail-go/cmd"
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
