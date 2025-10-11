@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/devantler/ksail-go/main/schemas/ksail-cluster-schema.json",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "description": "Kind of the resource (always 'Cluster' for KSail configurations)"
+    },
+    "apiVersion": {
+      "type": "string",
+      "description": "API version of the KSail cluster configuration"
+    },
+    "spec": {
+      "properties": {
+        "distributionConfig": {
+          "type": "string",
+          "description": "Configuration file for the distribution"
+        },
+        "sourceDirectory": {
+          "type": "string",
+          "description": "Directory containing workloads to deploy"
+        },
+        "connection": {
+          "properties": {
+            "kubeconfig": {
+              "type": "string",
+              "description": "Path to the kubeconfig file"
+            },
+            "context": {
+              "type": "string",
+              "description": "Kubernetes context of cluster"
+            },
+            "timeout": {
+              "properties": {
+                "Duration": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "description": "Timeout for cluster operations"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "description": "Connection settings for the Kubernetes cluster"
+        },
+        "distribution": {
+          "type": "string",
+          "description": "Kubernetes distribution to use"
+        },
+        "cni": {
+          "type": "string",
+          "description": "Container Network Interface to use"
+        },
+        "csi": {
+          "type": "string",
+          "description": "Container Storage Interface to use"
+        },
+        "ingressController": {
+          "type": "string",
+          "description": "Ingress controller to install"
+        },
+        "gatewayController": {
+          "type": "string",
+          "description": "Gateway API controller to install"
+        },
+        "gitOpsEngine": {
+          "type": "string",
+          "description": "GitOps engine to use for deployment"
+        },
+        "options": {
+          "properties": {
+            "kind": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "k3d": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "cilium": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "flux": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "argocd": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "helm": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "kustomize": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "description": "Distribution-specific and tool-specific options"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "Specification of the desired cluster state"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind"
+  ],
+  "title": "KSail Cluster Configuration",
+  "description": "Schema for KSail cluster configuration (ksail.yaml)"
+}
