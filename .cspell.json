@@ -161,7 +161,7 @@
     "Kubeadm",
     "Kubeconfig",
     "kubeconfig",
-    "kubectlinstaller",
+    "applysetinstaller",
     "kubelet",
     "Kustomization",
     "kustomization",
