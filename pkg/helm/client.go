@@ -60,7 +60,7 @@ func (c *Client) CreateInstallCommand() *cobra.Command {
 		Use:   "install [NAME] [CHART]",
 		Short: "Install Helm charts",
 		Long: "Install Helm charts to provision workloads through KSail. " +
-			"This command works like 'helm install' with all its options.",
+			"This command works like 'ksail workload install' with all Helm install options.",
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(_ *cobra.Command, _ []string) error {
 			// Set namespace from settings
