@@ -175,7 +175,7 @@ Each runs the complete lifecycle: init → create → info → list → start �
 
 - **Command changes**: Always check corresponding test files (`*_test.go`)
 - **API changes**: Review `pkg/apis/cluster/v1alpha1/` definitions
-- **Configuration changes**: Check `pkg/config-manager/` implementations
+- **Configuration changes**: Check `pkg/io/config-manager/` implementations
 - **Provisioner changes**: Validate against `pkg/provisioner/cluster/` providers
 - **Build/CI changes**: Review `.github/workflows/ci.yaml`
 
@@ -183,7 +183,7 @@ Each runs the complete lifecycle: init → create → info → list → start �
 
 - **Adding new CLI commands**: `cmd/*.go` + corresponding tests
 - **Cluster provider logic**: `pkg/provisioner/cluster/{kind,k3d,eks}/`
-- **Configuration handling**: `pkg/config-manager/`
+- **Configuration handling**: `pkg/io/config-manager/`
 - **File generation**: `pkg/io/generator/`
 - **Test utilities**: `internal/testutils/` and package-specific `testutils/`
 
