@@ -1,4 +1,3 @@
-// Package applysetinstaller provides an ApplySet installer implementation.
 package applysetinstaller
 
 import (
