@@ -4,6 +4,14 @@ packages:
   github.com/devantler-tech/ksail-go:
     config:
       all: true
+  github.com/devantler-tech/ksail-go/pkg/io/generator:
+    config:
+      recursive: false
+      dir: pkg/io/generator
+      filename: mocks.go
+      pkgname: generator
+    interfaces:
+      Generator:
   github.com/devantler-tech/ksail-go/pkg/config-manager:
     config:
       recursive: false
