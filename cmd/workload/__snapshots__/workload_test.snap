@@ -8,23 +8,23 @@ Usage:
 
 Examples:
   # Apply the configuration in pod.json to a pod
-  kubectl apply -f ./pod.json
+  ksail workload apply -f ./pod.json
   
   # Apply resources from a directory containing kustomization.yaml - e.g. dir/kustomization.yaml
-  kubectl apply -k dir/
+  ksail workload apply -k dir/
   
   # Apply the JSON passed into stdin to a pod
-  cat pod.json | kubectl apply -f -
+  cat pod.json | ksail workload apply -f -
   
   # Apply the configuration from all files that end with '.json'
-  kubectl apply -f '*.json'
+  ksail workload apply -f '*.json'
   
   # Note: --prune is still in Alpha
   # Apply the configuration in manifest.yaml that matches label app=nginx and delete all other resources that are not in the file and match label app=nginx
-  kubectl apply --prune -f manifest.yaml -l app=nginx
+  ksail workload apply --prune -f manifest.yaml -l app=nginx
   
   # Apply the configuration in manifest.yaml and delete all the other config maps that are not in the file
-  kubectl apply --prune -f manifest.yaml --all --prune-allowlist=core/v1/ConfigMap
+  ksail workload apply --prune -f manifest.yaml --all --prune-allowlist=core/v1/ConfigMap
 
 Available Commands:
   edit-last-applied Edit latest last-applied-configuration annotations of a resource/object
@@ -71,13 +71,13 @@ Usage:
 
 Examples:
   # Create a pod using the data in pod.json
-  kubectl create -f ./pod.json
+  ksail workload create -f ./pod.json
   
   # Create a pod based on the JSON passed into stdin
-  cat pod.json | kubectl create -f -
+  cat pod.json | ksail workload create -f -
   
   # Edit the data in registry.yaml in JSON then create the resource using the edited data
-  kubectl create -f registry.yaml --edit -o json
+  ksail workload create -f registry.yaml --edit -o json
 
 Available Commands:
   clusterrole         Create a cluster role
@@ -128,34 +128,34 @@ Usage:
 
 Examples:
   # Delete a pod using the type and name specified in pod.json
-  kubectl delete -f ./pod.json
+  ksail workload delete -f ./pod.json
   
   # Delete resources from a directory containing kustomization.yaml - e.g. dir/kustomization.yaml
-  kubectl delete -k dir
+  ksail workload delete -k dir
   
   # Delete resources from all files that end with '.json'
-  kubectl delete -f '*.json'
+  ksail workload delete -f '*.json'
   
   # Delete a pod based on the type and name in the JSON passed into stdin
-  cat pod.json | kubectl delete -f -
+  cat pod.json | ksail workload delete -f -
   
   # Delete pods and services with same names "baz" and "foo"
-  kubectl delete pod,service baz foo
+  ksail workload delete pod,service baz foo
   
   # Delete pods and services with label name=myLabel
-  kubectl delete pods,services -l name=myLabel
+  ksail workload delete pods,services -l name=myLabel
   
   # Delete a pod with minimal delay
-  kubectl delete pod foo --now
+  ksail workload delete pod foo --now
   
   # Force delete a pod on a dead node
-  kubectl delete pod foo --force
+  ksail workload delete pod foo --force
   
   # Delete all pods
-  kubectl delete pods --all
+  ksail workload delete pods --all
   
   # Delete all pods only if the user confirms the deletion
-  kubectl delete pods --all --interactive
+  ksail workload delete pods --all --interactive
 
 Flags:
       --all                             Delete all resources, in the namespace of the specified resource types.
@@ -188,23 +188,23 @@ Usage:
 
 Examples:
   # Describe a node
-  kubectl describe nodes kubernetes-node-emt8.c.myproject.internal
+  ksail workload describe nodes kubernetes-node-emt8.c.myproject.internal
   
   # Describe a pod
-  kubectl describe pods/nginx
+  ksail workload describe pods/nginx
   
   # Describe a pod identified by type and name in "pod.json"
-  kubectl describe -f pod.json
+  ksail workload describe -f pod.json
   
   # Describe all pods
-  kubectl describe pods
+  ksail workload describe pods
   
   # Describe pods by label name=myLabel
-  kubectl describe pods -l name=myLabel
+  ksail workload describe pods -l name=myLabel
   
   # Describe all pods managed by the 'frontend' replication controller
   # (rc-created pods get the name of the rc as a prefix in the pod name)
-  kubectl describe pods frontend
+  ksail workload describe pods frontend
 
 Flags:
   -A, --all-namespaces     If present, list the requested object(s) across all namespaces. Namespace in current context is ignored even if specified with --namespace.
@@ -219,7 +219,7 @@ Flags:
 ---
 
 [TestWorkloadHelpSnapshots/install - 1]
-Install Helm charts to provision workloads through KSail. This command works like 'helm install' with all its options.
+Install Helm charts to provision workloads through KSail. This command works like 'ksail workload install' with all Helm install options.
 
 Usage:
   ksail workload install [NAME] [CHART] [flags]
@@ -304,19 +304,19 @@ Usage:
 
 Examples:
   # Edit the service named 'registry'
-  kubectl edit svc/registry
+  ksail workload edit svc/registry
   
   # Use an alternative editor
-  KUBE_EDITOR="nano" kubectl edit svc/registry
+  KUBE_EDITOR="nano" ksail workload edit svc/registry
   
   # Edit the job 'myjob' in JSON using the v1 API format
-  kubectl edit job.v1.batch/myjob -o json
+  ksail workload edit job.v1.batch/myjob -o json
   
   # Edit the deployment 'mydeployment' in YAML and save the modified config in its annotation
-  kubectl edit deployment/mydeployment -o yaml --save-config
+  ksail workload edit deployment/mydeployment -o yaml --save-config
   
   # Edit the 'status' subresource for the 'mydeployment' deployment
-  kubectl edit deployment mydeployment --subresource='status'
+  ksail workload edit deployment mydeployment --subresource='status'
 
 Flags:
       --allow-missing-template-keys   If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
@@ -344,27 +344,27 @@ Usage:
 
 Examples:
   # Get output from running the 'date' command from pod mypod, using the first container by default
-  kubectl exec mypod -- date
+  ksail workload exec mypod -- date
   
   # Get output from running the 'date' command in ruby-container from pod mypod
-  kubectl exec mypod -c ruby-container -- date
+  ksail workload exec mypod -c ruby-container -- date
   
   # Switch to raw terminal mode; sends stdin to 'bash' in ruby-container from pod mypod
   # and sends stdout/stderr from 'bash' back to the client
-  kubectl exec mypod -c ruby-container -i -t -- bash -il
+  ksail workload exec mypod -c ruby-container -i -t -- bash -il
   
   # List contents of /usr from the first container of pod mypod and sort by modification time
   # If the command you want to execute in the pod has any flags in common (e.g. -i),
   # you must use two dashes (--) to separate your command's flags/arguments
   # Also note, do not surround your command and its flags/arguments with quotes
   # unless that is how you would execute it normally (i.e., do ls -t /usr, not "ls -t /usr")
-  kubectl exec mypod -i -t -- ls -t /usr
+  ksail workload exec mypod -i -t -- ls -t /usr
   
   # Get output from running 'date' command from the first pod of the deployment mydeployment, using the first container by default
-  kubectl exec deploy/mydeployment -- date
+  ksail workload exec deploy/mydeployment -- date
   
   # Get output from running 'date' command from the first pod of the service myservice, using the first container by default
-  kubectl exec svc/myservice -- date
+  ksail workload exec svc/myservice -- date
 
 Flags:
   -c, --container string               Container name. If omitted, use the kubectl.kubernetes.io/default-container annotation for selecting the container to be attached or the first container in the pod will be chosen
@@ -385,19 +385,19 @@ Usage:
 
 Examples:
   # Get the documentation of the resource and its fields
-  kubectl explain pods
+  ksail workload explain pods
   
   # Get all the fields in the resource
-  kubectl explain pods --recursive
+  ksail workload explain pods --recursive
   
   # Get the explanation for deployment in supported api versions
-  kubectl explain deployments --api-version=apps/v1
+  ksail workload explain deployments --api-version=apps/v1
   
   # Get the documentation of a specific field of a resource
-  kubectl explain pods.spec.containers
+  ksail workload explain pods.spec.containers
   
   # Get the documentation of resources in different format
-  kubectl explain deployment --output=plaintext-openapiv2
+  ksail workload explain deployment --output=plaintext-openapiv2
 
 Flags:
       --api-version string   Get different explanations for particular API version (API group/version)
@@ -415,25 +415,25 @@ Usage:
 
 Examples:
   # Create a service for a replicated nginx, which serves on port 80 and connects to the containers on port 8000
-  kubectl expose rc nginx --port=80 --target-port=8000
+  ksail workload expose rc nginx --port=80 --target-port=8000
   
   # Create a service for a replication controller identified by type and name specified in "nginx-controller.yaml", which serves on port 80 and connects to the containers on port 8000
-  kubectl expose -f nginx-controller.yaml --port=80 --target-port=8000
+  ksail workload expose -f nginx-controller.yaml --port=80 --target-port=8000
   
   # Create a service for a pod valid-pod, which serves on port 444 with the name "frontend"
-  kubectl expose pod valid-pod --port=444 --name=frontend
+  ksail workload expose pod valid-pod --port=444 --name=frontend
   
   # Create a second service based on the above service, exposing the container port 8443 as port 443 with the name "nginx-https"
-  kubectl expose service nginx --port=443 --target-port=8443 --name=nginx-https
+  ksail workload expose service nginx --port=443 --target-port=8443 --name=nginx-https
   
   # Create a service for a replicated streaming application on port 4100 balancing UDP traffic and named 'video-stream'.
-  kubectl expose rc streamer --port=4100 --protocol=UDP --name=video-stream
+  ksail workload expose rc streamer --port=4100 --protocol=UDP --name=video-stream
   
   # Create a service for a replicated nginx using replica set, which serves on port 80 and connects to the containers on port 8000
-  kubectl expose rs nginx --port=80 --target-port=8000
+  ksail workload expose rs nginx --port=80 --target-port=8000
   
   # Create a service for an nginx deployment, which serves on port 80 and connects to the containers on port 8000
-  kubectl expose deployment nginx --port=80 --target-port=8000
+  ksail workload expose deployment nginx --port=80 --target-port=8000
 
 Flags:
       --allow-missing-template-keys    If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
@@ -471,46 +471,46 @@ Usage:
 
 Examples:
   # List all pods in ps output format
-  kubectl get pods
+  ksail workload get pods
   
   # List all pods in ps output format with more information (such as node name)
-  kubectl get pods -o wide
+  ksail workload get pods -o wide
   
   # List a single replication controller with specified NAME in ps output format
-  kubectl get replicationcontroller web
+  ksail workload get replicationcontroller web
   
   # List deployments in JSON output format, in the "v1" version of the "apps" API group
-  kubectl get deployments.v1.apps -o json
+  ksail workload get deployments.v1.apps -o json
   
   # List a single pod in JSON output format
-  kubectl get -o json pod web-pod-13je7
+  ksail workload get -o json pod web-pod-13je7
   
   # List a pod identified by type and name specified in "pod.yaml" in JSON output format
-  kubectl get -f pod.yaml -o json
+  ksail workload get -f pod.yaml -o json
   
   # List resources from a directory with kustomization.yaml - e.g. dir/kustomization.yaml
-  kubectl get -k dir/
+  ksail workload get -k dir/
   
   # Return only the phase value of the specified pod
-  kubectl get -o template pod/web-pod-13je7 --template={{.status.phase}}
+  ksail workload get -o template pod/web-pod-13je7 --template={{.status.phase}}
   
   # List resource information in custom columns
-  kubectl get pod test-pod -o custom-columns=CONTAINER:.spec.containers[0].name,IMAGE:.spec.containers[0].image
+  ksail workload get pod test-pod -o custom-columns=CONTAINER:.spec.containers[0].name,IMAGE:.spec.containers[0].image
   
   # List all replication controllers and services together in ps output format
-  kubectl get rc,services
+  ksail workload get rc,services
   
   # List one or more resources by their type and names
-  kubectl get rc/web service/frontend pods/web-pod-13je7
+  ksail workload get rc/web service/frontend pods/web-pod-13je7
   
   # List the 'status' subresource for a single pod
-  kubectl get pod web-pod-13je7 --subresource status
+  ksail workload get pod web-pod-13je7 --subresource status
   
   # List all deployments in namespace 'backend'
-  kubectl get deployments.apps --namespace backend
+  ksail workload get deployments.apps --namespace backend
   
   # List all pods existing in all namespaces
-  kubectl get pods --all-namespaces
+  ksail workload get pods --all-namespaces
 
 Flags:
   -A, --all-namespaces                If present, list the requested object(s) across all namespaces. Namespace in current context is ignored even if specified with --namespace.
@@ -549,58 +549,58 @@ Usage:
 
 Examples:
   # Return snapshot logs from pod nginx with only one container
-  kubectl logs nginx
+  ksail workload logs nginx
   
   # Return snapshot logs from pod nginx, prefixing each line with the source pod and container name
-  kubectl logs nginx --prefix
+  ksail workload logs nginx --prefix
   
   # Return snapshot logs from pod nginx, limiting output to 500 bytes
-  kubectl logs nginx --limit-bytes=500
+  ksail workload logs nginx --limit-bytes=500
   
   # Return snapshot logs from pod nginx, waiting up to 20 seconds for it to start running.
-  kubectl logs nginx --pod-running-timeout=20s
+  ksail workload logs nginx --pod-running-timeout=20s
   
   # Return snapshot logs from pod nginx with multi containers
-  kubectl logs nginx --all-containers=true
+  ksail workload logs nginx --all-containers=true
   
   # Return snapshot logs from all pods in the deployment nginx
-  kubectl logs deployment/nginx --all-pods=true
+  ksail workload logs deployment/nginx --all-pods=true
   
   # Return snapshot logs from all containers in pods defined by label app=nginx
-  kubectl logs -l app=nginx --all-containers=true
+  ksail workload logs -l app=nginx --all-containers=true
   
   # Return snapshot logs from all pods defined by label app=nginx, limiting concurrent log requests to 10 pods
-  kubectl logs -l app=nginx --max-log-requests=10
+  ksail workload logs -l app=nginx --max-log-requests=10
   
   # Return snapshot of previous terminated ruby container logs from pod web-1
-  kubectl logs -p -c ruby web-1
+  ksail workload logs -p -c ruby web-1
   
   # Begin streaming the logs from pod nginx, continuing even if errors occur
-  kubectl logs nginx -f --ignore-errors=true
+  ksail workload logs nginx -f --ignore-errors=true
   
   # Begin streaming the logs of the ruby container in pod web-1
-  kubectl logs -f -c ruby web-1
+  ksail workload logs -f -c ruby web-1
   
   # Begin streaming the logs from all containers in pods defined by label app=nginx
-  kubectl logs -f -l app=nginx --all-containers=true
+  ksail workload logs -f -l app=nginx --all-containers=true
   
   # Display only the most recent 20 lines of output in pod nginx
-  kubectl logs --tail=20 nginx
+  ksail workload logs --tail=20 nginx
   
   # Show all logs from pod nginx written in the last hour
-  kubectl logs --since=1h nginx
+  ksail workload logs --since=1h nginx
   
   # Show all logs with timestamps from pod nginx starting from August 30, 2024, at 06:00:00 UTC
-  kubectl logs nginx --since-time=2024-08-30T06:00:00Z --timestamps=true
+  ksail workload logs nginx --since-time=2024-08-30T06:00:00Z --timestamps=true
   
   # Show logs from a kubelet with an expired serving certificate
-  kubectl logs --insecure-skip-tls-verify-backend nginx
+  ksail workload logs --insecure-skip-tls-verify-backend nginx
   
   # Return snapshot logs from first container of a job named hello
-  kubectl logs job/hello
+  ksail workload logs job/hello
   
   # Return snapshot logs from container nginx-1 of a deployment named nginx
-  kubectl logs deployment/nginx -c nginx-1
+  ksail workload logs deployment/nginx -c nginx-1
 
 Flags:
       --all-containers                     Get all containers' logs in the pod(s).
@@ -631,19 +631,19 @@ Usage:
 
 Examples:
   # Scale a replica set named 'foo' to 3
-  kubectl scale --replicas=3 rs/foo
+  ksail workload scale --replicas=3 rs/foo
   
   # Scale a resource identified by type and name specified in "foo.yaml" to 3
-  kubectl scale --replicas=3 -f foo.yaml
+  ksail workload scale --replicas=3 -f foo.yaml
   
   # If the deployment named mysql's current size is 2, scale mysql to 3
-  kubectl scale --current-replicas=2 --replicas=3 deployment/mysql
+  ksail workload scale --current-replicas=2 --replicas=3 deployment/mysql
   
   # Scale multiple replication controllers
-  kubectl scale --replicas=5 rc/example1 rc/example2 rc/example3
+  ksail workload scale --replicas=5 rc/example1 rc/example2 rc/example3
   
   # Scale stateful set named 'web' to 3
-  kubectl scale --replicas=3 statefulset/web
+  ksail workload scale --replicas=3 statefulset/web
 
 Flags:
       --all                            Select all resources in the namespace of the specified resource types
@@ -673,16 +673,16 @@ Usage:
 
 Examples:
   # Rollback to the previous deployment
-  kubectl rollout undo deployment/abc
+  ksail workload rollout undo deployment/abc
   
   # Check the rollout status of a daemonset
-  kubectl rollout status daemonset/foo
+  ksail workload rollout status daemonset/foo
   
   # Restart a deployment
-  kubectl rollout restart deployment/abc
+  ksail workload rollout restart deployment/abc
   
   # Restart deployments with the 'app=nginx' label
-  kubectl rollout restart deployment --selector=app=nginx
+  ksail workload rollout restart deployment --selector=app=nginx
 
 Available Commands:
   history     View rollout history
@@ -696,5 +696,37 @@ Flags:
   -h, --help   help for rollout
 
 Use "ksail workload rollout [command] --help" for more information about a command.
+
+---
+
+[TestNewWorkloadCmdRunETriggersHelp - 1]
+Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.
+
+Usage:
+  workload [flags]
+  workload [command]
+
+Available Commands:
+  apply       Apply manifests
+  completion  Generate the autocompletion script for the specified shell
+  create      Create resources
+  delete      Delete resources
+  describe    Describe resources
+  edit        Edit a resource
+  exec        Execute a command in a container
+  explain     Get documentation for a resource
+  expose      Expose a resource as a service
+  get         Get resources
+  help        Help about any command
+  install     Install Helm charts
+  logs        Print container logs
+  reconcile   Reconcile workloads with the cluster
+  rollout     Manage the rollout of a resource
+  scale       Scale resources
+
+Flags:
+  -h, --help   help for workload
+
+Use "workload [command] --help" for more information about a command.
 
 ---
