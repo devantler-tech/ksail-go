@@ -25,7 +25,7 @@ linters:
         path: pkg/config-manager/helpers/loader.go
       - linters:
           - ireturn
-        path: pkg/containerengine/engine.go
+        path: pkg/client/docker/engine.go
       - linters:
           - ireturn
         path: cmd/cluster/list_test.go

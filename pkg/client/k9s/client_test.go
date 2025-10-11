@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/k9s"
+	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )

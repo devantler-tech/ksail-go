@@ -7,7 +7,7 @@ import (
 
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/k9s"
+	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	"github.com/spf13/cobra"
 )
 
