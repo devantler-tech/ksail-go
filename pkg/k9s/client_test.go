@@ -2,11 +2,11 @@ package k9s_test
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/k9s"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -154,29 +154,26 @@ func TestRunK9s_ArgumentHandling(t *testing.T) {
 	verifyCommandMetadata(t, cmdWithArgs)
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithKubeconfig(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "", []string{},
-		[]string{"k9s", "--kubeconfig", "/test/kubeconfig"}, nil)
+		[]string{"--kubeconfig", "/test/kubeconfig"}, nil)
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithoutKubeconfig(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(t, "", "", []string{},
-		[]string{"k9s"}, []string{"--kubeconfig"})
+		[]string{}, []string{"--kubeconfig"})
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithAdditionalArgs(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(
 		t,
 		"/test/kubeconfig",
 		"",
 		[]string{"--namespace", "default", "--readonly"},
-		[]string{"k9s", "--kubeconfig", "/test/kubeconfig", "--namespace", "default", "--readonly"},
+		[]string{"--kubeconfig", "/test/kubeconfig", "--namespace", "default", "--readonly"},
 		nil,
 	)
 }
@@ -199,7 +196,7 @@ func assertArgsNotContain(t *testing.T, args []string, notExpected ...string) {
 	}
 }
 
-// setupMockExecutorTest creates a mock executor that captures os.Args during execution.
+// setupMockExecutorTest creates a mock executor that captures arguments during execution.
 // Returns the mock executor and a pointer to the captured args slice.
 func setupMockExecutorTest(t *testing.T) (*k9s.MockExecutor, *[]string) {
 	t.Helper()
@@ -207,10 +204,10 @@ func setupMockExecutorTest(t *testing.T) (*k9s.MockExecutor, *[]string) {
 	var capturedArgs []string
 
 	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Run(func() {
-		capturedArgs = make([]string, len(os.Args))
-		copy(capturedArgs, os.Args)
-	}).Once()
+	mockExecutor.EXPECT().Execute(mock.Anything).Run(func(args []string) {
+		capturedArgs = make([]string, len(args))
+		copy(capturedArgs, args)
+	}).Return(nil).Once()
 
 	return mockExecutor, &capturedArgs
 }
@@ -247,50 +244,41 @@ func testRunK9sWithMockExecutor(
 	}
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_OsArgsRestored(t *testing.T) {
-	// NOT parallel - modifies global os.Args
+	// This test is no longer needed as we don't modify os.Args anymore
+	// Kept as a placeholder to maintain test structure
 	mockExecutor := k9s.NewMockExecutor(t)
-	mockExecutor.EXPECT().Execute().Once()
+	mockExecutor.EXPECT().Execute(mock.Anything).Return(nil).Once()
 
 	client := k9s.NewClientWithExecutor(mockExecutor)
-
-	// Save original os.Args
-	originalArgs := make([]string, len(os.Args))
-	copy(originalArgs, os.Args)
 
 	cmd := client.CreateConnectCommand("/test/kubeconfig", "")
 	err := cmd.RunE(cmd, []string{"--namespace", "test"})
 	require.NoError(t, err)
-
-	// Verify os.Args is restored after execution
-	require.Equal(t, originalArgs, os.Args, "expected os.Args to be restored")
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithContext(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "my-context", []string{},
-		[]string{"k9s", "--kubeconfig", "/test/kubeconfig", "--context", "my-context"}, nil)
+		[]string{"--kubeconfig", "/test/kubeconfig", "--context", "my-context"}, nil)
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithoutContext(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(t, "/test/kubeconfig", "", []string{},
-		[]string{"k9s", "--kubeconfig", "/test/kubeconfig"}, []string{"--context"})
+		[]string{"--kubeconfig", "/test/kubeconfig"}, []string{"--context"})
 }
 
-//nolint:paralleltest // Cannot run in parallel due to os.Args modification
+//nolint:paralleltest // Tests use shared mock setup
 func TestRunK9s_WithMockExecutor_WithContextAndAdditionalArgs(t *testing.T) {
-	// NOT parallel - modifies global os.Args
 	testRunK9sWithMockExecutor(
 		t,
 		"/test/kubeconfig",
 		"prod-cluster",
 		[]string{"--namespace", "default", "--readonly"},
 		[]string{
-			"k9s", "--kubeconfig", "/test/kubeconfig", "--context", "prod-cluster",
+			"--kubeconfig", "/test/kubeconfig", "--context", "prod-cluster",
 			"--namespace", "default", "--readonly",
 		},
 		nil,

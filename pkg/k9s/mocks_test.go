@@ -36,9 +36,20 @@ func (_m *MockExecutor) EXPECT() *MockExecutor_Expecter {
 }
 
 // Execute provides a mock function for the type MockExecutor
-func (_mock *MockExecutor) Execute() {
-	_mock.Called()
-	return
+func (_mock *MockExecutor) Execute(args []string) error {
+	ret := _mock.Called(args)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Execute")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func([]string) error); ok {
+		r0 = returnFunc(args)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
 }
 
 // MockExecutor_Execute_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Execute'
@@ -47,23 +58,30 @@ type MockExecutor_Execute_Call struct {
 }
 
 // Execute is a helper method to define mock.On call
-func (_e *MockExecutor_Expecter) Execute() *MockExecutor_Execute_Call {
-	return &MockExecutor_Execute_Call{Call: _e.mock.On("Execute")}
+//   - args []string
+func (_e *MockExecutor_Expecter) Execute(args interface{}) *MockExecutor_Execute_Call {
+	return &MockExecutor_Execute_Call{Call: _e.mock.On("Execute", args)}
 }
 
-func (_c *MockExecutor_Execute_Call) Run(run func()) *MockExecutor_Execute_Call {
+func (_c *MockExecutor_Execute_Call) Run(run func(args []string)) *MockExecutor_Execute_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 []string
+		if args[0] != nil {
+			arg0 = args[0].([]string)
+		}
+		run(
+			arg0,
+		)
 	})
 	return _c
 }
 
-func (_c *MockExecutor_Execute_Call) Return() *MockExecutor_Execute_Call {
-	_c.Call.Return()
+func (_c *MockExecutor_Execute_Call) Return(err error) *MockExecutor_Execute_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockExecutor_Execute_Call) RunAndReturn(run func()) *MockExecutor_Execute_Call {
-	_c.Run(run)
+func (_c *MockExecutor_Execute_Call) RunAndReturn(run func(args []string) error) *MockExecutor_Execute_Call {
+	_c.Call.Return(run)
 	return _c
 }

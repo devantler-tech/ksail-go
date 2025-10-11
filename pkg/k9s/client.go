@@ -1,6 +1,6 @@
 // Package k9s provides a k9s client implementation.
 //
-// Coverage Note: The DefaultK9sExecutor.Execute() method (line 20) and parts of the
+// Coverage Note: The DefaultK9sExecutor.Execute() method and parts of the
 // HandleConnectRunE execution path cannot be fully tested in unit tests because they
 // require launching k9s which needs an actual terminal UI. These paths are validated
 // through:
@@ -10,23 +10,37 @@
 package k9s
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 
-	k9scmd "github.com/derailed/k9s/cmd"
 	"github.com/spf13/cobra"
 )
 
 // Executor defines the interface for executing k9s.
 type Executor interface {
-	Execute()
+	Execute(args []string) error
 }
 
-// DefaultK9sExecutor is the default implementation that calls k9s directly.
+// DefaultK9sExecutor is the default implementation that calls k9s as an external command.
 type DefaultK9sExecutor struct{}
 
-// Execute calls the k9s cmd.Execute function.
-func (e *DefaultK9sExecutor) Execute() {
-	k9scmd.Execute()
+// Execute runs k9s as an external command with the provided arguments.
+func (e *DefaultK9sExecutor) Execute(args []string) error {
+	// Check if k9s is installed
+	k9sPath, err := exec.LookPath("k9s")
+	if err != nil {
+		return fmt.Errorf("k9s not found in PATH - please install k9s: https://k9scli.io/topics/install/")
+	}
+
+	// Create command
+	cmd := exec.Command(k9sPath, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	// Run k9s
+	return cmd.Run()
 }
 
 // Client wraps k9s command functionality.
@@ -64,15 +78,8 @@ func (c *Client) CreateConnectCommand(kubeConfigPath, context string) *cobra.Com
 }
 
 func (c *Client) runK9s(kubeConfigPath, context string, args []string) error {
-	// Set up os.Args to pass flags to k9s
-	originalArgs := os.Args
-
-	defer func() {
-		os.Args = originalArgs
-	}()
-
 	// Build arguments for k9s
-	k9sArgs := []string{"k9s"}
+	k9sArgs := []string{}
 
 	// Add kubeconfig flag if provided
 	if kubeConfigPath != "" {
@@ -87,11 +94,6 @@ func (c *Client) runK9s(kubeConfigPath, context string, args []string) error {
 	// Append all additional arguments passed by user
 	k9sArgs = append(k9sArgs, args...)
 
-	// Set os.Args for k9s to parse
-	os.Args = k9sArgs
-
 	// Execute k9s using the executor (allows mocking for tests)
-	c.executor.Execute()
-
-	return nil
+	return c.executor.Execute(k9sArgs)
 }
