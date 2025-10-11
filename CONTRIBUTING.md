@@ -11,6 +11,10 @@ To get started with contributing to ksail, you'll need to set up your developmen
 
 To understand the codebase it is recommended to read the `.github/copilot-instructions.md` file, which provides an overview of the project structure and key components. You can also use GitHub Copilot to assist you in navigating the codebase and understanding its functionality.
 
+### Code Documentation
+
+For detailed package and API documentation, refer to the Go documentation at [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go). This provides comprehensive documentation for all exported packages, types, functions, and methods.
+
 ### Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -59,11 +63,11 @@ go test ./...
 
 The repository is organized into three main directories:
 
-- **[cmd/](./cmd/README.md)** - CLI command implementations
-- **[pkg/](./pkg/README.md)** - Public packages (importable by external projects)
-- **[internal/](./internal/testutils/README.md)** - Internal packages (not importable externally)
+- **cmd/** - CLI command implementations
+- **pkg/** - Public packages (importable by external projects)
+- **internal/** - Internal packages (not importable externally)
 
-Each directory contains its own README with detailed information about its contents and purpose.
+For detailed package and API documentation, refer to [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
 
 ## CI
 
