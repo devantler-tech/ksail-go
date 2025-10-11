@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/k3d"
-	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
+	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"

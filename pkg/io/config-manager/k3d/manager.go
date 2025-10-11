@@ -5,8 +5,8 @@ package k3d
 import (
 	"fmt"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"

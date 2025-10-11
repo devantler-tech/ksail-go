@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
