@@ -10,11 +10,18 @@
 package k9s
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
+)
+
+// ErrK9sNotFound is returned when k9s binary is not found in PATH.
+var ErrK9sNotFound = errors.New(
+	"k9s not found in PATH - please install k9s: https://k9scli.io/topics/install/",
 )
 
 // Executor defines the interface for executing k9s.
@@ -30,17 +37,24 @@ func (e *DefaultK9sExecutor) Execute(args []string) error {
 	// Check if k9s is installed
 	k9sPath, err := exec.LookPath("k9s")
 	if err != nil {
-		return fmt.Errorf("k9s not found in PATH - please install k9s: https://k9scli.io/topics/install/")
+		return ErrK9sNotFound
 	}
 
-	// Create command
-	cmd := exec.Command(k9sPath, args...)
+	// Create command with context support
+	ctx := context.Background()
+	//nolint:gosec // k9sPath is validated by exec.LookPath, args are user-provided flags
+	cmd := exec.CommandContext(ctx, k9sPath, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	// Run k9s
-	return cmd.Run()
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("execute k9s: %w", err)
+	}
+
+	return nil
 }
 
 // Client wraps k9s command functionality.
@@ -95,5 +109,10 @@ func (c *Client) runK9s(kubeConfigPath, context string, args []string) error {
 	k9sArgs = append(k9sArgs, args...)
 
 	// Execute k9s using the executor (allows mocking for tests)
-	return c.executor.Execute(k9sArgs)
+	err := c.executor.Execute(k9sArgs)
+	if err != nil {
+		return fmt.Errorf("execute k9s with args: %w", err)
+	}
+
+	return nil
 }
