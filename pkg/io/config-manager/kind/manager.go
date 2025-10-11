@@ -5,8 +5,8 @@ package kind
 import (
 	"fmt"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/helpers"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	kindvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"

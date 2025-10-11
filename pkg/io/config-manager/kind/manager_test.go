@@ -3,9 +3,9 @@ package kind_test
 import (
 	"testing"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/config-manager"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/kind"
-	"github.com/devantler-tech/ksail-go/pkg/config-manager/testutils"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/testutils"
 	"github.com/stretchr/testify/assert"
 	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
