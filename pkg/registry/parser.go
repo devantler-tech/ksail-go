@@ -10,10 +10,8 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var (
-	// ErrInvalidRegistryFormat is returned when a registry reference has an invalid format.
-	ErrInvalidRegistryFormat = errors.New("invalid registry reference format")
-)
+// ErrInvalidRegistryFormat is returned when a registry reference has an invalid format.
+var ErrInvalidRegistryFormat = errors.New("invalid registry reference format")
 
 // ExtractRegistriesFromK3d extracts registry configurations from K3d config.
 // It looks at the Registries.Use field which contains registry references.
@@ -101,7 +99,9 @@ func parseContainerdPatch(patch string) []Config {
 
 	// Pattern to match registry mirror configuration
 	// [plugins."io.containerd.grpc.v1.cri".registry.mirrors."<host>:<port>"]
-	mirrorPattern := regexp.MustCompile(`\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\."([^"]+)"\]`)
+	mirrorPattern := regexp.MustCompile(
+		`\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\."([^"]+)"\]`,
+	)
 
 	// Pattern to match endpoint = ["http://<name>:<port>"] or ["http://<name>"]
 	endpointPattern := regexp.MustCompile(`endpoint\s*=\s*\[\s*"https?://([^:"]+)(?::(\d+))?"`)

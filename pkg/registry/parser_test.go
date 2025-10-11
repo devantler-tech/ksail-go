@@ -238,7 +238,7 @@ func TestExtractRegistriesFromKind_ComplexContainerdPatch(t *testing.T) {
 	require.NoError(t, err)
 	// Should find the localhost:5000 mirror
 	require.GreaterOrEqual(t, len(registries), 1)
-	
+
 	// Find the k3d-registry entry
 	found := false
 	for _, reg := range registries {

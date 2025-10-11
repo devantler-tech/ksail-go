@@ -94,7 +94,8 @@ func TestCreateRegistryListError(t *testing.T) {
 	}
 
 	// Mock list error
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, errors.New("list error"))
+	mockClient.On("ContainerList", ctx, mock.Anything).
+		Return([]container.Summary{}, errors.New("list error"))
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -191,4 +192,3 @@ func TestCreateRegistryCreateError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create registry container")
 }
-
