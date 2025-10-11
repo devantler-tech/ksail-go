@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/pkg/containerengine"
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/cluster"
 )
@@ -76,7 +76,7 @@ func (a *DefaultKindProviderAdapter) ListNodes(name string) ([]string, error) {
 // required by KindClusterProvisioner.
 // Returns the concrete type to satisfy ireturn linter.
 func NewDefaultDockerClient() (*client.Client, error) {
-	dockerClient, err := containerengine.GetDockerClient()
+	dockerClient, err := docker.GetDockerClient()
 	if err != nil {
 		return nil, fmt.Errorf("create Docker client: %w", err)
 	}

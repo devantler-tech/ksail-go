@@ -9,9 +9,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
+	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/validator/ksail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

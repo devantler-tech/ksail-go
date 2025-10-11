@@ -9,7 +9,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/validator"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 )
 
 // ErrConfigurationValidationFailed is returned when configuration validation fails.

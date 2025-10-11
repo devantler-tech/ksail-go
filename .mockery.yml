@@ -20,10 +20,10 @@ packages:
       pkgname: configmanager
     interfaces:
       ConfigManager:
-  github.com/devantler-tech/ksail-go/pkg/k9s:
+  github.com/devantler-tech/ksail-go/pkg/client/k9s:
     config:
       recursive: false
-      dir: pkg/k9s
+      dir: pkg/client/k9s
       filename: mocks_test.go
       pkgname: k9s
     interfaces:
@@ -37,10 +37,10 @@ packages:
     interfaces:
       ClusterProvisioner:
       Factory:
-  github.com/devantler-tech/ksail-go/pkg/validator:
+  github.com/devantler-tech/ksail-go/pkg/io/validator:
     config:
       recursive: false
-      dir: pkg/validator
+      dir: pkg/io/validator
       filename: mocks.go
       pkgname: validator
     interfaces:
@@ -48,25 +48,25 @@ packages:
   github.com/docker/docker/client:
     config:
       recursive: false
-      dir: pkg/containerengine
+      dir: pkg/client/docker
       filename: mocks.go
-      pkgname: containerengine
+      pkgname: docker
     interfaces:
       ContainerAPIClient:
       APIClient:
   k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1:
     config:
       recursive: false
-      dir: pkg/installer/kubectl
+      dir: pkg/installer/applyset
       filename: apiextensions_mocks_test.go
-      pkgname: kubectlinstaller
+      pkgname: applysetinstaller
     interfaces:
       CustomResourceDefinitionInterface:
   k8s.io/client-go/dynamic:
     config:
       recursive: false
-      dir: pkg/installer/kubectl
+      dir: pkg/installer/applyset
       filename: dynamic_mocks_test.go
-      pkgname: kubectlinstaller
+      pkgname: applysetinstaller
     interfaces:
       ResourceInterface:

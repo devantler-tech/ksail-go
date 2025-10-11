@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	"github.com/devantler-tech/ksail-go/pkg/k9s"
 	"github.com/spf13/cobra"
 )
 
