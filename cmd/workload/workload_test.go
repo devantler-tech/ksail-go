@@ -118,20 +118,5 @@ func TestNewWorkloadCmdRunETriggersHelp(t *testing.T) {
 	err := command.Execute()
 	require.NoError(t, err)
 
-	output := out.String()
-	if !strings.Contains(output, "Group workload commands under a single namespace") {
-		t.Fatalf("expected help output to mention workload namespace details, got %q", output)
-	}
-
-	if !strings.Contains(output, "logs") {
-		t.Fatalf("expected help output to mention logs command, got %q", output)
-	}
-
-	if !strings.Contains(output, "edit") {
-		t.Fatalf("expected help output to mention edit command, got %q", output)
-	}
-
-	if !strings.Contains(output, "exec") {
-		t.Fatalf("expected help output to mention exec command, got %q", output)
-	}
+	snaps.MatchSnapshot(t, out.String())
 }
