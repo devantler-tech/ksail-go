@@ -63,11 +63,11 @@ go test ./...
 
 The repository is organized into three main directories:
 
-- **[cmd/](./cmd/README.md)** - CLI command implementations
-- **[pkg/](./pkg/README.md)** - Public packages (importable by external projects)
-- **[internal/](./internal/testutils/README.md)** - Internal packages (not importable externally)
+- **cmd/** - CLI command implementations
+- **pkg/** - Public packages (importable by external projects)
+- **internal/** - Internal packages (not importable externally)
 
-Each directory contains its own README with detailed information about its contents and purpose.
+For detailed package and API documentation, refer to [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
 
 ## CI
 
