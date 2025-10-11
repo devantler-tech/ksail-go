@@ -5,7 +5,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/helm"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/spf13/cobra"
 )
 

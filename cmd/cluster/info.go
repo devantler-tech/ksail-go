@@ -5,7 +5,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/kubectl"
+	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )

@@ -3,7 +3,7 @@ package cipher
 
 import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/sops"
+	"github.com/devantler-tech/ksail-go/pkg/client/sops"
 	"github.com/spf13/cobra"
 )
 
