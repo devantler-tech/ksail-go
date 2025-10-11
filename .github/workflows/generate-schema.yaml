@@ -5,13 +5,17 @@ on:
     paths:
       - 'pkg/apis/cluster/v1alpha1/types.go'
       - 'pkg/config-manager/ksail/field_selector.go'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   generate-schema:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
+    if: github.event_name == 'pull_request'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,20 +31,20 @@ jobs:
       - name: Generate JSON schema
         run: go run ./cmd/schema-gen
 
-      - name: Check for schema changes
-        id: check-changes
+      - name: Check for changes
+        id: check_changes
         run: |
           if git diff --quiet schemas/ksail-cluster-schema.json; then
-            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> $GITHUB_OUTPUT
           else
-            echo "changes=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Commit and push schema changes
-        if: steps.check-changes.outputs.changes == 'true'
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.changed == 'true'
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add schemas/ksail-cluster-schema.json
           git commit -m "chore: regenerate JSON schema"
           git push
