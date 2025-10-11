@@ -6,10 +6,9 @@
 > [!IMPORTANT]
 > This is a work in progress to migrate KSail to a Golang. This is a huge endeavour, but being able to leverage the power of the Go ecosystem will be invaluable. The amount of packages available in Go to support this project is immense, so switching programming language has the potential to greatly enhance the functionality, performance and ease of use of KSail. I also hope switching will promote adoption and contributions.
 
+KSail is a CLI tool with the ambition to become a full-fledged SDK for creating and maintaining Kubernetes clusters—locally or in the cloud. It provides a unified interface for managing clusters and workloads across different distributions (currently Kind and K3d, with more planned). By wrapping existing tools with a consistent command-line experience, KSail eliminates the complexity of juggling multiple CLIs and learning different syntaxes for each distribution.
 
-KSail is a CLI tool for managing local Kubernetes clusters and workloads with a single, unified interface. It wraps popular tools like Kind and K3d, providing a consistent experience across different distributions—no more juggling multiple CLIs or memorizing different syntaxes.
-
-Setting up local Kubernetes environments typically means learning multiple tools, each with their own commands and configuration formats. KSail eliminates this friction by providing:
+KSail simplifies your Kubernetes workflow by providing:
 
 - 🎯 A single command-line interface for Kind and K3d clusters
 - 📝 Declarative configuration for reproducible environments
