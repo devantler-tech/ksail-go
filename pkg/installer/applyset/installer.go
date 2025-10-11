@@ -1,5 +1,5 @@
-// Package kubectlinstaller provides a kubectl installer implementation.
-package kubectlinstaller
+// Package applysetinstaller provides an ApplySet installer implementation.
+package applysetinstaller
 
 import (
 	"context"
@@ -86,20 +86,20 @@ func createDefaultUpdateOptions() metav1.UpdateOptions {
 // ErrCRDNameNotAccepted is returned when CRD names are not accepted.
 var ErrCRDNameNotAccepted = errors.New("crd names not accepted")
 
-// KubectlInstaller implements the installer.Installer interface for kubectl.
-type KubectlInstaller struct {
+// ApplySetInstaller implements the installer.Installer interface for ApplySet.
+type ApplySetInstaller struct {
 	timeout             time.Duration
 	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface
 	dynamicClient       dynamic.ResourceInterface
 }
 
-// NewKubectlInstaller creates a new kubectl installer instance.
-func NewKubectlInstaller(
+// NewApplySetInstaller creates a new ApplySet installer instance.
+func NewApplySetInstaller(
 	timeout time.Duration,
 	apiExtensionsClient apiextensionsv1client.CustomResourceDefinitionInterface,
 	dynamicClient dynamic.ResourceInterface,
-) *KubectlInstaller {
-	return &KubectlInstaller{
+) *ApplySetInstaller {
+	return &ApplySetInstaller{
 		timeout:             timeout,
 		apiExtensionsClient: apiExtensionsClient,
 		dynamicClient:       dynamicClient,
@@ -107,7 +107,7 @@ func NewKubectlInstaller(
 }
 
 // Install ensures the ApplySet CRD and its parent CR exist.
-func (b *KubectlInstaller) Install(ctx context.Context) error {
+func (b *ApplySetInstaller) Install(ctx context.Context) error {
 	err := b.installCRD(ctx)
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (b *KubectlInstaller) Install(ctx context.Context) error {
 }
 
 // Uninstall deletes the ApplySet CR then its CRD.
-func (b *KubectlInstaller) Uninstall(ctx context.Context) error {
+func (b *ApplySetInstaller) Uninstall(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
@@ -144,7 +144,7 @@ func (b *KubectlInstaller) Uninstall(ctx context.Context) error {
 // --- internals ---
 
 // installCRD installs the ApplySet CRD.
-func (b *KubectlInstaller) installCRD(ctx context.Context) error {
+func (b *ApplySetInstaller) installCRD(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
@@ -169,7 +169,7 @@ func (b *KubectlInstaller) installCRD(ctx context.Context) error {
 }
 
 // installApplySetCR installs the ApplySet custom resource.
-func (b *KubectlInstaller) installApplySetCR(ctx context.Context) error {
+func (b *ApplySetInstaller) installApplySetCR(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
@@ -189,7 +189,7 @@ func (b *KubectlInstaller) installApplySetCR(ctx context.Context) error {
 }
 
 // applyCRD creates the ApplySet CRD from embedded YAML.
-func (b *KubectlInstaller) applyCRD(
+func (b *ApplySetInstaller) applyCRD(
 	ctx context.Context,
 	client apiextensionsv1client.CustomResourceDefinitionInterface,
 ) error {
@@ -224,7 +224,7 @@ func (b *KubectlInstaller) applyCRD(
 	return fmt.Errorf("failed to create CRD: %w", err)
 }
 
-func (b *KubectlInstaller) waitForCRDEstablished(
+func (b *ApplySetInstaller) waitForCRDEstablished(
 	ctx context.Context,
 	client apiextensionsv1client.CustomResourceDefinitionInterface,
 	name string,
@@ -265,7 +265,7 @@ func (b *KubectlInstaller) waitForCRDEstablished(
 	return nil
 }
 
-func (b *KubectlInstaller) applyApplySetCR(
+func (b *ApplySetInstaller) applyApplySetCR(
 	ctx context.Context,
 	dyn dynamic.ResourceInterface,
 	name string,
