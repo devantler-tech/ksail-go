@@ -20,10 +20,10 @@ packages:
       pkgname: configmanager
     interfaces:
       ConfigManager:
-  github.com/devantler-tech/ksail-go/pkg/k9s:
+  github.com/devantler-tech/ksail-go/pkg/client/k9s:
     config:
       recursive: false
-      dir: pkg/k9s
+      dir: pkg/client/k9s
       filename: mocks_test.go
       pkgname: k9s
     interfaces:
@@ -48,9 +48,9 @@ packages:
   github.com/docker/docker/client:
     config:
       recursive: false
-      dir: pkg/containerengine
+      dir: pkg/client/docker
       filename: mocks.go
-      pkgname: containerengine
+      pkgname: docker
     interfaces:
       ContainerAPIClient:
       APIClient:
