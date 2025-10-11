@@ -12,6 +12,7 @@ import (
 	cmdpkg "github.com/devantler-tech/ksail-go/cmd"
 	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
 
@@ -94,10 +95,10 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 		t.Fatal("expected timer NewStage to be called")
 	}
 
-	output := buffer.String()
-	if !strings.Contains(output, "initialized project") {
-		t.Fatalf("expected success message in output, got %q", output)
-	}
+	// Normalize temp directory paths for snapshot comparison
+	output := strings.ReplaceAll(buffer.String(), configDir, "<config-dir>")
+
+	snaps.MatchSnapshot(t, output)
 
 	_, err = os.Stat(filepath.Join(outDir, "ksail.yaml"))
 	if err != nil {
@@ -164,10 +165,10 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	output := buffer.String()
-	if !strings.Contains(output, "Initialize project......") {
-		t.Fatalf("expected initialization title in output, got %q", output)
-	}
+	// Normalize temp directory paths for snapshot comparison
+	output := strings.ReplaceAll(buffer.String(), configDir, "<config-dir>")
+
+	snaps.MatchSnapshot(t, output)
 
 	_, err = os.Stat(filepath.Join(workingDir, "ksail.yaml"))
 	if err != nil {

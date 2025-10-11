@@ -3,10 +3,10 @@ package cluster //nolint:testpackage // Needs access to unexported helpers for c
 import (
 	"bytes"
 	"errors"
-	"strings"
 	"testing"
 
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
 
@@ -42,8 +42,7 @@ func TestClusterCommandRunEDisplaysHelp(t *testing.T) {
 		t.Fatalf("expected executing cluster command without subcommand to succeed, got %v", err)
 	}
 
-	assertOutputContains(t, buffer.String(), "Usage:")
-	assertOutputContains(t, buffer.String(), "Available Commands:")
+	snaps.MatchSnapshot(t, buffer.String())
 }
 
 //nolint:paralleltest // Alters package-level helper.
@@ -149,14 +148,6 @@ func assertSubcommandMetadata(t *testing.T, cmd *cobra.Command, metadata lifecyc
 			metadata.long,
 			cmd.Long,
 		)
-	}
-}
-
-func assertOutputContains(t *testing.T, output, expected string) {
-	t.Helper()
-
-	if !strings.Contains(output, expected) {
-		t.Fatalf("expected output to contain %q, got %q", expected, output)
 	}
 }
 
