@@ -82,10 +82,14 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-	timer := &lifecycleTimer{}
-	factory := clusterprovisioner.NewMockFactory(t)
-	factory.On("Create", mock.Anything, mock.Anything).Return(nil, nil, errFactoryError).Once()
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps, timer, factory := setupLifecycleDepsWithFactory(
+		t,
+		func(factory *clusterprovisioner.MockFactory) {
+			factory.On("Create", mock.Anything, mock.Anything).
+				Return(nil, nil, errFactoryError).
+				Once()
+		},
+	)
 	config := shared.LifecycleConfig{}
 
 	err := runLifecycleHandlerTest(cfgManager, deps, config)
@@ -109,10 +113,14 @@ func TestHandleLifecycleRunE_NilProvisioner(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-	timer := &lifecycleTimer{}
-	factory := clusterprovisioner.NewMockFactory(t)
-	factory.On("Create", mock.Anything, mock.Anything).Return(nil, &v1alpha4.Cluster{}, nil).Once()
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps, _, _ := setupLifecycleDepsWithFactory(
+		t,
+		func(factory *clusterprovisioner.MockFactory) {
+			factory.On("Create", mock.Anything, mock.Anything).
+				Return(nil, &v1alpha4.Cluster{}, nil).
+				Once()
+		},
+	)
 	config := shared.LifecycleConfig{}
 
 	err := runLifecycleHandlerTest(cfgManager, deps, config)
@@ -125,11 +133,15 @@ func TestHandleLifecycleRunE_InvalidDistributionConfig(t *testing.T) {
 	t.Parallel()
 
 	cfgManager := createValidConfigManager(t)
-	timer := &lifecycleTimer{}
-	provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
-	factory := clusterprovisioner.NewMockFactory(t)
-	factory.On("Create", mock.Anything, mock.Anything).Return(provisioner, struct{}{}, nil).Once()
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps, _, _ := setupLifecycleDepsWithFactory(
+		t,
+		func(factory *clusterprovisioner.MockFactory) {
+			provisioner := clusterprovisioner.NewMockClusterProvisioner(t)
+			factory.On("Create", mock.Anything, mock.Anything).
+				Return(provisioner, struct{}{}, nil).
+				Once()
+		},
+	)
 	config := shared.LifecycleConfig{}
 
 	err := runLifecycleHandlerTest(cfgManager, deps, config)
@@ -357,6 +369,21 @@ func setupLifecycleDepsWithProvisioner(
 		Return(provisioner, &v1alpha4.Cluster{Name: "test-cluster"}, nil).Maybe()
 
 	return shared.LifecycleDeps{Timer: timer, Factory: factory}
+}
+
+// setupLifecycleDepsWithFactory creates lifecycle dependencies with a custom factory setup.
+// Returns the dependencies along with the timer and factory for assertion purposes.
+func setupLifecycleDepsWithFactory(
+	t *testing.T,
+	configureFactory func(*clusterprovisioner.MockFactory),
+) (shared.LifecycleDeps, *lifecycleTimer, *clusterprovisioner.MockFactory) {
+	t.Helper()
+
+	timer := &lifecycleTimer{}
+	factory := clusterprovisioner.NewMockFactory(t)
+	configureFactory(factory)
+
+	return shared.LifecycleDeps{Timer: timer, Factory: factory}, timer, factory
 }
 
 func createTestConfig() shared.LifecycleConfig {
