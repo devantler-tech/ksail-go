@@ -425,6 +425,11 @@ func generateDistributionContent(
 		// Create minimal K3d configuration that matches the original hardcoded output
 		k3dContent := "apiVersion: k3d.io/v1alpha5\nkind: Simple\nmetadata:\n  name: ksail-default\n"
 		snaps.MatchSnapshot(t, k3dContent)
+	case v1alpha1.DistributionEKS:
+		// Create minimal EKS configuration
+		eksContent := "apiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\n" +
+			"metadata:\n  name: ksail-eks\n  region: us-west-2\n"
+		snaps.MatchSnapshot(t, eksContent)
 	}
 }
 
@@ -451,6 +456,14 @@ func createMinimalClusterForSnapshot(
 		minimalCluster.Spec = v1alpha1.Spec{
 			Distribution:       v1alpha1.DistributionK3d,
 			DistributionConfig: "k3d.yaml",
+		}
+
+		return minimalCluster
+	case v1alpha1.DistributionEKS:
+		// For EKS, include distribution and distributionConfig
+		minimalCluster.Spec = v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionEKS,
+			DistributionConfig: "eks.yaml",
 		}
 
 		return minimalCluster

@@ -1,3 +1,5 @@
+// Package eksprovisioner provides implementations of the Provisioner interface
+// for provisioning EKS clusters using eksctl.
 package eksprovisioner
 
 import (
@@ -24,6 +26,7 @@ type DefaultEksctlExecutor struct{}
 // Execute runs eksctl with the provided arguments.
 func (e *DefaultEksctlExecutor) Execute(ctx context.Context, args []string) (string, error) {
 	cmd := exec.CommandContext(ctx, "eksctl", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("eksctl command failed: %w", err)
@@ -71,6 +74,7 @@ func (e *EKSClusterProvisioner) Create(ctx context.Context, name string) error {
 	if e.configPath != "" {
 		args = append(args, "--config-file", e.configPath)
 	}
+
 	if target != "" {
 		args = append(args, "--name", target)
 	}
@@ -91,7 +95,7 @@ func (e *EKSClusterProvisioner) Delete(ctx context.Context, name string) error {
 	}
 
 	if target == "" {
-		return fmt.Errorf("cluster name is required for deletion")
+		return ErrClusterNotFound
 	}
 
 	args := []string{"delete", "cluster", "--name", target, "--wait"}
@@ -125,7 +129,8 @@ func (e *EKSClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	output, err := e.executor.Execute(ctx, args)
 	if err != nil {
 		// If no clusters exist, eksctl may return an error
-		if strings.Contains(output, "No cluster found") || strings.Contains(err.Error(), "No cluster found") {
+		if strings.Contains(output, "No cluster found") ||
+			strings.Contains(err.Error(), "No cluster found") {
 			return []string{}, nil
 		}
 
@@ -136,6 +141,7 @@ func (e *EKSClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	// For simplicity, we'll parse the JSON output for cluster names
 	// This is a basic implementation - production would use proper JSON parsing
 	lines := strings.Split(output, "\n")
+
 	var clusters []string
 
 	for _, line := range lines {
@@ -143,7 +149,9 @@ func (e *EKSClusterProvisioner) List(ctx context.Context) ([]string, error) {
 		if strings.Contains(line, "\"name\":") {
 			// Extract cluster name from JSON field
 			parts := strings.Split(line, ":")
-			if len(parts) >= 2 {
+			minParts := 2
+
+			if len(parts) >= minParts {
 				name := strings.Trim(strings.TrimSuffix(parts[1], ","), "\" ")
 				if name != "" {
 					clusters = append(clusters, name)
