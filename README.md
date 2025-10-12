@@ -71,7 +71,6 @@ For detailed command reference, run `ksail --help`.
 
 ## Documentation 📚
 
-For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Related Projects 🔗
 
@@ -81,4 +80,6 @@ For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 
-Contributions welcome. Open an issue or PR to propose features.
+Contributions welcome. Open an issue or PR to propose features. 
+
+For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
