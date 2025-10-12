@@ -8,6 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	ekstypes "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -15,6 +16,7 @@ import (
 type Validator struct {
 	kindConfig *kindv1alpha4.Cluster
 	k3dConfig  *k3dapi.SimpleConfig
+	eksConfig  *ekstypes.ClusterConfig
 }
 
 // NewValidator creates a new KSail configuration validator with optional distribution configurations.
@@ -29,6 +31,8 @@ func NewValidator(distributionConfigs ...any) *Validator {
 			validator.kindConfig = cfg
 		case *k3dapi.SimpleConfig:
 			validator.k3dConfig = cfg
+		case *ekstypes.ClusterConfig:
+			validator.eksConfig = cfg
 		}
 	}
 
@@ -148,6 +152,8 @@ func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
 		return "k3d-" + distributionName
+	case v1alpha1.DistributionEKS:
+		return distributionName
 	default:
 		return ""
 	}
@@ -160,6 +166,8 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 		return v.getKindConfigName()
 	case v1alpha1.DistributionK3d:
 		return v.getK3dConfigName()
+	case v1alpha1.DistributionEKS:
+		return v.getEKSConfigName()
 	default:
 		return ""
 	}
@@ -183,4 +191,14 @@ func (v *Validator) getK3dConfigName() string {
 
 	// Return default K3d cluster name when no config is provided
 	return "k3s-default"
+}
+
+// getEKSConfigName returns the EKS configuration name if available.
+func (v *Validator) getEKSConfigName() string {
+	if v.eksConfig != nil && v.eksConfig.Metadata != nil && v.eksConfig.Metadata.Name != "" {
+		return v.eksConfig.Metadata.Name
+	}
+
+	// Return default EKS cluster name when no config is provided
+	return "ksail-eks"
 }
