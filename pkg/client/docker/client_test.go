@@ -1,9 +1,9 @@
-package registry_test
+package docker_test
 
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/registry"
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -11,12 +11,16 @@ import (
 )
 
 // assertRegistryConfig validates a registry configuration.
-func assertRegistryConfig(t *testing.T, reg registry.Config, expectedName, expectedPort string) {
+func assertRegistryConfig(
+	t *testing.T,
+	reg docker.RegistryConfig,
+	expectedName, expectedPort string,
+) {
 	t.Helper()
 
 	assert.Equal(t, expectedName, reg.Name)
 	assert.Equal(t, expectedPort, reg.HostPort)
-	assert.Equal(t, registry.DefaultRegistryImage, reg.Image)
+	assert.Equal(t, docker.DefaultRegistryImage, reg.Image)
 }
 
 func TestExtractRegistriesFromK3d_NoRegistries(t *testing.T) {
@@ -24,7 +28,7 @@ func TestExtractRegistriesFromK3d_NoRegistries(t *testing.T) {
 
 	cfg := &k3dv1alpha5.SimpleConfig{}
 
-	registries, err := registry.ExtractRegistriesFromK3d(cfg)
+	registries, err := docker.ExtractRegistriesFromK3d(cfg)
 
 	require.NoError(t, err)
 	assert.Empty(t, registries)
@@ -39,13 +43,13 @@ func TestExtractRegistriesFromK3d_SingleRegistry(t *testing.T) {
 		},
 	}
 
-	registries, err := registry.ExtractRegistriesFromK3d(cfg)
+	registries, err := docker.ExtractRegistriesFromK3d(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
 	assert.Equal(t, "k3d-registry", registries[0].Name)
 	assert.Equal(t, "5000", registries[0].HostPort)
-	assert.Equal(t, registry.DefaultRegistryImage, registries[0].Image)
+	assert.Equal(t, docker.DefaultRegistryImage, registries[0].Image)
 }
 
 func TestExtractRegistriesFromK3d_MultipleRegistries(t *testing.T) {
@@ -57,7 +61,7 @@ func TestExtractRegistriesFromK3d_MultipleRegistries(t *testing.T) {
 		},
 	}
 
-	registries, err := registry.ExtractRegistriesFromK3d(cfg)
+	registries, err := docker.ExtractRegistriesFromK3d(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 2)
@@ -74,7 +78,7 @@ func TestExtractRegistriesFromK3d_InvalidFormat(t *testing.T) {
 		},
 	}
 
-	registries, err := registry.ExtractRegistriesFromK3d(cfg)
+	registries, err := docker.ExtractRegistriesFromK3d(cfg)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid registry reference format")
@@ -84,7 +88,7 @@ func TestExtractRegistriesFromK3d_InvalidFormat(t *testing.T) {
 func TestExtractRegistriesFromK3d_NilConfig(t *testing.T) {
 	t.Parallel()
 
-	registries, err := registry.ExtractRegistriesFromK3d(nil)
+	registries, err := docker.ExtractRegistriesFromK3d(nil)
 
 	require.NoError(t, err)
 	assert.Empty(t, registries)
@@ -95,7 +99,7 @@ func TestExtractRegistriesFromKind_NoPatches(t *testing.T) {
 
 	cfg := &v1alpha4.Cluster{}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	assert.Empty(t, registries)
@@ -111,7 +115,7 @@ func TestExtractRegistriesFromKind_SingleRegistry(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
@@ -131,7 +135,7 @@ func TestExtractRegistriesFromKind_MultiplePatches(t *testing.T) {
 		ContainerdConfigPatches: []string{patch1, patch2},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 2)
@@ -153,7 +157,7 @@ func TestExtractRegistriesFromKind_DuplicateRegistries(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	// Should deduplicate based on name:port
@@ -172,7 +176,7 @@ func TestExtractRegistriesFromKind_HTTPSEndpoint(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
@@ -189,7 +193,7 @@ func TestExtractRegistriesFromKind_EndpointWithoutPort(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
@@ -203,7 +207,7 @@ func TestExtractRegistriesFromKind_EmptyPatch(t *testing.T) {
 		ContainerdConfigPatches: []string{""},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	assert.Empty(t, registries)
@@ -212,7 +216,7 @@ func TestExtractRegistriesFromKind_EmptyPatch(t *testing.T) {
 func TestExtractRegistriesFromKind_NilConfig(t *testing.T) {
 	t.Parallel()
 
-	registries, err := registry.ExtractRegistriesFromKind(nil)
+	registries, err := docker.ExtractRegistriesFromKind(nil)
 
 	require.NoError(t, err)
 	assert.Empty(t, registries)
@@ -235,7 +239,7 @@ func TestExtractRegistriesFromKind_ComplexContainerdPatch(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
-	registries, err := registry.ExtractRegistriesFromKind(cfg)
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
 
 	require.NoError(t, err)
 	// Should find the localhost:5000 mirror

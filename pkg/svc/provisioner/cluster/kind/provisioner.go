@@ -9,8 +9,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
-	"github.com/devantler-tech/ksail-go/pkg/registry"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -34,7 +34,7 @@ type KindClusterProvisioner struct {
 	kindConfig      *v1alpha4.Cluster
 	provider        KindProvider
 	client          client.APIClient
-	registryManager *registry.Manager
+	registryManager *docker.RegistryManager
 }
 
 // NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
@@ -51,7 +51,7 @@ func NewKindClusterProvisioner(
 		kindConfig:      kindConfig,
 		provider:        provider,
 		client:          dockerClient,
-		registryManager: registry.NewManager(dockerClient),
+		registryManager: docker.NewRegistryManager(dockerClient),
 	}
 }
 
@@ -186,7 +186,7 @@ func (k *KindClusterProvisioner) Exists(_ context.Context, name string) (bool, e
 
 // createMirrorRegistries extracts and creates mirror registries from Kind config.
 func (k *KindClusterProvisioner) createMirrorRegistries(ctx context.Context) error {
-	registries, err := registry.ExtractRegistriesFromKind(k.kindConfig)
+	registries, err := docker.ExtractRegistriesFromKind(k.kindConfig)
 	if err != nil {
 		return fmt.Errorf("failed to extract registries: %w", err)
 	}

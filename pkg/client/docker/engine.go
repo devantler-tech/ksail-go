@@ -1,4 +1,5 @@
-// Package docker provides unified container engine detection and management.
+// Package docker provides unified container engine detection and management,
+// including Docker registry container lifecycle management for mirror registries.
 package docker
 
 import (

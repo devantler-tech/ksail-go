@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/devantler-tech/ksail-go/pkg/registry"
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
@@ -16,7 +16,7 @@ type K3dClusterProvisioner struct {
 	simpleCfg       *v1alpha5.SimpleConfig
 	clientProvider  K3dClientProvider
 	configProvider  K3dConfigProvider
-	registryManager *registry.Manager
+	registryManager *docker.RegistryManager
 }
 
 // NewK3dClusterProvisioner constructs a k3d provisioner instance.
