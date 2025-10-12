@@ -306,6 +306,11 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Name: "kind",
 	}
 
+	// Disable default CNI if Cilium is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+		kindConfig.Networking.DisableDefaultCNI = true
+	}
+
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
@@ -359,6 +364,16 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		ObjectMeta: types.ObjectMeta{
 			Name: "k3s-default",
 		},
+	}
+
+	// Disable default CNI (Flannel) if Cilium is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+		config.Options.K3sOptions.ExtraArgs = []k3dv1alpha5.K3sArgWithNodeFilters{
+			{
+				Arg:         "--flannel-backend=none",
+				NodeFilters: []string{"server:*"},
+			},
+		}
 	}
 
 	return config

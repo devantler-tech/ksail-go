@@ -9,11 +9,15 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
+	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
@@ -215,7 +219,10 @@ func (m *ConfigManager) notifyLoadingComplete(tmr timer.Timer) {
 }
 
 func (m *ConfigManager) validateConfig() error {
-	validator := ksailvalidator.NewValidator()
+	// Load distribution configs for cross-validation only if distributionConfig is set
+	distributionConfigs := m.loadDistributionConfigsForValidation()
+
+	validator := ksailvalidator.NewValidator(distributionConfigs...)
 	result := validator.Validate(m.Config)
 
 	if !result.Valid {
@@ -287,4 +294,66 @@ func isFieldEmpty(fieldPtr any) bool {
 // IsFieldEmptyForTesting exposes isFieldEmpty for testing purposes.
 func IsFieldEmptyForTesting(fieldPtr any) bool {
 	return isFieldEmpty(fieldPtr)
+}
+
+// loadDistributionConfigsForValidation loads distribution configurations for cross-validation.
+// Only loads configs when Cilium CNI is requested and distributionConfig is specified.
+func (m *ConfigManager) loadDistributionConfigsForValidation() []any {
+	var distributionConfigs []any
+
+	// Only attempt to load distribution configs if the config file path is specified
+	// This avoids unnecessary file operations during testing or when using defaults
+	if m.Config.Spec.DistributionConfig != "" && m.Config.Spec.CNI == v1alpha1.CNICilium {
+		// Try to load distribution config for CNI alignment validation
+		switch m.Config.Spec.Distribution {
+		case v1alpha1.DistributionKind:
+			kindConfig := m.loadKindConfig()
+			if kindConfig != nil {
+				distributionConfigs = append(distributionConfigs, kindConfig)
+			}
+		case v1alpha1.DistributionK3d:
+			k3dConfig := m.loadK3dConfig()
+			if k3dConfig != nil {
+				distributionConfigs = append(distributionConfigs, k3dConfig)
+			}
+		}
+	}
+
+	return distributionConfigs
+}
+
+// loadKindConfig loads the Kind distribution configuration if it exists.
+// Returns nil if the config doesn't exist or cannot be loaded (non-critical for validation).
+func (m *ConfigManager) loadKindConfig() *kindv1alpha4.Cluster {
+	if m.Config.Spec.DistributionConfig == "" {
+		return nil
+	}
+
+	kindManager := kindconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
+
+	err := kindManager.LoadConfig(nil)
+	if err != nil {
+		// Config not found or invalid, return nil for validation to continue
+		return nil
+	}
+
+	return kindManager.GetConfig()
+}
+
+// loadK3dConfig loads the K3d distribution configuration if it exists.
+// Returns nil if the config doesn't exist or cannot be loaded (non-critical for validation).
+func (m *ConfigManager) loadK3dConfig() *k3dv1alpha5.SimpleConfig {
+	if m.Config.Spec.DistributionConfig == "" {
+		return nil
+	}
+
+	k3dManager := k3dconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
+
+	err := k3dManager.LoadConfig(nil)
+	if err != nil {
+		// Config not found or invalid, return nil for validation to continue
+		return nil
+	}
+
+	return k3dManager.GetConfig()
 }

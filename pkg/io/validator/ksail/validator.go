@@ -65,6 +65,9 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 	// Perform cross-configuration validation
 	v.validateContextName(config, result)
 
+	// Validate CNI alignment with distribution config
+	v.validateCNIAlignment(config, result)
+
 	return result
 }
 
@@ -183,4 +186,68 @@ func (v *Validator) getK3dConfigName() string {
 
 	// Return default K3d cluster name when no config is provided
 	return "k3s-default"
+}
+
+// validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
+// When Cilium CNI is requested, the distribution config must have CNI disabled.
+func (v *Validator) validateCNIAlignment(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	// Only validate when Cilium CNI is explicitly requested
+	if config.Spec.CNI != v1alpha1.CNICilium {
+		return
+	}
+
+	switch config.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dCNIAlignment(result)
+	}
+}
+
+// validateKindCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
+func (v *Validator) validateKindCNIAlignment(result *validator.ValidationResult) {
+	if v.kindConfig == nil {
+		// No Kind config provided for validation, skip
+		return
+	}
+
+	if !v.kindConfig.Networking.DisableDefaultCNI {
+		result.AddError(validator.ValidationError{
+			Field:   "spec.cni",
+			Message: "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
+			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file, " +
+				"or regenerate the Kind configuration with 'ksail init --force' to apply the correct CNI settings",
+		})
+	}
+}
+
+// validateK3dCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
+func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	// Check if --flannel-backend=none is set in K3s extra args
+	hasFlannelDisabled := false
+
+	for _, arg := range v.k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--flannel-backend=none" {
+			hasFlannelDisabled = true
+
+			break
+		}
+	}
+
+	if !hasFlannelDisabled {
+		result.AddError(validator.ValidationError{
+			Field:   "spec.cni",
+			Message: "Cilium CNI requires Flannel to be disabled in K3d configuration",
+			FixSuggestion: "Add '--flannel-backend=none' to the K3s extra args in your k3d.yaml configuration file, " +
+				"or regenerate the K3d configuration with 'ksail init --force' to apply the correct CNI settings",
+		})
+	}
 }
