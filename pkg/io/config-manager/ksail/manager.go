@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -329,9 +330,16 @@ func (m *ConfigManager) loadKindConfig() *kindv1alpha4.Cluster {
 		return nil
 	}
 
+	// Check if the file actually exists before trying to load it
+	// This prevents validation against default configs during init
+	_, err := os.Stat(m.Config.Spec.DistributionConfig)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
 	kindManager := kindconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	err := kindManager.LoadConfig(nil)
+	err = kindManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil
@@ -347,9 +355,16 @@ func (m *ConfigManager) loadK3dConfig() *k3dv1alpha5.SimpleConfig {
 		return nil
 	}
 
+	// Check if the file actually exists before trying to load it
+	// This prevents validation against default configs during init
+	_, err := os.Stat(m.Config.Spec.DistributionConfig)
+	if os.IsNotExist(err) {
+		return nil
+	}
+
 	k3dManager := k3dconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	err := k3dManager.LoadConfig(nil)
+	err = k3dManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil

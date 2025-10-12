@@ -71,6 +71,15 @@ func DefaultContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
+// DefaultCNIFieldSelector creates a standard field selector for CNI.
+func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
+		Description:  "Container Network Interface (CNI) to use",
+		DefaultValue: v1alpha1.CNIDefault,
+	}
+}
+
 // DefaultClusterFieldSelectors returns the default field selectors shared by cluster commands.
 func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 	return []FieldSelector[v1alpha1.Cluster]{
