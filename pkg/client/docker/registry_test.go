@@ -23,6 +23,25 @@ func assertRegistryConfig(
 	assert.Equal(t, docker.DefaultRegistryImage, reg.Image)
 }
 
+// assertKindSingleRegistry is a helper that validates extraction of a single registry from Kind config.
+func assertKindSingleRegistry(
+	t *testing.T,
+	patch string,
+	expectedName, expectedPort string,
+) {
+	t.Helper()
+
+	cfg := &v1alpha4.Cluster{
+		ContainerdConfigPatches: []string{patch},
+	}
+
+	registries, err := docker.ExtractRegistriesFromKind(cfg)
+
+	require.NoError(t, err)
+	require.Len(t, registries, 1)
+	assertRegistryConfig(t, registries[0], expectedName, expectedPort)
+}
+
 func TestExtractRegistriesFromK3d_NoRegistries(t *testing.T) {
 	t.Parallel()
 
@@ -111,15 +130,7 @@ func TestExtractRegistriesFromKind_SingleRegistry(t *testing.T) {
 	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
   endpoint = ["http://k3d-registry:5000"]`
 
-	cfg := &v1alpha4.Cluster{
-		ContainerdConfigPatches: []string{patch},
-	}
-
-	registries, err := docker.ExtractRegistriesFromKind(cfg)
-
-	require.NoError(t, err)
-	require.Len(t, registries, 1)
-	assertRegistryConfig(t, registries[0], "k3d-registry", "5000")
+	assertKindSingleRegistry(t, patch, "k3d-registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_MultiplePatches(t *testing.T) {
@@ -172,15 +183,7 @@ func TestExtractRegistriesFromKind_HTTPSEndpoint(t *testing.T) {
 	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
   endpoint = ["https://secure-registry:5000"]`
 
-	cfg := &v1alpha4.Cluster{
-		ContainerdConfigPatches: []string{patch},
-	}
-
-	registries, err := docker.ExtractRegistriesFromKind(cfg)
-
-	require.NoError(t, err)
-	require.Len(t, registries, 1)
-	assertRegistryConfig(t, registries[0], "secure-registry", "5000")
+	assertKindSingleRegistry(t, patch, "secure-registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_EndpointWithoutPort(t *testing.T) {
@@ -189,15 +192,7 @@ func TestExtractRegistriesFromKind_EndpointWithoutPort(t *testing.T) {
 	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
   endpoint = ["http://registry"]`
 
-	cfg := &v1alpha4.Cluster{
-		ContainerdConfigPatches: []string{patch},
-	}
-
-	registries, err := docker.ExtractRegistriesFromKind(cfg)
-
-	require.NoError(t, err)
-	require.Len(t, registries, 1)
-	assertRegistryConfig(t, registries[0], "registry", "5000")
+	assertKindSingleRegistry(t, patch, "registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_EmptyPatch(t *testing.T) {
