@@ -216,10 +216,9 @@ func (v *Validator) validateKindCNIAlignment(result *validator.ValidationResult)
 
 	if !v.kindConfig.Networking.DisableDefaultCNI {
 		result.AddError(validator.ValidationError{
-			Field:   "spec.cni",
-			Message: "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
-			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file, " +
-				"or regenerate the Kind configuration with 'ksail init --force' to apply the correct CNI settings",
+			Field:         "spec.cni",
+			Message:       "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
+			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
 		})
 	}
 }
@@ -244,10 +243,9 @@ func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) 
 
 	if !hasFlannelDisabled {
 		result.AddError(validator.ValidationError{
-			Field:   "spec.cni",
-			Message: "Cilium CNI requires Flannel to be disabled in K3d configuration",
-			FixSuggestion: "Add '--flannel-backend=none' to the K3s extra args in your k3d.yaml configuration file, " +
-				"or regenerate the K3d configuration with 'ksail init --force' to apply the correct CNI settings",
+			Field:         "spec.cni",
+			Message:       "Cilium CNI requires Flannel to be disabled in K3d configuration",
+			FixSuggestion: "Add '--flannel-backend=none' to the K3s extra args in your k3d.yaml configuration file",
 		})
 	}
 }
