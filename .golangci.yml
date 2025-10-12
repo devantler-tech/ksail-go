@@ -22,10 +22,10 @@ linters:
     rules:
       - linters:
           - ireturn
-        path: pkg/config-manager/helpers/loader.go
+        path: pkg/io/config-manager/helpers/loader.go
       - linters:
           - ireturn
-        path: pkg/containerengine/engine.go
+        path: pkg/client/docker/engine.go
       - linters:
           - ireturn
         path: cmd/cluster/list_test.go

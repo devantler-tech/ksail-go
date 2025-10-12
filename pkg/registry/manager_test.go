@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/containerengine"
+	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/devantler-tech/ksail-go/pkg/registry"
 	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +19,11 @@ import (
 func setupManagerTest(t *testing.T) (
 	context.Context,
 	registry.Config,
-	*containerengine.MockAPIClient,
+	*docker.MockAPIClient,
 ) {
 	t.Helper()
 
-	mockClient := containerengine.NewMockAPIClient(t)
+	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
 	cfg := registry.Config{
 		Name:     "test-registry",
@@ -34,14 +34,14 @@ func setupManagerTest(t *testing.T) (
 }
 
 // mockContainerDoesNotExist sets up mock expectations for a container that doesn't exist.
-func mockContainerDoesNotExist(ctx context.Context, mockClient *containerengine.MockAPIClient) {
+func mockContainerDoesNotExist(ctx context.Context, mockClient *docker.MockAPIClient) {
 	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
 }
 
 // mockSuccessfulImagePull sets up mock expectations for successful image pull.
 func mockSuccessfulImagePull(
 	ctx context.Context,
-	mockClient *containerengine.MockAPIClient,
+	mockClient *docker.MockAPIClient,
 	image string,
 ) {
 	mockClient.On("ImagePull", ctx, image, mock.Anything).
@@ -51,7 +51,7 @@ func mockSuccessfulImagePull(
 // mockSuccessfulContainerCreate sets up mock expectations for successful container creation.
 func mockSuccessfulContainerCreate(
 	ctx context.Context,
-	mockClient *containerengine.MockAPIClient,
+	mockClient *docker.MockAPIClient,
 	containerName string,
 ) {
 	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, containerName).
@@ -80,13 +80,7 @@ func TestCreateRegistrySuccess(t *testing.T) {
 func TestCreateRegistryAlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
-
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-	}
+	ctx, cfg, mockClient := setupManagerTest(t)
 
 	// Mock container exists
 	existingContainers := []container.Summary{

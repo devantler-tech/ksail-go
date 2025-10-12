@@ -12,8 +12,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/config-manager/ksail"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 

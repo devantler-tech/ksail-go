@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/helm"
 	"github.com/spf13/cobra"
 )
 

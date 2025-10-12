@@ -7,8 +7,8 @@ import (
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/errorhandler"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
+	errorhandler "github.com/devantler-tech/ksail-go/pkg/ui/error-handler"
 	"github.com/spf13/cobra"
 )
 
