@@ -15,38 +15,60 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	errTestListFailed   = errors.New("list error")
-	errTestPullFailed   = errors.New("pull error")
-	errTestCreateFailed = errors.New("create error")
-)
+// setupManagerTest creates a test context, config, and mock client.
+func setupManagerTest(t *testing.T) (
+	context.Context,
+	registry.Config,
+	*containerengine.MockAPIClient,
+) {
+	t.Helper()
+
+	mockClient := containerengine.NewMockAPIClient(t)
+	ctx := context.Background()
+	cfg := registry.Config{
+		Name:     "test-registry",
+		HostPort: "5000",
+	}
+
+	return ctx, cfg, mockClient
+}
+
+// mockContainerDoesNotExist sets up mock expectations for a container that doesn't exist.
+func mockContainerDoesNotExist(ctx context.Context, mockClient *containerengine.MockAPIClient) {
+	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
+}
+
+// mockSuccessfulImagePull sets up mock expectations for successful image pull.
+func mockSuccessfulImagePull(
+	ctx context.Context,
+	mockClient *containerengine.MockAPIClient,
+	image string,
+) {
+	mockClient.On("ImagePull", ctx, image, mock.Anything).
+		Return(io.NopCloser(strings.NewReader("")), nil)
+}
+
+// mockSuccessfulContainerCreate sets up mock expectations for successful container creation.
+func mockSuccessfulContainerCreate(
+	ctx context.Context,
+	mockClient *containerengine.MockAPIClient,
+	containerName string,
+) {
+	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, containerName).
+		Return(container.CreateResponse{ID: "test-id"}, nil)
+	mockClient.On("ContainerStart", ctx, "test-id", mock.Anything).Return(nil)
+}
 
 // TestCreateRegistry_Success tests successful registry creation.
 func TestCreateRegistrySuccess(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
+	ctx, cfg, mockClient := setupManagerTest(t)
+	cfg.Image = registry.DefaultRegistryImage
 
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-		Image:    registry.DefaultRegistryImage,
-	}
-
-	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
-
-	// Mock successful image pull
-	mockClient.On("ImagePull", ctx, cfg.Image, mock.Anything).
-		Return(io.NopCloser(strings.NewReader("")), nil)
-
-	// Mock successful container create
-	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, cfg.Name).
-		Return(container.CreateResponse{ID: "test-id"}, nil)
-
-	// Mock successful container start
-	mockClient.On("ContainerStart", ctx, "test-id", mock.Anything).Return(nil)
+	mockContainerDoesNotExist(ctx, mockClient)
+	mockSuccessfulImagePull(ctx, mockClient, cfg.Image)
+	mockSuccessfulContainerCreate(ctx, mockClient, cfg.Name)
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -85,15 +107,9 @@ func TestCreateRegistryAlreadyExists(t *testing.T) {
 func TestCreateRegistryListError(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
+	ctx, cfg, mockClient := setupManagerTest(t)
+	errTestListFailed := errors.New("list error") //nolint:err113 // Test error
 
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-	}
-
-	// Mock list error
 	mockClient.On("ContainerList", ctx, mock.Anything).
 		Return([]container.Summary{}, errTestListFailed)
 
@@ -108,28 +124,12 @@ func TestCreateRegistryListError(t *testing.T) {
 func TestCreateRegistryDefaultImage(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
+	ctx, cfg, mockClient := setupManagerTest(t)
+	// Image not specified - should use default
 
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-		// Image not specified
-	}
-
-	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
-
-	// Mock successful image pull with default image
-	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
-		Return(io.NopCloser(strings.NewReader("")), nil)
-
-	// Mock successful container create
-	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, cfg.Name).
-		Return(container.CreateResponse{ID: "test-id"}, nil)
-
-	// Mock successful container start
-	mockClient.On("ContainerStart", ctx, "test-id", mock.Anything).Return(nil)
+	mockContainerDoesNotExist(ctx, mockClient)
+	mockSuccessfulImagePull(ctx, mockClient, registry.DefaultRegistryImage)
+	mockSuccessfulContainerCreate(ctx, mockClient, cfg.Name)
 
 	manager := registry.NewManager(mockClient)
 	err := manager.CreateRegistry(ctx, cfg)
@@ -141,18 +141,10 @@ func TestCreateRegistryDefaultImage(t *testing.T) {
 func TestCreateRegistryPullError(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
+	ctx, cfg, mockClient := setupManagerTest(t)
+	errTestPullFailed := errors.New("pull error") //nolint:err113 // Test error
 
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-	}
-
-	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
-
-	// Mock image pull error
+	mockContainerDoesNotExist(ctx, mockClient)
 	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
 		Return(nil, errTestPullFailed)
 
@@ -167,22 +159,11 @@ func TestCreateRegistryPullError(t *testing.T) {
 func TestCreateRegistryCreateError(t *testing.T) {
 	t.Parallel()
 
-	mockClient := containerengine.NewMockAPIClient(t)
-	ctx := context.Background()
+	ctx, cfg, mockClient := setupManagerTest(t)
+	errTestCreateFailed := errors.New("create error") //nolint:err113 // Test error
 
-	cfg := registry.Config{
-		Name:     "test-registry",
-		HostPort: "5000",
-	}
-
-	// Mock container doesn't exist
-	mockClient.On("ContainerList", ctx, mock.Anything).Return([]container.Summary{}, nil)
-
-	// Mock successful image pull
-	mockClient.On("ImagePull", ctx, registry.DefaultRegistryImage, mock.Anything).
-		Return(io.NopCloser(strings.NewReader("")), nil)
-
-	// Mock container create error
+	mockContainerDoesNotExist(ctx, mockClient)
+	mockSuccessfulImagePull(ctx, mockClient, registry.DefaultRegistryImage)
 	mockClient.On("ContainerCreate", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, cfg.Name).
 		Return(container.CreateResponse{}, errTestCreateFailed)
 

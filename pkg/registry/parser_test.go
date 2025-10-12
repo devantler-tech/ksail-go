@@ -10,6 +10,15 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+// assertRegistryConfig validates a registry configuration.
+func assertRegistryConfig(t *testing.T, reg registry.Config, expectedName, expectedPort string) {
+	t.Helper()
+
+	assert.Equal(t, expectedName, reg.Name)
+	assert.Equal(t, expectedPort, reg.HostPort)
+	assert.Equal(t, registry.DefaultRegistryImage, reg.Image)
+}
+
 func TestExtractRegistriesFromK3d_NoRegistries(t *testing.T) {
 	t.Parallel()
 
@@ -52,10 +61,8 @@ func TestExtractRegistriesFromK3d_MultipleRegistries(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, registries, 2)
-	assert.Equal(t, "registry1", registries[0].Name)
-	assert.Equal(t, "5000", registries[0].HostPort)
-	assert.Equal(t, "registry2", registries[1].Name)
-	assert.Equal(t, "5001", registries[1].HostPort)
+	assertRegistryConfig(t, registries[0], "registry1", "5000")
+	assertRegistryConfig(t, registries[1], "registry2", "5001")
 }
 
 func TestExtractRegistriesFromK3d_InvalidFormat(t *testing.T) {
@@ -108,9 +115,7 @@ func TestExtractRegistriesFromKind_SingleRegistry(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
-	assert.Equal(t, "k3d-registry", registries[0].Name)
-	assert.Equal(t, "5000", registries[0].HostPort)
-	assert.Equal(t, registry.DefaultRegistryImage, registries[0].Image)
+	assertRegistryConfig(t, registries[0], "k3d-registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_MultiplePatches(t *testing.T) {
@@ -171,8 +176,7 @@ func TestExtractRegistriesFromKind_HTTPSEndpoint(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
-	assert.Equal(t, "secure-registry", registries[0].Name)
-	assert.Equal(t, "5000", registries[0].HostPort)
+	assertRegistryConfig(t, registries[0], "secure-registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_EndpointWithoutPort(t *testing.T) {
@@ -189,9 +193,7 @@ func TestExtractRegistriesFromKind_EndpointWithoutPort(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
-	assert.Equal(t, "registry", registries[0].Name)
-	// Should use default port from mirror host
-	assert.Equal(t, "5000", registries[0].HostPort)
+	assertRegistryConfig(t, registries[0], "registry", "5000")
 }
 
 func TestExtractRegistriesFromKind_EmptyPatch(t *testing.T) {
