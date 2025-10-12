@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version-file: 'go.mod'
-      - uses: pre-commit/action@2c7b3805e2f6a8003d7da6cd07e8e9d2a8f9c6f9 # v3.0.1
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
       - name: Commit changes
         if: failure()
         run: |
