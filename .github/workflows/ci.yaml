@@ -30,6 +30,7 @@ jobs:
         init-args:
           - "--distribution Kind"
           - "--distribution K3d"
+          - "--distribution EKS"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -53,26 +54,32 @@ jobs:
           ./ksail init ${{ matrix.init-args }}
 
       - name: 🧪 ksail cluster create
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail cluster create
 
       - name: 🧪 ksail cluster list
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail cluster list
 
       - name: 🧪 ksail cluster start
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail cluster start
 
       - name: 🧪 ksail cluster stop
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail cluster stop
 
       - name: 🧪 ksail workload reconcile
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail workload reconcile
 
       - name: 🧪 ksail cluster delete
+        if: ${{ !contains(matrix.init-args, 'EKS') }}
         run: |
           ./ksail cluster delete
 
@@ -81,6 +88,7 @@ jobs:
           if [ -d "k8s" ]; then rm -rf "k8s"; fi
           if [ -f "kind.yaml" ]; then rm "kind.yaml"; fi
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
+          if [ -f "eks.yaml" ]; then rm "eks.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
   system-test-status:
