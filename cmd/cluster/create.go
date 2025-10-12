@@ -3,6 +3,8 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
@@ -106,7 +108,20 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	// Determine kubeconfig path
 	kubeconfig := clusterCfg.Spec.Connection.Kubeconfig
 	if kubeconfig == "" {
-		kubeconfig = "~/.kube/config"
+		// Use default kubeconfig location
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get user home directory: %w", err)
+		}
+
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
+
+	// Read kubeconfig file
+	// #nosec G304 - kubeconfig path is from cluster configuration, not user input
+	kubeconfigData, err := os.ReadFile(kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to read kubeconfig file %s: %w", kubeconfig, err)
 	}
 
 	// Create Helm client using kubeconfig
@@ -122,7 +137,7 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 			Output:           nil,
 		},
 		KubeContext: clusterCfg.Spec.Connection.Context,
-		KubeConfig:  []byte{}, // Empty means use default kubeconfig
+		KubeConfig:  kubeconfigData, // Pass actual kubeconfig content
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %w", err)
