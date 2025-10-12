@@ -86,7 +86,7 @@ func handleCreateRunE(
 	// Reuse the standard lifecycle logic but extend with CNI installation
 	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
 	if err != nil {
-		return err
+		return fmt.Errorf("cluster creation failed: %w", err)
 	}
 
 	// Install CNI if Cilium is configured
@@ -138,7 +138,9 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	}
 
 	// Determine timeout
-	timeout := 5 * time.Minute
+	const defaultTimeout = 5
+
+	timeout := defaultTimeout * time.Minute
 	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
 		timeout = clusterCfg.Spec.Connection.Timeout.Duration
 	}
@@ -152,5 +154,10 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	)
 
 	// Install Cilium
-	return installer.Install(ctx)
+	err = installer.Install(ctx)
+	if err != nil {
+		return fmt.Errorf("cilium installation failed: %w", err)
+	}
+
+	return nil
 }

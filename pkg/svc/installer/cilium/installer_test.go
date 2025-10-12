@@ -28,7 +28,9 @@ func TestCiliumInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := ciliuminstaller.NewMockHelmClient(t)
-	client.EXPECT().InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	client.EXPECT().
+		InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, nil)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
 		client,
@@ -46,7 +48,9 @@ func TestCiliumInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
 	client := ciliuminstaller.NewMockHelmClient(t)
-	client.EXPECT().InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).Return(nil, assert.AnError)
+	client.EXPECT().
+		InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, assert.AnError)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
 		client,

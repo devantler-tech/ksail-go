@@ -9,6 +9,10 @@ import (
 
 // HelmClient defines the subset of Helm operations used by the installer.
 type HelmClient interface {
-	InstallOrUpgradeChart(ctx context.Context, spec *helmclient.ChartSpec, opts *helmclient.GenericHelmOptions) (*release.Release, error)
+	InstallOrUpgradeChart(
+		ctx context.Context,
+		spec *helmclient.ChartSpec,
+		opts *helmclient.GenericHelmOptions,
+	) (*release.Release, error)
 	UninstallReleaseByName(name string) error
 }
