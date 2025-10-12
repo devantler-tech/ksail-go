@@ -105,23 +105,10 @@ func handleCreateRunE(
 
 // installCiliumCNI installs Cilium CNI on the cluster.
 func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
-	// Determine kubeconfig path
-	kubeconfig := clusterCfg.Spec.Connection.Kubeconfig
-	if kubeconfig == "" {
-		// Use default kubeconfig location
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get user home directory: %w", err)
-		}
-
-		kubeconfig = filepath.Join(home, ".kube", "config")
-	}
-
 	// Read kubeconfig file
-	// #nosec G304 - kubeconfig path is from cluster configuration, not user input
-	kubeconfigData, err := os.ReadFile(kubeconfig)
+	kubeconfigData, kubeconfigPath, err := readKubeconfigWithRetry(clusterCfg)
 	if err != nil {
-		return fmt.Errorf("failed to read kubeconfig file %s: %w", kubeconfig, err)
+		return fmt.Errorf("failed to read kubeconfig: %w", err)
 	}
 
 	// Create Helm client using kubeconfig
@@ -163,7 +150,7 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	// Create Cilium installer
 	installer := ciliuminstaller.NewCiliumInstaller(
 		helmClient,
-		kubeconfig,
+		kubeconfigPath,
 		clusterCfg.Spec.Connection.Context,
 		timeout,
 	)
@@ -175,4 +162,54 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	}
 
 	return nil
+}
+
+// readKubeconfigWithRetry reads the kubeconfig file with retry logic.
+// This is necessary because cluster provisioners (Kind/K3d) update the kubeconfig
+// after cluster creation, and we may need to wait briefly for the file to be available.
+func readKubeconfigWithRetry(clusterCfg *v1alpha1.Cluster) ([]byte, string, error) {
+	const (
+		maxRetries     = 10
+		retryDelay     = 500 * time.Millisecond
+		lastRetryIndex = maxRetries - 1
+	)
+
+	// Determine kubeconfig path
+	kubeconfig := clusterCfg.Spec.Connection.Kubeconfig
+	if kubeconfig == "" {
+		// Check KUBECONFIG environment variable first
+		if envKubeconfig := os.Getenv("KUBECONFIG"); envKubeconfig != "" {
+			kubeconfig = envKubeconfig
+		} else {
+			// Use default kubeconfig location
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return nil, "", fmt.Errorf("failed to get user home directory: %w", err)
+			}
+
+			kubeconfig = filepath.Join(home, ".kube", "config")
+		}
+	}
+
+	// Wait briefly for kubeconfig file to be created by the cluster provisioner
+	var kubeconfigData []byte
+
+	var lastErr error
+
+	for attempt := range maxRetries {
+		// Read kubeconfig file
+		// #nosec G304 - kubeconfig path is from cluster configuration, not user input
+		kubeconfigData, lastErr = os.ReadFile(kubeconfig)
+		if lastErr == nil {
+			return kubeconfigData, kubeconfig, nil
+		}
+
+		// Wait before next retry (except on last iteration)
+		if attempt < lastRetryIndex {
+			time.Sleep(retryDelay)
+		}
+	}
+
+	return nil, kubeconfig, fmt.Errorf("failed to read kubeconfig file %s after %d retries: %w",
+		kubeconfig, maxRetries, lastErr)
 }
