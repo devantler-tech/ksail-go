@@ -8,9 +8,9 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
-	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
-	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/kind"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

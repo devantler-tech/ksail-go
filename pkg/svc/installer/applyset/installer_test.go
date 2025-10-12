@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	applysetinstaller "github.com/devantler-tech/ksail-go/pkg/installer/applyset"
+	applysetinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/applyset"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

@@ -3,7 +3,7 @@ package k3dprovisioner_test
 import (
 	"testing"
 
-	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster/k3d"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,7 +6,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/provisioner/cluster"
+	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
 
