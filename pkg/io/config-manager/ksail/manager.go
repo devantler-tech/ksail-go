@@ -220,10 +220,8 @@ func (m *ConfigManager) notifyLoadingComplete(tmr timer.Timer) {
 }
 
 func (m *ConfigManager) validateConfig() error {
-	// Load distribution config for cross-validation only if distributionConfig is set
-	kindConfig, k3dConfig := m.loadDistributionConfigForValidation()
-
-	validator := ksailvalidator.NewValidator(kindConfig, k3dConfig)
+	// Create validator with distribution config for cross-validation
+	validator := m.createValidatorForDistribution()
 	result := validator.Validate(m.Config)
 
 	if !result.Valid {
@@ -297,29 +295,29 @@ func IsFieldEmptyForTesting(fieldPtr any) bool {
 	return isFieldEmpty(fieldPtr)
 }
 
-// loadDistributionConfigForValidation loads the distribution configuration for cross-validation.
-// Only loads config when Cilium CNI is requested and distributionConfig is specified.
-// Returns nil for both if no config needs to be loaded.
-func (m *ConfigManager) loadDistributionConfigForValidation() (*kindv1alpha4.Cluster, *k3dv1alpha5.SimpleConfig) {
-	// Only attempt to load distribution config if the config file path is specified
-	// This avoids unnecessary file operations during testing or when using defaults
+// createValidatorForDistribution creates a validator with the appropriate distribution config.
+// Only loads distribution config when Cilium CNI is requested for validation.
+func (m *ConfigManager) createValidatorForDistribution() *ksailvalidator.Validator {
+	// Only load distribution config for Cilium CNI validation
 	if m.Config.Spec.DistributionConfig == "" || m.Config.Spec.CNI != v1alpha1.CNICilium {
-		return nil, nil
+		return ksailvalidator.NewValidator()
 	}
 
-	// Load distribution config for CNI alignment validation based on configured distribution
+	// Create distribution-specific validator based on configured distribution
 	switch m.Config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
 		kindConfig := m.loadKindConfig()
-
-		return kindConfig, nil
+		if kindConfig != nil {
+			return ksailvalidator.NewValidatorForKind(kindConfig)
+		}
 	case v1alpha1.DistributionK3d:
 		k3dConfig := m.loadK3dConfig()
-
-		return nil, k3dConfig
+		if k3dConfig != nil {
+			return ksailvalidator.NewValidatorForK3d(k3dConfig)
+		}
 	}
 
-	return nil, nil
+	return ksailvalidator.NewValidator()
 }
 
 // loadKindConfig loads the Kind distribution configuration if it exists.

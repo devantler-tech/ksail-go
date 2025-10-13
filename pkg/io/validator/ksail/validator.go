@@ -17,12 +17,25 @@ type Validator struct {
 	k3dConfig  *k3dapi.SimpleConfig
 }
 
-// NewValidator creates a new KSail configuration validator with optional distribution configuration.
-// The distribution config is used for cross-configuration validation (name consistency, context patterns).
-func NewValidator(kindConfig *kindv1alpha4.Cluster, k3dConfig *k3dapi.SimpleConfig) *Validator {
+// NewValidator creates a new KSail configuration validator without distribution configuration.
+// Use NewValidatorForKind or NewValidatorForK3d for distribution-specific validation.
+func NewValidator() *Validator {
+	return &Validator{}
+}
+
+// NewValidatorForKind creates a new KSail configuration validator with Kind distribution configuration.
+// The Kind config is used for cross-configuration validation (name consistency, CNI alignment).
+func NewValidatorForKind(kindConfig *kindv1alpha4.Cluster) *Validator {
 	return &Validator{
 		kindConfig: kindConfig,
-		k3dConfig:  k3dConfig,
+	}
+}
+
+// NewValidatorForK3d creates a new KSail configuration validator with K3d distribution configuration.
+// The K3d config is used for cross-configuration validation (name consistency, CNI alignment).
+func NewValidatorForK3d(k3dConfig *k3dapi.SimpleConfig) *Validator {
+	return &Validator{
+		k3dConfig: k3dConfig,
 	}
 }
 
