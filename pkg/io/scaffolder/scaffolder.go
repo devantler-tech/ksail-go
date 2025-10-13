@@ -364,6 +364,8 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		ObjectMeta: types.ObjectMeta{
 			Name: "k3s-default",
 		},
+		Servers: 1, // Explicitly set 1 server node
+		Agents:  0, // No agent nodes by default
 	}
 
 	// Disable default CNI (Flannel) if Cilium is requested

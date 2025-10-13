@@ -29,6 +29,13 @@ func TestK3dCreateSuccess(t *testing.T) {
 		) {
 			expectTransformSimpleToClusterConfigOK(configProvider)
 			clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+			clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.Anything).Return(&types.Cluster{
+				Name: "cfg-name",
+				Nodes: []*types.Node{
+					{Name: "k3d-cfg-name-server-0", Role: types.ServerRole},
+				},
+			}, nil)
+			clientProvider.On("KubeconfigGet", mock.Anything, mock.Anything, mock.Anything).Return(&clientcmdapi.Config{}, nil)
 		},
 		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
 			return prov.Create(context.Background(), name)
