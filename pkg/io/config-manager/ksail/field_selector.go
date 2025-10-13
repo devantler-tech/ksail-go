@@ -94,6 +94,7 @@ func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 	return []FieldSelector[v1alpha1.Cluster]{
 		DefaultDistributionFieldSelector(),
 		DefaultDistributionConfigFieldSelector(),
+		DefaultContextFieldSelector(),
 		DefaultKubeconfigFieldSelector(),
 	}
 }

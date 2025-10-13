@@ -551,7 +551,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 	t.Parallel()
 
 	selectors := configmanager.DefaultClusterFieldSelectors()
-	require.Len(t, selectors, 3)
+	require.Len(t, selectors, 4)
 
 	cluster := v1alpha1.NewCluster()
 
@@ -570,12 +570,17 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 		pathPtr, ok := field.(*string)
 		require.True(t, ok, "selector did not return supported pointer type")
 
-		// Check that the default value is either kind.yaml or ~/.kube/config
+		// Check that the default value is one of the expected values
 		defaultValue, ok := selector.DefaultValue.(string)
 		require.True(t, ok, "selector default value must be a string")
-		assert.True(t,
-			defaultValue == "kind.yaml" || defaultValue == "~/.kube/config",
-			"unexpected default value: %s", defaultValue)
+		assert.True(
+			t,
+			defaultValue == "kind.yaml" ||
+				defaultValue == "~/.kube/config" ||
+				defaultValue == "kind-kind",
+			"unexpected default value: %s",
+			defaultValue,
+		)
 
 		*pathPtr = "custom.yaml"
 		assert.Equal(t, "custom.yaml", *pathPtr)
