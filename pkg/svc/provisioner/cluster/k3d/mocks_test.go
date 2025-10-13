@@ -11,6 +11,7 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
 	mock "github.com/stretchr/testify/mock"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 // NewMockK3dClientProvider creates a new instance of MockK3dClientProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -442,6 +443,80 @@ func (_c *MockK3dClientProvider_ClusterStop_Call) Return(err error) *MockK3dClie
 }
 
 func (_c *MockK3dClientProvider_ClusterStop_Call) RunAndReturn(run func(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) error) *MockK3dClientProvider_ClusterStop_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// KubeconfigGet provides a mock function for the type MockK3dClientProvider
+func (_mock *MockK3dClientProvider) KubeconfigGet(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*api.Config, error) {
+	ret := _mock.Called(ctx, runtime, cluster)
+
+	if len(ret) == 0 {
+		panic("no return value specified for KubeconfigGet")
+	}
+
+	var r0 *api.Config
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, runtimes.Runtime, *types.Cluster) (*api.Config, error)); ok {
+		return returnFunc(ctx, runtime, cluster)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, runtimes.Runtime, *types.Cluster) *api.Config); ok {
+		r0 = returnFunc(ctx, runtime, cluster)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.Config)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, runtimes.Runtime, *types.Cluster) error); ok {
+		r1 = returnFunc(ctx, runtime, cluster)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockK3dClientProvider_KubeconfigGet_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'KubeconfigGet'
+type MockK3dClientProvider_KubeconfigGet_Call struct {
+	*mock.Call
+}
+
+// KubeconfigGet is a helper method to define mock.On call
+//   - ctx context.Context
+//   - runtime runtimes.Runtime
+//   - cluster *types.Cluster
+func (_e *MockK3dClientProvider_Expecter) KubeconfigGet(ctx interface{}, runtime interface{}, cluster interface{}) *MockK3dClientProvider_KubeconfigGet_Call {
+	return &MockK3dClientProvider_KubeconfigGet_Call{Call: _e.mock.On("KubeconfigGet", ctx, runtime, cluster)}
+}
+
+func (_c *MockK3dClientProvider_KubeconfigGet_Call) Run(run func(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster)) *MockK3dClientProvider_KubeconfigGet_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 runtimes.Runtime
+		if args[1] != nil {
+			arg1 = args[1].(runtimes.Runtime)
+		}
+		var arg2 *types.Cluster
+		if args[2] != nil {
+			arg2 = args[2].(*types.Cluster)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockK3dClientProvider_KubeconfigGet_Call) Return(config *api.Config, err error) *MockK3dClientProvider_KubeconfigGet_Call {
+	_c.Call.Return(config, err)
+	return _c
+}
+
+func (_c *MockK3dClientProvider_KubeconfigGet_Call) RunAndReturn(run func(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*api.Config, error)) *MockK3dClientProvider_KubeconfigGet_Call {
 	_c.Call.Return(run)
 	return _c
 }

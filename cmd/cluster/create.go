@@ -177,12 +177,36 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 		return "", nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
+	// For K3d clusters, the kubeconfig might not be written immediately after cluster creation
+	// Wait for it to exist with a retry mechanism
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d {
+		err = waitForKubeconfigFile(kubeconfig, 10*time.Second)
+		if err != nil {
+			return "", nil, fmt.Errorf("kubeconfig file not created after cluster creation: %w", err)
+		}
+	}
+
 	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to read kubeconfig file: %w", err)
 	}
 
 	return kubeconfig, kubeconfigData, nil
+}
+
+// waitForKubeconfigFile waits for a kubeconfig file to exist with retry logic.
+func waitForKubeconfigFile(path string, maxWait time.Duration) error {
+	const retryInterval = 500 * time.Millisecond
+	deadline := time.Now().Add(maxWait)
+
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(path); err == nil {
+			return nil
+		}
+		time.Sleep(retryInterval)
+	}
+
+	return fmt.Errorf("kubeconfig file %s not found after waiting %v", path, maxWait)
 }
 
 // createSilentHelmClient creates a Helm client with suppressed output.
