@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,6 +15,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/spf13/cobra"
@@ -95,7 +97,13 @@ func handleCreateRunE(
 	// Install CNI if Cilium is configured
 	clusterCfg := cfgManager.GetConfig()
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		err = installCiliumCNI(cmd.Context(), clusterCfg)
+		// Add newline separator before CNI installation
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		// Start new stage for CNI installation
+		deps.Timer.NewStage()
+
+		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
 		}
@@ -105,36 +113,25 @@ func handleCreateRunE(
 }
 
 // installCiliumCNI installs Cilium CNI on the cluster.
-func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
-	// Get kubeconfig path from cluster config (expected to be set via field selector default)
-	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
-	if err != nil {
-		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
-	}
-
-	// Read kubeconfig file using safe method
-	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
-	if err != nil {
-		return fmt.Errorf("failed to read kubeconfig file: %w", err)
-	}
-
-	// Create Helm client using kubeconfig
-	helmClient, err := helmclient.NewClientFromKubeConf(&helmclient.KubeConfClientOptions{
-		Options: &helmclient.Options{
-			Namespace:        "kube-system",
-			RepositoryCache:  "/tmp/.helmcache",
-			RepositoryConfig: "/tmp/.helmrepo",
-			Debug:            false,
-			Linting:          false,
-			DebugLog:         nil,
-			RegistryConfig:   "",
-			Output:           nil,
-		},
-		KubeContext: clusterCfg.Spec.Connection.Context,
-		KubeConfig:  kubeconfigData, // Pass actual kubeconfig content
+func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	// Display title for CNI installation
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Installing CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
 	})
+
+	// Get kubeconfig path and data
+	kubeconfig, kubeconfigData, err := loadKubeconfig(clusterCfg)
 	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
+		return err
+	}
+
+	// Create Helm client with output suppression
+	helmClient, err := createSilentHelmClient(kubeconfigData, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return err
 	}
 
 	// Add Cilium Helm repository
@@ -146,15 +143,8 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 		return fmt.Errorf("failed to add Cilium Helm repository: %w", err)
 	}
 
-	// Determine timeout
-	const defaultTimeout = 5
-
-	timeout := defaultTimeout * time.Minute
-	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
-		timeout = clusterCfg.Spec.Connection.Timeout.Duration
-	}
-
-	// Create Cilium installer
+	// Create and run Cilium installer
+	timeout := getCiliumInstallTimeout(clusterCfg)
 	installer := ciliuminstaller.NewCiliumInstaller(
 		helmClient,
 		kubeconfig,
@@ -162,13 +152,74 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 		timeout,
 	)
 
-	// Install Cilium
-	err = installer.Install(ctx)
+	err = installer.Install(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("cilium installation failed: %w", err)
 	}
 
+	// Display success message with timing
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "CNI installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
 	return nil
+}
+
+// loadKubeconfig loads and returns the kubeconfig path and data.
+func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
+	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
+	}
+
+	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to read kubeconfig file: %w", err)
+	}
+
+	return kubeconfig, kubeconfigData, nil
+}
+
+// createSilentHelmClient creates a Helm client with suppressed output.
+//
+//nolint:ireturn // Helm client interface is required by the installer
+func createSilentHelmClient(kubeconfigData []byte, kubeContext string) (helmclient.Client, error) {
+	helmClient, err := helmclient.NewClientFromKubeConf(&helmclient.KubeConfClientOptions{
+		Options: &helmclient.Options{
+			Namespace:        "kube-system",
+			RepositoryCache:  "/tmp/.helmcache",
+			RepositoryConfig: "/tmp/.helmrepo",
+			Debug:            false,
+			Linting:          false,
+			DebugLog:         func(_ string, _ ...interface{}) {}, // Suppress debug output
+			RegistryConfig:   "",
+			Output:           io.Discard, // Suppress Helm output
+		},
+		KubeContext: kubeContext,
+		KubeConfig:  kubeconfigData,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	return helmClient, nil
+}
+
+// getCiliumInstallTimeout determines the timeout for Cilium installation.
+func getCiliumInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+	const defaultTimeout = 5
+
+	timeout := defaultTimeout * time.Minute
+	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
+		timeout = clusterCfg.Spec.Connection.Timeout.Duration
+	}
+
+	return timeout
 }
 
 // expandKubeconfigPath expands tilde (~) in kubeconfig paths to the user's home directory.
