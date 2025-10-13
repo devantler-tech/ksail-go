@@ -220,10 +220,10 @@ func (m *ConfigManager) notifyLoadingComplete(tmr timer.Timer) {
 }
 
 func (m *ConfigManager) validateConfig() error {
-	// Load distribution configs for cross-validation only if distributionConfig is set
-	distributionConfigs := m.loadDistributionConfigsForValidation()
+	// Load distribution config for cross-validation only if distributionConfig is set
+	kindConfig, k3dConfig := m.loadDistributionConfigForValidation()
 
-	validator := ksailvalidator.NewValidator(distributionConfigs...)
+	validator := ksailvalidator.NewValidator(kindConfig, k3dConfig)
 	result := validator.Validate(m.Config)
 
 	if !result.Valid {
@@ -297,30 +297,29 @@ func IsFieldEmptyForTesting(fieldPtr any) bool {
 	return isFieldEmpty(fieldPtr)
 }
 
-// loadDistributionConfigsForValidation loads distribution configurations for cross-validation.
-// Only loads configs when Cilium CNI is requested and distributionConfig is specified.
-func (m *ConfigManager) loadDistributionConfigsForValidation() []any {
-	var distributionConfigs []any
-
-	// Only attempt to load distribution configs if the config file path is specified
+// loadDistributionConfigForValidation loads the distribution configuration for cross-validation.
+// Only loads config when Cilium CNI is requested and distributionConfig is specified.
+// Returns nil for both if no config needs to be loaded.
+func (m *ConfigManager) loadDistributionConfigForValidation() (*kindv1alpha4.Cluster, *k3dv1alpha5.SimpleConfig) {
+	// Only attempt to load distribution config if the config file path is specified
 	// This avoids unnecessary file operations during testing or when using defaults
-	if m.Config.Spec.DistributionConfig != "" && m.Config.Spec.CNI == v1alpha1.CNICilium {
-		// Try to load distribution config for CNI alignment validation
-		switch m.Config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			kindConfig := m.loadKindConfig()
-			if kindConfig != nil {
-				distributionConfigs = append(distributionConfigs, kindConfig)
-			}
-		case v1alpha1.DistributionK3d:
-			k3dConfig := m.loadK3dConfig()
-			if k3dConfig != nil {
-				distributionConfigs = append(distributionConfigs, k3dConfig)
-			}
-		}
+	if m.Config.Spec.DistributionConfig == "" || m.Config.Spec.CNI != v1alpha1.CNICilium {
+		return nil, nil
 	}
 
-	return distributionConfigs
+	// Load distribution config for CNI alignment validation based on configured distribution
+	switch m.Config.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		kindConfig := m.loadKindConfig()
+
+		return kindConfig, nil
+	case v1alpha1.DistributionK3d:
+		k3dConfig := m.loadK3dConfig()
+
+		return nil, k3dConfig
+	}
+
+	return nil, nil
 }
 
 // loadKindConfig loads the Kind distribution configuration if it exists.

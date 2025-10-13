@@ -17,22 +17,13 @@ type Validator struct {
 	k3dConfig  *k3dapi.SimpleConfig
 }
 
-// NewValidator creates a new KSail configuration validator with optional distribution configurations.
-// Distribution configs are used for cross-configuration validation (name consistency, context patterns).
-func NewValidator(distributionConfigs ...any) *Validator {
-	validator := &Validator{}
-
-	// Accept distribution configurations for cross-configuration validation
-	for _, config := range distributionConfigs {
-		switch cfg := config.(type) {
-		case *kindv1alpha4.Cluster:
-			validator.kindConfig = cfg
-		case *k3dapi.SimpleConfig:
-			validator.k3dConfig = cfg
-		}
+// NewValidator creates a new KSail configuration validator with optional distribution configuration.
+// The distribution config is used for cross-configuration validation (name consistency, context patterns).
+func NewValidator(kindConfig *kindv1alpha4.Cluster, k3dConfig *k3dapi.SimpleConfig) *Validator {
+	return &Validator{
+		kindConfig: kindConfig,
+		k3dConfig:  k3dConfig,
 	}
-
-	return validator
 }
 
 // Validate performs validation on a loaded KSail cluster configuration.

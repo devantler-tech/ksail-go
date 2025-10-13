@@ -24,7 +24,7 @@ func TestKSailValidator(t *testing.T) {
 	// This test MUST FAIL initially to follow TDD approach
 	t.Parallel()
 
-	validator := ksailvalidator.NewValidator()
+	validator := ksailvalidator.NewValidator(nil, nil)
 	require.NotNil(t, validator, "KSail validator constructor must return non-nil validator")
 
 	testCases := createKSailTestCases()
@@ -151,7 +151,7 @@ func validateExpectedErrors(
 func TestKSailValidatorCrossConfiguration(t *testing.T) {
 	t.Parallel()
 
-	validator := ksailvalidator.NewValidator()
+	validator := ksailvalidator.NewValidator(nil, nil)
 
 	t.Run("cross_config_validation_current_scope", func(t *testing.T) {
 		t.Parallel()
@@ -259,7 +259,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
 		config.Spec.Connection.Context = "kind-kind" // No distribution config, so expect conventional default
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Valid Kind context should pass validation")
@@ -272,7 +272,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		config := createValidKSailConfig(v1alpha1.DistributionK3d)
 		config.Spec.Connection.Context = "k3d-k3s-default" // No distribution config, so expect conventional default
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Valid K3d context should pass validation")
@@ -285,7 +285,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
 		config.Spec.Connection.Context = "invalid-context"
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.False(t, result.Valid, "Invalid context should fail validation")
@@ -324,7 +324,7 @@ func TestKSailValidatorKindConsistency(t *testing.T) {
 			Name: "ksail", // Matches expected cluster name
 		}
 
-		validator := ksailvalidator.NewValidator(kindConfig)
+		validator := ksailvalidator.NewValidator(kindConfig, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Matching Kind config names should pass validation")
@@ -342,7 +342,7 @@ func TestKSailValidatorKindConsistency(t *testing.T) {
 			Name: "different-name", // This should be used in the context name
 		}
 
-		validator := ksailvalidator.NewValidator(kindConfig)
+		validator := ksailvalidator.NewValidator(kindConfig, nil)
 		result := validator.Validate(config)
 
 		assert.True(
@@ -371,7 +371,7 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator(k3dConfig)
+		validator := ksailvalidator.NewValidator(nil, k3dConfig)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Matching K3d config names should pass validation")
@@ -485,7 +485,7 @@ func testUnknownDistribution(t *testing.T) {
 			"unknown.yaml",
 			"unknown-context",
 		)
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.False(t, result.Valid, "Unknown distribution should fail validation")
@@ -563,7 +563,7 @@ func testEmptyContextValidationSkipped(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Empty context should skip validation")
@@ -601,7 +601,7 @@ func testKindCrossValidationWithConfigName(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator(kindConfig)
+		validator := ksailvalidator.NewValidator(kindConfig, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Validation should pass with matching Kind config name")
@@ -633,7 +633,7 @@ func testK3dCrossValidationWithConfigName(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator(k3dConfig)
+		validator := ksailvalidator.NewValidator(nil, k3dConfig)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Validation should pass with matching K3d config name")
@@ -671,7 +671,7 @@ func testKindDefaultFallback(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator(kindConfig)
+		validator := ksailvalidator.NewValidator(kindConfig, nil)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Validation should pass with default Kind name")
@@ -703,7 +703,7 @@ func testK3dDefaultFallback(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator(k3dConfig)
+		validator := ksailvalidator.NewValidator(nil, k3dConfig)
 		result := validator.Validate(config)
 
 		assert.True(t, result.Valid, "Validation should pass with default K3d name")
@@ -739,7 +739,7 @@ func testNoDistributionConfigProvided(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator() // No distribution config provided
+		validator := ksailvalidator.NewValidator(nil, nil) // No distribution config provided
 		result := validator.Validate(config)
 
 		assert.True(
@@ -778,7 +778,7 @@ func testEmptyDistribution(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.False(t, result.Valid, "Empty distribution should fail validation")
@@ -820,7 +820,7 @@ func testEmptyDistributionConfig(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.False(t, result.Valid, "Empty distribution config should fail validation")
@@ -862,7 +862,7 @@ func testInvalidDistributionValue(t *testing.T) {
 			},
 		}
 
-		validator := ksailvalidator.NewValidator()
+		validator := ksailvalidator.NewValidator(nil, nil)
 		result := validator.Validate(config)
 
 		assert.False(t, result.Valid, "Invalid distribution should fail validation")
@@ -929,7 +929,7 @@ func TestKSailValidatorKindConfigEdgeCases(t *testing.T) {
 				},
 			}
 
-			validator := ksailvalidator.NewValidator(test.kindConfig)
+			validator := ksailvalidator.NewValidator(test.kindConfig, nil)
 			result := validator.Validate(config)
 
 			assert.True(t, result.Valid, test.description+" should pass validation")
@@ -991,7 +991,7 @@ func TestKSailValidatorK3dConfigEdgeCases(t *testing.T) {
 				},
 			}
 
-			validator := ksailvalidator.NewValidator(test.k3dConfig)
+			validator := ksailvalidator.NewValidator(nil, test.k3dConfig)
 			result := validator.Validate(config)
 
 			assert.True(t, result.Valid, test.description+" should pass validation")
@@ -1115,7 +1115,7 @@ func validateContextTest(
 ) {
 	t.Helper()
 
-	validator := ksailvalidator.NewValidator()
+	validator := ksailvalidator.NewValidator(nil, nil)
 	result := validator.Validate(config)
 
 	if shouldPass {
