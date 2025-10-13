@@ -81,7 +81,7 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			name:            "context",
 			factory:         configmanager.DefaultContextFieldSelector,
 			expectedDesc:    "Kubernetes context of cluster",
-			expectedDefault: "kind-kind",
+			expectedDefault: nil,
 			assertPointer:   assertContextSelector,
 		},
 	}
@@ -113,7 +113,7 @@ func specFieldTestCases() []testCase {
 		{
 			name:         "Spec.Connection.Context field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			defaultValue: "kind-kind",
+			defaultValue: nil,
 			description:  []string{"Kubernetes context of cluster"},
 			expectedDesc: "Kubernetes context of cluster",
 		},
@@ -570,17 +570,18 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 		pathPtr, ok := field.(*string)
 		require.True(t, ok, "selector did not return supported pointer type")
 
-		// Check that the default value is one of the expected values
-		defaultValue, ok := selector.DefaultValue.(string)
-		require.True(t, ok, "selector default value must be a string")
-		assert.True(
-			t,
-			defaultValue == "kind.yaml" ||
-				defaultValue == "~/.kube/config" ||
-				defaultValue == "kind-kind",
-			"unexpected default value: %s",
-			defaultValue,
-		)
+		// Check that the default value is one of the expected values (if it's set)
+		if selector.DefaultValue != nil {
+			defaultValue, ok := selector.DefaultValue.(string)
+			require.True(t, ok, "selector default value must be a string when present")
+			assert.True(
+				t,
+				defaultValue == "kind.yaml" ||
+					defaultValue == "~/.kube/config",
+				"unexpected default value: %s",
+				defaultValue,
+			)
+		}
 
 		*pathPtr = "custom.yaml"
 		assert.Equal(t, "custom.yaml", *pathPtr)
@@ -595,7 +596,11 @@ func TestDefaultContextFieldSelector(t *testing.T) {
 
 	ptr, ok := selector.Selector(cluster).(*string)
 	require.True(t, ok, "expected selector to return *string")
-	assert.Equal(t, "kind-kind", selector.DefaultValue)
+	assert.Nil(
+		t,
+		selector.DefaultValue,
+		"context has no default value as it's distribution-specific",
+	)
 
 	*ptr = "custom"
 

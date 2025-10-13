@@ -63,11 +63,12 @@ func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 }
 
 // DefaultContextFieldSelector creates a standard field selector for kubernetes context.
+// No default value is set as the context is distribution-specific and will be
+// determined by the scaffolder based on the distribution type.
 func DefaultContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-		Description:  "Kubernetes context of cluster",
-		DefaultValue: "kind-kind",
+		Selector:    func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+		Description: "Kubernetes context of cluster",
 	}
 }
 
