@@ -80,10 +80,20 @@ func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
+// DefaultKubeconfigFieldSelector creates a standard field selector for kubeconfig.
+func DefaultKubeconfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+		Description:  "Path to kubeconfig file",
+		DefaultValue: "~/.kube/config",
+	}
+}
+
 // DefaultClusterFieldSelectors returns the default field selectors shared by cluster commands.
 func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 	return []FieldSelector[v1alpha1.Cluster]{
 		DefaultDistributionFieldSelector(),
 		DefaultDistributionConfigFieldSelector(),
+		DefaultKubeconfigFieldSelector(),
 	}
 }

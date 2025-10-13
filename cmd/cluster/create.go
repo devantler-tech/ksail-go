@@ -10,6 +10,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
@@ -105,22 +106,16 @@ func handleCreateRunE(
 
 // installCiliumCNI installs Cilium CNI on the cluster.
 func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
-	// Use kubeconfig path from cluster config, or default if not specified
-	kubeconfig := clusterCfg.Spec.Connection.Kubeconfig
-	if kubeconfig == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get user home directory: %w", err)
-		}
-
-		kubeconfig = filepath.Join(home, ".kube", "config")
+	// Get kubeconfig path from cluster config (expected to be set via field selector default)
+	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
+	if err != nil {
+		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	// Read kubeconfig file
-	// #nosec G304 - kubeconfig path is from cluster configuration, not user input
-	kubeconfigData, err := os.ReadFile(kubeconfig)
+	// Read kubeconfig file using safe method
+	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
 	if err != nil {
-		return fmt.Errorf("failed to read kubeconfig file %s: %w", kubeconfig, err)
+		return fmt.Errorf("failed to read kubeconfig file: %w", err)
 	}
 
 	// Create Helm client using kubeconfig
@@ -174,4 +169,18 @@ func installCiliumCNI(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	}
 
 	return nil
+}
+
+// expandKubeconfigPath expands tilde (~) in kubeconfig paths to the user's home directory.
+func expandKubeconfigPath(kubeconfig string) (string, error) {
+	if len(kubeconfig) == 0 || kubeconfig[0] != '~' {
+		return kubeconfig, nil
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	return filepath.Join(home, kubeconfig[1:]), nil
 }

@@ -125,8 +125,8 @@ func TestHandleConnectRunE_DefaultKubeconfig(t *testing.T) {
 	loadConfigAndVerifyNoError(t, cfgManager)
 
 	cfg := cfgManager.GetConfig()
-	require.Empty(t, cfg.Spec.Connection.Kubeconfig,
-		"expected kubeconfig path to be empty, will use default")
+	require.Equal(t, "~/.kube/config", cfg.Spec.Connection.Kubeconfig,
+		"expected kubeconfig path to have default value")
 
 	// Verify default path can be constructed
 	homeDir, err := os.UserHomeDir()
@@ -255,7 +255,8 @@ func TestHandleConnectRunE_WithDefaultPath(t *testing.T) {
 	require.NoError(t, err, "expected config to load successfully")
 
 	cfg := cfgManager.GetConfig()
-	require.Empty(t, cfg.Spec.Connection.Kubeconfig)
+	require.Equal(t, "~/.kube/config", cfg.Spec.Connection.Kubeconfig,
+		"expected kubeconfig to have default value")
 
 	// Verify we can get home directory for default path construction
 	homeDir, err := os.UserHomeDir()
