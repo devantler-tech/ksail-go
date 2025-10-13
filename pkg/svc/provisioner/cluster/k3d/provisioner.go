@@ -3,14 +3,11 @@ package k3dprovisioner
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // K3dClusterProvisioner implements provisioning for k3d clusters.
@@ -60,23 +57,10 @@ func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	clusterCfg.KubeconfigOpts.UpdateDefaultKubeconfig = true
 	clusterCfg.KubeconfigOpts.SwitchCurrentContext = true
 
-	// Ensure ~/.kube directory exists for kubeconfig writing
-	err = ensureKubeDirectoryExists()
-	if err != nil {
-		return fmt.Errorf("ensure kube directory: %w", err)
-	}
-
 	// Run full create sequence
 	err = k.clientProvider.ClusterRun(ctx, runtime, clusterCfg)
 	if err != nil {
 		return fmt.Errorf("cluster run: %w", err)
-	}
-
-	// Explicitly write kubeconfig after cluster creation
-	// K3d's UpdateDefaultKubeconfig doesn't always work reliably, so we ensure it's written
-	err = k.writeKubeconfig(ctx, runtime, target, &clusterCfg.KubeconfigOpts)
-	if err != nil {
-		return fmt.Errorf("write kubeconfig: %w", err)
 	}
 
 	return nil
@@ -189,62 +173,4 @@ func (k *K3dClusterProvisioner) Exists(ctx context.Context, name string) (bool, 
 	}
 
 	return slices.Contains(clusters, target), nil
-}
-
-// ensureKubeDirectoryExists creates the ~/.kube directory if it doesn't exist.
-func ensureKubeDirectoryExists() error {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("get home directory: %w", err)
-	}
-
-	kubeDir := filepath.Join(homeDir, ".kube")
-	err = os.MkdirAll(kubeDir, 0o700)
-	if err != nil {
-		return fmt.Errorf("create kube directory: %w", err)
-	}
-
-	return nil
-}
-
-// writeKubeconfig writes the kubeconfig for a k3d cluster to the configured location.
-func (k *K3dClusterProvisioner) writeKubeconfig(
-	ctx context.Context,
-	runtime runtimes.Runtime,
-	clusterName string,
-	opts *v1alpha5.SimpleConfigOptionsKubeconfig,
-) error {
-	// Determine if we should write the kubeconfig
-	if !opts.UpdateDefaultKubeconfig {
-		return nil
-	}
-
-	// Get the cluster details
-	cluster := &types.Cluster{Name: clusterName}
-	clusterDetails, err := k.clientProvider.ClusterGet(ctx, runtime, cluster)
-	if err != nil {
-		return fmt.Errorf("get cluster details: %w", err)
-	}
-
-	// Get the kubeconfig from the cluster
-	kubeconfig, err := k.clientProvider.KubeconfigGet(ctx, runtime, clusterDetails)
-	if err != nil {
-		return fmt.Errorf("get kubeconfig: %w", err)
-	}
-
-	// Determine the output path
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("get home directory: %w", err)
-	}
-
-	kubeconfigPath := filepath.Join(homeDir, ".kube", "config")
-
-	// Write the kubeconfig to the file
-	err = clientcmd.WriteToFile(*kubeconfig, kubeconfigPath)
-	if err != nil {
-		return fmt.Errorf("write kubeconfig to file: %w", err)
-	}
-
-	return nil
 }

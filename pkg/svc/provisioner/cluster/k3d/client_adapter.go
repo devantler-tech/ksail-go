@@ -8,7 +8,6 @@ import (
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // DefaultK3dClientAdapter provides a production-ready implementation of K3dClientProvider
@@ -103,18 +102,4 @@ func (a *DefaultK3dClientAdapter) ClusterList(
 	}
 
 	return clusters, nil
-}
-
-// KubeconfigGet retrieves the kubeconfig for a k3d cluster.
-func (a *DefaultK3dClientAdapter) KubeconfigGet(
-	ctx context.Context,
-	runtime runtimes.Runtime,
-	cluster *types.Cluster,
-) (*clientcmdapi.Config, error) {
-	kubeconfig, err := client.KubeconfigGet(ctx, runtime, cluster)
-	if err != nil {
-		return nil, fmt.Errorf("kubeconfig get: %w", err)
-	}
-
-	return kubeconfig, nil
 }

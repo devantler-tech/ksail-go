@@ -49,7 +49,7 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
-		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
+		distributionName = "k3d-default" // Default K3d cluster name (matches createK3dConfig)
 
 		return "k3d-" + distributionName
 	default:
@@ -362,7 +362,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 			Kind:       "Simple",
 		},
 		ObjectMeta: types.ObjectMeta{
-			Name: "k3s-default",
+			Name: "k3d-default",
 		},
 		Servers: 1, // Explicitly set 1 server node
 		Agents:  0, // No agent nodes by default

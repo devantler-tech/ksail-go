@@ -189,7 +189,7 @@ func (v *Validator) getK3dConfigName() string {
 	}
 
 	// Return default K3d cluster name when no config is provided
-	return "k3s-default"
+	return "k3d-default"
 }
 
 // validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.

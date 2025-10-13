@@ -6,7 +6,6 @@ import (
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
 	"github.com/k3d-io/k3d/v5/pkg/types"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // K3dClientProvider describes the subset of methods from k3d's client used here.
@@ -35,5 +34,4 @@ type K3dClientProvider interface {
 	) error
 	ClusterStop(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) error
 	ClusterList(ctx context.Context, runtime runtimes.Runtime) ([]*types.Cluster, error)
-	KubeconfigGet(ctx context.Context, runtime runtimes.Runtime, cluster *types.Cluster) (*clientcmdapi.Config, error)
 }
