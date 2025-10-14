@@ -229,6 +229,9 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	case v1alpha1.DistributionK3d:
 		distributionConfigFile = "k3d.yaml"
 		contextName = "k3d-k3s-default" // No distribution config provided, use conventional default
+	case v1alpha1.DistributionEKS:
+		distributionConfigFile = "eks.yaml"
+		contextName = "ksail-eks"
 	default:
 		distributionConfigFile = "cluster.yaml"
 		contextName = "ksail"

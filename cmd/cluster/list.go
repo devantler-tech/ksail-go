@@ -100,6 +100,7 @@ func listClusters(
 		distributions := []v1alpha1.Distribution{
 			v1alpha1.DistributionKind,
 			v1alpha1.DistributionK3d,
+			v1alpha1.DistributionEKS,
 		}
 		for _, distribution := range distributions {
 			if distribution == clusterCfg.Spec.Distribution {
@@ -163,6 +164,8 @@ func defaultDistributionConfigPath(distribution v1alpha1.Distribution) string {
 		return "kind.yaml"
 	case v1alpha1.DistributionK3d:
 		return "k3d.yaml"
+	case v1alpha1.DistributionEKS:
+		return "eks.yaml"
 	default:
 		return "kind.yaml"
 	}

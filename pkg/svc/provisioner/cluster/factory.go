@@ -6,11 +6,14 @@ import (
 	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	eksconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/eks"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
+	eksprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/eks"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	ekstypes "github.com/weaveworks/eksctl/pkg/apis/eksctl.io/v1alpha5"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -49,6 +52,8 @@ func (DefaultFactory) Create(
 		)
 	case v1alpha1.DistributionK3d:
 		return createK3dProvisioner(cluster.Spec.DistributionConfig)
+	case v1alpha1.DistributionEKS:
+		return createEKSProvisioner(cluster.Spec.DistributionConfig)
 	default:
 		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
 	}
@@ -122,4 +127,26 @@ func createK3dProvisionerFromConfig(
 		clientProvider,
 		configProvider,
 	)
+}
+
+func createEKSProvisioner(
+	distributionConfigPath string,
+) (*eksprovisioner.EKSClusterProvisioner, *ekstypes.ClusterConfig, error) {
+	eksConfigMgr := eksconfigmanager.NewConfigManager(distributionConfigPath)
+
+	err := eksConfigMgr.LoadConfig(nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to load EKS configuration: %w", err)
+	}
+
+	provisioner := createEKSProvisionerFromConfig(eksConfigMgr.GetConfig(), distributionConfigPath)
+
+	return provisioner, eksConfigMgr.GetConfig(), nil
+}
+
+func createEKSProvisionerFromConfig(
+	eksConfig *ekstypes.ClusterConfig,
+	configPath string,
+) *eksprovisioner.EKSClusterProvisioner {
+	return eksprovisioner.NewDefaultEKSClusterProvisioner(eksConfig, configPath)
 }

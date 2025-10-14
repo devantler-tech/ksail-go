@@ -77,11 +77,13 @@ const (
 	DistributionKind Distribution = "Kind"
 	// DistributionK3d is the K3d distribution.
 	DistributionK3d Distribution = "K3d"
+	// DistributionEKS is the EKS distribution.
+	DistributionEKS Distribution = "EKS"
 )
 
 // validDistributions returns supported distribution values.
 func validDistributions() []Distribution {
-	return []Distribution{DistributionK3d, DistributionKind}
+	return []Distribution{DistributionK3d, DistributionKind, DistributionEKS}
 }
 
 // validCNIs returns supported CNI values.
@@ -178,6 +180,7 @@ func validGitOpsEngines() []GitOpsEngine {
 type Options struct {
 	Kind OptionsKind `json:"kind,omitzero"`
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
+	EKS  OptionsEKS  `json:"eks,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 
@@ -196,6 +199,11 @@ type OptionsKind struct {
 // OptionsK3d defines options specific to the K3d distribution.
 type OptionsK3d struct {
 	// Add any specific fields for the K3d distribution here.
+}
+
+// OptionsEKS defines options specific to the EKS distribution.
+type OptionsEKS struct {
+	// Add any specific fields for the EKS distribution here.
 }
 
 // OptionsCilium defines options for the Cilium CNI.
@@ -236,8 +244,8 @@ func (d *Distribution) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s)",
-		ErrInvalidDistribution, value, DistributionKind, DistributionK3d)
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidDistribution, value, DistributionKind, DistributionK3d, DistributionEKS)
 }
 
 // Set for GitOpsEngine.

@@ -63,6 +63,7 @@ linters:
             - github.com/spf13/pflag
             - github.com/spf13/viper
             - github.com/stretchr/testify
+            - github.com/weaveworks/eksctl
             - helm.sh/helm
             - k8s.io
             - sigs.k8s.io
