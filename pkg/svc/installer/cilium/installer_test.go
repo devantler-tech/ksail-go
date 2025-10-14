@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -29,7 +30,16 @@ func TestCiliumInstallerInstallSuccess(t *testing.T) {
 
 	client := ciliuminstaller.NewMockHelmClient(t)
 	client.EXPECT().
-		InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).
+		InstallOrUpgradeChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "cilium", spec.ReleaseName)
+				assert.Equal(t, "cilium/cilium", spec.ChartName)
+				assert.Equal(t, "kube-system", spec.Namespace)
+
+				return true
+			}),
+		).
 		Return(nil, nil)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
@@ -49,7 +59,16 @@ func TestCiliumInstallerInstallError(t *testing.T) {
 
 	client := ciliuminstaller.NewMockHelmClient(t)
 	client.EXPECT().
-		InstallOrUpgradeChart(mock.Anything, mock.Anything, mock.Anything).
+		InstallOrUpgradeChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "cilium", spec.ReleaseName)
+				assert.Equal(t, "cilium/cilium", spec.ChartName)
+				assert.Equal(t, "kube-system", spec.Namespace)
+
+				return true
+			}),
+		).
 		Return(nil, assert.AnError)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
@@ -69,7 +88,9 @@ func TestCiliumInstallerUninstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := ciliuminstaller.NewMockHelmClient(t)
-	client.EXPECT().UninstallReleaseByName("cilium").Return(nil)
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "cilium", "kube-system").
+		Return(nil)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
 		client,
@@ -87,7 +108,9 @@ func TestCiliumInstallerUninstallError(t *testing.T) {
 	t.Parallel()
 
 	client := ciliuminstaller.NewMockHelmClient(t)
-	client.EXPECT().UninstallReleaseByName("cilium").Return(assert.AnError)
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "cilium", "kube-system").
+		Return(assert.AnError)
 
 	installer := ciliuminstaller.NewCiliumInstaller(
 		client,

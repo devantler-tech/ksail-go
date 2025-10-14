@@ -39,7 +39,8 @@ func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 			}
 
 			deps := ListDeps{
-				Factory: factory,
+				Factory:             factory,
+				DistributionFactory: clusterprovisioner.DefaultFactory{},
 			}
 
 			return HandleListRunE(cmd, cfgManager, deps)
@@ -51,7 +52,8 @@ func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 // ListDeps captures dependencies needed for the list command logic.
 type ListDeps struct {
-	Factory clusterprovisioner.Factory
+	Factory             clusterprovisioner.Factory
+	DistributionFactory clusterprovisioner.Factory
 }
 
 // HandleListRunE handles the list command.
@@ -111,9 +113,12 @@ func listClusters(
 				continue
 			}
 
-			defaultFactory := clusterprovisioner.DefaultFactory{}
+			distributionFactory := deps.DistributionFactory
+			if distributionFactory == nil {
+				distributionFactory = clusterprovisioner.DefaultFactory{}
+			}
 
-			otherProv, _, err := defaultFactory.Create(cmd.Context(), otherCluster)
+			otherProv, _, err := distributionFactory.Create(cmd.Context(), otherCluster)
 			if err != nil {
 				return fmt.Errorf(
 					"failed to create provisioner for distribution %s: %w",

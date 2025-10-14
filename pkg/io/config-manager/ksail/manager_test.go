@@ -121,7 +121,7 @@ func TestLoadConfig(t *testing.T) {
 			envVars: map[string]string{
 				"KSAIL_SPEC_DISTRIBUTION":       "K3d",
 				"KSAIL_SPEC_SOURCEDIRECTORY":    "custom-k8s",
-				"KSAIL_SPEC_CONNECTION_CONTEXT": "k3d-k3s-default",
+				"KSAIL_SPEC_CONNECTION_CONTEXT": "k3d-k3d-default",
 			},
 			expectedDistribution: v1alpha1.DistributionK3d,
 			shouldSucceed:        true,

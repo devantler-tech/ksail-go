@@ -213,11 +213,19 @@ func TestListClusters_AllFlagTriggersAdditionalDistribution(t *testing.T) {
 
 	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
 	factory := &recordingListFactory{provisioner: provisioner}
+	otherProvisioner := &recordingListProvisioner{listErr: context.DeadlineExceeded}
+	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
 
-	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	err := listClusters(
+		cfgManager,
+		ListDeps{Factory: factory, DistributionFactory: otherFactory},
+		cmd,
+	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to list clusters for distribution K3d")
 	require.Equal(t, 1, provisioner.listCalls)
+	require.Equal(t, 1, otherFactory.callCount)
+	require.Equal(t, 1, otherProvisioner.listCalls)
 }
 
 func TestDisplayClusterList(t *testing.T) {

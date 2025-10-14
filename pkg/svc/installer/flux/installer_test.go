@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -28,7 +29,22 @@ func TestFluxInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(nil)
+	client.EXPECT().
+		InstallChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "flux-operator", spec.ReleaseName)
+				assert.Equal(
+					t,
+					"oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+					spec.ChartName,
+				)
+				assert.Equal(t, "flux-system", spec.Namespace)
+
+				return true
+			}),
+		).
+		Return(nil, nil)
 
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
@@ -46,7 +62,22 @@ func TestFluxInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
-	client.EXPECT().Install(mock.Anything, mock.Anything).Return(assert.AnError)
+	client.EXPECT().
+		InstallChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "flux-operator", spec.ReleaseName)
+				assert.Equal(
+					t,
+					"oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+					spec.ChartName,
+				)
+				assert.Equal(t, "flux-system", spec.Namespace)
+
+				return true
+			}),
+		).
+		Return(nil, assert.AnError)
 
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
@@ -65,7 +96,9 @@ func TestFluxInstallerUninstallSuccess(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
-	client.EXPECT().Uninstall("flux-operator").Return(nil)
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "flux-operator", "flux-system").
+		Return(nil)
 
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
@@ -83,7 +116,9 @@ func TestFluxInstallerUninstallError(t *testing.T) {
 	t.Parallel()
 
 	client := fluxinstaller.NewMockHelmClient(t)
-	client.EXPECT().Uninstall("flux-operator").Return(assert.AnError)
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "flux-operator", "flux-system").
+		Return(assert.AnError)
 
 	installer := fluxinstaller.NewFluxInstaller(
 		client,

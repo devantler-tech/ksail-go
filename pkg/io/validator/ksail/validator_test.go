@@ -228,7 +228,7 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 		contextName = "kind-kind" // No distribution config provided, use conventional default
 	case v1alpha1.DistributionK3d:
 		distributionConfigFile = "k3d.yaml"
-		contextName = "k3d-k3s-default" // No distribution config provided, use conventional default
+		contextName = "k3d-k3d-default" // No distribution config provided, use conventional default
 	default:
 		distributionConfigFile = "cluster.yaml"
 		contextName = "ksail"
@@ -270,7 +270,7 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionK3d)
-		config.Spec.Connection.Context = "k3d-k3s-default" // No distribution config, so expect conventional default
+		config.Spec.Connection.Context = "k3d-k3d-default" // No distribution config, so expect conventional default
 
 		validator := ksailvalidator.NewValidator()
 		result := validator.Validate(config)
@@ -693,7 +693,7 @@ func testK3dDefaultFallback(t *testing.T) {
 				Distribution:       v1alpha1.DistributionK3d,
 				DistributionConfig: "k3d.yaml",
 				Connection: v1alpha1.Connection{
-					Context: "k3d-k3s-default", // Should match default "k3s-default" with k3d prefix
+					Context: "k3d-k3d-default", // Should match default "k3d-default" with k3d prefix
 				},
 			},
 		}
@@ -1066,13 +1066,13 @@ func testK3dContextValidation(t *testing.T) {
 	}{
 		{
 			name:        "k3d_with_exact_match",
-			context:     "k3d-k3s-default",
+			context:     "k3d-k3d-default",
 			shouldPass:  true,
 			description: "K3d context should match exactly",
 		},
 		{
 			name:        "k3d_with_extra_prefix",
-			context:     "prefix-k3d-k3s-default",
+			context:     "prefix-k3d-k3d-default",
 			shouldPass:  false,
 			description: "K3d context should not have extra prefix",
 		},
