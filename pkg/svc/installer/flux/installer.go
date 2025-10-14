@@ -2,17 +2,10 @@ package fluxinstaller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	helmclient "github.com/mittwald/go-helm-client"
-	"github.com/mittwald/go-helm-client/values"
-)
-
-// ErrUnexpectedClientType is returned when the helm client constructor returns an unexpected type.
-var ErrUnexpectedClientType = errors.New(
-	"unexpected client type returned from helm client constructor",
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
 // FluxInstaller implements the installer.Installer interface for Flux.
@@ -48,8 +41,8 @@ func (b *FluxInstaller) Install(ctx context.Context) error {
 }
 
 // Uninstall removes the Helm release for the Flux Operator.
-func (b *FluxInstaller) Uninstall(_ context.Context) error {
-	err := b.client.Uninstall("flux-operator")
+func (b *FluxInstaller) Uninstall(ctx context.Context) error {
+	err := b.client.UninstallRelease(ctx, "flux-operator", "flux-system")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
 	}
@@ -60,27 +53,18 @@ func (b *FluxInstaller) Uninstall(_ context.Context) error {
 // --- internals ---
 
 func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) error {
-	spec := &helmclient.ChartSpec{
-		ReleaseName:     "flux-operator",
-		ChartName:       "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
-		Namespace:       "flux-system",
-		CreateNamespace: true,
-		Atomic:          true,
-		UpgradeCRDs:     true,
-		Timeout:         b.timeout,
-		ValuesYaml:      "",
-		ValuesOptions: values.Options{
-			ValueFiles:   nil,
-			StringValues: nil,
-			Values:       nil,
-			FileValues:   nil,
-			JSONValues:   nil,
-		},
-		Version:              "",
-		DisableHooks:         false,
-		Replace:              false,
+	spec := &helm.ChartSpec{
+		ReleaseName:          "flux-operator",
+		ChartName:            "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+		Namespace:            "flux-system",
+		CreateNamespace:      true,
+		Atomic:               true,
+		UpgradeCRDs:          true,
+		Timeout:              b.timeout,
 		Wait:                 false,
 		WaitForJobs:          false,
+		DisableHooks:         false,
+		Replace:              false,
 		DependencyUpdate:     false,
 		GenerateName:         false,
 		NameTemplate:         "",
@@ -90,22 +74,18 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) er
 		ResetValues:          false,
 		ReuseValues:          false,
 		ResetThenReuseValues: false,
-		Recreate:             false,
 		MaxHistory:           0,
 		CleanupOnFail:        false,
 		DryRun:               false,
-		DryRunOption:         "",
 		Description:          "",
 		KeepHistory:          false,
-		Labels:               nil,
 		IgnoreNotFound:       false,
-		DeletionPropagation:  "",
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
-	err := b.client.Install(timeoutCtx, spec)
+	_, err := b.client.InstallChart(timeoutCtx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install flux operator chart: %w", err)
 	}

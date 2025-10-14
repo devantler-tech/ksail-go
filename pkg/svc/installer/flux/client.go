@@ -3,11 +3,14 @@ package fluxinstaller
 import (
 	"context"
 
-	helmclient "github.com/mittwald/go-helm-client"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
-// HelmClient defines the subset of Helm operations used by the installer.
+// HelmClient defines the interface for Helm operations needed by the installer.
+// This wraps our consolidated helm client interface.
+//
+//go:generate mockery --name=HelmClient --output=. --filename=mocks.go
 type HelmClient interface {
-	Install(ctx context.Context, spec *helmclient.ChartSpec) error
-	Uninstall(name string) error
+	InstallChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)
+	UninstallRelease(ctx context.Context, releaseName, namespace string) error
 }

@@ -7,9 +7,8 @@ package ciliuminstaller
 import (
 	"context"
 
-	"github.com/mittwald/go-helm-client"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	mock "github.com/stretchr/testify/mock"
-	"helm.sh/helm/v3/pkg/release"
 )
 
 // NewMockHelmClient creates a new instance of MockHelmClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -40,27 +39,27 @@ func (_m *MockHelmClient) EXPECT() *MockHelmClient_Expecter {
 }
 
 // InstallOrUpgradeChart provides a mock function for the type MockHelmClient
-func (_mock *MockHelmClient) InstallOrUpgradeChart(ctx context.Context, spec *helmclient.ChartSpec, opts *helmclient.GenericHelmOptions) (*release.Release, error) {
-	ret := _mock.Called(ctx, spec, opts)
+func (_mock *MockHelmClient) InstallOrUpgradeChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error) {
+	ret := _mock.Called(ctx, spec)
 
 	if len(ret) == 0 {
 		panic("no return value specified for InstallOrUpgradeChart")
 	}
 
-	var r0 *release.Release
+	var r0 *helm.ReleaseInfo
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *helmclient.ChartSpec, *helmclient.GenericHelmOptions) (*release.Release, error)); ok {
-		return returnFunc(ctx, spec, opts)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) (*helm.ReleaseInfo, error)); ok {
+		return returnFunc(ctx, spec)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *helmclient.ChartSpec, *helmclient.GenericHelmOptions) *release.Release); ok {
-		r0 = returnFunc(ctx, spec, opts)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) *helm.ReleaseInfo); ok {
+		r0 = returnFunc(ctx, spec)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*release.Release)
+			r0 = ret.Get(0).(*helm.ReleaseInfo)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *helmclient.ChartSpec, *helmclient.GenericHelmOptions) error); ok {
-		r1 = returnFunc(ctx, spec, opts)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *helm.ChartSpec) error); ok {
+		r1 = returnFunc(ctx, spec)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -74,25 +73,82 @@ type MockHelmClient_InstallOrUpgradeChart_Call struct {
 
 // InstallOrUpgradeChart is a helper method to define mock.On call
 //   - ctx context.Context
-//   - spec *helmclient.ChartSpec
-//   - opts *helmclient.GenericHelmOptions
-func (_e *MockHelmClient_Expecter) InstallOrUpgradeChart(ctx interface{}, spec interface{}, opts interface{}) *MockHelmClient_InstallOrUpgradeChart_Call {
-	return &MockHelmClient_InstallOrUpgradeChart_Call{Call: _e.mock.On("InstallOrUpgradeChart", ctx, spec, opts)}
+//   - spec *helm.ChartSpec
+func (_e *MockHelmClient_Expecter) InstallOrUpgradeChart(ctx interface{}, spec interface{}) *MockHelmClient_InstallOrUpgradeChart_Call {
+	return &MockHelmClient_InstallOrUpgradeChart_Call{Call: _e.mock.On("InstallOrUpgradeChart", ctx, spec)}
 }
 
-func (_c *MockHelmClient_InstallOrUpgradeChart_Call) Run(run func(ctx context.Context, spec *helmclient.ChartSpec, opts *helmclient.GenericHelmOptions)) *MockHelmClient_InstallOrUpgradeChart_Call {
+func (_c *MockHelmClient_InstallOrUpgradeChart_Call) Run(run func(ctx context.Context, spec *helm.ChartSpec)) *MockHelmClient_InstallOrUpgradeChart_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *helmclient.ChartSpec
+		var arg1 *helm.ChartSpec
 		if args[1] != nil {
-			arg1 = args[1].(*helmclient.ChartSpec)
+			arg1 = args[1].(*helm.ChartSpec)
 		}
-		var arg2 *helmclient.GenericHelmOptions
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockHelmClient_InstallOrUpgradeChart_Call) Return(releaseInfo *helm.ReleaseInfo, err error) *MockHelmClient_InstallOrUpgradeChart_Call {
+	_c.Call.Return(releaseInfo, err)
+	return _c
+}
+
+func (_c *MockHelmClient_InstallOrUpgradeChart_Call) RunAndReturn(run func(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)) *MockHelmClient_InstallOrUpgradeChart_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UninstallRelease provides a mock function for the type MockHelmClient
+func (_mock *MockHelmClient) UninstallRelease(ctx context.Context, releaseName string, namespace string) error {
+	ret := _mock.Called(ctx, releaseName, namespace)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UninstallRelease")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, releaseName, namespace)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockHelmClient_UninstallRelease_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UninstallRelease'
+type MockHelmClient_UninstallRelease_Call struct {
+	*mock.Call
+}
+
+// UninstallRelease is a helper method to define mock.On call
+//   - ctx context.Context
+//   - releaseName string
+//   - namespace string
+func (_e *MockHelmClient_Expecter) UninstallRelease(ctx interface{}, releaseName interface{}, namespace interface{}) *MockHelmClient_UninstallRelease_Call {
+	return &MockHelmClient_UninstallRelease_Call{Call: _e.mock.On("UninstallRelease", ctx, releaseName, namespace)}
+}
+
+func (_c *MockHelmClient_UninstallRelease_Call) Run(run func(ctx context.Context, releaseName string, namespace string)) *MockHelmClient_UninstallRelease_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].(*helmclient.GenericHelmOptions)
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
@@ -103,63 +159,12 @@ func (_c *MockHelmClient_InstallOrUpgradeChart_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockHelmClient_InstallOrUpgradeChart_Call) Return(release1 *release.Release, err error) *MockHelmClient_InstallOrUpgradeChart_Call {
-	_c.Call.Return(release1, err)
-	return _c
-}
-
-func (_c *MockHelmClient_InstallOrUpgradeChart_Call) RunAndReturn(run func(ctx context.Context, spec *helmclient.ChartSpec, opts *helmclient.GenericHelmOptions) (*release.Release, error)) *MockHelmClient_InstallOrUpgradeChart_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UninstallReleaseByName provides a mock function for the type MockHelmClient
-func (_mock *MockHelmClient) UninstallReleaseByName(name string) error {
-	ret := _mock.Called(name)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UninstallReleaseByName")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockHelmClient_UninstallReleaseByName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UninstallReleaseByName'
-type MockHelmClient_UninstallReleaseByName_Call struct {
-	*mock.Call
-}
-
-// UninstallReleaseByName is a helper method to define mock.On call
-//   - name string
-func (_e *MockHelmClient_Expecter) UninstallReleaseByName(name interface{}) *MockHelmClient_UninstallReleaseByName_Call {
-	return &MockHelmClient_UninstallReleaseByName_Call{Call: _e.mock.On("UninstallReleaseByName", name)}
-}
-
-func (_c *MockHelmClient_UninstallReleaseByName_Call) Run(run func(name string)) *MockHelmClient_UninstallReleaseByName_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockHelmClient_UninstallReleaseByName_Call) Return(err error) *MockHelmClient_UninstallReleaseByName_Call {
+func (_c *MockHelmClient_UninstallRelease_Call) Return(err error) *MockHelmClient_UninstallRelease_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockHelmClient_UninstallReleaseByName_Call) RunAndReturn(run func(name string) error) *MockHelmClient_UninstallReleaseByName_Call {
+func (_c *MockHelmClient_UninstallRelease_Call) RunAndReturn(run func(ctx context.Context, releaseName string, namespace string) error) *MockHelmClient_UninstallRelease_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -49,7 +49,7 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
-		distributionName = "k3d-default" // Default K3d cluster name (matches createK3dConfig)
+		distributionName = "k3d-default" // Default K3d cluster name (handled by config manager)
 
 		return "k3d-" + distributionName
 	default:
@@ -361,11 +361,8 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
-		ObjectMeta: types.ObjectMeta{
-			Name: "k3d-default",
-		},
-		Servers: 1, // Explicitly set 1 server node
-		Agents:  0, // No agent nodes by default
+		// Additional configuration will be handled by the provisioner with sensible defaults
+		// Users can override any settings in this generated config file
 	}
 
 	// Disable default CNI (Flannel) if Cilium is requested

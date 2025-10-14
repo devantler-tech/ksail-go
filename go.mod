@@ -10,7 +10,6 @@ require (
 	github.com/gkampitakis/go-snaps v0.5.15
 	github.com/jinzhu/copier v0.4.0
 	github.com/k3d-io/k3d/v5 v5.8.3
-	github.com/mittwald/go-helm-client v0.12.18
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/samber/do/v2 v2.0.0
 	github.com/spf13/cobra v1.10.1

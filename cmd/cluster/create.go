@@ -3,13 +3,13 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -17,9 +17,7 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	helmclient "github.com/mittwald/go-helm-client"
 	"github.com/spf13/cobra"
-	"helm.sh/helm/v3/pkg/repo"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -123,19 +121,19 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 	})
 
 	// Get kubeconfig path and data
-	kubeconfig, kubeconfigData, err := loadKubeconfig(clusterCfg)
+	kubeconfig, _, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
 
-	// Create Helm client with output suppression
-	helmClient, err := createSilentHelmClient(kubeconfigData, clusterCfg.Spec.Connection.Context)
+	// Create Helm client
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
 	// Add Cilium Helm repository
-	err = helmClient.AddOrUpdateChartRepo(repo.Entry{
+	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
 		Name: "cilium",
 		URL:  "https://helm.cilium.io/",
 	})
@@ -183,31 +181,6 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 	}
 
 	return kubeconfig, kubeconfigData, nil
-}
-
-// createSilentHelmClient creates a Helm client with suppressed output.
-//
-//nolint:ireturn // Helm client interface is required by the installer
-func createSilentHelmClient(kubeconfigData []byte, kubeContext string) (helmclient.Client, error) {
-	helmClient, err := helmclient.NewClientFromKubeConf(&helmclient.KubeConfClientOptions{
-		Options: &helmclient.Options{
-			Namespace:        "kube-system",
-			RepositoryCache:  "/tmp/.helmcache",
-			RepositoryConfig: "/tmp/.helmrepo",
-			Debug:            false,
-			Linting:          false,
-			DebugLog:         func(_ string, _ ...interface{}) {}, // Suppress debug output
-			RegistryConfig:   "",
-			Output:           io.Discard, // Suppress Helm output
-		},
-		KubeContext: kubeContext,
-		KubeConfig:  kubeconfigData,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	return helmClient, nil
 }
 
 // getCiliumInstallTimeout determines the timeout for Cilium installation.

@@ -2,17 +2,10 @@ package ciliuminstaller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
-	helmclient "github.com/mittwald/go-helm-client"
-	"github.com/mittwald/go-helm-client/values"
-)
-
-// ErrUnexpectedClientType is returned when the helm client constructor returns an unexpected type.
-var ErrUnexpectedClientType = errors.New(
-	"unexpected client type returned from helm client constructor",
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
@@ -48,8 +41,8 @@ func (c *CiliumInstaller) Install(ctx context.Context) error {
 }
 
 // Uninstall removes the Helm release for Cilium.
-func (c *CiliumInstaller) Uninstall(_ context.Context) error {
-	err := c.client.UninstallReleaseByName("cilium")
+func (c *CiliumInstaller) Uninstall(ctx context.Context) error {
+	err := c.client.UninstallRelease(ctx, "cilium", "kube-system")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall cilium release: %w", err)
 	}
@@ -60,27 +53,18 @@ func (c *CiliumInstaller) Uninstall(_ context.Context) error {
 // --- internals ---
 
 func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error {
-	spec := &helmclient.ChartSpec{
-		ReleaseName:     "cilium",
-		ChartName:       "cilium/cilium",
-		Namespace:       "kube-system",
-		CreateNamespace: false,
-		Atomic:          true,
-		UpgradeCRDs:     true,
-		Timeout:         c.timeout,
-		ValuesYaml:      "",
-		ValuesOptions: values.Options{
-			ValueFiles:   nil,
-			StringValues: nil,
-			Values:       nil,
-			FileValues:   nil,
-			JSONValues:   nil,
-		},
-		Version:              "",
-		DisableHooks:         false,
-		Replace:              false,
+	spec := &helm.ChartSpec{
+		ReleaseName:          "cilium",
+		ChartName:            "cilium/cilium",
+		Namespace:            "kube-system",
+		CreateNamespace:      false,
+		Atomic:               true,
+		UpgradeCRDs:          true,
+		Timeout:              c.timeout,
 		Wait:                 false,
 		WaitForJobs:          false,
+		DisableHooks:         false,
+		Replace:              false,
 		DependencyUpdate:     false,
 		GenerateName:         false,
 		NameTemplate:         "",
@@ -90,22 +74,18 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		ResetValues:          false,
 		ReuseValues:          false,
 		ResetThenReuseValues: false,
-		Recreate:             false,
 		MaxHistory:           0,
 		CleanupOnFail:        false,
 		DryRun:               false,
-		DryRunOption:         "",
 		Description:          "",
 		KeepHistory:          false,
-		Labels:               nil,
 		IgnoreNotFound:       false,
-		DeletionPropagation:  "",
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	_, err := c.client.InstallOrUpgradeChart(timeoutCtx, spec, nil)
+	_, err := c.client.InstallOrUpgradeChart(timeoutCtx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install cilium chart: %w", err)
 	}

@@ -7,7 +7,7 @@ package fluxinstaller
 import (
 	"context"
 
-	"github.com/mittwald/go-helm-client"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -38,44 +38,55 @@ func (_m *MockHelmClient) EXPECT() *MockHelmClient_Expecter {
 	return &MockHelmClient_Expecter{mock: &_m.Mock}
 }
 
-// Install provides a mock function for the type MockHelmClient
-func (_mock *MockHelmClient) Install(ctx context.Context, spec *helmclient.ChartSpec) error {
+// InstallChart provides a mock function for the type MockHelmClient
+func (_mock *MockHelmClient) InstallChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error) {
 	ret := _mock.Called(ctx, spec)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Install")
+		panic("no return value specified for InstallChart")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *helmclient.ChartSpec) error); ok {
+	var r0 *helm.ReleaseInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) (*helm.ReleaseInfo, error)); ok {
+		return returnFunc(ctx, spec)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) *helm.ReleaseInfo); ok {
 		r0 = returnFunc(ctx, spec)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*helm.ReleaseInfo)
+		}
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *helm.ChartSpec) error); ok {
+		r1 = returnFunc(ctx, spec)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockHelmClient_Install_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Install'
-type MockHelmClient_Install_Call struct {
+// MockHelmClient_InstallChart_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InstallChart'
+type MockHelmClient_InstallChart_Call struct {
 	*mock.Call
 }
 
-// Install is a helper method to define mock.On call
+// InstallChart is a helper method to define mock.On call
 //   - ctx context.Context
-//   - spec *helmclient.ChartSpec
-func (_e *MockHelmClient_Expecter) Install(ctx interface{}, spec interface{}) *MockHelmClient_Install_Call {
-	return &MockHelmClient_Install_Call{Call: _e.mock.On("Install", ctx, spec)}
+//   - spec *helm.ChartSpec
+func (_e *MockHelmClient_Expecter) InstallChart(ctx interface{}, spec interface{}) *MockHelmClient_InstallChart_Call {
+	return &MockHelmClient_InstallChart_Call{Call: _e.mock.On("InstallChart", ctx, spec)}
 }
 
-func (_c *MockHelmClient_Install_Call) Run(run func(ctx context.Context, spec *helmclient.ChartSpec)) *MockHelmClient_Install_Call {
+func (_c *MockHelmClient_InstallChart_Call) Run(run func(ctx context.Context, spec *helm.ChartSpec)) *MockHelmClient_InstallChart_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *helmclient.ChartSpec
+		var arg1 *helm.ChartSpec
 		if args[1] != nil {
-			arg1 = args[1].(*helmclient.ChartSpec)
+			arg1 = args[1].(*helm.ChartSpec)
 		}
 		run(
 			arg0,
@@ -85,63 +96,75 @@ func (_c *MockHelmClient_Install_Call) Run(run func(ctx context.Context, spec *h
 	return _c
 }
 
-func (_c *MockHelmClient_Install_Call) Return(err error) *MockHelmClient_Install_Call {
-	_c.Call.Return(err)
+func (_c *MockHelmClient_InstallChart_Call) Return(releaseInfo *helm.ReleaseInfo, err error) *MockHelmClient_InstallChart_Call {
+	_c.Call.Return(releaseInfo, err)
 	return _c
 }
 
-func (_c *MockHelmClient_Install_Call) RunAndReturn(run func(ctx context.Context, spec *helmclient.ChartSpec) error) *MockHelmClient_Install_Call {
+func (_c *MockHelmClient_InstallChart_Call) RunAndReturn(run func(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)) *MockHelmClient_InstallChart_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// Uninstall provides a mock function for the type MockHelmClient
-func (_mock *MockHelmClient) Uninstall(name string) error {
-	ret := _mock.Called(name)
+// UninstallRelease provides a mock function for the type MockHelmClient
+func (_mock *MockHelmClient) UninstallRelease(ctx context.Context, releaseName string, namespace string) error {
+	ret := _mock.Called(ctx, releaseName, namespace)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Uninstall")
+		panic("no return value specified for UninstallRelease")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = returnFunc(ctx, releaseName, namespace)
 	} else {
 		r0 = ret.Error(0)
 	}
 	return r0
 }
 
-// MockHelmClient_Uninstall_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Uninstall'
-type MockHelmClient_Uninstall_Call struct {
+// MockHelmClient_UninstallRelease_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UninstallRelease'
+type MockHelmClient_UninstallRelease_Call struct {
 	*mock.Call
 }
 
-// Uninstall is a helper method to define mock.On call
-//   - name string
-func (_e *MockHelmClient_Expecter) Uninstall(name interface{}) *MockHelmClient_Uninstall_Call {
-	return &MockHelmClient_Uninstall_Call{Call: _e.mock.On("Uninstall", name)}
+// UninstallRelease is a helper method to define mock.On call
+//   - ctx context.Context
+//   - releaseName string
+//   - namespace string
+func (_e *MockHelmClient_Expecter) UninstallRelease(ctx interface{}, releaseName interface{}, namespace interface{}) *MockHelmClient_UninstallRelease_Call {
+	return &MockHelmClient_UninstallRelease_Call{Call: _e.mock.On("UninstallRelease", ctx, releaseName, namespace)}
 }
 
-func (_c *MockHelmClient_Uninstall_Call) Run(run func(name string)) *MockHelmClient_Uninstall_Call {
+func (_c *MockHelmClient_UninstallRelease_Call) Run(run func(ctx context.Context, releaseName string, namespace string)) *MockHelmClient_UninstallRelease_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
 		}
 		run(
 			arg0,
+			arg1,
+			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockHelmClient_Uninstall_Call) Return(err error) *MockHelmClient_Uninstall_Call {
+func (_c *MockHelmClient_UninstallRelease_Call) Return(err error) *MockHelmClient_UninstallRelease_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockHelmClient_Uninstall_Call) RunAndReturn(run func(name string) error) *MockHelmClient_Uninstall_Call {
+func (_c *MockHelmClient_UninstallRelease_Call) RunAndReturn(run func(ctx context.Context, releaseName string, namespace string) error) *MockHelmClient_UninstallRelease_Call {
 	_c.Call.Return(run)
 	return _c
 }
