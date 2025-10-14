@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -29,10 +30,11 @@ type KindProvider interface {
 
 // KindClusterProvisioner is an implementation of the ClusterProvisioner interface for provisioning kind clusters.
 type KindClusterProvisioner struct {
-	kubeConfig string
-	kindConfig *v1alpha4.Cluster
-	provider   KindProvider
-	client     client.ContainerAPIClient
+	kubeConfig      string
+	kindConfig      *v1alpha4.Cluster
+	provider        KindProvider
+	client          client.APIClient
+	registryManager *docker.RegistryManager
 }
 
 // NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
@@ -42,21 +44,29 @@ func NewKindClusterProvisioner(
 	kindConfig *v1alpha4.Cluster,
 	kubeConfig string,
 	provider KindProvider,
-	client client.ContainerAPIClient,
+	dockerClient client.APIClient,
 ) *KindClusterProvisioner {
 	return &KindClusterProvisioner{
-		kubeConfig: kubeConfig,
-		kindConfig: kindConfig,
-		provider:   provider,
-		client:     client,
+		kubeConfig:      kubeConfig,
+		kindConfig:      kindConfig,
+		provider:        provider,
+		client:          dockerClient,
+		registryManager: docker.NewRegistryManager(dockerClient),
 	}
 }
 
-// Create creates a kind cluster.
-func (k *KindClusterProvisioner) Create(_ context.Context, name string) error {
+// Create creates a kind cluster and any configured mirror registries.
+func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error {
+	// First, create any required mirror registries
+	err := k.createMirrorRegistries(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create mirror registries: %w", err)
+	}
+
+	// Then create the Kind cluster
 	target := setName(name, k.kindConfig.Name)
 
-	err := k.provider.Create(
+	err = k.provider.Create(
 		target,
 		cluster.CreateWithV1Alpha4Config(k.kindConfig),
 		cluster.CreateWithDisplayUsage(true),
@@ -172,6 +182,23 @@ func (k *KindClusterProvisioner) Exists(_ context.Context, name string) (bool, e
 	}
 
 	return false, nil
+}
+
+// createMirrorRegistries extracts and creates mirror registries from Kind config.
+func (k *KindClusterProvisioner) createMirrorRegistries(ctx context.Context) error {
+	registries, err := docker.ExtractRegistriesFromKind(k.kindConfig)
+	if err != nil {
+		return fmt.Errorf("failed to extract registries: %w", err)
+	}
+
+	for _, reg := range registries {
+		err := k.registryManager.CreateRegistry(ctx, reg)
+		if err != nil {
+			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
+		}
+	}
+
+	return nil
 }
 
 // --- internals ---

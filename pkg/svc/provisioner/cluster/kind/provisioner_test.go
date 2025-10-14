@@ -205,7 +205,7 @@ func TestStartErrorDockerStartFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Start(context.Background(), "") },
 		"Start",
-		func(client *docker.MockContainerAPIClient) {
+		func(client *docker.MockAPIClient) {
 			client.On("ContainerStart", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStartClusterFailed)
 		},
@@ -237,7 +237,7 @@ func TestStopErrorDockerStopFailed(t *testing.T) {
 		t,
 		func(p *kindprovisioner.KindClusterProvisioner) error { return p.Stop(context.Background(), "") },
 		"Stop",
-		func(client *docker.MockContainerAPIClient) {
+		func(client *docker.MockAPIClient) {
 			client.On("ContainerStop", mock.Anything, "kind-control-plane", mock.Anything).
 				Return(clustertestutils.ErrStopClusterFailed)
 		},
@@ -267,11 +267,11 @@ func newProvisionerForTest(
 ) (
 	*kindprovisioner.KindClusterProvisioner,
 	*kindprovisioner.MockKindProvider,
-	*docker.MockContainerAPIClient,
+	*docker.MockAPIClient,
 ) {
 	t.Helper()
 	provider := kindprovisioner.NewMockKindProvider(t)
-	client := docker.NewMockContainerAPIClient(t)
+	client := docker.NewMockAPIClient(t)
 
 	cfg := &v1alpha4.Cluster{
 		Name: "cfg-name",
@@ -315,7 +315,7 @@ func runDockerOperationFailureTest(
 	t *testing.T,
 	operation func(*kindprovisioner.KindClusterProvisioner) error,
 	operationName string,
-	expectDockerCall func(*docker.MockContainerAPIClient),
+	expectDockerCall func(*docker.MockAPIClient),
 	expectedErrorMsg string,
 ) {
 	t.Helper()
