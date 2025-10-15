@@ -372,6 +372,10 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 				Arg:         "--flannel-backend=none",
 				NodeFilters: []string{"server:*"},
 			},
+			{
+				Arg:         "--disable-network-policy",
+				NodeFilters: []string{"server:*"},
+			},
 		}
 	}
 

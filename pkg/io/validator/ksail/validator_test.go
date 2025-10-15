@@ -379,6 +379,88 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 	})
 }
 
+func TestKSailValidatorK3dCiliumExtraArgsValidation(t *testing.T) {
+	t.Parallel()
+
+	createCluster := func() *v1alpha1.Cluster {
+		cluster := createValidKSailConfig(v1alpha1.DistributionK3d)
+		cluster.Spec.CNI = v1alpha1.CNICilium
+
+		return cluster
+	}
+
+	testCases := []struct {
+		name        string
+		extraArgs   []k3dapi.K3sArgWithNodeFilters
+		expectValid bool
+		expectSnips []string
+	}{
+		{
+			name: "all_required_args_present",
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--flannel-backend=none", NodeFilters: []string{"server:*"}},
+				{Arg: "--disable-network-policy", NodeFilters: []string{"server:*"}},
+			},
+			expectValid: true,
+		},
+		{
+			name: "missing_flannel_backend",
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--disable-network-policy", NodeFilters: []string{"server:*"}},
+			},
+			expectValid: false,
+			expectSnips: []string{"--flannel-backend=none"},
+		},
+		{
+			name: "missing_network_policy_disable",
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--flannel-backend=none", NodeFilters: []string{"server:*"}},
+			},
+			expectValid: false,
+			expectSnips: []string{"--disable-network-policy"},
+		},
+		{
+			name:        "missing_all_required_args",
+			extraArgs:   nil,
+			expectValid: false,
+			expectSnips: []string{"--flannel-backend=none", "--disable-network-policy"},
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			cluster := createCluster()
+			k3dConfig := &k3dapi.SimpleConfig{
+				ObjectMeta: k3dtypes.ObjectMeta{Name: "ksail"},
+			}
+			k3dConfig.Options.K3sOptions.ExtraArgs = testCase.extraArgs
+
+			validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
+			result := validator.Validate(cluster)
+
+			if testCase.expectValid {
+				assert.True(t, result.Valid)
+				assert.Empty(t, result.Errors)
+
+				return
+			}
+
+			assert.False(t, result.Valid)
+			require.Len(t, result.Errors, 1)
+			err := result.Errors[0]
+			assert.Equal(t, "spec.cni", err.Field)
+			for _, snippet := range testCase.expectSnips {
+				assert.Contains(t, err.Message, snippet)
+				assert.Contains(t, err.FixSuggestion, snippet)
+			}
+		})
+	}
+}
+
 // TestKSailValidatorMultipleConfigs tests validation with multiple distribution configs.
 func TestKSailValidatorMultipleConfigs(t *testing.T) {
 	t.Parallel()

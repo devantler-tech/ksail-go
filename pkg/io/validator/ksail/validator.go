@@ -3,6 +3,7 @@ package ksail
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
@@ -234,22 +235,41 @@ func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) 
 		return
 	}
 
-	// Check if --flannel-backend=none is set in K3s extra args
-	hasFlannelDisabled := false
+	var (
+		hasFlannelDisabled       bool
+		hasNetworkPolicyDisabled bool
+	)
 
 	for _, arg := range v.k3dConfig.Options.K3sOptions.ExtraArgs {
-		if arg.Arg == "--flannel-backend=none" {
+		switch arg.Arg {
+		case "--flannel-backend=none":
 			hasFlannelDisabled = true
-
-			break
+		case "--disable-network-policy":
+			hasNetworkPolicyDisabled = true
 		}
 	}
 
+	missingArgs := make([]string, 0, 2)
 	if !hasFlannelDisabled {
-		result.AddError(validator.ValidationError{
-			Field:         "spec.cni",
-			Message:       "Cilium CNI requires Flannel to be disabled in K3d configuration",
-			FixSuggestion: "Add '--flannel-backend=none' to the K3s extra args in your k3d.yaml configuration file",
-		})
+		missingArgs = append(missingArgs, "'--flannel-backend=none'")
 	}
+	if !hasNetworkPolicyDisabled {
+		missingArgs = append(missingArgs, "'--disable-network-policy'")
+	}
+
+	if len(missingArgs) == 0 {
+		return
+	}
+
+	result.AddError(validator.ValidationError{
+		Field: "spec.cni",
+		Message: fmt.Sprintf(
+			"Cilium CNI requires %s in K3d configuration",
+			strings.Join(missingArgs, " and "),
+		),
+		FixSuggestion: fmt.Sprintf(
+			"Add %s to the K3s extra args in your k3d.yaml configuration file",
+			strings.Join(missingArgs, " and "),
+		),
+	})
 }

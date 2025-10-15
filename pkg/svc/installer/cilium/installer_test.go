@@ -36,6 +36,8 @@ func TestCiliumInstallerInstallSuccess(t *testing.T) {
 				assert.Equal(t, "cilium", spec.ReleaseName)
 				assert.Equal(t, "cilium/cilium", spec.ChartName)
 				assert.Equal(t, "kube-system", spec.Namespace)
+				assert.True(t, spec.Wait)
+				assert.True(t, spec.WaitForJobs)
 
 				return true
 			}),
@@ -65,6 +67,8 @@ func TestCiliumInstallerInstallError(t *testing.T) {
 				assert.Equal(t, "cilium", spec.ReleaseName)
 				assert.Equal(t, "cilium/cilium", spec.ChartName)
 				assert.Equal(t, "kube-system", spec.Namespace)
+				assert.True(t, spec.Wait)
+				assert.True(t, spec.WaitForJobs)
 
 				return true
 			}),
