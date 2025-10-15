@@ -212,23 +212,28 @@ func (c *Client) switchNamespace(namespace string) (func(), error) {
 }
 
 func (c *Client) InstallChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error) {
-	return c.executeReleaseOp(
-		ctx,
-		spec,
-		true,
-		func(ctx context.Context, chartSpec *helmclientlib.ChartSpec) (*release.Release, error) {
-			return c.inner.InstallChart(ctx, chartSpec, nil)
-		},
-	)
+	return c.installRelease(ctx, spec, false)
 }
 
 func (c *Client) InstallOrUpgradeChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error) {
+	return c.installRelease(ctx, spec, true)
+}
+
+func (c *Client) installRelease(
+	ctx context.Context,
+	spec *ChartSpec,
+	upgrade bool,
+) (*ReleaseInfo, error) {
 	return c.executeReleaseOp(
 		ctx,
 		spec,
 		true,
 		func(ctx context.Context, chartSpec *helmclientlib.ChartSpec) (*release.Release, error) {
-			return c.inner.InstallOrUpgradeChart(ctx, chartSpec, nil)
+			if upgrade {
+				return c.inner.InstallOrUpgradeChart(ctx, chartSpec, nil)
+			}
+
+			return c.inner.InstallChart(ctx, chartSpec, nil)
 		},
 	)
 }

@@ -180,33 +180,27 @@ func waitForDaemonSetReady(
 	namespace, name string,
 	deadline time.Duration,
 ) error {
-	return wait.PollUntilContextTimeout(
-		ctx,
-		3*time.Second,
-		deadline,
-		true,
-		func(ctx context.Context) (bool, error) {
-			daemonSet, err := clientset.AppsV1().
-				DaemonSets(namespace).
-				Get(ctx, name, metav1.GetOptions{})
-			if err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-
-				return false, err
-			}
-
-			if daemonSet.Status.DesiredNumberScheduled == 0 {
+	return pollForReadiness(ctx, deadline, func(ctx context.Context) (bool, error) {
+		daemonSet, err := clientset.AppsV1().
+			DaemonSets(namespace).
+			Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
 				return false, nil
 			}
 
-			ready := daemonSet.Status.NumberUnavailable == 0 &&
-				daemonSet.Status.UpdatedNumberScheduled == daemonSet.Status.DesiredNumberScheduled
+			return false, err
+		}
 
-			return ready, nil
-		},
-	)
+		if daemonSet.Status.DesiredNumberScheduled == 0 {
+			return false, nil
+		}
+
+		ready := daemonSet.Status.NumberUnavailable == 0 &&
+			daemonSet.Status.UpdatedNumberScheduled == daemonSet.Status.DesiredNumberScheduled
+
+		return ready, nil
+	})
 }
 
 func waitForDeploymentReady(
@@ -215,36 +209,44 @@ func waitForDeploymentReady(
 	namespace, name string,
 	deadline time.Duration,
 ) error {
+	return pollForReadiness(ctx, deadline, func(ctx context.Context) (bool, error) {
+		deployment, err := clientset.AppsV1().
+			Deployments(namespace).
+			Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+
+			return false, err
+		}
+
+		if deployment.Status.Replicas == 0 {
+			return false, nil
+		}
+
+		if deployment.Status.UpdatedReplicas < deployment.Status.Replicas {
+			return false, nil
+		}
+
+		if deployment.Status.AvailableReplicas < deployment.Status.Replicas {
+			return false, nil
+		}
+
+		return true, nil
+	})
+}
+
+func pollForReadiness(
+	ctx context.Context,
+	deadline time.Duration,
+	poll func(context.Context) (bool, error),
+) error {
 	return wait.PollUntilContextTimeout(
 		ctx,
 		3*time.Second,
 		deadline,
 		true,
-		func(ctx context.Context) (bool, error) {
-			deployment, err := clientset.AppsV1().
-				Deployments(namespace).
-				Get(ctx, name, metav1.GetOptions{})
-			if err != nil {
-				if errors.IsNotFound(err) {
-					return false, nil
-				}
-
-				return false, err
-			}
-
-			if deployment.Status.Replicas == 0 {
-				return false, nil
-			}
-
-			if deployment.Status.UpdatedReplicas < deployment.Status.Replicas {
-				return false, nil
-			}
-
-			if deployment.Status.AvailableReplicas < deployment.Status.Replicas {
-				return false, nil
-			}
-
-			return true, nil
-		},
+		poll,
 	)
 }

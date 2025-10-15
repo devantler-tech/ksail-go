@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
@@ -30,29 +29,9 @@ func (s *stubRunner) Run(
 ) (commandrunner.CommandResult, error) {
 	s.recorded.args = append([]string(nil), args...)
 	if s.err != nil {
-		return s.result, combineError(s.err, s.result)
+		return s.result, commandrunner.MergeCommandError(s.err, s.result)
 	}
 	return s.result, nil
-}
-
-func combineError(base error, res commandrunner.CommandResult) error {
-	if base == nil {
-		return nil
-	}
-
-	var details []string
-	if trimmed := strings.TrimSpace(res.Stderr); trimmed != "" {
-		details = append(details, trimmed)
-	}
-	if trimmed := strings.TrimSpace(res.Stdout); trimmed != "" {
-		details = append(details, trimmed)
-	}
-
-	if len(details) == 0 {
-		return base
-	}
-
-	return fmt.Errorf("%w: %s", base, strings.Join(details, " | "))
 }
 
 func TestCreateUsesConfigFlag(t *testing.T) {

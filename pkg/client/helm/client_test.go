@@ -280,15 +280,7 @@ func TestHelmClientContextSupport(t *testing.T) {
 }
 
 func TestClientAddRepositorySuccess(t *testing.T) {
-	tempDir := t.TempDir()
-	repoCache := filepath.Join(tempDir, "cache")
-	repoConfig := filepath.Join(tempDir, "repositories.yaml")
-
-	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
-	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
-	t.Setenv("HELM_CACHE_HOME", tempDir)
-	t.Setenv("HELM_CONFIG_HOME", tempDir)
-	t.Setenv("HELM_DATA_HOME", tempDir)
+	repoCache, repoConfig := setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/index.yaml" {
@@ -317,15 +309,7 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 }
 
 func TestClientAddRepositoryDownloadFailure(t *testing.T) {
-	tempDir := t.TempDir()
-	repoCache := filepath.Join(tempDir, "cache")
-	repoConfig := filepath.Join(tempDir, "repositories.yaml")
-
-	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
-	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
-	t.Setenv("HELM_CACHE_HOME", tempDir)
-	t.Setenv("HELM_CONFIG_HOME", tempDir)
-	t.Setenv("HELM_DATA_HOME", tempDir)
+	setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -341,4 +325,19 @@ func TestClientAddRepositoryDownloadFailure(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to download repository index file")
+}
+
+func setupHelmRepoEnv(t *testing.T) (repoCache, repoConfig string) {
+	t.Helper()
+	tempDir := t.TempDir()
+	repoCache = filepath.Join(tempDir, "cache")
+	repoConfig = filepath.Join(tempDir, "repositories.yaml")
+
+	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
+	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
+	t.Setenv("HELM_CACHE_HOME", tempDir)
+	t.Setenv("HELM_CONFIG_HOME", tempDir)
+	t.Setenv("HELM_DATA_HOME", tempDir)
+
+	return repoCache, repoConfig
 }

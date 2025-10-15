@@ -58,24 +58,7 @@ func newCreateCommandRunE(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
 ) func(*cobra.Command, []string) error {
-	return runtime.RunEWithRuntime(
-		runtimeContainer,
-		runtime.WithTimer(
-			func(cmd *cobra.Command, injector runtime.Injector, tmr timer.Timer) error {
-				factory, err := runtime.ResolveClusterProvisionerFactory(injector)
-				if err != nil {
-					return fmt.Errorf("resolve provisioner factory dependency: %w", err)
-				}
-
-				deps := shared.LifecycleDeps{
-					Timer:   tmr,
-					Factory: factory,
-				}
-
-				return handleCreateRunE(cmd, cfgManager, deps)
-			},
-		),
-	)
+	return shared.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 }
 
 // handleCreateRunE executes cluster creation with CNI installation.

@@ -88,9 +88,9 @@ func (r *cobraCommandRunner) Run(
 
 		switch {
 		case fatalErr != nil:
-			err = mergeCommandError(fatalErr, res)
+			err = MergeCommandError(fatalErr, res)
 		case err != nil:
-			err = mergeCommandError(err, res)
+			err = MergeCommandError(err, res)
 		}
 	}()
 
@@ -141,7 +141,8 @@ func (r *cobraCommandRunner) Run(
 	return res, err
 }
 
-func mergeCommandError(base error, res CommandResult) error {
+// MergeCommandError enriches a base error with captured stdout/stderr when available.
+func MergeCommandError(base error, res CommandResult) error {
 	if base == nil {
 		return nil
 	}

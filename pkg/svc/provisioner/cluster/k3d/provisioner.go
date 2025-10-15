@@ -93,71 +93,35 @@ func WithCommandBuilders(builders CommandBuilders) Option {
 
 // Create provisions a k3d cluster using the native Cobra command.
 func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
-	cmd := k.builders.Create()
 	args := k.appendConfigFlag(nil)
-	target := k.resolveName(name)
-	if target != "" {
-		args = append(args, target)
-		k.simpleCfg.Name = target
-	}
-
-	_, err := k.runner.Run(ctx, cmd, args)
-	if err != nil {
-		return fmt.Errorf("cluster create: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(
+		ctx,
+		k.builders.Create,
+		args,
+		name,
+		"cluster create",
+		func(target string) {
+			if k.simpleCfg != nil {
+				k.simpleCfg.Name = target
+			}
+		},
+	)
 }
 
 // Delete removes a k3d cluster via the Cobra command.
 func (k *K3dClusterProvisioner) Delete(ctx context.Context, name string) error {
-	cmd := k.builders.Delete()
 	args := k.appendConfigFlag(nil)
-	target := k.resolveName(name)
-	if target != "" {
-		args = append(args, target)
-	}
-
-	_, err := k.runner.Run(ctx, cmd, args)
-	if err != nil {
-		return fmt.Errorf("cluster delete: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Delete, args, name, "cluster delete", nil)
 }
 
 // Start resumes a stopped k3d cluster via Cobra.
 func (k *K3dClusterProvisioner) Start(ctx context.Context, name string) error {
-	cmd := k.builders.Start()
-	args := make([]string, 0)
-	target := k.resolveName(name)
-	if target != "" {
-		args = append(args, target)
-	}
-
-	_, err := k.runner.Run(ctx, cmd, args)
-	if err != nil {
-		return fmt.Errorf("cluster start: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Start, nil, name, "cluster start", nil)
 }
 
 // Stop halts a running k3d cluster via Cobra.
 func (k *K3dClusterProvisioner) Stop(ctx context.Context, name string) error {
-	cmd := k.builders.Stop()
-	args := make([]string, 0)
-	target := k.resolveName(name)
-	if target != "" {
-		args = append(args, target)
-	}
-
-	_, err := k.runner.Run(ctx, cmd, args)
-	if err != nil {
-		return fmt.Errorf("cluster stop: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Stop, nil, name, "cluster stop", nil)
 }
 
 // List returns cluster names reported by the Cobra command.
@@ -224,4 +188,28 @@ func (k *K3dClusterProvisioner) resolveName(name string) string {
 		return k.simpleCfg.Name
 	}
 	return ""
+}
+
+func (k *K3dClusterProvisioner) runLifecycleCommand(
+	ctx context.Context,
+	builder func() *cobra.Command,
+	args []string,
+	name string,
+	errorPrefix string,
+	onTarget func(string),
+) error {
+	cmd := builder()
+	target := k.resolveName(name)
+	if target != "" {
+		args = append(args, target)
+		if onTarget != nil {
+			onTarget(target)
+		}
+	}
+
+	if _, err := k.runner.Run(ctx, cmd, args); err != nil {
+		return fmt.Errorf("%s: %w", errorPrefix, err)
+	}
+
+	return nil
 }

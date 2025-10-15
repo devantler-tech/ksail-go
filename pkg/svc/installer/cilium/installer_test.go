@@ -28,41 +28,9 @@ func TestNewCiliumInstaller(t *testing.T) {
 func TestCiliumInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
-	client := NewMockHelmClient(t)
-	client.EXPECT().
-		AddRepository(
-			mock.Anything,
-			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-				assert.Equal(t, "cilium", entry.Name)
-				assert.Equal(t, "https://helm.cilium.io", entry.URL)
-
-				return true
-			}),
-		).
-		Return(nil)
-	client.EXPECT().
-		InstallOrUpgradeChart(
-			mock.Anything,
-			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				assert.Equal(t, "cilium", spec.ReleaseName)
-				assert.Equal(t, "cilium/cilium", spec.ChartName)
-				assert.Equal(t, "kube-system", spec.Namespace)
-				assert.Equal(t, "https://helm.cilium.io", spec.RepoURL)
-				assert.True(t, spec.Wait)
-				assert.True(t, spec.WaitForJobs)
-				assert.Equal(t, "1", spec.SetJSONVals["operator.replicas"])
-
-				return true
-			}),
-		).
-		Return(nil, nil)
-
-	installer := NewCiliumInstaller(
-		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
-	)
+	installer, client := newDefaultInstaller(t)
+	expectCiliumAddRepository(t, client, nil)
+	expectCiliumInstallChart(t, client, nil)
 
 	err := installer.Install(context.Background())
 
@@ -72,41 +40,9 @@ func TestCiliumInstallerInstallSuccess(t *testing.T) {
 func TestCiliumInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
-	client := NewMockHelmClient(t)
-	client.EXPECT().
-		AddRepository(
-			mock.Anything,
-			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-				assert.Equal(t, "cilium", entry.Name)
-				assert.Equal(t, "https://helm.cilium.io", entry.URL)
-
-				return true
-			}),
-		).
-		Return(nil)
-	client.EXPECT().
-		InstallOrUpgradeChart(
-			mock.Anything,
-			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				assert.Equal(t, "cilium", spec.ReleaseName)
-				assert.Equal(t, "cilium/cilium", spec.ChartName)
-				assert.Equal(t, "kube-system", spec.Namespace)
-				assert.Equal(t, "https://helm.cilium.io", spec.RepoURL)
-				assert.True(t, spec.Wait)
-				assert.True(t, spec.WaitForJobs)
-				assert.Equal(t, "1", spec.SetJSONVals["operator.replicas"])
-
-				return true
-			}),
-		).
-		Return(nil, assert.AnError)
-
-	installer := NewCiliumInstaller(
-		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
-	)
+	installer, client := newDefaultInstaller(t)
+	expectCiliumAddRepository(t, client, nil)
+	expectCiliumInstallChart(t, client, assert.AnError)
 
 	err := installer.Install(context.Background())
 
@@ -117,25 +53,8 @@ func TestCiliumInstallerInstallError(t *testing.T) {
 func TestCiliumInstallerInstallAddRepositoryError(t *testing.T) {
 	t.Parallel()
 
-	client := NewMockHelmClient(t)
-	client.EXPECT().
-		AddRepository(
-			mock.Anything,
-			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-				assert.Equal(t, "cilium", entry.Name)
-				assert.Equal(t, "https://helm.cilium.io", entry.URL)
-
-				return true
-			}),
-		).
-		Return(assert.AnError)
-
-	installer := NewCiliumInstaller(
-		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
-	)
+	installer, client := newDefaultInstaller(t)
+	expectCiliumAddRepository(t, client, assert.AnError)
 
 	err := installer.Install(context.Background())
 
@@ -146,17 +65,8 @@ func TestCiliumInstallerInstallAddRepositoryError(t *testing.T) {
 func TestCiliumInstallerUninstallSuccess(t *testing.T) {
 	t.Parallel()
 
-	client := NewMockHelmClient(t)
-	client.EXPECT().
-		UninstallRelease(mock.Anything, "cilium", "kube-system").
-		Return(nil)
-
-	installer := NewCiliumInstaller(
-		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
-	)
+	installer, client := newDefaultInstaller(t)
+	expectCiliumUninstall(t, client, nil)
 
 	err := installer.Uninstall(context.Background())
 
@@ -166,17 +76,8 @@ func TestCiliumInstallerUninstallSuccess(t *testing.T) {
 func TestCiliumInstallerUninstallError(t *testing.T) {
 	t.Parallel()
 
-	client := NewMockHelmClient(t)
-	client.EXPECT().
-		UninstallRelease(mock.Anything, "cilium", "kube-system").
-		Return(assert.AnError)
-
-	installer := NewCiliumInstaller(
-		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
-	)
+	installer, client := newDefaultInstaller(t)
+	expectCiliumUninstall(t, client, assert.AnError)
 
 	err := installer.Uninstall(context.Background())
 
@@ -240,4 +141,59 @@ func TestCiliumInstallerWaitForReadinessRestoresDefaultWhenNil(t *testing.T) {
 	installer.SetWaitForReadinessFunc(nil)
 	restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
 	require.Equal(t, defaultPtr, restoredPtr)
+}
+
+func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *MockHelmClient) {
+	t.Helper()
+	client := NewMockHelmClient(t)
+	installer := NewCiliumInstaller(
+		client,
+		"~/.kube/config",
+		"test-context",
+		5*time.Second,
+	)
+
+	return installer, client
+}
+
+func expectCiliumAddRepository(t *testing.T, client *MockHelmClient, err error) {
+	t.Helper()
+	client.EXPECT().
+		AddRepository(
+			mock.Anything,
+			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
+				assert.Equal(t, "cilium", entry.Name)
+				assert.Equal(t, "https://helm.cilium.io", entry.URL)
+
+				return true
+			}),
+		).
+		Return(err)
+}
+
+func expectCiliumInstallChart(t *testing.T, client *MockHelmClient, installErr error) {
+	t.Helper()
+	client.EXPECT().
+		InstallOrUpgradeChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "cilium", spec.ReleaseName)
+				assert.Equal(t, "cilium/cilium", spec.ChartName)
+				assert.Equal(t, "kube-system", spec.Namespace)
+				assert.Equal(t, "https://helm.cilium.io", spec.RepoURL)
+				assert.True(t, spec.Wait)
+				assert.True(t, spec.WaitForJobs)
+				assert.Equal(t, "1", spec.SetJSONVals["operator.replicas"])
+
+				return true
+			}),
+		).
+		Return(nil, installErr)
+}
+
+func expectCiliumUninstall(t *testing.T, client *MockHelmClient, err error) {
+	t.Helper()
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "cilium", "kube-system").
+		Return(err)
 }
