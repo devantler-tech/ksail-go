@@ -2,6 +2,10 @@ package helm_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -189,51 +193,18 @@ func TestChartSpec_InstallOptions(t *testing.T) {
 		Namespace:       "test-namespace",
 		CreateNamespace: true,
 		UpgradeCRDs:     true,
-		SkipCRDs:        false,
 		Atomic:          true,
 		Wait:            true,
 		WaitForJobs:     true,
-		DisableHooks:    false,
-		Replace:         true,
-		DryRun:          false,
+		Silent:          true,
 	}
 
 	assert.True(t, spec.CreateNamespace)
 	assert.True(t, spec.UpgradeCRDs)
-	assert.False(t, spec.SkipCRDs)
 	assert.True(t, spec.Atomic)
 	assert.True(t, spec.Wait)
 	assert.True(t, spec.WaitForJobs)
-	assert.False(t, spec.DisableHooks)
-	assert.True(t, spec.Replace)
-	assert.False(t, spec.DryRun)
-}
-
-func TestChartSpec_UpgradeOptions(t *testing.T) {
-	t.Parallel()
-
-	spec := &helm.ChartSpec{
-		ReleaseName:          "test-release",
-		ChartName:            "test/chart",
-		Namespace:            "test-namespace",
-		Force:                true,
-		ResetValues:          false,
-		ReuseValues:          true,
-		ResetThenReuseValues: false,
-		MaxHistory:           10,
-		CleanupOnFail:        true,
-		KeepHistory:          false,
-		IgnoreNotFound:       true,
-	}
-
-	assert.True(t, spec.Force)
-	assert.False(t, spec.ResetValues)
-	assert.True(t, spec.ReuseValues)
-	assert.False(t, spec.ResetThenReuseValues)
-	assert.Equal(t, 10, spec.MaxHistory)
-	assert.True(t, spec.CleanupOnFail)
-	assert.False(t, spec.KeepHistory)
-	assert.True(t, spec.IgnoreNotFound)
+	assert.True(t, spec.Silent)
 }
 
 func TestChartSpec_RepositoryOptions(t *testing.T) {
@@ -249,8 +220,8 @@ func TestChartSpec_RepositoryOptions(t *testing.T) {
 		Password:              "pass",
 		CertFile:              "/path/to/cert",
 		KeyFile:               "/path/to/key",
+		CaFile:                "/path/to/ca",
 		InsecureSkipTLSverify: true,
-		PlainHTTP:             false,
 	}
 
 	assert.Equal(t, "1.2.3", spec.Version)
@@ -259,8 +230,8 @@ func TestChartSpec_RepositoryOptions(t *testing.T) {
 	assert.Equal(t, "pass", spec.Password)
 	assert.Equal(t, "/path/to/cert", spec.CertFile)
 	assert.Equal(t, "/path/to/key", spec.KeyFile)
+	assert.Equal(t, "/path/to/ca", spec.CaFile)
 	assert.True(t, spec.InsecureSkipTLSverify)
-	assert.False(t, spec.PlainHTTP)
 }
 
 func TestDefaultTimeout(t *testing.T) {
@@ -296,16 +267,78 @@ func TestHelmClientContextSupport(t *testing.T) {
 	// These would fail in actual execution without a Kubernetes cluster,
 	// but they verify the interface contract
 	_, _ = client.InstallChart(ctx, spec)
-	_, _ = client.UpgradeChart(ctx, spec)
 	_, _ = client.InstallOrUpgradeChart(ctx, spec)
 	_ = client.UninstallRelease(ctx, "test", "default")
-	_, _ = client.GetRelease(ctx, "test", "default")
-	_, _ = client.ListReleases(ctx, "default")
-	_ = client.RollbackRelease(ctx, "test", "default", 1)
-	_ = client.AddRepository(ctx, &helm.RepositoryEntry{Name: "test", URL: "https://example.com"})
-	_ = client.UpdateRepositories(ctx)
-	_ = client.RemoveRepository(ctx, "test")
-	_, _ = client.ListRepositories(ctx)
-	_, _ = client.TemplateChart(ctx, spec)
-	_, _ = client.GetValues(ctx, "test", "default")
+
+	canceledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err = client.AddRepository(
+		canceledCtx,
+		&helm.RepositoryEntry{Name: "test", URL: "https://example.com"},
+	)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
+func TestClientAddRepositorySuccess(t *testing.T) {
+	tempDir := t.TempDir()
+	repoCache := filepath.Join(tempDir, "cache")
+	repoConfig := filepath.Join(tempDir, "repositories.yaml")
+
+	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
+	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
+	t.Setenv("HELM_CACHE_HOME", tempDir)
+	t.Setenv("HELM_CONFIG_HOME", tempDir)
+	t.Setenv("HELM_DATA_HOME", tempDir)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/index.yaml" {
+			_, _ = w.Write([]byte("apiVersion: v1\nentries: {}\n"))
+			return
+		}
+
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	client, err := helm.NewClient("", "")
+	require.NoError(t, err)
+
+	entry := &helm.RepositoryEntry{Name: "cilium", URL: server.URL}
+	err = client.AddRepository(context.Background(), entry)
+	require.NoError(t, err)
+
+	indexPath := filepath.Join(repoCache, "cilium-index.yaml")
+	_, err = os.Stat(indexPath)
+	require.NoError(t, err)
+
+	configData, err := os.ReadFile(repoConfig)
+	require.NoError(t, err)
+	assert.Contains(t, string(configData), server.URL)
+}
+
+func TestClientAddRepositoryDownloadFailure(t *testing.T) {
+	tempDir := t.TempDir()
+	repoCache := filepath.Join(tempDir, "cache")
+	repoConfig := filepath.Join(tempDir, "repositories.yaml")
+
+	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
+	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
+	t.Setenv("HELM_CACHE_HOME", tempDir)
+	t.Setenv("HELM_CONFIG_HOME", tempDir)
+	t.Setenv("HELM_DATA_HOME", tempDir)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "error", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client, err := helm.NewClient("", "")
+	require.NoError(t, err)
+
+	err = client.AddRepository(
+		context.Background(),
+		&helm.RepositoryEntry{Name: "cilium", URL: server.URL},
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to download repository index file")
 }

@@ -13,4 +13,5 @@ import (
 type HelmClient interface {
 	InstallOrUpgradeChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)
 	UninstallRelease(ctx context.Context, releaseName, namespace string) error
+	AddRepository(ctx context.Context, entry *helm.RepositoryEntry) error
 }
