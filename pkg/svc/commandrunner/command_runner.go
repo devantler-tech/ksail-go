@@ -3,6 +3,7 @@ package commandrunner
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"sync"
 
 	k3dlog "github.com/k3d-io/k3d/v5/pkg/logger"
+	"github.com/sirupsen/logrus"
+	logwriter "github.com/sirupsen/logrus/hooks/writer"
 	"github.com/spf13/cobra"
 )
 
@@ -48,21 +51,30 @@ func (r *cobraCommandRunner) Run(
 		return res, fmt.Errorf("capture stderr: %w", pipeErr)
 	}
 
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+	originalExit := k3dlog.Log().ExitFunc
+
+	stdoutDest := io.Writer(&stdoutBuf)
+	if originalStdout != nil {
+		stdoutDest = io.MultiWriter(&stdoutBuf, originalStdout)
+	}
+
+	stderrDest := io.Writer(&stderrBuf)
+	if originalStderr != nil {
+		stderrDest = io.MultiWriter(&stderrBuf, originalStderr)
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		_, _ = io.Copy(&stdoutBuf, stdoutReader)
+		_, _ = io.Copy(stdoutDest, stdoutReader)
 	}()
 	go func() {
 		defer wg.Done()
-		_, _ = io.Copy(&stderrBuf, stderrReader)
+		_, _ = io.Copy(stderrDest, stderrReader)
 	}()
-
-	originalStdout := os.Stdout
-	originalStderr := os.Stderr
-	originalLoggerOut := k3dlog.Log().Out
-	originalExit := k3dlog.Log().ExitFunc
 
 	type exitSentinel struct{}
 	var fatalErr error
@@ -93,16 +105,25 @@ func (r *cobraCommandRunner) Run(
 		res.Stderr = stderrBuf.String()
 	}()
 
+	logger := k3dlog.Log()
+	savedHooks := cloneHooks(logger.Hooks)
+	workingHooks := stripStdoutInfoHooks(cloneHooks(logger.Hooks), originalStdout)
+	originalLoggerOut := logger.Out
+	logger.ReplaceHooks(workingHooks)
+	logger.SetOutput(io.Discard)
+	formatter := cloneFormatter(logger.Formatter, originalStdout)
+	logger.AddHook(&pipeForwardHook{writer: stdoutWriter, formatter: formatter})
+
 	defer func() {
-		k3dlog.Log().SetOutput(originalLoggerOut)
-		k3dlog.Log().ExitFunc = originalExit
+		logger.SetOutput(originalLoggerOut)
+		logger.ReplaceHooks(savedHooks)
+		logger.ExitFunc = originalExit
 		os.Stdout = originalStdout
 		os.Stderr = originalStderr
 	}()
 
 	os.Stdout = stdoutWriter
 	os.Stderr = stderrWriter
-	k3dlog.Log().SetOutput(stdoutWriter)
 
 	cmd.SetArgs(args)
 	cmd.SetContext(ctx)
@@ -111,7 +132,7 @@ func (r *cobraCommandRunner) Run(
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
 
-	k3dlog.Log().ExitFunc = func(code int) {
+	logger.ExitFunc = func(code int) {
 		fatalErr = fmt.Errorf("k3d command exited with status %d", code)
 		panic(exitSentinel{})
 	}
@@ -138,4 +159,129 @@ func mergeCommandError(base error, res CommandResult) error {
 	}
 
 	return fmt.Errorf("%w: %s", base, strings.Join(details, " | "))
+}
+
+type pipeForwardHook struct {
+	writer    io.Writer
+	formatter logrus.Formatter
+}
+
+func (h *pipeForwardHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *pipeForwardHook) Fire(entry *logrus.Entry) error {
+	if h.writer == nil || h.formatter == nil {
+		return nil
+	}
+
+	dup := entry.Dup()
+	dup.Level = entry.Level
+	dup.Message = entry.Message
+	formatted, err := h.formatter.Format(dup)
+	if err != nil {
+		return err
+	}
+	if _, err = h.writer.Write(formatted); err != nil {
+		if errors.Is(err, io.ErrClosedPipe) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+func cloneHooks(hooks logrus.LevelHooks) logrus.LevelHooks {
+	if hooks == nil {
+		return nil
+	}
+
+	cloned := make(logrus.LevelHooks, len(hooks))
+	for level, levelHooks := range hooks {
+		if len(levelHooks) == 0 {
+			continue
+		}
+
+		copies := make([]logrus.Hook, len(levelHooks))
+		copy(copies, levelHooks)
+		cloned[level] = copies
+	}
+
+	return cloned
+}
+
+func stripStdoutInfoHooks(hooks logrus.LevelHooks, stdout *os.File) logrus.LevelHooks {
+	if hooks == nil {
+		return nil
+	}
+
+	filtered := make(logrus.LevelHooks, len(hooks))
+	for level, levelHooks := range hooks {
+		var kept []logrus.Hook
+		for _, hook := range levelHooks {
+			if isStdoutInfoWriterHook(hook, stdout) {
+				continue
+			}
+			kept = append(kept, hook)
+		}
+		if len(kept) > 0 {
+			filtered[level] = kept
+		}
+	}
+
+	return filtered
+}
+
+func isStdoutInfoWriterHook(hook logrus.Hook, stdout *os.File) bool {
+	if stdout == nil {
+		return false
+	}
+
+	writerHook, ok := hook.(*logwriter.Hook)
+	if !ok {
+		return false
+	}
+
+	if writerHook.Writer != stdout {
+		return false
+	}
+
+	for _, level := range writerHook.LogLevels {
+		switch level {
+		case logrus.InfoLevel, logrus.DebugLevel, logrus.TraceLevel:
+			return true
+		}
+	}
+
+	return false
+}
+
+func cloneFormatter(base logrus.Formatter, stdout *os.File) logrus.Formatter {
+	if base == nil {
+		return &logrus.TextFormatter{ForceColors: stdout != nil}
+	}
+
+	if tf, ok := base.(*logrus.TextFormatter); ok {
+		formatter := &logrus.TextFormatter{
+			ForceColors:               tf.ForceColors || stdout != nil,
+			DisableColors:             tf.DisableColors,
+			ForceQuote:                tf.ForceQuote,
+			DisableQuote:              tf.DisableQuote,
+			EnvironmentOverrideColors: tf.EnvironmentOverrideColors,
+			DisableTimestamp:          tf.DisableTimestamp,
+			FullTimestamp:             tf.FullTimestamp,
+			TimestampFormat:           tf.TimestampFormat,
+			DisableSorting:            tf.DisableSorting,
+			SortingFunc:               tf.SortingFunc,
+			DisableLevelTruncation:    tf.DisableLevelTruncation,
+			PadLevelText:              tf.PadLevelText,
+			QuoteEmptyFields:          tf.QuoteEmptyFields,
+			FieldMap:                  tf.FieldMap,
+			CallerPrettyfier:          tf.CallerPrettyfier,
+		}
+		return formatter
+	}
+
+	return base
 }
