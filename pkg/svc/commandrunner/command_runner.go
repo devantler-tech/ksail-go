@@ -59,6 +59,7 @@ func (r *CobraCommandRunner) Run(
 
 	if err = execCtx.configureLogger(); err != nil {
 		execCtx.restore()
+
 		return CommandResult{}, fmt.Errorf("configure logger: %w", err)
 	}
 	defer execCtx.resetLogger()
