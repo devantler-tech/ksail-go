@@ -41,7 +41,7 @@ type CommandRunner interface {
 type CobraCommandRunner struct{}
 
 // NewCobraCommandRunner creates a command runner that wraps Cobra execution
-// with stdout/stderr capture compatible with k3d's logging behaviour.
+// with stdout/stderr capture compatible with k3d's logging behavior.
 func NewCobraCommandRunner() *CobraCommandRunner {
 	return &CobraCommandRunner{}
 }
@@ -56,9 +56,9 @@ func (r *CobraCommandRunner) Run(
 	if err != nil {
 		return CommandResult{}, fmt.Errorf("prepare command execution: %w", err)
 	}
-	defer execCtx.restore()
 
 	if err = execCtx.configureLogger(); err != nil {
+		execCtx.restore()
 		return CommandResult{}, fmt.Errorf("configure logger: %w", err)
 	}
 	defer execCtx.resetLogger()
@@ -66,16 +66,20 @@ func (r *CobraCommandRunner) Run(
 	execCtx.prepareCommand(ctx, cmd, args)
 
 	if err = execCtx.execute(ctx, cmd); err != nil {
+		execCtx.restore()
 		result := execCtx.result()
 
 		return result, MergeCommandError(err, result)
 	}
 
 	if execCtx.fatalErr != nil {
+		execCtx.restore()
 		result := execCtx.result()
 
 		return result, MergeCommandError(execCtx.fatalErr, result)
 	}
+
+	execCtx.restore()
 
 	return execCtx.result(), nil
 }

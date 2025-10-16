@@ -441,7 +441,7 @@ func runCiliumExtraArgsValidationTest(t *testing.T, testCase ciliumExtraArgsTest
 	cluster.Spec.CNI = v1alpha1.CNICilium
 
 	k3dConfig := &k3dapi.SimpleConfig{ObjectMeta: k3dtypes.ObjectMeta{Name: "ksail"}}
-	cluster.Spec.Connection.Context = "k3d-" + k3dConfig.ObjectMeta.Name
+	cluster.Spec.Connection.Context = "k3d-" + k3dConfig.Name
 	k3dConfig.Options.K3sOptions.ExtraArgs = testCase.extraArgs
 
 	validator := ksailvalidator.NewValidatorForK3d(k3dConfig)

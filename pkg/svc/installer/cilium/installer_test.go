@@ -1,4 +1,4 @@
-package ciliuminstaller
+package ciliuminstaller //nolint:testpackage
 
 import (
 	"context"

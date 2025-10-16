@@ -31,7 +31,7 @@ func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 	res := commandrunner.CommandResult{Stdout: "info", Stderr: "fail"}
 
 	err := commandrunner.MergeCommandError(assert.AnError, res)
-	require.ErrorContains(t, err, "base error")
+	require.ErrorContains(t, err, assert.AnError.Error())
 	require.ErrorContains(t, err, "info")
 	require.ErrorContains(t, err, "fail")
 }

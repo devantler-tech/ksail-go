@@ -282,8 +282,6 @@ func TestHelmClientContextSupport(t *testing.T) {
 }
 
 func TestClientAddRepositorySuccess(t *testing.T) {
-	t.Parallel()
-
 	repoCache, repoConfig := setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(
@@ -316,8 +314,6 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 }
 
 func TestClientAddRepositoryDownloadFailure(t *testing.T) {
-	t.Parallel()
-
 	setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(

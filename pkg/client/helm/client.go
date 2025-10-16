@@ -274,14 +274,16 @@ func (c *Client) AddRepository(ctx context.Context, entry *RepositoryEntry) erro
 		return err
 	}
 
-	if err := downloadRepositoryIndex(chartRepository); err != nil {
-		return err
+	downloadErr := downloadRepositoryIndex(chartRepository)
+	if downloadErr != nil {
+		return downloadErr
 	}
 
 	repositoryFile.Update(repoEntry)
 
-	if err := repositoryFile.WriteFile(repoFile, repoFileMode); err != nil {
-		return fmt.Errorf("write repository file: %w", err)
+	writeErr := repositoryFile.WriteFile(repoFile, repoFileMode)
+	if writeErr != nil {
+		return fmt.Errorf("write repository file: %w", writeErr)
 	}
 
 	return nil
@@ -306,19 +308,22 @@ func validateRepositoryRequest(ctx context.Context, entry *RepositoryEntry) erro
 
 func ensureRepositoryConfig(settings *cli.EnvSettings) (string, error) {
 	repoFile := settings.RepositoryConfig
-	if repoFile == "" {
-		repoFile = os.Getenv("HELM_REPOSITORY_CONFIG")
-		if repoFile == "" {
-			return "", errRepositoryConfigUnset
-		}
 
-		settings.RepositoryConfig = repoFile
+	envRepoConfig := os.Getenv("HELM_REPOSITORY_CONFIG")
+	if envRepoConfig != "" {
+		repoFile = envRepoConfig
+		settings.RepositoryConfig = envRepoConfig
+	}
+
+	if repoFile == "" {
+		return "", errRepositoryConfigUnset
 	}
 
 	repoDir := filepath.Dir(repoFile)
 
-	if err := os.MkdirAll(repoDir, repoDirMode); err != nil {
-		return "", fmt.Errorf("create repository directory: %w", err)
+	mkdirErr := os.MkdirAll(repoDir, repoDirMode)
+	if mkdirErr != nil {
+		return "", fmt.Errorf("create repository directory: %w", mkdirErr)
 	}
 
 	return repoFile, nil
@@ -358,8 +363,9 @@ func ensureRepositoryCache(settings *cli.EnvSettings) (string, error) {
 		return "", errRepositoryCacheUnset
 	}
 
-	if err := os.MkdirAll(repoCache, repoDirMode); err != nil {
-		return "", fmt.Errorf("create repository cache directory: %w", err)
+	mkdirCacheErr := os.MkdirAll(repoCache, repoDirMode)
+	if mkdirCacheErr != nil {
+		return "", fmt.Errorf("create repository cache directory: %w", mkdirCacheErr)
 	}
 
 	return repoCache, nil
@@ -477,7 +483,7 @@ func (c *Client) executeReleaseOp(
 
 	var rel *release.Release
 	if spec != nil && spec.Silent {
-		rel, err = runWithSilencedStderr(operation)
+		rel, err = runWithSilencedStderr(run)
 	} else {
 		rel, err = run()
 	}
@@ -634,10 +640,10 @@ func releaseToInfo(rel *release.Release) *ReleaseInfo {
 	}
 }
 
-func runWithSilencedStderr[T any](fn func() (T, error)) (T, error) {
+func runWithSilencedStderr[T any](operation func() (T, error)) (T, error) {
 	readPipe, writePipe, pipeErr := os.Pipe()
 	if pipeErr != nil {
-		return fn()
+		return operation()
 	}
 
 	originalStderr := os.Stderr
@@ -678,7 +684,7 @@ func runWithSilencedStderr[T any](fn func() (T, error)) (T, error) {
 		}
 	}()
 
-	value, runErr = fn()
+	value, runErr = operation()
 
 	return value, runErr
 }
