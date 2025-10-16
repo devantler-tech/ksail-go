@@ -1,3 +1,5 @@
+// Package commandrunner provides helpers for executing Cobra commands while
+// capturing their output and translating k3d logging semantics.
 package commandrunner
 
 import (
@@ -16,68 +18,209 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const streamCopyWorkers = 2
+
+var (
+	errK3dCommandExit    = errors.New("commandrunner: k3d command exited")
+	errLoggerUnavailable = errors.New("commandrunner: logger not available")
+)
+
+// CommandResult captures the stdout and stderr collected during a Cobra command
+// execution.
 type CommandResult struct {
 	Stdout string
 	Stderr string
 }
 
+// CommandRunner executes Cobra commands while capturing their output.
 type CommandRunner interface {
 	Run(ctx context.Context, cmd *cobra.Command, args []string) (CommandResult, error)
 }
 
-type cobraCommandRunner struct{}
+// CobraCommandRunner executes Cobra commands while mirroring k3d logging semantics.
+type CobraCommandRunner struct{}
 
-func NewCobraCommandRunner() CommandRunner {
-	return &cobraCommandRunner{}
+// NewCobraCommandRunner creates a command runner that wraps Cobra execution
+// with stdout/stderr capture compatible with k3d's logging behaviour.
+func NewCobraCommandRunner() *CobraCommandRunner {
+	return &CobraCommandRunner{}
 }
 
-func (r *cobraCommandRunner) Run(
+// Run executes the provided Cobra command while capturing stdout/stderr.
+func (r *CobraCommandRunner) Run(
 	ctx context.Context,
 	cmd *cobra.Command,
 	args []string,
-) (res CommandResult, err error) {
-	var stdoutBuf bytes.Buffer
-	var stderrBuf bytes.Buffer
+) (CommandResult, error) {
+	execCtx, err := newCommandExecution()
+	if err != nil {
+		return CommandResult{}, fmt.Errorf("prepare command execution: %w", err)
+	}
+	defer execCtx.restore()
 
-	stdoutReader, stdoutWriter, pipeErr := os.Pipe()
-	if pipeErr != nil {
-		return res, fmt.Errorf("capture stdout: %w", pipeErr)
+	if err = execCtx.configureLogger(); err != nil {
+		return CommandResult{}, fmt.Errorf("configure logger: %w", err)
+	}
+	defer execCtx.resetLogger()
+
+	execCtx.prepareCommand(ctx, cmd, args)
+
+	if err = execCtx.execute(ctx, cmd); err != nil {
+		result := execCtx.result()
+
+		return result, MergeCommandError(err, result)
 	}
 
-	stderrReader, stderrWriter, pipeErr := os.Pipe()
-	if pipeErr != nil {
+	if execCtx.fatalErr != nil {
+		result := execCtx.result()
+
+		return result, MergeCommandError(execCtx.fatalErr, result)
+	}
+
+	return execCtx.result(), nil
+}
+
+type commandExecution struct {
+	stdoutBuffer bytes.Buffer
+	stderrBuffer bytes.Buffer
+
+	stdoutReader *os.File
+	stdoutWriter *os.File
+	stderrReader *os.File
+	stderrWriter *os.File
+
+	originalStdout *os.File
+	originalStderr *os.File
+
+	stdoutDest io.Writer
+	stderrDest io.Writer
+
+	waitGroup sync.WaitGroup
+
+	logger            *logrus.Logger
+	savedHooks        logrus.LevelHooks
+	originalLoggerOut io.Writer
+	originalExit      func(int)
+	formatter         logrus.Formatter
+
+	fatalErr error
+}
+
+func newCommandExecution() (*commandExecution, error) {
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		return nil, fmt.Errorf("capture stdout: %w", err)
+	}
+
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
 		_ = stdoutReader.Close()
 		_ = stdoutWriter.Close()
-		return res, fmt.Errorf("capture stderr: %w", pipeErr)
+
+		return nil, fmt.Errorf("capture stderr: %w", err)
 	}
 
-	originalStdout := os.Stdout
-	originalStderr := os.Stderr
-	originalExit := k3dlog.Log().ExitFunc
-
-	stdoutDest := io.Writer(&stdoutBuf)
-	if originalStdout != nil {
-		stdoutDest = io.MultiWriter(&stdoutBuf, originalStdout)
+	ctx := &commandExecution{
+		stdoutReader:      stdoutReader,
+		stdoutWriter:      stdoutWriter,
+		stderrReader:      stderrReader,
+		stderrWriter:      stderrWriter,
+		originalStdout:    os.Stdout,
+		originalStderr:    os.Stderr,
+		logger:            k3dlog.Log(),
+		originalLoggerOut: io.Discard, // placeholder, overwritten in configureLogger.
 	}
 
-	stderrDest := io.Writer(&stderrBuf)
-	if originalStderr != nil {
-		stderrDest = io.MultiWriter(&stderrBuf, originalStderr)
+	ctx.stdoutDest = ctx.buildDestWriter(ctx.originalStdout, &ctx.stdoutBuffer)
+	ctx.stderrDest = ctx.buildDestWriter(ctx.originalStderr, &ctx.stderrBuffer)
+
+	ctx.waitGroup.Add(streamCopyWorkers)
+
+	go ctx.copyStream(ctx.stdoutReader, ctx.stdoutDest)
+	go ctx.copyStream(ctx.stderrReader, ctx.stderrDest)
+
+	os.Stdout = stdoutWriter
+	os.Stderr = stderrWriter
+
+	return ctx, nil
+}
+
+func (c *commandExecution) buildDestWriter(original *os.File, buffer *bytes.Buffer) io.Writer {
+	if original == nil {
+		return buffer
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(stdoutDest, stdoutReader)
-	}()
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(stderrDest, stderrReader)
-	}()
+	return io.MultiWriter(buffer, original)
+}
+
+func (c *commandExecution) copyStream(reader *os.File, writer io.Writer) {
+	defer c.waitGroup.Done()
+
+	_, _ = io.Copy(writer, reader)
+}
+
+func (c *commandExecution) configureLogger() error {
+	if c.logger == nil {
+		return errLoggerUnavailable
+	}
+
+	c.savedHooks = cloneHooks(c.logger.Hooks)
+	workingHooks := stripStdoutInfoHooks(cloneHooks(c.logger.Hooks), c.originalStdout)
+	c.originalLoggerOut = c.logger.Out
+	c.logger.ReplaceHooks(workingHooks)
+	c.logger.SetOutput(io.Discard)
+
+	switch typedFormatter := c.logger.Formatter.(type) {
+	case *logrus.TextFormatter:
+		c.formatter = &logrus.TextFormatter{
+			ForceColors:               typedFormatter.ForceColors || c.originalStdout != nil,
+			DisableColors:             typedFormatter.DisableColors,
+			ForceQuote:                typedFormatter.ForceQuote,
+			DisableQuote:              typedFormatter.DisableQuote,
+			EnvironmentOverrideColors: typedFormatter.EnvironmentOverrideColors,
+			DisableTimestamp:          typedFormatter.DisableTimestamp,
+			FullTimestamp:             typedFormatter.FullTimestamp,
+			TimestampFormat:           typedFormatter.TimestampFormat,
+			DisableSorting:            typedFormatter.DisableSorting,
+			SortingFunc:               typedFormatter.SortingFunc,
+			DisableLevelTruncation:    typedFormatter.DisableLevelTruncation,
+			PadLevelText:              typedFormatter.PadLevelText,
+			QuoteEmptyFields:          typedFormatter.QuoteEmptyFields,
+			FieldMap:                  typedFormatter.FieldMap,
+			CallerPrettyfier:          typedFormatter.CallerPrettyfier,
+		}
+	case nil:
+		c.formatter = &logrus.TextFormatter{ForceColors: c.originalStdout != nil}
+	default:
+		c.formatter = typedFormatter
+	}
+
+	c.logger.AddHook(&pipeForwardHook{writer: c.stdoutWriter, formatter: c.formatter})
+
+	c.originalExit = c.logger.ExitFunc
 
 	type exitSentinel struct{}
-	var fatalErr error
+
+	c.logger.ExitFunc = func(code int) {
+		c.fatalErr = fmt.Errorf("%w: status %d", errK3dCommandExit, code)
+
+		panic(exitSentinel{})
+	}
+
+	return nil
+}
+
+func (c *commandExecution) prepareCommand(ctx context.Context, cmd *cobra.Command, args []string) {
+	cmd.SetArgs(args)
+	cmd.SetContext(ctx)
+	cmd.SetOut(c.stdoutWriter)
+	cmd.SetErr(c.stderrWriter)
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+}
+
+func (c *commandExecution) execute(ctx context.Context, cmd *cobra.Command) error {
+	type exitSentinel struct{}
 
 	defer func() {
 		if recovered := recover(); recovered != nil {
@@ -85,60 +228,44 @@ func (r *cobraCommandRunner) Run(
 				panic(recovered)
 			}
 		}
-
-		switch {
-		case fatalErr != nil:
-			err = MergeCommandError(fatalErr, res)
-		case err != nil:
-			err = MergeCommandError(err, res)
-		}
 	}()
 
-	defer func() {
-		_ = stdoutWriter.Close()
-		_ = stderrWriter.Close()
-		wg.Wait()
-		_ = stdoutReader.Close()
-		_ = stderrReader.Close()
-
-		res.Stdout = stdoutBuf.String()
-		res.Stderr = stderrBuf.String()
-	}()
-
-	logger := k3dlog.Log()
-	savedHooks := cloneHooks(logger.Hooks)
-	workingHooks := stripStdoutInfoHooks(cloneHooks(logger.Hooks), originalStdout)
-	originalLoggerOut := logger.Out
-	logger.ReplaceHooks(workingHooks)
-	logger.SetOutput(io.Discard)
-	formatter := cloneFormatter(logger.Formatter, originalStdout)
-	logger.AddHook(&pipeForwardHook{writer: stdoutWriter, formatter: formatter})
-
-	defer func() {
-		logger.SetOutput(originalLoggerOut)
-		logger.ReplaceHooks(savedHooks)
-		logger.ExitFunc = originalExit
-		os.Stdout = originalStdout
-		os.Stderr = originalStderr
-	}()
-
-	os.Stdout = stdoutWriter
-	os.Stderr = stderrWriter
-
-	cmd.SetArgs(args)
-	cmd.SetContext(ctx)
-	cmd.SetOut(stdoutWriter)
-	cmd.SetErr(stderrWriter)
-	cmd.SilenceUsage = true
-	cmd.SilenceErrors = true
-
-	logger.ExitFunc = func(code int) {
-		fatalErr = fmt.Errorf("k3d command exited with status %d", code)
-		panic(exitSentinel{})
+	execErr := cmd.ExecuteContext(ctx)
+	if execErr != nil {
+		return fmt.Errorf("execute command: %w", execErr)
 	}
 
-	err = cmd.ExecuteContext(ctx)
-	return res, err
+	return nil
+}
+
+func (c *commandExecution) resetLogger() {
+	if c.logger == nil {
+		return
+	}
+
+	c.logger.SetOutput(c.originalLoggerOut)
+	c.logger.ReplaceHooks(c.savedHooks)
+	c.logger.ExitFunc = c.originalExit
+}
+
+func (c *commandExecution) restore() {
+	_ = c.stdoutWriter.Close()
+	_ = c.stderrWriter.Close()
+
+	c.waitGroup.Wait()
+
+	_ = c.stdoutReader.Close()
+	_ = c.stderrReader.Close()
+
+	os.Stdout = c.originalStdout
+	os.Stderr = c.originalStderr
+}
+
+func (c *commandExecution) result() CommandResult {
+	return CommandResult{
+		Stdout: c.stdoutBuffer.String(),
+		Stderr: c.stderrBuffer.String(),
+	}
 }
 
 // MergeCommandError enriches a base error with captured stdout/stderr when available.
@@ -151,6 +278,7 @@ func MergeCommandError(base error, res CommandResult) error {
 	if trimmed := strings.TrimSpace(res.Stderr); trimmed != "" {
 		details = append(details, trimmed)
 	}
+
 	if trimmed := strings.TrimSpace(res.Stdout); trimmed != "" {
 		details = append(details, trimmed)
 	}
@@ -179,15 +307,18 @@ func (h *pipeForwardHook) Fire(entry *logrus.Entry) error {
 	dup := entry.Dup()
 	dup.Level = entry.Level
 	dup.Message = entry.Message
+
 	formatted, err := h.formatter.Format(dup)
 	if err != nil {
-		return err
+		return fmt.Errorf("format log entry: %w", err)
 	}
+
 	if _, err = h.writer.Write(formatted); err != nil {
 		if errors.Is(err, io.ErrClosedPipe) {
 			return nil
 		}
-		return err
+
+		return fmt.Errorf("write log entry: %w", err)
 	}
 
 	return nil
@@ -220,12 +351,15 @@ func stripStdoutInfoHooks(hooks logrus.LevelHooks, stdout *os.File) logrus.Level
 	filtered := make(logrus.LevelHooks, len(hooks))
 	for level, levelHooks := range hooks {
 		var kept []logrus.Hook
+
 		for _, hook := range levelHooks {
 			if isStdoutInfoWriterHook(hook, stdout) {
 				continue
 			}
+
 			kept = append(kept, hook)
 		}
+
 		if len(kept) > 0 {
 			filtered[level] = kept
 		}
@@ -252,37 +386,12 @@ func isStdoutInfoWriterHook(hook logrus.Hook, stdout *os.File) bool {
 		switch level {
 		case logrus.InfoLevel, logrus.DebugLevel, logrus.TraceLevel:
 			return true
+		case logrus.WarnLevel, logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
+			continue
+		default:
+			continue
 		}
 	}
 
 	return false
-}
-
-func cloneFormatter(base logrus.Formatter, stdout *os.File) logrus.Formatter {
-	if base == nil {
-		return &logrus.TextFormatter{ForceColors: stdout != nil}
-	}
-
-	if tf, ok := base.(*logrus.TextFormatter); ok {
-		formatter := &logrus.TextFormatter{
-			ForceColors:               tf.ForceColors || stdout != nil,
-			DisableColors:             tf.DisableColors,
-			ForceQuote:                tf.ForceQuote,
-			DisableQuote:              tf.DisableQuote,
-			EnvironmentOverrideColors: tf.EnvironmentOverrideColors,
-			DisableTimestamp:          tf.DisableTimestamp,
-			FullTimestamp:             tf.FullTimestamp,
-			TimestampFormat:           tf.TimestampFormat,
-			DisableSorting:            tf.DisableSorting,
-			SortingFunc:               tf.SortingFunc,
-			DisableLevelTruncation:    tf.DisableLevelTruncation,
-			PadLevelText:              tf.PadLevelText,
-			QuoteEmptyFields:          tf.QuoteEmptyFields,
-			FieldMap:                  tf.FieldMap,
-			CallerPrettyfier:          tf.CallerPrettyfier,
-		}
-		return formatter
-	}
-
-	return base
 }

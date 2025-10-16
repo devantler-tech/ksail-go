@@ -1,4 +1,4 @@
-package k3dprovisioner
+package k3dprovisioner_test
 
 import (
 	"context"
@@ -7,12 +7,14 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
-	clustercommand "github.com/k3d-io/k3d/v5/cmd/cluster"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var errBoom = errors.New("boom")
 
 type stubRunner struct {
 	recorded struct {
@@ -29,15 +31,24 @@ func (s *stubRunner) Run(
 ) (commandrunner.CommandResult, error) {
 	s.recorded.args = append([]string(nil), args...)
 	if s.err != nil {
-		return s.result, commandrunner.MergeCommandError(s.err, s.result)
+		mergeErr := commandrunner.MergeCommandError(s.err, s.result)
+
+		return s.result, fmt.Errorf("merge command error: %w", mergeErr)
 	}
+
 	return s.result, nil
 }
 
 func TestCreateUsesConfigFlag(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("cfg-name")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "path/to/k3d.yaml", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"path/to/k3d.yaml",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	err := prov.Create(context.Background(), "")
 	require.NoError(t, err)
@@ -50,9 +61,15 @@ func TestCreateUsesConfigFlag(t *testing.T) {
 }
 
 func TestDeleteDefaultsToConfigName(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("from-config")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	err := prov.Delete(context.Background(), "")
 	require.NoError(t, err)
@@ -61,9 +78,15 @@ func TestDeleteDefaultsToConfigName(t *testing.T) {
 }
 
 func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("cluster-a")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "path/to/config.yaml", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"path/to/config.yaml",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	err := prov.Start(context.Background(), "")
 	require.NoError(t, err)
@@ -72,9 +95,15 @@ func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
 }
 
 func TestStopUsesExplicitName(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("cluster-a")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	err := prov.Stop(context.Background(), "custom")
 	require.NoError(t, err)
@@ -83,9 +112,15 @@ func TestStopUsesExplicitName(t *testing.T) {
 }
 
 func TestListAddsJSONOutputFlag(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	_, err := prov.List(context.Background())
 	require.NoError(t, err)
@@ -94,11 +129,17 @@ func TestListAddsJSONOutputFlag(t *testing.T) {
 }
 
 func TestListParsesJSON(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	runner.result.Stdout = `[{"name":"alpha"},{"name":"beta"}]`
 
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 	names, err := prov.List(context.Background())
 
 	require.NoError(t, err)
@@ -106,20 +147,32 @@ func TestListParsesJSON(t *testing.T) {
 }
 
 func TestListReturnsErrorWhenJSONInvalid(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	runner.result.Stdout = `not-json`
 
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 	_, err := prov.List(context.Background())
 
 	require.ErrorContains(t, err, "parse output")
 }
 
 func TestExistsReturnsFalseWhenNameEmpty(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("")
 	runner := &stubRunner{}
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
 	exists, err := prov.Exists(context.Background(), "")
 
@@ -128,13 +181,19 @@ func TestExistsReturnsFalseWhenNameEmpty(t *testing.T) {
 }
 
 func TestCommandErrorsIncludeStdStreams(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
-	runner.err = errors.New("boom")
+	runner.err = errBoom
 	runner.result.Stdout = "stdout"
 	runner.result.Stderr = "stderr"
 
-	prov := NewK3dClusterProvisioner(cfg, "", WithCommandRunner(runner))
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 	err := prov.Create(context.Background(), "name")
 
 	require.ErrorContains(t, err, "boom")
@@ -143,20 +202,25 @@ func TestCommandErrorsIncludeStdStreams(t *testing.T) {
 }
 
 func TestCustomCommandBuilder(t *testing.T) {
+	t.Parallel()
+
 	cfg := buildSimpleConfig("cfg")
 	runner := &stubRunner{}
 	builderCalls := 0
 
-	prov := NewK3dClusterProvisioner(
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
 		cfg,
 		"",
-		WithCommandRunner(runner),
-		WithCommandBuilders(CommandBuilders{
+		k3dprovisioner.WithCommandRunner(runner),
+		k3dprovisioner.WithCommandBuilders(k3dprovisioner.CommandBuilders{
 			Create: func() *cobra.Command {
 				builderCalls++
+				testT := t
+
 				return &cobra.Command{
-					Run: func(cmd *cobra.Command, args []string) {
-						fmt.Fprint(cmd.OutOrStdout(), "custom run")
+					Run: func(cmd *cobra.Command, _ []string) {
+						_, writeErr := fmt.Fprint(cmd.OutOrStdout(), "custom run")
+						require.NoError(testT, writeErr)
 					},
 				}
 			},
@@ -175,10 +239,6 @@ func TestCustomCommandBuilder(t *testing.T) {
 func buildSimpleConfig(name string) *v1alpha5.SimpleConfig {
 	cfg := &v1alpha5.SimpleConfig{}
 	cfg.Name = name
-	return cfg
-}
 
-func init() {
-	// Ensure Cobra builder baseline is available to avoid nil pointers
-	_ = clustercommand.NewCmdClusterCreate
+	return cfg
 }

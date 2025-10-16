@@ -382,19 +382,25 @@ func TestKSailValidatorK3dConsistency(t *testing.T) {
 func TestKSailValidatorK3dCiliumExtraArgsValidation(t *testing.T) {
 	t.Parallel()
 
-	createCluster := func() *v1alpha1.Cluster {
-		cluster := createValidKSailConfig(v1alpha1.DistributionK3d)
-		cluster.Spec.CNI = v1alpha1.CNICilium
+	for _, testCase := range ciliumExtraArgsTestCases() {
+		tc := testCase
 
-		return cluster
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCiliumExtraArgsValidationTest(t, tc)
+		})
 	}
+}
 
-	testCases := []struct {
-		name        string
-		extraArgs   []k3dapi.K3sArgWithNodeFilters
-		expectValid bool
-		expectSnips []string
-	}{
+type ciliumExtraArgsTestCase struct {
+	name        string
+	extraArgs   []k3dapi.K3sArgWithNodeFilters
+	expectValid bool
+	expectSnips []string
+}
+
+func ciliumExtraArgsTestCases() []ciliumExtraArgsTestCase {
+	return []ciliumExtraArgsTestCase{
 		{
 			name: "all_required_args_present",
 			extraArgs: []k3dapi.K3sArgWithNodeFilters{
@@ -426,38 +432,36 @@ func TestKSailValidatorK3dCiliumExtraArgsValidation(t *testing.T) {
 			expectSnips: []string{"--flannel-backend=none", "--disable-network-policy"},
 		},
 	}
+}
 
-	for _, testCase := range testCases {
-		testCase := testCase
+func runCiliumExtraArgsValidationTest(t *testing.T, testCase ciliumExtraArgsTestCase) {
+	t.Helper()
 
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+	cluster := createValidKSailConfig(v1alpha1.DistributionK3d)
+	cluster.Spec.CNI = v1alpha1.CNICilium
 
-			cluster := createCluster()
-			k3dConfig := &k3dapi.SimpleConfig{
-				ObjectMeta: k3dtypes.ObjectMeta{Name: "ksail"},
-			}
-			k3dConfig.Options.K3sOptions.ExtraArgs = testCase.extraArgs
+	k3dConfig := &k3dapi.SimpleConfig{ObjectMeta: k3dtypes.ObjectMeta{Name: "ksail"}}
+	cluster.Spec.Connection.Context = "k3d-" + k3dConfig.ObjectMeta.Name
+	k3dConfig.Options.K3sOptions.ExtraArgs = testCase.extraArgs
 
-			validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
-			result := validator.Validate(cluster)
+	validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
+	result := validator.Validate(cluster)
 
-			if testCase.expectValid {
-				assert.True(t, result.Valid)
-				assert.Empty(t, result.Errors)
+	if testCase.expectValid {
+		assert.True(t, result.Valid)
+		assert.Empty(t, result.Errors)
 
-				return
-			}
+		return
+	}
 
-			assert.False(t, result.Valid)
-			require.Len(t, result.Errors, 1)
-			err := result.Errors[0]
-			assert.Equal(t, "spec.cni", err.Field)
-			for _, snippet := range testCase.expectSnips {
-				assert.Contains(t, err.Message, snippet)
-				assert.Contains(t, err.FixSuggestion, snippet)
-			}
-		})
+	assert.False(t, result.Valid)
+	require.Len(t, result.Errors, 1)
+	err := result.Errors[0]
+	assert.Equal(t, "spec.cni", err.Field)
+
+	for _, snippet := range testCase.expectSnips {
+		assert.Contains(t, err.Message, snippet)
+		assert.Contains(t, err.FixSuggestion, snippet)
 	}
 }
 

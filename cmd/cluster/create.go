@@ -95,7 +95,6 @@ func handleCreateRunE(
 
 // installCiliumCNI installs Cilium CNI on the cluster.
 func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
-	// Display title for CNI installation
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: "Install CNI...",
@@ -103,46 +102,67 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Get kubeconfig path and data
 	kubeconfig, _, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
 
-	// Create Helm client
 	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
 	if err != nil {
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	timeout := getCiliumInstallTimeout(clusterCfg)
+	repoErr := addCiliumRepository(cmd.Context(), helmClient)
+	if repoErr != nil {
+		return repoErr
+	}
 
-	// Add Cilium Helm repository
-	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+	installer := newCiliumInstaller(helmClient, kubeconfig, clusterCfg)
+
+	return runCiliumInstallation(cmd, installer, tmr)
+}
+
+func addCiliumRepository(ctx context.Context, client *helm.Client) error {
+	repoErr := client.AddRepository(ctx, &helm.RepositoryEntry{
 		Name: "cilium",
 		URL:  "https://helm.cilium.io/",
 	})
-	if err != nil {
-		return fmt.Errorf("failed to add Cilium Helm repository: %w", err)
+	if repoErr != nil {
+		return fmt.Errorf("failed to add Cilium Helm repository: %w", repoErr)
 	}
 
-	// Create and run Cilium installer
-	installer := ciliuminstaller.NewCiliumInstaller(
+	return nil
+}
+
+func newCiliumInstaller(
+	helmClient *helm.Client,
+	kubeconfig string,
+	clusterCfg *v1alpha1.Cluster,
+) *ciliuminstaller.CiliumInstaller {
+	timeout := getCiliumInstallTimeout(clusterCfg)
+
+	return ciliuminstaller.NewCiliumInstaller(
 		helmClient,
 		kubeconfig,
 		clusterCfg.Spec.Connection.Context,
 		timeout,
 	)
+}
 
+func runCiliumInstallation(
+	cmd *cobra.Command,
+	installer *ciliuminstaller.CiliumInstaller,
+	tmr timer.Timer,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
 		Content: "installing cilium",
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err = installer.Install(cmd.Context())
-	if err != nil {
-		return fmt.Errorf("cilium installation failed: %w", err)
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("cilium installation failed: %w", installErr)
 	}
 
 	notify.WriteMessage(notify.Message{
@@ -151,12 +171,11 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err = installer.WaitForReadiness(cmd.Context())
-	if err != nil {
-		return fmt.Errorf("cilium readiness check failed: %w", err)
+	readinessErr := installer.WaitForReadiness(cmd.Context())
+	if readinessErr != nil {
+		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
 	}
 
-	// Display success message with timing
 	total, stage := tmr.GetTiming()
 	timingStr := notify.FormatTiming(total, stage, true)
 

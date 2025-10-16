@@ -63,30 +63,34 @@ func NewK3dClusterProvisioner(
 
 // WithCommandRunner overrides the command runner (primarily for tests).
 func WithCommandRunner(runner commandrunner.CommandRunner) Option {
-	return func(p *K3dClusterProvisioner) {
+	return func(provisioner *K3dClusterProvisioner) {
 		if runner != nil {
-			p.runner = runner
+			provisioner.runner = runner
 		}
 	}
 }
 
 // WithCommandBuilders overrides specific Cobra command builders.
 func WithCommandBuilders(builders CommandBuilders) Option {
-	return func(p *K3dClusterProvisioner) {
+	return func(provisioner *K3dClusterProvisioner) {
 		if builders.Create != nil {
-			p.builders.Create = builders.Create
+			provisioner.builders.Create = builders.Create
 		}
+
 		if builders.Delete != nil {
-			p.builders.Delete = builders.Delete
+			provisioner.builders.Delete = builders.Delete
 		}
+
 		if builders.Start != nil {
-			p.builders.Start = builders.Start
+			provisioner.builders.Start = builders.Start
 		}
+
 		if builders.Stop != nil {
-			p.builders.Stop = builders.Stop
+			provisioner.builders.Stop = builders.Stop
 		}
+
 		if builders.List != nil {
-			p.builders.List = builders.List
+			provisioner.builders.List = builders.List
 		}
 	}
 }
@@ -94,6 +98,7 @@ func WithCommandBuilders(builders CommandBuilders) Option {
 // Create provisions a k3d cluster using the native Cobra command.
 func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 	args := k.appendConfigFlag(nil)
+
 	return k.runLifecycleCommand(
 		ctx,
 		k.builders.Create,
@@ -111,6 +116,7 @@ func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
 // Delete removes a k3d cluster via the Cobra command.
 func (k *K3dClusterProvisioner) Delete(ctx context.Context, name string) error {
 	args := k.appendConfigFlag(nil)
+
 	return k.runLifecycleCommand(ctx, k.builders.Delete, args, name, "cluster delete", nil)
 }
 
@@ -128,6 +134,7 @@ func (k *K3dClusterProvisioner) Stop(ctx context.Context, name string) error {
 func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	cmd := k.builders.List()
 	args := []string{"--output", "json"}
+
 	res, err := k.runner.Run(ctx, cmd, args)
 	if err != nil {
 		return nil, fmt.Errorf("cluster list: %w", err)
@@ -184,9 +191,11 @@ func (k *K3dClusterProvisioner) resolveName(name string) string {
 	if strings.TrimSpace(name) != "" {
 		return name
 	}
+
 	if k.simpleCfg != nil && strings.TrimSpace(k.simpleCfg.Name) != "" {
 		return k.simpleCfg.Name
 	}
+
 	return ""
 }
 
@@ -199,6 +208,7 @@ func (k *K3dClusterProvisioner) runLifecycleCommand(
 	onTarget func(string),
 ) error {
 	cmd := builder()
+
 	target := k.resolveName(name)
 	if target != "" {
 		args = append(args, target)
@@ -207,8 +217,9 @@ func (k *K3dClusterProvisioner) runLifecycleCommand(
 		}
 	}
 
-	if _, err := k.runner.Run(ctx, cmd, args); err != nil {
-		return fmt.Errorf("%s: %w", errorPrefix, err)
+	_, runErr := k.runner.Run(ctx, cmd, args)
+	if runErr != nil {
+		return fmt.Errorf("%s: %w", errorPrefix, runErr)
 	}
 
 	return nil

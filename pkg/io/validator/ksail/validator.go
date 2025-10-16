@@ -12,6 +12,8 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const requiredCiliumArgs = 2
+
 // Validator validates KSail cluster configurations for semantic correctness and cross-configuration consistency.
 type Validator struct {
 	kindConfig *kindv1alpha4.Cluster
@@ -249,10 +251,11 @@ func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) 
 		}
 	}
 
-	missingArgs := make([]string, 0, 2)
+	missingArgs := make([]string, 0, requiredCiliumArgs)
 	if !hasFlannelDisabled {
 		missingArgs = append(missingArgs, "'--flannel-backend=none'")
 	}
+
 	if !hasNetworkPolicyDisabled {
 		missingArgs = append(missingArgs, "'--disable-network-policy'")
 	}

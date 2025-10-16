@@ -1,11 +1,15 @@
 package workload
 
 import (
+	"fmt"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
+
+const minInstallArgs = 2
 
 // NewInstallCmd creates the workload install command.
 func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
@@ -17,7 +21,7 @@ func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 		Short: "Install Helm charts",
 		Long: "Install Helm charts to provision workloads through KSail. " +
 			"This command provides native Helm chart installation capabilities.",
-		Args: cobra.MinimumNArgs(2),
+		Args: cobra.MinimumNArgs(minInstallArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			releaseName := args[0]
 			chartName := args[1]
@@ -25,7 +29,7 @@ func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 			// Create helm client
 			client, err := helm.NewClient(kubeconfigPath, "")
 			if err != nil {
-				return err
+				return fmt.Errorf("create helm client: %w", err)
 			}
 
 			// Get namespace from flag or use default
@@ -46,16 +50,22 @@ func NewInstallCmd(_ *runtime.Runtime) *cobra.Command {
 			if createNamespace, _ := cmd.Flags().GetBool("create-namespace"); createNamespace {
 				spec.CreateNamespace = true
 			}
+
 			if wait, _ := cmd.Flags().GetBool("wait"); wait {
 				spec.Wait = true
 			}
+
 			if atomic, _ := cmd.Flags().GetBool("atomic"); atomic {
 				spec.Atomic = true
 			}
 
 			// Install chart
 			_, err = client.InstallChart(cmd.Context(), spec)
-			return err
+			if err != nil {
+				return fmt.Errorf("install chart %q: %w", chartName, err)
+			}
+
+			return nil
 		},
 	}
 

@@ -86,6 +86,8 @@ func TestCiliumInstallerUninstallError(t *testing.T) {
 }
 
 func TestApplyDefaultValuesSetsOperatorReplicaWhenMissing(t *testing.T) {
+	t.Parallel()
+
 	spec := &helm.ChartSpec{}
 
 	applyDefaultValues(spec)
@@ -94,6 +96,8 @@ func TestApplyDefaultValuesSetsOperatorReplicaWhenMissing(t *testing.T) {
 }
 
 func TestApplyDefaultValuesDoesNotOverrideExistingValues(t *testing.T) {
+	t.Parallel()
+
 	spec := &helm.ChartSpec{
 		SetJSONVals: map[string]string{
 			"operator.replicas": "3",
@@ -112,7 +116,8 @@ func TestCiliumInstallerWaitForReadinessUsesInjectedFunc(t *testing.T) {
 	installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
 
 	called := false
-	installer.SetWaitForReadinessFunc(func(ctx context.Context) error {
+
+	installer.SetWaitForReadinessFunc(func(_ context.Context) error {
 		called = true
 
 		return nil
@@ -134,7 +139,7 @@ func TestCiliumInstallerWaitForReadinessRestoresDefaultWhenNil(t *testing.T) {
 	require.NotNil(t, defaultFn)
 	defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
-	installer.SetWaitForReadinessFunc(func(ctx context.Context) error { return nil })
+	installer.SetWaitForReadinessFunc(func(_ context.Context) error { return nil })
 	customPtr := reflect.ValueOf(installer.waitFn).Pointer()
 	require.NotEqual(t, defaultPtr, customPtr)
 

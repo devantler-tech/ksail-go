@@ -1,3 +1,4 @@
+// Package helm provides helpers for interacting with Helm in KSail.
 package helm
 
 import (
@@ -13,17 +14,35 @@ import (
 	"sync"
 	"time"
 
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	helmclientlib "github.com/mittwald/go-helm-client"
 	valueslib "github.com/mittwald/go-helm-client/values"
+	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 )
 
 const (
+	// DefaultTimeout defines the fallback Helm chart installation timeout.
 	DefaultTimeout = 5 * time.Minute
+	repoDirMode    = 0o750
+	repoFileMode   = 0o640
+	chartRefParts  = 2
 )
 
+var (
+	errUnsupportedClientImplementation = errors.New("helm: unsupported client implementation")
+	errReleaseNameRequired             = errors.New("helm: release name is required")
+	errRepositoryEntryRequired         = errors.New("helm: repository entry is required")
+	errRepositoryNameRequired          = errors.New("helm: repository name is required")
+	errRepositoryCacheUnset            = errors.New("helm: repository cache path is not set")
+	errRepositoryConfigUnset           = errors.New("helm: repository config path is not set")
+	errChartSpecRequired               = errors.New("helm: chart spec is required")
+)
+
+// ChartSpec mirrors the mittwald chart specification while keeping KSail
+// specific convenience fields.
 type ChartSpec struct {
 	ReleaseName string
 	ChartName   string
@@ -53,6 +72,8 @@ type ChartSpec struct {
 	InsecureSkipTLSverify bool
 }
 
+// RepositoryEntry describes a Helm repository that should be added locally
+// before performing chart operations.
 type RepositoryEntry struct {
 	Name                  string
 	URL                   string
@@ -65,6 +86,7 @@ type RepositoryEntry struct {
 	PlainHTTP             bool
 }
 
+// ReleaseInfo captures metadata about a Helm release after an operation.
 type ReleaseInfo struct {
 	Name       string
 	Namespace  string
@@ -76,24 +98,29 @@ type ReleaseInfo struct {
 	Notes      string
 }
 
-//go:generate mockery --name=HelmClient --output=. --filename=mocks.go
-type HelmClient interface {
-	InstallChart(context.Context, *ChartSpec) (*ReleaseInfo, error)
-	InstallOrUpgradeChart(context.Context, *ChartSpec) (*ReleaseInfo, error)
-	UninstallRelease(context.Context, string, string) error
-	AddRepository(context.Context, *RepositoryEntry) error
+// Interface defines the subset of Helm functionality required by KSail.
+//
+//go:generate mockery --name=Interface --output=. --filename=mocks.go
+type Interface interface {
+	InstallChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error)
+	InstallOrUpgradeChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error)
+	UninstallRelease(ctx context.Context, releaseName, namespace string) error
+	AddRepository(ctx context.Context, entry *RepositoryEntry) error
 }
 
+// Client represents the default helm implementation used by KSail.
 type Client struct {
 	inner helmclientlib.Client
 }
 
-var _ HelmClient = (*Client)(nil)
+var _ Interface = (*Client)(nil)
 
+// NewClient creates a Helm client using the provided kubeconfig and context.
 func NewClient(kubeConfig, kubeContext string) (*Client, error) {
 	return newClient(kubeConfig, kubeContext, nil)
 }
 
+// NewClientWithDebug creates a Helm client with a custom debug logger.
 func NewClientWithDebug(
 	kubeConfig, kubeContext string,
 	debugFunc func(string, ...interface{}),
@@ -129,7 +156,8 @@ func createHelmClient(
 	}
 
 	if kubeConfig != "" {
-		if data, err := os.ReadFile(kubeConfig); err == nil {
+		data, readErr := ksailio.ReadFileSafe(filepath.Dir(kubeConfig), kubeConfig)
+		if readErr == nil {
 			client, err := helmclientlib.NewClientFromKubeConf(&helmclientlib.KubeConfClientOptions{
 				Options:     options,
 				KubeConfig:  data,
@@ -150,73 +178,219 @@ func createHelmClient(
 	if kubeConfig != "" {
 		settings.KubeConfig = kubeConfig
 	}
+
 	if kubeContext != "" {
 		settings.KubeContext = kubeContext
 	}
 
-	if hc, ok := client.(*helmclientlib.HelmClient); ok {
-		if err := reinitActionConfig(hc); err != nil {
-			return nil, fmt.Errorf("failed to initialize helm action config: %w", err)
+	if helmConcrete, ok := client.(*helmclientlib.HelmClient); ok {
+		reinitErr := reinitActionConfig(helmConcrete)
+		if reinitErr != nil {
+			return nil, fmt.Errorf("failed to initialize helm action config: %w", reinitErr)
 		}
 	}
 
 	return client, nil
 }
 
-func reinitActionConfig(hc *helmclientlib.HelmClient) error {
-	return hc.ActionConfig.Init(
-		hc.Settings.RESTClientGetter(),
-		hc.Settings.Namespace(),
+func reinitActionConfig(helmClient *helmclientlib.HelmClient) error {
+	reinitErr := helmClient.ActionConfig.Init(
+		helmClient.Settings.RESTClientGetter(),
+		helmClient.Settings.Namespace(),
 		os.Getenv("HELM_DRIVER"),
-		hc.DebugLog,
+		helmClient.DebugLog,
 	)
+	if reinitErr != nil {
+		return fmt.Errorf("initialize helm action config: %w", reinitErr)
+	}
+
+	return nil
 }
 
-func (c *Client) concreteClient() (*helmclientlib.HelmClient, error) {
-	hc, ok := c.inner.(*helmclientlib.HelmClient)
-	if !ok {
-		return nil, errors.New("unsupported helm client implementation")
-	}
-	return hc, nil
-}
-
-func (c *Client) switchNamespace(namespace string) (func(), error) {
-	if namespace == "" {
-		return func() {}, nil
-	}
-
-	hc, err := c.concreteClient()
-	if err != nil {
-		return nil, err
-	}
-
-	settings := hc.Settings
-	previous := settings.Namespace()
-	if previous == namespace {
-		return func() {}, nil
-	}
-
-	settings.SetNamespace(namespace)
-	if err := reinitActionConfig(hc); err != nil {
-		settings.SetNamespace(previous)
-		_ = reinitActionConfig(hc)
-		return nil, fmt.Errorf("failed to set helm namespace %q: %w", namespace, err)
-	}
-
-	return func() {
-		settings.SetNamespace(previous)
-		if err := reinitActionConfig(hc); err != nil {
-			hc.DebugLog("failed to restore helm namespace: %v", err)
-		}
-	}, nil
-}
-
+// InstallChart installs a Helm chart using the provided specification.
 func (c *Client) InstallChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error) {
 	return c.installRelease(ctx, spec, false)
 }
 
+// InstallOrUpgradeChart upgrades a Helm chart when present and installs it otherwise.
 func (c *Client) InstallOrUpgradeChart(ctx context.Context, spec *ChartSpec) (*ReleaseInfo, error) {
 	return c.installRelease(ctx, spec, true)
+}
+
+// UninstallRelease removes a Helm release by name within the provided namespace.
+func (c *Client) UninstallRelease(ctx context.Context, releaseName, namespace string) error {
+	if releaseName == "" {
+		return errReleaseNameRequired
+	}
+
+	ctxErr := ctx.Err()
+	if ctxErr != nil {
+		return fmt.Errorf("uninstall release context cancelled: %w", ctxErr)
+	}
+
+	cleanup, err := c.switchNamespace(namespace)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	chartSpec := &helmclientlib.ChartSpec{
+		ReleaseName: releaseName,
+		Namespace:   namespace,
+	}
+
+	uninstallErr := c.inner.UninstallRelease(chartSpec)
+	if uninstallErr != nil {
+		return fmt.Errorf("uninstall release %q: %w", releaseName, uninstallErr)
+	}
+
+	return nil
+}
+
+// AddRepository registers a Helm repository for the current client instance.
+func (c *Client) AddRepository(ctx context.Context, entry *RepositoryEntry) error {
+	requestErr := validateRepositoryRequest(ctx, entry)
+	if requestErr != nil {
+		return requestErr
+	}
+
+	settings := c.inner.GetSettings()
+
+	repoFile, err := ensureRepositoryConfig(settings)
+	if err != nil {
+		return err
+	}
+
+	repositoryFile := loadOrInitRepositoryFile(repoFile)
+	repoEntry := convertRepositoryEntry(entry)
+
+	repoCache, err := ensureRepositoryCache(settings)
+	if err != nil {
+		return err
+	}
+
+	chartRepository, err := newChartRepository(settings, repoEntry, repoCache)
+	if err != nil {
+		return err
+	}
+
+	if err := downloadRepositoryIndex(chartRepository); err != nil {
+		return err
+	}
+
+	repositoryFile.Update(repoEntry)
+
+	if err := repositoryFile.WriteFile(repoFile, repoFileMode); err != nil {
+		return fmt.Errorf("write repository file: %w", err)
+	}
+
+	return nil
+}
+
+func validateRepositoryRequest(ctx context.Context, entry *RepositoryEntry) error {
+	if entry == nil {
+		return errRepositoryEntryRequired
+	}
+
+	if entry.Name == "" {
+		return errRepositoryNameRequired
+	}
+
+	ctxErr := ctx.Err()
+	if ctxErr != nil {
+		return fmt.Errorf("add repository context cancelled: %w", ctxErr)
+	}
+
+	return nil
+}
+
+func ensureRepositoryConfig(settings *cli.EnvSettings) (string, error) {
+	repoFile := settings.RepositoryConfig
+	if repoFile == "" {
+		repoFile = os.Getenv("HELM_REPOSITORY_CONFIG")
+		if repoFile == "" {
+			return "", errRepositoryConfigUnset
+		}
+
+		settings.RepositoryConfig = repoFile
+	}
+
+	repoDir := filepath.Dir(repoFile)
+
+	if err := os.MkdirAll(repoDir, repoDirMode); err != nil {
+		return "", fmt.Errorf("create repository directory: %w", err)
+	}
+
+	return repoFile, nil
+}
+
+func loadOrInitRepositoryFile(repoFile string) *repo.File {
+	repositoryFile, err := repo.LoadFile(repoFile)
+	if err != nil {
+		return repo.NewFile()
+	}
+
+	return repositoryFile
+}
+
+func convertRepositoryEntry(entry *RepositoryEntry) *repo.Entry {
+	return &repo.Entry{
+		Name:                  entry.Name,
+		URL:                   entry.URL,
+		Username:              entry.Username,
+		Password:              entry.Password,
+		CertFile:              entry.CertFile,
+		KeyFile:               entry.KeyFile,
+		CAFile:                entry.CaFile,
+		InsecureSkipTLSverify: entry.InsecureSkipTLSverify,
+	}
+}
+
+func ensureRepositoryCache(settings *cli.EnvSettings) (string, error) {
+	repoCache := settings.RepositoryCache
+
+	if envCache := os.Getenv("HELM_REPOSITORY_CACHE"); envCache != "" {
+		repoCache = envCache
+		settings.RepositoryCache = envCache
+	}
+
+	if repoCache == "" {
+		return "", errRepositoryCacheUnset
+	}
+
+	if err := os.MkdirAll(repoCache, repoDirMode); err != nil {
+		return "", fmt.Errorf("create repository cache directory: %w", err)
+	}
+
+	return repoCache, nil
+}
+
+func newChartRepository(
+	settings *cli.EnvSettings,
+	repoEntry *repo.Entry,
+	repoCache string,
+) (*repo.ChartRepository, error) {
+	chartRepository, err := repo.NewChartRepository(repoEntry, getter.All(settings))
+	if err != nil {
+		return nil, fmt.Errorf("create chart repository: %w", err)
+	}
+
+	chartRepository.CachePath = repoCache
+
+	return chartRepository, nil
+}
+
+func downloadRepositoryIndex(chartRepository *repo.ChartRepository) error {
+	indexPath, err := chartRepository.DownloadIndexFile()
+	if err != nil {
+		return fmt.Errorf("failed to download repository index file: %w", err)
+	}
+
+	if _, statErr := os.Stat(indexPath); statErr != nil {
+		return fmt.Errorf("failed to verify repository index file: %w", statErr)
+	}
+
+	return nil
 }
 
 func (c *Client) installRelease(
@@ -238,66 +412,51 @@ func (c *Client) installRelease(
 	)
 }
 
-func (c *Client) UninstallRelease(ctx context.Context, releaseName, namespace string) error {
-	if releaseName == "" {
-		return errors.New("release name is required")
+func (c *Client) switchNamespace(namespace string) (func(), error) {
+	if namespace == "" {
+		return func() {}, nil
 	}
 
-	cleanup, err := c.switchNamespace(namespace)
+	helmClient, err := c.concreteClient()
 	if err != nil {
-		return err
-	}
-	defer cleanup()
-
-	chartSpec := &helmclientlib.ChartSpec{
-		ReleaseName: releaseName,
-		Namespace:   namespace,
+		return nil, err
 	}
 
-	return c.inner.UninstallRelease(chartSpec)
+	settings := helmClient.Settings
+
+	previous := settings.Namespace()
+	if previous == namespace {
+		return func() {}, nil
+	}
+
+	settings.SetNamespace(namespace)
+
+	reinitErr := reinitActionConfig(helmClient)
+	if reinitErr != nil {
+		settings.SetNamespace(previous)
+
+		_ = reinitActionConfig(helmClient)
+
+		return nil, fmt.Errorf("failed to set helm namespace %q: %w", namespace, reinitErr)
+	}
+
+	return func() {
+		settings.SetNamespace(previous)
+
+		restoreErr := reinitActionConfig(helmClient)
+		if restoreErr != nil {
+			helmClient.DebugLog("failed to restore helm namespace: %v", restoreErr)
+		}
+	}, nil
 }
 
-func (c *Client) AddRepository(ctx context.Context, entry *RepositoryEntry) error {
-	if entry == nil {
-		return errors.New("repository entry is required")
-	}
-	if entry.Name == "" {
-		return errors.New("repository name is required")
+func (c *Client) concreteClient() (*helmclientlib.HelmClient, error) {
+	implementation, ok := c.inner.(*helmclientlib.HelmClient)
+	if !ok {
+		return nil, errUnsupportedClientImplementation
 	}
 
-	settings := c.inner.GetSettings()
-	repoFile := settings.RepositoryConfig
-	if repoFile == "" {
-		return errors.New("helm repository config path is not set")
-	}
-
-	if err := os.MkdirAll(filepath.Dir(repoFile), 0o755); err != nil {
-		return fmt.Errorf("failed to create repository directory: %w", err)
-	}
-
-	f, err := repo.LoadFile(repoFile)
-	if err != nil {
-		f = repo.NewFile()
-	}
-
-	repoEntry := &repo.Entry{
-		Name:                  entry.Name,
-		URL:                   entry.URL,
-		Username:              entry.Username,
-		Password:              entry.Password,
-		CertFile:              entry.CertFile,
-		KeyFile:               entry.KeyFile,
-		CAFile:                entry.CaFile,
-		InsecureSkipTLSverify: entry.InsecureSkipTLSverify,
-	}
-
-	f.Update(repoEntry)
-
-	if err := f.WriteFile(repoFile, 0o644); err != nil {
-		return fmt.Errorf("failed to write repository file: %w", err)
-	}
-
-	return nil
+	return implementation, nil
 }
 
 func (c *Client) executeReleaseOp(
@@ -318,10 +477,11 @@ func (c *Client) executeReleaseOp(
 
 	var rel *release.Release
 	if spec != nil && spec.Silent {
-		rel, err = runWithSilencedStderr(run)
+		rel, err = runWithSilencedStderr(operation)
 	} else {
 		rel, err = run()
 	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +494,7 @@ func (c *Client) prepareChartSpec(
 	applyDefaultTimeout bool,
 ) (*helmclientlib.ChartSpec, func(), error) {
 	if spec == nil {
-		return nil, nil, errors.New("chart spec is required")
+		return nil, nil, errChartSpecRequired
 	}
 
 	chartSpec := convertChartSpec(spec)
@@ -342,8 +502,9 @@ func (c *Client) prepareChartSpec(
 		chartSpec.Timeout = DefaultTimeout
 	}
 
-	if err := c.ensureRepository(spec, chartSpec); err != nil {
-		return nil, nil, err
+	ensureErr := c.ensureRepository(spec, chartSpec)
+	if ensureErr != nil {
+		return nil, nil, ensureErr
 	}
 
 	cleanup, err := c.switchNamespace(chartSpec.Namespace)
@@ -359,15 +520,14 @@ func (c *Client) ensureRepository(spec *ChartSpec, chartSpec *helmclientlib.Char
 		return nil
 	}
 
-	_, chartName, err := parseChartRef(spec.ChartName)
-	if err != nil {
-		return fmt.Errorf("failed to parse chart reference: %w", err)
-	}
+	_, chartName := parseChartRef(spec.ChartName)
+
 	if chartName == "" {
 		chartName = spec.ChartName
 	}
 
 	settings := c.inner.GetSettings()
+
 	chartURL, err := repo.FindChartInAuthAndTLSAndPassRepoURL(
 		spec.RepoURL,
 		spec.Username,
@@ -391,6 +551,7 @@ func (c *Client) ensureRepository(spec *ChartSpec, chartSpec *helmclientlib.Char
 	}
 
 	chartSpec.ChartName = chartURL
+
 	return nil
 }
 
@@ -416,20 +577,21 @@ func convertChartSpec(spec *ChartSpec) *helmclientlib.ChartSpec {
 	}
 }
 
-func convertMapToSlice(m map[string]string) []string {
-	if len(m) == 0 {
+func convertMapToSlice(valuesMap map[string]string) []string {
+	if len(valuesMap) == 0 {
 		return nil
 	}
 
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
+	keys := make([]string, 0, len(valuesMap))
+	for key := range valuesMap {
+		keys = append(keys, key)
 	}
+
 	sort.Strings(keys)
 
 	result := make([]string, 0, len(keys))
-	for _, k := range keys {
-		result = append(result, fmt.Sprintf("%s=%s", k, m[k]))
+	for _, key := range keys {
+		result = append(result, fmt.Sprintf("%s=%s", key, valuesMap[key]))
 	}
 
 	return result
@@ -439,17 +601,20 @@ func copyStringSlice(src []string) []string {
 	if len(src) == 0 {
 		return nil
 	}
+
 	dup := make([]string, len(src))
 	copy(dup, src)
+
 	return dup
 }
 
-func parseChartRef(chartRef string) (string, string, error) {
-	parts := strings.SplitN(chartRef, "/", 2)
+func parseChartRef(chartRef string) (string, string) {
+	parts := strings.SplitN(chartRef, "/", chartRefParts)
 	if len(parts) == 1 {
-		return "", parts[0], nil
+		return "", parts[0]
 	}
-	return parts[0], parts[1], nil
+
+	return parts[0], parts[1]
 }
 
 func releaseToInfo(rel *release.Release) *ReleaseInfo {
@@ -469,39 +634,51 @@ func releaseToInfo(rel *release.Release) *ReleaseInfo {
 	}
 }
 
-func runWithSilencedStderr[T any](fn func() (T, error)) (result T, err error) {
-	r, w, pipeErr := os.Pipe()
+func runWithSilencedStderr[T any](fn func() (T, error)) (T, error) {
+	readPipe, writePipe, pipeErr := os.Pipe()
 	if pipeErr != nil {
 		return fn()
 	}
 
 	originalStderr := os.Stderr
-	var buffer bytes.Buffer
-	var wg sync.WaitGroup
-	wg.Add(1)
+
+	var (
+		stderrBuffer bytes.Buffer
+		waitGroup    sync.WaitGroup
+	)
+
+	waitGroup.Add(1)
 
 	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(&buffer, r)
+		defer waitGroup.Done()
+
+		_, _ = io.Copy(&stderrBuffer, readPipe)
 	}()
 
-	os.Stderr = w
+	os.Stderr = writePipe
+
+	var (
+		value  T
+		runErr error
+	)
 
 	defer func() {
-		_ = w.Close()
-		wg.Wait()
-		_ = r.Close()
+		_ = writePipe.Close()
+
+		waitGroup.Wait()
+
+		_ = readPipe.Close()
 		os.Stderr = originalStderr
 
-		if err != nil {
-			logs := strings.TrimSpace(buffer.String())
+		if runErr != nil {
+			logs := strings.TrimSpace(stderrBuffer.String())
 			if logs != "" {
-				err = fmt.Errorf("%w: %s", err, logs)
+				runErr = fmt.Errorf("%w: %s", runErr, logs)
 			}
 		}
 	}()
 
-	result, err = fn()
+	value, runErr = fn()
 
-	return result, err
+	return value, runErr
 }

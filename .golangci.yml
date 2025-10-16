@@ -58,10 +58,12 @@ linters:
             - github.com/jinzhu/copier
             - github.com/k3d-io
             - github.com/rancher
+            - github.com/mittwald
             - github.com/spf13/cobra
             - github.com/spf13/pflag
             - github.com/spf13/viper
             - github.com/stretchr/testify
+            - github.com/sirupsen/logrus
             - helm.sh/helm
             - k8s.io
             - sigs.k8s.io

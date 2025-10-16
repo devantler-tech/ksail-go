@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,13 +44,13 @@ func TestNewClient(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			client, err := helm.NewClient(tt.kubeConfig, tt.kubeContext)
+			client, err := helm.NewClient(testCase.kubeConfig, testCase.kubeContext)
 
-			if tt.wantErr {
+			if testCase.wantErr {
 				require.Error(t, err)
 				assert.Nil(t, client)
 			} else {
@@ -64,7 +65,7 @@ func TestNewClientWithDebug(t *testing.T) {
 	t.Parallel()
 
 	debugCalled := false
-	debugFunc := func(format string, v ...interface{}) {
+	debugFunc := func(_ string, _ ...interface{}) {
 		debugCalled = true
 	}
 
@@ -240,15 +241,15 @@ func TestDefaultTimeout(t *testing.T) {
 	assert.Equal(t, 5*time.Minute, helm.DefaultTimeout)
 }
 
-// Test interface compliance
+// Test interface compliance.
 func TestHelmClientInterface(t *testing.T) {
 	t.Parallel()
 
-	// This test ensures that our Client type implements the HelmClient interface
-	var _ helm.HelmClient = (*helm.Client)(nil)
+	// This test ensures that our Client type implements the helm.Interface interface
+	var _ helm.Interface = (*helm.Client)(nil)
 }
 
-// Test context support in interface methods
+// Test context support in interface methods.
 func TestHelmClientContextSupport(t *testing.T) {
 	t.Parallel()
 
@@ -272,6 +273,7 @@ func TestHelmClientContextSupport(t *testing.T) {
 
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
+
 	err = client.AddRepository(
 		canceledCtx,
 		&helm.RepositoryEntry{Name: "test", URL: "https://example.com"},
@@ -280,16 +282,21 @@ func TestHelmClientContextSupport(t *testing.T) {
 }
 
 func TestClientAddRepositorySuccess(t *testing.T) {
+	t.Parallel()
+
 	repoCache, repoConfig := setupHelmRepoEnv(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/index.yaml" {
-			_, _ = w.Write([]byte("apiVersion: v1\nentries: {}\n"))
-			return
-		}
+	server := httptest.NewServer(
+		http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if request.URL.Path == "/index.yaml" {
+				_, _ = writer.Write([]byte("apiVersion: v1\nentries: {}\n"))
 
-		http.NotFound(w, r)
-	}))
+				return
+			}
+
+			http.NotFound(writer, request)
+		}),
+	)
 	defer server.Close()
 
 	client, err := helm.NewClient("", "")
@@ -303,17 +310,21 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	_, err = os.Stat(indexPath)
 	require.NoError(t, err)
 
-	configData, err := os.ReadFile(repoConfig)
+	configData, err := ksailio.ReadFileSafe(filepath.Dir(repoConfig), repoConfig)
 	require.NoError(t, err)
 	assert.Contains(t, string(configData), server.URL)
 }
 
 func TestClientAddRepositoryDownloadFailure(t *testing.T) {
+	t.Parallel()
+
 	setupHelmRepoEnv(t)
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "error", http.StatusInternalServerError)
-	}))
+	server := httptest.NewServer(
+		http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			http.Error(writer, "error", http.StatusInternalServerError)
+		}),
+	)
 	defer server.Close()
 
 	client, err := helm.NewClient("", "")
@@ -327,11 +338,11 @@ func TestClientAddRepositoryDownloadFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to download repository index file")
 }
 
-func setupHelmRepoEnv(t *testing.T) (repoCache, repoConfig string) {
+func setupHelmRepoEnv(t *testing.T) (string, string) {
 	t.Helper()
 	tempDir := t.TempDir()
-	repoCache = filepath.Join(tempDir, "cache")
-	repoConfig = filepath.Join(tempDir, "repositories.yaml")
+	repoCache := filepath.Join(tempDir, "cache")
+	repoConfig := filepath.Join(tempDir, "repositories.yaml")
 
 	t.Setenv("HELM_REPOSITORY_CACHE", repoCache)
 	t.Setenv("HELM_REPOSITORY_CONFIG", repoConfig)
