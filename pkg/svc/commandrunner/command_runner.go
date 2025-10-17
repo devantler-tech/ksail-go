@@ -57,7 +57,8 @@ func (r *CobraCommandRunner) Run(
 		return CommandResult{}, fmt.Errorf("prepare command execution: %w", err)
 	}
 
-	if err = execCtx.configureLogger(); err != nil {
+	err = execCtx.configureLogger()
+	if err != nil {
 		execCtx.restore()
 
 		return CommandResult{}, fmt.Errorf("configure logger: %w", err)
@@ -66,7 +67,8 @@ func (r *CobraCommandRunner) Run(
 
 	execCtx.prepareCommand(ctx, cmd, args)
 
-	if err = execCtx.execute(ctx, cmd); err != nil {
+	err = execCtx.execute(ctx, cmd)
+	if err != nil {
 		execCtx.restore()
 		result := execCtx.result()
 
@@ -318,12 +320,13 @@ func (h *pipeForwardHook) Fire(entry *logrus.Entry) error {
 		return fmt.Errorf("format log entry: %w", err)
 	}
 
-	if _, err = h.writer.Write(formatted); err != nil {
-		if errors.Is(err, io.ErrClosedPipe) {
+	_, writeErr := h.writer.Write(formatted)
+	if writeErr != nil {
+		if errors.Is(writeErr, io.ErrClosedPipe) {
 			return nil
 		}
 
-		return fmt.Errorf("write log entry: %w", err)
+		return fmt.Errorf("write log entry: %w", writeErr)
 	}
 
 	return nil

@@ -281,7 +281,9 @@ func TestHelmClientContextSupport(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
-func TestClientAddRepositorySuccess(t *testing.T) {
+func TestClientAddRepositorySuccess(
+	t *testing.T,
+) { //nolint:paralleltest // uses process-wide env variables
 	repoCache, repoConfig := setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(
@@ -313,7 +315,9 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	assert.Contains(t, string(configData), server.URL)
 }
 
-func TestClientAddRepositoryDownloadFailure(t *testing.T) {
+func TestClientAddRepositoryDownloadFailure(
+	t *testing.T,
+) { //nolint:paralleltest // uses process-wide env variables
 	setupHelmRepoEnv(t)
 
 	server := httptest.NewServer(

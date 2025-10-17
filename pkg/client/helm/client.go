@@ -143,7 +143,7 @@ func newClient(
 func createHelmClient(
 	kubeConfig, kubeContext string,
 	debug func(string, ...interface{}),
-) (helmclientlib.Client, error) {
+) (*helmclientlib.HelmClient, error) {
 	debugLog := debug
 	if debugLog == nil {
 		debugLog = func(string, ...interface{}) {}
@@ -164,7 +164,7 @@ func createHelmClient(
 				KubeContext: kubeContext,
 			})
 			if err == nil {
-				return client, nil
+				return ensureHelmClient(client)
 			}
 		}
 	}
@@ -174,7 +174,12 @@ func createHelmClient(
 		return nil, fmt.Errorf("failed to create helm client: %w", err)
 	}
 
-	settings := client.GetSettings()
+	concrete, err := ensureHelmClient(client)
+	if err != nil {
+		return nil, err
+	}
+
+	settings := concrete.GetSettings()
 	if kubeConfig != "" {
 		settings.KubeConfig = kubeConfig
 	}
@@ -183,14 +188,21 @@ func createHelmClient(
 		settings.KubeContext = kubeContext
 	}
 
-	if helmConcrete, ok := client.(*helmclientlib.HelmClient); ok {
-		reinitErr := reinitActionConfig(helmConcrete)
-		if reinitErr != nil {
-			return nil, fmt.Errorf("failed to initialize helm action config: %w", reinitErr)
-		}
+	reinitErr := reinitActionConfig(concrete)
+	if reinitErr != nil {
+		return nil, fmt.Errorf("failed to initialize helm action config: %w", reinitErr)
 	}
 
-	return client, nil
+	return concrete, nil
+}
+
+func ensureHelmClient(client helmclientlib.Client) (*helmclientlib.HelmClient, error) {
+	helConcrete, ok := client.(*helmclientlib.HelmClient)
+	if !ok {
+		return nil, errUnsupportedClientImplementation
+	}
+
+	return helConcrete, nil
 }
 
 func reinitActionConfig(helmClient *helmclientlib.HelmClient) error {
@@ -392,7 +404,8 @@ func downloadRepositoryIndex(chartRepository *repo.ChartRepository) error {
 		return fmt.Errorf("failed to download repository index file: %w", err)
 	}
 
-	if _, statErr := os.Stat(indexPath); statErr != nil {
+	_, statErr := os.Stat(indexPath)
+	if statErr != nil {
 		return fmt.Errorf("failed to verify repository index file: %w", statErr)
 	}
 
@@ -483,7 +496,7 @@ func (c *Client) executeReleaseOp(
 
 	var rel *release.Release
 	if spec != nil && spec.Silent {
-		rel, err = runWithSilencedStderr(run)
+		rel, err = runReleaseWithSilencedStderr(run)
 	} else {
 		rel, err = run()
 	}
@@ -640,7 +653,9 @@ func releaseToInfo(rel *release.Release) *ReleaseInfo {
 	}
 }
 
-func runWithSilencedStderr[T any](operation func() (T, error)) (T, error) {
+func runReleaseWithSilencedStderr(
+	operation func() (*release.Release, error),
+) (*release.Release, error) {
 	readPipe, writePipe, pipeErr := os.Pipe()
 	if pipeErr != nil {
 		return operation()
@@ -664,8 +679,8 @@ func runWithSilencedStderr[T any](operation func() (T, error)) (T, error) {
 	os.Stderr = writePipe
 
 	var (
-		value  T
-		runErr error
+		releaseResult *release.Release
+		runErr        error
 	)
 
 	defer func() {
@@ -684,7 +699,7 @@ func runWithSilencedStderr[T any](operation func() (T, error)) (T, error) {
 		}
 	}()
 
-	value, runErr = operation()
+	releaseResult, runErr = operation()
 
-	return value, runErr
+	return releaseResult, runErr
 }
