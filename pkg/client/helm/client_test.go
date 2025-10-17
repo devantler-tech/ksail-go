@@ -1,7 +1,9 @@
-package helm_test
+package helm
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -9,10 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/release"
+	helmtime "helm.sh/helm/v3/pkg/time"
 )
 
 func TestNewClient(t *testing.T) {
@@ -48,7 +52,7 @@ func TestNewClient(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			client, err := helm.NewClient(testCase.kubeConfig, testCase.kubeContext)
+			client, err := NewClient(testCase.kubeConfig, testCase.kubeContext)
 
 			if testCase.wantErr {
 				require.Error(t, err)
@@ -69,7 +73,7 @@ func TestNewClientWithDebug(t *testing.T) {
 		debugCalled = true
 	}
 
-	client, err := helm.NewClientWithDebug("", "", debugFunc)
+	client, err := NewClientWithDebug("", "", debugFunc)
 	require.NoError(t, err)
 	assert.NotNil(t, client)
 
@@ -80,7 +84,7 @@ func TestNewClientWithDebug(t *testing.T) {
 func TestChartSpec_DefaultValues(t *testing.T) {
 	t.Parallel()
 
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName: "test-release",
 		ChartName:   "test/chart",
 		Namespace:   "test-namespace",
@@ -98,7 +102,7 @@ func TestChartSpec_DefaultValues(t *testing.T) {
 func TestRepositoryEntry_Fields(t *testing.T) {
 	t.Parallel()
 
-	entry := &helm.RepositoryEntry{
+	entry := &RepositoryEntry{
 		Name:                  "test-repo",
 		URL:                   "https://charts.example.com",
 		Username:              "user",
@@ -125,7 +129,7 @@ func TestReleaseInfo_Fields(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	info := &helm.ReleaseInfo{
+	info := &ReleaseInfo{
 		Name:       "test-release",
 		Namespace:  "test-namespace",
 		Revision:   2,
@@ -152,7 +156,7 @@ func TestReleaseInfo_Fields(t *testing.T) {
 func TestChartSpec_WithTimeout(t *testing.T) {
 	t.Parallel()
 
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName: "test-release",
 		ChartName:   "test/chart",
 		Namespace:   "test-namespace",
@@ -165,7 +169,7 @@ func TestChartSpec_WithTimeout(t *testing.T) {
 func TestChartSpec_WithValues(t *testing.T) {
 	t.Parallel()
 
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName: "test-release",
 		ChartName:   "test/chart",
 		Namespace:   "test-namespace",
@@ -188,7 +192,7 @@ func TestChartSpec_WithValues(t *testing.T) {
 func TestChartSpec_InstallOptions(t *testing.T) {
 	t.Parallel()
 
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName:     "test-release",
 		ChartName:       "test/chart",
 		Namespace:       "test-namespace",
@@ -211,7 +215,7 @@ func TestChartSpec_InstallOptions(t *testing.T) {
 func TestChartSpec_RepositoryOptions(t *testing.T) {
 	t.Parallel()
 
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName:           "test-release",
 		ChartName:             "test/chart",
 		Namespace:             "test-namespace",
@@ -238,7 +242,7 @@ func TestChartSpec_RepositoryOptions(t *testing.T) {
 func TestDefaultTimeout(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, 5*time.Minute, helm.DefaultTimeout)
+	assert.Equal(t, 5*time.Minute, DefaultTimeout)
 }
 
 // Test interface compliance.
@@ -246,7 +250,7 @@ func TestHelmClientInterface(t *testing.T) {
 	t.Parallel()
 
 	// This test ensures that our Client type implements the helm.Interface interface
-	var _ helm.Interface = (*helm.Client)(nil)
+	var _ Interface = (*Client)(nil)
 }
 
 // Test context support in interface methods.
@@ -254,12 +258,12 @@ func TestHelmClientContextSupport(t *testing.T) {
 	t.Parallel()
 
 	// Create a client (won't be used for actual operations)
-	client, err := helm.NewClient("", "")
+	client, err := NewClient("", "")
 	require.NoError(t, err)
 
 	// Test that methods accept context (interface compliance)
 	ctx := context.Background()
-	spec := &helm.ChartSpec{
+	spec := &ChartSpec{
 		ReleaseName: "test",
 		ChartName:   "test/chart",
 		Namespace:   "default",
@@ -276,7 +280,7 @@ func TestHelmClientContextSupport(t *testing.T) {
 
 	err = client.AddRepository(
 		canceledCtx,
-		&helm.RepositoryEntry{Name: "test", URL: "https://example.com"},
+		&RepositoryEntry{Name: "test", URL: "https://example.com"},
 	)
 	assert.ErrorIs(t, err, context.Canceled)
 }
@@ -300,10 +304,10 @@ func TestClientAddRepositorySuccess(
 	)
 	defer server.Close()
 
-	client, err := helm.NewClient("", "")
+	client, err := NewClient("", "")
 	require.NoError(t, err)
 
-	entry := &helm.RepositoryEntry{Name: "cilium", URL: server.URL}
+	entry := &RepositoryEntry{Name: "cilium", URL: server.URL}
 	err = client.AddRepository(context.Background(), entry)
 	require.NoError(t, err)
 
@@ -329,15 +333,175 @@ func TestClientAddRepositoryDownloadFailure(
 	)
 	defer server.Close()
 
-	client, err := helm.NewClient("", "")
+	client, err := NewClient("", "")
 	require.NoError(t, err)
 
 	err = client.AddRepository(
 		context.Background(),
-		&helm.RepositoryEntry{Name: "cilium", URL: server.URL},
+		&RepositoryEntry{Name: "cilium", URL: server.URL},
 	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to download repository index file")
+}
+
+func TestParseChartRef(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		ref           string
+		expectedRepo  string
+		expectedChart string
+	}{
+		{name: "ChartOnly", ref: "nginx", expectedRepo: "", expectedChart: "nginx"},
+		{
+			name:          "RepositoryAndChart",
+			ref:           "stable/nginx",
+			expectedRepo:  "stable",
+			expectedChart: "nginx",
+		},
+		{
+			name:          "OnlySplitsFirstSlash",
+			ref:           "stable/nested",
+			expectedRepo:  "stable",
+			expectedChart: "nested",
+		},
+	}
+
+	for _, testCase := range testCases {
+		tc := testCase
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo, chart := parseChartRef(tc.ref)
+
+			assert.Equal(t, tc.expectedRepo, repo)
+			assert.Equal(t, tc.expectedChart, chart)
+		})
+	}
+}
+
+func TestReleaseToInfo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilRelease", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Nil(t, releaseToInfo(nil))
+	})
+
+	t.Run("PopulatedRelease", func(t *testing.T) {
+		t.Parallel()
+
+		timestamp := time.Now()
+		rel := &release.Release{
+			Name:      "demo",
+			Namespace: "default",
+			Version:   3,
+			Chart: &chart.Chart{Metadata: &chart.Metadata{
+				Name:       "demo-chart",
+				AppVersion: "1.2.3",
+			}},
+			Info: &release.Info{
+				Status:       release.StatusDeployed,
+				LastDeployed: helmtime.Time{Time: timestamp},
+				Notes:        "deployment notes",
+			},
+		}
+
+		info := releaseToInfo(rel)
+		require.NotNil(t, info)
+		assert.Equal(t, "demo", info.Name)
+		assert.Equal(t, "default", info.Namespace)
+		assert.Equal(t, 3, info.Revision)
+		assert.Equal(t, release.StatusDeployed.String(), info.Status)
+		assert.Equal(t, "demo-chart", info.Chart)
+		assert.Equal(t, "1.2.3", info.AppVersion)
+		assert.Equal(t, timestamp, info.Updated)
+		assert.Equal(t, "deployment notes", info.Notes)
+	})
+}
+
+func TestConvertMapToSlice(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilWhenEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Nil(t, convertMapToSlice(nil))
+		assert.Nil(t, convertMapToSlice(map[string]string{}))
+	})
+
+	t.Run("SortedKeyValuePairs", func(t *testing.T) {
+		t.Parallel()
+
+		values := map[string]string{
+			"beta":  "2",
+			"alpha": "1",
+		}
+
+		result := convertMapToSlice(values)
+
+		require.Equal(t, []string{"alpha=1", "beta=2"}, result)
+	})
+}
+
+func TestCopyStringSlice(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NilWhenEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Nil(t, copyStringSlice(nil))
+		assert.Nil(t, copyStringSlice([]string{}))
+	})
+
+	t.Run("IndependentCopy", func(t *testing.T) {
+		t.Parallel()
+
+		original := []string{"one", "two"}
+		clone := copyStringSlice(original)
+
+		require.Equal(t, original, clone)
+
+		clone[0] = "changed"
+
+		assert.Equal(t, "one", original[0])
+		assert.Equal(t, "changed", clone[0])
+	})
+}
+
+func TestRunReleaseWithSilencedStderr(t *testing.T) {
+	originalStderr := os.Stderr
+
+	t.Run("SuccessReturnsRelease", func(t *testing.T) {
+		releaseResult := &release.Release{Name: "success"}
+
+		result, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
+			fmt.Fprintln(os.Stderr, "ignored log")
+
+			return releaseResult, nil
+		})
+
+		require.NoError(t, err)
+		assert.Equal(t, releaseResult, result)
+		assert.Equal(t, originalStderr, os.Stderr)
+	})
+
+	t.Run("ErrorIncludesCapturedLogs", func(t *testing.T) {
+		expected := errors.New("operation failed")
+
+		_, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
+			fmt.Fprintln(os.Stderr, "detailed failure")
+
+			return nil, expected
+		})
+
+		require.Error(t, err)
+		assert.ErrorContains(t, err, expected.Error())
+		assert.ErrorContains(t, err, "detailed failure")
+		assert.Equal(t, originalStderr, os.Stderr)
+	})
 }
 
 func setupHelmRepoEnv(t *testing.T) (string, string) {
