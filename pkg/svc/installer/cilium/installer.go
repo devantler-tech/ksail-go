@@ -190,6 +190,7 @@ func (c *CiliumInstaller) buildRESTConfig() (*rest.Config, error) {
 	return restConfig, nil
 }
 
+//nolint:unparam // name remains for future flexibility and consistent signatures.
 func waitForDaemonSetReady(
 	ctx context.Context,
 	clientset kubernetes.Interface,
@@ -219,6 +220,7 @@ func waitForDaemonSetReady(
 	})
 }
 
+//nolint:unparam // name remains for future flexibility and consistent signatures.
 func waitForDeploymentReady(
 	ctx context.Context,
 	clientset kubernetes.Interface,

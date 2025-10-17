@@ -3,7 +3,6 @@ package ciliuminstaller //nolint:testpackage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -64,6 +63,15 @@ func expectTrue(t *testing.T, condition bool, description string) {
 	}
 }
 
+var (
+	errInstallFailed   = errors.New("install failed")
+	errAddRepoFailed   = errors.New("add repo failed")
+	errUninstallFailed = errors.New("uninstall failed")
+	errDaemonSetBoom   = errors.New("boom")
+	errDeploymentFail  = errors.New("fail")
+	errPollBoom        = errors.New("boom")
+)
+
 func TestNewCiliumInstaller(t *testing.T) {
 	t.Parallel()
 
@@ -88,6 +96,8 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		{
 			name: "Success",
 			setup: func(t *testing.T, client *MockHelmClient) {
+				t.Helper()
+
 				expectCiliumAddRepository(t, client, nil)
 				expectCiliumInstallChart(t, client, nil)
 			},
@@ -95,38 +105,40 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		{
 			name: "InstallFailure",
 			setup: func(t *testing.T, client *MockHelmClient) {
+				t.Helper()
+
 				expectCiliumAddRepository(t, client, nil)
-				expectCiliumInstallChart(t, client, errors.New("install failed"))
+				expectCiliumInstallChart(t, client, errInstallFailed)
 			},
 			wantErr: "failed to install Cilium",
 		},
 		{
 			name: "AddRepositoryFailure",
 			setup: func(t *testing.T, client *MockHelmClient) {
-				expectCiliumAddRepository(t, client, errors.New("add repo failed"))
+				t.Helper()
+
+				expectCiliumAddRepository(t, client, errAddRepoFailed)
 			},
 			wantErr: "failed to add cilium repository",
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			installer, client := newDefaultInstaller(t)
-			tc.setup(t, client)
+			testCase.setup(t, client)
 
 			err := installer.Install(context.Background())
 
-			if tc.wantErr == "" {
+			if testCase.wantErr == "" {
 				expectNoError(t, err, "Install")
 
 				return
 			}
 
-			expectErrorContains(t, err, tc.wantErr, "Install error")
+			expectErrorContains(t, err, testCase.wantErr, "Install error")
 		})
 	}
 }
@@ -142,36 +154,38 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 		{
 			name: "Success",
 			setup: func(t *testing.T, client *MockHelmClient) {
+				t.Helper()
+
 				expectCiliumUninstall(t, client, nil)
 			},
 		},
 		{
 			name: "UninstallFailure",
 			setup: func(t *testing.T, client *MockHelmClient) {
-				expectCiliumUninstall(t, client, errors.New("uninstall failed"))
+				t.Helper()
+
+				expectCiliumUninstall(t, client, errUninstallFailed)
 			},
 			wantErr: "failed to uninstall cilium release",
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			installer, client := newDefaultInstaller(t)
-			tc.setup(t, client)
+			testCase.setup(t, client)
 
 			err := installer.Uninstall(context.Background())
 
-			if tc.wantErr == "" {
+			if testCase.wantErr == "" {
 				expectNoError(t, err, "Uninstall")
 
 				return
 			}
 
-			expectErrorContains(t, err, tc.wantErr, "Uninstall error")
+			expectErrorContains(t, err, testCase.wantErr, "Uninstall error")
 		})
 	}
 }
@@ -198,19 +212,17 @@ func TestApplyDefaultValues(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			applyDefaultValues(tc.spec)
+			applyDefaultValues(testCase.spec)
 
-			expectNotNil(t, tc.spec.SetJSONVals, "SetJSONVals map")
+			expectNotNil(t, testCase.spec.SetJSONVals, "SetJSONVals map")
 			expectEqual(
 				t,
-				tc.spec.SetJSONVals["operator.replicas"],
-				tc.expectedValue,
+				testCase.spec.SetJSONVals["operator.replicas"],
+				testCase.expectedValue,
 				"operator replicas",
 			)
 		})
@@ -251,6 +263,7 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
 		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
+
 		replacedPtr := reflect.ValueOf(installer.waitFn).Pointer()
 		if replacedPtr == defaultPtr {
 			t.Fatal("expected custom wait function to replace default")
@@ -331,149 +344,175 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 func TestWaitForDaemonSetReady(t *testing.T) {
 	t.Parallel()
 
-	t.Run("ReadyOnFirstPoll", func(t *testing.T) {
-		t.Parallel()
+	t.Run("ReadyOnFirstPoll", testWaitForDaemonSetReadyReady)
+	t.Run("PropagatesAPIError", testWaitForDaemonSetReadyAPIError)
+	t.Run("TimesOutWhenNotReady", testWaitForDaemonSetReadyTimeout)
+}
 
-		client := fake.NewSimpleClientset(&appsv1.DaemonSet{
-			ObjectMeta: metav1.ObjectMeta{Name: "cilium", Namespace: "kube-system"},
-			Status: appsv1.DaemonSetStatus{
-				DesiredNumberScheduled: 1,
-				NumberUnavailable:      0,
-				UpdatedNumberScheduled: 1,
-			},
-		})
+func testWaitForDaemonSetReadyReady(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
+	const (
+		namespace = "kube-system"
+		name      = "cilium"
+	)
 
-		err := waitForDaemonSetReady(ctx, client, "kube-system", "cilium", 200*time.Millisecond)
-
-		expectNoError(t, err, "waitForDaemonSetReady ready state")
+	client := fake.NewSimpleClientset(&appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DaemonSetStatus{
+			DesiredNumberScheduled: 1,
+			NumberUnavailable:      0,
+			UpdatedNumberScheduled: 1,
+		},
 	})
 
-	t.Run("PropagatesAPIError", func(t *testing.T) {
-		t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
 
-		client := fake.NewSimpleClientset()
-		client.PrependReactor(
-			"get",
-			"daemonsets",
-			func(action k8stesting.Action) (bool, runtime.Object, error) {
-				return true, nil, fmt.Errorf("boom")
-			},
-		)
+	err := waitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
+	expectNoError(t, err, "waitForDaemonSetReady ready state")
+}
 
-		err := waitForDaemonSetReady(ctx, client, "kube-system", "cilium", 200*time.Millisecond)
+func testWaitForDaemonSetReadyAPIError(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		expectErrorContains(
-			t,
-			err,
-			"get daemonset kube-system/cilium: boom",
-			"waitForDaemonSetReady api error",
-		)
-	})
+	const (
+		namespace = "observability"
+		name      = "cilium-agent"
+	)
 
-	t.Run("TimesOutWhenNotReady", func(t *testing.T) {
-		t.Parallel()
+	client := fake.NewSimpleClientset()
+	client.PrependReactor(
+		"get",
+		"daemonsets",
+		func(_ k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, errDaemonSetBoom
+		},
+	)
 
-		client := fake.NewSimpleClientset()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-		defer cancel()
+	err := waitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
 
-		err := waitForDaemonSetReady(ctx, client, "kube-system", "cilium", 150*time.Millisecond)
+	expectErrorContains(
+		t,
+		err,
+		"get daemonset observability/cilium-agent: boom",
+		"waitForDaemonSetReady api error",
+	)
+}
 
-		expectErrorContains(t, err, "poll for readiness", "waitForDaemonSetReady timeout")
-	})
+func testWaitForDaemonSetReadyTimeout(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	const (
+		namespace = "networking"
+		name      = "cilium"
+	)
+
+	client := fake.NewSimpleClientset()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	defer cancel()
+
+	err := waitForDaemonSetReady(ctx, client, namespace, name, 150*time.Millisecond)
+
+	expectErrorContains(t, err, "poll for readiness", "waitForDaemonSetReady timeout")
 }
 
 func TestWaitForDeploymentReady(t *testing.T) {
 	t.Parallel()
 
-	t.Run("ReadyOnFirstPoll", func(t *testing.T) {
-		t.Parallel()
+	t.Run("ReadyOnFirstPoll", testWaitForDeploymentReadyReady)
+	t.Run("PropagatesAPIError", testWaitForDeploymentReadyAPIError)
+	t.Run("TimesOutWhenNotReady", testWaitForDeploymentReadyTimeout)
+}
 
-		client := fake.NewSimpleClientset(&appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{Name: "cilium-operator", Namespace: "kube-system"},
-			Status: appsv1.DeploymentStatus{
-				Replicas:          1,
-				UpdatedReplicas:   1,
-				AvailableReplicas: 1,
-			},
-		})
+func testWaitForDeploymentReadyReady(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
+	const (
+		namespace = "kube-system"
+		name      = "cilium-operator"
+	)
 
-		err := waitForDeploymentReady(
-			ctx,
-			client,
-			"kube-system",
-			"cilium-operator",
-			200*time.Millisecond,
-		)
-
-		expectNoError(t, err, "waitForDeploymentReady ready state")
+	client := fake.NewSimpleClientset(&appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DeploymentStatus{
+			Replicas:          1,
+			UpdatedReplicas:   1,
+			AvailableReplicas: 1,
+		},
 	})
 
-	t.Run("PropagatesAPIError", func(t *testing.T) {
-		t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
 
-		client := fake.NewSimpleClientset()
-		client.PrependReactor(
-			"get",
-			"deployments",
-			func(action k8stesting.Action) (bool, runtime.Object, error) {
-				return true, nil, fmt.Errorf("fail")
-			},
-		)
+	err := waitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
+	expectNoError(t, err, "waitForDeploymentReady ready state")
+}
 
-		err := waitForDeploymentReady(
-			ctx,
-			client,
-			"kube-system",
-			"cilium-operator",
-			200*time.Millisecond,
-		)
+func testWaitForDeploymentReadyAPIError(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		expectErrorContains(
-			t,
-			err,
-			"get deployment kube-system/cilium-operator: fail",
-			"waitForDeploymentReady api error",
-		)
+	const (
+		namespace = "platform-system"
+		name      = "cilium-operator"
+	)
+
+	client := fake.NewSimpleClientset()
+	client.PrependReactor(
+		"get",
+		"deployments",
+		func(_ k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, errDeploymentFail
+		},
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	err := waitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
+
+	expectErrorContains(
+		t,
+		err,
+		"get deployment platform-system/cilium-operator: fail",
+		"waitForDeploymentReady api error",
+	)
+}
+
+func testWaitForDeploymentReadyTimeout(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+
+	const (
+		namespace = "observability"
+		name      = "cilium-operator"
+	)
+
+	client := fake.NewSimpleClientset(&appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DeploymentStatus{
+			Replicas:        2,
+			UpdatedReplicas: 1,
+		},
 	})
 
-	t.Run("TimesOutWhenNotReady", func(t *testing.T) {
-		t.Parallel()
+	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	defer cancel()
 
-		client := fake.NewSimpleClientset(&appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{Name: "cilium-operator", Namespace: "kube-system"},
-			Status: appsv1.DeploymentStatus{
-				Replicas:        2,
-				UpdatedReplicas: 1,
-			},
-		})
+	err := waitForDeploymentReady(ctx, client, namespace, name, 150*time.Millisecond)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
-		defer cancel()
-
-		err := waitForDeploymentReady(
-			ctx,
-			client,
-			"kube-system",
-			"cilium-operator",
-			150*time.Millisecond,
-		)
-
-		expectErrorContains(t, err, "poll for readiness", "waitForDeploymentReady timeout")
-	})
+	expectErrorContains(t, err, "poll for readiness", "waitForDeploymentReady timeout")
 }
 
 func TestPollForReadiness(t *testing.T) {
@@ -499,7 +538,7 @@ func TestPollForReadiness(t *testing.T) {
 		defer cancel()
 
 		err := pollForReadiness(ctx, 200*time.Millisecond, func(context.Context) (bool, error) {
-			return false, errors.New("boom")
+			return false, errPollBoom
 		})
 
 		expectErrorContains(t, err, "poll for readiness: boom", "pollForReadiness error wrap")
@@ -595,7 +634,8 @@ users:
 `
 
 	path := filepath.Join(dir, "config")
-	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+	err := os.WriteFile(path, []byte(contents), 0o600)
+	if err != nil {
 		t.Fatalf("write kubeconfig file: %v", err)
 	}
 

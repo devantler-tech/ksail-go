@@ -1,4 +1,4 @@
-package helm
+package helm //nolint:testpackage
 
 import (
 	"context"
@@ -55,6 +55,8 @@ func expectErrorContains(t *testing.T, err error, substr, description string) {
 	}
 }
 
+var errOperationFailed = errors.New("operation failed")
+
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
@@ -84,32 +86,30 @@ func TestNewClient(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			client, err := NewClient(tc.kubeConfig, tc.kubeContext)
+			client, err := NewClient(testCase.kubeConfig, testCase.kubeContext)
 
-			if tc.wantErr {
+			if testCase.wantErr {
 				if err == nil {
-					t.Fatalf("%s: expected error but got nil", tc.name)
+					t.Fatalf("%s: expected error but got nil", testCase.name)
 				}
 
 				if client != nil {
-					t.Fatalf("%s: expected client to be nil", tc.name)
+					t.Fatalf("%s: expected client to be nil", testCase.name)
 				}
 
 				return
 			}
 
 			if err != nil {
-				t.Fatalf("%s: unexpected error: %v", tc.name, err)
+				t.Fatalf("%s: unexpected error: %v", testCase.name, err)
 			}
 
 			if client == nil {
-				t.Fatalf("%s: expected client instance", tc.name)
+				t.Fatalf("%s: expected client instance", testCase.name)
 			}
 		})
 	}
@@ -369,7 +369,9 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	expectNoError(t, addErr, "AddRepository")
 
 	indexPath := filepath.Join(repoCache, "cilium-index.yaml")
-	if _, err = os.Stat(indexPath); err != nil {
+
+	_, err = os.Stat(indexPath)
+	if err != nil {
 		t.Fatalf("expected repository index at %s: %v", indexPath, err)
 	}
 
@@ -393,6 +395,7 @@ func TestClientAddRepositoryDownloadFailure(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient("", "")
+
 	expectNoError(t, err, "NewClient")
 
 	err = client.AddRepository(
@@ -427,16 +430,14 @@ func TestParseChartRef(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, chart := parseChartRef(tc.ref)
+			repo, chart := parseChartRef(testCase.ref)
 
-			expectEqual(t, repo, tc.expectedRepo, "repo")
-			expectEqual(t, chart, tc.expectedChart, "chart")
+			expectEqual(t, repo, testCase.expectedRepo, "repo")
+			expectEqual(t, chart, testCase.expectedChart, "chart")
 		})
 	}
 }
@@ -544,10 +545,13 @@ func TestCopyStringSlice(t *testing.T) {
 }
 
 func TestRunReleaseWithSilencedStderr(t *testing.T) {
-	originalStderr := os.Stderr
+	t.Parallel()
 
 	t.Run("SuccessReturnsRelease", func(t *testing.T) {
+		t.Parallel()
+
 		releaseResult := &release.Release{Name: "success"}
+		originalStderr := os.Stderr
 
 		result, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
 			fmt.Fprintln(os.Stderr, "ignored log")
@@ -567,17 +571,24 @@ func TestRunReleaseWithSilencedStderr(t *testing.T) {
 	})
 
 	t.Run("ErrorIncludesCapturedLogs", func(t *testing.T) {
-		expected := errors.New("operation failed")
+		t.Parallel()
+
+		originalStderr := os.Stderr
 
 		_, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
 			fmt.Fprintln(os.Stderr, "detailed failure")
 
-			return nil, expected
+			return nil, errOperationFailed
 		})
 
-		expectErrorContains(t, err, expected.Error(), "runReleaseWithSilencedStderr error")
+		expectErrorContains(
+			t,
+			err,
+			errOperationFailed.Error(),
+			"runReleaseWithSilencedStderr error",
+		)
 
-		if !errors.Is(err, expected) {
+		if !errors.Is(err, errOperationFailed) {
 			t.Fatalf("expected wrapped error to match original: %v", err)
 		}
 
