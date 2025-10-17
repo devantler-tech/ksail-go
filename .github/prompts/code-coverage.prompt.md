@@ -26,7 +26,8 @@ $ARGUMENTS
    - Skip all `testutils` packages during analysis or test creation; those utilities are intentionally uncovered.
 
 4. **Validate outcomes**
-   - Run the relevant test, lint, and formatting commands to ensure compliance and reliability. Regression is not acceptable.
+   - Run the relevant test, lint, and formatting commands from the CLI (not via VS Code tasks) to ensure compliance and reliability. Regression is not acceptable.
+   - Always execute `go test ./...` and required lint commands such as `golangci-lint run` directly from the CLI.
    - Ensure added tests are are actually adding code coverage.
    - Confirm testutils packages remain excluded from reports and that all changes respect Go testing best practices.
 
