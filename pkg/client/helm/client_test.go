@@ -35,26 +35,6 @@ func expectDeepEqual[T any](t *testing.T, got, want T, description string) {
 	}
 }
 
-func expectNoError(t *testing.T, err error, description string) {
-	t.Helper()
-
-	if err != nil {
-		t.Fatalf("%s: unexpected error: %v", description, err)
-	}
-}
-
-func expectErrorContains(t *testing.T, err error, substr, description string) {
-	t.Helper()
-
-	if err == nil {
-		t.Fatalf("%s: expected error containing %q but got nil", description, substr)
-	}
-
-	if !strings.Contains(err.Error(), substr) {
-		t.Fatalf("%s: expected error to contain %q, got %q", description, substr, err.Error())
-	}
-}
-
 var errOperationFailed = errors.New("operation failed")
 
 func TestNewClient(t *testing.T) {
@@ -365,6 +345,7 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	expectNoError(t, err, "NewClient")
 
 	entry := &RepositoryEntry{Name: "cilium", URL: server.URL}
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	addErr := client.AddRepository(context.Background(), entry)
 	expectNoError(t, addErr, "AddRepository")
 

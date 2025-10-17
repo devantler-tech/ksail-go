@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,42 +23,6 @@ func expectEqual[T comparable](t *testing.T, got, want T, description string) {
 
 	if got != want {
 		t.Fatalf("unexpected %s: got %v want %v", description, got, want)
-	}
-}
-
-func expectNoError(t *testing.T, err error, description string) {
-	t.Helper()
-
-	if err != nil {
-		t.Fatalf("%s: unexpected error: %v", description, err)
-	}
-}
-
-func expectErrorContains(t *testing.T, err error, substr, description string) {
-	t.Helper()
-
-	if err == nil {
-		t.Fatalf("%s: expected error containing %q but got nil", description, substr)
-	}
-
-	if !strings.Contains(err.Error(), substr) {
-		t.Fatalf("%s: expected error to contain %q, got %q", description, substr, err.Error())
-	}
-}
-
-func expectNotNil(t *testing.T, value any, description string) {
-	t.Helper()
-
-	if value == nil {
-		t.Fatalf("expected %s to be non-nil", description)
-	}
-}
-
-func expectTrue(t *testing.T, condition bool, description string) {
-	t.Helper()
-
-	if !condition {
-		t.Fatalf("expected %s to be true", description)
 	}
 }
 
@@ -634,6 +597,7 @@ users:
 `
 
 	path := filepath.Join(dir, "config")
+
 	err := os.WriteFile(path, []byte(contents), 0o600)
 	if err != nil {
 		t.Fatalf("write kubeconfig file: %v", err)
