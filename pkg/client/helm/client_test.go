@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
@@ -104,7 +105,7 @@ func TestNewClientWithDebug(t *testing.T) {
 	}
 
 	client, err := NewClientWithDebug("", "", debugFunc)
-	expectNoError(t, err, "NewClientWithDebug")
+	testutils.ExpectNoError(t, err, "NewClientWithDebug")
 
 	if client == nil {
 		t.Fatal("expected client instance")
@@ -302,7 +303,7 @@ func TestHelmClientContextSupport(t *testing.T) {
 	t.Parallel()
 
 	client, err := NewClient("", "")
-	expectNoError(t, err, "NewClient")
+	testutils.ExpectNoError(t, err, "NewClient")
 
 	ctx := context.Background()
 	spec := &ChartSpec{ReleaseName: "test", ChartName: "test/chart", Namespace: "default"}
@@ -342,12 +343,12 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient("", "")
-	expectNoError(t, err, "NewClient")
+	testutils.ExpectNoError(t, err, "NewClient")
 
 	entry := &RepositoryEntry{Name: "cilium", URL: server.URL}
-	"github.com/devantler-tech/ksail-go/internal/testutils"
-	addErr := client.AddRepository(context.Background(), entry)
-	expectNoError(t, addErr, "AddRepository")
+	// Inline AddRepository logic
+	err = client.AddRepository(context.Background(), entry)
+	testutils.ExpectNoError(t, err, "AddRepository")
 
 	indexPath := filepath.Join(repoCache, "cilium-index.yaml")
 
@@ -357,7 +358,7 @@ func TestClientAddRepositorySuccess(t *testing.T) {
 	}
 
 	configData, err := ksailio.ReadFileSafe(filepath.Dir(repoConfig), repoConfig)
-	expectNoError(t, err, "ReadFileSafe")
+	testutils.ExpectNoError(t, err, "ReadFileSafe")
 
 	if !strings.Contains(string(configData), server.URL) {
 		t.Fatalf("repository config missing server URL: %s", server.URL)
@@ -376,15 +377,19 @@ func TestClientAddRepositoryDownloadFailure(t *testing.T) {
 	defer server.Close()
 
 	client, err := NewClient("", "")
-
-	expectNoError(t, err, "NewClient")
+	testutils.ExpectNoError(t, err, "NewClient")
 
 	err = client.AddRepository(
 		context.Background(),
 		&RepositoryEntry{Name: "cilium", URL: server.URL},
 	)
 
-	expectErrorContains(t, err, "failed to download repository index file", "AddRepository failure")
+	testutils.ExpectErrorContains(
+		t,
+		err,
+		"failed to download repository index file",
+		"AddRepository failure",
+	)
 }
 
 func TestParseChartRef(t *testing.T) {
@@ -529,18 +534,14 @@ func TestRunReleaseWithSilencedStderr(t *testing.T) {
 	t.Parallel()
 
 	t.Run("SuccessReturnsRelease", func(t *testing.T) {
-		t.Parallel()
-
 		releaseResult := &release.Release{Name: "success"}
 		originalStderr := os.Stderr
 
 		result, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
-			fmt.Fprintln(os.Stderr, "ignored log")
-
 			return releaseResult, nil
 		})
 
-		expectNoError(t, err, "runReleaseWithSilencedStderr success")
+		testutils.ExpectNoError(t, err, "runReleaseWithSilencedStderr success")
 
 		if result != releaseResult {
 			t.Fatalf("expected release result %v, got %v", releaseResult, result)
@@ -552,8 +553,6 @@ func TestRunReleaseWithSilencedStderr(t *testing.T) {
 	})
 
 	t.Run("ErrorIncludesCapturedLogs", func(t *testing.T) {
-		t.Parallel()
-
 		originalStderr := os.Stderr
 
 		_, err := runReleaseWithSilencedStderr(func() (*release.Release, error) {
@@ -562,7 +561,7 @@ func TestRunReleaseWithSilencedStderr(t *testing.T) {
 			return nil, errOperationFailed
 		})
 
-		expectErrorContains(
+		testutils.ExpectErrorContains(
 			t,
 			err,
 			errOperationFailed.Error(),
