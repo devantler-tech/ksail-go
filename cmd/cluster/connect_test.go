@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const kindClusterContext = "kind-kind"
+
 func TestNewConnectCmd(t *testing.T) {
 	t.Parallel()
 
@@ -185,7 +187,7 @@ func TestHandleConnectRunE_WithAdditionalArgs(t *testing.T) {
 func TestHandleConnectRunE_WithContext(t *testing.T) {
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
-	contextName := "kind-kind"
+	contextName := kindClusterContext
 
 	configContent := createKSailConfigYAML(kubeConfigPath, contextName)
 	cfgManager := setupTestConfig(t, configContent)
@@ -270,7 +272,7 @@ func TestHandleConnectRunE_WithDefaultPath(t *testing.T) {
 func TestHandleConnectRunE_WithContextAndKubeconfig(t *testing.T) {
 	tempDir := t.TempDir()
 	kubeConfigPath := filepath.Join(tempDir, "kubeconfig")
-	contextName := "kind-kind"
+	contextName := kindClusterContext
 
 	// Create the kubeconfig file
 	err := os.WriteFile(kubeConfigPath, []byte("# test kubeconfig"), 0o600)
