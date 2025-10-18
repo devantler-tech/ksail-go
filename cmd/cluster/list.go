@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,6 +15,8 @@ import (
 )
 
 const allFlag = "all"
+
+var errDistributionFactoryUnset = errors.New("distribution factory dependency is not configured")
 
 // NewListCmd creates the list command for clusters.
 func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
@@ -154,7 +157,10 @@ func listDistributionClusters(
 
 	distributionFactory := deps.DistributionFactory
 	if distributionFactory == nil {
-		distributionFactory = clusterprovisioner.DefaultFactory{}
+		return fmt.Errorf(
+			"distribution factory dependency is not configured: %w",
+			errDistributionFactoryUnset,
+		)
 	}
 
 	otherProv, _, err := distributionFactory.Create(cmd.Context(), otherCluster)

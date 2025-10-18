@@ -15,6 +15,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
+	helmclientlib "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/release"
 	helmtime "helm.sh/helm/v3/pkg/time"
@@ -475,6 +476,45 @@ func TestReleaseToInfo(t *testing.T) {
 	})
 }
 
+func TestNewHelmClientFromKubeConf(t *testing.T) {
+	t.Parallel()
+
+	kubeConfig := []byte(`apiVersion: v1
+clusters:
+- cluster:
+    server: https://example.invalid
+  name: coverage
+contexts:
+- context:
+    cluster: coverage
+    user: default
+  name: coverage
+current-context: coverage
+kind: Config
+preferences: {}
+users:
+- name: default
+  user:
+    token: dummy
+`)
+
+	t.Run("ValidConfigCreatesClient", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := newHelmClientFromKubeConf(&helmclientlib.Options{}, kubeConfig, "coverage")
+		testutils.ExpectNoError(t, err, "newHelmClientFromKubeConf valid config")
+
+		if client == nil {
+			t.Fatal("expected helm client instance")
+		}
+
+		settings := client.GetSettings()
+		if settings.KubeContext != "coverage" {
+			t.Fatalf("expected kube context to be set to coverage, got %q", settings.KubeContext)
+		}
+	})
+}
+
 func TestConvertMapToSlice(t *testing.T) {
 	t.Parallel()
 
@@ -527,6 +567,145 @@ func TestCopyStringSlice(t *testing.T) {
 
 		expectEqual(t, original[0], "one", "original unchanged")
 		expectEqual(t, clone[0], "changed", "clone mutated")
+	})
+}
+
+func TestClientSwitchNamespace(t *testing.T) {
+	t.Parallel()
+
+	t.Run("SwitchesAndRestoresNamespace", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := NewClient("", "")
+		testutils.ExpectNoError(t, err, "NewClient for switchNamespace")
+
+		helClient, err := client.concreteClient()
+		testutils.ExpectNoError(t, err, "concreteClient access")
+
+		initial := helClient.Settings.Namespace()
+
+		target := "coverage-ns"
+		if target == initial {
+			target += "-alt"
+		}
+
+		cleanup, err := client.switchNamespace(target)
+		testutils.ExpectNoError(t, err, "switchNamespace success")
+
+		current := helClient.Settings.Namespace()
+		if current != target {
+			t.Fatalf("expected namespace %q, got %q", target, current)
+		}
+
+		cleanup()
+
+		restored := helClient.Settings.Namespace()
+		if restored != initial {
+			t.Fatalf("expected namespace to be restored to %q, got %q", initial, restored)
+		}
+	})
+
+	t.Run("SameNamespaceNoChange", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := NewClient("", "")
+		testutils.ExpectNoError(t, err, "NewClient for same namespace")
+
+		helClient, err := client.concreteClient()
+		testutils.ExpectNoError(t, err, "concreteClient access")
+
+		initial := helClient.Settings.Namespace()
+
+		cleanup, err := client.switchNamespace(initial)
+		testutils.ExpectNoError(t, err, "switchNamespace same namespace")
+
+		cleanup()
+
+		if helClient.Settings.Namespace() != initial {
+			t.Fatalf(
+				"expected namespace to remain %q, got %q",
+				initial,
+				helClient.Settings.Namespace(),
+			)
+		}
+	})
+}
+
+//nolint:paralleltest // modifies HELM_* environment variables
+func TestClientEnsureRepository(t *testing.T) {
+	setupHelmRepoEnv(t)
+
+	t.Run("NoRepoURLSkipsLookup", func(t *testing.T) {
+		client, err := NewClient("", "")
+		testutils.ExpectNoError(t, err, "NewClient no repo")
+
+		chartSpec := &helmclientlib.ChartSpec{ChartName: "demo"}
+		err = client.ensureRepository(&ChartSpec{ChartName: "demo"}, chartSpec)
+		testutils.ExpectNoError(t, err, "ensureRepository without repo")
+
+		expectEqual(t, chartSpec.ChartName, "demo", "chart name unchanged")
+	})
+
+	t.Run("LookupFailureReturnsError", func(t *testing.T) {
+		server := httptest.NewServer(
+			http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				http.Error(writer, "boom", http.StatusInternalServerError)
+			}),
+		)
+		defer server.Close()
+
+		client, err := NewClient("", "")
+		testutils.ExpectNoError(t, err, "NewClient failure case")
+
+		spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
+		chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
+
+		err = client.ensureRepository(spec, chartSpec)
+		testutils.ExpectErrorContains(
+			t,
+			err,
+			"failed to locate chart",
+			"ensureRepository failure path",
+		)
+	})
+
+	t.Run("SuccessfulLookupUpdatesChart", func(t *testing.T) {
+		var serverURL string
+
+		server := httptest.NewServer(
+			http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				switch request.URL.Path {
+				case "/index.yaml":
+					_, writeErr := fmt.Fprintf(
+						writer,
+						"apiVersion: v1\nentries:\n  example:\n  - apiVersion: v2\n    appVersion: 1.0.0\n    name: example\n    version: 1.0.0\n    urls:\n    - %s/example-1.0.0.tgz\n",
+						serverURL,
+					)
+					if writeErr != nil {
+						http.Error(writer, writeErr.Error(), http.StatusInternalServerError)
+					}
+				case "/example-1.0.0.tgz":
+					writer.WriteHeader(http.StatusOK)
+				default:
+					http.NotFound(writer, request)
+				}
+			}),
+		)
+
+		serverURL = server.URL
+		defer server.Close()
+
+		client, err := NewClient("", "")
+		testutils.ExpectNoError(t, err, "NewClient success case")
+
+		spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
+		chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
+
+		err = client.ensureRepository(spec, chartSpec)
+		testutils.ExpectNoError(t, err, "ensureRepository success path")
+
+		expected := server.URL + "/example-1.0.0.tgz"
+		expectEqual(t, chartSpec.ChartName, expected, "chart URL updated")
 	})
 }
 

@@ -228,6 +228,23 @@ func TestListClusters_AllFlagTriggersAdditionalDistribution(t *testing.T) {
 	require.Equal(t, 1, otherProvisioner.listCalls)
 }
 
+func TestListClusters_AllFlagWithoutDistributionFactory(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := newCommandWithBuffer(t)
+	cfgManager := createConfigManagerWithFile(t, io.Discard)
+	require.NoError(t, cfgManager.LoadConfigSilent())
+	cfgManager.Viper.Set(allFlag, true)
+
+	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
+	factory := &recordingListFactory{provisioner: provisioner}
+
+	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errDistributionFactoryUnset)
+	require.Equal(t, 1, provisioner.listCalls)
+}
+
 func TestDisplayClusterList(t *testing.T) {
 	t.Parallel()
 
