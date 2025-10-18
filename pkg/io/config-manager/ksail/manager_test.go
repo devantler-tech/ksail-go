@@ -189,6 +189,53 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
 }
 
+func TestNewCommandConfigManagerBindsFlags(t *testing.T) {
+	t.Parallel()
+
+	var output bytes.Buffer
+
+	cmd := &cobra.Command{Use: "test"}
+	cmd.SetOut(&output)
+
+	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
+	}
+
+	manager := configmanager.NewCommandConfigManager(cmd, selectors)
+
+	require.NotNil(t, manager)
+	assert.Same(t, cmd.OutOrStdout(), manager.Writer)
+
+	for _, flagName := range []string{"distribution", "distribution-config"} {
+		flag := cmd.Flags().Lookup(flagName)
+		require.NotNil(t, flag, "expected flag %s to be registered", flagName)
+	}
+}
+
+func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
+	t.Parallel()
+
+	var output bytes.Buffer
+
+	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
+		configmanager.DefaultDistributionFieldSelector(),
+		configmanager.DefaultDistributionConfigFieldSelector(),
+		configmanager.DefaultKubeconfigFieldSelector(),
+	}
+
+	manager := configmanager.NewConfigManager(&output, selectors...)
+
+	err := manager.LoadConfigSilent()
+	require.NoError(t, err)
+	assert.Empty(t, output.String(), "silent load should not emit notifications")
+
+	cluster := manager.GetConfig()
+	require.NotNil(t, cluster)
+	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
+	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
+}
+
 // TestLoadConfigValidationFailureMessages verifies validation error notifications.
 //
 //nolint:paralleltest // Uses t.Chdir for isolated filesystem state.

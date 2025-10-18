@@ -84,6 +84,13 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			expectedDefault: nil,
 			assertPointer:   assertContextSelector,
 		},
+		{
+			name:            "cni",
+			factory:         configmanager.DefaultCNIFieldSelector,
+			expectedDesc:    "Container Network Interface (CNI) to use",
+			expectedDefault: v1alpha1.CNIDefault,
+			assertPointer:   assertCNISelector,
+		},
 	}
 }
 
@@ -166,6 +173,11 @@ func assertDistributionConfigSelector(t *testing.T, cluster *v1alpha1.Cluster, p
 func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.Connection.Context)
+}
+
+func assertCNISelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.CNI)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
