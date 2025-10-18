@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -157,6 +158,36 @@ func TestGetCiliumInstallTimeout(t *testing.T) {
 				t.Fatalf("expected %v, got %v", test.expected, result)
 			}
 		})
+	}
+}
+
+func TestNewCiliumInstaller(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Connection.Context = "kind-dev"
+	clusterCfg.Spec.Connection.Timeout.Duration = 2 * time.Minute
+
+	installer := newCiliumInstaller(nil, "/tmp/kubeconfig", clusterCfg)
+	if installer == nil {
+		t.Fatal("expected installer to be created")
+	}
+
+	value := reflect.ValueOf(installer).Elem()
+
+	kubeconfig := value.FieldByName("kubeconfig").String()
+	if kubeconfig != "/tmp/kubeconfig" {
+		t.Fatalf("expected kubeconfig to propagate, got %q", kubeconfig)
+	}
+
+	contextName := value.FieldByName("context").String()
+	if contextName != "kind-dev" {
+		t.Fatalf("expected context to propagate, got %q", contextName)
+	}
+
+	timeout := value.FieldByName("timeout").Interface().(time.Duration)
+	if timeout != 2*time.Minute {
+		t.Fatalf("expected timeout to use cluster override, got %v", timeout)
 	}
 }
 
