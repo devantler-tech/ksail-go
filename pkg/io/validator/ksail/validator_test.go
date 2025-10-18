@@ -17,6 +17,7 @@ import (
 
 const (
 	specDistributionField = "spec.distribution"
+	kindKSailContext      = "kind-ksail"
 )
 
 // TestKSailValidator tests the contract for KSail configuration validator.
@@ -249,6 +250,62 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	}
 }
 
+func runKindCiliumAlignmentTest(
+	t *testing.T,
+	disableDefaultCNI bool,
+	expectValid bool,
+	expectedMessagePart string,
+) {
+	t.Helper()
+
+	kindConfig := &kindv1alpha4.Cluster{
+		Name: "ksail",
+		Networking: kindv1alpha4.Networking{
+			DisableDefaultCNI: disableDefaultCNI,
+		},
+	}
+
+	validator := ksailvalidator.NewValidatorForKind(kindConfig)
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNICilium
+	config.Spec.Connection.Context = kindKSailContext
+
+	result := validator.Validate(config)
+
+	if expectValid {
+		assert.True(t, result.Valid, "expected config to be valid when disableDefaultCNI is true")
+		assert.Empty(t, result.Errors, "expected no validation errors when configuration is valid")
+
+		return
+	}
+
+	assert.False(t, result.Valid, "expected validation to fail when disableDefaultCNI is false")
+
+	found := false
+
+	for _, err := range result.Errors {
+		if err.Field == "spec.cni" {
+			found = true
+
+			if expectedMessagePart != "" {
+				assert.Contains(
+					t,
+					err.Message,
+					expectedMessagePart,
+					"error message should mention expected hint",
+				)
+			}
+
+			assert.NotEmpty(t, err.FixSuggestion, "error should include fix suggestion")
+
+			break
+		}
+	}
+
+	assert.True(t, found, "expected to find Cilium alignment validation error")
+}
+
 // TestKSailValidatorContextNameValidation tests context name validation patterns.
 func TestKSailValidatorContextNameValidation(t *testing.T) {
 	t.Parallel()
@@ -317,7 +374,7 @@ func TestKSailValidatorKindConsistency(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Connection.Context = "kind-ksail" // Set context to match the provided Kind config name
+		config.Spec.Connection.Context = kindKSailContext // Set context to match the provided Kind config name
 
 		// Create a Kind config with matching name
 		kindConfig := &kindv1alpha4.Cluster{
@@ -388,6 +445,44 @@ func TestKSailValidatorK3dCiliumExtraArgsValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			runCiliumExtraArgsValidationTest(t, tc)
+		})
+	}
+}
+
+func TestKSailValidatorKindCiliumAlignment(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name                string
+		disableDefaultCNI   bool
+		expectValid         bool
+		expectedMessagePart string
+	}{
+		{
+			name:                "disable_default_cni_required",
+			disableDefaultCNI:   false,
+			expectValid:         false,
+			expectedMessagePart: "disableDefaultCNI",
+		},
+		{
+			name:                "cilium_alignment_succeeds",
+			disableDefaultCNI:   true,
+			expectValid:         true,
+			expectedMessagePart: "",
+		},
+	}
+
+	for idx := range tests {
+		testCase := tests[idx]
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runKindCiliumAlignmentTest(
+				t,
+				testCase.disableDefaultCNI,
+				testCase.expectValid,
+				testCase.expectedMessagePart,
+			)
 		})
 	}
 }
@@ -473,7 +568,7 @@ func TestKSailValidatorMultipleConfigs(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Connection.Context = "kind-ksail" // Set context to match the Kind config name
+		config.Spec.Connection.Context = kindKSailContext // Set context to match the Kind config name
 
 		// Create Kind config for validation (K3d config is irrelevant for Kind distribution)
 		kindConfig := &kindv1alpha4.Cluster{
