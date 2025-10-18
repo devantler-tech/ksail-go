@@ -49,7 +49,7 @@ func getExpectedContextName(distribution v1alpha1.Distribution) string {
 
 		return "kind-" + distributionName
 	case v1alpha1.DistributionK3d:
-		distributionName = "k3s-default" // Default K3d cluster name (matches createK3dConfig)
+		distributionName = "k3d-default" // Default K3d cluster name (handled by config manager)
 
 		return "k3d-" + distributionName
 	default:
@@ -306,6 +306,11 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Name: "kind",
 	}
 
+	// Disable default CNI if Cilium is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+		kindConfig.Networking.DisableDefaultCNI = true
+	}
+
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
@@ -356,9 +361,22 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
-		ObjectMeta: types.ObjectMeta{
-			Name: "k3s-default",
-		},
+		// Additional configuration will be handled by the provisioner with sensible defaults
+		// Users can override any settings in this generated config file
+	}
+
+	// Disable default CNI (Flannel) if Cilium is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+		config.Options.K3sOptions.ExtraArgs = []k3dv1alpha5.K3sArgWithNodeFilters{
+			{
+				Arg:         "--flannel-backend=none",
+				NodeFilters: []string{"server:*"},
+			},
+			{
+				Arg:         "--disable-network-policy",
+				NodeFilters: []string{"server:*"},
+			},
+		}
 	}
 
 	return config

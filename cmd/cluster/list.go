@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,6 +15,8 @@ import (
 )
 
 const allFlag = "all"
+
+var errDistributionFactoryUnset = errors.New("distribution factory dependency is not configured")
 
 // NewListCmd creates the list command for clusters.
 func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
@@ -39,7 +42,8 @@ func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 			}
 
 			deps := ListDeps{
-				Factory: factory,
+				Factory:             factory,
+				DistributionFactory: clusterprovisioner.DefaultFactory{},
 			}
 
 			return HandleListRunE(cmd, cfgManager, deps)
@@ -51,7 +55,8 @@ func NewListCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 // ListDeps captures dependencies needed for the list command logic.
 type ListDeps struct {
-	Factory clusterprovisioner.Factory
+	Factory             clusterprovisioner.Factory
+	DistributionFactory clusterprovisioner.Factory
 }
 
 // HandleListRunE handles the list command.
@@ -84,6 +89,24 @@ func listClusters(
 	clusterCfg := cfgManager.GetConfig()
 	includeDistribution := cfgManager.Viper.GetBool(allFlag)
 
+	primaryErr := listPrimaryClusters(cmd, clusterCfg, deps, includeDistribution)
+	if primaryErr != nil {
+		return primaryErr
+	}
+
+	if !includeDistribution {
+		return nil
+	}
+
+	return listAdditionalDistributionClusters(cmd, clusterCfg, deps)
+}
+
+func listPrimaryClusters(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps ListDeps,
+	includeDistribution bool,
+) error {
 	provisioner, _, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
@@ -96,44 +119,69 @@ func listClusters(
 
 	displayClusterList(clusterCfg.Spec.Distribution, clusters, cmd, includeDistribution)
 
-	if includeDistribution {
-		distributions := []v1alpha1.Distribution{
-			v1alpha1.DistributionKind,
-			v1alpha1.DistributionK3d,
+	return nil
+}
+
+func listAdditionalDistributionClusters(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps ListDeps,
+) error {
+	for _, distribution := range []v1alpha1.Distribution{
+		v1alpha1.DistributionKind,
+		v1alpha1.DistributionK3d,
+	} {
+		if distribution == clusterCfg.Spec.Distribution {
+			continue
 		}
-		for _, distribution := range distributions {
-			if distribution == clusterCfg.Spec.Distribution {
-				continue
-			}
 
-			otherCluster := cloneClusterForDistribution(clusterCfg, distribution)
-			if otherCluster == nil {
-				continue
-			}
-
-			defaultFactory := clusterprovisioner.DefaultFactory{}
-
-			otherProv, _, err := defaultFactory.Create(cmd.Context(), otherCluster)
-			if err != nil {
-				return fmt.Errorf(
-					"failed to create provisioner for distribution %s: %w",
-					distribution,
-					err,
-				)
-			}
-
-			otherClusters, err := otherProv.List(cmd.Context())
-			if err != nil {
-				return fmt.Errorf(
-					"failed to list clusters for distribution %s: %w",
-					distribution,
-					err,
-				)
-			}
-
-			displayClusterList(distribution, otherClusters, cmd, true)
+		listErr := listDistributionClusters(cmd, clusterCfg, deps, distribution)
+		if listErr != nil {
+			return listErr
 		}
 	}
+
+	return nil
+}
+
+func listDistributionClusters(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps ListDeps,
+	distribution v1alpha1.Distribution,
+) error {
+	otherCluster := cloneClusterForDistribution(clusterCfg, distribution)
+	if otherCluster == nil {
+		return nil
+	}
+
+	distributionFactory := deps.DistributionFactory
+	if distributionFactory == nil {
+		return fmt.Errorf(
+			"distribution factory dependency is not configured: %w",
+			errDistributionFactoryUnset,
+		)
+	}
+
+	otherProv, _, err := distributionFactory.Create(cmd.Context(), otherCluster)
+	if err != nil {
+		return fmt.Errorf(
+			"failed to create provisioner for distribution %s: %w",
+			distribution,
+			err,
+		)
+	}
+
+	otherClusters, err := otherProv.List(cmd.Context())
+	if err != nil {
+		return fmt.Errorf(
+			"failed to list clusters for distribution %s: %w",
+			distribution,
+			err,
+		)
+	}
+
+	displayClusterList(distribution, otherClusters, cmd, true)
 
 	return nil
 }

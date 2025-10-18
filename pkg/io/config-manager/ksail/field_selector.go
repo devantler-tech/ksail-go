@@ -63,11 +63,30 @@ func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 }
 
 // DefaultContextFieldSelector creates a standard field selector for kubernetes context.
+// No default value is set as the context is distribution-specific and will be
+// determined by the scaffolder based on the distribution type.
 func DefaultContextFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-		Description:  "Kubernetes context of cluster",
-		DefaultValue: "kind-kind",
+		Selector:    func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
+		Description: "Kubernetes context of cluster",
+	}
+}
+
+// DefaultCNIFieldSelector creates a standard field selector for CNI.
+func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
+		Description:  "Container Network Interface (CNI) to use",
+		DefaultValue: v1alpha1.CNIDefault,
+	}
+}
+
+// DefaultKubeconfigFieldSelector creates a standard field selector for kubeconfig.
+func DefaultKubeconfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
+		Description:  "Path to kubeconfig file",
+		DefaultValue: "~/.kube/config",
 	}
 }
 
@@ -76,5 +95,7 @@ func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 	return []FieldSelector[v1alpha1.Cluster]{
 		DefaultDistributionFieldSelector(),
 		DefaultDistributionConfigFieldSelector(),
+		DefaultContextFieldSelector(),
+		DefaultKubeconfigFieldSelector(),
 	}
 }

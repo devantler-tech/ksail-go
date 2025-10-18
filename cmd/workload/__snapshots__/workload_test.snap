@@ -1,4 +1,36 @@
 
+[TestNewWorkloadCmdRunETriggersHelp - 1]
+Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.
+
+Usage:
+  workload [flags]
+  workload [command]
+
+Available Commands:
+  apply       Apply manifests
+  completion  Generate the autocompletion script for the specified shell
+  create      Create resources
+  delete      Delete resources
+  describe    Describe resources
+  edit        Edit a resource
+  exec        Execute a command in a container
+  explain     Get documentation for a resource
+  expose      Expose a resource as a service
+  get         Get resources
+  help        Help about any command
+  install     Install Helm charts
+  logs        Print container logs
+  reconcile   Reconcile workloads with the cluster
+  rollout     Manage the rollout of a resource
+  scale       Scale resources
+
+Flags:
+  -h, --help   help for workload
+
+Use "workload [command] --help" for more information about a command.
+
+---
+
 [TestWorkloadHelpSnapshots/apply - 1]
 Apply local Kubernetes manifests to your cluster.
 
@@ -215,84 +247,6 @@ Flags:
   -R, --recursive          Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
   -l, --selector string    Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
       --show-events        If true, display events related to the described object. (default true)
-
----
-
-[TestWorkloadHelpSnapshots/install - 1]
-Install Helm charts to provision workloads through KSail. This command works like 'ksail workload install' with all Helm install options.
-
-Usage:
-  ksail workload install [NAME] [CHART] [flags]
-
-Flags:
-      --atomic                       if set, the installation deletes on failure
-      --cert-file string             SSL certificate file
-      --create-namespace             create the release namespace if not present
-      --dependency-update            update dependencies if missing
-      --description string           add a custom description
-      --devel                        use development versions
-      --disable-openapi-validation   disable OpenAPI Schema validation
-      --dry-run string               simulate an install
-      --force                        force resource updates through a replacement strategy
-  -g, --generate-name                generate the name
-  -h, --help                         help for install
-      --insecure-skip-tls-verify     skip TLS checks
-      --key-file string              SSL key file
-      --name-template string         specify template used to name the release
-  -n, --namespace string             namespace scope (default "default")
-      --no-hooks                     prevent hooks from running
-      --password string              chart repository password
-      --plain-http                   use insecure HTTP
-      --render-subchart-notes        render subchart notes
-      --replace                      re-use the name
-      --repo string                  chart repository url
-      --skip-crds                    skip CRD installation
-      --timeout duration             time to wait for operations (default 5m0s)
-      --username string              chart repository username
-      --version string               specify chart version
-      --wait                         wait until resources are ready
-      --wait-for-jobs                wait for jobs to complete
-
----
-
-[TestWorkloadHelpSnapshots/namespace - 1]
-Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.
-
-Usage:
-  ksail workload [flags]
-  ksail workload [command]
-
-Available Commands:
-  apply       Apply manifests
-  create      Create resources
-  delete      Delete resources
-  describe    Describe resources
-  edit        Edit a resource
-  exec        Execute a command in a container
-  explain     Get documentation for a resource
-  expose      Expose a resource as a service
-  get         Get resources
-  install     Install Helm charts
-  logs        Print container logs
-  reconcile   Reconcile workloads with the cluster
-  rollout     Manage the rollout of a resource
-  scale       Scale resources
-
-Flags:
-  -h, --help   help for workload
-
-Use "ksail workload [command] --help" for more information about a command.
-
----
-
-[TestWorkloadHelpSnapshots/reconcile - 1]
-Trigger reconciliation tooling to sync local workloads with your cluster.
-
-Usage:
-  ksail workload reconcile [flags]
-
-Flags:
-  -h, --help   help for reconcile
 
 ---
 
@@ -540,6 +494,20 @@ Flags:
 
 ---
 
+[TestWorkloadHelpSnapshots/install - 1]
+Install Helm charts to provision workloads through KSail. This command provides native Helm chart installation capabilities.
+
+Usage:
+  ksail workload install [NAME] [CHART] [flags]
+
+Flags:
+      --atomic             if set, the installation deletes on failure
+      --create-namespace   create the release namespace if not present
+  -h, --help               help for install
+  -n, --namespace string   namespace scope for the request (default "default")
+      --wait               wait until resources are ready
+
+---
 
 [TestWorkloadHelpSnapshots/logs - 1]
 Print the logs for a container in a pod or specified resource. If the pod has only one container, the container name is optional.
@@ -623,44 +591,44 @@ Flags:
 
 ---
 
-[TestWorkloadHelpSnapshots/scale - 1]
-Set a new size for a deployment, replica set, replication controller, or stateful set.
+[TestWorkloadHelpSnapshots/namespace - 1]
+Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.
 
 Usage:
-  ksail workload scale
+  ksail workload [flags]
+  ksail workload [command]
 
-Examples:
-  # Scale a replica set named 'foo' to 3
-  ksail workload scale --replicas=3 rs/foo
-  
-  # Scale a resource identified by type and name specified in "foo.yaml" to 3
-  ksail workload scale --replicas=3 -f foo.yaml
-  
-  # If the deployment named mysql's current size is 2, scale mysql to 3
-  ksail workload scale --current-replicas=2 --replicas=3 deployment/mysql
-  
-  # Scale multiple replication controllers
-  ksail workload scale --replicas=5 rc/example1 rc/example2 rc/example3
-  
-  # Scale stateful set named 'web' to 3
-  ksail workload scale --replicas=3 statefulset/web
+Available Commands:
+  apply       Apply manifests
+  create      Create resources
+  delete      Delete resources
+  describe    Describe resources
+  edit        Edit a resource
+  exec        Execute a command in a container
+  explain     Get documentation for a resource
+  expose      Expose a resource as a service
+  get         Get resources
+  install     Install Helm charts
+  logs        Print container logs
+  reconcile   Reconcile workloads with the cluster
+  rollout     Manage the rollout of a resource
+  scale       Scale resources
 
 Flags:
-      --all                            Select all resources in the namespace of the specified resource types
-      --allow-missing-template-keys    If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
-      --current-replicas int           Precondition for current size. Requires that the current size of the resource match this value in order to scale. -1 (default) for no condition. (default -1)
-      --dry-run string[="unchanged"]   Must be "none", "server", or "client". If client strategy, only print the object that would be sent, without sending it. If server strategy, submit server-side request without persisting the resource. (default "none")
-  -f, --filename strings               Filename, directory, or URL to files identifying the resource to set a new size
-  -h, --help                           help for scale
-  -k, --kustomize string               Process the kustomization directory. This flag can't be used together with -f or -R.
-  -o, --output string                  Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
-  -R, --recursive                      Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
-      --replicas int                   The new desired number of replicas. Required.
-      --resource-version string        Precondition for resource version. Requires that the current resource version match this value in order to scale.
-  -l, --selector string                Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
-      --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
-      --template string                Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
-      --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
+  -h, --help   help for workload
+
+Use "ksail workload [command] --help" for more information about a command.
+
+---
+
+[TestWorkloadHelpSnapshots/reconcile - 1]
+Trigger reconciliation tooling to sync local workloads with your cluster.
+
+Usage:
+  ksail workload reconcile [flags]
+
+Flags:
+  -h, --help   help for reconcile
 
 ---
 
@@ -699,34 +667,43 @@ Use "ksail workload rollout [command] --help" for more information about a comma
 
 ---
 
-[TestNewWorkloadCmdRunETriggersHelp - 1]
-Group workload commands under a single namespace to reconcile, apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.
+[TestWorkloadHelpSnapshots/scale - 1]
+Set a new size for a deployment, replica set, replication controller, or stateful set.
 
 Usage:
-  workload [flags]
-  workload [command]
+  ksail workload scale
 
-Available Commands:
-  apply       Apply manifests
-  completion  Generate the autocompletion script for the specified shell
-  create      Create resources
-  delete      Delete resources
-  describe    Describe resources
-  edit        Edit a resource
-  exec        Execute a command in a container
-  explain     Get documentation for a resource
-  expose      Expose a resource as a service
-  get         Get resources
-  help        Help about any command
-  install     Install Helm charts
-  logs        Print container logs
-  reconcile   Reconcile workloads with the cluster
-  rollout     Manage the rollout of a resource
-  scale       Scale resources
+Examples:
+  # Scale a replica set named 'foo' to 3
+  ksail workload scale --replicas=3 rs/foo
+  
+  # Scale a resource identified by type and name specified in "foo.yaml" to 3
+  ksail workload scale --replicas=3 -f foo.yaml
+  
+  # If the deployment named mysql's current size is 2, scale mysql to 3
+  ksail workload scale --current-replicas=2 --replicas=3 deployment/mysql
+  
+  # Scale multiple replication controllers
+  ksail workload scale --replicas=5 rc/example1 rc/example2 rc/example3
+  
+  # Scale stateful set named 'web' to 3
+  ksail workload scale --replicas=3 statefulset/web
 
 Flags:
-  -h, --help   help for workload
-
-Use "workload [command] --help" for more information about a command.
+      --all                            Select all resources in the namespace of the specified resource types
+      --allow-missing-template-keys    If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
+      --current-replicas int           Precondition for current size. Requires that the current size of the resource match this value in order to scale. -1 (default) for no condition. (default -1)
+      --dry-run string[="unchanged"]   Must be "none", "server", or "client". If client strategy, only print the object that would be sent, without sending it. If server strategy, submit server-side request without persisting the resource. (default "none")
+  -f, --filename strings               Filename, directory, or URL to files identifying the resource to set a new size
+  -h, --help                           help for scale
+  -k, --kustomize string               Process the kustomization directory. This flag can't be used together with -f or -R.
+  -o, --output string                  Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
+  -R, --recursive                      Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
+      --replicas int                   The new desired number of replicas. Required.
+      --resource-version string        Precondition for resource version. Requires that the current resource version match this value in order to scale.
+  -l, --selector string                Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
+      --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
+      --template string                Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+      --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
 
 ---

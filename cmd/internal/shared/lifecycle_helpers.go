@@ -46,6 +46,21 @@ func NewLifecycleCommandWrapper(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	config LifecycleConfig,
 ) func(*cobra.Command, []string) error {
+	return WrapLifecycleHandler(
+		runtimeContainer,
+		cfgManager,
+		func(cmd *cobra.Command, manager *ksailconfigmanager.ConfigManager, deps LifecycleDeps) error {
+			return HandleLifecycleRunE(cmd, manager, deps, config)
+		},
+	)
+}
+
+// WrapLifecycleHandler resolves lifecycle dependencies and delegates to a provided handler.
+func WrapLifecycleHandler(
+	runtimeContainer *runtime.Runtime,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	handler func(*cobra.Command, *ksailconfigmanager.ConfigManager, LifecycleDeps) error,
+) func(*cobra.Command, []string) error {
 	return runtime.RunEWithRuntime(
 		runtimeContainer,
 		runtime.WithTimer(
@@ -60,7 +75,7 @@ func NewLifecycleCommandWrapper(
 					Factory: factory,
 				}
 
-				return HandleLifecycleRunE(cmd, cfgManager, deps, config)
+				return handler(cmd, cfgManager, deps)
 			},
 		),
 	)

@@ -1,4 +1,4 @@
-package fluxinstaller
+package ciliuminstaller
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 //
 //go:generate mockery --name=HelmClient --output=. --filename=mocks.go
 type HelmClient interface {
-	InstallChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)
+	InstallOrUpgradeChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error)
 	UninstallRelease(ctx context.Context, releaseName, namespace string) error
+	AddRepository(ctx context.Context, entry *helm.RepositoryEntry) error
 }

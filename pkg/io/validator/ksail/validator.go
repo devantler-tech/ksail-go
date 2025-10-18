@@ -3,6 +3,7 @@ package ksail
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
@@ -11,28 +12,34 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const requiredCiliumArgs = 2
+
 // Validator validates KSail cluster configurations for semantic correctness and cross-configuration consistency.
 type Validator struct {
 	kindConfig *kindv1alpha4.Cluster
 	k3dConfig  *k3dapi.SimpleConfig
 }
 
-// NewValidator creates a new KSail configuration validator with optional distribution configurations.
-// Distribution configs are used for cross-configuration validation (name consistency, context patterns).
-func NewValidator(distributionConfigs ...any) *Validator {
-	validator := &Validator{}
+// NewValidator creates a new KSail configuration validator without distribution configuration.
+// Use NewValidatorForKind or NewValidatorForK3d for distribution-specific validation.
+func NewValidator() *Validator {
+	return &Validator{}
+}
 
-	// Accept distribution configurations for cross-configuration validation
-	for _, config := range distributionConfigs {
-		switch cfg := config.(type) {
-		case *kindv1alpha4.Cluster:
-			validator.kindConfig = cfg
-		case *k3dapi.SimpleConfig:
-			validator.k3dConfig = cfg
-		}
+// NewValidatorForKind creates a new KSail configuration validator with Kind distribution configuration.
+// The Kind config is used for cross-configuration validation (name consistency, CNI alignment).
+func NewValidatorForKind(kindConfig *kindv1alpha4.Cluster) *Validator {
+	return &Validator{
+		kindConfig: kindConfig,
 	}
+}
 
-	return validator
+// NewValidatorForK3d creates a new KSail configuration validator with K3d distribution configuration.
+// The K3d config is used for cross-configuration validation (name consistency, CNI alignment).
+func NewValidatorForK3d(k3dConfig *k3dapi.SimpleConfig) *Validator {
+	return &Validator{
+		k3dConfig: k3dConfig,
+	}
 }
 
 // Validate performs validation on a loaded KSail cluster configuration.
@@ -64,6 +71,9 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 
 	// Perform cross-configuration validation
 	v.validateContextName(config, result)
+
+	// Validate CNI alignment with distribution config
+	v.validateCNIAlignment(config, result)
 
 	return result
 }
@@ -182,5 +192,87 @@ func (v *Validator) getK3dConfigName() string {
 	}
 
 	// Return default K3d cluster name when no config is provided
-	return "k3s-default"
+	return "k3d-default"
+}
+
+// validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
+// When Cilium CNI is requested, the distribution config must have CNI disabled.
+func (v *Validator) validateCNIAlignment(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	// Only validate when Cilium CNI is explicitly requested
+	if config.Spec.CNI != v1alpha1.CNICilium {
+		return
+	}
+
+	switch config.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dCNIAlignment(result)
+	}
+}
+
+// validateKindCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
+func (v *Validator) validateKindCNIAlignment(result *validator.ValidationResult) {
+	if v.kindConfig == nil {
+		// No Kind config provided for validation, skip
+		return
+	}
+
+	if !v.kindConfig.Networking.DisableDefaultCNI {
+		result.AddError(validator.ValidationError{
+			Field:         "spec.cni",
+			Message:       "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
+			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
+		})
+	}
+}
+
+// validateK3dCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
+func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	var (
+		hasFlannelDisabled       bool
+		hasNetworkPolicyDisabled bool
+	)
+
+	for _, arg := range v.k3dConfig.Options.K3sOptions.ExtraArgs {
+		switch arg.Arg {
+		case "--flannel-backend=none":
+			hasFlannelDisabled = true
+		case "--disable-network-policy":
+			hasNetworkPolicyDisabled = true
+		}
+	}
+
+	missingArgs := make([]string, 0, requiredCiliumArgs)
+	if !hasFlannelDisabled {
+		missingArgs = append(missingArgs, "'--flannel-backend=none'")
+	}
+
+	if !hasNetworkPolicyDisabled {
+		missingArgs = append(missingArgs, "'--disable-network-policy'")
+	}
+
+	if len(missingArgs) == 0 {
+		return
+	}
+
+	result.AddError(validator.ValidationError{
+		Field: "spec.cni",
+		Message: fmt.Sprintf(
+			"Cilium CNI requires %s in K3d configuration",
+			strings.Join(missingArgs, " and "),
+		),
+		FixSuggestion: fmt.Sprintf(
+			"Add %s to the K3s extra args in your k3d.yaml configuration file",
+			strings.Join(missingArgs, " and "),
+		),
+	})
 }

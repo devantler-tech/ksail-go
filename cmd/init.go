@@ -23,6 +23,7 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
 	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
+	selectors = append(selectors, ksailconfigmanager.DefaultCNIFieldSelector())
 
 	cfgManager := ksailconfigmanager.NewCommandConfigManager(cmd, selectors)
 

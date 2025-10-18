@@ -85,6 +85,22 @@ func createConfigManagerWithFile(t *testing.T, writer io.Writer) *configmanager.
 	return cfgManager
 }
 
+func setupListCommandWithAllFlag(
+	t *testing.T,
+) (*cobra.Command, *configmanager.ConfigManager, *recordingListProvisioner, *recordingListFactory) {
+	t.Helper()
+
+	cmd, _ := newCommandWithBuffer(t)
+	cfgManager := createConfigManagerWithFile(t, io.Discard)
+	require.NoError(t, cfgManager.LoadConfigSilent())
+	cfgManager.Viper.Set(allFlag, true)
+
+	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
+	factory := &recordingListFactory{provisioner: provisioner}
+
+	return cmd, cfgManager, provisioner, factory
+}
+
 const ignoredConfigValue = "ignored"
 
 func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
@@ -206,17 +222,30 @@ func TestListClusters_ListFailure(t *testing.T) {
 func TestListClusters_AllFlagTriggersAdditionalDistribution(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newCommandWithBuffer(t)
-	cfgManager := createConfigManagerWithFile(t, io.Discard)
-	require.NoError(t, cfgManager.LoadConfigSilent())
-	cfgManager.Viper.Set(allFlag, true)
+	cmd, cfgManager, provisioner, factory := setupListCommandWithAllFlag(t)
+	otherProvisioner := &recordingListProvisioner{listErr: context.DeadlineExceeded}
+	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
 
-	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
-	factory := &recordingListFactory{provisioner: provisioner}
+	err := listClusters(
+		cfgManager,
+		ListDeps{Factory: factory, DistributionFactory: otherFactory},
+		cmd,
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to list clusters for distribution K3d")
+	require.Equal(t, 1, provisioner.listCalls)
+	require.Equal(t, 1, otherFactory.callCount)
+	require.Equal(t, 1, otherProvisioner.listCalls)
+}
+
+func TestListClusters_AllFlagWithoutDistributionFactory(t *testing.T) {
+	t.Parallel()
+
+	cmd, cfgManager, provisioner, factory := setupListCommandWithAllFlag(t)
 
 	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to list clusters for distribution K3d")
+	require.ErrorIs(t, err, errDistributionFactoryUnset)
 	require.Equal(t, 1, provisioner.listCalls)
 }
 

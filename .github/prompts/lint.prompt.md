@@ -13,11 +13,13 @@ $ARGUMENTS
 
 - Work from the repository root (directory containing `go.mod`).
 - Skim the relevant configuration files (`.golangci.yml`, `.jscpd.json`, `.cspell.json`, `CONTRIBUTING.md`) only when you need specific settings or exclusions—don’t summarize them.
+- Invoke every tool via an explicit CLI command in the terminal; **do not** rely on VS Code tasks or UI buttons for linting or tests.
 
 ## Linting workflow
 
 1. **golangci-lint**
-   - Run `golangci-lint run --timeout=5m`.
+   - Run `golangci-lint run --timeout=5m` directly in the terminal.
+   - Allow the command to run for at least 2 minutes before assuming it is stuck—never cancel early.
    - Apply automatic fixes with `golangci-lint run --fix` (or targeted `golangci-lint fmt`) when available.
    - Tackle remaining issues directly in the source—shorten functions, reduce complexity, add helpers, rename variables, etc.—until the tool passes.
 
@@ -41,7 +43,7 @@ $ARGUMENTS
 After each major batch of fixes:
 
 - Re-run the relevant linter to confirm the issue is gone.
-- Run `go test ./...` to guard against regressions.
+- Run `go test ./...` directly in the terminal to guard against regressions.
 
 You’re done when all linting tools exit cleanly and the tests pass. Provide a short note describing the concrete fixes you made (no progress checklists or extended reports).
 
