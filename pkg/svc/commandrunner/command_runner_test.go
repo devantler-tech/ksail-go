@@ -72,6 +72,7 @@ func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 	}
 
 	entry := newLogEntry(logrus.InfoLevel, "message")
+
 	err := hook.Fire(entry)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -93,6 +94,7 @@ func TestPipeForwardHookIgnoresClosedPipe(t *testing.T) {
 	}
 
 	entry := newLogEntry(logrus.DebugLevel, "debug")
+
 	err := hook.Fire(entry)
 	if err != nil {
 		t.Fatalf("expected nil error for closed pipe, got %v", err)
@@ -108,6 +110,7 @@ func TestPipeForwardHookPropagatesFormatterErrors(t *testing.T) {
 	}
 
 	entry := newLogEntry(logrus.InfoLevel, "fail")
+
 	err := hook.Fire(entry)
 	if err == nil || !errors.Is(err, errFormatFailed) {
 		t.Fatalf("expected formatter error, got %v", err)
@@ -123,6 +126,7 @@ func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
 	}
 
 	entry := newLogEntry(logrus.InfoLevel, "warn")
+
 	err := hook.Fire(entry)
 	if err == nil || !errors.Is(err, errWriteFailed) {
 		t.Fatalf("expected write error, got %v", err)
