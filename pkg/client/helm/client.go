@@ -41,6 +41,9 @@ var (
 	errChartSpecRequired               = errors.New("helm: chart spec is required")
 )
 
+// stderrCaptureMu protects process-wide stderr redirection from concurrent access.
+var stderrCaptureMu sync.Mutex //nolint:gochecknoglobals // global lock required to coordinate stderr interception
+
 // ChartSpec mirrors the mittwald chart specification while keeping KSail
 // specific convenience fields.
 type ChartSpec struct {
@@ -158,18 +161,26 @@ func createHelmClient(
 	if kubeConfig != "" {
 		data, readErr := ksailio.ReadFileSafe(filepath.Dir(kubeConfig), kubeConfig)
 		if readErr == nil {
+			stderrCaptureMu.Lock()
+
 			client, err := helmclientlib.NewClientFromKubeConf(&helmclientlib.KubeConfClientOptions{
 				Options:     options,
 				KubeConfig:  data,
 				KubeContext: kubeContext,
 			})
+
+			stderrCaptureMu.Unlock()
 			if err == nil {
 				return ensureHelmClient(client)
 			}
 		}
 	}
 
+	stderrCaptureMu.Lock()
+
 	client, err := helmclientlib.New(options)
+
+	stderrCaptureMu.Unlock()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create helm client: %w", err)
 	}
@@ -660,6 +671,9 @@ func runReleaseWithSilencedStderr(
 	if pipeErr != nil {
 		return operation()
 	}
+
+	stderrCaptureMu.Lock()
+	defer stderrCaptureMu.Unlock()
 
 	originalStderr := os.Stderr
 
