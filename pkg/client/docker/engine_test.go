@@ -227,6 +227,21 @@ func TestGetDockerClient(t *testing.T) {
 	}
 }
 
+func TestGetDockerClient_InvalidEnv(t *testing.T) {
+	t.Setenv("DOCKER_HOST", "://")
+	t.Setenv("DOCKER_TLS_VERIFY", "")
+	t.Setenv("DOCKER_CERT_PATH", "")
+
+	client, err := docker.GetDockerClient()
+	if err == nil {
+		t.Fatal("expected error for malformed DOCKER_HOST")
+	}
+
+	if client != nil {
+		t.Fatalf("expected nil client when creation fails, got %v", client)
+	}
+}
+
 func TestGetPodmanUserClient(t *testing.T) {
 	t.Parallel()
 
