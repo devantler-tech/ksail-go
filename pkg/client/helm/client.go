@@ -161,31 +161,14 @@ func createHelmClient(
 	if kubeConfig != "" {
 		data, readErr := ksailio.ReadFileSafe(filepath.Dir(kubeConfig), kubeConfig)
 		if readErr == nil {
-			stderrCaptureMu.Lock()
-
-			client, err := helmclientlib.NewClientFromKubeConf(&helmclientlib.KubeConfClientOptions{
-				Options:     options,
-				KubeConfig:  data,
-				KubeContext: kubeContext,
-			})
-
-			stderrCaptureMu.Unlock()
+			configuredClient, err := newHelmClientFromKubeConf(options, data, kubeContext)
 			if err == nil {
-				return ensureHelmClient(client)
+				return configuredClient, nil
 			}
 		}
 	}
 
-	stderrCaptureMu.Lock()
-
-	client, err := helmclientlib.New(options)
-
-	stderrCaptureMu.Unlock()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create helm client: %w", err)
-	}
-
-	concrete, err := ensureHelmClient(client)
+	concrete, err := newHelmClient(options)
 	if err != nil {
 		return nil, err
 	}
@@ -205,6 +188,38 @@ func createHelmClient(
 	}
 
 	return concrete, nil
+}
+
+func newHelmClientFromKubeConf(
+	options *helmclientlib.Options,
+	kubeConfig []byte,
+	kubeContext string,
+) (*helmclientlib.HelmClient, error) {
+	stderrCaptureMu.Lock()
+	defer stderrCaptureMu.Unlock()
+
+	client, err := helmclientlib.NewClientFromKubeConf(&helmclientlib.KubeConfClientOptions{
+		Options:     options,
+		KubeConfig:  kubeConfig,
+		KubeContext: kubeContext,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ensureHelmClient(client)
+}
+
+func newHelmClient(options *helmclientlib.Options) (*helmclientlib.HelmClient, error) {
+	stderrCaptureMu.Lock()
+	defer stderrCaptureMu.Unlock()
+
+	client, err := helmclientlib.New(options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create helm client: %w", err)
+	}
+
+	return ensureHelmClient(client)
 }
 
 func ensureHelmClient(client helmclientlib.Client) (*helmclientlib.HelmClient, error) {
