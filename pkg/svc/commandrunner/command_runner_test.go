@@ -15,9 +15,11 @@ import (
 )
 
 var (
-	errBaseFailure  = errors.New("base failure")
-	errFormatFailed = errors.New("format failed")
-	errWriteFailed  = errors.New("write failed")
+	errBaseFailure   = errors.New("base failure")
+	errFormatFailed  = errors.New("format failed")
+	errWriteFailed   = errors.New("write failed")
+	errCommandFailed = errors.New("boom")
+	errBaseOnly      = errors.New("base error only")
 )
 
 //nolint:paralleltest // Serializes stdout manipulation to avoid race with global stdio.
@@ -39,8 +41,44 @@ func TestCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Serializes stdout manipulation to avoid race with global stdio.
+func TestCobraCommandRunner_RunReturnsMergedError(t *testing.T) {
+	runner := NewCobraCommandRunner()
+	cmd := &cobra.Command{
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cmd.Println("info output")
+			cmd.PrintErrln("stderr detail")
+
+			return errCommandFailed
+		},
+	}
+
+	res, err := runner.Run(context.Background(), cmd, nil)
+	if err == nil {
+		t.Fatal("expected error when command fails")
+	}
+
+	msg := err.Error()
+	if !strings.Contains(msg, "execute command: boom") {
+		t.Fatalf("expected base error in message, got %q", msg)
+	}
+
+	if !strings.Contains(msg, "stderr detail | info output") {
+		t.Fatalf("expected merged output, got %q", msg)
+	}
+
+	if !strings.Contains(res.Stdout, "info output") {
+		t.Fatalf("expected stdout capture, got %q", res.Stdout)
+	}
+
+	if !strings.Contains(res.Stderr, "stderr detail") {
+		t.Fatalf("expected stderr capture, got %q", res.Stderr)
+	}
+}
+
 func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 	t.Parallel()
+
 	res := CommandResult{Stdout: "info", Stderr: "fail"}
 
 	err := MergeCommandError(errBaseFailure, res)
@@ -58,8 +96,30 @@ func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 	}
 }
 
+func TestMergeCommandError_NilBaseReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	err := MergeCommandError(nil, CommandResult{})
+	if err != nil {
+		t.Fatalf("expected nil when base error nil, got %v", err)
+	}
+}
+
+func TestMergeCommandError_NoDetailsReturnsBase(t *testing.T) {
+	t.Parallel()
+
+	base := errBaseOnly
+	res := CommandResult{Stdout: "\n\t", Stderr: ""}
+
+	merged := MergeCommandError(base, res)
+	if !errors.Is(merged, base) {
+		t.Fatalf("expected original error when no details, got %v", merged)
+	}
+}
+
 func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 	t.Parallel()
+
 	var buf bytes.Buffer
 
 	hook := &pipeForwardHook{
@@ -83,6 +143,7 @@ func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 
 func TestPipeForwardHookIgnoresClosedPipe(t *testing.T) {
 	t.Parallel()
+
 	hook := &pipeForwardHook{
 		writer: closedPipeWriter{},
 		formatter: stubFormatter{
@@ -100,6 +161,7 @@ func TestPipeForwardHookIgnoresClosedPipe(t *testing.T) {
 
 func TestPipeForwardHookPropagatesFormatterErrors(t *testing.T) {
 	t.Parallel()
+
 	hook := &pipeForwardHook{
 		writer:    &bytes.Buffer{},
 		formatter: stubFormatter{err: errFormatFailed},
@@ -115,6 +177,7 @@ func TestPipeForwardHookPropagatesFormatterErrors(t *testing.T) {
 
 func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
 	t.Parallel()
+
 	hook := &pipeForwardHook{
 		writer:    errorWriter{err: errWriteFailed},
 		formatter: stubFormatter{output: []byte("data")},
