@@ -204,7 +204,7 @@ func newHelmClientFromKubeConf(
 		KubeContext: kubeContext,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create helm client from kubeconfig: %w", err)
 	}
 
 	return ensureHelmClient(client)
