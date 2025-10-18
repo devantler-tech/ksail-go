@@ -134,6 +134,93 @@ func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
 	}
 }
 
+func TestCommandExecutionBuildDestWriter(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns buffer when original nil", func(t *testing.T) {
+		t.Parallel()
+
+		runBuildDestWriterBufferCase(t)
+	})
+
+	t.Run("multiwriter mirrors output", func(t *testing.T) {
+		t.Parallel()
+
+		runBuildDestWriterMultiWriterCase(t)
+	})
+}
+
+func runBuildDestWriterBufferCase(t *testing.T) {
+	t.Helper()
+
+	var buf bytes.Buffer
+
+	ce := &commandExecution{}
+	writer := ce.buildDestWriter(nil, &buf)
+
+	_, err := writer.Write([]byte("payload"))
+	if err != nil {
+		t.Fatalf("unexpected write error: %v", err)
+	}
+
+	if buf.String() != "payload" {
+		t.Fatalf("expected buffer to capture payload, got %q", buf.String())
+	}
+}
+
+func runBuildDestWriterMultiWriterCase(t *testing.T) {
+	t.Helper()
+
+	file, err := os.CreateTemp(t.TempDir(), "commandrunner-dest-*.log")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	t.Cleanup(func() {
+		_ = file.Close()
+	})
+
+	var buf bytes.Buffer
+
+	ce := &commandExecution{}
+	writer := ce.buildDestWriter(file, &buf)
+	data := []byte("mirrored output")
+
+	_, err = writer.Write(data)
+	if err != nil {
+		t.Fatalf("unexpected write error: %v", err)
+	}
+
+	if buf.String() != string(data) {
+		t.Fatalf("buffer mismatch: got %q", buf.String())
+	}
+
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		t.Fatalf("failed to seek file: %v", err)
+	}
+
+	fileData, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+
+	if string(fileData) != string(data) {
+		t.Fatalf("file mismatch: got %q", string(fileData))
+	}
+}
+
+func TestCommandExecutionConfigureLoggerNil(t *testing.T) {
+	t.Parallel()
+
+	ce := &commandExecution{}
+
+	err := ce.configureLogger()
+	if !errors.Is(err, errLoggerUnavailable) {
+		t.Fatalf("expected errLoggerUnavailable, got %v", err)
+	}
+}
+
 func TestStripStdoutInfoHooks(t *testing.T) {
 	t.Parallel()
 
