@@ -64,6 +64,7 @@ func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
+
 	hook := &pipeForwardHook{
 		writer: &buf,
 		formatter: stubFormatter{
