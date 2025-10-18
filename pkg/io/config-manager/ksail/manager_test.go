@@ -2,9 +2,11 @@ package configmanager_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -763,6 +765,52 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	assert.Contains(t, output, "distribution is required")
 }
 
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state per scenario.
+func TestLoadConfigKindCiliumValidation(t *testing.T) {
+	tests := []kindCiliumScenario{
+		{
+			name:                "requiresDisableDefaultCNI",
+			disableDefaultCNI:   false,
+			expectValidationErr: true,
+			configName:          "kind-cilium",
+		},
+		{
+			name:                "passesWhenDisableDefaultCNITrue",
+			disableDefaultCNI:   true,
+			expectValidationErr: false,
+			configName:          "kind-enabled",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			runKindCiliumValidationScenario(t, testCase)
+		})
+	}
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state per scenario.
+func TestLoadConfigK3dDistributionConfigHandling(t *testing.T) {
+	tests := []k3dScenario{
+		{
+			name:                 "missingDistributionConfig",
+			distributionContents: "",
+			expectErr:            false,
+		},
+		{
+			name:                 "invalidDistributionConfigProducesValidationMessage",
+			distributionContents: "kind: Wrong\napiVersion: example/v1\n",
+			expectErr:            true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			runK3dDistributionScenario(t, testCase)
+		})
+	}
+}
+
 // helper function to load config and capture output for tests.
 func loadConfigAndCaptureOutput(
 	t *testing.T,
@@ -778,4 +826,157 @@ func loadConfigAndCaptureOutput(
 	require.NotNil(t, manager.GetConfig())
 
 	return manager, output, manager.GetConfig()
+}
+
+type kindCiliumScenario struct {
+	name                string
+	disableDefaultCNI   bool
+	expectValidationErr bool
+	configName          string
+}
+
+func runKindCiliumValidationScenario(t *testing.T, scenario kindCiliumScenario) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindContents := fmt.Sprintf(`kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: %s
+networking:
+  disableDefaultCNI: %t
+`, scenario.configName, scenario.disableDefaultCNI)
+	writeFile(t, "kind.yaml", kindContents)
+
+	ksailContents := fmt.Sprintf(`apiVersion: ksail.dev/v1alpha1
+kind: Cluster
+spec:
+  distribution: Kind
+  distributionConfig: kind.yaml
+  sourceDirectory: k8s
+  cni: Cilium
+  connection:
+    context: kind-%s
+`, scenario.configName)
+	writeFile(t, "ksail.yaml", ksailContents)
+
+	var (
+		output  bytes.Buffer
+		manager = configmanager.NewConfigManager(&output)
+	)
+
+	err := manager.LoadConfig(nil)
+	logOutput := output.String()
+
+	if scenario.expectValidationErr {
+		if err == nil {
+			t.Fatalf("expected validation error when disableDefaultCNI is false")
+		}
+
+		if !strings.Contains(logOutput, "Cilium CNI requires disableDefaultCNI") {
+			t.Fatalf("expected Cilium validation message, got %q", logOutput)
+		}
+
+		return
+	}
+
+	if err != nil {
+		t.Fatalf("unexpected validation error: %v (output: %s)", err, logOutput)
+	}
+}
+
+type k3dScenario struct {
+	name                 string
+	distributionContents string
+	expectErr            bool
+	expectedLog          string
+}
+
+func runK3dDistributionScenario(t *testing.T, scenario k3dScenario) {
+	t.Helper()
+
+	manager, output := newK3dManagerForScenario(t, scenario)
+
+	err := manager.LoadConfig(nil)
+	logOutput := output.String()
+
+	if scenario.expectErr {
+		if err == nil {
+			t.Fatalf(
+				"expected validation error for %s but got none (output: %s)",
+				scenario.name,
+				logOutput,
+			)
+		}
+
+		if scenario.expectedLog != "" && !strings.Contains(logOutput, scenario.expectedLog) {
+			t.Fatalf(
+				"expected log output to contain %q but got %q",
+				scenario.expectedLog,
+				logOutput,
+			)
+		}
+
+		return
+	}
+
+	if err != nil {
+		t.Fatalf(
+			"unexpected validation error for %s: %v (output: %s)",
+			scenario.name,
+			err,
+			logOutput,
+		)
+	}
+
+	config := manager.GetConfig()
+	if config == nil {
+		t.Fatalf("expected config to be loaded")
+	}
+
+	if config.Spec.Distribution != v1alpha1.DistributionK3d {
+		t.Fatalf("expected distribution to be K3d, got %s", config.Spec.Distribution)
+	}
+}
+
+func newK3dManagerForScenario(
+	t *testing.T,
+	scenario k3dScenario,
+) (*configmanager.ConfigManager, *bytes.Buffer) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	if scenario.distributionContents != "" {
+		writeFile(t, "k3d.yaml", scenario.distributionContents)
+	}
+
+	ksailContents := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: K3d\n" +
+		"  distributionConfig: k3d.yaml\n" +
+		"  sourceDirectory: k8s\n" +
+		"  cni: Cilium\n" +
+		"  connection:\n" +
+		"    context: k3d-k3d-default\n"
+	writeFile(t, "ksail.yaml", ksailContents)
+
+	var (
+		output  bytes.Buffer
+		manager = configmanager.NewConfigManager(&output)
+	)
+
+	return manager, &output
+}
+
+func writeFile(t *testing.T, path, contents string) {
+	t.Helper()
+
+	err := os.WriteFile(path, []byte(contents), 0o600)
+	if err != nil {
+		t.Fatalf("failed to write %s: %v", path, err)
+	}
 }
