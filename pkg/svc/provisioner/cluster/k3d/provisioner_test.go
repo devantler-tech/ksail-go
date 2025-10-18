@@ -39,9 +39,8 @@ func (s *stubRunner) Run(
 	return s.result, nil
 }
 
+//nolint:paralleltest
 func TestCreateUsesConfigFlag(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("cfg-name")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -60,9 +59,8 @@ func TestCreateUsesConfigFlag(t *testing.T) {
 	)
 }
 
+//nolint:paralleltest
 func TestDeleteDefaultsToConfigName(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("from-config")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -77,9 +75,8 @@ func TestDeleteDefaultsToConfigName(t *testing.T) {
 	assert.Equal(t, []string{"from-config"}, runner.recorded.args)
 }
 
+//nolint:paralleltest
 func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("cluster-a")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -94,9 +91,8 @@ func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
 	assert.Equal(t, []string{"cluster-a"}, runner.recorded.args)
 }
 
+//nolint:paralleltest
 func TestStopUsesExplicitName(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("cluster-a")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -111,9 +107,8 @@ func TestStopUsesExplicitName(t *testing.T) {
 	assert.Equal(t, []string{"custom"}, runner.recorded.args)
 }
 
+//nolint:paralleltest
 func TestListAddsJSONOutputFlag(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -128,9 +123,8 @@ func TestListAddsJSONOutputFlag(t *testing.T) {
 	assert.Equal(t, []string{"--output", "json"}, runner.recorded.args)
 }
 
+//nolint:paralleltest
 func TestListParsesJSON(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	runner.result.Stdout = `[{"name":"alpha"},{"name":"beta"}]`
@@ -146,9 +140,8 @@ func TestListParsesJSON(t *testing.T) {
 	assert.Equal(t, []string{"alpha", "beta"}, names)
 }
 
+//nolint:paralleltest
 func TestListReturnsErrorWhenJSONInvalid(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	runner.result.Stdout = `not-json`
@@ -163,9 +156,8 @@ func TestListReturnsErrorWhenJSONInvalid(t *testing.T) {
 	require.ErrorContains(t, err, "parse output")
 }
 
+//nolint:paralleltest
 func TestExistsReturnsFalseWhenNameEmpty(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("")
 	runner := &stubRunner{}
 	prov := k3dprovisioner.NewK3dClusterProvisioner(
@@ -180,9 +172,8 @@ func TestExistsReturnsFalseWhenNameEmpty(t *testing.T) {
 	assert.False(t, exists)
 }
 
+//nolint:paralleltest
 func TestCommandErrorsIncludeStdStreams(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("any")
 	runner := &stubRunner{}
 	runner.err = errBoom
@@ -201,9 +192,8 @@ func TestCommandErrorsIncludeStdStreams(t *testing.T) {
 	require.ErrorContains(t, err, "stderr")
 }
 
+//nolint:paralleltest
 func TestCustomCommandBuilder(t *testing.T) {
-	t.Parallel()
-
 	cfg := buildSimpleConfig("cfg")
 	runner := &stubRunner{}
 	builderCalls := 0

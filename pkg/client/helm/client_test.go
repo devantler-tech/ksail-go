@@ -530,9 +530,11 @@ func TestCopyStringSlice(t *testing.T) {
 	})
 }
 
+//nolint:tparallel // serial subtests avoid os.Stderr races
 func TestRunReleaseWithSilencedStderr(t *testing.T) {
 	t.Parallel()
 
+	//nolint:paralleltest // writes to os.Stderr must run serially
 	t.Run("SuccessReturnsRelease", func(t *testing.T) {
 		releaseResult := &release.Release{Name: "success"}
 		originalStderr := os.Stderr
@@ -552,6 +554,7 @@ func TestRunReleaseWithSilencedStderr(t *testing.T) {
 		}
 	})
 
+	//nolint:paralleltest // writes to os.Stderr must run serially
 	t.Run("ErrorIncludesCapturedLogs", func(t *testing.T) {
 		originalStderr := os.Stderr
 

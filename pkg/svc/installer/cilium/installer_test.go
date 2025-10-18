@@ -49,35 +49,62 @@ func TestNewCiliumInstaller(t *testing.T) {
 	testutils.ExpectNotNil(t, installer, "installer instance")
 }
 
+type installerScenario struct {
+	name       string
+	setup      func(*testing.T, *MockHelmClient)
+	actionName string
+	action     func(context.Context, *CiliumInstaller) error
+	wantErr    string
+}
+
+func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
+	t.Helper()
+
+	for _, scenario := range scenarios {
+		scenario := scenario
+
+		t.Run(scenario.name, func(t *testing.T) {
+			t.Parallel()
+
+			installer, client := newDefaultInstaller(t)
+			scenario.setup(t, client)
+
+			err := scenario.action(context.Background(), installer)
+
+			expectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
+		})
+	}
+}
+
 func TestCiliumInstallerInstall(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name    string
-		setup   func(*testing.T, *MockHelmClient)
-		wantErr string
-	}{
-		{
-			name: "Success",
-			setup: func(t *testing.T, client *MockHelmClient) {
-				t.Helper()
+	installAction := func(ctx context.Context, installer *CiliumInstaller) error {
+		return installer.Install(ctx)
+	}
 
-				expectCiliumAddRepository(t, client, nil)
-				expectCiliumInstallChart(t, client, nil)
+	scenarios := []installerScenario{
+		{
+			name:       "Success",
+			actionName: "Install",
+			action:     installAction,
+			setup: func(t *testing.T, client *MockHelmClient) {
+				setupCiliumInstallExpectations(t, client, nil)
 			},
 		},
 		{
-			name: "InstallFailure",
+			name:       "InstallFailure",
+			actionName: "Install",
+			action:     installAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
-				t.Helper()
-
-				expectCiliumAddRepository(t, client, nil)
-				expectCiliumInstallChart(t, client, errInstallFailed)
+				setupCiliumInstallExpectations(t, client, errInstallFailed)
 			},
 			wantErr: "failed to install Cilium",
 		},
 		{
-			name: "AddRepositoryFailure",
+			name:       "AddRepositoryFailure",
+			actionName: "Install",
+			action:     installAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
 				t.Helper()
 
@@ -87,36 +114,21 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			installer, client := newDefaultInstaller(t)
-			testCase.setup(t, client)
-
-			err := installer.Install(context.Background())
-
-			if testCase.wantErr == "" {
-				testutils.ExpectNoError(t, err, "Install")
-
-				return
-			}
-
-			testutils.ExpectErrorContains(t, err, testCase.wantErr, "Install error")
-		})
-	}
+	runInstallerScenarios(t, scenarios)
 }
 
 func TestCiliumInstallerUninstall(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name    string
-		setup   func(*testing.T, *MockHelmClient)
-		wantErr string
-	}{
+	uninstallAction := func(ctx context.Context, installer *CiliumInstaller) error {
+		return installer.Uninstall(ctx)
+	}
+
+	scenarios := []installerScenario{
 		{
-			name: "Success",
+			name:       "Success",
+			actionName: "Uninstall",
+			action:     uninstallAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
 				t.Helper()
 
@@ -124,7 +136,9 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 			},
 		},
 		{
-			name: "UninstallFailure",
+			name:       "UninstallFailure",
+			actionName: "Uninstall",
+			action:     uninstallAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
 				t.Helper()
 
@@ -134,24 +148,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			installer, client := newDefaultInstaller(t)
-			testCase.setup(t, client)
-
-			err := installer.Uninstall(context.Background())
-
-			if testCase.wantErr == "" {
-				testutils.ExpectNoError(t, err, "Uninstall")
-
-				return
-			}
-
-			testutils.ExpectErrorContains(t, err, testCase.wantErr, "Uninstall error")
-		})
-	}
+	runInstallerScenarios(t, scenarios)
 }
 
 func TestApplyDefaultValues(t *testing.T) {
@@ -495,10 +492,7 @@ func TestPollForReadiness(t *testing.T) {
 	t.Run("ReturnsNilWhenReady", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
-
-		err := pollForReadiness(ctx, 200*time.Millisecond, func(context.Context) (bool, error) {
+		err := pollForReadinessWithDefaultTimeout(t, func(context.Context) (bool, error) {
 			return true, nil
 		})
 
@@ -508,10 +502,7 @@ func TestPollForReadiness(t *testing.T) {
 	t.Run("WrapsErrors", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-		defer cancel()
-
-		err := pollForReadiness(ctx, 200*time.Millisecond, func(context.Context) (bool, error) {
+		err := pollForReadinessWithDefaultTimeout(t, func(context.Context) (bool, error) {
 			return false, errPollBoom
 		})
 
@@ -535,6 +526,38 @@ func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *MockHelmClient) {
 	)
 
 	return installer, client
+}
+
+func expectInstallerResult(t *testing.T, err error, wantErr, operation string) {
+	t.Helper()
+
+	if wantErr == "" {
+		testutils.ExpectNoError(t, err, operation)
+
+		return
+	}
+
+	message := operation + " error"
+	testutils.ExpectErrorContains(t, err, wantErr, message)
+}
+
+func setupCiliumInstallExpectations(t *testing.T, client *MockHelmClient, installErr error) {
+	t.Helper()
+
+	expectCiliumAddRepository(t, client, nil)
+	expectCiliumInstallChart(t, client, installErr)
+}
+
+func pollForReadinessWithDefaultTimeout(
+	t *testing.T,
+	checker func(context.Context) (bool, error),
+) error {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	return pollForReadiness(ctx, 200*time.Millisecond, checker)
 }
 
 func expectCiliumAddRepository(t *testing.T, client *MockHelmClient, err error) {
