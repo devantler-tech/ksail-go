@@ -23,6 +23,8 @@ const streamCopyWorkers = 2
 var (
 	errK3dCommandExit    = errors.New("commandrunner: k3d command exited")
 	errLoggerUnavailable = errors.New("commandrunner: logger not available")
+
+	stdioSwapMu sync.Mutex
 )
 
 // CommandResult captures the stdout and stderr collected during a Cobra command
@@ -111,6 +113,8 @@ type commandExecution struct {
 	formatter         logrus.Formatter
 
 	fatalErr error
+
+	stdioLocked bool
 }
 
 func newCommandExecution() (*commandExecution, error) {
@@ -137,6 +141,9 @@ func newCommandExecution() (*commandExecution, error) {
 		logger:            k3dlog.Log(),
 		originalLoggerOut: io.Discard, // placeholder, overwritten in configureLogger.
 	}
+
+	stdioSwapMu.Lock()
+	ctx.stdioLocked = true
 
 	ctx.stdoutDest = ctx.buildDestWriter(ctx.originalStdout, &ctx.stdoutBuffer)
 	ctx.stderrDest = ctx.buildDestWriter(ctx.originalStderr, &ctx.stderrBuffer)
@@ -266,6 +273,11 @@ func (c *commandExecution) restore() {
 
 	os.Stdout = c.originalStdout
 	os.Stderr = c.originalStderr
+
+	if c.stdioLocked {
+		c.stdioLocked = false
+		stdioSwapMu.Unlock()
+	}
 }
 
 func (c *commandExecution) result() CommandResult {
