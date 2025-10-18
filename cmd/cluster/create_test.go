@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
@@ -19,6 +20,11 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+)
+
+const (
+	testCiliumContext  = "kind-kind"
+	testKubeconfigPath = "kubeconfig"
 )
 
 func TestNewCreateCmd(t *testing.T) {
@@ -175,20 +181,48 @@ func TestNewCiliumInstaller(t *testing.T) {
 
 	value := reflect.ValueOf(installer).Elem()
 
-	kubeconfig := value.FieldByName("kubeconfig").String()
+	kubeconfig := readUnexportedString(t, value, "kubeconfig")
 	if kubeconfig != "/tmp/kubeconfig" {
 		t.Fatalf("expected kubeconfig to propagate, got %q", kubeconfig)
 	}
 
-	contextName := value.FieldByName("context").String()
+	contextName := readUnexportedString(t, value, "context")
 	if contextName != "kind-dev" {
 		t.Fatalf("expected context to propagate, got %q", contextName)
 	}
 
-	timeout := value.FieldByName("timeout").Interface().(time.Duration)
+	timeout := readUnexportedDuration(t, value, "timeout")
 	if timeout != 2*time.Minute {
 		t.Fatalf("expected timeout to use cluster override, got %v", timeout)
 	}
+}
+
+// readUnexportedString inspects the value of an unexported string field for assertions.
+//
+//nolint:gosec // Using unsafe pointer conversion for read-only test verification.
+func readUnexportedString(t *testing.T, value reflect.Value, field string) string {
+	t.Helper()
+
+	f := value.FieldByName(field)
+	if !f.IsValid() {
+		t.Fatalf("field %s not found", field)
+	}
+
+	return *(*string)(unsafe.Pointer(f.UnsafeAddr()))
+}
+
+// readUnexportedDuration inspects the value of an unexported duration field for assertions.
+//
+//nolint:gosec // Using unsafe pointer conversion for read-only test verification.
+func readUnexportedDuration(t *testing.T, value reflect.Value, field string) time.Duration {
+	t.Helper()
+
+	f := value.FieldByName(field)
+	if !f.IsValid() {
+		t.Fatalf("field %s not found", field)
+	}
+
+	return *(*time.Duration)(unsafe.Pointer(f.UnsafeAddr()))
 }
 
 //nolint:paralleltest // Uses t.Setenv to control home directory.
@@ -266,75 +300,74 @@ func TestLoadKubeconfig(t *testing.T) {
 	})
 }
 
-func TestRunCiliumInstallation(t *testing.T) {
+func TestRunCiliumInstallationWritesSuccessMessage(t *testing.T) {
 	t.Parallel()
 
-	t.Run("writes_success_message", func(t *testing.T) {
-		t.Parallel()
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
 
-		cmd, out := testutils.NewCommand(t)
-		cmd.SetContext(context.Background())
+	helmClient := &fakeHelmClient{}
+	installer := newReadyCiliumInstaller(helmClient, time.Second)
 
-		helmClient := &fakeHelmClient{}
-		installer := ciliuminstaller.NewCiliumInstaller(
-			helmClient,
-			"kubeconfig",
-			"kind-kind",
-			time.Second,
-		)
-		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
+	err := runCiliumInstallation(
+		cmd,
+		installer,
+		&stubTimer{total: time.Second, stage: time.Second},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-		err := runCiliumInstallation(
-			cmd,
-			installer,
-			&stubTimer{total: time.Second, stage: time.Second},
-		)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
+	output := out.String()
+	if !strings.Contains(output, "CNI installed") {
+		t.Fatalf("expected install success in output, got %q", output)
+	}
 
-		output := out.String()
-		if !strings.Contains(output, "CNI installed") {
-			t.Fatalf("expected success message in output, got %q", output)
-		}
+	if helmClient.installCalls != 1 {
+		t.Fatalf("expected helm install to be invoked once, got %d", helmClient.installCalls)
+	}
 
-		if helmClient.installCalls != 1 {
-			t.Fatalf("expected helm install to be invoked once, got %d", helmClient.installCalls)
-		}
+	if helmClient.addRepoCalls != 1 {
+		t.Fatalf("expected repository add to be invoked once, got %d", helmClient.addRepoCalls)
+	}
 
-		if helmClient.addRepoCalls != 1 {
-			t.Fatalf("expected repository add to be invoked once, got %d", helmClient.addRepoCalls)
-		}
+	if helmClient.lastSpec == nil || helmClient.lastSpec.Timeout != time.Second {
+		t.Fatalf("expected chart spec to use provided timeout")
+	}
+}
 
-		if helmClient.lastSpec == nil || helmClient.lastSpec.Timeout != time.Second {
-			t.Fatalf("expected chart spec to use provided timeout")
-		}
-	})
+func TestRunCiliumInstallationReturnsInstallErrors(t *testing.T) {
+	t.Parallel()
 
-	t.Run("returns_error_when_install_fails", func(t *testing.T) {
-		t.Parallel()
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
 
-		cmd, _ := testutils.NewCommand(t)
-		cmd.SetContext(context.Background())
+	helmClient := &fakeHelmClient{installErr: context.DeadlineExceeded}
+	installer := newReadyCiliumInstaller(helmClient, time.Second)
 
-		helmClient := &fakeHelmClient{installErr: context.DeadlineExceeded}
-		installer := ciliuminstaller.NewCiliumInstaller(
-			helmClient,
-			"kubeconfig",
-			"kind-kind",
-			time.Second,
-		)
-		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
+	err := runCiliumInstallation(cmd, installer, &stubTimer{})
+	if err == nil {
+		t.Fatal("expected installation error")
+	}
 
-		err := runCiliumInstallation(cmd, installer, &stubTimer{})
-		if err == nil {
-			t.Fatal("expected installation error")
-		}
+	if !strings.Contains(err.Error(), "cilium installation failed") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
 
-		if !strings.Contains(err.Error(), "cilium installation failed") {
-			t.Fatalf("unexpected error message: %v", err)
-		}
-	})
+func newReadyCiliumInstaller(
+	helmClient *fakeHelmClient,
+	timeout time.Duration,
+) *ciliuminstaller.CiliumInstaller {
+	installer := ciliuminstaller.NewCiliumInstaller(
+		helmClient,
+		testKubeconfigPath,
+		testCiliumContext,
+		timeout,
+	)
+	installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
+
+	return installer
 }
 
 func TestInstallCiliumCNI(t *testing.T) {
@@ -345,7 +378,7 @@ func TestInstallCiliumCNI(t *testing.T) {
 
 	clusterCfg := &v1alpha1.Cluster{}
 	clusterCfg.Spec.CNI = v1alpha1.CNICilium
-	clusterCfg.Spec.Connection.Context = "kind-kind"
+	clusterCfg.Spec.Connection.Context = testCiliumContext
 	clusterCfg.Spec.Connection.Kubeconfig = filepath.Join(t.TempDir(), "missing")
 
 	err := installCiliumCNI(cmd, clusterCfg, &stubTimer{})

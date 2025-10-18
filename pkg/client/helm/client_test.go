@@ -635,78 +635,89 @@ func TestClientSwitchNamespace(t *testing.T) {
 func TestClientEnsureRepository(t *testing.T) {
 	setupHelmRepoEnv(t)
 
-	t.Run("NoRepoURLSkipsLookup", func(t *testing.T) {
-		client, err := NewClient("", "")
-		testutils.ExpectNoError(t, err, "NewClient no repo")
+	t.Run("NoRepoURLSkipsLookup", testClientEnsureRepositoryNoRepoURL)
+	t.Run("LookupFailureReturnsError", testClientEnsureRepositoryLookupFailure)
+	t.Run("SuccessfulLookupUpdatesChart", testClientEnsureRepositorySuccessfulLookup)
+}
 
-		chartSpec := &helmclientlib.ChartSpec{ChartName: "demo"}
-		err = client.ensureRepository(&ChartSpec{ChartName: "demo"}, chartSpec)
-		testutils.ExpectNoError(t, err, "ensureRepository without repo")
+func testClientEnsureRepositoryNoRepoURL(t *testing.T) {
+	client, err := NewClient("", "")
+	testutils.ExpectNoError(t, err, "NewClient no repo")
 
-		expectEqual(t, chartSpec.ChartName, "demo", "chart name unchanged")
-	})
+	chartSpec := &helmclientlib.ChartSpec{ChartName: "demo"}
+	err = client.ensureRepository(&ChartSpec{ChartName: "demo"}, chartSpec)
+	testutils.ExpectNoError(t, err, "ensureRepository without repo")
 
-	t.Run("LookupFailureReturnsError", func(t *testing.T) {
-		server := httptest.NewServer(
-			http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
-				http.Error(writer, "boom", http.StatusInternalServerError)
-			}),
-		)
-		defer server.Close()
+	expectEqual(t, chartSpec.ChartName, "demo", "chart name unchanged")
+}
 
-		client, err := NewClient("", "")
-		testutils.ExpectNoError(t, err, "NewClient failure case")
+func testClientEnsureRepositoryLookupFailure(t *testing.T) {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			http.Error(writer, "boom", http.StatusInternalServerError)
+		}),
+	)
+	defer server.Close()
 
-		spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
-		chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
+	client, err := NewClient("", "")
+	testutils.ExpectNoError(t, err, "NewClient failure case")
 
-		err = client.ensureRepository(spec, chartSpec)
-		testutils.ExpectErrorContains(
-			t,
-			err,
-			"failed to locate chart",
-			"ensureRepository failure path",
-		)
-	})
+	spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
+	chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
 
-	t.Run("SuccessfulLookupUpdatesChart", func(t *testing.T) {
-		var serverURL string
+	err = client.ensureRepository(spec, chartSpec)
+	testutils.ExpectErrorContains(
+		t,
+		err,
+		"failed to locate chart",
+		"ensureRepository failure path",
+	)
+}
 
-		server := httptest.NewServer(
-			http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				switch request.URL.Path {
-				case "/index.yaml":
-					_, writeErr := fmt.Fprintf(
-						writer,
-						"apiVersion: v1\nentries:\n  example:\n  - apiVersion: v2\n    appVersion: 1.0.0\n    name: example\n    version: 1.0.0\n    urls:\n    - %s/example-1.0.0.tgz\n",
-						serverURL,
-					)
-					if writeErr != nil {
-						http.Error(writer, writeErr.Error(), http.StatusInternalServerError)
-					}
-				case "/example-1.0.0.tgz":
-					writer.WriteHeader(http.StatusOK)
-				default:
-					http.NotFound(writer, request)
+const chartIndexTemplate = `apiVersion: v1
+entries:
+  example:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    name: example
+    version: 1.0.0
+    urls:
+    - %s/example-1.0.0.tgz
+`
+
+func testClientEnsureRepositorySuccessfulLookup(t *testing.T) {
+	var serverURL string
+
+	server := httptest.NewServer(
+		http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			switch request.URL.Path {
+			case "/index.yaml":
+				_, writeErr := fmt.Fprintf(writer, chartIndexTemplate, serverURL)
+				if writeErr != nil {
+					http.Error(writer, writeErr.Error(), http.StatusInternalServerError)
 				}
-			}),
-		)
+			case "/example-1.0.0.tgz":
+				writer.WriteHeader(http.StatusOK)
+			default:
+				http.NotFound(writer, request)
+			}
+		}),
+	)
 
-		serverURL = server.URL
-		defer server.Close()
+	serverURL = server.URL
+	defer server.Close()
 
-		client, err := NewClient("", "")
-		testutils.ExpectNoError(t, err, "NewClient success case")
+	client, err := NewClient("", "")
+	testutils.ExpectNoError(t, err, "NewClient success case")
 
-		spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
-		chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
+	spec := &ChartSpec{ChartName: "example", RepoURL: server.URL, Version: "1.0.0"}
+	chartSpec := &helmclientlib.ChartSpec{ChartName: spec.ChartName}
 
-		err = client.ensureRepository(spec, chartSpec)
-		testutils.ExpectNoError(t, err, "ensureRepository success path")
+	err = client.ensureRepository(spec, chartSpec)
+	testutils.ExpectNoError(t, err, "ensureRepository success path")
 
-		expected := server.URL + "/example-1.0.0.tgz"
-		expectEqual(t, chartSpec.ChartName, expected, "chart URL updated")
-	})
+	expected := server.URL + "/example-1.0.0.tgz"
+	expectEqual(t, chartSpec.ChartName, expected, "chart URL updated")
 }
 
 //nolint:tparallel // serial subtests avoid os.Stderr races
