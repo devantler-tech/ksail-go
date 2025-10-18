@@ -61,8 +61,6 @@ func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
 	t.Helper()
 
 	for _, scenario := range scenarios {
-		scenario := scenario
-
 		t.Run(scenario.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -89,6 +87,8 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			actionName: "Install",
 			action:     installAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
+				t.Helper()
+
 				setupCiliumInstallExpectations(t, client, nil)
 			},
 		},
@@ -97,6 +97,8 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			actionName: "Install",
 			action:     installAction,
 			setup: func(t *testing.T, client *MockHelmClient) {
+				t.Helper()
+
 				setupCiliumInstallExpectations(t, client, errInstallFailed)
 			},
 			wantErr: "failed to install Cilium",
