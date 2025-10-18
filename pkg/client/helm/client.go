@@ -195,6 +195,10 @@ func newHelmClientFromKubeConf(
 	kubeConfig []byte,
 	kubeContext string,
 ) (*helmclientlib.HelmClient, error) {
+	// We must keep the mutex held for the entire duration because os.Stderr is a
+	// process-wide global. Releasing the lock before restoration would allow
+	// another goroutine to swap stderr out from under us, leading to corrupted
+	// logs or panics when we attempt to restore the original writer.
 	stderrCaptureMu.Lock()
 	defer stderrCaptureMu.Unlock()
 
