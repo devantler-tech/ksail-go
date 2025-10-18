@@ -143,7 +143,7 @@ func TestCommandExecutionBuildDestWriter(t *testing.T) {
 		runBuildDestWriterBufferCase(t)
 	})
 
-	t.Run("multiwriter mirrors output", func(t *testing.T) {
+	t.Run("multi-writer mirrors output", func(t *testing.T) {
 		t.Parallel()
 
 		runBuildDestWriterMultiWriterCase(t)
