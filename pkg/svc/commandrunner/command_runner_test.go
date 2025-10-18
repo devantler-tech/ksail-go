@@ -20,6 +20,7 @@ var (
 	errWriteFailed  = errors.New("write failed")
 )
 
+//nolint:paralleltest // Serializes stdout manipulation to avoid race with global stdio.
 func TestCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 	runner := NewCobraCommandRunner()
 	cmd := &cobra.Command{
@@ -39,6 +40,7 @@ func TestCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 }
 
 func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
+	t.Parallel()
 	res := CommandResult{Stdout: "info", Stderr: "fail"}
 
 	err := MergeCommandError(errBaseFailure, res)
@@ -57,6 +59,7 @@ func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 }
 
 func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
+	t.Parallel()
 	var buf bytes.Buffer
 
 	hook := &pipeForwardHook{
@@ -79,6 +82,7 @@ func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 }
 
 func TestPipeForwardHookIgnoresClosedPipe(t *testing.T) {
+	t.Parallel()
 	hook := &pipeForwardHook{
 		writer: closedPipeWriter{},
 		formatter: stubFormatter{
@@ -95,6 +99,7 @@ func TestPipeForwardHookIgnoresClosedPipe(t *testing.T) {
 }
 
 func TestPipeForwardHookPropagatesFormatterErrors(t *testing.T) {
+	t.Parallel()
 	hook := &pipeForwardHook{
 		writer:    &bytes.Buffer{},
 		formatter: stubFormatter{err: errFormatFailed},
@@ -109,6 +114,7 @@ func TestPipeForwardHookPropagatesFormatterErrors(t *testing.T) {
 }
 
 func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
+	t.Parallel()
 	hook := &pipeForwardHook{
 		writer:    errorWriter{err: errWriteFailed},
 		formatter: stubFormatter{output: []byte("data")},
@@ -123,11 +129,17 @@ func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
 }
 
 func TestCommandExecutionBuildDestWriter(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns buffer when original nil", func(t *testing.T) {
+		t.Parallel()
+
 		runBuildDestWriterBufferCase(t)
 	})
 
 	t.Run("multi-writer mirrors output", func(t *testing.T) {
+		t.Parallel()
+
 		runBuildDestWriterMultiWriterCase(t)
 	})
 }
@@ -193,6 +205,8 @@ func runBuildDestWriterMultiWriterCase(t *testing.T) {
 }
 
 func TestCommandExecutionConfigureLoggerNil(t *testing.T) {
+	t.Parallel()
+
 	ce := &commandExecution{}
 
 	err := ce.configureLogger()
@@ -202,7 +216,11 @@ func TestCommandExecutionConfigureLoggerNil(t *testing.T) {
 }
 
 func TestStripStdoutInfoHooks(t *testing.T) {
+	t.Parallel()
+
 	t.Run("removes info hooks targeting stdout", func(t *testing.T) {
+		t.Parallel()
+
 		stdout := newStdoutFile(t)
 
 		hooks := logrus.LevelHooks{
@@ -232,6 +250,8 @@ func TestStripStdoutInfoHooks(t *testing.T) {
 	})
 
 	t.Run("returns nil for nil hooks", func(t *testing.T) {
+		t.Parallel()
+
 		stdout := newStdoutFile(t)
 
 		if result := stripStdoutInfoHooks(nil, stdout); result != nil {
@@ -241,6 +261,8 @@ func TestStripStdoutInfoHooks(t *testing.T) {
 }
 
 func TestIsStdoutInfoWriterHook(t *testing.T) {
+	t.Parallel()
+
 	stdout := newStdoutFile(t)
 
 	stdoutHook := &logwriter.Hook{Writer: stdout, LogLevels: []logrus.Level{logrus.InfoLevel}}
@@ -268,6 +290,8 @@ func TestIsStdoutInfoWriterHook(t *testing.T) {
 }
 
 func TestCloneHooks(t *testing.T) {
+	t.Parallel()
+
 	stdout := newStdoutFile(t)
 
 	original := logrus.LevelHooks{

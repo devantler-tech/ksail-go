@@ -24,7 +24,8 @@ var (
 	errK3dCommandExit    = errors.New("commandrunner: k3d command exited")
 	errLoggerUnavailable = errors.New("commandrunner: logger not available")
 
-	stdioSwapMu sync.Mutex
+	// stdioSwapMu serializes global stdio swaps to remain thread-safe.
+	stdioSwapMu sync.Mutex //nolint:gochecknoglobals // Package-level guard for stdout/stderr mutation.
 )
 
 // CommandResult captures the stdout and stderr collected during a Cobra command
@@ -143,6 +144,7 @@ func newCommandExecution() (*commandExecution, error) {
 	}
 
 	stdioSwapMu.Lock()
+
 	ctx.stdioLocked = true
 
 	ctx.stdoutDest = ctx.buildDestWriter(ctx.originalStdout, &ctx.stdoutBuffer)
@@ -276,6 +278,7 @@ func (c *commandExecution) restore() {
 
 	if c.stdioLocked {
 		c.stdioLocked = false
+
 		stdioSwapMu.Unlock()
 	}
 }
