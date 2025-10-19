@@ -311,6 +311,15 @@ func runKindCiliumAlignmentTest(
 func TestKSailValidatorContextNameValidation(t *testing.T) {
 	t.Parallel()
 
+	testKindValidContext(t)
+	testK3dValidContext(t)
+	testInvalidContextPatternWithConfig(t)
+	testContextNotValidatedWithoutConfig(t)
+}
+
+func testKindValidContext(t *testing.T) {
+	t.Helper()
+
 	t.Run("kind_valid_context", func(t *testing.T) {
 		t.Parallel()
 
@@ -323,6 +332,10 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		assert.True(t, result.Valid, "Valid Kind context should pass validation")
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
+}
+
+func testK3dValidContext(t *testing.T) {
+	t.Helper()
 
 	t.Run("k3d_valid_context", func(t *testing.T) {
 		t.Parallel()
@@ -336,6 +349,10 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		assert.True(t, result.Valid, "Valid K3d context should pass validation")
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
+}
+
+func testInvalidContextPatternWithConfig(t *testing.T) {
+	t.Helper()
 
 	t.Run("invalid_context_pattern_with_config", func(t *testing.T) {
 		t.Parallel()
@@ -375,6 +392,10 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 
 		assert.True(t, found, "Should have context validation error")
 	})
+}
+
+func testContextNotValidatedWithoutConfig(t *testing.T) {
+	t.Helper()
 
 	t.Run("context_not_validated_without_config", func(t *testing.T) {
 		t.Parallel()
@@ -1275,39 +1296,54 @@ func testKindContextValidation(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution:       v1alpha1.DistributionKind,
-					DistributionConfig: "config.yaml",
-					Connection: v1alpha1.Connection{
-						Context: test.context,
-					},
-				},
-			}
-
-			var validator *ksailvalidator.Validator
-			if test.useConfig {
-				kindConfig := &kindv1alpha4.Cluster{Name: "my-cluster"}
-				validator = ksailvalidator.NewValidatorForKind(kindConfig)
-			} else {
-				validator = ksailvalidator.NewValidator()
-			}
-
-			result := validator.Validate(config)
-
-			if test.shouldPass {
-				assert.True(t, result.Valid, test.description+" should pass validation")
-				assert.Empty(t, result.Errors, test.description+" should have no validation errors")
-			} else {
-				assert.False(t, result.Valid, test.description+" should fail validation")
-				assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
-			}
+			runKindContextValidationTest(t, test)
 		})
+	}
+}
+
+func runKindContextValidationTest(
+	t *testing.T,
+	test struct {
+		name        string
+		context     string
+		shouldPass  bool
+		description string
+		useConfig   bool
+	},
+) {
+	t.Helper()
+
+	config := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ksail.dev/v1alpha1",
+			Kind:       "Cluster",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionKind,
+			DistributionConfig: "config.yaml",
+			Connection: v1alpha1.Connection{
+				Context: test.context,
+			},
+		},
+	}
+
+	var validator *ksailvalidator.Validator
+
+	if test.useConfig {
+		kindConfig := &kindv1alpha4.Cluster{Name: "my-cluster"}
+		validator = ksailvalidator.NewValidatorForKind(kindConfig)
+	} else {
+		validator = ksailvalidator.NewValidator()
+	}
+
+	result := validator.Validate(config)
+
+	if test.shouldPass {
+		assert.True(t, result.Valid, test.description+" should pass validation")
+		assert.Empty(t, result.Errors, test.description+" should have no validation errors")
+	} else {
+		assert.False(t, result.Valid, test.description+" should fail validation")
+		assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
 	}
 }
 
@@ -1348,41 +1384,56 @@ func testK3dContextValidation(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution:       v1alpha1.DistributionK3d,
-					DistributionConfig: "config.yaml",
-					Connection: v1alpha1.Connection{
-						Context: test.context,
-					},
-				},
-			}
-
-			var validator *ksailvalidator.Validator
-			if test.useConfig {
-				k3dConfig := &k3dapi.SimpleConfig{
-					ObjectMeta: k3dtypes.ObjectMeta{Name: "my-cluster"},
-				}
-				validator = ksailvalidator.NewValidatorForK3d(k3dConfig)
-			} else {
-				validator = ksailvalidator.NewValidator()
-			}
-
-			result := validator.Validate(config)
-
-			if test.shouldPass {
-				assert.True(t, result.Valid, test.description+" should pass validation")
-				assert.Empty(t, result.Errors, test.description+" should have no validation errors")
-			} else {
-				assert.False(t, result.Valid, test.description+" should fail validation")
-				assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
-			}
+			runK3dContextValidationTest(t, test)
 		})
+	}
+}
+
+func runK3dContextValidationTest(
+	t *testing.T,
+	test struct {
+		name        string
+		context     string
+		shouldPass  bool
+		description string
+		useConfig   bool
+	},
+) {
+	t.Helper()
+
+	config := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ksail.dev/v1alpha1",
+			Kind:       "Cluster",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionK3d,
+			DistributionConfig: "config.yaml",
+			Connection: v1alpha1.Connection{
+				Context: test.context,
+			},
+		},
+	}
+
+	var validator *ksailvalidator.Validator
+
+	if test.useConfig {
+		k3dConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: k3dtypes.ObjectMeta{Name: "my-cluster"},
+		}
+		validator = ksailvalidator.NewValidatorForK3d(k3dConfig)
+	} else {
+		validator = ksailvalidator.NewValidator()
+	}
+
+	result := validator.Validate(config)
+
+	if test.shouldPass {
+		assert.True(t, result.Valid, test.description+" should pass validation")
+		assert.Empty(t, result.Errors, test.description+" should have no validation errors")
+	} else {
+		assert.False(t, result.Valid, test.description+" should fail validation")
+		assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
 	}
 }
 
