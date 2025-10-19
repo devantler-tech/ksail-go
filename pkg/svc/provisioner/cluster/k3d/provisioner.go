@@ -2,175 +2,225 @@ package k3dprovisioner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
+	commandrunner "github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
+	clustercommand "github.com/k3d-io/k3d/v5/cmd/cluster"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/k3d-io/k3d/v5/pkg/runtimes"
-	"github.com/k3d-io/k3d/v5/pkg/types"
+	"github.com/spf13/cobra"
 )
 
-// K3dClusterProvisioner implements provisioning for k3d clusters.
-type K3dClusterProvisioner struct {
-	simpleCfg      *v1alpha5.SimpleConfig
-	clientProvider K3dClientProvider
-	configProvider K3dConfigProvider
+// CommandBuilders supplies constructors for k3d Cobra commands, allowing test injection.
+type CommandBuilders struct {
+	Create func() *cobra.Command
+	Delete func() *cobra.Command
+	Start  func() *cobra.Command
+	Stop   func() *cobra.Command
+	List   func() *cobra.Command
 }
 
-// NewK3dClusterProvisioner constructs a k3d provisioner instance.
+// Option configures the k3d command provisioner.
+type Option func(*K3dClusterProvisioner)
+
+// K3dClusterProvisioner executes k3d lifecycle commands via Cobra.
+type K3dClusterProvisioner struct {
+	simpleCfg  *v1alpha5.SimpleConfig
+	configPath string
+	runner     commandrunner.CommandRunner
+	builders   CommandBuilders
+}
+
+// NewK3dClusterProvisioner constructs a new command-backed provisioner.
 func NewK3dClusterProvisioner(
 	simpleCfg *v1alpha5.SimpleConfig,
-	clientProvider K3dClientProvider,
-	configProvider K3dConfigProvider,
+	configPath string,
+	opts ...Option,
 ) *K3dClusterProvisioner {
-	return &K3dClusterProvisioner{
-		simpleCfg:      simpleCfg,
-		clientProvider: clientProvider,
-		configProvider: configProvider,
+	prov := &K3dClusterProvisioner{
+		simpleCfg:  simpleCfg,
+		configPath: configPath,
+		runner:     commandrunner.NewCobraCommandRunner(),
+		builders: CommandBuilders{
+			Create: clustercommand.NewCmdClusterCreate,
+			Delete: clustercommand.NewCmdClusterDelete,
+			Start:  clustercommand.NewCmdClusterStart,
+			Stop:   clustercommand.NewCmdClusterStop,
+			List:   clustercommand.NewCmdClusterList,
+		},
+	}
+
+	for _, opt := range opts {
+		if opt != nil {
+			opt(prov)
+		}
+	}
+
+	return prov
+}
+
+// WithCommandRunner overrides the command runner (primarily for tests).
+func WithCommandRunner(runner commandrunner.CommandRunner) Option {
+	return func(provisioner *K3dClusterProvisioner) {
+		if runner != nil {
+			provisioner.runner = runner
+		}
 	}
 }
 
-// Create provisions a k3d cluster using the loaded SimpleConfig.
+// WithCommandBuilders overrides specific Cobra command builders.
+func WithCommandBuilders(builders CommandBuilders) Option {
+	return func(provisioner *K3dClusterProvisioner) {
+		if builders.Create != nil {
+			provisioner.builders.Create = builders.Create
+		}
+
+		if builders.Delete != nil {
+			provisioner.builders.Delete = builders.Delete
+		}
+
+		if builders.Start != nil {
+			provisioner.builders.Start = builders.Start
+		}
+
+		if builders.Stop != nil {
+			provisioner.builders.Stop = builders.Stop
+		}
+
+		if builders.List != nil {
+			provisioner.builders.List = builders.List
+		}
+	}
+}
+
+// Create provisions a k3d cluster using the native Cobra command.
 func (k *K3dClusterProvisioner) Create(ctx context.Context, name string) error {
-	runtime := runtimes.SelectedRuntime
+	args := k.appendConfigFlag(nil)
 
-	// Ensure name in SimpleConfig; default to ksail name
-	target := name
-	if target == "" {
-		target = k.simpleCfg.Name
-	}
-
-	k.simpleCfg.Name = target
-
-	// Transform SimpleConfig -> ClusterConfig
-	clusterCfg, err := k.configProvider.TransformSimpleToClusterConfig(
+	return k.runLifecycleCommand(
 		ctx,
-		runtime,
-		*k.simpleCfg,
-		"k3d.yaml",
+		k.builders.Create,
+		args,
+		name,
+		"cluster create",
+		func(target string) {
+			if k.simpleCfg != nil {
+				k.simpleCfg.Name = target
+			}
+		},
 	)
-	if err != nil {
-		return fmt.Errorf("transform simple to cluster config: %w", err)
-	}
-
-	// Default kubeconfig options similar to CLI
-	clusterCfg.KubeconfigOpts.UpdateDefaultKubeconfig = true
-	clusterCfg.KubeconfigOpts.SwitchCurrentContext = true
-
-	// Run full create sequence
-	err = k.clientProvider.ClusterRun(ctx, runtime, clusterCfg)
-	if err != nil {
-		return fmt.Errorf("cluster run: %w", err)
-	}
-
-	return nil
 }
 
-// Delete tears down a k3d cluster.
+// Delete removes a k3d cluster via the Cobra command.
 func (k *K3dClusterProvisioner) Delete(ctx context.Context, name string) error {
-	runtime := runtimes.SelectedRuntime
+	args := k.appendConfigFlag(nil)
 
-	target := name
-	if target == "" {
-		target = k.simpleCfg.Name
-	}
-
-	var cluster types.Cluster
-
-	cluster.Name = target
-
-	var opts types.ClusterDeleteOpts
-
-	err := k.clientProvider.ClusterDelete(ctx, runtime, &cluster, opts)
-	if err != nil {
-		return fmt.Errorf("cluster delete: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Delete, args, name, "cluster delete", nil)
 }
 
-// Start starts an existing k3d cluster.
+// Start resumes a stopped k3d cluster via Cobra.
 func (k *K3dClusterProvisioner) Start(ctx context.Context, name string) error {
-	runtime := runtimes.SelectedRuntime
-
-	target := name
-	if target == "" {
-		target = k.simpleCfg.Name
-	}
-
-	var cluster types.Cluster
-
-	cluster.Name = target
-
-	k3dCluster, err := k.clientProvider.ClusterGet(ctx, runtime, &cluster)
-	if err != nil {
-		return fmt.Errorf("cluster get: %w", err)
-	}
-
-	var startOpts types.ClusterStartOpts
-
-	err = k.clientProvider.ClusterStart(ctx, runtime, k3dCluster, startOpts)
-	if err != nil {
-		return fmt.Errorf("cluster start: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Start, nil, name, "cluster start", nil)
 }
 
-// Stop stops a running k3d cluster.
+// Stop halts a running k3d cluster via Cobra.
 func (k *K3dClusterProvisioner) Stop(ctx context.Context, name string) error {
-	runtime := runtimes.SelectedRuntime
-
-	target := name
-	if target == "" {
-		target = k.simpleCfg.Name
-	}
-
-	var cluster types.Cluster
-
-	cluster.Name = target
-
-	c, err := k.clientProvider.ClusterGet(ctx, runtime, &cluster)
-	if err != nil {
-		return fmt.Errorf("cluster get: %w", err)
-	}
-
-	err = k.clientProvider.ClusterStop(ctx, runtime, c)
-	if err != nil {
-		return fmt.Errorf("cluster stop: %w", err)
-	}
-
-	return nil
+	return k.runLifecycleCommand(ctx, k.builders.Stop, nil, name, "cluster stop", nil)
 }
 
-// List returns cluster names managed by k3d.
+// List returns cluster names reported by the Cobra command.
 func (k *K3dClusterProvisioner) List(ctx context.Context) ([]string, error) {
-	runtime := runtimes.SelectedRuntime
+	cmd := k.builders.List()
+	args := []string{"--output", "json"}
 
-	clusters, err := k.clientProvider.ClusterList(ctx, runtime)
+	res, err := k.runner.Run(ctx, cmd, args)
 	if err != nil {
 		return nil, fmt.Errorf("cluster list: %w", err)
 	}
 
-	out := make([]string, 0, len(clusters))
-	for _, c := range clusters {
-		out = append(out, c.Name)
+	output := strings.TrimSpace(res.Stdout)
+	if output == "" {
+		return nil, nil
 	}
 
-	return out, nil
+	var entries []struct {
+		Name string `json:"name"`
+	}
+
+	decodeErr := json.Unmarshal([]byte(output), &entries)
+	if decodeErr != nil {
+		return nil, fmt.Errorf("cluster list: parse output: %w", decodeErr)
+	}
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Name != "" {
+			names = append(names, entry.Name)
+		}
+	}
+
+	return names, nil
 }
 
-// Exists returns whether the ksail cluster name exists in k3d.
+// Exists returns whether the target cluster is present.
 func (k *K3dClusterProvisioner) Exists(ctx context.Context, name string) (bool, error) {
 	clusters, err := k.List(ctx)
 	if err != nil {
 		return false, fmt.Errorf("list: %w", err)
 	}
 
-	target := name
+	target := k.resolveName(name)
 	if target == "" {
-		target = k.simpleCfg.Name
+		return false, nil
 	}
 
 	return slices.Contains(clusters, target), nil
+}
+
+func (k *K3dClusterProvisioner) appendConfigFlag(args []string) []string {
+	if k.configPath == "" {
+		return args
+	}
+
+	return append(args, "--config", k.configPath)
+}
+
+func (k *K3dClusterProvisioner) resolveName(name string) string {
+	if strings.TrimSpace(name) != "" {
+		return name
+	}
+
+	if k.simpleCfg != nil && strings.TrimSpace(k.simpleCfg.Name) != "" {
+		return k.simpleCfg.Name
+	}
+
+	return ""
+}
+
+func (k *K3dClusterProvisioner) runLifecycleCommand(
+	ctx context.Context,
+	builder func() *cobra.Command,
+	args []string,
+	name string,
+	errorPrefix string,
+	onTarget func(string),
+) error {
+	cmd := builder()
+
+	target := k.resolveName(name)
+	if target != "" {
+		args = append(args, target)
+		if onTarget != nil {
+			onTarget(target)
+		}
+	}
+
+	_, runErr := k.runner.Run(ctx, cmd, args)
+	if runErr != nil {
+		return fmt.Errorf("%s: %w", errorPrefix, runErr)
+	}
+
+	return nil
 }

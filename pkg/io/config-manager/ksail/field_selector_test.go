@@ -81,8 +81,15 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			name:            "context",
 			factory:         configmanager.DefaultContextFieldSelector,
 			expectedDesc:    "Kubernetes context of cluster",
-			expectedDefault: "kind-kind",
+			expectedDefault: nil,
 			assertPointer:   assertContextSelector,
+		},
+		{
+			name:            "cni",
+			factory:         configmanager.DefaultCNIFieldSelector,
+			expectedDesc:    "Container Network Interface (CNI) to use",
+			expectedDefault: v1alpha1.CNIDefault,
+			assertPointer:   assertCNISelector,
 		},
 	}
 }
@@ -113,7 +120,7 @@ func specFieldTestCases() []testCase {
 		{
 			name:         "Spec.Connection.Context field",
 			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Context },
-			defaultValue: "kind-kind",
+			defaultValue: nil,
 			description:  []string{"Kubernetes context of cluster"},
 			expectedDesc: "Kubernetes context of cluster",
 		},
@@ -166,6 +173,11 @@ func assertDistributionConfigSelector(t *testing.T, cluster *v1alpha1.Cluster, p
 func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.Connection.Context)
+}
+
+func assertCNISelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.CNI)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
@@ -551,7 +563,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 	t.Parallel()
 
 	selectors := configmanager.DefaultClusterFieldSelectors()
-	require.Len(t, selectors, 2)
+	require.Len(t, selectors, 4)
 
 	cluster := v1alpha1.NewCluster()
 
@@ -569,7 +581,19 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 
 		pathPtr, ok := field.(*string)
 		require.True(t, ok, "selector did not return supported pointer type")
-		assert.Equal(t, "kind.yaml", selector.DefaultValue)
+
+		// Check that the default value is one of the expected values (if it's set)
+		if selector.DefaultValue != nil {
+			defaultValue, ok := selector.DefaultValue.(string)
+			require.True(t, ok, "selector default value must be a string when present")
+			assert.True(
+				t,
+				defaultValue == "kind.yaml" ||
+					defaultValue == "~/.kube/config",
+				"unexpected default value: %s",
+				defaultValue,
+			)
+		}
 
 		*pathPtr = "custom.yaml"
 		assert.Equal(t, "custom.yaml", *pathPtr)
@@ -584,7 +608,11 @@ func TestDefaultContextFieldSelector(t *testing.T) {
 
 	ptr, ok := selector.Selector(cluster).(*string)
 	require.True(t, ok, "expected selector to return *string")
-	assert.Equal(t, "kind-kind", selector.DefaultValue)
+	assert.Nil(
+		t,
+		selector.DefaultValue,
+		"context has no default value as it's distribution-specific",
+	)
 
 	*ptr = "custom"
 

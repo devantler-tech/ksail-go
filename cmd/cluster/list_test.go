@@ -85,6 +85,22 @@ func createConfigManagerWithFile(t *testing.T, writer io.Writer) *configmanager.
 	return cfgManager
 }
 
+func setupListCommandWithAllFlag(
+	t *testing.T,
+) (*cobra.Command, *configmanager.ConfigManager, *recordingListProvisioner, *recordingListFactory) {
+	t.Helper()
+
+	cmd, _ := newCommandWithBuffer(t)
+	cfgManager := createConfigManagerWithFile(t, io.Discard)
+	require.NoError(t, cfgManager.LoadConfigSilent())
+	cfgManager.Viper.Set(allFlag, true)
+
+	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
+	factory := &recordingListFactory{provisioner: provisioner}
+
+	return cmd, cfgManager, provisioner, factory
+}
+
 const ignoredConfigValue = "ignored"
 
 func TestHandleListRunE_ReturnsErrorWhenConfigLoadFails(t *testing.T) {
@@ -206,18 +222,75 @@ func TestListClusters_ListFailure(t *testing.T) {
 func TestListClusters_AllFlagTriggersAdditionalDistribution(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := newCommandWithBuffer(t)
-	cfgManager := createConfigManagerWithFile(t, io.Discard)
-	require.NoError(t, cfgManager.LoadConfigSilent())
-	cfgManager.Viper.Set(allFlag, true)
+	cmd, cfgManager, provisioner, factory := setupListCommandWithAllFlag(t)
+	otherProvisioner := &recordingListProvisioner{listErr: context.DeadlineExceeded}
+	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
 
-	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}
-	factory := &recordingListFactory{provisioner: provisioner}
-
-	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	err := listClusters(
+		cfgManager,
+		ListDeps{Factory: factory, DistributionFactory: otherFactory},
+		cmd,
+	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to list clusters for distribution K3d")
 	require.Equal(t, 1, provisioner.listCalls)
+	require.Equal(t, 1, otherFactory.callCount)
+	require.Equal(t, 1, otherProvisioner.listCalls)
+}
+
+func TestListClusters_AllFlagWithoutDistributionFactory(t *testing.T) {
+	t.Parallel()
+
+	cmd, cfgManager, provisioner, factory := setupListCommandWithAllFlag(t)
+
+	err := listClusters(cfgManager, ListDeps{Factory: factory}, cmd)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errDistributionFactoryUnset)
+	require.Equal(t, 1, provisioner.listCalls)
+}
+
+func TestListAdditionalDistributionClusters_Success(t *testing.T) {
+	t.Parallel()
+
+	cmd, out := newCommandWithBuffer(t)
+	clusterCfg := buildClusterWithConfig(v1alpha1.DistributionKind, defaultKindConfig)
+
+	otherProvisioner := &recordingListProvisioner{listResult: []string{"k3d-primary"}}
+	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
+
+	err := listAdditionalDistributionClusters(
+		cmd,
+		clusterCfg,
+		ListDeps{DistributionFactory: otherFactory},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, otherFactory.callCount)
+	require.Equal(t, 1, otherProvisioner.listCalls)
+	require.Len(t, otherFactory.captured, 1)
+	require.NotNil(t, otherFactory.captured[0])
+	require.Equal(t, v1alpha1.DistributionK3d, otherFactory.captured[0].Spec.Distribution)
+	require.Equal(t, defaultK3dConfig, otherFactory.captured[0].Spec.DistributionConfig)
+
+	output := out.String()
+	if !strings.Contains(output, "k3d: k3d-primary") {
+		t.Fatalf("expected k3d cluster list output, got %q", output)
+	}
+}
+
+func TestListDistributionClusters_NilClusterReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := newCommandWithBuffer(t)
+	factory := &recordingListFactory{provisioner: &recordingListProvisioner{}}
+
+	err := listDistributionClusters(
+		cmd,
+		nil,
+		ListDeps{DistributionFactory: factory},
+		v1alpha1.DistributionKind,
+	)
+	require.NoError(t, err)
+	require.Equal(t, 0, factory.callCount)
 }
 
 func TestDisplayClusterList(t *testing.T) {
@@ -308,7 +381,7 @@ func TestCloneClusterForDistribution(t *testing.T) {
 
 		require.NotNil(t, clone)
 		require.Equal(t, v1alpha1.DistributionKind, clone.Spec.Distribution)
-		require.Equal(t, "kind.yaml", clone.Spec.DistributionConfig)
+		require.Equal(t, defaultKindConfig, clone.Spec.DistributionConfig)
 		require.Equal(t, v1alpha1.DistributionK3d, original.Spec.Distribution)
 		require.Equal(t, "custom.yaml", original.Spec.DistributionConfig)
 	})
@@ -322,9 +395,9 @@ func TestDefaultDistributionConfigPath(t *testing.T) {
 		distribution v1alpha1.Distribution
 		expected     string
 	}{
-		{name: "kind", distribution: v1alpha1.DistributionKind, expected: "kind.yaml"},
-		{name: "k3d", distribution: v1alpha1.DistributionK3d, expected: "k3d.yaml"},
-		{name: "unknown", distribution: "other", expected: "kind.yaml"},
+		{name: "kind", distribution: v1alpha1.DistributionKind, expected: defaultKindConfig},
+		{name: "k3d", distribution: v1alpha1.DistributionK3d, expected: defaultK3dConfig},
+		{name: "unknown", distribution: "other", expected: defaultKindConfig},
 	}
 
 	for _, tc := range cases {
@@ -335,6 +408,24 @@ func TestDefaultDistributionConfigPath(t *testing.T) {
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+const (
+	defaultKindConfig = "kind.yaml"
+	defaultK3dConfig  = "k3d.yaml"
+)
+
+func buildClusterWithConfig(
+	distribution v1alpha1.Distribution,
+	distributionConfig string,
+) *v1alpha1.Cluster {
+	cluster := &v1alpha1.Cluster{}
+	cluster.Spec.Distribution = distribution
+	cluster.Spec.DistributionConfig = distributionConfig
+	cluster.Spec.SourceDirectory = "k8s"
+	cluster.Spec.Connection.Kubeconfig = "~/.kube/" + distributionConfig
+
+	return cluster
 }
 
 //nolint:paralleltest // Uses t.Chdir for snapshot setup.
