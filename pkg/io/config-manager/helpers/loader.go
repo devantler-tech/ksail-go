@@ -32,7 +32,7 @@ func NewValidationSummaryError(errorCount, warningCount int) *ValidationSummaryE
 
 // Error implements the error interface, returning a summary message.
 func (e *ValidationSummaryError) Error() string {
-	if e.WarningCount > 0 {
+	if e.ErrorCount > 0 && e.WarningCount > 0 {
 		return fmt.Sprintf(
 			"validation reported %d error(s) and %d warning(s)",
 			e.ErrorCount,
@@ -40,7 +40,11 @@ func (e *ValidationSummaryError) Error() string {
 		)
 	}
 
-	return fmt.Sprintf("validation reported %d error(s)", e.ErrorCount)
+	if e.ErrorCount > 0 {
+		return fmt.Sprintf("validation reported %d error(s)", e.ErrorCount)
+	}
+
+	return fmt.Sprintf("validation reported %d warning(s)", e.WarningCount)
 }
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.

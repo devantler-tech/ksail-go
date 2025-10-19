@@ -494,4 +494,11 @@ func TestValidationSummaryError(t *testing.T) {
 		err := helpers.NewValidationSummaryError(5, 0)
 		assert.Equal(t, "validation reported 5 error(s)", err.Error())
 	})
+
+	t.Run("formats error with warnings only", func(t *testing.T) {
+		t.Parallel()
+
+		err := helpers.NewValidationSummaryError(0, 2)
+		assert.Equal(t, "validation reported 2 warning(s)", err.Error())
+	})
 }
