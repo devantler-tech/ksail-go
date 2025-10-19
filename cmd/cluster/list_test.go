@@ -249,6 +249,52 @@ func TestListClusters_AllFlagWithoutDistributionFactory(t *testing.T) {
 	require.Equal(t, 1, provisioner.listCalls)
 }
 
+func TestListAdditionalDistributionClusters_Success(t *testing.T) {
+	t.Parallel()
+
+	cmd, out := newCommandWithBuffer(t)
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
+	clusterCfg.Spec.DistributionConfig = "kind.yaml"
+
+	otherProvisioner := &recordingListProvisioner{listResult: []string{"k3d-primary"}}
+	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
+
+	err := listAdditionalDistributionClusters(
+		cmd,
+		clusterCfg,
+		ListDeps{DistributionFactory: otherFactory},
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, otherFactory.callCount)
+	require.Equal(t, 1, otherProvisioner.listCalls)
+	require.Len(t, otherFactory.captured, 1)
+	require.NotNil(t, otherFactory.captured[0])
+	require.Equal(t, v1alpha1.DistributionK3d, otherFactory.captured[0].Spec.Distribution)
+	require.Equal(t, "k3d.yaml", otherFactory.captured[0].Spec.DistributionConfig)
+
+	output := out.String()
+	if !strings.Contains(output, "k3d: k3d-primary") {
+		t.Fatalf("expected k3d cluster list output, got %q", output)
+	}
+}
+
+func TestListDistributionClusters_NilClusterReturnsNil(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := newCommandWithBuffer(t)
+	factory := &recordingListFactory{provisioner: &recordingListProvisioner{}}
+
+	err := listDistributionClusters(
+		cmd,
+		nil,
+		ListDeps{DistributionFactory: factory},
+		v1alpha1.DistributionKind,
+	)
+	require.NoError(t, err)
+	require.Equal(t, 0, factory.callCount)
+}
+
 func TestDisplayClusterList(t *testing.T) {
 	t.Parallel()
 
