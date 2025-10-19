@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
@@ -33,18 +34,15 @@ func NewValidationSummaryError(errorCount, warningCount int) *ValidationSummaryE
 // Error implements the error interface, returning a summary message.
 func (e *ValidationSummaryError) Error() string {
 	if e.ErrorCount > 0 && e.WarningCount > 0 {
-		return fmt.Sprintf(
-			"validation reported %d error(s) and %d warning(s)",
-			e.ErrorCount,
-			e.WarningCount,
-		)
+		return "validation reported " + strconv.Itoa(e.ErrorCount) +
+			" error(s) and " + strconv.Itoa(e.WarningCount) + " warning(s)"
 	}
 
 	if e.ErrorCount > 0 {
-		return fmt.Sprintf("validation reported %d error(s)", e.ErrorCount)
+		return "validation reported " + strconv.Itoa(e.ErrorCount) + " error(s)"
 	}
 
-	return fmt.Sprintf("validation reported %d warning(s)", e.WarningCount)
+	return "validation reported " + strconv.Itoa(e.WarningCount) + " warning(s)"
 }
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
