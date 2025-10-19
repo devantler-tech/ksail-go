@@ -343,68 +343,72 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
 }
 
+type scaffoldContextCase struct {
+	distribution v1alpha1.Distribution
+	initial      string
+	expected     string
+	expectErr    bool
+}
+
+func (c scaffoldContextCase) run(t *testing.T) {
+	t.Helper()
+
+	capturedContext, err := captureScaffoldedContext(t, c.distribution, c.initial)
+
+	if c.expectErr {
+		require.Error(t, err)
+		require.Equal(t, c.expected, capturedContext)
+
+		return
+	}
+
+	require.NoError(t, err)
+	require.Equal(t, c.expected, capturedContext)
+}
+
 func TestScaffoldAppliesContextDefaults(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name         string
-		distribution v1alpha1.Distribution
-		initial      string
-		expected     string
-		expectErr    bool
+		name     string
+		scenario scaffoldContextCase
 	}{
 		{
-			name:         "KindDefaultContext",
-			distribution: v1alpha1.DistributionKind,
-			expected:     "kind-kind",
+			name: "KindDefaultContext",
+			scenario: scaffoldContextCase{
+				distribution: v1alpha1.DistributionKind,
+				expected:     "kind-kind",
+			},
 		},
 		{
-			name:         "K3dDefaultContext",
-			distribution: v1alpha1.DistributionK3d,
-			expected:     "k3d-k3d-default",
+			name: "K3dDefaultContext",
+			scenario: scaffoldContextCase{
+				distribution: v1alpha1.DistributionK3d,
+				expected:     "k3d-k3d-default",
+			},
 		},
 		{
-			name:         "KeepExistingContext",
-			distribution: v1alpha1.DistributionKind,
-			initial:      "custom",
-			expected:     "custom",
+			name: "KeepExistingContext",
+			scenario: scaffoldContextCase{
+				distribution: v1alpha1.DistributionKind,
+				initial:      "custom",
+				expected:     "custom",
+			},
 		},
 		{
-			name:         "UnknownDistributionContext",
-			distribution: v1alpha1.Distribution("Unknown"),
-			expected:     "",
-			expectErr:    true,
+			name: "UnknownDistributionContext",
+			scenario: scaffoldContextCase{
+				distribution: v1alpha1.Distribution("Unknown"),
+				expected:     "",
+				expectErr:    true,
+			},
 		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
-			capturedContext, err := captureScaffoldedContext(
-				t,
-				testCase.distribution,
-				testCase.initial,
-			)
-			if testCase.expectErr {
-				require.Error(t, err)
-
-				if capturedContext != testCase.expected {
-					t.Fatalf(
-						"expected context %q when error occurs, got %q",
-						testCase.expected,
-						capturedContext,
-					)
-				}
-
-				return
-			}
-
-			require.NoError(t, err)
-
-			if capturedContext != testCase.expected {
-				t.Fatalf("expected context %q, got %q", testCase.expected, capturedContext)
-			}
+			testCase.scenario.run(t)
 		})
 	}
 }

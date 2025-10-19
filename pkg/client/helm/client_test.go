@@ -327,71 +327,77 @@ func TestHelmClientContextSupport(t *testing.T) {
 	}
 }
 
+type repositoryRequestCase struct {
+	name    string
+	entry   *RepositoryEntry
+	ctxFn   func() context.Context
+	wantErr error
+}
+
+func (c repositoryRequestCase) run(t *testing.T) {
+	t.Helper()
+
+	ctx := context.Background()
+	if c.ctxFn != nil {
+		ctx = c.ctxFn()
+	}
+
+	err := validateRepositoryRequest(ctx, c.entry)
+
+	if c.wantErr == nil {
+		testutils.ExpectNoError(t, err, "validateRepositoryRequest")
+
+		return
+	}
+
+	if !errors.Is(err, c.wantErr) {
+		t.Fatalf("expected error %v, got %v", c.wantErr, err)
+	}
+}
+
 func TestValidateRepositoryRequest(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name    string
-		ctx     context.Context
-		entry   *RepositoryEntry
-		expects error
-	}{
+	testCases := []repositoryRequestCase{
 		{
 			name:    "NilEntry",
-			ctx:     context.Background(),
 			entry:   nil,
-			expects: errRepositoryEntryRequired,
+			wantErr: errRepositoryEntryRequired,
 		},
 		{
-			name: "MissingName",
-			ctx:  context.Background(),
-			entry: &RepositoryEntry{
-				URL: "https://example.com/charts",
-			},
-			expects: errRepositoryNameRequired,
+			name:    "MissingName",
+			entry:   &RepositoryEntry{URL: "https://example.com/charts"},
+			wantErr: errRepositoryNameRequired,
 		},
 		{
-			name: "ContextCancelled",
-			ctx: func() context.Context {
+			name:  "ContextCancelled",
+			entry: &RepositoryEntry{Name: "cilium"},
+			ctxFn: func() context.Context {
 				ctx, cancel := context.WithCancel(context.Background())
 				cancel()
 
 				return ctx
-			}(),
-			entry:   &RepositoryEntry{Name: "cilium"},
-			expects: context.Canceled,
+			},
+			wantErr: context.Canceled,
 		},
 		{
 			name: "Valid",
-			ctx:  context.Background(),
 			entry: &RepositoryEntry{
 				Name: "cilium",
 				URL:  "https://helm.cilium.io",
 			},
-			expects: nil,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-
-			err := validateRepositoryRequest(testCase.ctx, testCase.entry)
-
-			if testCase.expects == nil {
-				testutils.ExpectNoError(t, err, "validateRepositoryRequest")
-
-				return
-			}
-
-			if !errors.Is(err, testCase.expects) {
-				t.Fatalf("expected error %v, got %v", testCase.expects, err)
-			}
+			testCase.run(t)
 		})
 	}
 }
 
-func TestEnsureRepositoryConfig(t *testing.T) {
+func TestEnsureRepositoryConfig(t *testing.T) { //nolint:tparallel // uses Setenv in subtests
 	t.Run("ErrorsWhenUnset", func(t *testing.T) {
 		t.Parallel()
 
@@ -419,7 +425,8 @@ func TestEnsureRepositoryConfig(t *testing.T) {
 			t.Fatalf("expected repo file %q, got %q", repoFile, returned)
 		}
 
-		if _, statErr := os.Stat(dir); statErr != nil {
+		_, statErr := os.Stat(dir)
+		if statErr != nil {
 			t.Fatalf("expected repo directory to exist: %v", statErr)
 		}
 	})
@@ -444,7 +451,7 @@ func TestLoadOrInitRepositoryFile(t *testing.T) {
 	})
 }
 
-func TestEnsureRepositoryCache(t *testing.T) {
+func TestEnsureRepositoryCache(t *testing.T) { //nolint:tparallel // uses Setenv in subtests
 	t.Run("ErrorsWhenUnset", func(t *testing.T) {
 		t.Parallel()
 
@@ -471,7 +478,8 @@ func TestEnsureRepositoryCache(t *testing.T) {
 			t.Fatalf("expected cache path %q, got %q", dir, cache)
 		}
 
-		if _, statErr := os.Stat(dir); statErr != nil {
+		_, statErr := os.Stat(dir)
+		if statErr != nil {
 			t.Fatalf("expected cache directory to exist: %v", statErr)
 		}
 	})
