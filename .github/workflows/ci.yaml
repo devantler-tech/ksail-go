@@ -38,6 +38,8 @@ jobs:
       - name: 📤 Commit and push changes if any
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -49,7 +51,7 @@ jobs:
             git commit -m "chore: apply pre-commit hooks [skip ci]"
             
             # Push using token explicitly (not persisted in git config)
-            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
           else
             echo "No changes to commit"
           fi
