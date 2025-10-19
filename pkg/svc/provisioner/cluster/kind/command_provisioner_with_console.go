@@ -1,13 +1,14 @@
-// This file contains a proof-of-concept implementation of the Kind provisioner
-// using Cobra commands. See docs/kind-cobra-analysis.md for why this is NOT recommended.
+// This file demonstrates Option 1 from docs/kind-console-logging-options.md
+// It shows how to modify the POC to provide console logging like k3d.
 //
-//nolint:godoclint,revive,dupl // POC file with expected duplication with console demo
+//nolint:godoclint,revive,dupl // Demo file with expected duplication from POC
 package kindprovisioner
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"time"
@@ -25,35 +26,47 @@ import (
 	"sigs.k8s.io/kind/pkg/log"
 )
 
-// NOTE: This is a PROOF-OF-CONCEPT implementation demonstrating that it's TECHNICALLY POSSIBLE
-// to use kind's Cobra commands, but it is NOT RECOMMENDED for production use.
-// See docs/kind-cobra-analysis.md for detailed reasoning.
+// NOTE: This demonstrates Option 1: Using Kind's Cobra commands WITH console output.
+// This provides the same real-time logging UX as k3d provisioner.
+// See docs/kind-console-logging-options.md for details.
 
-// KindCommandRunner executes Cobra commands with kind-specific requirements.
-type KindCommandRunner interface {
-	Run(ctx context.Context, cmd *cobra.Command, args []string) (string, string, error)
+// ConsoleKindRunner executes kind commands and displays output to console.
+type ConsoleKindRunner struct {
+	stdout io.Writer
+	stderr io.Writer
 }
 
-// SimpleKindRunner is a basic command runner for kind commands.
-type SimpleKindRunner struct{}
+// NewConsoleKindRunner creates a command runner that displays output to console.
+func NewConsoleKindRunner(stdout, stderr io.Writer) *ConsoleKindRunner {
+	if stdout == nil {
+		stdout = os.Stdout
+	}
 
-// NewSimpleKindRunner creates a new simple kind command runner.
-func NewSimpleKindRunner() *SimpleKindRunner {
-	return &SimpleKindRunner{}
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+
+	return &ConsoleKindRunner{
+		stdout: stdout,
+		stderr: stderr,
+	}
 }
 
-// Run executes a kind Cobra command and returns stdout, stderr, and any error.
-func (r *SimpleKindRunner) Run(
+// Run executes a kind Cobra command and displays output in real-time.
+func (r *ConsoleKindRunner) Run(
 	ctx context.Context,
 	cmd *cobra.Command,
 	args []string,
 ) (string, string, error) {
 	var outBuf, errBuf bytes.Buffer
 
+	// KEY DIFFERENCE: Use io.MultiWriter to display AND capture
+	// This is how k3d shows console output to users
+	cmd.SetOut(io.MultiWriter(&outBuf, r.stdout))
+	cmd.SetErr(io.MultiWriter(&errBuf, r.stderr))
+
 	cmd.SetContext(ctx)
 	cmd.SetArgs(args)
-	cmd.SetOut(&outBuf)
-	cmd.SetErr(&errBuf)
 	cmd.SilenceUsage = true
 	cmd.SilenceErrors = true
 
@@ -62,43 +75,33 @@ func (r *SimpleKindRunner) Run(
 	return outBuf.String(), errBuf.String(), execErr
 }
 
-// KindCommandBuilders supplies constructors for kind Cobra commands.
-type KindCommandBuilders struct {
-	Create func(logger log.Logger, streams kindcmd.IOStreams) *cobra.Command
-	Delete func(logger log.Logger, streams kindcmd.IOStreams) *cobra.Command
-	List   func(logger log.Logger, streams kindcmd.IOStreams) *cobra.Command
-}
-
-// KindCommandProvisionerOption configures the kind command provisioner.
-type KindCommandProvisionerOption func(*KindCommandProvisionerPOC)
-
-// KindCommandProvisionerPOC is a PROOF-OF-CONCEPT provisioner using kind's Cobra commands.
-// This demonstrates it's technically possible but NOT RECOMMENDED.
-// See docs/kind-cobra-analysis.md for why the current Provider-based approach is better.
-type KindCommandProvisionerPOC struct {
+// KindConsoleProvisioner is like KindCommandProvisionerPOC but displays console output.
+// This demonstrates how to get the same user experience as k3d provisioner.
+type KindConsoleProvisioner struct {
 	kubeConfig string
 	kindConfig *v1alpha4.Cluster
 	client     client.ContainerAPIClient
 	runner     KindCommandRunner
 	builders   KindCommandBuilders
-	provider   KindProvider // Still needed for ListNodes in Start/Stop
+	provider   KindProvider
 }
 
-// NewKindCommandProvisionerPOC creates a proof-of-concept command-based provisioner.
-// WARNING: This is for demonstration only. Use NewKindClusterProvisioner for production.
-func NewKindCommandProvisionerPOC(
+// NewKindConsoleProvisioner creates a provisioner that displays console output.
+// This demonstrates Option 1 from docs/kind-console-logging-options.md.
+func NewKindConsoleProvisioner(
 	kindConfig *v1alpha4.Cluster,
 	kubeConfig string,
 	client client.ContainerAPIClient,
 	provider KindProvider,
+	stdout, stderr io.Writer,
 	opts ...KindCommandProvisionerOption,
-) *KindCommandProvisionerPOC {
-	prov := &KindCommandProvisionerPOC{
+) *KindConsoleProvisioner {
+	prov := &KindConsoleProvisioner{
 		kubeConfig: kubeConfig,
 		kindConfig: kindConfig,
 		client:     client,
 		provider:   provider,
-		runner:     NewSimpleKindRunner(),
+		runner:     NewConsoleKindRunner(stdout, stderr),
 		builders: KindCommandBuilders{
 			Create: createcluster.NewCommand,
 			Delete: deletecluster.NewCommand,
@@ -108,45 +111,18 @@ func NewKindCommandProvisionerPOC(
 
 	for _, opt := range opts {
 		if opt != nil {
-			opt(prov)
+			opt((*KindCommandProvisionerPOC)(prov))
 		}
 	}
 
 	return prov
 }
 
-// WithKindCommandRunner overrides the command runner.
-func WithKindCommandRunner(runner KindCommandRunner) KindCommandProvisionerOption {
-	return func(p *KindCommandProvisionerPOC) {
-		if runner != nil {
-			p.runner = runner
-		}
-	}
-}
-
-// WithKindCommandBuilders overrides command builders.
-func WithKindCommandBuilders(builders KindCommandBuilders) KindCommandProvisionerOption {
-	return func(prov *KindCommandProvisionerPOC) {
-		if builders.Create != nil {
-			prov.builders.Create = builders.Create
-		}
-
-		if builders.Delete != nil {
-			prov.builders.Delete = builders.Delete
-		}
-
-		if builders.List != nil {
-			prov.builders.List = builders.List
-		}
-	}
-}
-
-// Create creates a kind cluster using the Cobra command.
-// NOTE: This requires serializing config to a temp file - a significant limitation.
-func (k *KindCommandProvisionerPOC) Create(ctx context.Context, name string) error {
+// Create creates a kind cluster and displays progress to console.
+func (k *KindConsoleProvisioner) Create(ctx context.Context, name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	// LIMITATION: Must serialize config to temp file for Cobra command
+	// Serialize config to temp file (limitation of Cobra commands)
 	tmpFile, err := os.CreateTemp("", "kind-config-*.yaml")
 	if err != nil {
 		return fmt.Errorf("create temp config file: %w", err)
@@ -181,6 +157,7 @@ func (k *KindCommandProvisionerPOC) Create(ctx context.Context, name string) err
 
 	args := []string{"--name", target, "--config", tmpFile.Name()}
 
+	// Console output will be displayed in real-time by ConsoleKindRunner
 	_, stderr, err := k.runner.Run(ctx, cmd, args)
 	if err != nil {
 		return fmt.Errorf("failed to create kind cluster: %w (stderr: %s)", err, stderr)
@@ -189,8 +166,8 @@ func (k *KindCommandProvisionerPOC) Create(ctx context.Context, name string) err
 	return nil
 }
 
-// Delete deletes a kind cluster using the Cobra command.
-func (k *KindCommandProvisionerPOC) Delete(ctx context.Context, name string) error {
+// Delete deletes a kind cluster and displays progress to console.
+func (k *KindConsoleProvisioner) Delete(ctx context.Context, name string) error {
 	target := setName(name, k.kindConfig.Name)
 
 	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
@@ -211,6 +188,7 @@ func (k *KindCommandProvisionerPOC) Delete(ctx context.Context, name string) err
 		args = append(args, "--kubeconfig", kubeconfigPath)
 	}
 
+	// Console output will be displayed in real-time
 	_, stderr, err := k.runner.Run(ctx, cmd, args)
 	if err != nil {
 		return fmt.Errorf("failed to delete kind cluster: %w (stderr: %s)", err, stderr)
@@ -219,14 +197,12 @@ func (k *KindCommandProvisionerPOC) Delete(ctx context.Context, name string) err
 	return nil
 }
 
-// Start starts a kind cluster.
-// NOTE: No Cobra command exists - must use Provider interface + Docker client.
-func (k *KindCommandProvisionerPOC) Start(ctx context.Context, name string) error {
+// Start starts a kind cluster (no Cobra command available).
+func (k *KindConsoleProvisioner) Start(ctx context.Context, name string) error {
 	const dockerStartTimeout = 30 * time.Second
 
 	target := setName(name, k.kindConfig.Name)
 
-	// LIMITATION: Must use Provider interface - no Cobra command for ListNodes
 	nodes, err := k.provider.ListNodes(target)
 	if err != nil {
 		return fmt.Errorf("cluster '%s': %w", target, err)
@@ -252,14 +228,12 @@ func (k *KindCommandProvisionerPOC) Start(ctx context.Context, name string) erro
 	return nil
 }
 
-// Stop stops a kind cluster.
-// NOTE: No Cobra command exists - must use Provider interface + Docker client.
-func (k *KindCommandProvisionerPOC) Stop(ctx context.Context, name string) error {
+// Stop stops a kind cluster (no Cobra command available).
+func (k *KindConsoleProvisioner) Stop(ctx context.Context, name string) error {
 	const dockerStopTimeout = 60 * time.Second
 
 	target := setName(name, k.kindConfig.Name)
 
-	// LIMITATION: Must use Provider interface - no Cobra command for ListNodes
 	nodes, err := k.provider.ListNodes(target)
 	if err != nil {
 		return fmt.Errorf("failed to list nodes for cluster '%s': %w", target, err)
@@ -285,8 +259,8 @@ func (k *KindCommandProvisionerPOC) Stop(ctx context.Context, name string) error
 	return nil
 }
 
-// List returns all kind clusters using the Cobra command.
-func (k *KindCommandProvisionerPOC) List(ctx context.Context) ([]string, error) {
+// List returns all kind clusters and displays output to console.
+func (k *KindConsoleProvisioner) List(ctx context.Context) ([]string, error) {
 	logger := log.NoopLogger{}
 
 	var outBuf, errBuf bytes.Buffer
@@ -298,6 +272,7 @@ func (k *KindCommandProvisionerPOC) List(ctx context.Context) ([]string, error) 
 
 	cmd := k.builders.List(logger, streams)
 
+	// Console output will be displayed in real-time
 	stdout, stderr, err := k.runner.Run(ctx, cmd, []string{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list kind clusters: %w (stderr: %s)", err, stderr)
@@ -319,7 +294,7 @@ func (k *KindCommandProvisionerPOC) List(ctx context.Context) ([]string, error) 
 }
 
 // Exists checks if a kind cluster exists.
-func (k *KindCommandProvisionerPOC) Exists(ctx context.Context, name string) (bool, error) {
+func (k *KindConsoleProvisioner) Exists(ctx context.Context, name string) (bool, error) {
 	clusters, err := k.List(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to list kind clusters: %w", err)
