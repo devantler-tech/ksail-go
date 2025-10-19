@@ -17,12 +17,12 @@ var (
 	errBaseFailure   = errors.New("base failure")
 )
 
-func TestGenericCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
+func TestCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 	t.Parallel()
 
 	var stdout, stderr bytes.Buffer
 
-	runner := commandrunner.NewGenericCobraCommandRunner(&stdout, &stderr)
+	runner := commandrunner.NewCobraCommandRunner(&stdout, &stderr)
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, _ []string) {
@@ -44,12 +44,12 @@ func TestGenericCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 	}
 }
 
-func TestGenericCobraCommandRunner_RunReturnsError(t *testing.T) {
+func TestCobraCommandRunner_RunReturnsError(t *testing.T) {
 	t.Parallel()
 
 	var stdout, stderr bytes.Buffer
 
-	runner := commandrunner.NewGenericCobraCommandRunner(&stdout, &stderr)
+	runner := commandrunner.NewCobraCommandRunner(&stdout, &stderr)
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -78,11 +78,11 @@ func TestGenericCobraCommandRunner_RunReturnsError(t *testing.T) {
 	}
 }
 
-func TestGenericCobraCommandRunner_DefaultsToOsStdout(t *testing.T) {
+func TestCobraCommandRunner_DefaultsToOsStdout(t *testing.T) {
 	t.Parallel()
 
 	// Test that nil defaults work
-	runner := commandrunner.NewGenericCobraCommandRunner(nil, nil)
+	runner := commandrunner.NewCobraCommandRunner(nil, nil)
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, _ []string) {

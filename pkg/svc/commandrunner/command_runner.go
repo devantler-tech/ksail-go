@@ -25,18 +25,18 @@ type CommandRunner interface {
 	Run(ctx context.Context, cmd *cobra.Command, args []string) (CommandResult, error)
 }
 
-// GenericCobraCommandRunner executes any Cobra command with console output.
+// CobraCommandRunner executes any Cobra command with console output.
 // This runner displays command output to stdout/stderr in real-time while
 // also capturing it for the result.
-type GenericCobraCommandRunner struct {
+type CobraCommandRunner struct {
 	stdout io.Writer
 	stderr io.Writer
 }
 
-// NewGenericCobraCommandRunner creates a command runner that works with any Cobra command.
+// NewCobraCommandRunner creates a command runner that works with any Cobra command.
 // It displays output to the console in real-time (like running the binary directly)
 // while also capturing output for programmatic use.
-func NewGenericCobraCommandRunner(stdout, stderr io.Writer) *GenericCobraCommandRunner {
+func NewCobraCommandRunner(stdout, stderr io.Writer) *CobraCommandRunner {
 	if stdout == nil {
 		stdout = os.Stdout
 	}
@@ -45,14 +45,14 @@ func NewGenericCobraCommandRunner(stdout, stderr io.Writer) *GenericCobraCommand
 		stderr = os.Stderr
 	}
 
-	return &GenericCobraCommandRunner{
+	return &CobraCommandRunner{
 		stdout: stdout,
 		stderr: stderr,
 	}
 }
 
 // Run executes a Cobra command and displays output in real-time to console.
-func (r *GenericCobraCommandRunner) Run(
+func (r *CobraCommandRunner) Run(
 	ctx context.Context,
 	cmd *cobra.Command,
 	args []string,

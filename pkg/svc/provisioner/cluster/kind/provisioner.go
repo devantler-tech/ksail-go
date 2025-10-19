@@ -61,7 +61,7 @@ func NewKindClusterProvisioner(
 		kubeConfig,
 		provider,
 		client,
-		commandrunner.NewGenericCobraCommandRunner(os.Stdout, os.Stderr),
+		commandrunner.NewCobraCommandRunner(os.Stdout, os.Stderr),
 	)
 }
 
