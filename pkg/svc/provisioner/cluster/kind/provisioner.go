@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"slices"
 	"time"
@@ -112,11 +113,10 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 
 	logger := log.NoopLogger{}
 
-	var outBuf, errBuf bytes.Buffer
-
+	// Use io.Discard since the runner handles output buffering via MultiWriter
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    io.Discard,
+		ErrOut: io.Discard,
 	}
 
 	cmd := createcluster.NewCommand(logger, streams)
@@ -139,11 +139,10 @@ func (k *KindClusterProvisioner) Delete(ctx context.Context, name string) error 
 
 	logger := log.NoopLogger{}
 
-	var outBuf, errBuf bytes.Buffer
-
+	// Use io.Discard since the runner handles output buffering via MultiWriter
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    io.Discard,
+		ErrOut: io.Discard,
 	}
 
 	cmd := deletecluster.NewCommand(logger, streams)
@@ -232,11 +231,10 @@ func (k *KindClusterProvisioner) Stop(ctx context.Context, name string) error {
 func (k *KindClusterProvisioner) List(ctx context.Context) ([]string, error) {
 	logger := log.NoopLogger{}
 
-	var outBuf, errBuf bytes.Buffer
-
+	// Use io.Discard since the runner handles output buffering via MultiWriter
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    io.Discard,
+		ErrOut: io.Discard,
 	}
 
 	cmd := getclusters.NewCommand(logger, streams)
