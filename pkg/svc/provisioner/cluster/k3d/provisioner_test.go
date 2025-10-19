@@ -3,420 +3,338 @@ package k3dprovisioner_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
-	"github.com/docker/go-connections/nat"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/k3d-io/k3d/v5/pkg/types"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-var errK3dBoom = errors.New("k3d boom")
+var errBoom = errors.New("boom")
 
-func TestK3dCreateSuccess(t *testing.T) {
-	t.Parallel()
-	runK3dNamedActionCases(
+type stubRunner struct {
+	recorded struct {
+		args []string
+	}
+	result commandrunner.CommandResult
+	err    error
+}
+
+func (s *stubRunner) Run(
+	_ context.Context,
+	_ *cobra.Command,
+	args []string,
+) (commandrunner.CommandResult, error) {
+	s.recorded.args = append([]string(nil), args...)
+	if s.err != nil {
+		mergeErr := commandrunner.MergeCommandError(s.err, s.result)
+
+		return s.result, fmt.Errorf("merge command error: %w", mergeErr)
+	}
+
+	return s.result, nil
+}
+
+//nolint:paralleltest
+func TestCreateUsesConfigFlag(t *testing.T) {
+	cfg := buildSimpleConfig("cfg-name")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"path/to/k3d.yaml",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+
+	err := prov.Create(context.Background(), "")
+	require.NoError(t, err)
+
+	assert.ElementsMatch(
 		t,
-		"Create()",
-		func(
-			clientProvider *k3dprovisioner.MockK3dClientProvider,
-			configProvider *k3dprovisioner.MockK3dConfigProvider,
-			_ string,
-		) {
-			expectTransformSimpleToClusterConfigOK(configProvider)
-			clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
-		},
-		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Create(context.Background(), name)
-		},
+		[]string{"--config", "path/to/k3d.yaml", "cfg-name"},
+		runner.recorded.args,
 	)
 }
 
-func TestK3dCreateErrorTransformFailed(t *testing.T) {
-	t.Parallel()
-	provisioner, _, configProvider := newK3dProvisionerForTest(t)
-	expectTransformSimpleToClusterConfigErr(configProvider, errK3dBoom)
-
-	err := provisioner.Create(context.Background(), "my-cluster")
-
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		errK3dBoom,
-		"transform simple to cluster config",
-		"Create()",
+//nolint:paralleltest
+func TestDeleteDefaultsToConfigName(t *testing.T) {
+	cfg := buildSimpleConfig("from-config")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+
+	err := prov.Delete(context.Background(), "")
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"from-config"}, runner.recorded.args)
 }
 
-func TestK3dCreateErrorClusterRunFailed(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, configProvider := newK3dProvisionerForTest(t)
-
-	expectTransformSimpleToClusterConfigOK(configProvider)
-	clientProvider.On("ClusterRun", mock.Anything, mock.Anything, mock.Anything).Return(errK3dBoom)
-
-	err := provisioner.Create(context.Background(), "my-cluster")
-
-	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster run", "Create()")
-}
-
-func TestK3dDeleteSuccess(t *testing.T) {
-	t.Parallel()
-	runK3dNamedActionCases(
-		t,
-		"Delete()",
-		func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
-			clientProvider.On("ClusterDelete", mock.Anything, mock.Anything, mock.MatchedBy(func(cluster *types.Cluster) bool {
-				return cluster.Name == name
-			}), mock.Anything).
-				Return(nil)
-		},
-		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Delete(context.Background(), name)
-		},
+//nolint:paralleltest
+func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
+	cfg := buildSimpleConfig("cluster-a")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"path/to/config.yaml",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+
+	err := prov.Start(context.Background(), "")
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"cluster-a"}, runner.recorded.args)
 }
 
-func TestK3dDeleteErrorDeleteFailed(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clientProvider.On("ClusterDelete", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errK3dBoom)
-
-	err := provisioner.Delete(context.Background(), "bad")
-
-	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster delete", "Delete()")
-}
-
-func TestK3dStartSuccess(t *testing.T) {
-	t.Parallel()
-	runK3dNamedActionCases(
-		t,
-		"Start()",
-		func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
-			cluster := expectClusterGetByName(clientProvider, name)
-			clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).
-				Return(nil)
-		},
-		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Start(context.Background(), name)
-		},
+//nolint:paralleltest
+func TestStopUsesExplicitName(t *testing.T) {
+	cfg := buildSimpleConfig("cluster-a")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+
+	err := prov.Stop(context.Background(), "custom")
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"custom"}, runner.recorded.args)
 }
 
-func TestK3dStartErrorGetFailed(t *testing.T) {
-	t.Parallel()
-	runK3dClusterGetError(t, "Start()", func(p *k3dprovisioner.K3dClusterProvisioner) error {
-		return p.Start(context.Background(), "my-cluster")
-	})
-}
-
-func TestK3dStartErrorStartFailed(t *testing.T) {
-	t.Parallel()
-	runK3dClusterOpErrorAfterGet(
-		t,
-		"Start()",
-		func(clientProvider *k3dprovisioner.MockK3dClientProvider, cluster *types.Cluster) {
-			clientProvider.On("ClusterStart", mock.Anything, mock.Anything, cluster, mock.Anything).
-				Return(errK3dBoom)
-		},
-		func(p *k3dprovisioner.K3dClusterProvisioner) error {
-			return p.Start(context.Background(), "my-cluster")
-		},
-		"cluster start",
+//nolint:paralleltest
+func TestListAddsJSONOutputFlag(t *testing.T) {
+	cfg := buildSimpleConfig("any")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+
+	_, err := prov.List(context.Background())
+	require.NoError(t, err)
+
+	assert.Equal(t, []string{"--output", "json"}, runner.recorded.args)
 }
 
-func TestK3dStopSuccess(t *testing.T) {
-	t.Parallel()
-	runK3dNamedActionCases(
-		t,
-		"Stop()",
-		func(clientProvider *k3dprovisioner.MockK3dClientProvider, _ *k3dprovisioner.MockK3dConfigProvider, name string) {
-			cluster := expectClusterGetByName(clientProvider, name)
-			clientProvider.On("ClusterStop", mock.Anything, mock.Anything, cluster).Return(nil)
-		},
-		func(prov *k3dprovisioner.K3dClusterProvisioner, name string) error {
-			return prov.Stop(context.Background(), name)
-		},
+//nolint:paralleltest
+func TestListParsesJSON(t *testing.T) {
+	cfg := buildSimpleConfig("any")
+	runner := &stubRunner{}
+	runner.result.Stdout = `[{"name":"alpha"},{"name":"beta"}]`
+
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+	names, err := prov.List(context.Background())
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"alpha", "beta"}, names)
 }
 
-func TestK3dStopErrorGetFailed(t *testing.T) {
-	t.Parallel()
-	runK3dClusterGetError(t, "Stop()", func(p *k3dprovisioner.K3dClusterProvisioner) error {
-		return p.Stop(context.Background(), "my-cluster")
-	})
-}
+//nolint:paralleltest
+func TestListReturnsErrorWhenJSONInvalid(t *testing.T) {
+	cfg := buildSimpleConfig("any")
+	runner := &stubRunner{}
+	runner.result.Stdout = `not-json`
 
-func TestK3dStopErrorStopFailed(t *testing.T) {
-	t.Parallel()
-	runK3dClusterOpErrorAfterGet(
-		t,
-		"Stop()",
-		func(clientProvider *k3dprovisioner.MockK3dClientProvider, cluster *types.Cluster) {
-			clientProvider.On("ClusterStop", mock.Anything, mock.Anything, cluster).
-				Return(errK3dBoom)
-		},
-		func(p *k3dprovisioner.K3dClusterProvisioner) error { return p.Stop(context.Background(), "my-cluster") },
-		"cluster stop",
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
 	)
+	_, err := prov.List(context.Background())
+
+	require.ErrorContains(t, err, "parse output")
 }
 
-func TestK3dListSuccess(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clusters := []*types.Cluster{
-		{Name: "cluster-a"},
-		{Name: "cluster-b"},
-	}
-	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
+//nolint:paralleltest
+func TestExistsReturnsFalseWhenNameEmpty(t *testing.T) {
+	cfg := buildSimpleConfig("")
+	runner := &stubRunner{}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
 
-	got, err := provisioner.List(context.Background())
+	exists, err := prov.Exists(context.Background(), "")
 
-	require.NoError(t, err, "List()")
-	assert.Equal(t, []string{"cluster-a", "cluster-b"}, got, "List()")
+	require.NoError(t, err)
+	assert.False(t, exists)
 }
 
-func TestK3dListErrorListFailed(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
+//nolint:paralleltest
+func TestCommandErrorsIncludeStdStreams(t *testing.T) {
+	cfg := buildSimpleConfig("any")
+	runner := &stubRunner{}
+	runner.err = errBoom
+	runner.result.Stdout = "stdout"
+	runner.result.Stderr = "stderr"
 
-	_, err := provisioner.List(context.Background())
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+	err := prov.Create(context.Background(), "name")
 
-	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster list", "List()")
+	require.ErrorContains(t, err, "boom")
+	require.ErrorContains(t, err, "stdout")
+	require.ErrorContains(t, err, "stderr")
 }
 
-func TestK3dExistsSuccessFalse(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clusters := []*types.Cluster{
-		{Name: "cluster-x"},
-		{Name: "cluster-y"},
-	}
-	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
+//nolint:paralleltest
+func TestCustomCommandBuilder(t *testing.T) {
+	cfg := buildSimpleConfig("cfg")
+	runner := &stubRunner{}
+	builderCalls := 0
 
-	exists, err := provisioner.Exists(context.Background(), "not-here")
-	if err != nil {
-		t.Fatalf("Exists() unexpected error: %v", err)
-	}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		cfg,
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+		k3dprovisioner.WithCommandBuilders(k3dprovisioner.CommandBuilders{
+			Create: func() *cobra.Command {
+				builderCalls++
+				testT := t
 
-	if exists {
-		t.Fatalf("Exists() got true, want false")
-	}
+				return &cobra.Command{
+					Run: func(cmd *cobra.Command, _ []string) {
+						_, writeErr := fmt.Fprint(cmd.OutOrStdout(), "custom run")
+						require.NoError(testT, writeErr)
+					},
+				}
+			},
+		}),
+	)
+
+	_, err := prov.List(context.Background())
+	require.NoError(t, err)
+
+	err = prov.Create(context.Background(), "")
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, builderCalls, "custom builder should be used once for create")
 }
 
-func TestK3dExistsSuccessTrue(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clusters := []*types.Cluster{
-		{Name: "cluster-x"},
-		{Name: "cfg-name"},
-	}
-	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(clusters, nil)
-
-	exists, err := provisioner.Exists(context.Background(), "")
-	if err != nil {
-		t.Fatalf("Exists() unexpected error: %v", err)
-	}
-
-	if !exists {
-		t.Fatalf("Exists() got false, want true")
-	}
-}
-
-func TestK3dExistsErrorListFailed(t *testing.T) {
-	t.Parallel()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clientProvider.On("ClusterList", mock.Anything, mock.Anything).Return(nil, errK3dBoom)
-
-	exists, err := provisioner.Exists(context.Background(), "any")
-
-	if exists {
-		t.Fatalf("Exists() got true, want false when error occurs")
-	}
-
-	if !errors.Is(err, errK3dBoom) {
-		t.Fatalf("Exists() error = %v, want wrapped errK3dBoom", err)
-	}
-}
-
-// --- test helpers ---
-
-func newK3dProvisionerForTest(
-	t *testing.T,
-) (
-	*k3dprovisioner.K3dClusterProvisioner,
-	*k3dprovisioner.MockK3dClientProvider,
-	*k3dprovisioner.MockK3dConfigProvider,
-) {
-	t.Helper()
-	clientProvider := k3dprovisioner.NewMockK3dClientProvider(t)
-	configProvider := k3dprovisioner.NewMockK3dConfigProvider(t)
-
-	cfg := buildTestSimpleConfig()
-	provisioner := k3dprovisioner.NewK3dClusterProvisioner(cfg, clientProvider, configProvider)
-
-	return provisioner, clientProvider, configProvider
-}
-
-func buildTestSimpleConfig() *v1alpha5.SimpleConfig {
+func buildSimpleConfig(name string) *v1alpha5.SimpleConfig {
 	cfg := &v1alpha5.SimpleConfig{}
-	cfg.Name = "cfg-name"
+	cfg.Name = name
 
 	return cfg
 }
 
-type (
-	expectK3dProviderFn func(*k3dprovisioner.MockK3dClientProvider, *k3dprovisioner.MockK3dConfigProvider, string)
-	k3dActionFn         func(*k3dprovisioner.K3dClusterProvisioner, string) error
-)
+//nolint:paralleltest // Updates shared runner stub state for sequential assertions.
+func TestWithCommandBuildersOverridesAllCommands(t *testing.T) {
+	recorder := &builderRecorder{}
+	runner := &stubRunner{}
+	runner.result.Stdout = `[{"name":"custom"}]`
 
-func runK3dActionSuccess(
-	t *testing.T,
-	label string,
-	inputName, expectedName string,
-	expect expectK3dProviderFn,
-	action k3dActionFn,
-) {
-	t.Helper()
-	provisioner, clientProvider, configProvider := newK3dProvisionerForTest(t)
-	expect(clientProvider, configProvider, expectedName)
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+		k3dprovisioner.WithCommandBuilders(k3dprovisioner.CommandBuilders{
+			Create: recorder.createBuilder,
+			Delete: recorder.deleteBuilder,
+			Start:  recorder.startBuilder,
+			Stop:   recorder.stopBuilder,
+			List:   recorder.listBuilder,
+		}),
+	)
 
-	err := action(provisioner, inputName)
-	if err != nil {
-		t.Fatalf("%s unexpected error: %v", label, err)
-	}
+	require.NoError(t, prov.Create(context.Background(), ""))
+	require.NoError(t, prov.Delete(context.Background(), ""))
+	require.NoError(t, prov.Start(context.Background(), ""))
+	require.NoError(t, prov.Stop(context.Background(), ""))
+
+	names, err := prov.List(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []string{"custom"}, names)
+
+	assert.Equal(t, 1, recorder.createCalls, "expected custom create builder to be used")
+	assert.Equal(t, 1, recorder.deleteCalls, "expected custom delete builder to be used")
+	assert.Equal(t, 1, recorder.startCalls, "expected custom start builder to be used")
+	assert.Equal(t, 1, recorder.stopCalls, "expected custom stop builder to be used")
+	assert.Equal(t, 1, recorder.listCalls, "expected custom list builder to be used")
 }
 
-// runK3dNamedActionCases wraps the common two-case pattern for name handling
-// and executes the provided expectation+action for each.
-func runK3dNamedActionCases(
-	t *testing.T,
-	label string,
-	expect expectK3dProviderFn,
-	action k3dActionFn,
-) {
-	t.Helper()
-
-	cases := testutils.DefaultNameCases("cfg-name")
-	testutils.RunNameCases(t, cases, func(t *testing.T, c testutils.NameCase) {
-		t.Helper()
-		runK3dActionSuccess(t, label, c.InputName, c.ExpectedName, expect, action)
-	})
+type builderRecorder struct {
+	createCalls int
+	deleteCalls int
+	startCalls  int
+	stopCalls   int
+	listCalls   int
 }
 
-// runK3dClusterGetError DRYs the repeated "ClusterGet" failure scenario
-// for Start/Stop flows.
-func runK3dClusterGetError(
-	t *testing.T,
-	label string,
-	action func(*k3dprovisioner.K3dClusterProvisioner) error,
-) {
-	t.Helper()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.Anything).
-		Return(nil, errK3dBoom)
+func (b *builderRecorder) createBuilder() *cobra.Command {
+	b.createCalls++
 
-	err := action(provisioner)
-	testutils.AssertErrWrappedContains(t, err, errK3dBoom, "cluster get", label)
+	return &cobra.Command{}
 }
 
-// runK3dClusterOpErrorAfterGet DRYs the scenario where ClusterGet succeeds
-// but the subsequent operation (start/stop) fails with errK3dBoom.
-func runK3dClusterOpErrorAfterGet(
-	t *testing.T,
-	label string,
-	expectOp func(*k3dprovisioner.MockK3dClientProvider, *types.Cluster),
-	action func(*k3dprovisioner.K3dClusterProvisioner) error,
-	expectedMsg string,
-) {
-	t.Helper()
-	provisioner, clientProvider, _ := newK3dProvisionerForTest(t)
-	cluster := createClusterWithKubeAPI("my-cluster")
-	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.Anything).
-		Return(cluster, nil)
-	expectOp(clientProvider, cluster)
+func (b *builderRecorder) deleteBuilder() *cobra.Command {
+	b.deleteCalls++
 
-	err := action(provisioner)
-	testutils.AssertErrWrappedContains(t, err, errK3dBoom, expectedMsg, label)
+	return &cobra.Command{}
 }
 
-// expectTransformSimpleToClusterConfigOK sets up a successful TransformSimpleToClusterConfig expectation.
-func expectTransformSimpleToClusterConfigOK(configProvider *k3dprovisioner.MockK3dConfigProvider) {
-	configProvider.On(
-		"TransformSimpleToClusterConfig",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		"k3d.yaml",
-	).Return(createDefaultClusterConfig(), nil)
+func (b *builderRecorder) startBuilder() *cobra.Command {
+	b.startCalls++
+
+	return &cobra.Command{}
 }
 
-// expectTransformSimpleToClusterConfigErr sets up a failing TransformSimpleToClusterConfig expectation.
-func expectTransformSimpleToClusterConfigErr(
-	configProvider *k3dprovisioner.MockK3dConfigProvider,
-	err error,
-) {
-	configProvider.On(
-		"TransformSimpleToClusterConfig",
-		mock.Anything,
-		mock.Anything,
-		mock.Anything,
-		"k3d.yaml",
-	).Return(nil, err)
+func (b *builderRecorder) stopBuilder() *cobra.Command {
+	b.stopCalls++
+
+	return &cobra.Command{}
 }
 
-// expectClusterGetByName sets up ClusterGet to return a cluster with the given name and returns the cluster.
-func expectClusterGetByName(
-	clientProvider *k3dprovisioner.MockK3dClientProvider,
-	name string,
-) *types.Cluster {
-	cluster := createDefaultCluster(name)
-	clientProvider.On("ClusterGet", mock.Anything, mock.Anything, mock.MatchedBy(func(c *types.Cluster) bool {
-		return c.Name == name
-	})).
-		Return(cluster, nil)
+func (b *builderRecorder) listBuilder() *cobra.Command {
+	b.listCalls++
 
-	return cluster
+	return &cobra.Command{}
 }
 
-// createDefaultCluster creates a default types.Cluster for testing.
-func createDefaultCluster(name string) *types.Cluster {
-	return &types.Cluster{
-		Name: name,
-	}
+func TestExistsReturnsTrueForMatchingCluster(t *testing.T) {
+	t.Parallel()
+
+	runner := &stubRunner{}
+	runner.result.Stdout = `[{"name":"target"}]`
+
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+
+	exists, err := prov.Exists(context.Background(), "target")
+	require.NoError(t, err)
+	assert.True(t, exists)
 }
 
-// createClusterWithKubeAPI creates a cluster with KubeAPI configuration for testing.
-func createClusterWithKubeAPI(name string) *types.Cluster {
-	cluster := createDefaultCluster(name)
-	cluster.KubeAPI = &types.ExposureOpts{
-		PortMapping: nat.PortMapping{
-			Port: "",
-			Binding: nat.PortBinding{
-				HostIP:   "",
-				HostPort: "",
-			},
-		},
-		Host: "",
-	}
-	cluster.ServerLoadBalancer = &types.Loadbalancer{
-		Node:   nil,
-		Config: nil,
-	}
+func TestExistsPropagatesListErrors(t *testing.T) {
+	t.Parallel()
 
-	return cluster
-}
+	runner := &stubRunner{}
+	runner.err = errBoom
 
-// createDefaultClusterConfig creates a default v1alpha5.ClusterConfig for testing.
-func createDefaultClusterConfig() *v1alpha5.ClusterConfig {
-	return &v1alpha5.ClusterConfig{
-		Cluster: *createDefaultCluster(""),
-	}
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+
+	_, err := prov.Exists(context.Background(), "any")
+	require.ErrorContains(t, err, "list")
 }

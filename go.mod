@@ -10,7 +10,6 @@ require (
 	github.com/gkampitakis/go-snaps v0.5.15
 	github.com/jinzhu/copier v0.4.0
 	github.com/k3d-io/k3d/v5 v5.8.3
-	github.com/mittwald/go-helm-client v0.12.18
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/samber/do/v2 v2.0.0
 	github.com/spf13/cobra v1.10.1
@@ -269,6 +268,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/mittwald/go-helm-client v0.12.18 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.1.0 // indirect
 	github.com/moby/locker v1.0.1 // indirect

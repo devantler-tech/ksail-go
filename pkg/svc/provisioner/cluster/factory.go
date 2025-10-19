@@ -106,20 +106,10 @@ func createK3dProvisioner(
 		return nil, nil, fmt.Errorf("failed to load K3d configuration: %w", err)
 	}
 
-	provisioner := createK3dProvisionerFromConfig(k3dConfigMgr.GetConfig())
+	provisioner := k3dprovisioner.NewK3dClusterProvisioner(
+		k3dConfigMgr.GetConfig(),
+		distributionConfigPath,
+	)
 
 	return provisioner, k3dConfigMgr.GetConfig(), nil
-}
-
-func createK3dProvisionerFromConfig(
-	k3dConfig *k3dv1alpha5.SimpleConfig,
-) *k3dprovisioner.K3dClusterProvisioner {
-	clientProvider := k3dprovisioner.NewDefaultK3dClientAdapter()
-	configProvider := k3dprovisioner.NewDefaultK3dConfigAdapter()
-
-	return k3dprovisioner.NewK3dClusterProvisioner(
-		k3dConfig,
-		clientProvider,
-		configProvider,
-	)
 }
