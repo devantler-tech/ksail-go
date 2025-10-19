@@ -38,74 +38,6 @@ func (_m *MockHelmClient) EXPECT() *MockHelmClient_Expecter {
 	return &MockHelmClient_Expecter{mock: &_m.Mock}
 }
 
-// InstallChart provides a mock function for the type MockHelmClient
-func (_mock *MockHelmClient) InstallChart(ctx context.Context, spec *helm.ChartSpec) (*helm.ReleaseInfo, error) {
-	ret := _mock.Called(ctx, spec)
-
-	if len(ret) == 0 {
-		panic("no return value specified for InstallChart")
-	}
-
-	var r0 *helm.ReleaseInfo
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) (*helm.ReleaseInfo, error)); ok {
-		return returnFunc(ctx, spec)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *helm.ChartSpec) *helm.ReleaseInfo); ok {
-		r0 = returnFunc(ctx, spec)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*helm.ReleaseInfo)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *helm.ChartSpec) error); ok {
-		r1 = returnFunc(ctx, spec)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockHelmClient_InstallChart_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InstallChart'
-type MockHelmClient_InstallChart_Call struct {
-	*mock.Call
-}
-
-// InstallChart is a helper method to define mock.On call
-//   - ctx context.Context
-//   - spec *helm.ChartSpec
-func (_e *MockHelmClient_Expecter) InstallChart(ctx interface{}, spec interface{}) *MockHelmClient_InstallChart_Call {
-	return &MockHelmClient_InstallChart_Call{Call: _e.mock.On("InstallChart", ctx, spec)}
-}
-
-func (_c *MockHelmClient_InstallChart_Call) Run(run func(ctx context.Context, spec *helm.ChartSpec)) *MockHelmClient_InstallChart_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 *helm.ChartSpec
-		if args[1] != nil {
-			arg1 = args[1].(*helm.ChartSpec)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockHelmClient_InstallChart_Call) Return(releaseInfo *helm.ReleaseInfo, err error) *MockHelmClient_InstallChart_Call {
-	_c.Call.Return(releaseInfo, err)
-	return _c
-}
-
-func (_c *MockHelmClient_InstallChart_Call) RunAndReturn(run func(context.Context, *helm.ChartSpec) (*helm.ReleaseInfo, error)) *MockHelmClient_InstallChart_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // AddRepository provides a mock function for the type MockHelmClient
 func (_mock *MockHelmClient) AddRepository(ctx context.Context, entry *helm.RepositoryEntry) error {
 	ret := _mock.Called(ctx, entry)
@@ -158,7 +90,7 @@ func (_c *MockHelmClient_AddRepository_Call) Return(err error) *MockHelmClient_A
 	return _c
 }
 
-func (_c *MockHelmClient_AddRepository_Call) RunAndReturn(run func(context.Context, *helm.RepositoryEntry) error) *MockHelmClient_AddRepository_Call {
+func (_c *MockHelmClient_AddRepository_Call) RunAndReturn(run func(ctx context.Context, entry *helm.RepositoryEntry) error) *MockHelmClient_AddRepository_Call {
 	_c.Call.Return(run)
 	return _c
 }

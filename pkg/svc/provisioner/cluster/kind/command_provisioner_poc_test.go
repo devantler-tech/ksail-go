@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-	kindcmd "sigs.k8s.io/kind/pkg/cmd"
-	"sigs.k8s.io/kind/pkg/log"
 )
 
 // NOTE: These tests demonstrate the POC implementation works, but also
@@ -33,23 +31,10 @@ func (m *mockKindCommandRunner) Run(
 	_ context.Context,
 	_ *cobra.Command,
 	args []string,
-) (stdout, stderr string, err error) {
+) (string, string, error) {
 	m.recordedArgs = args
+
 	return m.stdout, m.stderr, m.err
-}
-
-// mockCommandBuilder captures builder calls for testing.
-type mockCommandBuilder struct {
-	called bool
-}
-
-func (m *mockCommandBuilder) build(logger log.Logger, streams kindcmd.IOStreams) *cobra.Command {
-	m.called = true
-	cmd := &cobra.Command{
-		Use:  "test",
-		RunE: func(cmd *cobra.Command, args []string) error { return nil },
-	}
-	return cmd
 }
 
 func TestPOC_ListSuccess(t *testing.T) {
@@ -223,11 +208,13 @@ func TestPOC_SimpleKindRunnerBasicExecution(t *testing.T) {
 	runner := kindprovisioner.NewSimpleKindRunner()
 
 	var outBuf, errBuf bytes.Buffer
+
 	cmd := &cobra.Command{
 		Use: "test",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.OutOrStdout().Write([]byte("output"))
-			cmd.ErrOrStderr().Write([]byte("error"))
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			_, _ = cmd.OutOrStdout().Write([]byte("output"))
+			_, _ = cmd.ErrOrStderr().Write([]byte("error"))
+
 			return nil
 		},
 	}
@@ -248,7 +235,7 @@ func TestPOC_SimpleKindRunnerReturnsError(t *testing.T) {
 
 	cmd := &cobra.Command{
 		Use: "test",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return errPOCTest
 		},
 	}

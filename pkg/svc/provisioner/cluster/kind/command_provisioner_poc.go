@@ -1,5 +1,7 @@
-// Package kindprovisioner provides implementations of the Provisioner interface
-// for provisioning clusters in different providers.
+// This file contains a proof-of-concept implementation of the Kind provisioner
+// using Cobra commands. See docs/kind-cobra-analysis.md for why this is NOT recommended.
+//
+//nolint:godoclint,revive // POC file with different doc style
 package kindprovisioner
 
 import (
@@ -11,10 +13,10 @@ import (
 	"time"
 
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
+	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	kindcmd "sigs.k8s.io/kind/pkg/cmd"
 	createcluster "sigs.k8s.io/kind/pkg/cmd/kind/create/cluster"
@@ -29,7 +31,7 @@ import (
 
 // KindCommandRunner executes Cobra commands with kind-specific requirements.
 type KindCommandRunner interface {
-	Run(ctx context.Context, cmd *cobra.Command, args []string) (stdout, stderr string, err error)
+	Run(ctx context.Context, cmd *cobra.Command, args []string) (string, string, error)
 }
 
 // SimpleKindRunner is a basic command runner for kind commands.
@@ -45,7 +47,7 @@ func (r *SimpleKindRunner) Run(
 	ctx context.Context,
 	cmd *cobra.Command,
 	args []string,
-) (stdout, stderr string, err error) {
+) (string, string, error) {
 	var outBuf, errBuf bytes.Buffer
 
 	cmd.SetContext(ctx)
@@ -124,15 +126,17 @@ func WithKindCommandRunner(runner KindCommandRunner) KindCommandProvisionerOptio
 
 // WithKindCommandBuilders overrides command builders.
 func WithKindCommandBuilders(builders KindCommandBuilders) KindCommandProvisionerOption {
-	return func(p *KindCommandProvisionerPOC) {
+	return func(prov *KindCommandProvisionerPOC) {
 		if builders.Create != nil {
-			p.builders.Create = builders.Create
+			prov.builders.Create = builders.Create
 		}
+
 		if builders.Delete != nil {
-			p.builders.Delete = builders.Delete
+			prov.builders.Delete = builders.Delete
 		}
+
 		if builders.List != nil {
-			p.builders.List = builders.List
+			prov.builders.List = builders.List
 		}
 	}
 }
@@ -147,19 +151,27 @@ func (k *KindCommandProvisionerPOC) Create(ctx context.Context, name string) err
 	if err != nil {
 		return fmt.Errorf("create temp config file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
 
-	configYAML, err := yaml.Marshal(k.kindConfig)
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+
+	marshaller := yamlmarshaller.NewMarshaller[*v1alpha4.Cluster]()
+
+	configYAML, err := marshaller.Marshal(k.kindConfig)
 	if err != nil {
 		return fmt.Errorf("marshal kind config: %w", err)
 	}
 
-	if err := os.WriteFile(tmpFile.Name(), configYAML, 0600); err != nil {
+	const configFilePerms = 0o600
+
+	err = os.WriteFile(tmpFile.Name(), []byte(configYAML), configFilePerms)
+	if err != nil {
 		return fmt.Errorf("write temp config file: %w", err)
 	}
 
 	logger := log.NoopLogger{}
+
 	var outBuf, errBuf bytes.Buffer
+
 	streams := kindcmd.IOStreams{
 		Out:    &outBuf,
 		ErrOut: &errBuf,
@@ -184,7 +196,9 @@ func (k *KindCommandProvisionerPOC) Delete(ctx context.Context, name string) err
 	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
 
 	logger := log.NoopLogger{}
+
 	var outBuf, errBuf bytes.Buffer
+
 	streams := kindcmd.IOStreams{
 		Out:    &outBuf,
 		ErrOut: &errBuf,
@@ -274,7 +288,9 @@ func (k *KindCommandProvisionerPOC) Stop(ctx context.Context, name string) error
 // List returns all kind clusters using the Cobra command.
 func (k *KindCommandProvisionerPOC) List(ctx context.Context) ([]string, error) {
 	logger := log.NoopLogger{}
+
 	var outBuf, errBuf bytes.Buffer
+
 	streams := kindcmd.IOStreams{
 		Out:    &outBuf,
 		ErrOut: &errBuf,
@@ -289,7 +305,9 @@ func (k *KindCommandProvisionerPOC) List(ctx context.Context) ([]string, error) 
 
 	// Parse stdout - each line is a cluster name
 	lines := bytes.Split([]byte(stdout), []byte("\n"))
+
 	var clusters []string
+
 	for _, line := range lines {
 		name := string(bytes.TrimSpace(line))
 		if name != "" && name != "No kind clusters found." {

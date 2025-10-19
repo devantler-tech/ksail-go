@@ -1,5 +1,7 @@
 // Package kindprovisioner provides implementations of the Provisioner interface
 // for provisioning clusters in different providers.
+//
+//nolint:godoclint // False positive - only one package doc
 package kindprovisioner
 
 import (
