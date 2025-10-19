@@ -260,13 +260,9 @@ func (v *Validator) validateKindDefaultCNIAlignment(result *validator.Validation
 	}
 }
 
-// validateK3dCiliumCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
-func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationResult) {
-	if v.k3dConfig == nil {
-		// No K3d config provided for validation, skip
-		return
-	}
-
+// checkK3dFlannelAndNetworkPolicyStatus checks if Flannel and network policy are disabled in K3d configuration.
+// Returns (hasFlannelDisabled, hasNetworkPolicyDisabled).
+func (v *Validator) checkK3dFlannelAndNetworkPolicyStatus() (bool, bool) {
 	var (
 		hasFlannelDisabled       bool
 		hasNetworkPolicyDisabled bool
@@ -280,6 +276,18 @@ func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationRe
 			hasNetworkPolicyDisabled = true
 		}
 	}
+
+	return hasFlannelDisabled, hasNetworkPolicyDisabled
+}
+
+// validateK3dCiliumCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
+func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	hasFlannelDisabled, hasNetworkPolicyDisabled := v.checkK3dFlannelAndNetworkPolicyStatus()
 
 	missingArgs := make([]string, 0, requiredCiliumArgs)
 	if !hasFlannelDisabled {
@@ -314,19 +322,7 @@ func (v *Validator) validateK3dDefaultCNIAlignment(result *validator.ValidationR
 		return
 	}
 
-	var (
-		hasFlannelDisabled       bool
-		hasNetworkPolicyDisabled bool
-	)
-
-	for _, arg := range v.k3dConfig.Options.K3sOptions.ExtraArgs {
-		switch arg.Arg {
-		case "--flannel-backend=none":
-			hasFlannelDisabled = true
-		case "--disable-network-policy":
-			hasNetworkPolicyDisabled = true
-		}
-	}
+	hasFlannelDisabled, hasNetworkPolicyDisabled := v.checkK3dFlannelAndNetworkPolicyStatus()
 
 	problematicArgs := make([]string, 0, requiredCiliumArgs)
 	if hasFlannelDisabled {
