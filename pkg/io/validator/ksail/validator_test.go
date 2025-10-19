@@ -219,6 +219,7 @@ func TestKSailValidatorCrossConfiguration(t *testing.T) {
 }
 
 // createValidKSailConfig creates a valid KSail configuration with the specified distribution.
+// Uses sample context names that are typical for each distribution.
 func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluster {
 	var distributionConfigFile string
 
@@ -227,10 +228,10 @@ func createValidKSailConfig(distribution v1alpha1.Distribution) *v1alpha1.Cluste
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		distributionConfigFile = "kind.yaml"
-		contextName = "kind-kind" // No distribution config provided, use conventional default
+		contextName = "kind-kind" // Sample context name
 	case v1alpha1.DistributionK3d:
 		distributionConfigFile = "k3d.yaml"
-		contextName = "k3d-k3d-default" // No distribution config provided, use conventional default
+		contextName = "k3d-k3d-default" // Sample context name
 	default:
 		distributionConfigFile = "cluster.yaml"
 		contextName = "ksail"
@@ -311,6 +312,15 @@ func runKindCiliumAlignmentTest(
 func TestKSailValidatorContextNameValidation(t *testing.T) {
 	t.Parallel()
 
+	testKindValidContext(t)
+	testK3dValidContext(t)
+	testInvalidContextPatternWithConfig(t)
+	testContextNotValidatedWithoutConfig(t)
+}
+
+func testKindValidContext(t *testing.T) {
+	t.Helper()
+
 	t.Run("kind_valid_context", func(t *testing.T) {
 		t.Parallel()
 
@@ -323,6 +333,10 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		assert.True(t, result.Valid, "Valid Kind context should pass validation")
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
+}
+
+func testK3dValidContext(t *testing.T) {
+	t.Helper()
 
 	t.Run("k3d_valid_context", func(t *testing.T) {
 		t.Parallel()
@@ -336,17 +350,31 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		assert.True(t, result.Valid, "Valid K3d context should pass validation")
 		assert.Empty(t, result.Errors, "Valid context should have no errors")
 	})
+}
 
-	t.Run("invalid_context_pattern", func(t *testing.T) {
+func testInvalidContextPatternWithConfig(t *testing.T) {
+	t.Helper()
+
+	t.Run("invalid_context_pattern_with_config", func(t *testing.T) {
 		t.Parallel()
+
+		// Create a Kind config with a specific name
+		kindConfig := &kindv1alpha4.Cluster{
+			Name: "my-cluster",
+		}
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
 		config.Spec.Connection.Context = "invalid-context"
 
-		validator := ksailvalidator.NewValidator()
+		// Use validator WITH distribution config to enable context validation
+		validator := ksailvalidator.NewValidatorForKind(kindConfig)
 		result := validator.Validate(config)
 
-		assert.False(t, result.Valid, "Invalid context should fail validation")
+		assert.False(
+			t,
+			result.Valid,
+			"Invalid context should fail validation when distribution config is provided",
+		)
 		assert.NotEmpty(t, result.Errors, "Invalid context should have errors")
 
 		// Find the context error
@@ -357,13 +385,35 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 				found = true
 
 				assert.Contains(t, err.Message, "context name does not match expected pattern")
-				assert.Contains(t, err.FixSuggestion, "kind-kind")
+				assert.Contains(t, err.FixSuggestion, "kind-my-cluster")
 
 				break
 			}
 		}
 
 		assert.True(t, found, "Should have context validation error")
+	})
+}
+
+func testContextNotValidatedWithoutConfig(t *testing.T) {
+	t.Helper()
+
+	t.Run("context_not_validated_without_config", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.Connection.Context = "any-context-name" // Any context should be valid without distribution config
+
+		// Use validator WITHOUT distribution config
+		validator := ksailvalidator.NewValidator()
+		result := validator.Validate(config)
+
+		assert.True(
+			t,
+			result.Valid,
+			"Context should not be validated when no distribution config is provided",
+		)
+		assert.Empty(t, result.Errors, "Should have no errors without distribution config")
 	})
 }
 
@@ -870,22 +920,22 @@ func testK3dCrossValidationWithConfigName(t *testing.T) {
 	})
 }
 
-// TestKSailValidatorDefaultFallbackValidation tests validation with default fallback scenarios.
-func TestKSailValidatorDefaultFallbackValidation(t *testing.T) {
+// TestKSailValidatorEmptyConfigNameValidation tests validation when distribution config has empty name.
+func TestKSailValidatorEmptyConfigNameValidation(t *testing.T) {
 	t.Parallel()
 
-	testKindDefaultFallback(t)
-	testK3dDefaultFallback(t)
+	testKindEmptyConfigName(t)
+	testK3dEmptyConfigName(t)
 }
 
-// testKindDefaultFallback tests Kind validation with default name fallback.
-func testKindDefaultFallback(t *testing.T) {
+// testKindEmptyConfigName tests Kind validation with empty config name.
+func testKindEmptyConfigName(t *testing.T) {
 	t.Helper()
 
-	t.Run("kind_default_fallback", func(t *testing.T) {
+	t.Run("kind_empty_config_name", func(t *testing.T) {
 		t.Parallel()
 
-		kindConfig := &kindv1alpha4.Cluster{Name: ""} // Empty name should use default
+		kindConfig := &kindv1alpha4.Cluster{Name: ""} // Empty name - validation should be skipped
 		config := &v1alpha1.Cluster{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "ksail.dev/v1alpha1",
@@ -895,7 +945,7 @@ func testKindDefaultFallback(t *testing.T) {
 				Distribution:       v1alpha1.DistributionKind,
 				DistributionConfig: "kind.yaml",
 				Connection: v1alpha1.Connection{
-					Context: "kind-kind", // Should match default "kind"
+					Context: "any-context-name", // Any context is valid when config name is empty
 				},
 			},
 		}
@@ -903,20 +953,24 @@ func testKindDefaultFallback(t *testing.T) {
 		validator := ksailvalidator.NewValidatorForKind(kindConfig)
 		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "Validation should pass with default Kind name")
+		assert.True(
+			t,
+			result.Valid,
+			"Validation should skip context check when Kind config has empty name",
+		)
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
 }
 
-// testK3dDefaultFallback tests K3d validation with default name fallback.
-func testK3dDefaultFallback(t *testing.T) {
+// testK3dEmptyConfigName tests K3d validation with empty config name.
+func testK3dEmptyConfigName(t *testing.T) {
 	t.Helper()
 
-	t.Run("k3d_default_fallback", func(t *testing.T) {
+	t.Run("k3d_empty_config_name", func(t *testing.T) {
 		t.Parallel()
 
 		k3dConfig := &k3dapi.SimpleConfig{
-			ObjectMeta: k3dtypes.ObjectMeta{Name: ""}, // Empty name should use default
+			ObjectMeta: k3dtypes.ObjectMeta{Name: ""}, // Empty name - validation should be skipped
 		}
 		config := &v1alpha1.Cluster{
 			TypeMeta: metav1.TypeMeta{
@@ -927,7 +981,7 @@ func testK3dDefaultFallback(t *testing.T) {
 				Distribution:       v1alpha1.DistributionK3d,
 				DistributionConfig: "k3d.yaml",
 				Connection: v1alpha1.Connection{
-					Context: "k3d-k3d-default", // Should match default "k3d-default" with k3d prefix
+					Context: "any-context-name", // Any context is valid when config name is empty
 				},
 			},
 		}
@@ -935,7 +989,11 @@ func testK3dDefaultFallback(t *testing.T) {
 		validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
 		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "Validation should pass with default K3d name")
+		assert.True(
+			t,
+			result.Valid,
+			"Validation should skip context check when K3d config has empty name",
+		)
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
 }
@@ -963,7 +1021,7 @@ func testNoDistributionConfigProvided(t *testing.T) {
 				Distribution:       v1alpha1.DistributionKind,
 				DistributionConfig: "kind.yaml",
 				Connection: v1alpha1.Connection{
-					Context: "kind-kind", // Should match default when no config provided
+					Context: "any-custom-context", // Any context should be valid when no config provided
 				},
 			},
 		}
@@ -974,7 +1032,7 @@ func testNoDistributionConfigProvided(t *testing.T) {
 		assert.True(
 			t,
 			result.Valid,
-			"Validation should pass with default Kind name when no config provided",
+			"Validation should skip context check when no distribution config provided",
 		)
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
@@ -1250,41 +1308,82 @@ func testKindContextValidation(t *testing.T) {
 		context     string
 		shouldPass  bool
 		description string
+		useConfig   bool // Whether to provide a Kind config to the validator
 	}{
 		{
 			name:        "kind_with_exact_match",
-			context:     "kind-kind",
+			context:     "kind-my-cluster",
 			shouldPass:  true,
 			description: "Kind context should match exactly",
+			useConfig:   true,
 		},
 		{
 			name:        "kind_with_case_mismatch",
-			context:     "KIND-kind",
+			context:     "KIND-my-cluster",
 			shouldPass:  false,
 			description: "Kind context is case sensitive",
+			useConfig:   true,
+		},
+		{
+			name:        "kind_without_config_any_context",
+			context:     "any-context",
+			shouldPass:  true,
+			description: "Kind context should not be validated without distribution config",
+			useConfig:   false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution:       v1alpha1.DistributionKind,
-					DistributionConfig: "config.yaml",
-					Connection: v1alpha1.Connection{
-						Context: test.context,
-					},
-				},
-			}
-
-			validateContextTest(t, config, test.shouldPass, test.description)
+			runKindContextValidationTest(t, test)
 		})
+	}
+}
+
+func runKindContextValidationTest(
+	t *testing.T,
+	test struct {
+		name        string
+		context     string
+		shouldPass  bool
+		description string
+		useConfig   bool
+	},
+) {
+	t.Helper()
+
+	config := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ksail.dev/v1alpha1",
+			Kind:       "Cluster",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionKind,
+			DistributionConfig: "config.yaml",
+			Connection: v1alpha1.Connection{
+				Context: test.context,
+			},
+		},
+	}
+
+	var validator *ksailvalidator.Validator
+
+	if test.useConfig {
+		kindConfig := &kindv1alpha4.Cluster{Name: "my-cluster"}
+		validator = ksailvalidator.NewValidatorForKind(kindConfig)
+	} else {
+		validator = ksailvalidator.NewValidator()
+	}
+
+	result := validator.Validate(config)
+
+	if test.shouldPass {
+		assert.True(t, result.Valid, test.description+" should pass validation")
+		assert.Empty(t, result.Errors, test.description+" should have no validation errors")
+	} else {
+		assert.False(t, result.Valid, test.description+" should fail validation")
+		assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
 	}
 }
 
@@ -1297,62 +1396,84 @@ func testK3dContextValidation(t *testing.T) {
 		context     string
 		shouldPass  bool
 		description string
+		useConfig   bool // Whether to provide a K3d config to the validator
 	}{
 		{
 			name:        "k3d_with_exact_match",
-			context:     "k3d-k3d-default",
+			context:     "k3d-my-cluster",
 			shouldPass:  true,
 			description: "K3d context should match exactly",
+			useConfig:   true,
 		},
 		{
 			name:        "k3d_with_extra_prefix",
-			context:     "prefix-k3d-k3d-default",
+			context:     "prefix-k3d-my-cluster",
 			shouldPass:  false,
 			description: "K3d context should not have extra prefix",
+			useConfig:   true,
+		},
+		{
+			name:        "k3d_without_config_any_context",
+			context:     "any-context",
+			shouldPass:  true,
+			description: "K3d context should not be validated without distribution config",
+			useConfig:   false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
-			config := &v1alpha1.Cluster{
-				TypeMeta: metav1.TypeMeta{
-					APIVersion: "ksail.dev/v1alpha1",
-					Kind:       "Cluster",
-				},
-				Spec: v1alpha1.Spec{
-					Distribution:       v1alpha1.DistributionK3d,
-					DistributionConfig: "config.yaml",
-					Connection: v1alpha1.Connection{
-						Context: test.context,
-					},
-				},
-			}
-
-			validateContextTest(t, config, test.shouldPass, test.description)
+			runK3dContextValidationTest(t, test)
 		})
 	}
 }
 
-// validateContextTest is a helper function for running context validation tests.
-func validateContextTest(
+func runK3dContextValidationTest(
 	t *testing.T,
-	config *v1alpha1.Cluster,
-	shouldPass bool,
-	description string,
+	test struct {
+		name        string
+		context     string
+		shouldPass  bool
+		description string
+		useConfig   bool
+	},
 ) {
 	t.Helper()
 
-	validator := ksailvalidator.NewValidator()
+	config := &v1alpha1.Cluster{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "ksail.dev/v1alpha1",
+			Kind:       "Cluster",
+		},
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionK3d,
+			DistributionConfig: "config.yaml",
+			Connection: v1alpha1.Connection{
+				Context: test.context,
+			},
+		},
+	}
+
+	var validator *ksailvalidator.Validator
+
+	if test.useConfig {
+		k3dConfig := &k3dapi.SimpleConfig{
+			ObjectMeta: k3dtypes.ObjectMeta{Name: "my-cluster"},
+		}
+		validator = ksailvalidator.NewValidatorForK3d(k3dConfig)
+	} else {
+		validator = ksailvalidator.NewValidator()
+	}
+
 	result := validator.Validate(config)
 
-	if shouldPass {
-		assert.True(t, result.Valid, description+" should pass validation")
-		assert.Empty(t, result.Errors, description+" should have no validation errors")
+	if test.shouldPass {
+		assert.True(t, result.Valid, test.description+" should pass validation")
+		assert.Empty(t, result.Errors, test.description+" should have no validation errors")
 	} else {
-		assert.False(t, result.Valid, description+" should fail validation")
-		assert.NotEmpty(t, result.Errors, description+" should have validation errors")
+		assert.False(t, result.Valid, test.description+" should fail validation")
+		assert.NotEmpty(t, result.Errors, test.description+" should have validation errors")
 	}
 }
 
