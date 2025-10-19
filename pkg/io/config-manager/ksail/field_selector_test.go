@@ -91,6 +91,13 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			expectedDefault: v1alpha1.CNIDefault,
 			assertPointer:   assertCNISelector,
 		},
+		{
+			name:            "gitops-engine",
+			factory:         configmanager.DefaultGitOpsEngineFieldSelector,
+			expectedDesc:    "GitOps engine to use",
+			expectedDefault: v1alpha1.GitOpsEngineNone,
+			assertPointer:   assertGitOpsEngineSelector,
+		},
 	}
 }
 
@@ -178,6 +185,11 @@ func assertContextSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 func assertCNISelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.CNI)
+}
+
+func assertGitOpsEngineSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.GitOpsEngine)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
