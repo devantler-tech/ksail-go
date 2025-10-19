@@ -351,6 +351,7 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 		distribution v1alpha1.Distribution
 		initial      string
 		expected     string
+		expectErr    bool
 	}{
 		{
 			name:         "KindDefaultContext",
@@ -372,6 +373,7 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 			name:         "UnknownDistributionContext",
 			distribution: v1alpha1.Distribution("Unknown"),
 			expected:     "",
+			expectErr:    true,
 		},
 	}
 
@@ -379,7 +381,24 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			capturedContext := captureScaffoldedContext(t, testCase.distribution, testCase.initial)
+			capturedContext, err := captureScaffoldedContext(
+				t,
+				testCase.distribution,
+				testCase.initial,
+			)
+			if testCase.expectErr {
+				require.Error(t, err)
+				if capturedContext != testCase.expected {
+					t.Fatalf(
+						"expected context %q when error occurs, got %q",
+						testCase.expected,
+						capturedContext,
+					)
+				}
+				return
+			}
+
+			require.NoError(t, err)
 			if capturedContext != testCase.expected {
 				t.Fatalf("expected context %q, got %q", testCase.expected, capturedContext)
 			}
@@ -466,7 +485,7 @@ func captureScaffoldedContext(
 	t *testing.T,
 	distribution v1alpha1.Distribution,
 	initial string,
-) string {
+) (string, error) {
 	t.Helper()
 
 	tempDir := t.TempDir()
@@ -478,9 +497,11 @@ func captureScaffoldedContext(
 	instance.KSailConfig.Spec.DistributionConfig = ""
 
 	err := instance.Scaffold(tempDir, false)
-	require.NoError(t, err)
+	if err != nil {
+		return "", err
+	}
 
-	return mocks.ksailLastModel.Spec.Connection.Context
+	return mocks.ksailLastModel.Spec.Connection.Context, nil
 }
 
 func captureDistributionConfigForCNI[T any](
