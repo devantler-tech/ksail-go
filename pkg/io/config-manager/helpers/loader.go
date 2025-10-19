@@ -15,37 +15,32 @@ import (
 // ErrConfigurationValidationFailed is returned when configuration validation fails.
 var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
-// SilentError is an error type that signals the error message has already been displayed to the user.
-// When this error is returned, the error handler should exit without printing additional error messages.
-type SilentError struct {
-	// Cause is the underlying error that was already displayed.
-	Cause error
+// ValidationSummaryError is an error that contains only a validation summary message.
+// This error type is used to provide a concise summary instead of a full error stack.
+type ValidationSummaryError struct {
+	ErrorCount   int
+	WarningCount int
 }
 
-// NewSilentError creates a new SilentError wrapping the given error.
-func NewSilentError(err error) *SilentError {
-	return &SilentError{Cause: err}
+// NewValidationSummaryError creates a new ValidationSummaryError.
+func NewValidationSummaryError(errorCount, warningCount int) *ValidationSummaryError {
+	return &ValidationSummaryError{
+		ErrorCount:   errorCount,
+		WarningCount: warningCount,
+	}
 }
 
-// Error implements the error interface.
-func (e *SilentError) Error() string {
-	if e.Cause != nil {
-		return e.Cause.Error()
+// Error implements the error interface, returning a summary message.
+func (e *ValidationSummaryError) Error() string {
+	if e.WarningCount > 0 {
+		return fmt.Sprintf(
+			"validation reported %d error(s) and %d warning(s)",
+			e.ErrorCount,
+			e.WarningCount,
+		)
 	}
 
-	return ""
-}
-
-// Unwrap returns the underlying error for errors.Is and errors.As compatibility.
-func (e *SilentError) Unwrap() error {
-	return e.Cause
-}
-
-// IsSilent checks if an error is a SilentError or wraps one.
-func IsSilent(err error) bool {
-	var silent *SilentError
-
-	return errors.As(err, &silent)
+	return fmt.Sprintf("validation reported %d error(s)", e.ErrorCount)
 }
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.

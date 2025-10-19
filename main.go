@@ -8,7 +8,6 @@ import (
 	"runtime/debug"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 )
 
@@ -53,15 +52,12 @@ func runWithArgs(args []string) int {
 
 	err := cmd.Execute(rootCmd)
 	if err != nil {
-		// Don't print error message if it's a silent error (already displayed)
-		if !helpers.IsSilent(err) {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.ErrorType,
-				Content: "%v",
-				Args:    []any{err},
-				Writer:  rootCmd.ErrOrStderr(),
-			})
-		}
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ErrorType,
+			Content: "%v",
+			Args:    []any{err},
+			Writer:  rootCmd.ErrOrStderr(),
+		})
 
 		return 1
 	}

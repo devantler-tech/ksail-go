@@ -1,7 +1,6 @@
 package helpers_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -472,54 +471,27 @@ func TestLoadAndValidateConfigErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to validate config")
 }
 
-func TestSilentError(t *testing.T) {
+func TestValidationSummaryError(t *testing.T) {
 	t.Parallel()
 
-	t.Run("creates silent error", func(t *testing.T) {
+	t.Run("formats error with errors only", func(t *testing.T) {
 		t.Parallel()
 
-		baseErr := helpers.ErrConfigurationValidationFailed
-		silentErr := helpers.NewSilentError(baseErr)
-
-		assert.NotNil(t, silentErr)
-		assert.Equal(t, baseErr.Error(), silentErr.Error())
+		err := helpers.NewValidationSummaryError(1, 0)
+		assert.Equal(t, "validation reported 1 error(s)", err.Error())
 	})
 
-	t.Run("unwraps to underlying error", func(t *testing.T) {
+	t.Run("formats error with errors and warnings", func(t *testing.T) {
 		t.Parallel()
 
-		baseErr := helpers.ErrConfigurationValidationFailed
-		silentErr := helpers.NewSilentError(baseErr)
-
-		assert.ErrorIs(t, silentErr, baseErr)
+		err := helpers.NewValidationSummaryError(2, 3)
+		assert.Equal(t, "validation reported 2 error(s) and 3 warning(s)", err.Error())
 	})
 
-	t.Run("IsSilent detects silent errors", func(t *testing.T) {
+	t.Run("formats error with multiple errors", func(t *testing.T) {
 		t.Parallel()
 
-		baseErr := helpers.ErrConfigurationValidationFailed
-		silentErr := helpers.NewSilentError(baseErr)
-
-		assert.True(t, helpers.IsSilent(silentErr))
-		assert.False(t, helpers.IsSilent(baseErr))
-	})
-
-	t.Run("IsSilent detects wrapped silent errors", func(t *testing.T) {
-		t.Parallel()
-
-		baseErr := helpers.ErrConfigurationValidationFailed
-		silentErr := helpers.NewSilentError(baseErr)
-		wrappedErr := fmt.Errorf("wrapped: %w", silentErr)
-
-		assert.True(t, helpers.IsSilent(wrappedErr))
-	})
-
-	t.Run("handles nil cause", func(t *testing.T) {
-		t.Parallel()
-
-		silentErr := helpers.NewSilentError(nil)
-
-		assert.Empty(t, silentErr.Error())
-		assert.NoError(t, silentErr.Unwrap())
+		err := helpers.NewValidationSummaryError(5, 0)
+		assert.Equal(t, "validation reported 5 error(s)", err.Error())
 	})
 }
