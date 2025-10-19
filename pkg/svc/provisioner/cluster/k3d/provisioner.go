@@ -42,7 +42,7 @@ func NewK3dClusterProvisioner(
 	prov := &K3dClusterProvisioner{
 		simpleCfg:  simpleCfg,
 		configPath: configPath,
-		runner:     commandrunner.NewCobraCommandRunner(),
+		runner:     commandrunner.NewGenericCobraCommandRunner(nil, nil),
 		builders: CommandBuilders{
 			Create: clustercommand.NewCmdClusterCreate,
 			Delete: clustercommand.NewCmdClusterDelete,
