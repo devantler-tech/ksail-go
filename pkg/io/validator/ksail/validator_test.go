@@ -352,7 +352,11 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		validator := ksailvalidator.NewValidatorForKind(kindConfig)
 		result := validator.Validate(config)
 
-		assert.False(t, result.Valid, "Invalid context should fail validation when distribution config is provided")
+		assert.False(
+			t,
+			result.Valid,
+			"Invalid context should fail validation when distribution config is provided",
+		)
 		assert.NotEmpty(t, result.Errors, "Invalid context should have errors")
 
 		// Find the context error
@@ -382,7 +386,11 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 		validator := ksailvalidator.NewValidator()
 		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "Context should not be validated when no distribution config is provided")
+		assert.True(
+			t,
+			result.Valid,
+			"Context should not be validated when no distribution config is provided",
+		)
 		assert.Empty(t, result.Errors, "Should have no errors without distribution config")
 	})
 }
@@ -884,7 +892,11 @@ func testKindEmptyConfigName(t *testing.T) {
 		validator := ksailvalidator.NewValidatorForKind(kindConfig)
 		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "Validation should skip context check when Kind config has empty name")
+		assert.True(
+			t,
+			result.Valid,
+			"Validation should skip context check when Kind config has empty name",
+		)
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
 }
@@ -916,7 +928,11 @@ func testK3dEmptyConfigName(t *testing.T) {
 		validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
 		result := validator.Validate(config)
 
-		assert.True(t, result.Valid, "Validation should skip context check when K3d config has empty name")
+		assert.True(
+			t,
+			result.Valid,
+			"Validation should skip context check when K3d config has empty name",
+		)
 		assert.Empty(t, result.Errors, "Should have no validation errors")
 	})
 }
