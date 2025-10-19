@@ -388,6 +388,7 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 			)
 			if testCase.expectErr {
 				require.Error(t, err)
+
 				if capturedContext != testCase.expected {
 					t.Fatalf(
 						"expected context %q when error occurs, got %q",
@@ -395,10 +396,12 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 						capturedContext,
 					)
 				}
+
 				return
 			}
 
 			require.NoError(t, err)
+
 			if capturedContext != testCase.expected {
 				t.Fatalf("expected context %q, got %q", testCase.expected, capturedContext)
 			}
@@ -498,19 +501,18 @@ func captureScaffoldedContext(
 
 	err := instance.Scaffold(tempDir, false)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("scaffold context: %w", err)
 	}
 
 	return mocks.ksailLastModel.Spec.Connection.Context, nil
 }
 
-func captureDistributionConfigForCNI[T any](
+func runCniCapture(
 	t *testing.T,
 	distribution v1alpha1.Distribution,
 	cni v1alpha1.CNI,
-	reset func(*generatorMocks),
-	register func(*generatorMocks, func(T) bool),
-) T {
+	configure func(*generatorMocks),
+) {
 	t.Helper()
 
 	instance, mocks, tempDir := setupScaffolderForCNI(
@@ -519,60 +521,66 @@ func captureDistributionConfigForCNI[T any](
 		cni,
 	)
 
-	reset(mocks)
-
-	var captured T
-	register(mocks, func(cfg T) bool {
-		captured = cfg
-
-		return true
-	})
+	configure(mocks)
 
 	err := instance.Scaffold(tempDir, true)
 	require.NoError(t, err)
-	require.NotNil(t, captured)
-
-	return captured
 }
 
 func captureKindConfigForCNI(t *testing.T, cni v1alpha1.CNI) *v1alpha4.Cluster {
 	t.Helper()
 
-	return captureDistributionConfigForCNI[*v1alpha4.Cluster](
+	var captured *v1alpha4.Cluster
+
+	runCniCapture(
 		t,
 		v1alpha1.DistributionKind,
 		cni,
 		func(m *generatorMocks) {
 			m.kind.ExpectedCalls = nil
-		},
-		func(m *generatorMocks, matcher func(*v1alpha4.Cluster) bool) {
 			m.kind.On(
 				"Generate",
-				mock.MatchedBy(matcher),
+				mock.MatchedBy(func(cfg *v1alpha4.Cluster) bool {
+					captured = cfg
+
+					return true
+				}),
 				mock.Anything,
 			).Return("", nil).Once()
 		},
 	)
+
+	require.NotNil(t, captured)
+
+	return captured
 }
 
 func captureK3dConfigForCNI(t *testing.T, cni v1alpha1.CNI) *k3dv1alpha5.SimpleConfig {
 	t.Helper()
 
-	return captureDistributionConfigForCNI[*k3dv1alpha5.SimpleConfig](
+	var captured *k3dv1alpha5.SimpleConfig
+
+	runCniCapture(
 		t,
 		v1alpha1.DistributionK3d,
 		cni,
 		func(m *generatorMocks) {
 			m.k3d.ExpectedCalls = nil
-		},
-		func(m *generatorMocks, matcher func(*k3dv1alpha5.SimpleConfig) bool) {
 			m.k3d.On(
 				"Generate",
-				mock.MatchedBy(matcher),
+				mock.MatchedBy(func(cfg *k3dv1alpha5.SimpleConfig) bool {
+					captured = cfg
+
+					return true
+				}),
 				mock.Anything,
 			).Return("", nil).Once()
 		},
 	)
+
+	require.NotNil(t, captured)
+
+	return captured
 }
 
 func setupScaffolderForCNI(
