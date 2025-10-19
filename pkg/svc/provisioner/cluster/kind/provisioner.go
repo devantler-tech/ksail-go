@@ -93,6 +93,7 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 		return fmt.Errorf("create temp config file: %w", err)
 	}
 
+	defer func() { _ = tmpFile.Close() }()
 	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	marshaller := yamlmarshaller.NewMarshaller[*v1alpha4.Cluster]()
