@@ -79,6 +79,7 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 }
 
 // validateContextName validates the context name pattern matches the distribution and cluster name.
+// Only validates when a distribution config is provided to the validator.
 func (v *Validator) validateContextName(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
@@ -90,7 +91,7 @@ func (v *Validator) validateContextName(
 
 	expectedContext := v.getExpectedContextName(config)
 	if expectedContext == "" {
-		// For EKS or unknown distributions, skip context validation
+		// For EKS or unknown distributions, or when no distribution config is provided, skip context validation
 		return
 	}
 
@@ -149,9 +150,13 @@ func (v *Validator) validateDistribution(
 
 // getExpectedContextName returns the expected context name for the given configuration.
 // Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted
-// from the distribution config. If no cluster name is found, "ksail-default" is used as the ultimate fallback.
+// from the distribution config. Returns empty string if no distribution config is available.
 func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
+	if distributionName == "" {
+		// No distribution config available, skip context validation
+		return ""
+	}
 
 	switch config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
@@ -176,23 +181,25 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 }
 
 // getKindConfigName returns the Kind configuration name if available.
+// Returns empty string if no Kind config is provided to the validator.
 func (v *Validator) getKindConfigName() string {
 	if v.kindConfig != nil && v.kindConfig.Name != "" {
 		return v.kindConfig.Name
 	}
 
-	// Return default Kind cluster name when no config is provided
-	return "kind"
+	// No Kind config provided, return empty to skip validation
+	return ""
 }
 
 // getK3dConfigName returns the K3d configuration name if available.
+// Returns empty string if no K3d config is provided to the validator.
 func (v *Validator) getK3dConfigName() string {
 	if v.k3dConfig != nil && v.k3dConfig.Name != "" {
 		return v.k3dConfig.Name
 	}
 
-	// Return default K3d cluster name when no config is provided
-	return "k3d-default"
+	// No K3d config provided, return empty to skip validation
+	return ""
 }
 
 // validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
