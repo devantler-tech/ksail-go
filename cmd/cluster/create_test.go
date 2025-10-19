@@ -3,6 +3,7 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,8 @@ const (
 	testCiliumContext  = "kind-kind"
 	testKubeconfigPath = "kubeconfig"
 )
+
+var errCiliumReadiness = errors.New("cilium readiness failed")
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -130,6 +133,42 @@ func TestHandleCreateRunE(t *testing.T) {
 			t.Fatalf("expected provisioner create to be invoked, got %d", provisioner.CreateCalls)
 		}
 	})
+}
+
+func TestHandleCreateRunEWithoutCilium(t *testing.T) {
+	t.Parallel()
+
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	cfgManager := testutils.CreateConfigManager(t, out)
+
+	provisioner := &testutils.StubProvisioner{}
+	timer := &testutils.RecordingTimer{}
+	deps := shared.LifecycleDeps{
+		Timer: timer,
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+
+	err := handleCreateRunE(cmd, cfgManager, deps)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if provisioner.CreateCalls != 1 {
+		t.Fatalf("expected provisioner create to be invoked, got %d", provisioner.CreateCalls)
+	}
+
+	if timer.NewStageCount != 1 {
+		t.Fatalf("expected timer new stage to be called once, got %d", timer.NewStageCount)
+	}
+
+	if strings.Contains(out.String(), "Install CNI") {
+		t.Fatalf("did not expect cilium installation messaging:\n%s", out.String())
+	}
 }
 
 func TestGetCiliumInstallTimeout(t *testing.T) {
@@ -351,6 +390,28 @@ func TestRunCiliumInstallationReturnsInstallErrors(t *testing.T) {
 	}
 
 	if !strings.Contains(err.Error(), "cilium installation failed") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestRunCiliumInstallationReturnsReadinessErrors(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	helmClient := &fakeHelmClient{}
+	installer := newReadyCiliumInstaller(helmClient, time.Second)
+	installer.SetWaitForReadinessFunc(func(context.Context) error {
+		return errCiliumReadiness
+	})
+
+	err := runCiliumInstallation(cmd, installer, &stubTimer{})
+	if err == nil {
+		t.Fatal("expected readiness error")
+	}
+
+	if !strings.Contains(err.Error(), "cilium readiness check failed") {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
