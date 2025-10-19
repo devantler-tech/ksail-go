@@ -113,7 +113,7 @@ func FormatValidationErrorsMultiline(result *validator.ValidationResult) string 
 		errorMsg += fmt.Sprintf("error: %s\nfield: %s", err.Message, err.Field)
 
 		if err.FixSuggestion != "" {
-			errorMsg += fmt.Sprintf("\nfix: %s", err.FixSuggestion)
+			errorMsg += "\nfix: " + err.FixSuggestion
 		}
 
 		errorMsg += "\n"
