@@ -1,5 +1,5 @@
 // Package commandrunner provides helpers for executing Cobra commands while
-// capturing their output and translating k3d logging semantics.
+// capturing their output and displaying it to the console.
 package commandrunner
 
 import (
@@ -38,6 +38,64 @@ type CommandResult struct {
 // CommandRunner executes Cobra commands while capturing their output.
 type CommandRunner interface {
 	Run(ctx context.Context, cmd *cobra.Command, args []string) (CommandResult, error)
+}
+
+// GenericCobraCommandRunner executes any Cobra command with console output.
+// This runner displays command output to stdout/stderr in real-time while
+// also capturing it for the result.
+type GenericCobraCommandRunner struct {
+	stdout io.Writer
+	stderr io.Writer
+}
+
+// NewGenericCobraCommandRunner creates a command runner that works with any Cobra command.
+// It displays output to the console in real-time (like running the binary directly)
+// while also capturing output for programmatic use.
+func NewGenericCobraCommandRunner(stdout, stderr io.Writer) *GenericCobraCommandRunner {
+	if stdout == nil {
+		stdout = os.Stdout
+	}
+
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+
+	return &GenericCobraCommandRunner{
+		stdout: stdout,
+		stderr: stderr,
+	}
+}
+
+// Run executes a Cobra command and displays output in real-time to console.
+func (r *GenericCobraCommandRunner) Run(
+	ctx context.Context,
+	cmd *cobra.Command,
+	args []string,
+) (CommandResult, error) {
+	var outBuf, errBuf bytes.Buffer
+
+	// Use io.MultiWriter to display AND capture output
+	// This provides the same behavior as running the binary directly
+	cmd.SetOut(io.MultiWriter(&outBuf, r.stdout))
+	cmd.SetErr(io.MultiWriter(&errBuf, r.stderr))
+
+	cmd.SetContext(ctx)
+	cmd.SetArgs(args)
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+
+	execErr := cmd.ExecuteContext(ctx)
+	if execErr != nil {
+		return CommandResult{
+			Stdout: outBuf.String(),
+			Stderr: errBuf.String(),
+		}, fmt.Errorf("command execution failed: %w", execErr)
+	}
+
+	return CommandResult{
+		Stdout: outBuf.String(),
+		Stderr: errBuf.String(),
+	}, nil
 }
 
 // CobraCommandRunner executes Cobra commands while mirroring k3d logging semantics.

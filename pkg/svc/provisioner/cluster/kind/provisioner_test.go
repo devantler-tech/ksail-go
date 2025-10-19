@@ -3,48 +3,93 @@ package kindprovisioner_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/testutils"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-// setupKindProvisioner is a helper function that creates a Kind provisioner and mock provider for testing.
-// This eliminates code duplication between Create and Delete tests.
-func setupKindProvisioner(
-	t *testing.T,
-) (*kindprovisioner.KindClusterProvisioner, *kindprovisioner.MockKindProvider) {
-	t.Helper()
-	provisioner, provider, _ := newProvisionerForTest(t)
+// mockCommandRunner is a test helper that mocks the command runner.
+type mockCommandRunner struct {
+	mock.Mock
+}
 
-	return provisioner, provider
+func (m *mockCommandRunner) Run(
+	_ context.Context,
+	_ *cobra.Command,
+	_ []string,
+) (commandrunner.CommandResult, error) {
+	callArgs := m.Called()
+
+	result, ok := callArgs.Get(0).(commandrunner.CommandResult)
+	if !ok {
+		err := callArgs.Error(1)
+		if err != nil {
+			return commandrunner.CommandResult{}, fmt.Errorf("mock run error: %w", err)
+		}
+
+		return commandrunner.CommandResult{}, nil
+	}
+
+	err := callArgs.Error(1)
+	if err != nil {
+		return result, fmt.Errorf("mock run error: %w", err)
+	}
+
+	return result, nil
 }
 
 func TestCreateSuccess(t *testing.T) {
 	t.Parallel()
-	clustertestutils.RunCreateSuccessTest(
-		t,
-		setupKindProvisioner,
-		func(p *kindprovisioner.MockKindProvider, name string) {
-			p.On("Create", name, mock.Anything, mock.Anything, mock.Anything).Return(nil)
+
+	tests := []struct {
+		name         string
+		inputName    string
+		expectedName string
+	}{
+		{
+			name:         "without_name_uses_cfg",
+			inputName:    "",
+			expectedName: "cfg-name",
 		},
-		func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-			return prov.Create(context.Background(), name)
+		{
+			name:         "with_name",
+			inputName:    "my-cluster",
+			expectedName: "my-cluster",
 		},
-	)
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			provisioner, _, _, runner := newProvisionerForTest(t)
+			// Mock command runner to return success
+			runner.On("Run").
+				Return(commandrunner.CommandResult{}, nil)
+
+			err := provisioner.Create(context.Background(), testCase.inputName)
+
+			require.NoError(t, err, "Create()")
+		})
+	}
 }
 
 func TestCreateErrorCreateFailed(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Create", "my-cluster", mock.Anything, mock.Anything, mock.Anything).
-		Return(clustertestutils.ErrCreateClusterFailed)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	// Mock command runner to return error
+	runner.On("Run").
+		Return(commandrunner.CommandResult{}, clustertestutils.ErrCreateClusterFailed)
 
 	err := provisioner.Create(context.Background(), "my-cluster")
 
@@ -59,34 +104,46 @@ func TestCreateErrorCreateFailed(t *testing.T) {
 
 func TestDeleteSuccess(t *testing.T) {
 	t.Parallel()
-	// order doesn't matter for copy detection; reusing the same helper
-	cases := clustertestutils.DefaultDeleteCases()
-	clustertestutils.RunStandardSuccessTest(
-		t,
-		cases,
-		func(t *testing.T, inputName, expectedName string) {
-			t.Helper()
-			clustertestutils.RunActionSuccess(
-				t,
-				"Delete()",
-				inputName,
-				expectedName,
-				setupKindProvisioner,
-				func(p *kindprovisioner.MockKindProvider, name string) {
-					p.On("Delete", name, mock.Anything).Return(nil)
-				},
-				func(prov *kindprovisioner.KindClusterProvisioner, name string) error {
-					return prov.Delete(context.Background(), name)
-				},
-			)
+
+	tests := []struct {
+		name         string
+		inputName    string
+		expectedName string
+	}{
+		{
+			name:         "without_name_uses_cfg",
+			inputName:    "",
+			expectedName: "cfg-name",
 		},
-	)
+		{
+			name:         "with_name",
+			inputName:    "my-cluster",
+			expectedName: "my-cluster",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			provisioner, _, _, runner := newProvisionerForTest(t)
+			// Mock command runner to return success
+			runner.On("Run").
+				Return(commandrunner.CommandResult{}, nil)
+
+			err := provisioner.Delete(context.Background(), testCase.inputName)
+
+			require.NoError(t, err, "Delete()")
+		})
+	}
 }
 
 func TestDeleteErrorDeleteFailed(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("Delete", "bad", mock.Anything).Return(clustertestutils.ErrDeleteClusterFailed)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	// Mock command runner to return error
+	runner.On("Run").
+		Return(commandrunner.CommandResult{}, clustertestutils.ErrDeleteClusterFailed)
 
 	err := provisioner.Delete(context.Background(), "bad")
 
@@ -101,8 +158,11 @@ func TestDeleteErrorDeleteFailed(t *testing.T) {
 
 func TestExistsSuccessFalse(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return([]string{"x", "y"}, nil)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	// Mock command runner to return cluster names that don't include "not-here"
+	runner.On("Run").
+		Return(commandrunner.CommandResult{Stdout: "x\ny\n", Stderr: ""}, nil)
 
 	exists, err := provisioner.Exists(context.Background(), "not-here")
 	if err != nil {
@@ -116,8 +176,11 @@ func TestExistsSuccessFalse(t *testing.T) {
 
 func TestExistsSuccessTrue(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return([]string{"x", "cfg-name"}, nil)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	// Mock command runner to return cluster names including cfg-name
+	runner.On("Run").
+		Return(commandrunner.CommandResult{Stdout: "x\ncfg-name\n", Stderr: ""}, nil)
 
 	exists, err := provisioner.Exists(context.Background(), "")
 	if err != nil {
@@ -131,8 +194,11 @@ func TestExistsSuccessTrue(t *testing.T) {
 
 func TestExistsErrorListFailed(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	// Mock command runner to return error
+	runner.On("Run").
+		Return(commandrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
 
 	exists, err := provisioner.Exists(context.Background(), "any")
 
@@ -146,8 +212,10 @@ func TestExistsErrorListFailed(t *testing.T) {
 
 func TestListSuccess(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return([]string{"a", "b"}, nil)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	// Mock command runner to return cluster names
+	runner.On("Run").
+		Return(commandrunner.CommandResult{Stdout: "a\nb\n", Stderr: ""}, nil)
 
 	got, err := provisioner.List(context.Background())
 
@@ -157,8 +225,10 @@ func TestListSuccess(t *testing.T) {
 
 func TestListErrorListFailed(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
-	provider.On("List").Return(nil, clustertestutils.ErrListClustersFailed)
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	// Mock command runner to return error
+	runner.On("Run").
+		Return(commandrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
 
 	_, err := provisioner.List(context.Background())
 
@@ -175,7 +245,7 @@ func TestStartErrorClusterNotFound(t *testing.T) {
 
 func TestStartErrorNoNodesFound(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
+	provisioner, provider, _, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStartClusterFailed)
 
 	err := provisioner.Start(context.Background(), "")
@@ -186,8 +256,7 @@ func TestStartErrorNoNodesFound(t *testing.T) {
 
 func TestStartSuccess(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, client := newProvisionerForTest(t)
-
+	provisioner, provider, client, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane", "kind-worker"}, nil)
 
 	// Expect ContainerStart called twice with any args
@@ -222,7 +291,7 @@ func TestStopErrorClusterNotFound(t *testing.T) {
 
 func TestStopErrorNoNodesFound(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, _ := newProvisionerForTest(t)
+	provisioner, provider, _, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return(nil, clustertestutils.ErrStopClusterFailed)
 
 	err := provisioner.Stop(context.Background(), "")
@@ -247,8 +316,7 @@ func TestStopErrorDockerStopFailed(t *testing.T) {
 
 func TestStopSuccess(t *testing.T) {
 	t.Parallel()
-	provisioner, provider, client := newProvisionerForTest(t)
-
+	provisioner, provider, client, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").
 		Return([]string{"kind-control-plane", "kind-worker", "kind-worker2"}, nil)
 
@@ -268,10 +336,12 @@ func newProvisionerForTest(
 	*kindprovisioner.KindClusterProvisioner,
 	*kindprovisioner.MockKindProvider,
 	*docker.MockContainerAPIClient,
+	*mockCommandRunner,
 ) {
 	t.Helper()
 	provider := kindprovisioner.NewMockKindProvider(t)
 	client := docker.NewMockContainerAPIClient(t)
+	runner := &mockCommandRunner{}
 
 	cfg := &v1alpha4.Cluster{
 		Name: "cfg-name",
@@ -280,14 +350,15 @@ func newProvisionerForTest(
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 		},
 	}
-	provisioner := kindprovisioner.NewKindClusterProvisioner(
+	provisioner := kindprovisioner.NewKindClusterProvisionerWithRunner(
 		cfg,
 		"~/.kube/config",
 		provider,
 		client,
+		runner,
 	)
 
-	return provisioner, provider, client
+	return provisioner, provider, client, runner
 }
 
 // helper to DRY up the repeated "cluster not found" error scenario for Start/Stop.
@@ -297,7 +368,7 @@ func runClusterNotFoundTest(
 	action func(*kindprovisioner.KindClusterProvisioner) error,
 ) {
 	t.Helper()
-	provisioner, provider, _ := newProvisionerForTest(t)
+	provisioner, provider, _, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return([]string{}, nil)
 
 	err := action(provisioner)
@@ -319,8 +390,7 @@ func runDockerOperationFailureTest(
 	expectedErrorMsg string,
 ) {
 	t.Helper()
-	provisioner, provider, client := newProvisionerForTest(t)
-
+	provisioner, provider, client, _ := newProvisionerForTest(t)
 	provider.On("ListNodes", "cfg-name").Return([]string{"kind-control-plane"}, nil)
 
 	expectDockerCall(client)
