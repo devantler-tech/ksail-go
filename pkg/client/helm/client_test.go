@@ -17,6 +17,7 @@ import (
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	helmclientlib "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
 	helmtime "helm.sh/helm/v3/pkg/time"
 )
@@ -323,6 +324,168 @@ func TestHelmClientContextSupport(t *testing.T) {
 
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context.Canceled error, got %v", err)
+	}
+}
+
+func TestValidateRepositoryRequest(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name    string
+		ctx     context.Context
+		entry   *RepositoryEntry
+		expects error
+	}{
+		{
+			name:    "NilEntry",
+			ctx:     context.Background(),
+			entry:   nil,
+			expects: errRepositoryEntryRequired,
+		},
+		{
+			name: "MissingName",
+			ctx:  context.Background(),
+			entry: &RepositoryEntry{
+				URL: "https://example.com/charts",
+			},
+			expects: errRepositoryNameRequired,
+		},
+		{
+			name: "ContextCancelled",
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+
+				return ctx
+			}(),
+			entry:   &RepositoryEntry{Name: "cilium"},
+			expects: context.Canceled,
+		},
+		{
+			name: "Valid",
+			ctx:  context.Background(),
+			entry: &RepositoryEntry{
+				Name: "cilium",
+				URL:  "https://helm.cilium.io",
+			},
+			expects: nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateRepositoryRequest(testCase.ctx, testCase.entry)
+
+			if testCase.expects == nil {
+				testutils.ExpectNoError(t, err, "validateRepositoryRequest")
+
+				return
+			}
+
+			if !errors.Is(err, testCase.expects) {
+				t.Fatalf("expected error %v, got %v", testCase.expects, err)
+			}
+		})
+	}
+}
+
+func TestEnsureRepositoryConfig(t *testing.T) {
+	t.Run("ErrorsWhenUnset", func(t *testing.T) {
+		t.Parallel()
+
+		settings := cli.New()
+		settings.RepositoryConfig = ""
+
+		_, err := ensureRepositoryConfig(settings)
+		if !errors.Is(err, errRepositoryConfigUnset) {
+			t.Fatalf("expected errRepositoryConfigUnset, got %v", err)
+		}
+	})
+
+	t.Run("RespectsEnvOverride", func(t *testing.T) {
+		dir := t.TempDir()
+		repoFile := filepath.Join(dir, "repositories.yaml")
+		t.Setenv("HELM_REPOSITORY_CONFIG", repoFile)
+
+		settings := cli.New()
+		settings.RepositoryConfig = ""
+
+		returned, err := ensureRepositoryConfig(settings)
+		testutils.ExpectNoError(t, err, "ensureRepositoryConfig")
+
+		if returned != repoFile {
+			t.Fatalf("expected repo file %q, got %q", repoFile, returned)
+		}
+
+		if _, statErr := os.Stat(dir); statErr != nil {
+			t.Fatalf("expected repo directory to exist: %v", statErr)
+		}
+	})
+}
+
+func TestLoadOrInitRepositoryFile(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ReturnsNewFileWhenMissing", func(t *testing.T) {
+		t.Parallel()
+
+		path := filepath.Join(t.TempDir(), "missing-repo.yaml")
+		file := loadOrInitRepositoryFile(path)
+
+		if file == nil {
+			t.Fatal("expected repository file instance")
+		}
+
+		if len(file.Repositories) != 0 {
+			t.Fatalf("expected empty repository list, got %d", len(file.Repositories))
+		}
+	})
+}
+
+func TestEnsureRepositoryCache(t *testing.T) {
+	t.Run("ErrorsWhenUnset", func(t *testing.T) {
+		t.Parallel()
+
+		settings := cli.New()
+		settings.RepositoryCache = ""
+
+		_, err := ensureRepositoryCache(settings)
+		if !errors.Is(err, errRepositoryCacheUnset) {
+			t.Fatalf("expected errRepositoryCacheUnset, got %v", err)
+		}
+	})
+
+	t.Run("RespectsEnvOverride", func(t *testing.T) {
+		dir := filepath.Join(t.TempDir(), "cache")
+		t.Setenv("HELM_REPOSITORY_CACHE", dir)
+
+		settings := cli.New()
+		settings.RepositoryCache = ""
+
+		cache, err := ensureRepositoryCache(settings)
+		testutils.ExpectNoError(t, err, "ensureRepositoryCache")
+
+		if cache != dir {
+			t.Fatalf("expected cache path %q, got %q", dir, cache)
+		}
+
+		if _, statErr := os.Stat(dir); statErr != nil {
+			t.Fatalf("expected cache directory to exist: %v", statErr)
+		}
+	})
+}
+
+func TestClientUninstallReleaseRequiresName(t *testing.T) {
+	t.Parallel()
+
+	client, err := NewClient("", "")
+	testutils.ExpectNoError(t, err, "NewClient")
+
+	err = client.UninstallRelease(context.Background(), "", "default")
+	if !errors.Is(err, errReleaseNameRequired) {
+		t.Fatalf("expected errReleaseNameRequired, got %v", err)
 	}
 }
 

@@ -252,6 +252,18 @@ func TestCiliumInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 	)
 }
 
+func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
+	t.Parallel()
+
+	installer := NewCiliumInstaller(NewMockHelmClient(t), "kubeconfig", "", time.Second)
+	installer.waitFn = nil
+
+	err := installer.WaitForReadiness(context.Background())
+	if err != nil {
+		t.Fatalf("expected nil error when waitFn unset, got %v", err)
+	}
+}
+
 func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Parallel()
 
