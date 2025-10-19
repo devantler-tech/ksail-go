@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -340,6 +341,227 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
+}
+
+func TestScaffoldAppliesContextDefaults(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		initial      string
+		expected     string
+	}{
+		{
+			name:         "KindDefaultContext",
+			distribution: v1alpha1.DistributionKind,
+			expected:     "kind-kind",
+		},
+		{
+			name:         "K3dDefaultContext",
+			distribution: v1alpha1.DistributionK3d,
+			expected:     "k3d-k3d-default",
+		},
+		{
+			name:         "KeepExistingContext",
+			distribution: v1alpha1.DistributionKind,
+			initial:      "custom",
+			expected:     "custom",
+		},
+		{
+			name:         "UnknownDistributionContext",
+			distribution: v1alpha1.Distribution("Unknown"),
+			expected:     "",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			buffer := &bytes.Buffer{}
+			instance, mocks := newScaffolderWithMocks(t, buffer)
+
+			instance.KSailConfig.Spec.Distribution = testCase.distribution
+			instance.KSailConfig.Spec.Connection.Context = testCase.initial
+			instance.KSailConfig.Spec.DistributionConfig = ""
+
+			_ = instance.Scaffold(tempDir, false)
+
+			capturedContext := mocks.ksailLastModel.Spec.Connection.Context
+			if capturedContext != testCase.expected {
+				t.Fatalf("expected context %q, got %q", testCase.expected, capturedContext)
+			}
+		})
+	}
+}
+
+func TestGenerateKindConfigHandlesCNI(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name          string
+		cni           v1alpha1.CNI
+		expectDisable bool
+	}{
+		{name: "DefaultCNI", cni: v1alpha1.CNIDefault, expectDisable: false},
+		{name: "CiliumCNI", cni: v1alpha1.CNICilium, expectDisable: true},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			tempDir := t.TempDir()
+			buffer := &bytes.Buffer{}
+			instance, mocks := newScaffolderWithMocks(t, buffer)
+			instance.KSailConfig.Spec.CNI = testCase.cni
+			instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionKind
+
+			mocks.kind.ExpectedCalls = nil
+
+			var captured *v1alpha4.Cluster
+			mocks.kind.On(
+				"Generate",
+				mock.MatchedBy(func(cfg *v1alpha4.Cluster) bool {
+					captured = cfg
+
+					return true
+				}),
+				mock.Anything,
+			).Return("", nil).Once()
+
+			err := instance.Scaffold(tempDir, true)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if captured == nil {
+				t.Fatal("expected captured kind config")
+			}
+
+			disableDefault := captured.Networking.DisableDefaultCNI
+			if disableDefault != testCase.expectDisable {
+				t.Fatalf(
+					"expected DisableDefaultCNI=%t, got %t",
+					testCase.expectDisable,
+					disableDefault,
+				)
+			}
+		})
+	}
+}
+
+func TestGenerateK3dConfigHandlesCNI(t *testing.T) {
+	t.Parallel()
+
+	cases := []k3dCniCase{
+		{name: "DefaultCNI", cni: v1alpha1.CNIDefault, expectArgs: 0},
+		{
+			name:        "CiliumCNI",
+			cni:         v1alpha1.CNICilium,
+			expectArgs:  2,
+			expectValue: "--flannel-backend=none",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runK3dCniCase(t, testCase)
+		})
+	}
+}
+
+type k3dCniCase struct {
+	name        string
+	cni         v1alpha1.CNI
+	expectArgs  int
+	expectValue string
+}
+
+func runK3dCniCase(t *testing.T, testCase k3dCniCase) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+	instance.KSailConfig.Spec.CNI = testCase.cni
+	instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionK3d
+
+	mocks.k3d.ExpectedCalls = nil
+
+	var captured *k3dv1alpha5.SimpleConfig
+	mocks.k3d.On(
+		"Generate",
+		mock.MatchedBy(func(cfg *k3dv1alpha5.SimpleConfig) bool {
+			captured = cfg
+
+			return true
+		}),
+		mock.Anything,
+	).Return("", nil).Once()
+
+	err := instance.Scaffold(tempDir, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if captured == nil {
+		t.Fatal("expected captured k3d config")
+	}
+
+	extraArgs := captured.Options.K3sOptions.ExtraArgs
+	if len(extraArgs) != testCase.expectArgs {
+		t.Fatalf("expected %d extra args, got %d", testCase.expectArgs, len(extraArgs))
+	}
+
+	if testCase.expectArgs > 0 {
+		if extraArgs[0].Arg != testCase.expectValue {
+			t.Fatalf("expected first arg %q, got %q", testCase.expectValue, extraArgs[0].Arg)
+		}
+	}
+}
+
+func TestScaffoldForceUpdatesModTime(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	ksailPath := filepath.Join(tempDir, "ksail.yaml")
+
+	writeErr := os.WriteFile(ksailPath, []byte("existing"), 0o600)
+	if writeErr != nil {
+		t.Fatalf("failed to write test file: %v", writeErr)
+	}
+
+	oldTime := time.Now().Add(-2 * time.Minute)
+
+	setTimeErr := os.Chtimes(ksailPath, oldTime, oldTime)
+	if setTimeErr != nil {
+		t.Fatalf("failed to set mod time: %v", setTimeErr)
+	}
+
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+
+	mocks.ksail.ExpectedCalls = nil
+	mocks.ksail.On("Generate", mock.Anything, mock.Anything).Return("", nil).Once()
+
+	scaffoldErr := instance.Scaffold(tempDir, true)
+	if scaffoldErr != nil {
+		t.Fatalf("unexpected error: %v", scaffoldErr)
+	}
+
+	info, err := os.Stat(ksailPath)
+	if err != nil {
+		t.Fatalf("failed to stat ksail.yaml: %v", err)
+	}
+
+	if !info.ModTime().After(oldTime) {
+		t.Fatalf("expected mod time after %v, got %v", oldTime, info.ModTime())
+	}
 }
 
 // Test case definitions.

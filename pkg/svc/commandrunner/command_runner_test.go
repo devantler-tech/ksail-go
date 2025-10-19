@@ -117,6 +117,127 @@ func TestMergeCommandError_NoDetailsReturnsBase(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Serializes stdout manipulation to avoid race with global stdio.
+func TestCommandExecutionExecuteWrapsError(t *testing.T) {
+	execCtx := setupCommandExecution(t)
+
+	err := execCtx.configureLogger()
+	if err != nil {
+		t.Fatalf("configure logger: %v", err)
+	}
+
+	ctx := context.Background()
+	cmd := &cobra.Command{
+		RunE: func(*cobra.Command, []string) error {
+			return errBaseFailure
+		},
+	}
+
+	execCtx.prepareCommand(ctx, cmd, nil)
+
+	execErr := execCtx.execute(ctx, cmd)
+	if execErr == nil {
+		t.Fatal("expected execute error")
+	}
+
+	if !errors.Is(execErr, errBaseFailure) {
+		t.Fatalf("expected wrapped base error, got %v", execErr)
+	}
+
+	if !strings.Contains(execErr.Error(), "execute command: base failure") {
+		t.Fatalf("expected wrapped message, got %q", execErr.Error())
+	}
+}
+
+func TestCommandExecutionConfigureLoggerRequiresLogger(t *testing.T) {
+	t.Parallel()
+
+	ce := &commandExecution{}
+
+	err := ce.configureLogger()
+	if !errors.Is(err, errLoggerUnavailable) {
+		t.Fatalf("expected errLoggerUnavailable, got %v", err)
+	}
+}
+
+//nolint:paralleltest // Mutates shared logger formatter state during configuration.
+func TestCommandExecutionConfigureLoggerFormatterSelection(t *testing.T) {
+	t.Run("assigns text formatter when logger formatter nil", func(t *testing.T) {
+		execCtx := setupCommandExecution(t)
+
+		originalFormatter := execCtx.logger.Formatter
+		execCtx.logger.Formatter = nil
+
+		t.Cleanup(func() {
+			execCtx.logger.Formatter = originalFormatter
+		})
+
+		err := execCtx.configureLogger()
+		if err != nil {
+			t.Fatalf("configure logger: %v", err)
+		}
+
+		formatter, ok := execCtx.formatter.(*logrus.TextFormatter)
+		if !ok {
+			t.Fatalf("expected text formatter, got %T", execCtx.formatter)
+		}
+
+		expectForceColors := execCtx.originalStdout != nil
+		if formatter.ForceColors != expectForceColors {
+			t.Fatalf("expected ForceColors=%t, got %t", expectForceColors, formatter.ForceColors)
+		}
+	})
+
+	t.Run("retains custom formatter instance", func(t *testing.T) {
+		execCtx := setupCommandExecution(t)
+
+		custom := &logrus.JSONFormatter{}
+		previous := execCtx.logger.Formatter
+		execCtx.logger.Formatter = custom
+
+		t.Cleanup(func() {
+			execCtx.logger.Formatter = previous
+		})
+
+		err := execCtx.configureLogger()
+		if err != nil {
+			t.Fatalf("configure logger: %v", err)
+		}
+
+		if execCtx.formatter != custom {
+			t.Fatalf("expected custom formatter to be retained, got %T", execCtx.formatter)
+		}
+	})
+}
+
+//nolint:paralleltest // Exercises logger exit function that mutates shared state.
+func TestCommandExecutionConfigureLoggerExitFuncCapturesStatus(t *testing.T) {
+	execCtx := setupCommandExecution(t)
+
+	err := execCtx.configureLogger()
+	if err != nil {
+		t.Fatalf("configure logger: %v", err)
+	}
+
+	func() {
+		defer func() {
+			if recovered := recover(); recovered == nil {
+				t.Fatal("expected panic from exit func")
+			}
+		}()
+
+		execCtx.logger.ExitFunc(42)
+	}()
+
+	if execCtx.fatalErr == nil {
+		t.Fatal("expected fatal error to be recorded")
+	}
+
+	if !strings.Contains(execCtx.fatalErr.Error(), "status 42") {
+		t.Fatalf("expected status code in fatal error, got %q", execCtx.fatalErr.Error())
+	}
+}
+
 func TestPipeForwardHookWritesFormattedEntry(t *testing.T) {
 	t.Parallel()
 
@@ -188,6 +309,28 @@ func TestPipeForwardHookReturnsWriteErrors(t *testing.T) {
 	err := hook.Fire(entry)
 	if err == nil || !errors.Is(err, errWriteFailed) {
 		t.Fatalf("expected write error, got %v", err)
+	}
+}
+
+func TestPipeForwardHookSkipsWhenUnconfigured(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]pipeForwardHook{
+		"missing-writer":    {formatter: stubFormatter{output: []byte("noop")}},
+		"missing-formatter": {writer: &bytes.Buffer{}},
+	}
+
+	entry := newLogEntry(logrus.InfoLevel, "skip")
+
+	for name, hook := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := hook.Fire(entry)
+			if err != nil {
+				t.Fatalf("expected nil error for %s, got %v", name, err)
+			}
+		})
 	}
 }
 
@@ -355,28 +498,44 @@ func TestIsStdoutInfoWriterHook(t *testing.T) {
 func TestCloneHooks(t *testing.T) {
 	t.Parallel()
 
-	stdout := newStdoutFile(t)
+	t.Run("returns nil when input nil", func(t *testing.T) {
+		t.Parallel()
 
-	original := logrus.LevelHooks{
-		logrus.InfoLevel: {
-			&logwriter.Hook{Writer: stdout, LogLevels: []logrus.Level{logrus.InfoLevel}},
-		},
-		logrus.ErrorLevel: {
-			&logwriter.Hook{Writer: stdout, LogLevels: []logrus.Level{logrus.ErrorLevel}},
-		},
-	}
+		if clone := cloneHooks(nil); clone != nil {
+			t.Fatalf("expected nil clone, got %#v", clone)
+		}
+	})
 
-	clone := cloneHooks(original)
+	t.Run("skips empty levels and clones hooks", func(t *testing.T) {
+		t.Parallel()
 
-	if len(clone) != len(original) {
-		t.Fatalf("expected clone to match size, got %d vs %d", len(clone), len(original))
-	}
+		stdout := newStdoutFile(t)
 
-	// Mutate clone and ensure original unaffected.
-	clone[logrus.InfoLevel] = nil
-	if original[logrus.InfoLevel] == nil {
-		t.Fatal("expected original to remain unchanged")
-	}
+		original := logrus.LevelHooks{
+			logrus.InfoLevel: {},
+			logrus.ErrorLevel: {
+				&logwriter.Hook{Writer: stdout, LogLevels: []logrus.Level{logrus.ErrorLevel}},
+			},
+		}
+
+		clone := cloneHooks(original)
+
+		if _, exists := clone[logrus.InfoLevel]; exists {
+			t.Fatal("expected empty level to be skipped in clone")
+		}
+
+		actual := len(clone[logrus.ErrorLevel])
+		expected := len(original[logrus.ErrorLevel])
+
+		if actual != expected {
+			t.Fatalf("expected error level hooks copied, got %d vs %d", actual, expected)
+		}
+
+		clone[logrus.ErrorLevel] = nil
+		if original[logrus.ErrorLevel] == nil {
+			t.Fatal("expected original hooks to remain unchanged")
+		}
+	})
 }
 
 type stubFormatter struct {
@@ -428,4 +587,20 @@ func newStdoutFile(t *testing.T) *os.File {
 	})
 
 	return file
+}
+
+func setupCommandExecution(t *testing.T) *commandExecution {
+	t.Helper()
+
+	execCtx, err := newCommandExecution()
+	if err != nil {
+		t.Fatalf("new command execution: %v", err)
+	}
+
+	t.Cleanup(func() {
+		execCtx.resetLogger()
+		execCtx.restore()
+	})
+
+	return execCtx
 }
