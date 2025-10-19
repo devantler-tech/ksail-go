@@ -52,6 +52,7 @@ jobs:
           fi
 
   ci:
+    needs: [pre-commit]
     if: github.event_name == 'push'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@800bac1f7de14fcc6b9b9bcf62e201308eafd15b # v1.15.12
     secrets:
@@ -64,8 +65,8 @@ jobs:
 
   system-test:
     runs-on: ubuntu-latest
-    # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
-    needs: [ci]
+    # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
+    needs: [pre-commit, ci]
     if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:
