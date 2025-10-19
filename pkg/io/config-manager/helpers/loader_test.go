@@ -225,14 +225,19 @@ func TestFormatValidationErrorsMultiline(t *testing.T) {
 
 	tests := []TestCase{
 		{
-			Name:     "single error",
+			Name:     "single error without fix",
 			Result:   commonResults["single_error"],
-			Expected: "  - name: is required\n",
+			Expected: "error: is required\nfield: name\n",
 		},
 		{
-			Name:     "multiple errors with specific validation data",
+			Name:     "single error with fix",
+			Result:   commonResults["single_error_with_fix"],
+			Expected: "error: is required\nfield: name\nfix: add name field\n",
+		},
+		{
+			Name:     "multiple errors with mixed fix suggestions",
 			Result:   commonResults["multiple_errors"],
-			Expected: "  - name: is required\n  - version: is invalid\n",
+			Expected: "error: is required\nfield: name\nfix: add name field\n\nerror: is invalid\nfield: version\n",
 		},
 		{
 			Name:     "no errors",
@@ -464,4 +469,36 @@ func TestLoadAndValidateConfigErrors(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to validate config")
+}
+
+func TestValidationSummaryError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("formats error with errors only", func(t *testing.T) {
+		t.Parallel()
+
+		err := helpers.NewValidationSummaryError(1, 0)
+		assert.Equal(t, "validation reported 1 error(s)", err.Error())
+	})
+
+	t.Run("formats error with errors and warnings", func(t *testing.T) {
+		t.Parallel()
+
+		err := helpers.NewValidationSummaryError(2, 3)
+		assert.Equal(t, "validation reported 2 error(s) and 3 warning(s)", err.Error())
+	})
+
+	t.Run("formats error with multiple errors", func(t *testing.T) {
+		t.Parallel()
+
+		err := helpers.NewValidationSummaryError(5, 0)
+		assert.Equal(t, "validation reported 5 error(s)", err.Error())
+	})
+
+	t.Run("formats error with warnings only", func(t *testing.T) {
+		t.Parallel()
+
+		err := helpers.NewValidationSummaryError(0, 2)
+		assert.Equal(t, "validation reported 2 warning(s)", err.Error())
+	})
 }
