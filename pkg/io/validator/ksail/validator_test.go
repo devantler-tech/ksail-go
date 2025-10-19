@@ -17,6 +17,7 @@ import (
 
 const (
 	specDistributionField = "spec.distribution"
+	specCNIField          = "spec.cni"
 	kindKSailContext      = "kind-ksail"
 )
 
@@ -285,7 +286,7 @@ func runKindCiliumAlignmentTest(
 	found := false
 
 	for _, err := range result.Errors {
-		if err.Field == "spec.cni" {
+		if err.Field == specCNIField {
 			found = true
 
 			if expectedMessagePart != "" {
@@ -1390,4 +1391,232 @@ func createK3dConfigValidator() *ksailvalidator.Validator {
 	}
 
 	return ksailvalidator.NewValidatorForK3d(k3dConfig)
+}
+
+// kindDefaultCNITestCase defines a test case for Kind Default CNI validation.
+type kindDefaultCNITestCase struct {
+	name                string
+	cni                 v1alpha1.CNI
+	disableDefaultCNI   bool
+	expectValid         bool
+	expectedMessagePart string
+}
+
+// runKindDefaultCNITest runs a single Kind Default CNI validation test case.
+func runKindDefaultCNITest(t *testing.T, testCase kindDefaultCNITestCase) {
+	t.Helper()
+
+	kindConfig := &kindv1alpha4.Cluster{
+		Name: "ksail",
+		Networking: kindv1alpha4.Networking{
+			DisableDefaultCNI: testCase.disableDefaultCNI,
+		},
+	}
+
+	validator := ksailvalidator.NewValidatorForKind(kindConfig)
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = testCase.cni
+	config.Spec.Connection.Context = kindKSailContext
+
+	result := validator.Validate(config)
+
+	if testCase.expectValid {
+		assert.True(t, result.Valid, "expected config to be valid")
+		assert.Empty(t, result.Errors, "expected no validation errors when configuration is valid")
+
+		return
+	}
+
+	assert.False(t, result.Valid, "expected validation to fail")
+
+	found := false
+
+	for _, err := range result.Errors {
+		if err.Field == specCNIField {
+			found = true
+
+			if testCase.expectedMessagePart != "" {
+				assert.Contains(
+					t,
+					err.Message,
+					testCase.expectedMessagePart,
+					"error message should mention expected hint",
+				)
+			}
+
+			assert.NotEmpty(t, err.FixSuggestion, "error should include fix suggestion")
+
+			break
+		}
+	}
+
+	assert.True(t, found, "expected to find Default CNI alignment validation error")
+}
+
+// TestKSailValidatorKindDefaultCNIAlignment tests validation for Default CNI with Kind.
+func TestKSailValidatorKindDefaultCNIAlignment(t *testing.T) {
+	t.Parallel()
+
+	tests := []kindDefaultCNITestCase{
+		{
+			name:                "default_cni_with_disabled_cni",
+			cni:                 v1alpha1.CNIDefault,
+			disableDefaultCNI:   true,
+			expectValid:         false,
+			expectedMessagePart: "Default CNI requires disableDefaultCNI to be false",
+		},
+		{
+			name:                "default_cni_with_enabled_cni",
+			cni:                 v1alpha1.CNIDefault,
+			disableDefaultCNI:   false,
+			expectValid:         true,
+			expectedMessagePart: "",
+		},
+		{
+			name:                "empty_cni_with_disabled_cni",
+			cni:                 "",
+			disableDefaultCNI:   true,
+			expectValid:         false,
+			expectedMessagePart: "Default CNI requires disableDefaultCNI to be false",
+		},
+		{
+			name:                "empty_cni_with_enabled_cni",
+			cni:                 "",
+			disableDefaultCNI:   false,
+			expectValid:         true,
+			expectedMessagePart: "",
+		},
+	}
+
+	for idx := range tests {
+		testCase := tests[idx]
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runKindDefaultCNITest(t, testCase)
+		})
+	}
+}
+
+// k3dDefaultCNITestCase defines a test case for K3d Default CNI validation.
+type k3dDefaultCNITestCase struct {
+	name                string
+	cni                 v1alpha1.CNI
+	extraArgs           []k3dapi.K3sArgWithNodeFilters
+	expectValid         bool
+	expectedMessagePart string
+}
+
+// runK3dDefaultCNITest runs a single K3d Default CNI validation test case.
+func runK3dDefaultCNITest(t *testing.T, testCase k3dDefaultCNITestCase) {
+	t.Helper()
+
+	k3dConfig := &k3dapi.SimpleConfig{
+		ObjectMeta: k3dtypes.ObjectMeta{Name: "ksail"},
+		Options: k3dapi.SimpleConfigOptions{
+			K3sOptions: k3dapi.SimpleConfigOptionsK3s{
+				ExtraArgs: testCase.extraArgs,
+			},
+		},
+	}
+
+	validator := ksailvalidator.NewValidatorForK3d(k3dConfig)
+
+	config := createValidKSailConfig(v1alpha1.DistributionK3d)
+	config.Spec.CNI = testCase.cni
+	config.Spec.Connection.Context = "k3d-ksail"
+
+	result := validator.Validate(config)
+
+	if testCase.expectValid {
+		assert.True(t, result.Valid, "expected config to be valid")
+		assert.Empty(t, result.Errors, "expected no validation errors when configuration is valid")
+
+		return
+	}
+
+	assert.False(t, result.Valid, "expected validation to fail")
+
+	found := false
+
+	for _, err := range result.Errors {
+		if err.Field == specCNIField {
+			found = true
+
+			if testCase.expectedMessagePart != "" {
+				assert.Contains(
+					t,
+					err.Message,
+					testCase.expectedMessagePart,
+					"error message should mention expected hint",
+				)
+			}
+
+			assert.NotEmpty(t, err.FixSuggestion, "error should include fix suggestion")
+
+			break
+		}
+	}
+
+	assert.True(t, found, "expected to find Default CNI alignment validation error")
+}
+
+// TestKSailValidatorK3dDefaultCNIAlignment tests validation for Default CNI with K3d.
+func TestKSailValidatorK3dDefaultCNIAlignment(t *testing.T) {
+	t.Parallel()
+
+	tests := []k3dDefaultCNITestCase{
+		{
+			name: "default_cni_with_flannel_disabled",
+			cni:  v1alpha1.CNIDefault,
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--flannel-backend=none", NodeFilters: []string{"server:*"}},
+			},
+			expectValid:         false,
+			expectedMessagePart: "Default CNI requires Flannel to be enabled",
+		},
+		{
+			name: "default_cni_with_network_policy_disabled",
+			cni:  v1alpha1.CNIDefault,
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--disable-network-policy", NodeFilters: []string{"server:*"}},
+			},
+			expectValid:         false,
+			expectedMessagePart: "Default CNI requires Flannel to be enabled",
+		},
+		{
+			name: "default_cni_with_both_disabled",
+			cni:  v1alpha1.CNIDefault,
+			extraArgs: []k3dapi.K3sArgWithNodeFilters{
+				{Arg: "--flannel-backend=none", NodeFilters: []string{"server:*"}},
+				{Arg: "--disable-network-policy", NodeFilters: []string{"server:*"}},
+			},
+			expectValid:         false,
+			expectedMessagePart: "Default CNI requires Flannel to be enabled",
+		},
+		{
+			name:                "default_cni_with_flannel_enabled",
+			cni:                 v1alpha1.CNIDefault,
+			extraArgs:           []k3dapi.K3sArgWithNodeFilters{},
+			expectValid:         true,
+			expectedMessagePart: "",
+		},
+		{
+			name:                "empty_cni_with_flannel_enabled",
+			cni:                 "",
+			extraArgs:           []k3dapi.K3sArgWithNodeFilters{},
+			expectValid:         true,
+			expectedMessagePart: "",
+		},
+	}
+
+	for idx := range tests {
+		testCase := tests[idx]
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runK3dDefaultCNITest(t, testCase)
+		})
+	}
 }
