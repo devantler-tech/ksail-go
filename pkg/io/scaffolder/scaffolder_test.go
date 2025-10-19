@@ -379,17 +379,7 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tempDir := t.TempDir()
-			buffer := &bytes.Buffer{}
-			instance, mocks := newScaffolderWithMocks(t, buffer)
-
-			instance.KSailConfig.Spec.Distribution = testCase.distribution
-			instance.KSailConfig.Spec.Connection.Context = testCase.initial
-			instance.KSailConfig.Spec.DistributionConfig = ""
-
-			_ = instance.Scaffold(tempDir, false)
-
-			capturedContext := mocks.ksailLastModel.Spec.Connection.Context
+			capturedContext := captureScaffoldedContext(t, testCase.distribution, testCase.initial)
 			if capturedContext != testCase.expected {
 				t.Fatalf("expected context %q, got %q", testCase.expected, capturedContext)
 			}
@@ -413,33 +403,7 @@ func TestGenerateKindConfigHandlesCNI(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			tempDir := t.TempDir()
-			buffer := &bytes.Buffer{}
-			instance, mocks := newScaffolderWithMocks(t, buffer)
-			instance.KSailConfig.Spec.CNI = testCase.cni
-			instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionKind
-
-			mocks.kind.ExpectedCalls = nil
-
-			var captured *v1alpha4.Cluster
-			mocks.kind.On(
-				"Generate",
-				mock.MatchedBy(func(cfg *v1alpha4.Cluster) bool {
-					captured = cfg
-
-					return true
-				}),
-				mock.Anything,
-			).Return("", nil).Once()
-
-			err := instance.Scaffold(tempDir, true)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if captured == nil {
-				t.Fatal("expected captured kind config")
-			}
+			captured := captureKindConfigForCNI(t, testCase.cni)
 
 			disableDefault := captured.Networking.DisableDefaultCNI
 			if disableDefault != testCase.expectDisable {
@@ -484,33 +448,7 @@ type k3dCniCase struct {
 func runK3dCniCase(t *testing.T, testCase k3dCniCase) {
 	t.Helper()
 
-	tempDir := t.TempDir()
-	buffer := &bytes.Buffer{}
-	instance, mocks := newScaffolderWithMocks(t, buffer)
-	instance.KSailConfig.Spec.CNI = testCase.cni
-	instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionK3d
-
-	mocks.k3d.ExpectedCalls = nil
-
-	var captured *k3dv1alpha5.SimpleConfig
-	mocks.k3d.On(
-		"Generate",
-		mock.MatchedBy(func(cfg *k3dv1alpha5.SimpleConfig) bool {
-			captured = cfg
-
-			return true
-		}),
-		mock.Anything,
-	).Return("", nil).Once()
-
-	err := instance.Scaffold(tempDir, true)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if captured == nil {
-		t.Fatal("expected captured k3d config")
-	}
+	captured := captureK3dConfigForCNI(t, testCase.cni)
 
 	extraArgs := captured.Options.K3sOptions.ExtraArgs
 	if len(extraArgs) != testCase.expectArgs {
@@ -522,6 +460,114 @@ func runK3dCniCase(t *testing.T, testCase k3dCniCase) {
 			t.Fatalf("expected first arg %q, got %q", testCase.expectValue, extraArgs[0].Arg)
 		}
 	}
+}
+
+func captureScaffoldedContext(
+	t *testing.T,
+	distribution v1alpha1.Distribution,
+	initial string,
+) string {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+
+	instance.KSailConfig.Spec.Distribution = distribution
+	instance.KSailConfig.Spec.Connection.Context = initial
+	instance.KSailConfig.Spec.DistributionConfig = ""
+
+	err := instance.Scaffold(tempDir, false)
+	require.NoError(t, err)
+
+	return mocks.ksailLastModel.Spec.Connection.Context
+}
+
+func captureDistributionConfigForCNI[T any](
+	t *testing.T,
+	distribution v1alpha1.Distribution,
+	cni v1alpha1.CNI,
+	reset func(*generatorMocks),
+	register func(*generatorMocks, func(T) bool),
+) T {
+	t.Helper()
+
+	instance, mocks, tempDir := setupScaffolderForCNI(
+		t,
+		distribution,
+		cni,
+	)
+
+	reset(mocks)
+
+	var captured T
+	register(mocks, func(cfg T) bool {
+		captured = cfg
+
+		return true
+	})
+
+	err := instance.Scaffold(tempDir, true)
+	require.NoError(t, err)
+	require.NotNil(t, captured)
+
+	return captured
+}
+
+func captureKindConfigForCNI(t *testing.T, cni v1alpha1.CNI) *v1alpha4.Cluster {
+	t.Helper()
+
+	return captureDistributionConfigForCNI[*v1alpha4.Cluster](
+		t,
+		v1alpha1.DistributionKind,
+		cni,
+		func(m *generatorMocks) {
+			m.kind.ExpectedCalls = nil
+		},
+		func(m *generatorMocks, matcher func(*v1alpha4.Cluster) bool) {
+			m.kind.On(
+				"Generate",
+				mock.MatchedBy(matcher),
+				mock.Anything,
+			).Return("", nil).Once()
+		},
+	)
+}
+
+func captureK3dConfigForCNI(t *testing.T, cni v1alpha1.CNI) *k3dv1alpha5.SimpleConfig {
+	t.Helper()
+
+	return captureDistributionConfigForCNI[*k3dv1alpha5.SimpleConfig](
+		t,
+		v1alpha1.DistributionK3d,
+		cni,
+		func(m *generatorMocks) {
+			m.k3d.ExpectedCalls = nil
+		},
+		func(m *generatorMocks, matcher func(*k3dv1alpha5.SimpleConfig) bool) {
+			m.k3d.On(
+				"Generate",
+				mock.MatchedBy(matcher),
+				mock.Anything,
+			).Return("", nil).Once()
+		},
+	)
+}
+
+func setupScaffolderForCNI(
+	t *testing.T,
+	distribution v1alpha1.Distribution,
+	cni v1alpha1.CNI,
+) (*scaffolder.Scaffolder, *generatorMocks, string) {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+	instance.KSailConfig.Spec.CNI = cni
+	instance.KSailConfig.Spec.Distribution = distribution
+
+	return instance, mocks, tempDir
 }
 
 func TestScaffoldForceUpdatesModTime(t *testing.T) {

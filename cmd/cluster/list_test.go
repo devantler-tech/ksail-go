@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -253,9 +254,7 @@ func TestListAdditionalDistributionClusters_Success(t *testing.T) {
 	t.Parallel()
 
 	cmd, out := newCommandWithBuffer(t)
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	clusterCfg.Spec.DistributionConfig = "kind.yaml"
+	clusterCfg := buildClusterWithConfig(v1alpha1.DistributionKind, defaultKindConfig)
 
 	otherProvisioner := &recordingListProvisioner{listResult: []string{"k3d-primary"}}
 	otherFactory := &recordingListFactory{provisioner: otherProvisioner}
@@ -271,7 +270,7 @@ func TestListAdditionalDistributionClusters_Success(t *testing.T) {
 	require.Len(t, otherFactory.captured, 1)
 	require.NotNil(t, otherFactory.captured[0])
 	require.Equal(t, v1alpha1.DistributionK3d, otherFactory.captured[0].Spec.Distribution)
-	require.Equal(t, "k3d.yaml", otherFactory.captured[0].Spec.DistributionConfig)
+	require.Equal(t, defaultK3dConfig, otherFactory.captured[0].Spec.DistributionConfig)
 
 	output := out.String()
 	if !strings.Contains(output, "k3d: k3d-primary") {
@@ -383,7 +382,7 @@ func TestCloneClusterForDistribution(t *testing.T) {
 
 		require.NotNil(t, clone)
 		require.Equal(t, v1alpha1.DistributionKind, clone.Spec.Distribution)
-		require.Equal(t, "kind.yaml", clone.Spec.DistributionConfig)
+		require.Equal(t, defaultKindConfig, clone.Spec.DistributionConfig)
 		require.Equal(t, v1alpha1.DistributionK3d, original.Spec.Distribution)
 		require.Equal(t, "custom.yaml", original.Spec.DistributionConfig)
 	})
@@ -397,9 +396,9 @@ func TestDefaultDistributionConfigPath(t *testing.T) {
 		distribution v1alpha1.Distribution
 		expected     string
 	}{
-		{name: "kind", distribution: v1alpha1.DistributionKind, expected: "kind.yaml"},
-		{name: "k3d", distribution: v1alpha1.DistributionK3d, expected: "k3d.yaml"},
-		{name: "unknown", distribution: "other", expected: "kind.yaml"},
+		{name: "kind", distribution: v1alpha1.DistributionKind, expected: defaultKindConfig},
+		{name: "k3d", distribution: v1alpha1.DistributionK3d, expected: defaultK3dConfig},
+		{name: "unknown", distribution: "other", expected: defaultKindConfig},
 	}
 
 	for _, tc := range cases {
@@ -410,6 +409,24 @@ func TestDefaultDistributionConfigPath(t *testing.T) {
 			require.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+const (
+	defaultKindConfig = "kind.yaml"
+	defaultK3dConfig  = "k3d.yaml"
+)
+
+func buildClusterWithConfig(
+	distribution v1alpha1.Distribution,
+	distributionConfig string,
+) *v1alpha1.Cluster {
+	cluster := &v1alpha1.Cluster{}
+	cluster.Spec.Distribution = distribution
+	cluster.Spec.DistributionConfig = distributionConfig
+	cluster.Spec.SourceDirectory = "k8s"
+	cluster.Spec.Connection.Kubeconfig = fmt.Sprintf("~/.kube/%s", distributionConfig)
+
+	return cluster
 }
 
 //nolint:paralleltest // Uses t.Chdir for snapshot setup.
