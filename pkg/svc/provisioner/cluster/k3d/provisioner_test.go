@@ -232,3 +232,109 @@ func buildSimpleConfig(name string) *v1alpha5.SimpleConfig {
 
 	return cfg
 }
+
+//nolint:paralleltest // Updates shared runner stub state for sequential assertions.
+func TestWithCommandBuildersOverridesAllCommands(t *testing.T) {
+	recorder := &builderRecorder{}
+	runner := &stubRunner{}
+	runner.result.Stdout = `[{"name":"custom"}]`
+
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+		k3dprovisioner.WithCommandBuilders(k3dprovisioner.CommandBuilders{
+			Create: recorder.createBuilder,
+			Delete: recorder.deleteBuilder,
+			Start:  recorder.startBuilder,
+			Stop:   recorder.stopBuilder,
+			List:   recorder.listBuilder,
+		}),
+	)
+
+	require.NoError(t, prov.Create(context.Background(), ""))
+	require.NoError(t, prov.Delete(context.Background(), ""))
+	require.NoError(t, prov.Start(context.Background(), ""))
+	require.NoError(t, prov.Stop(context.Background(), ""))
+
+	names, err := prov.List(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, []string{"custom"}, names)
+
+	assert.Equal(t, 1, recorder.createCalls, "expected custom create builder to be used")
+	assert.Equal(t, 1, recorder.deleteCalls, "expected custom delete builder to be used")
+	assert.Equal(t, 1, recorder.startCalls, "expected custom start builder to be used")
+	assert.Equal(t, 1, recorder.stopCalls, "expected custom stop builder to be used")
+	assert.Equal(t, 1, recorder.listCalls, "expected custom list builder to be used")
+}
+
+type builderRecorder struct {
+	createCalls int
+	deleteCalls int
+	startCalls  int
+	stopCalls   int
+	listCalls   int
+}
+
+func (b *builderRecorder) createBuilder() *cobra.Command {
+	b.createCalls++
+
+	return &cobra.Command{}
+}
+
+func (b *builderRecorder) deleteBuilder() *cobra.Command {
+	b.deleteCalls++
+
+	return &cobra.Command{}
+}
+
+func (b *builderRecorder) startBuilder() *cobra.Command {
+	b.startCalls++
+
+	return &cobra.Command{}
+}
+
+func (b *builderRecorder) stopBuilder() *cobra.Command {
+	b.stopCalls++
+
+	return &cobra.Command{}
+}
+
+func (b *builderRecorder) listBuilder() *cobra.Command {
+	b.listCalls++
+
+	return &cobra.Command{}
+}
+
+func TestExistsReturnsTrueForMatchingCluster(t *testing.T) {
+	t.Parallel()
+
+	runner := &stubRunner{}
+	runner.result.Stdout = `[{"name":"target"}]`
+
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+
+	exists, err := prov.Exists(context.Background(), "target")
+	require.NoError(t, err)
+	assert.True(t, exists)
+}
+
+func TestExistsPropagatesListErrors(t *testing.T) {
+	t.Parallel()
+
+	runner := &stubRunner{}
+	runner.err = errBoom
+
+	prov := k3dprovisioner.NewK3dClusterProvisioner(
+		buildSimpleConfig("cfg"),
+		"",
+		k3dprovisioner.WithCommandRunner(runner),
+	)
+
+	_, err := prov.Exists(context.Background(), "any")
+	require.ErrorContains(t, err, "list")
+}

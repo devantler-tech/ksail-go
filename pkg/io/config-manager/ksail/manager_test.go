@@ -52,6 +52,66 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 	}
 }
 
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigLoadsKindDistributionConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfigPath := filepath.Join(tempDir, "kind.yaml")
+	kindConfigYAML := "apiVersion: kind.x-k8s.io/v1alpha4\n" +
+		"kind: Cluster\n" +
+		"networking:\n" +
+		"  disableDefaultCNI: true\n"
+	require.NoError(t, os.WriteFile(kindConfigPath, []byte(kindConfigYAML), 0o600))
+
+	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: " + kindConfigPath + "\n" +
+		"  cni: Cilium\n" +
+		"  connection:\n" +
+		"    context: kind-kind\n"
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	require.NoError(t, manager.LoadConfig(nil))
+	assert.Equal(t, kindConfigPath, manager.Config.Spec.DistributionConfig)
+}
+
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	k3dConfigPath := filepath.Join(tempDir, "k3d.yaml")
+	k3dConfigYAML := "apiVersion: k3d.io/v1alpha5\n" +
+		"kind: Simple\n" +
+		"metadata:\n" +
+		"  name: test\n"
+	require.NoError(t, os.WriteFile(k3dConfigPath, []byte(k3dConfigYAML), 0o600))
+
+	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: K3d\n" +
+		"  distributionConfig: " + k3dConfigPath + "\n" +
+		"  cni: Cilium\n" +
+		"  connection:\n" +
+		"    context: k3d-k3d-default\n"
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "configuration validation failed")
+	assert.Equal(t, k3dConfigPath, manager.Config.Spec.DistributionConfig)
+}
+
 // createFieldSelectorsWithName creates field selectors including name field.
 func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Cluster] {
 	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{

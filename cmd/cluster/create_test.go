@@ -391,6 +391,46 @@ func TestInstallCiliumCNI(t *testing.T) {
 	}
 }
 
+func TestInstallCiliumCNIHandlesRepositoryErrors(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	cmd.SetContext(ctx)
+
+	kubeconfigPath := writeDummyKubeconfig(t)
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.CNI = v1alpha1.CNICilium
+	clusterCfg.Spec.Connection.Context = testCiliumContext
+	clusterCfg.Spec.Connection.Kubeconfig = kubeconfigPath
+
+	err := installCiliumCNI(cmd, clusterCfg, &stubTimer{})
+	if err == nil {
+		t.Fatal("expected error when repository add fails")
+	}
+
+	if !strings.Contains(err.Error(), "failed to add Cilium Helm repository") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func writeDummyKubeconfig(t *testing.T) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "kubeconfig")
+
+	content := "apiVersion: v1\nclusters: []\ncontexts: []\ncurrent-context: \"\"\nusers: []\n"
+
+	err := os.WriteFile(path, []byte(content), 0o600)
+	if err != nil {
+		t.Fatalf("failed to write kubeconfig: %v", err)
+	}
+
+	return path
+}
+
 func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 	t.Helper()
 

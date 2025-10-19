@@ -2,10 +2,14 @@ package ciliuminstaller //nolint:testpackage
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -264,6 +268,52 @@ func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	}
 }
 
+func TestCiliumInstallerWaitForReadinessSuccess(t *testing.T) {
+	t.Parallel()
+
+	server := newCiliumAPIServer(t, true)
+	t.Cleanup(server.Close)
+
+	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+
+	installer := NewCiliumInstaller(
+		NewMockHelmClient(t),
+		kubeconfig,
+		"default",
+		100*time.Millisecond,
+	)
+
+	err := installer.waitForReadiness(context.Background())
+	if err != nil {
+		t.Fatalf("expected readiness checks to succeed, got %v", err)
+	}
+}
+
+func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
+	t.Parallel()
+
+	server := newCiliumAPIServer(t, false)
+	t.Cleanup(server.Close)
+
+	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+
+	installer := NewCiliumInstaller(
+		NewMockHelmClient(t),
+		kubeconfig,
+		"default",
+		75*time.Millisecond,
+	)
+
+	err := installer.waitForReadiness(context.Background())
+	if err == nil {
+		t.Fatal("expected readiness failure when components are unready")
+	}
+
+	if !strings.Contains(err.Error(), "not ready") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
 func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Parallel()
 
@@ -324,6 +374,107 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 			"buildRESTConfig missing context",
 		)
 	})
+}
+
+func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {
+	t.Helper()
+
+	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/apis/apps/v1/namespaces/kube-system/daemonsets/cilium":
+			payload := map[string]any{
+				"apiVersion": "apps/v1",
+				"kind":       "DaemonSet",
+				"status": map[string]any{
+					"desiredNumberScheduled": 1,
+					"numberUnavailable":      0,
+					"updatedNumberScheduled": 1,
+				},
+			}
+
+			status, ok := payload["status"].(map[string]any)
+			if !ok {
+				t.Fatalf("unexpected payload status type %T", payload["status"])
+			}
+
+			if !ready {
+				status["numberUnavailable"] = 1
+				status["updatedNumberScheduled"] = 0
+			}
+
+			encodeJSON(t, writer, payload)
+
+		case "/apis/apps/v1/namespaces/kube-system/deployments/cilium-operator":
+			payload := map[string]any{
+				"apiVersion": "apps/v1",
+				"kind":       "Deployment",
+				"status": map[string]any{
+					"replicas":          1,
+					"updatedReplicas":   1,
+					"availableReplicas": 1,
+				},
+			}
+
+			status, ok := payload["status"].(map[string]any)
+			if !ok {
+				t.Fatalf("unexpected payload status type %T", payload["status"])
+			}
+
+			if !ready {
+				status["updatedReplicas"] = 0
+				status["availableReplicas"] = 0
+			}
+
+			encodeJSON(t, writer, payload)
+
+		default:
+			http.NotFound(writer, req)
+		}
+	}))
+}
+
+func encodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
+	t.Helper()
+
+	writer.Header().Set("Content-Type", "application/json")
+
+	encoder := json.NewEncoder(writer)
+
+	err := encoder.Encode(payload)
+	if err != nil {
+		t.Fatalf("failed to encode response: %v", err)
+	}
+}
+
+func writeServerBackedKubeconfig(t *testing.T, serverURL string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "kubeconfig.yaml")
+
+	content := "apiVersion: v1\n" +
+		"clusters:\n" +
+		"- cluster:\n" +
+		"    server: " + serverURL + "\n" +
+		"    insecure-skip-tls-verify: true\n" +
+		"  name: local\n" +
+		"contexts:\n" +
+		"- context:\n" +
+		"    cluster: local\n" +
+		"    user: default\n" +
+		"  name: default\n" +
+		"current-context: default\n" +
+		"kind: Config\n" +
+		"preferences: {}\n" +
+		"users:\n" +
+		"- name: default\n" +
+		"  user: {}\n"
+
+	err := os.WriteFile(path, []byte(content), 0o600)
+	if err != nil {
+		t.Fatalf("failed to write kubeconfig: %v", err)
+	}
+
+	return path
 }
 
 func TestWaitForDaemonSetReady(t *testing.T) {

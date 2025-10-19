@@ -487,6 +487,19 @@ func TestKSailValidatorKindCiliumAlignment(t *testing.T) {
 	}
 }
 
+func TestKSailValidatorKindCiliumAlignmentWithoutKindConfig(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNICilium
+
+	result := validator.Validate(config)
+	assert.True(t, result.Valid, "expected validation to pass when kind config is absent")
+	assert.Empty(t, result.Errors, "expected no validation errors without kind config")
+}
+
 type ciliumExtraArgsTestCase struct {
 	name        string
 	extraArgs   []k3dapi.K3sArgWithNodeFilters
