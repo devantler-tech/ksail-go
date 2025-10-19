@@ -3,6 +3,7 @@ package workload_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -73,5 +74,10 @@ func runInstallCmd(t *testing.T, args ...string) error {
 	cmd.SetContext(ctx)
 	cmd.SetArgs(args)
 
-	return cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		return fmt.Errorf("execute install command: %w", err)
+	}
+
+	return nil
 }
