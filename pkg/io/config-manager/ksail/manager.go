@@ -242,7 +242,8 @@ func (m *ConfigManager) validateConfig() error {
 			})
 		}
 
-		return helpers.ErrConfigurationValidationFailed
+		// Return a SilentError to prevent the error from being displayed again
+		return helpers.NewSilentError(helpers.ErrConfigurationValidationFailed)
 	}
 
 	warnings := helpers.FormatValidationWarnings(result)

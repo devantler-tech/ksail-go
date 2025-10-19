@@ -15,6 +15,39 @@ import (
 // ErrConfigurationValidationFailed is returned when configuration validation fails.
 var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
+// SilentError is an error type that signals the error message has already been displayed to the user.
+// When this error is returned, the error handler should exit without printing additional error messages.
+type SilentError struct {
+	// Cause is the underlying error that was already displayed.
+	Cause error
+}
+
+// NewSilentError creates a new SilentError wrapping the given error.
+func NewSilentError(err error) *SilentError {
+	return &SilentError{Cause: err}
+}
+
+// Error implements the error interface.
+func (e *SilentError) Error() string {
+	if e.Cause != nil {
+		return e.Cause.Error()
+	}
+
+	return ""
+}
+
+// Unwrap returns the underlying error for errors.Is and errors.As compatibility.
+func (e *SilentError) Unwrap() error {
+	return e.Cause
+}
+
+// IsSilent checks if an error is a SilentError or wraps one.
+func IsSilent(err error) bool {
+	var silent *SilentError
+
+	return errors.As(err, &silent)
+}
+
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
 // This function eliminates duplication between different config managers.
 //

@@ -1,6 +1,7 @@
 package helpers_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -469,4 +470,56 @@ func TestLoadAndValidateConfigErrors(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to validate config")
+}
+
+func TestSilentError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("creates silent error", func(t *testing.T) {
+		t.Parallel()
+
+		baseErr := helpers.ErrConfigurationValidationFailed
+		silentErr := helpers.NewSilentError(baseErr)
+
+		assert.NotNil(t, silentErr)
+		assert.Equal(t, baseErr.Error(), silentErr.Error())
+	})
+
+	t.Run("unwraps to underlying error", func(t *testing.T) {
+		t.Parallel()
+
+		baseErr := helpers.ErrConfigurationValidationFailed
+		silentErr := helpers.NewSilentError(baseErr)
+
+		assert.ErrorIs(t, silentErr, baseErr)
+	})
+
+	t.Run("IsSilent detects silent errors", func(t *testing.T) {
+		t.Parallel()
+
+		baseErr := helpers.ErrConfigurationValidationFailed
+		silentErr := helpers.NewSilentError(baseErr)
+
+		assert.True(t, helpers.IsSilent(silentErr))
+		assert.False(t, helpers.IsSilent(baseErr))
+	})
+
+	t.Run("IsSilent detects wrapped silent errors", func(t *testing.T) {
+		t.Parallel()
+
+		baseErr := helpers.ErrConfigurationValidationFailed
+		silentErr := helpers.NewSilentError(baseErr)
+		wrappedErr := fmt.Errorf("wrapped: %w", silentErr)
+
+		assert.True(t, helpers.IsSilent(wrappedErr))
+	})
+
+	t.Run("handles nil cause", func(t *testing.T) {
+		t.Parallel()
+
+		silentErr := helpers.NewSilentError(nil)
+
+		assert.Empty(t, silentErr.Error())
+		assert.NoError(t, silentErr.Unwrap())
+	})
 }
