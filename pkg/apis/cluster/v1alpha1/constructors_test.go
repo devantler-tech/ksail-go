@@ -288,7 +288,7 @@ func TestNewClusterSpec(t *testing.T) {
 	assert.Equal(t, v1alpha1.CSI(""), spec.CSI)
 	assert.Equal(t, v1alpha1.IngressController(""), spec.IngressController)
 	assert.Equal(t, v1alpha1.GatewayController(""), spec.GatewayController)
-	assert.Equal(t, v1alpha1.GitOpsEngine(""), spec.GitOpsEngine)
+	assert.Equal(t, v1alpha1.GitOpsEngineNone, spec.GitOpsEngine)
 	assert.NotNil(t, spec.Options)
 }
 

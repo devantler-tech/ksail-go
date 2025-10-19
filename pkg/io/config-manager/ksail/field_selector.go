@@ -81,6 +81,15 @@ func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
+// DefaultGitOpsEngineFieldSelector creates a standard field selector for GitOps Engine.
+func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
+		Description:  "GitOps engine to use",
+		DefaultValue: v1alpha1.GitOpsEngineNone,
+	}
+}
+
 // DefaultKubeconfigFieldSelector creates a standard field selector for kubeconfig.
 func DefaultKubeconfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
