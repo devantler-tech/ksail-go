@@ -501,6 +501,45 @@ func TestKSailValidatorKindCiliumAlignmentWithoutKindConfig(t *testing.T) {
 	assert.Empty(t, result.Errors, "expected no validation errors without kind config")
 }
 
+func TestKSailValidatorK3dCiliumAlignmentWithoutK3dConfig(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	config := createValidKSailConfig(v1alpha1.DistributionK3d)
+	config.Spec.CNI = v1alpha1.CNICilium
+
+	result := validator.Validate(config)
+	assert.True(t, result.Valid, "expected validation to pass when k3d config is absent")
+	assert.Empty(t, result.Errors, "expected no validation errors without k3d config")
+}
+
+func TestKSailValidatorKindDefaultCNIAlignmentWithoutKindConfig(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNIDefault
+
+	result := validator.Validate(config)
+	assert.True(t, result.Valid, "expected validation to pass when kind config is absent")
+	assert.Empty(t, result.Errors, "expected no validation errors without kind config")
+}
+
+func TestKSailValidatorK3dDefaultCNIAlignmentWithoutK3dConfig(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	config := createValidKSailConfig(v1alpha1.DistributionK3d)
+	config.Spec.CNI = v1alpha1.CNIDefault
+
+	result := validator.Validate(config)
+	assert.True(t, result.Valid, "expected validation to pass when k3d config is absent")
+	assert.Empty(t, result.Errors, "expected no validation errors without k3d config")
+}
+
 type ciliumExtraArgsTestCase struct {
 	name        string
 	extraArgs   []k3dapi.K3sArgWithNodeFilters
