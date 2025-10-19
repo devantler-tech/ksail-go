@@ -314,14 +314,14 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 
 	err := manager.LoadConfig(nil)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "with 4 errors and 0 warnings")
+	require.ErrorIs(t, err, helpers.ErrConfigurationValidationFailed)
 
 	logOutput := output.String()
-	assert.Contains(t, logOutput, "Configuration validation failed")
+	assert.Contains(t, logOutput, "error:")
 	assert.Contains(t, logOutput, "kind is required")
 	assert.Contains(t, logOutput, "apiVersion is required")
-	assert.Contains(t, logOutput, "- spec.distribution: distribution is required")
-	assert.Contains(t, logOutput, "- spec.distributionConfig: distributionConfig is required")
+	assert.Contains(t, logOutput, "field: spec.distribution")
+	assert.Contains(t, logOutput, "field: spec.distributionConfig")
 }
 
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.
@@ -868,7 +868,7 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 	assert.Contains(t, err.Error(), "configuration validation failed")
 
 	output := out.String()
-	assert.Contains(t, output, "Configuration validation failed:")
+	assert.Contains(t, output, "error:")
 	assert.Contains(t, output, "distribution is required")
 }
 

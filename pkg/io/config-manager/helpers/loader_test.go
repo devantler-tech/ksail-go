@@ -225,14 +225,19 @@ func TestFormatValidationErrorsMultiline(t *testing.T) {
 
 	tests := []TestCase{
 		{
-			Name:     "single error",
+			Name:     "single error without fix",
 			Result:   commonResults["single_error"],
-			Expected: "  - name: is required\n",
+			Expected: "error: is required\nfield: name\n",
 		},
 		{
-			Name:     "multiple errors with specific validation data",
+			Name:     "single error with fix",
+			Result:   commonResults["single_error_with_fix"],
+			Expected: "error: is required\nfield: name\nfix: add name field\n",
+		},
+		{
+			Name:     "multiple errors with mixed fix suggestions",
 			Result:   commonResults["multiple_errors"],
-			Expected: "  - name: is required\n  - version: is invalid\n",
+			Expected: "error: is required\nfield: name\nfix: add name field\n\nerror: is invalid\nfield: version\n",
 		},
 		{
 			Name:     "no errors",

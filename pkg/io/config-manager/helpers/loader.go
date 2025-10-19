@@ -93,6 +93,11 @@ func FormatValidationErrors(result *validator.ValidationResult) string {
 
 // FormatValidationErrorsMultiline formats validation errors into a multi-line string for CLI display.
 // This function provides a standardized way to format validation errors for user-facing output.
+// Format (with notify symbol "✗ " indentation applied):
+//
+//	✗ error: <message>
+//	  field: <field>
+//	  fix: <fix>
 func FormatValidationErrorsMultiline(result *validator.ValidationResult) string {
 	if len(result.Errors) == 0 {
 		return ""
@@ -100,8 +105,18 @@ func FormatValidationErrorsMultiline(result *validator.ValidationResult) string 
 
 	var errorMsg string
 
-	for _, err := range result.Errors {
-		errorMsg += fmt.Sprintf("  - %s: %s\n", err.Field, err.Message)
+	for i, err := range result.Errors {
+		if i > 0 {
+			errorMsg += "\n"
+		}
+
+		errorMsg += fmt.Sprintf("error: %s\nfield: %s", err.Message, err.Field)
+
+		if err.FixSuggestion != "" {
+			errorMsg += fmt.Sprintf("\nfix: %s", err.FixSuggestion)
+		}
+
+		errorMsg += "\n"
 	}
 
 	return errorMsg

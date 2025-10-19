@@ -228,19 +228,10 @@ func (m *ConfigManager) validateConfig() error {
 		errorMessages := helpers.FormatValidationErrorsMultiline(result)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.ErrorType,
-			Content: "Configuration validation failed:\n%s",
+			Content: "%s",
 			Args:    []any{errorMessages},
 			Writer:  m.Writer,
 		})
-
-		fixSuggestions := helpers.FormatValidationFixSuggestions(result)
-		for _, suggestion := range fixSuggestions {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.ActivityType,
-				Content: suggestion,
-				Writer:  m.Writer,
-			})
-		}
 
 		warnings := helpers.FormatValidationWarnings(result)
 		for _, warning := range warnings {
@@ -251,15 +242,7 @@ func (m *ConfigManager) validateConfig() error {
 			})
 		}
 
-		errorCount := len(result.Errors)
-		warningCount := len(result.Warnings)
-
-		return fmt.Errorf(
-			"%w with %d errors and %d warnings",
-			helpers.ErrConfigurationValidationFailed,
-			errorCount,
-			warningCount,
-		)
+		return helpers.ErrConfigurationValidationFailed
 	}
 
 	warnings := helpers.FormatValidationWarnings(result)
