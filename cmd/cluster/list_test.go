@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -424,7 +423,7 @@ func buildClusterWithConfig(
 	cluster.Spec.Distribution = distribution
 	cluster.Spec.DistributionConfig = distributionConfig
 	cluster.Spec.SourceDirectory = "k8s"
-	cluster.Spec.Connection.Kubeconfig = fmt.Sprintf("~/.kube/%s", distributionConfig)
+	cluster.Spec.Connection.Kubeconfig = "~/.kube/" + distributionConfig
 
 	return cluster
 }
