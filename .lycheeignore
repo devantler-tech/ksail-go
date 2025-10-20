@@ -1,0 +1,7 @@
+# Lychee link checker ignore patterns
+# See: https://github.com/lycheeverse/lychee
+
+# GitHub git authentication URL pattern (not a real URL to check)
+# This pattern is used in git push commands for authentication
+# Lychee extracts this as "https://x-access-token/" from the auth string
+https://x-access-token/
