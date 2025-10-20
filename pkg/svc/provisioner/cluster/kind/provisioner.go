@@ -31,6 +31,7 @@ var ErrClusterNotFound = errors.New("cluster not found")
 
 // streamLogger implements kind's log.Logger interface by writing to io.Writers.
 // This allows kind's console output to be displayed in real-time.
+// Only info-level messages (V(0)) are enabled to avoid verbose debug output.
 type streamLogger struct {
 	writer io.Writer
 }
@@ -51,8 +52,20 @@ func (l *streamLogger) Errorf(format string, args ...interface{}) {
 	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
 }
 
+// noopInfoLogger discards verbose/debug messages (V(1) and higher).
+type noopInfoLogger struct{}
+
+func (noopInfoLogger) Info(string)                  {}
+func (noopInfoLogger) Infof(string, ...interface{}) {}
+func (noopInfoLogger) Enabled() bool                { return false }
+
 //nolint:ireturn // V must return log.InfoLogger to satisfy kind's interface
-func (l *streamLogger) V(log.Level) log.InfoLogger {
+func (l *streamLogger) V(level log.Level) log.InfoLogger {
+	// Only enable info-level messages (V(0)), suppress verbose/debug (V(1+))
+	if level > 0 {
+		return noopInfoLogger{}
+	}
+
 	return l
 }
 
