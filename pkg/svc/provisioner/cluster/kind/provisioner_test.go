@@ -21,14 +21,18 @@ import (
 // mockCommandRunner is a test helper that mocks the command runner.
 type mockCommandRunner struct {
 	mock.Mock
+	lastArgs []string
 }
 
 func (m *mockCommandRunner) Run(
 	_ context.Context,
 	_ *cobra.Command,
-	_ []string,
+	args []string,
 ) (commandrunner.CommandResult, error) {
 	callArgs := m.Called()
+
+	// capture last arguments for tests that need to assert CLI flags
+	m.lastArgs = append([]string(nil), args...)
 
 	result, ok := callArgs.Get(0).(commandrunner.CommandResult)
 	if !ok {
@@ -89,6 +93,18 @@ func TestDeleteSuccess(t *testing.T) {
 			return provisioner.Delete(ctx, name)
 		},
 	)
+}
+
+func TestDeleteIncludesKubeconfigFlag(t *testing.T) {
+	t.Parallel()
+
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+	err := provisioner.Delete(context.Background(), "")
+
+	require.NoError(t, err, "Delete()")
+	require.Contains(t, runner.lastArgs, "--kubeconfig", "Delete() should pass kubeconfig flag")
 }
 
 func TestDeleteErrorDeleteFailed(t *testing.T) {
@@ -188,6 +204,21 @@ func TestListErrorListFailed(t *testing.T) {
 
 	testutils.AssertErrWrappedContains(t, err, clustertestutils.ErrListClustersFailed,
 		"failed to list kind clusters", "List()")
+}
+
+func TestListFiltersNoKindClustersMessage(t *testing.T) {
+	t.Parallel()
+	provisioner, _, _, runner := newProvisionerForTest(t)
+
+	runner.On("Run").Return(commandrunner.CommandResult{
+		Stdout: "No kind clusters found.\n",
+		Stderr: "",
+	}, nil)
+
+	got, err := provisioner.List(context.Background())
+
+	require.NoError(t, err, "List()")
+	require.Empty(t, got, "List() should ignore 'No kind clusters found.' message")
 }
 
 func TestStartErrorClusterNotFound(t *testing.T) {
