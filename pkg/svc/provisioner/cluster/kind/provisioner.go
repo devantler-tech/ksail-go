@@ -29,6 +29,45 @@ import (
 // ErrClusterNotFound is returned when a cluster is not found.
 var ErrClusterNotFound = errors.New("cluster not found")
 
+// streamLogger implements kind's log.Logger interface by writing to io.Writers.
+// This allows kind's console output to be displayed in real-time.
+type streamLogger struct {
+	writer io.Writer
+}
+
+func (l *streamLogger) Warn(message string) {
+	_, _ = fmt.Fprintln(l.writer, message)
+}
+
+func (l *streamLogger) Warnf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+}
+
+func (l *streamLogger) Error(message string) {
+	_, _ = fmt.Fprintln(l.writer, message)
+}
+
+func (l *streamLogger) Errorf(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+}
+
+//nolint:ireturn // V must return log.InfoLogger to satisfy kind's interface
+func (l *streamLogger) V(log.Level) log.InfoLogger {
+	return l
+}
+
+func (l *streamLogger) Info(message string) {
+	_, _ = fmt.Fprintln(l.writer, message)
+}
+
+func (l *streamLogger) Infof(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+}
+
+func (l *streamLogger) Enabled() bool {
+	return true
+}
+
 // KindProvider describes the subset of methods from kind's Provider used here.
 type KindProvider interface {
 	Create(name string, opts ...cluster.CreateOption) error
@@ -111,12 +150,16 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 		return fmt.Errorf("write temp config file: %w", err)
 	}
 
-	logger := log.NoopLogger{}
+	// Create buffers for kind to write to (the command runner will capture these)
+	var outBuf, errBuf bytes.Buffer
 
-	// Use io.Discard since the runner handles output buffering via MultiWriter
+	// Use stream logger that writes to the buffers - kind writes output through the logger
+	logger := &streamLogger{writer: &outBuf}
+
+	// Set up IOStreams that kind can write to
 	streams := kindcmd.IOStreams{
-		Out:    io.Discard,
-		ErrOut: io.Discard,
+		Out:    &outBuf,
+		ErrOut: &errBuf,
 	}
 
 	cmd := createcluster.NewCommand(logger, streams)
@@ -137,12 +180,16 @@ func (k *KindClusterProvisioner) Delete(ctx context.Context, name string) error 
 
 	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
 
-	logger := log.NoopLogger{}
+	// Create buffers for kind to write to (the command runner will capture these)
+	var outBuf, errBuf bytes.Buffer
 
-	// Use io.Discard since the runner handles output buffering via MultiWriter
+	// Use stream logger that writes to the buffers - kind writes output through the logger
+	logger := &streamLogger{writer: &outBuf}
+
+	// Set up IOStreams that kind can write to
 	streams := kindcmd.IOStreams{
-		Out:    io.Discard,
-		ErrOut: io.Discard,
+		Out:    &outBuf,
+		ErrOut: &errBuf,
 	}
 
 	cmd := deletecluster.NewCommand(logger, streams)
@@ -229,12 +276,16 @@ func (k *KindClusterProvisioner) Stop(ctx context.Context, name string) error {
 
 // List returns all kind clusters using kind's Cobra command.
 func (k *KindClusterProvisioner) List(ctx context.Context) ([]string, error) {
-	logger := log.NoopLogger{}
+	// Create buffers for kind to write to (the command runner will capture these)
+	var outBuf, errBuf bytes.Buffer
 
-	// Use io.Discard since the runner handles output buffering via MultiWriter
+	// Use stream logger that writes to the buffers - kind writes output through the logger
+	logger := &streamLogger{writer: &outBuf}
+
+	// Set up IOStreams that kind can write to
 	streams := kindcmd.IOStreams{
-		Out:    io.Discard,
-		ErrOut: io.Discard,
+		Out:    &outBuf,
+		ErrOut: &errBuf,
 	}
 
 	cmd := getclusters.NewCommand(logger, streams)
