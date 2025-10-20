@@ -9,7 +9,55 @@ on:
 permissions: {}
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: 📦 Download dependencies
+        run: go mod download
+
+      - name: 🔧 Install mockery
+        run: go install github.com/vektra/mockery/v3@latest
+
+      - name: 🏃 Run pre-commit hooks
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+
+      - name: 📤 Commit and push changes if any
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Check if there are any changes
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Changes detected, committing and pushing..."
+            git add -A
+            git commit -m "chore: apply pre-commit hooks [skip ci]"
+            
+            # Push using token explicitly (not persisted in git config)
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
+          else
+            echo "No changes to commit"
+          fi
+
   ci:
+    needs: [pre-commit]
     if: github.event_name == 'push'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@800bac1f7de14fcc6b9b9bcf62e201308eafd15b # v1.15.12
     secrets:
@@ -22,8 +70,8 @@ jobs:
 
   system-test:
     runs-on: ubuntu-latest
-    # Run system tests on both push and pull request, but only after ci job succeeds (if it runs)
-    needs: [ci]
+    # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
+    needs: [pre-commit, ci]
     if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:

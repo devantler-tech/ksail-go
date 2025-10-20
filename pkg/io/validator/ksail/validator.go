@@ -79,6 +79,7 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 }
 
 // validateContextName validates the context name pattern matches the distribution and cluster name.
+// Only validates when a distribution config is provided to the validator.
 func (v *Validator) validateContextName(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
@@ -90,7 +91,7 @@ func (v *Validator) validateContextName(
 
 	expectedContext := v.getExpectedContextName(config)
 	if expectedContext == "" {
-		// For EKS or unknown distributions, skip context validation
+		// For EKS or unknown distributions, or when no distribution config is provided, skip context validation
 		return
 	}
 
@@ -149,9 +150,13 @@ func (v *Validator) validateDistribution(
 
 // getExpectedContextName returns the expected context name for the given configuration.
 // Context name follows the pattern: {distribution}-{cluster_name}, where cluster_name is extracted
-// from the distribution config. If no cluster name is found, "ksail-default" is used as the ultimate fallback.
+// from the distribution config. Returns empty string if no distribution config is available.
 func (v *Validator) getExpectedContextName(config *v1alpha1.Cluster) string {
 	distributionName := v.getDistributionConfigName(config.Spec.Distribution)
+	if distributionName == "" {
+		// No distribution config available, skip context validation
+		return ""
+	}
 
 	switch config.Spec.Distribution {
 	case v1alpha1.DistributionKind:
@@ -176,46 +181,59 @@ func (v *Validator) getDistributionConfigName(distribution v1alpha1.Distribution
 }
 
 // getKindConfigName returns the Kind configuration name if available.
+// Returns empty string if no Kind config is provided to the validator.
 func (v *Validator) getKindConfigName() string {
 	if v.kindConfig != nil && v.kindConfig.Name != "" {
 		return v.kindConfig.Name
 	}
 
-	// Return default Kind cluster name when no config is provided
-	return "kind"
+	// No Kind config provided, return empty to skip validation
+	return ""
 }
 
 // getK3dConfigName returns the K3d configuration name if available.
+// Returns empty string if no K3d config is provided to the validator.
 func (v *Validator) getK3dConfigName() string {
 	if v.k3dConfig != nil && v.k3dConfig.Name != "" {
 		return v.k3dConfig.Name
 	}
 
-	// Return default K3d cluster name when no config is provided
-	return "k3d-default"
+	// No K3d config provided, return empty to skip validation
+	return ""
 }
 
 // validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
 // When Cilium CNI is requested, the distribution config must have CNI disabled.
+// When Default CNI is used, the distribution config must NOT have CNI disabled.
 func (v *Validator) validateCNIAlignment(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Only validate when Cilium CNI is explicitly requested
-	if config.Spec.CNI != v1alpha1.CNICilium {
+	// Validate Cilium CNI alignment
+	if config.Spec.CNI == v1alpha1.CNICilium {
+		switch config.Spec.Distribution {
+		case v1alpha1.DistributionKind:
+			v.validateKindCiliumCNIAlignment(result)
+		case v1alpha1.DistributionK3d:
+			v.validateK3dCiliumCNIAlignment(result)
+		}
+
 		return
 	}
 
-	switch config.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		v.validateKindCNIAlignment(result)
-	case v1alpha1.DistributionK3d:
-		v.validateK3dCNIAlignment(result)
+	// Validate Default CNI alignment (empty string or explicit "Default")
+	if config.Spec.CNI == "" || config.Spec.CNI == v1alpha1.CNIDefault {
+		switch config.Spec.Distribution {
+		case v1alpha1.DistributionKind:
+			v.validateKindDefaultCNIAlignment(result)
+		case v1alpha1.DistributionK3d:
+			v.validateK3dDefaultCNIAlignment(result)
+		}
 	}
 }
 
-// validateKindCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
-func (v *Validator) validateKindCNIAlignment(result *validator.ValidationResult) {
+// validateKindCiliumCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
+func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationResult) {
 	if v.kindConfig == nil {
 		// No Kind config provided for validation, skip
 		return
@@ -230,13 +248,28 @@ func (v *Validator) validateKindCNIAlignment(result *validator.ValidationResult)
 	}
 }
 
-// validateK3dCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
-func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) {
-	if v.k3dConfig == nil {
-		// No K3d config provided for validation, skip
+// validateKindDefaultCNIAlignment validates that Kind configuration does NOT have CNI disabled when Default is used.
+func (v *Validator) validateKindDefaultCNIAlignment(result *validator.ValidationResult) {
+	if v.kindConfig == nil {
+		// No Kind config provided for validation, skip
 		return
 	}
 
+	if v.kindConfig.Networking.DisableDefaultCNI {
+		result.AddError(validator.ValidationError{
+			Field:         "spec.cni",
+			Message:       "Default CNI requires disableDefaultCNI to be false in Kind configuration",
+			CurrentValue:  "disableDefaultCNI: true",
+			ExpectedValue: "disableDefaultCNI: false (or omit the field)",
+			FixSuggestion: "Remove 'networking.disableDefaultCNI: true' from your kind.yaml " +
+				"configuration file or set CNI to Cilium",
+		})
+	}
+}
+
+// checkK3dFlannelAndNetworkPolicyStatus checks if Flannel and network policy are disabled in K3d configuration.
+// Returns (hasFlannelDisabled, hasNetworkPolicyDisabled).
+func (v *Validator) checkK3dFlannelAndNetworkPolicyStatus() (bool, bool) {
 	var (
 		hasFlannelDisabled       bool
 		hasNetworkPolicyDisabled bool
@@ -250,6 +283,18 @@ func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) 
 			hasNetworkPolicyDisabled = true
 		}
 	}
+
+	return hasFlannelDisabled, hasNetworkPolicyDisabled
+}
+
+// validateK3dCiliumCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
+func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	hasFlannelDisabled, hasNetworkPolicyDisabled := v.checkK3dFlannelAndNetworkPolicyStatus()
 
 	missingArgs := make([]string, 0, requiredCiliumArgs)
 	if !hasFlannelDisabled {
@@ -273,6 +318,41 @@ func (v *Validator) validateK3dCNIAlignment(result *validator.ValidationResult) 
 		FixSuggestion: fmt.Sprintf(
 			"Add %s to the K3s extra args in your k3d.yaml configuration file",
 			strings.Join(missingArgs, " and "),
+		),
+	})
+}
+
+// validateK3dDefaultCNIAlignment validates that K3d configuration does NOT have Flannel disabled when Default is used.
+func (v *Validator) validateK3dDefaultCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	hasFlannelDisabled, hasNetworkPolicyDisabled := v.checkK3dFlannelAndNetworkPolicyStatus()
+
+	problematicArgs := make([]string, 0, requiredCiliumArgs)
+	if hasFlannelDisabled {
+		problematicArgs = append(problematicArgs, "'--flannel-backend=none'")
+	}
+
+	if hasNetworkPolicyDisabled {
+		problematicArgs = append(problematicArgs, "'--disable-network-policy'")
+	}
+
+	if len(problematicArgs) == 0 {
+		return
+	}
+
+	result.AddError(validator.ValidationError{
+		Field: "spec.cni",
+		Message: fmt.Sprintf(
+			"Default CNI requires Flannel to be enabled, but found %s in K3d configuration",
+			strings.Join(problematicArgs, " and "),
+		),
+		FixSuggestion: fmt.Sprintf(
+			"Remove %s from the K3s extra args in your k3d.yaml configuration file or set CNI to Cilium",
+			strings.Join(problematicArgs, " and "),
 		),
 	})
 }

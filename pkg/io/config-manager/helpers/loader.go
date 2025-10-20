@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
@@ -14,6 +15,35 @@ import (
 
 // ErrConfigurationValidationFailed is returned when configuration validation fails.
 var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
+
+// ValidationSummaryError is an error that contains only a validation summary message.
+// This error type is used to provide a concise summary instead of a full error stack.
+type ValidationSummaryError struct {
+	ErrorCount   int
+	WarningCount int
+}
+
+// NewValidationSummaryError creates a new ValidationSummaryError.
+func NewValidationSummaryError(errorCount, warningCount int) *ValidationSummaryError {
+	return &ValidationSummaryError{
+		ErrorCount:   errorCount,
+		WarningCount: warningCount,
+	}
+}
+
+// Error implements the error interface, returning a summary message.
+func (e *ValidationSummaryError) Error() string {
+	if e.ErrorCount > 0 && e.WarningCount > 0 {
+		return "validation reported " + strconv.Itoa(e.ErrorCount) +
+			" error(s) and " + strconv.Itoa(e.WarningCount) + " warning(s)"
+	}
+
+	if e.ErrorCount > 0 {
+		return "validation reported " + strconv.Itoa(e.ErrorCount) + " error(s)"
+	}
+
+	return "validation reported " + strconv.Itoa(e.WarningCount) + " warning(s)"
+}
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
 // This function eliminates duplication between different config managers.
@@ -93,6 +123,11 @@ func FormatValidationErrors(result *validator.ValidationResult) string {
 
 // FormatValidationErrorsMultiline formats validation errors into a multi-line string for CLI display.
 // This function provides a standardized way to format validation errors for user-facing output.
+// Format (with notify symbol "✗ " indentation applied):
+//
+//	✗ error: <message>
+//	  field: <field>
+//	  fix: <fix>
 func FormatValidationErrorsMultiline(result *validator.ValidationResult) string {
 	if len(result.Errors) == 0 {
 		return ""
@@ -100,8 +135,18 @@ func FormatValidationErrorsMultiline(result *validator.ValidationResult) string 
 
 	var errorMsg string
 
-	for _, err := range result.Errors {
-		errorMsg += fmt.Sprintf("  - %s: %s\n", err.Field, err.Message)
+	for i, err := range result.Errors {
+		if i > 0 {
+			errorMsg += "\n"
+		}
+
+		errorMsg += fmt.Sprintf("error: %s\nfield: %s", err.Message, err.Field)
+
+		if err.FixSuggestion != "" {
+			errorMsg += "\nfix: " + err.FixSuggestion
+		}
+
+		errorMsg += "\n"
 	}
 
 	return errorMsg
