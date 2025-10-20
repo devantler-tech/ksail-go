@@ -1,6 +1,7 @@
 package kindprovisioner_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	"sigs.k8s.io/kind/pkg/log"
 )
 
 // mockCommandRunner is a test helper that mocks the command runner.
@@ -480,4 +482,182 @@ func assertNameFlagPropagation(
 
 	require.NoError(t, err)
 	assertFlagValue(t, runner.lastArgs, "--name", expectedName)
+}
+
+// TestStreamLoggerWarn tests streamLogger's Warn method.
+func TestStreamLoggerWarn(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	logger.Warn("test warning message")
+
+	assert.Equal(t, "test warning message\n", buf.String())
+}
+
+// TestStreamLoggerWarnf tests streamLogger's Warnf method.
+func TestStreamLoggerWarnf(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	logger.Warnf("test %s: %d", "warning", 42)
+
+	assert.Equal(t, "test warning: 42\n", buf.String())
+}
+
+// TestStreamLoggerError tests streamLogger's Error method.
+func TestStreamLoggerError(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	logger.Error("test error message")
+
+	assert.Equal(t, "test error message\n", buf.String())
+}
+
+// TestStreamLoggerErrorf tests streamLogger's Errorf method.
+func TestStreamLoggerErrorf(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	logger.Errorf("test %s: %d", "error", 42)
+
+	assert.Equal(t, "test error: 42\n", buf.String())
+}
+
+// TestStreamLoggerInfo tests streamLogger's Info method.
+func TestStreamLoggerInfo(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	// Get the V(0) logger which has Info method
+	infoLogger := logger.V(log.Level(0))
+	infoLogger.Info("test info message")
+
+	assert.Equal(t, "test info message\n", buf.String())
+}
+
+// TestStreamLoggerInfof tests streamLogger's Infof method.
+func TestStreamLoggerInfof(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	// Get the V(0) logger which has Infof method
+	infoLogger := logger.V(log.Level(0))
+	infoLogger.Infof("test %s: %d", "info", 42)
+
+	assert.Equal(t, "test info: 42\n", buf.String())
+}
+
+// TestStreamLoggerEnabled tests streamLogger's Enabled method.
+func TestStreamLoggerEnabled(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	// Get the V(0) logger which has Enabled method
+	infoLogger := logger.V(log.Level(0))
+	assert.True(t, infoLogger.Enabled())
+}
+
+// TestStreamLoggerVLevel0 tests streamLogger V(0) returns itself (info level enabled).
+func TestStreamLoggerVLevel0(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	infoLogger := logger.V(log.Level(0))
+
+	// V(0) should return the logger itself, which is enabled
+	assert.True(t, infoLogger.Enabled())
+
+	// Should be able to write info messages
+	infoLogger.Info("test message at V(0)")
+	assert.Equal(t, "test message at V(0)\n", buf.String())
+}
+
+// TestStreamLoggerVLevel1 tests streamLogger V(1) returns noopInfoLogger (verbose disabled).
+func TestStreamLoggerVLevel1(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	infoLogger := logger.V(log.Level(1))
+
+	// V(1) should return noopInfoLogger, which is disabled
+	assert.False(t, infoLogger.Enabled())
+
+	// Should not write any output
+	infoLogger.Info("test message at V(1)")
+	assert.Empty(t, buf.String())
+}
+
+// TestStreamLoggerVLevel2 tests streamLogger V(2) returns noopInfoLogger (debug disabled).
+func TestStreamLoggerVLevel2(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+
+	logger := kindprovisioner.NewStreamLogger(&buf)
+
+	infoLogger := logger.V(log.Level(2))
+
+	// V(2) should return noopInfoLogger, which is disabled
+	assert.False(t, infoLogger.Enabled())
+
+	// Should not write any output
+	infoLogger.Info("test message at V(2)")
+	assert.Empty(t, buf.String())
+}
+
+// TestNoopInfoLoggerInfo tests noopInfoLogger's Info method does nothing.
+func TestNoopInfoLoggerInfo(t *testing.T) {
+	t.Parallel()
+
+	noop := kindprovisioner.NewNoopInfoLogger()
+
+	// Should not panic
+	noop.Info("test message")
+}
+
+// TestNoopInfoLoggerInfof tests noopInfoLogger's Infof method does nothing.
+func TestNoopInfoLoggerInfof(t *testing.T) {
+	t.Parallel()
+
+	noop := kindprovisioner.NewNoopInfoLogger()
+
+	// Should not panic
+	noop.Infof("test %s", "message")
+}
+
+// TestNoopInfoLoggerEnabled tests noopInfoLogger's Enabled method returns false.
+func TestNoopInfoLoggerEnabled(t *testing.T) {
+	t.Parallel()
+
+	noop := kindprovisioner.NewNoopInfoLogger()
+
+	assert.False(t, noop.Enabled())
 }

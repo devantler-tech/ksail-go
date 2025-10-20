@@ -36,6 +36,13 @@ type streamLogger struct {
 	writer io.Writer
 }
 
+// NewStreamLogger creates a new streamLogger that writes to the given writer.
+//
+//nolint:ireturn // Must return log.Logger interface to satisfy kind's Logger interface
+func NewStreamLogger(writer io.Writer) log.Logger {
+	return &streamLogger{writer: writer}
+}
+
 func (l *streamLogger) Warn(message string) {
 	_, _ = fmt.Fprintln(l.writer, message)
 }
@@ -54,6 +61,13 @@ func (l *streamLogger) Errorf(format string, args ...interface{}) {
 
 // noopInfoLogger discards verbose/debug messages (V(1) and higher).
 type noopInfoLogger struct{}
+
+// NewNoopInfoLogger creates a new noopInfoLogger.
+//
+//nolint:ireturn // Must return log.InfoLogger interface to satisfy kind's InfoLogger interface
+func NewNoopInfoLogger() log.InfoLogger {
+	return noopInfoLogger{}
+}
 
 func (noopInfoLogger) Info(string)                  {}
 func (noopInfoLogger) Infof(string, ...interface{}) {}
