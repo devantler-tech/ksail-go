@@ -111,39 +111,25 @@ func TestDeleteIncludesKubeconfigFlag(t *testing.T) {
 func TestCreateUsesProvidedName(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, runner := newProvisionerForTest(t)
-	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
-
-	const clusterName = "custom-cluster"
-
-	err := provisioner.Create(context.Background(), clusterName)
-
-	require.NoError(t, err, "Create()")
-	assertFlagValue(t, runner.lastArgs, "--name", clusterName)
+	assertNameFlagPropagation(t, func(p *kindprovisioner.KindClusterProvisioner) error {
+		return p.Create(context.Background(), "custom-cluster")
+	}, "custom-cluster")
 }
 
 func TestCreateUsesConfigNameWhenEmpty(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, runner := newProvisionerForTest(t)
-	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
-
-	err := provisioner.Create(context.Background(), "")
-
-	require.NoError(t, err, "Create()")
-	assertFlagValue(t, runner.lastArgs, "--name", "cfg-name")
+	assertNameFlagPropagation(t, func(p *kindprovisioner.KindClusterProvisioner) error {
+		return p.Create(context.Background(), "")
+	}, "cfg-name")
 }
 
 func TestDeleteUsesProvidedName(t *testing.T) {
 	t.Parallel()
 
-	provisioner, _, _, runner := newProvisionerForTest(t)
-	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
-
-	err := provisioner.Delete(context.Background(), "delete-me")
-
-	require.NoError(t, err, "Delete()")
-	assertFlagValue(t, runner.lastArgs, "--name", "delete-me")
+	assertNameFlagPropagation(t, func(p *kindprovisioner.KindClusterProvisioner) error {
+		return p.Delete(context.Background(), "delete-me")
+	}, "delete-me")
 }
 
 func TestDeleteErrorDeleteFailed(t *testing.T) {
@@ -467,12 +453,31 @@ func assertFlagValue(t *testing.T, args []string, flag string, expected string) 
 
 	for i := range args {
 		if args[i] == flag {
-			require.Greaterf(t, len(args), i+1, "flag %s should have value", flag)
-			require.Equalf(t, expected, args[i+1], "unexpected value for %s", flag)
+			if i+1 >= len(args) {
+				t.Fatalf("flag %s missing value in args: %v", flag, args)
+			}
+
+			require.Equal(t, expected, args[i+1], "unexpected value for %s", flag)
 
 			return
 		}
 	}
 
 	t.Fatalf("flag %s not found in args: %v", flag, args)
+}
+
+func assertNameFlagPropagation(
+	t *testing.T,
+	action func(*kindprovisioner.KindClusterProvisioner) error,
+	expectedName string,
+) {
+	t.Helper()
+
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+	err := action(provisioner)
+
+	require.NoError(t, err)
+	assertFlagValue(t, runner.lastArgs, "--name", expectedName)
 }
