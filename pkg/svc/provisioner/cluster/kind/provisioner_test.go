@@ -21,6 +21,7 @@ import (
 // mockCommandRunner is a test helper that mocks the command runner.
 type mockCommandRunner struct {
 	mock.Mock
+
 	lastArgs []string
 }
 
