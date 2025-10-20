@@ -150,16 +150,13 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 		return fmt.Errorf("write temp config file: %w", err)
 	}
 
-	// Create buffers for kind to write to (the command runner will capture these)
-	var outBuf, errBuf bytes.Buffer
+	// Kind writes output through its logger interface - send directly to stdout
+	logger := &streamLogger{writer: os.Stdout}
 
-	// Use stream logger that writes to the buffers - kind writes output through the logger
-	logger := &streamLogger{writer: &outBuf}
-
-	// Set up IOStreams that kind can write to
+	// Set up IOStreams - kind commands may also write here
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
 	}
 
 	cmd := createcluster.NewCommand(logger, streams)
@@ -180,16 +177,13 @@ func (k *KindClusterProvisioner) Delete(ctx context.Context, name string) error 
 
 	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
 
-	// Create buffers for kind to write to (the command runner will capture these)
-	var outBuf, errBuf bytes.Buffer
+	// Kind writes output through its logger interface - send directly to stdout
+	logger := &streamLogger{writer: os.Stdout}
 
-	// Use stream logger that writes to the buffers - kind writes output through the logger
-	logger := &streamLogger{writer: &outBuf}
-
-	// Set up IOStreams that kind can write to
+	// Set up IOStreams - kind commands may also write here
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
 	}
 
 	cmd := deletecluster.NewCommand(logger, streams)
@@ -276,16 +270,13 @@ func (k *KindClusterProvisioner) Stop(ctx context.Context, name string) error {
 
 // List returns all kind clusters using kind's Cobra command.
 func (k *KindClusterProvisioner) List(ctx context.Context) ([]string, error) {
-	// Create buffers for kind to write to (the command runner will capture these)
-	var outBuf, errBuf bytes.Buffer
+	// Kind writes output through its logger interface - send directly to stdout
+	logger := &streamLogger{writer: os.Stdout}
 
-	// Use stream logger that writes to the buffers - kind writes output through the logger
-	logger := &streamLogger{writer: &outBuf}
-
-	// Set up IOStreams that kind can write to
+	// Set up IOStreams - kind commands may also write here
 	streams := kindcmd.IOStreams{
-		Out:    &outBuf,
-		ErrOut: &errBuf,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
 	}
 
 	cmd := getclusters.NewCommand(logger, streams)
