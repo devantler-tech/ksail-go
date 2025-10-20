@@ -108,6 +108,44 @@ func TestDeleteIncludesKubeconfigFlag(t *testing.T) {
 	require.Contains(t, runner.lastArgs, "--kubeconfig", "Delete() should pass kubeconfig flag")
 }
 
+func TestCreateUsesProvidedName(t *testing.T) {
+	t.Parallel()
+
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+	const clusterName = "custom-cluster"
+
+	err := provisioner.Create(context.Background(), clusterName)
+
+	require.NoError(t, err, "Create()")
+	assertFlagValue(t, runner.lastArgs, "--name", clusterName)
+}
+
+func TestCreateUsesConfigNameWhenEmpty(t *testing.T) {
+	t.Parallel()
+
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+	err := provisioner.Create(context.Background(), "")
+
+	require.NoError(t, err, "Create()")
+	assertFlagValue(t, runner.lastArgs, "--name", "cfg-name")
+}
+
+func TestDeleteUsesProvidedName(t *testing.T) {
+	t.Parallel()
+
+	provisioner, _, _, runner := newProvisionerForTest(t)
+	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+	err := provisioner.Delete(context.Background(), "delete-me")
+
+	require.NoError(t, err, "Delete()")
+	assertFlagValue(t, runner.lastArgs, "--name", "delete-me")
+}
+
 func TestDeleteErrorDeleteFailed(t *testing.T) {
 	t.Parallel()
 	provisioner, _, _, runner := newProvisionerForTest(t)
@@ -422,4 +460,19 @@ func runProvisionerRunnerSuccessTest(
 			require.NoErrorf(t, err, "%s()", actionName)
 		})
 	}
+}
+
+func assertFlagValue(t *testing.T, args []string, flag string, expected string) {
+	t.Helper()
+
+	for i := range args {
+		if args[i] == flag {
+			require.Greaterf(t, len(args), i+1, "flag %s should have value", flag)
+			require.Equalf(t, expected, args[i+1], "unexpected value for %s", flag)
+
+			return
+		}
+	}
+
+	t.Fatalf("flag %s not found in args: %v", flag, args)
 }
