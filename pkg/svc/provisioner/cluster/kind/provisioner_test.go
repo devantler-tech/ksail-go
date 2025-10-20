@@ -51,36 +51,13 @@ func (m *mockCommandRunner) Run(
 func TestCreateSuccess(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		inputName    string
-		expectedName string
-	}{
-		{
-			name:         "without_name_uses_cfg",
-			inputName:    "",
-			expectedName: "cfg-name",
+	runProvisionerRunnerSuccessTest(
+		t,
+		"Create",
+		func(ctx context.Context, provisioner *kindprovisioner.KindClusterProvisioner, name string) error {
+			return provisioner.Create(ctx, name)
 		},
-		{
-			name:         "with_name",
-			inputName:    "my-cluster",
-			expectedName: "my-cluster",
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			provisioner, _, _, runner := newProvisionerForTest(t)
-			// Mock command runner to return success
-			runner.On("Run").
-				Return(commandrunner.CommandResult{}, nil)
-
-			err := provisioner.Create(context.Background(), testCase.inputName)
-
-			require.NoError(t, err, "Create()")
-		})
-	}
+	)
 }
 
 func TestCreateErrorCreateFailed(t *testing.T) {
@@ -105,36 +82,13 @@ func TestCreateErrorCreateFailed(t *testing.T) {
 func TestDeleteSuccess(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name         string
-		inputName    string
-		expectedName string
-	}{
-		{
-			name:         "without_name_uses_cfg",
-			inputName:    "",
-			expectedName: "cfg-name",
+	runProvisionerRunnerSuccessTest(
+		t,
+		"Delete",
+		func(ctx context.Context, provisioner *kindprovisioner.KindClusterProvisioner, name string) error {
+			return provisioner.Delete(ctx, name)
 		},
-		{
-			name:         "with_name",
-			inputName:    "my-cluster",
-			expectedName: "my-cluster",
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-			provisioner, _, _, runner := newProvisionerForTest(t)
-			// Mock command runner to return success
-			runner.On("Run").
-				Return(commandrunner.CommandResult{}, nil)
-
-			err := provisioner.Delete(context.Background(), testCase.inputName)
-
-			require.NoError(t, err, "Delete()")
-		})
-	}
+	)
 }
 
 func TestDeleteErrorDeleteFailed(t *testing.T) {
@@ -402,5 +356,38 @@ func runDockerOperationFailureTest(
 
 	if expectedErrorMsg != "" && !assert.Contains(t, err.Error(), expectedErrorMsg) {
 		t.Fatalf("%s() error should contain %q, got: %v", operationName, expectedErrorMsg, err)
+	}
+}
+
+func runProvisionerRunnerSuccessTest(
+	t *testing.T,
+	actionName string,
+	action func(context.Context, *kindprovisioner.KindClusterProvisioner, string) error,
+) {
+	t.Helper()
+
+	testCases := []struct {
+		name      string
+		inputName string
+	}{
+		{
+			name:      "without_name_uses_cfg",
+			inputName: "",
+		},
+		{
+			name:      "with_name",
+			inputName: "my-cluster",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			provisioner, _, _, runner := newProvisionerForTest(t)
+			runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+
+			err := action(context.Background(), provisioner, testCase.inputName)
+			require.NoErrorf(t, err, "%s()", actionName)
+		})
 	}
 }
