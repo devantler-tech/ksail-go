@@ -4,9 +4,12 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	commandrunner "github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -21,7 +24,10 @@ type CiliumInstaller struct {
 	context    string
 	timeout    time.Duration
 	client     helm.Interface
+	runner     commandrunner.CommandRunner
 	waitFn     func(context.Context) error
+	stdout     io.Writer
+	stderr     io.Writer
 }
 
 var errKubeconfigPathEmpty = stderrors.New("ciliuminstaller: kubeconfig path is empty")
@@ -34,11 +40,34 @@ func NewCiliumInstaller(
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *CiliumInstaller {
+	return NewCiliumInstallerWithRunner(
+		client,
+		kubeconfig,
+		context,
+		timeout,
+		commandrunner.NewCobraCommandRunner(os.Stdout, os.Stderr),
+		os.Stdout,
+		os.Stderr,
+	)
+}
+
+// NewCiliumInstallerWithRunner creates a new Cilium installer instance with a custom command runner.
+// This is primarily used for testing.
+func NewCiliumInstallerWithRunner(
+	client helm.Interface,
+	kubeconfig, context string,
+	timeout time.Duration,
+	runner commandrunner.CommandRunner,
+	stdout, stderr io.Writer,
+) *CiliumInstaller {
 	installer := &CiliumInstaller{
 		client:     client,
 		kubeconfig: kubeconfig,
 		context:    context,
 		timeout:    timeout,
+		runner:     runner,
+		stdout:     stdout,
+		stderr:     stderr,
 	}
 
 	installer.waitFn = installer.waitForReadiness
@@ -46,11 +75,25 @@ func NewCiliumInstaller(
 	return installer
 }
 
-// Install installs or upgrades Cilium via its Helm chart.
+// Install installs or upgrades Cilium via its Helm chart using in-process Cobra commands.
 func (c *CiliumInstaller) Install(ctx context.Context) error {
-	err := c.helmInstallOrUpgradeCilium(ctx)
+	//nolint:contextcheck // Context is passed via cobra command runner
+	cmd := NewInstallCommand(
+		c.client,
+		c.kubeconfig,
+		c.context,
+		c.timeout,
+		c.stdout,
+	)
+
+	result, err := c.runner.Run(ctx, cmd, []string{})
 	if err != nil {
-		return fmt.Errorf("failed to install Cilium: %w", err)
+		mergedErr := commandrunner.MergeCommandError(
+			fmt.Errorf("failed to install Cilium: %w", err),
+			result,
+		)
+
+		return fmt.Errorf("install command failed: %w", mergedErr)
 	}
 
 	return nil
@@ -76,64 +119,30 @@ func (c *CiliumInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context)
 	c.waitFn = waitFunc
 }
 
-// Uninstall removes the Helm release for Cilium.
+// Uninstall removes the Helm release for Cilium using in-process Cobra commands.
 func (c *CiliumInstaller) Uninstall(ctx context.Context) error {
-	err := c.client.UninstallRelease(ctx, "cilium", "kube-system")
+	//nolint:contextcheck // Context is passed via cobra command runner
+	cmd := NewUninstallCommand(
+		c.client,
+		c.kubeconfig,
+		c.context,
+		c.stdout,
+	)
+
+	result, err := c.runner.Run(ctx, cmd, []string{})
 	if err != nil {
-		return fmt.Errorf("failed to uninstall cilium release: %w", err)
+		mergedErr := commandrunner.MergeCommandError(
+			fmt.Errorf("failed to uninstall Cilium: %w", err),
+			result,
+		)
+
+		return fmt.Errorf("uninstall command failed: %w", mergedErr)
 	}
 
 	return nil
 }
 
 // --- internals ---
-
-func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error {
-	repoEntry := &helm.RepositoryEntry{
-		Name: "cilium",
-		URL:  "https://helm.cilium.io",
-	}
-
-	addRepoErr := c.client.AddRepository(ctx, repoEntry)
-	if addRepoErr != nil {
-		return fmt.Errorf("failed to add cilium repository: %w", addRepoErr)
-	}
-
-	spec := &helm.ChartSpec{
-		ReleaseName: "cilium",
-		ChartName:   "cilium/cilium",
-		Namespace:   "kube-system",
-		RepoURL:     "https://helm.cilium.io",
-		Atomic:      true,
-		Silent:      true,
-		UpgradeCRDs: true,
-		Timeout:     c.timeout,
-		Wait:        true,
-		WaitForJobs: true,
-	}
-
-	applyDefaultValues(spec)
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	_, err := c.client.InstallOrUpgradeChart(timeoutCtx, spec)
-	if err != nil {
-		return fmt.Errorf("failed to install cilium chart: %w", err)
-	}
-
-	return nil
-}
-
-func applyDefaultValues(spec *helm.ChartSpec) {
-	if spec.SetJSONVals == nil {
-		spec.SetJSONVals = make(map[string]string, 1)
-	}
-
-	if _, ok := spec.SetJSONVals["operator.replicas"]; !ok {
-		spec.SetJSONVals["operator.replicas"] = "1"
-	}
-}
 
 func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 	restConfig, err := c.buildRESTConfig()
