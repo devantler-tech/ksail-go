@@ -2,6 +2,7 @@ package workload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,6 +17,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
+
+// ErrUnsupportedGitOpsEngine is returned when an unsupported GitOps engine is configured.
+var ErrUnsupportedGitOpsEngine = errors.New("unsupported GitOps engine")
 
 // NewReconcileCmd creates the workload reconcile command.
 func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
@@ -48,7 +52,7 @@ func newReconcileCommandRunE(
 func handleReconcileRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
-	deps shared.LifecycleDeps,
+	_ shared.LifecycleDeps,
 ) error {
 	clusterCfg := cfgManager.GetConfig()
 
@@ -65,6 +69,7 @@ func handleReconcileRunE(
 
 	// Execute reconciliation based on GitOps engine
 	var err error
+
 	switch clusterCfg.Spec.GitOpsEngine {
 	case v1alpha1.GitOpsEngineFlux:
 		err = reconcileFlux(cmd.Context(), clusterCfg)
@@ -74,9 +79,10 @@ func handleReconcileRunE(
 			Content: "No GitOps engine configured, skipping reconciliation",
 			Writer:  cmd.OutOrStdout(),
 		})
+
 		return nil
 	default:
-		return fmt.Errorf("unsupported GitOps engine: %s", clusterCfg.Spec.GitOpsEngine)
+		return ErrUnsupportedGitOpsEngine
 	}
 
 	if err != nil {
@@ -105,7 +111,12 @@ func reconcileFlux(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 	// Reconcile source directory kustomizations if they exist
 	sourceDir := clusterCfg.Spec.SourceDirectory
 	if sourceDir != "" {
-		err = reconcileFluxKustomizations(ctx, kubeconfig, clusterCfg.Spec.Connection.Context, sourceDir)
+		err = reconcileFluxKustomizations(
+			ctx,
+			kubeconfig,
+			clusterCfg.Spec.Connection.Context,
+			sourceDir,
+		)
 		if err != nil {
 			return err
 		}
@@ -115,7 +126,9 @@ func reconcileFlux(ctx context.Context, clusterCfg *v1alpha1.Cluster) error {
 }
 
 // reconcileFluxKustomizations reconciles all kustomizations found in the source directory.
-func reconcileFluxKustomizations(ctx context.Context, kubeconfig, kubeContext, sourceDir string) error {
+func reconcileFluxKustomizations(ctx context.Context, kubeconfig, kubeContext, _ string) error {
+	const reconcileTimeout = 5 * time.Minute
+
 	// Use flux reconcile kustomization to reconcile all kustomizations
 	args := []string{
 		"reconcile",
@@ -124,21 +137,26 @@ func reconcileFluxKustomizations(ctx context.Context, kubeconfig, kubeContext, s
 	}
 
 	if kubeconfig != "" {
-		args = append(args, fmt.Sprintf("--kubeconfig=%s", kubeconfig))
+		args = append(args, "--kubeconfig="+kubeconfig)
 	}
 
 	if kubeContext != "" {
-		args = append(args, fmt.Sprintf("--context=%s", kubeContext))
+		args = append(args, "--context="+kubeContext)
 	}
 
 	// Add timeout context
-	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	timeoutCtx, cancel := context.WithTimeout(ctx, reconcileTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(timeoutCtx, "flux", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to reconcile Flux kustomizations: %w (output: %s)", err, string(output))
+		return fmt.Errorf(
+			"failed to reconcile Flux kustomizations: %w (output: %s)",
+			err,
+			string(output),
+		)
 	}
 
 	return nil

@@ -48,6 +48,7 @@ func newFluxInstallerWithDefaults(
 	t *testing.T,
 ) *fluxinstaller.FluxInstaller {
 	t.Helper()
+
 	installer := fluxinstaller.NewFluxInstaller(
 		"~/.kube/config",
 		"test-context",

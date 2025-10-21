@@ -29,11 +29,13 @@ func NewFluxInstaller(
 // Install installs Flux using the flux install command.
 func (f *FluxInstaller) Install(ctx context.Context) error {
 	args := f.buildInstallArgs()
-	
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, f.timeout)
 	defer cancel()
 
+	//nolint:gosec // flux command with user-provided arguments is expected
 	cmd := exec.CommandContext(timeoutCtx, "flux", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to install Flux: %w (output: %s)", err, string(output))
@@ -45,11 +47,13 @@ func (f *FluxInstaller) Install(ctx context.Context) error {
 // Uninstall removes Flux using the flux uninstall command.
 func (f *FluxInstaller) Uninstall(ctx context.Context) error {
 	args := f.buildUninstallArgs()
-	
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, f.timeout)
 	defer cancel()
 
+	//nolint:gosec // flux command with user-provided arguments is expected
 	cmd := exec.CommandContext(timeoutCtx, "flux", args...)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to uninstall Flux: %w (output: %s)", err, string(output))
@@ -69,11 +73,11 @@ func (f *FluxInstaller) buildInstallArgs() []string {
 	}
 
 	if f.kubeconfig != "" {
-		args = append(args, fmt.Sprintf("--kubeconfig=%s", f.kubeconfig))
+		args = append(args, "--kubeconfig="+f.kubeconfig)
 	}
 
 	if f.context != "" {
-		args = append(args, fmt.Sprintf("--context=%s", f.context))
+		args = append(args, "--context="+f.context)
 	}
 
 	return args
@@ -88,11 +92,11 @@ func (f *FluxInstaller) buildUninstallArgs() []string {
 	}
 
 	if f.kubeconfig != "" {
-		args = append(args, fmt.Sprintf("--kubeconfig=%s", f.kubeconfig))
+		args = append(args, "--kubeconfig="+f.kubeconfig)
 	}
 
 	if f.context != "" {
-		args = append(args, fmt.Sprintf("--context=%s", f.context))
+		args = append(args, "--context="+f.context)
 	}
 
 	return args
