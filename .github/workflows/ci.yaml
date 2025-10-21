@@ -78,16 +78,28 @@ jobs:
         include:
           - distribution: Kind
             cni: Default
+            gitops: None
             init-args: "--distribution Kind"
           - distribution: Kind
             cni: Cilium
+            gitops: None
             init-args: "--distribution Kind --cni Cilium"
+          - distribution: Kind
+            cni: Default
+            gitops: Flux
+            init-args: "--distribution Kind --gitops-engine Flux"
           - distribution: K3d
             cni: Default
+            gitops: None
             init-args: "--distribution K3d"
           - distribution: K3d
             cni: Cilium
+            gitops: None
             init-args: "--distribution K3d --cni Cilium"
+          - distribution: K3d
+            cni: Default
+            gitops: Flux
+            init-args: "--distribution K3d --gitops-engine Flux"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -103,10 +115,15 @@ jobs:
       - name: 📦 Download dependencies
         run: go mod download
 
+      - name: 🔧 Install Flux CLI
+        if: matrix.gitops == 'Flux'
+        run: |
+          curl -s https://fluxcd.io/install.sh | sudo bash
+
       - name: 🏗️ Build application
         run: go build -o ksail .
 
-      - name: 🧪 ksail init (${{ matrix.distribution }} + ${{ matrix.cni }})
+      - name: 🧪 ksail init (${{ matrix.distribution }} + ${{ matrix.cni }} + ${{ matrix.gitops }})
         run: |
           ./ksail init ${{ matrix.init-args }}
 

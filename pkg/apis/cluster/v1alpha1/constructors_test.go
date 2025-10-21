@@ -99,6 +99,9 @@ func TestGitOpsEngineSet(t *testing.T) {
 		{"None", "None"},
 		{"none", "None"},
 		{"NONE", "None"},
+		{"Flux", "Flux"},
+		{"flux", "Flux"},
+		{"FLUX", "Flux"},
 	}
 	for _, validCase := range validCases {
 		var tool v1alpha1.GitOpsEngine
