@@ -47,7 +47,7 @@ func TestNewCiliumInstaller(t *testing.T) {
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	client := NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := NewCiliumInstaller(client, kubeconfig, context, timeout)
 
 	testutils.ExpectNotNil(t, installer, "installer instance")
@@ -55,7 +55,7 @@ func TestNewCiliumInstaller(t *testing.T) {
 
 type installerScenario struct {
 	name       string
-	setup      func(*testing.T, *MockHelmClient)
+	setup      func(*testing.T, *helm.MockInterface)
 	actionName string
 	action     func(context.Context, *CiliumInstaller) error
 	wantErr    string
@@ -90,7 +90,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			name:       "Success",
 			actionName: "Install",
 			action:     installAction,
-			setup: func(t *testing.T, client *MockHelmClient) {
+			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCiliumInstallExpectations(t, client, nil)
@@ -100,7 +100,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			name:       "InstallFailure",
 			actionName: "Install",
 			action:     installAction,
-			setup: func(t *testing.T, client *MockHelmClient) {
+			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCiliumInstallExpectations(t, client, errInstallFailed)
@@ -111,7 +111,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			name:       "AddRepositoryFailure",
 			actionName: "Install",
 			action:     installAction,
-			setup: func(t *testing.T, client *MockHelmClient) {
+			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumAddRepository(t, client, errAddRepoFailed)
@@ -135,7 +135,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 			name:       "Success",
 			actionName: "Uninstall",
 			action:     uninstallAction,
-			setup: func(t *testing.T, client *MockHelmClient) {
+			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumUninstall(t, client, nil)
@@ -145,7 +145,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 			name:       "UninstallFailure",
 			actionName: "Uninstall",
 			action:     uninstallAction,
-			setup: func(t *testing.T, client *MockHelmClient) {
+			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumUninstall(t, client, errUninstallFailed)
@@ -202,7 +202,7 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Run("InvokesCustomFunction", func(t *testing.T) {
 		t.Parallel()
 
-		client := NewMockHelmClient(t)
+		client := helm.NewMockInterface(t)
 		installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
 		called := false
 
@@ -223,7 +223,7 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Run("RestoresDefaultWhenNil", func(t *testing.T) {
 		t.Parallel()
 
-		client := NewMockHelmClient(t)
+		client := helm.NewMockInterface(t)
 		installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
 		defaultFn := installer.waitFn
 		testutils.ExpectNotNil(t, defaultFn, "default wait function")
@@ -245,7 +245,7 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 func TestCiliumInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 	t.Parallel()
 
-	installer := NewCiliumInstaller(NewMockHelmClient(t), "", "", time.Second)
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), "", "", time.Second)
 	err := installer.WaitForReadiness(context.Background())
 
 	testutils.ExpectErrorContains(
@@ -259,7 +259,7 @@ func TestCiliumInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	installer := NewCiliumInstaller(NewMockHelmClient(t), "kubeconfig", "", time.Second)
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
 	installer.waitFn = nil
 
 	err := installer.WaitForReadiness(context.Background())
@@ -277,7 +277,7 @@ func TestCiliumInstallerWaitForReadinessSuccess(t *testing.T) {
 	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCiliumInstaller(
-		NewMockHelmClient(t),
+		helm.NewMockInterface(t),
 		kubeconfig,
 		"default",
 		100*time.Millisecond,
@@ -298,7 +298,7 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCiliumInstaller(
-		NewMockHelmClient(t),
+		helm.NewMockInterface(t),
 		kubeconfig,
 		"default",
 		75*time.Millisecond,
@@ -320,7 +320,7 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Run("ErrorWhenKubeconfigMissing", func(t *testing.T) {
 		t.Parallel()
 
-		installer := NewCiliumInstaller(NewMockHelmClient(t), "", "", time.Second)
+		installer := NewCiliumInstaller(helm.NewMockInterface(t), "", "", time.Second)
 		_, err := installer.buildRESTConfig()
 
 		testutils.ExpectErrorContains(
@@ -335,7 +335,7 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 		t.Parallel()
 
 		path := writeKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(NewMockHelmClient(t), path, "", time.Second)
+		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
@@ -347,7 +347,7 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 		t.Parallel()
 
 		path := writeKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(NewMockHelmClient(t), path, "alt", time.Second)
+		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
@@ -364,7 +364,7 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 		t.Parallel()
 
 		path := writeKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(NewMockHelmClient(t), path, "missing", time.Second)
+		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
 		_, err := installer.buildRESTConfig()
 
 		testutils.ExpectErrorContains(
@@ -680,9 +680,9 @@ func TestPollForReadiness(t *testing.T) {
 	})
 }
 
-func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *MockHelmClient) {
+func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *helm.MockInterface) {
 	t.Helper()
-	client := NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := NewCiliumInstaller(
 		client,
 		"~/.kube/config",
@@ -706,7 +706,7 @@ func expectInstallerResult(t *testing.T, err error, wantErr, operation string) {
 	testutils.ExpectErrorContains(t, err, wantErr, message)
 }
 
-func setupCiliumInstallExpectations(t *testing.T, client *MockHelmClient, installErr error) {
+func setupCiliumInstallExpectations(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 
 	expectCiliumAddRepository(t, client, nil)
@@ -725,7 +725,7 @@ func pollForReadinessWithDefaultTimeout(
 	return pollForReadiness(ctx, 200*time.Millisecond, checker)
 }
 
-func expectCiliumAddRepository(t *testing.T, client *MockHelmClient, err error) {
+func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
 	client.EXPECT().
 		AddRepository(
@@ -741,7 +741,7 @@ func expectCiliumAddRepository(t *testing.T, client *MockHelmClient, err error) 
 		Return(err)
 }
 
-func expectCiliumInstallChart(t *testing.T, client *MockHelmClient, installErr error) {
+func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 	client.EXPECT().
 		InstallOrUpgradeChart(
@@ -762,7 +762,7 @@ func expectCiliumInstallChart(t *testing.T, client *MockHelmClient, installErr e
 		Return(nil, installErr)
 }
 
-func expectCiliumUninstall(t *testing.T, client *MockHelmClient, err error) {
+func expectCiliumUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
 	client.EXPECT().
 		UninstallRelease(mock.Anything, "cilium", "kube-system").

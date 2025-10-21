@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 
 	commandrunner "github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
 	clustercommand "github.com/k3d-io/k3d/v5/cmd/cluster"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -39,10 +41,21 @@ func NewK3dClusterProvisioner(
 	configPath string,
 	opts ...Option,
 ) *K3dClusterProvisioner {
+	// Configure logrus for k3d's console output
+	// k3d uses logrus for logging, so we need to set it up properly
+	logrus.SetOutput(os.Stdout)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors:      true,
+		DisableTimestamp: false,
+		FullTimestamp:    false,
+		TimestampFormat:  "2006-01-02T15:04:05Z",
+	})
+	logrus.SetLevel(logrus.InfoLevel)
+
 	prov := &K3dClusterProvisioner{
 		simpleCfg:  simpleCfg,
 		configPath: configPath,
-		runner:     commandrunner.NewCobraCommandRunner(),
+		runner:     commandrunner.NewCobraCommandRunner(nil, nil),
 		builders: CommandBuilders{
 			Create: clustercommand.NewCmdClusterCreate,
 			Delete: clustercommand.NewCmdClusterDelete,
