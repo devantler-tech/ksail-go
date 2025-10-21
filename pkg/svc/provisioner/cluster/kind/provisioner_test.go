@@ -453,13 +453,13 @@ func runProvisionerRunnerSuccessTest(
 func assertFlagValue(t *testing.T, args []string, flag string, expected string) {
 	t.Helper()
 
-	for i := range args {
-		if args[i] == flag {
-			if i+1 >= len(args) {
+	for idx := range args {
+		if args[idx] == flag {
+			if idx+1 >= len(args) {
 				t.Fatalf("flag %s missing value in args: %v", flag, args)
 			}
 
-			require.Equal(t, expected, args[i+1], "unexpected value for %s", flag)
+			require.Equal(t, expected, args[idx+1], "unexpected value for %s", flag)
 
 			return
 		}
