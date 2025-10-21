@@ -165,12 +165,15 @@ type GitOpsEngine string
 const (
 	// GitOpsEngineNone is no GitOps engine.
 	GitOpsEngineNone GitOpsEngine = "None"
+	// GitOpsEngineFlux is the Flux GitOps engine.
+	GitOpsEngineFlux GitOpsEngine = "Flux"
 )
 
 // validGitOpsEngines enumerates supported GitOps engine values.
 func validGitOpsEngines() []GitOpsEngine {
 	return []GitOpsEngine{
 		GitOpsEngineNone,
+		GitOpsEngineFlux,
 	}
 }
 
@@ -252,10 +255,11 @@ func (d *GitOpsEngine) Set(value string) error {
 	}
 
 	return fmt.Errorf(
-		"%w: %s (valid options: %s)",
+		"%w: %s (valid options: %s, %s)",
 		ErrInvalidGitOpsEngine,
 		value,
 		GitOpsEngineNone,
+		GitOpsEngineFlux,
 	)
 }
 

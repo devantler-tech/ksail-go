@@ -3,9 +3,8 @@ package fluxinstaller
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"time"
-
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
 // FluxInstaller implements the installer.Installer interface for Flux.
@@ -13,38 +12,47 @@ type FluxInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
-	client     HelmClient
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
 func NewFluxInstaller(
-	client HelmClient,
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *FluxInstaller {
 	return &FluxInstaller{
-		client:     client,
 		kubeconfig: kubeconfig,
 		context:    context,
 		timeout:    timeout,
 	}
 }
 
-// Install installs or upgrades the Flux Operator via its OCI Helm chart.
-func (b *FluxInstaller) Install(ctx context.Context) error {
-	err := b.helmInstallOrUpgradeFluxOperator(ctx)
+// Install installs Flux using the flux install command.
+func (f *FluxInstaller) Install(ctx context.Context) error {
+	args := f.buildInstallArgs()
+	
+	timeoutCtx, cancel := context.WithTimeout(ctx, f.timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(timeoutCtx, "flux", args...)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to install Flux operator: %w", err)
+		return fmt.Errorf("failed to install Flux: %w (output: %s)", err, string(output))
 	}
 
 	return nil
 }
 
-// Uninstall removes the Helm release for the Flux Operator.
-func (b *FluxInstaller) Uninstall(ctx context.Context) error {
-	err := b.client.UninstallRelease(ctx, "flux-operator", "flux-system")
+// Uninstall removes Flux using the flux uninstall command.
+func (f *FluxInstaller) Uninstall(ctx context.Context) error {
+	args := f.buildUninstallArgs()
+	
+	timeoutCtx, cancel := context.WithTimeout(ctx, f.timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(timeoutCtx, "flux", args...)
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to uninstall flux-operator release: %w", err)
+		return fmt.Errorf("failed to uninstall Flux: %w (output: %s)", err, string(output))
 	}
 
 	return nil
@@ -52,24 +60,40 @@ func (b *FluxInstaller) Uninstall(ctx context.Context) error {
 
 // --- internals ---
 
-func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) error {
-	spec := &helm.ChartSpec{
-		ReleaseName:     "flux-operator",
-		ChartName:       "oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
-		Namespace:       "flux-system",
-		CreateNamespace: true,
-		Atomic:          true,
-		UpgradeCRDs:     true,
-		Timeout:         b.timeout,
+// buildInstallArgs constructs the arguments for flux install command.
+func (f *FluxInstaller) buildInstallArgs() []string {
+	args := []string{
+		"install",
+		"--namespace=flux-system",
+		"--network-policy=false",
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
-	defer cancel()
-
-	_, err := b.client.InstallChart(timeoutCtx, spec)
-	if err != nil {
-		return fmt.Errorf("failed to install flux operator chart: %w", err)
+	if f.kubeconfig != "" {
+		args = append(args, fmt.Sprintf("--kubeconfig=%s", f.kubeconfig))
 	}
 
-	return nil
+	if f.context != "" {
+		args = append(args, fmt.Sprintf("--context=%s", f.context))
+	}
+
+	return args
+}
+
+// buildUninstallArgs constructs the arguments for flux uninstall command.
+func (f *FluxInstaller) buildUninstallArgs() []string {
+	args := []string{
+		"uninstall",
+		"--namespace=flux-system",
+		"--silent",
+	}
+
+	if f.kubeconfig != "" {
+		args = append(args, fmt.Sprintf("--kubeconfig=%s", f.kubeconfig))
+	}
+
+	if f.context != "" {
+		args = append(args, fmt.Sprintf("--context=%s", f.context))
+	}
+
+	return args
 }
