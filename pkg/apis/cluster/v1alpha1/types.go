@@ -59,7 +59,17 @@ type Spec struct {
 	IngressController  IngressController `json:"ingressController,omitzero"`
 	GatewayController  GatewayController `json:"gatewayController,omitzero"`
 	GitOpsEngine       GitOpsEngine      `json:"gitOpsEngine,omitzero"`
+	MirrorRegistries   *bool             `json:"mirrorRegistries,omitzero"`
 	Options            Options           `json:"options,omitzero"`
+}
+
+// IsMirrorRegistriesEnabled returns true if mirror registries are enabled.
+// Defaults to true if not explicitly set.
+func (s *Spec) IsMirrorRegistriesEnabled() bool {
+	if s.MirrorRegistries == nil {
+		return true // Default to enabled
+	}
+	return *s.MirrorRegistries
 }
 
 // Connection defines connection options for a KSail cluster.
@@ -186,8 +196,6 @@ type Options struct {
 
 	Helm      OptionsHelm      `json:"helm,omitzero"`
 	Kustomize OptionsKustomize `json:"kustomize,omitzero"`
-
-	Registry OptionsRegistry `json:"registry,omitzero"`
 }
 
 // OptionsKind defines options specific to the Kind distribution.
@@ -223,20 +231,6 @@ type OptionsHelm struct {
 // OptionsKustomize defines options for the Kustomize tool.
 type OptionsKustomize struct {
 	// Add any specific fields for the Kustomize distribution here.
-}
-
-// OptionsRegistry defines options for pull-through/mirror registries.
-type OptionsRegistry struct {
-	Enabled          bool              `json:"enabled,omitzero"`
-	DeleteVolumes    bool              `json:"deleteVolumes,omitzero"`
-	Mirrors          []RegistryMirror  `json:"mirrors,omitzero"`
-}
-
-// RegistryMirror defines a mirror registry configuration.
-type RegistryMirror struct {
-	Name     string `json:"name,omitzero"`
-	Upstream string `json:"upstream,omitzero"`
-	Port     int    `json:"port,omitzero"`
 }
 
 // --- Setters for pflags ---
