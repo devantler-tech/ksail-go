@@ -13,11 +13,17 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
+	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	registrymanager "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/docker/docker/client"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -61,22 +67,29 @@ func newCreateCommandRunE(
 	return shared.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 }
 
-// handleCreateRunE executes cluster creation with CNI installation.
+// handleCreateRunE executes cluster creation with mirror registry setup and CNI installation.
 func handleCreateRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	deps shared.LifecycleDeps,
 ) error {
+	clusterCfg := cfgManager.GetConfig()
+
+	// Set up mirror registries before cluster creation if enabled
+	err := setupMirrorRegistries(cmd, clusterCfg, deps)
+	if err != nil {
+		return fmt.Errorf("failed to setup mirror registries: %w", err)
+	}
+
 	config := newCreateLifecycleConfig()
 
 	// Reuse the standard lifecycle logic but extend with CNI installation
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err = shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
 	if err != nil {
 		return fmt.Errorf("cluster creation failed: %w", err)
 	}
 
 	// Install CNI if Cilium is configured
-	clusterCfg := cfgManager.GetConfig()
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		// Add newline separator before CNI installation
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
@@ -227,4 +240,72 @@ func expandKubeconfigPath(kubeconfig string) (string, error) {
 	}
 
 	return filepath.Join(home, kubeconfig[1:]), nil
+}
+
+// setupMirrorRegistries sets up mirror registries based on the cluster configuration.
+func setupMirrorRegistries(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
+) error {
+	// Check if mirror registries are enabled
+	if !clusterCfg.Spec.IsMirrorRegistriesEnabled() {
+		return nil
+	}
+
+	// Create Docker client
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return fmt.Errorf("failed to create docker client: %w", err)
+	}
+	defer dockerClient.Close()
+
+	// Create registry manager
+	regMgr, err := registrymanager.NewManager(dockerClient)
+	if err != nil {
+		return fmt.Errorf("failed to create registry manager: %w", err)
+	}
+
+	// Load distribution-specific config to infer registries
+	var kindConfig *v1alpha4.Cluster
+	var k3dConfig *k3dv1alpha5.SimpleConfig
+
+	switch clusterCfg.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		err = kindConfigMgr.LoadConfig(deps.Timer)
+		if err != nil {
+			return fmt.Errorf("failed to load kind config: %w", err)
+		}
+		kindConfig = kindConfigMgr.GetConfig()
+	case v1alpha1.DistributionK3d:
+		k3dConfigMgr := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		err = k3dConfigMgr.LoadConfig(deps.Timer)
+		if err != nil {
+			return fmt.Errorf("failed to load k3d config: %w", err)
+		}
+		k3dConfig = k3dConfigMgr.GetConfig()
+	default:
+		return nil
+	}
+
+	// Get cluster name
+	clusterName := clusterCfg.Spec.Connection.Context
+	if clusterName == "" {
+		clusterName = "default"
+	}
+
+	// Set up registries
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "setting up mirror registries",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	err = regMgr.SetupRegistries(cmd.Context(), clusterCfg, kindConfig, k3dConfig, clusterName)
+	if err != nil {
+		return fmt.Errorf("failed to setup registries: %w", err)
+	}
+
+	return nil
 }
