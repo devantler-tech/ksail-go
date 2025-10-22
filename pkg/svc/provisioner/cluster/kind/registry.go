@@ -43,11 +43,11 @@ func SetupRegistries(
 
 	for _, reg := range registries {
 		config := dockerclient.RegistryConfig{
-			Name:         reg.Name,
-			Port:         reg.Port,
-			UpstreamURL:  reg.Upstream,
-			ClusterName:  clusterName,
-			NetworkName:  "kind", // Kind uses "kind" network
+			Name:        reg.Name,
+			Port:        reg.Port,
+			UpstreamURL: reg.Upstream,
+			ClusterName: clusterName,
+			NetworkName: "kind", // Kind uses "kind" network
 		}
 
 		if err := registryMgr.CreateRegistry(ctx, config); err != nil {
@@ -103,7 +103,7 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 		// Format example:
 		// [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
 		//   endpoint = ["http://localhost:5000"]
-		
+
 		mirrors := parseContainerdConfig(patch)
 		for host, endpoints := range mirrors {
 			// Skip if we've already processed this host
@@ -140,7 +140,7 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 func parseContainerdConfig(patch string) map[string][]string {
 	mirrors := make(map[string][]string)
 	lines := strings.Split(patch, "\n")
-	
+
 	var currentHost string
 	var inEndpointArray bool
 	var currentEndpoints []string
@@ -232,7 +232,7 @@ func parseContainerdConfig(patch string) map[string][]string {
 // Example: endpoint = ["http://localhost:5000", "http://localhost:5001"]
 func extractEndpointsFromInlineArray(line string) []string {
 	var endpoints []string
-	
+
 	// Find the array content between [ and ]
 	start := strings.Index(line, "[")
 	end := strings.LastIndex(line, "]")
@@ -241,7 +241,7 @@ func extractEndpointsFromInlineArray(line string) []string {
 	}
 
 	arrayContent := line[start+1 : end]
-	
+
 	// Split by comma and extract quoted strings
 	parts := strings.Split(arrayContent, ",")
 	for _, part := range parts {
@@ -266,13 +266,13 @@ func extractEndpointFromLine(line string) string {
 // extractQuotedString extracts a string from within quotes.
 func extractQuotedString(s string) string {
 	s = strings.TrimSpace(s)
-	
+
 	// Find first and last quote
 	firstQuote := strings.Index(s, `"`)
 	if firstQuote < 0 {
 		return ""
 	}
-	
+
 	lastQuote := strings.LastIndex(s, `"`)
 	if lastQuote <= firstQuote {
 		return ""

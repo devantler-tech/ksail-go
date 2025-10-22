@@ -18,9 +18,9 @@ import (
 func TestNewRegistryManager(t *testing.T) {
 	t.Run("success with valid client", func(t *testing.T) {
 		mockClient := NewMockAPIClient(t)
-		
+
 		rm, err := NewRegistryManager(mockClient)
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, rm)
 		assert.Equal(t, mockClient, rm.client)
@@ -28,7 +28,7 @@ func TestNewRegistryManager(t *testing.T) {
 
 	t.Run("error with nil client", func(t *testing.T) {
 		rm, err := NewRegistryManager(nil)
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, rm)
 		assert.Equal(t, ErrAPIClientNil, err)
@@ -42,11 +42,11 @@ func TestCreateRegistry(t *testing.T) {
 		ctx := context.Background()
 
 		config := RegistryConfig{
-			Name:         "docker.io",
-			Port:         5000,
-			UpstreamURL:  "https://registry-1.docker.io",
-			ClusterName:  "test-cluster",
-			NetworkName:  "kind",
+			Name:        "docker.io",
+			Port:        5000,
+			UpstreamURL: "https://registry-1.docker.io",
+			ClusterName: "test-cluster",
+			NetworkName: "kind",
 		}
 
 		// Mock registry doesn't exist
@@ -99,7 +99,7 @@ func TestCreateRegistry(t *testing.T) {
 			Once()
 
 		err := rm.CreateRegistry(ctx, config)
-		
+
 		assert.NoError(t, err)
 	})
 
@@ -128,7 +128,7 @@ func TestCreateRegistry(t *testing.T) {
 			Once()
 
 		err := rm.CreateRegistry(ctx, config)
-		
+
 		assert.NoError(t, err)
 	})
 }
@@ -173,7 +173,7 @@ func TestDeleteRegistry(t *testing.T) {
 			Once()
 
 		err := rm.DeleteRegistry(ctx, "docker.io", "test-cluster", true)
-		
+
 		assert.NoError(t, err)
 	})
 
@@ -198,7 +198,7 @@ func TestDeleteRegistry(t *testing.T) {
 			Times(2)
 
 		err := rm.DeleteRegistry(ctx, "docker.io", "test-cluster", true)
-		
+
 		assert.NoError(t, err)
 	})
 
@@ -214,7 +214,7 @@ func TestDeleteRegistry(t *testing.T) {
 			Once()
 
 		err := rm.DeleteRegistry(ctx, "docker.io", "test-cluster", false)
-		
+
 		assert.Error(t, err)
 		assert.Equal(t, ErrRegistryNotFound, err)
 	})
@@ -245,7 +245,7 @@ func TestListRegistries(t *testing.T) {
 			Once()
 
 		registries, err := rm.ListRegistries(ctx)
-		
+
 		assert.NoError(t, err)
 		assert.Len(t, registries, 2)
 		assert.Contains(t, registries, "docker.io")
@@ -263,7 +263,7 @@ func TestListRegistries(t *testing.T) {
 			Once()
 
 		registries, err := rm.ListRegistries(ctx)
-		
+
 		assert.NoError(t, err)
 		assert.Empty(t, registries)
 	})
@@ -289,7 +289,7 @@ func TestIsRegistryInUse(t *testing.T) {
 			Once()
 
 		inUse, err := rm.IsRegistryInUse(ctx, "docker.io")
-		
+
 		assert.NoError(t, err)
 		assert.True(t, inUse)
 	})
@@ -313,7 +313,7 @@ func TestIsRegistryInUse(t *testing.T) {
 			Once()
 
 		inUse, err := rm.IsRegistryInUse(ctx, "docker.io")
-		
+
 		assert.NoError(t, err)
 		assert.False(t, inUse)
 	})
@@ -329,7 +329,7 @@ func TestIsRegistryInUse(t *testing.T) {
 			Once()
 
 		inUse, err := rm.IsRegistryInUse(ctx, "docker.io")
-		
+
 		assert.NoError(t, err)
 		assert.False(t, inUse)
 	})
@@ -360,7 +360,7 @@ func TestGetRegistryPort(t *testing.T) {
 			Once()
 
 		port, err := rm.GetRegistryPort(ctx, "docker.io")
-		
+
 		assert.NoError(t, err)
 		assert.Equal(t, 5000, port)
 	})
@@ -376,7 +376,7 @@ func TestGetRegistryPort(t *testing.T) {
 			Once()
 
 		port, err := rm.GetRegistryPort(ctx, "docker.io")
-		
+
 		assert.Error(t, err)
 		assert.Equal(t, 0, port)
 		assert.Equal(t, ErrRegistryNotFound, err)

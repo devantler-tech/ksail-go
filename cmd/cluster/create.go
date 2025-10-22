@@ -7,9 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/docker/docker/client"
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
@@ -22,6 +19,8 @@ import (
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -52,7 +51,8 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.Flags().StringSlice("mirror-registry", []string{}, "Configure mirror registries (e.g., docker.io=http://localhost:5000)")
+	cmd.Flags().
+		StringSlice("mirror-registry", []string{}, "Configure mirror registries (e.g., docker.io=http://localhost:5000)")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)
@@ -283,7 +283,10 @@ func setupMirrorRegistries(
 	}
 
 	// Create Docker client
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}

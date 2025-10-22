@@ -53,11 +53,11 @@ func NewRegistryManager(apiClient client.APIClient) (*RegistryManager, error) {
 
 // RegistryConfig holds configuration for creating a registry.
 type RegistryConfig struct {
-	Name         string
-	Port         int
-	UpstreamURL  string
-	ClusterName  string
-	NetworkName  string
+	Name        string
+	Port        int
+	UpstreamURL string
+	ClusterName string
+	NetworkName string
 }
 
 // CreateRegistry creates a registry container with the given configuration.
@@ -90,7 +90,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	networkConfig := rm.buildNetworkConfig(config)
 
 	containerName := fmt.Sprintf("ksail-registry-%s", config.Name)
-	
+
 	// Create container
 	resp, err := rm.client.ContainerCreate(
 		ctx,
@@ -115,9 +115,13 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 // DeleteRegistry removes a registry container and optionally its volume.
 // If deleteVolume is true, the associated volume will be removed.
 // If the registry is still in use by other clusters, it returns an error.
-func (rm *RegistryManager) DeleteRegistry(ctx context.Context, name, clusterName string, deleteVolume bool) error {
+func (rm *RegistryManager) DeleteRegistry(
+	ctx context.Context,
+	name, clusterName string,
+	deleteVolume bool,
+) error {
 	containerName := fmt.Sprintf("ksail-registry-%s", name)
-	
+
 	// Get container to check labels
 	containers, err := rm.listRegistryContainers(ctx, name)
 	if err != nil {
@@ -230,20 +234,25 @@ func (rm *RegistryManager) registryExists(ctx context.Context, name string) (boo
 	return len(containers) > 0, nil
 }
 
-func (rm *RegistryManager) listRegistryContainers(ctx context.Context, name string) ([]container.Summary, error) {
+func (rm *RegistryManager) listRegistryContainers(
+	ctx context.Context,
+	name string,
+) ([]container.Summary, error) {
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("label", fmt.Sprintf("%s=%s", RegistryLabelKey, name))
-	
+
 	return rm.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filterArgs,
 	})
 }
 
-func (rm *RegistryManager) listAllRegistryContainers(ctx context.Context) ([]container.Summary, error) {
+func (rm *RegistryManager) listAllRegistryContainers(
+	ctx context.Context,
+) ([]container.Summary, error) {
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("label", RegistryLabelKey)
-	
+
 	return rm.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filterArgs,
@@ -273,7 +282,10 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	return nil
 }
 
-func (rm *RegistryManager) createVolume(ctx context.Context, volumeName, registryName string) error {
+func (rm *RegistryManager) createVolume(
+	ctx context.Context,
+	volumeName, registryName string,
+) error {
 	// Check if volume already exists
 	_, err := rm.client.VolumeInspect(ctx, volumeName)
 	if err == nil {
@@ -313,7 +325,10 @@ func (rm *RegistryManager) buildContainerConfig(config RegistryConfig) *containe
 	}
 }
 
-func (rm *RegistryManager) buildHostConfig(config RegistryConfig, volumeName string) *container.HostConfig {
+func (rm *RegistryManager) buildHostConfig(
+	config RegistryConfig,
+	volumeName string,
+) *container.HostConfig {
 	portBindings := nat.PortMap{}
 	if config.Port > 0 {
 		portBindings["5000/tcp"] = []nat.PortBinding{
@@ -351,13 +366,19 @@ func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.Ne
 	}
 }
 
-func (rm *RegistryManager) addClusterLabel(ctx context.Context, registryName, clusterName string) error {
+func (rm *RegistryManager) addClusterLabel(
+	ctx context.Context,
+	registryName, clusterName string,
+) error {
 	// With the network-based tracking, we just need to ensure the registry exists
 	// The actual network connection will be made when attaching to the cluster network
 	return nil
 }
 
-func (rm *RegistryManager) removeClusterLabel(ctx context.Context, registryName, clusterName string) error {
+func (rm *RegistryManager) removeClusterLabel(
+	ctx context.Context,
+	registryName, clusterName string,
+) error {
 	// With the network-based tracking, network disconnection happens when cluster is deleted
 	// This is a no-op as the network will be cleaned up automatically
 	return nil

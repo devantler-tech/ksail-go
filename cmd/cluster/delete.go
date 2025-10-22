@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/docker/client"
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
@@ -15,6 +12,8 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
 )
 
 // newDeleteLifecycleConfig creates the lifecycle configuration for cluster deletion.
@@ -116,7 +115,10 @@ func cleanupMirrorRegistries(
 	}
 
 	// Create Docker client
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}
@@ -144,7 +146,13 @@ func cleanupMirrorRegistries(
 	deleteVolumes := false
 
 	// Clean up registries for Kind (cluster name comes from kindConfig.Name)
-	err = kindprovisioner.CleanupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient, deleteVolumes)
+	err = kindprovisioner.CleanupRegistries(
+		cmd.Context(),
+		kindConfig,
+		kindConfig.Name,
+		dockerClient,
+		deleteVolumes,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup registries: %w", err)
 	}
