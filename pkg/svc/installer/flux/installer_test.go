@@ -5,8 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,43 +19,96 @@ func TestNewFluxInstaller(t *testing.T) {
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	installer := fluxinstaller.NewFluxInstaller(kubeconfig, context, timeout)
+	client := fluxinstaller.NewMockHelmClient(t)
+	installer := fluxinstaller.NewFluxInstaller(client, kubeconfig, context, timeout)
 
 	assert.NotNil(t, installer)
 }
 
-func TestFluxInstallerInstall(t *testing.T) {
-	t.Skip("Skipping test that requires flux CLI to be installed")
+func TestFluxInstallerInstallSuccess(t *testing.T) {
 	t.Parallel()
 
-	installer := newFluxInstallerWithDefaults(t)
+	installer, client := newFluxInstallerWithDefaults(t)
+	expectFluxInstall(t, client, nil)
 
 	err := installer.Install(context.Background())
 
 	require.NoError(t, err)
 }
 
-func TestFluxInstallerUninstall(t *testing.T) {
-	t.Skip("Skipping test that requires flux CLI to be installed")
+func TestFluxInstallerInstallError(t *testing.T) {
 	t.Parallel()
 
-	installer := newFluxInstallerWithDefaults(t)
+	installer, client := newFluxInstallerWithDefaults(t)
+	expectFluxInstall(t, client, assert.AnError)
+
+	err := installer.Install(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to install Flux operator")
+}
+
+func TestFluxInstallerUninstallSuccess(t *testing.T) {
+	t.Parallel()
+
+	installer, client := newFluxInstallerWithDefaults(t)
+	expectFluxUninstall(t, client, nil)
 
 	err := installer.Uninstall(context.Background())
 
 	require.NoError(t, err)
 }
 
+func TestFluxInstallerUninstallError(t *testing.T) {
+	t.Parallel()
+
+	installer, client := newFluxInstallerWithDefaults(t)
+	expectFluxUninstall(t, client, assert.AnError)
+
+	err := installer.Uninstall(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to uninstall flux-operator release")
+}
+
 func newFluxInstallerWithDefaults(
 	t *testing.T,
-) *fluxinstaller.FluxInstaller {
+) (*fluxinstaller.FluxInstaller, *fluxinstaller.MockHelmClient) {
 	t.Helper()
-
+	client := fluxinstaller.NewMockHelmClient(t)
 	installer := fluxinstaller.NewFluxInstaller(
+		client,
 		"~/.kube/config",
 		"test-context",
 		5*time.Second,
 	)
 
-	return installer
+	return installer, client
+}
+
+func expectFluxInstall(t *testing.T, client *fluxinstaller.MockHelmClient, installErr error) {
+	t.Helper()
+	client.EXPECT().
+		InstallChart(
+			mock.Anything,
+			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
+				assert.Equal(t, "flux-operator", spec.ReleaseName)
+				assert.Equal(
+					t,
+					"oci://ghcr.io/controlplaneio-fluxcd/charts/flux-operator",
+					spec.ChartName,
+				)
+				assert.Equal(t, "flux-system", spec.Namespace)
+
+				return true
+			}),
+		).
+		Return(nil, installErr)
+}
+
+func expectFluxUninstall(t *testing.T, client *fluxinstaller.MockHelmClient, err error) {
+	t.Helper()
+	client.EXPECT().
+		UninstallRelease(mock.Anything, "flux-operator", "flux-system").
+		Return(err)
 }

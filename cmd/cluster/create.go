@@ -259,18 +259,25 @@ func installFluxGitOps(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr tim
 		return err
 	}
 
-	installer := newFluxInstaller(kubeconfig, clusterCfg)
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	installer := newFluxInstaller(helmClient, kubeconfig, clusterCfg)
 
 	return runFluxInstallation(cmd, installer, tmr)
 }
 
 func newFluxInstaller(
+	helmClient *helm.Client,
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *fluxinstaller.FluxInstaller {
 	timeout := getFluxInstallTimeout(clusterCfg)
 
 	return fluxinstaller.NewFluxInstaller(
+		helmClient,
 		kubeconfig,
 		clusterCfg.Spec.Connection.Context,
 		timeout,
