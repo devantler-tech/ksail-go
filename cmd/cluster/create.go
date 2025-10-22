@@ -7,20 +7,21 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/docker/docker/client"
-	"github.com/spf13/cobra"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -51,6 +52,9 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
+	cmd.Flags().StringSlice("mirror-registry", []string{}, "Configure mirror registries (e.g., docker.io=http://localhost:5000)")
+	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
+
 	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)
 
 	return cmd
@@ -73,7 +77,7 @@ func handleCreateRunE(
 	clusterCfg := cfgManager.GetConfig()
 
 	// Set up mirror registries before cluster creation if enabled
-	err := setupMirrorRegistries(cmd, clusterCfg, deps)
+	err := setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager)
 	if err != nil {
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
 	}
@@ -241,10 +245,12 @@ func expandKubeconfigPath(kubeconfig string) (string, error) {
 
 // setupMirrorRegistries sets up mirror registries for Kind based on the cluster configuration.
 // K3d handles registries natively through its own configuration, so no setup is needed.
+// The --mirror-registry flag can be used to add/override mirror registry configurations.
 func setupMirrorRegistries(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
 ) error {
 	// Only Kind requires registry setup - K3d handles it natively
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
@@ -253,11 +259,23 @@ func setupMirrorRegistries(
 
 	// Load Kind config to check if containerd patches exist
 	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
 	err := kindConfigMgr.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load kind config: %w", err)
 	}
+
 	kindConfig := kindConfigMgr.GetConfig()
+
+	// Check for --mirror-registry flag overrides
+	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
+	if len(mirrorRegistries) > 0 {
+		// Add containerd patches from flag
+		kindConfig.ContainerdConfigPatches = append(
+			kindConfig.ContainerdConfigPatches,
+			generateContainerdPatchesFromSpecs(mirrorRegistries)...,
+		)
+	}
 
 	// If no containerd patches, no registries to set up
 	if len(kindConfig.ContainerdConfigPatches) == 0 {
@@ -269,7 +287,18 @@ func setupMirrorRegistries(
 	if err != nil {
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}
-	defer dockerClient.Close()
+
+	defer func() {
+		closeErr := dockerClient.Close()
+		if closeErr != nil {
+			// Log error but don't fail the operation
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
+				Writer:  cmd.OutOrStdout(),
+			})
+		}
+	}()
 
 	// Display activity message
 	notify.WriteMessage(notify.Message{
@@ -282,6 +311,42 @@ func setupMirrorRegistries(
 	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient)
 	if err != nil {
 		return fmt.Errorf("failed to setup registries: %w", err)
+	}
+
+	return nil
+}
+
+// generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
+// Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
+	patches := make([]string, 0, len(mirrorSpecs))
+
+	for _, spec := range mirrorSpecs {
+		parts := splitMirrorSpec(spec)
+		if parts == nil {
+			continue
+		}
+
+		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
+  endpoint = ["%s"]`, parts[0], parts[1])
+
+		patches = append(patches, patch)
+	}
+
+	return patches
+}
+
+// splitMirrorSpec splits a mirror specification into registry and endpoint parts.
+// Returns nil if the spec is invalid.
+func splitMirrorSpec(spec string) []string {
+	for idx, char := range spec {
+		if char == '=' {
+			if idx == 0 || idx == len(spec)-1 {
+				return nil
+			}
+
+			return []string{spec[:idx], spec[idx+1:]}
+		}
 	}
 
 	return nil

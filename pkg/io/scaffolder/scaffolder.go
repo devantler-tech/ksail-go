@@ -78,6 +78,7 @@ type Scaffolder struct {
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
+	MirrorRegistries       []string // Format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
@@ -311,6 +312,11 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		kindConfig.Networking.DisableDefaultCNI = true
 	}
 
+	// Add containerd config patches for mirror registries
+	if len(s.MirrorRegistries) > 0 {
+		kindConfig.ContainerdConfigPatches = s.generateContainerdPatches()
+	}
+
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
@@ -379,6 +385,11 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		}
 	}
 
+	// Add registry configuration for mirror registries
+	if len(s.MirrorRegistries) > 0 {
+		config.Registries = s.generateK3dRegistryConfig()
+	}
+
 	return config
 }
 
@@ -404,4 +415,104 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			},
 		},
 	)
+}
+
+// generateContainerdPatches generates containerd config patches for Kind mirror registries.
+// Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+func (s *Scaffolder) generateContainerdPatches() []string {
+	patches := make([]string, 0, len(s.MirrorRegistries))
+
+	for _, mirrorSpec := range s.MirrorRegistries {
+		parts := splitMirrorSpec(mirrorSpec)
+		if parts == nil {
+			continue
+		}
+
+		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
+  endpoint = ["%s"]`, parts[0], parts[1])
+
+		patches = append(patches, patch)
+	}
+
+	return patches
+}
+
+// generateK3dRegistryConfig generates K3d registry configuration for mirror registries.
+// Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
+	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
+		Use:    []string{},
+		Create: &k3dv1alpha5.SimpleConfigRegistryCreateConfig{},
+	}
+
+	configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
+	configLines = append(configLines, "mirrors:")
+
+	for _, mirrorSpec := range s.MirrorRegistries {
+		parts := splitMirrorSpec(mirrorSpec)
+		if parts == nil {
+			continue
+		}
+
+		registry := parts[0]
+		endpoint := parts[1]
+
+		configLines = append(configLines, fmt.Sprintf(`  "%s":`, registry))
+		configLines = append(configLines, "    endpoint:")
+		configLines = append(configLines, "      - "+endpoint)
+	}
+
+	if len(configLines) > 1 {
+		// Join with newlines to create YAML config
+		registryConfig.Config = joinLines(configLines) + "\n"
+	}
+
+	return registryConfig
+}
+
+// splitMirrorSpec splits a mirror specification into registry and endpoint parts.
+// Returns nil if the spec is invalid.
+func splitMirrorSpec(spec string) []string {
+	parts := splitOnEquals(spec)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil
+	}
+
+	return parts
+}
+
+// splitOnEquals splits a string on the first '=' character.
+func splitOnEquals(str string) []string {
+	idx := findFirstEquals(str)
+	if idx == -1 {
+		return []string{str}
+	}
+
+	return []string{str[:idx], str[idx+1:]}
+}
+
+// findFirstEquals finds the index of the first '=' character.
+func findFirstEquals(s string) int {
+	for i, c := range s {
+		if c == '=' {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// joinLines joins strings with newlines.
+func joinLines(lines []string) string {
+	result := ""
+
+	for idx, line := range lines {
+		if idx > 0 {
+			result += "\n"
+		}
+
+		result += line
+	}
+
+	return result
 }

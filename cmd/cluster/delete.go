@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
+	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/docker/docker/client"
-	"github.com/spf13/cobra"
 )
 
 // newDeleteLifecycleConfig creates the lifecycle configuration for cluster deletion.
@@ -73,6 +74,7 @@ func handleDeleteRunE(
 
 	// Clean up registries after cluster deletion
 	clusterCfg := cfgManager.GetConfig()
+
 	err = cleanupMirrorRegistries(cmd, clusterCfg, deps)
 	if err != nil {
 		// Log warning but don't fail the delete operation
@@ -100,10 +102,12 @@ func cleanupMirrorRegistries(
 
 	// Load Kind config to check if containerd patches exist
 	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
 	err := kindConfigMgr.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load kind config: %w", err)
 	}
+
 	kindConfig := kindConfigMgr.GetConfig()
 
 	// If no containerd patches, no registries to clean up
@@ -116,7 +120,18 @@ func cleanupMirrorRegistries(
 	if err != nil {
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}
-	defer dockerClient.Close()
+
+	defer func() {
+		closeErr := dockerClient.Close()
+		if closeErr != nil {
+			// Log error but don't fail the operation
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
+				Writer:  cmd.OutOrStdout(),
+			})
+		}
+	}()
 
 	// Display activity message
 	notify.WriteMessage(notify.Message{

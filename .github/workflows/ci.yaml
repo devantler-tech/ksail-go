@@ -82,12 +82,20 @@ jobs:
           - distribution: Kind
             cni: Cilium
             init-args: "--distribution Kind --cni Cilium"
+          - distribution: Kind
+            cni: Default
+            init-args: "--distribution Kind --mirror-registry docker.io=http://localhost:5000"
+            mirror-registry: true
           - distribution: K3d
             cni: Default
             init-args: "--distribution K3d"
           - distribution: K3d
             cni: Cilium
             init-args: "--distribution K3d --cni Cilium"
+          - distribution: K3d
+            cni: Default
+            init-args: "--distribution K3d --mirror-registry docker.io=http://localhost:5000"
+            mirror-registry: true
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -113,6 +121,33 @@ jobs:
       - name: 🧪 ksail cluster create
         run: |
           ./ksail cluster create
+
+      - name: 🧪 Verify mirror registry setup (if enabled)
+        if: matrix.mirror-registry == true
+        run: |
+          # For Kind, check that registry containers are running
+          if [ "${{ matrix.distribution }}" = "Kind" ]; then
+            echo "Checking for ksail mirror registry containers..."
+            docker ps --filter "label=io.ksail.registry" --format "{{.Names}}" | grep -q "ksail-registry-" || {
+              echo "ERROR: No ksail registry containers found"
+              docker ps -a
+              exit 1
+            }
+            echo "✓ Mirror registry containers are running"
+          fi
+          
+          # For K3d, check that registry config is in k3d.yaml
+          if [ "${{ matrix.distribution }}" = "K3d" ]; then
+            echo "Checking k3d.yaml for registry configuration..."
+            if [ -f "k3d.yaml" ]; then
+              grep -q "mirrors:" k3d.yaml || {
+                echo "ERROR: No mirror registry configuration found in k3d.yaml"
+                cat k3d.yaml
+                exit 1
+              }
+              echo "✓ Registry configuration found in k3d.yaml"
+            fi
+          fi
 
       - name: 🧪 ksail cluster list
         run: |
