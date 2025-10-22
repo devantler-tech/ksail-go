@@ -11,6 +11,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -21,6 +22,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -74,24 +76,87 @@ func handleCreateRunE(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	deps shared.LifecycleDeps,
 ) error {
+	// Start timer
+	deps.Timer.Start()
+
+	// Load config first
+	err := cfgManager.LoadConfig(deps.Timer)
+	if err != nil {
+		return fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
 	clusterCfg := cfgManager.GetConfig()
 
+	// Load distribution config for Kind to check for mirror registries
+	var kindConfig *v1alpha4.Cluster
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionKind {
+		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		err := kindConfigMgr.LoadConfig(deps.Timer)
+		if err != nil {
+			return fmt.Errorf("failed to load kind config: %w", err)
+		}
+		kindConfig = kindConfigMgr.GetConfig()
+	}
+
 	// Set up mirror registries before cluster creation if enabled
-	err := setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager)
+	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig)
 	if err != nil {
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
 	}
 
+	// Create cluster using standard lifecycle
+	deps.Timer.NewStage()
+	
 	config := newCreateLifecycleConfig()
-
-	// Reuse the standard lifecycle logic but extend with CNI installation
-	err = shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	
+	// Manually execute the cluster creation part (without re-loading config)
+	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
-		return fmt.Errorf("cluster creation failed: %w", err)
+		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
 	}
 
+	if provisioner == nil {
+		return shared.ErrMissingClusterProvisionerDependency
+	}
+
+	clusterName, err := configmanager.GetClusterName(distributionConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster name from config: %w", err)
+	}
+
+	// Show title for cluster creation
+	cmd.Println()
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: config.TitleContent,
+		Emoji:   config.TitleEmoji,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	// Show activity message
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: config.ActivityContent,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	// Execute cluster creation
+	err = config.Action(cmd.Context(), provisioner, clusterName)
+	if err != nil {
+		return fmt.Errorf("%s: %w", config.ErrorMessagePrefix, err)
+	}
+
+	// Show success message with timing
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    config.SuccessContent,
+		Timer:      deps.Timer,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
+	})
+
 	// Connect registries to the Kind network after cluster is created
-	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager)
+	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager, kindConfig)
 	if err != nil {
 		// Log warning but don't fail - registries can still work via localhost
 		notify.WriteMessage(notify.Message{
@@ -262,21 +327,12 @@ func setupMirrorRegistries(
 	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
 	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
 ) error {
 	// Only Kind requires registry setup - K3d handles it natively
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
 		return nil
 	}
-
-	// Load Kind config to check if containerd patches exist
-	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-
-	err := kindConfigMgr.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load kind config: %w", err)
-	}
-
-	kindConfig := kindConfigMgr.GetConfig()
 
 	// Check for --mirror-registry flag overrides
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
@@ -314,18 +370,32 @@ func setupMirrorRegistries(
 		}
 	}()
 
-	// Display activity message
+	// Start timing for registry setup
+	deps.Timer.NewStage()
+	
+	// Display title
+	cmd.Println()
 	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "setting up mirror registries",
+		Type:    notify.TitleType,
+		Content: "Create mirror registries...",
+		Emoji:   "🪞",
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Set up registries for Kind (cluster name comes from kindConfig.Name)
-	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient)
+	// Set up registries for Kind with detailed activity messages
+	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient, cmd.OutOrStdout())
 	if err != nil {
 		return fmt.Errorf("failed to setup registries: %w", err)
 	}
+
+	// Display success message with timing
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    "mirror registries created",
+		Timer:      deps.Timer,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
+	})
 
 	return nil
 }
@@ -336,22 +406,12 @@ func connectRegistriesToKindNetwork(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
 ) error {
 	// Only for Kind distribution
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
 		return nil
 	}
-
-	// Load Kind config to check if containerd patches exist
-	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-
-	// We don't need to show timer for this quick operation
-	err := kindConfigMgr.LoadConfig(timer.New())
-	if err != nil {
-		return fmt.Errorf("failed to load kind config: %w", err)
-	}
-
-	kindConfig := kindConfigMgr.GetConfig()
 
 	// Check for --mirror-registry flag overrides
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
@@ -389,9 +449,9 @@ func connectRegistriesToKindNetwork(
 	}()
 
 	// Connect registries to Kind network
-	err = kindprovisioner.ConnectRegistriesToNetwork(cmd.Context(), kindConfig, dockerClient)
+	err = kindprovisioner.ConnectRegistriesToNetwork(cmd.Context(), kindConfig, dockerClient, cmd.OutOrStdout())
 	if err != nil {
-		return fmt.Errorf("failed to connect registries: %w", err)
+		return fmt.Errorf("failed to connect registries to network: %w", err)
 	}
 
 	return nil

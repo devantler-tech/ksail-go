@@ -5,9 +5,11 @@ package kindprovisioner
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -27,6 +29,7 @@ func SetupRegistries(
 	kindConfig *v1alpha4.Cluster,
 	clusterName string,
 	dockerClient client.APIClient,
+	writer io.Writer,
 ) error {
 	if kindConfig == nil {
 		return nil
@@ -43,7 +46,21 @@ func SetupRegistries(
 		return nil
 	}
 
+	// Display activity message for creating registries
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "creating mirror registries",
+		Writer:  writer,
+	})
+
 	for _, reg := range registries {
+		// Display activity message for each registry
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: fmt.Sprintf("creating mirror for %s on http://localhost:%d", reg.Upstream, reg.Port),
+			Writer:  writer,
+		})
+
 		config := dockerclient.RegistryConfig{
 			Name:        reg.Name,
 			Port:        reg.Port,
@@ -66,6 +83,7 @@ func ConnectRegistriesToNetwork(
 	ctx context.Context,
 	kindConfig *v1alpha4.Cluster,
 	dockerClient client.APIClient,
+	writer io.Writer,
 ) error {
 	if kindConfig == nil {
 		return nil
@@ -83,7 +101,11 @@ func ConnectRegistriesToNetwork(
 		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)
 		if err != nil {
 			// Log warning but don't fail - registry can still work via localhost
-			fmt.Printf("Warning: failed to connect registry %s to kind network: %v\n", reg.Name, err)
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: fmt.Sprintf("failed to connect registry %s to kind network: %v", reg.Name, err),
+				Writer:  writer,
+			})
 		}
 	}
 
