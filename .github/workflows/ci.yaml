@@ -20,6 +20,16 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: ♻️ Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -43,13 +53,13 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          
+
           # Check if there are any changes
           if ! git diff --quiet || ! git diff --cached --quiet; then
             echo "Changes detected, committing and pushing..."
             git add -A
             git commit -m "chore: apply pre-commit hooks [skip ci]"
-            
+
             # Push using token explicitly (not persisted in git config)
             git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
           else
@@ -102,6 +112,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: ♻️ Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -135,7 +155,7 @@ jobs:
             }
             echo "✓ Mirror registry containers are running"
           fi
-          
+
           # For K3d, check that registry config is in k3d.yaml
           if [ "${{ matrix.distribution }}" = "K3d" ]; then
             echo "Checking k3d.yaml for registry configuration..."
