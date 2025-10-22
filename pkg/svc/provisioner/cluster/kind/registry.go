@@ -171,16 +171,24 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 			name = strings.ReplaceAll(name, "/", "-")
 			name = strings.ReplaceAll(name, ":", "-")
 
-			// Use first endpoint as upstream (most common case)
-			var upstream string
+			// Generate upstream URL from host
+			// docker.io -> https://registry-1.docker.io
+			// ghcr.io -> https://ghcr.io
+			// custom.registry.io:5000 -> https://custom.registry.io:5000
+			upstream := generateUpstreamURL(host)
+
+			// Extract port from first endpoint if provided
+			port := 5000 + portOffset
 			if len(endpoints) > 0 {
-				upstream = endpoints[0]
+				if extractedPort := extractPortFromEndpoint(endpoints[0]); extractedPort > 0 {
+					port = extractedPort
+				}
 			}
 
 			registries = append(registries, RegistryInfo{
 				Name:     name,
 				Upstream: upstream,
-				Port:     5000 + portOffset,
+				Port:     port,
 			})
 			portOffset++
 		}
@@ -333,4 +341,46 @@ func extractQuotedString(s string) string {
 	}
 
 	return s[firstQuote+1 : lastQuote]
+}
+
+// generateUpstreamURL generates the upstream registry URL from the host.
+// docker.io -> https://registry-1.docker.io
+// ghcr.io -> https://ghcr.io
+// quay.io -> https://quay.io
+// custom.registry.io:5000 -> https://custom.registry.io:5000
+func generateUpstreamURL(host string) string {
+	// Special case for docker.io - the actual registry is registry-1.docker.io
+	if host == "docker.io" {
+		return "https://registry-1.docker.io"
+	}
+
+	// For other registries, use https:// + host
+	return "https://" + host
+}
+
+// extractPortFromEndpoint extracts the port number from an endpoint URL.
+// Returns 0 if no port can be extracted.
+func extractPortFromEndpoint(endpoint string) int {
+	// Look for port after last colon
+	// Example: http://localhost:5000 -> 5000
+	lastColon := strings.LastIndex(endpoint, ":")
+	if lastColon < 0 {
+		return 0
+	}
+
+	// Make sure this is actually a port (not part of http://)
+	if lastColon < len(endpoint)-1 {
+		portStr := endpoint[lastColon+1:]
+		// Remove any trailing slash or path
+		if slashIdx := strings.Index(portStr, "/"); slashIdx >= 0 {
+			portStr = portStr[:slashIdx]
+		}
+
+		var port int
+		if _, err := fmt.Sscanf(portStr, "%d", &port); err == nil && port > 0 && port <= 65535 {
+			return port
+		}
+	}
+
+	return 0
 }

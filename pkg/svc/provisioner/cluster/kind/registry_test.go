@@ -121,7 +121,7 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			expected: []RegistryInfo{
 				{
 					Name:     "docker-io",
-					Upstream: "http://localhost:5000",
+					Upstream: "https://registry-1.docker.io",
 					Port:     5000,
 				},
 			},
@@ -139,12 +139,12 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			expected: []RegistryInfo{
 				{
 					Name:     "docker-io",
-					Upstream: "http://localhost:5000",
+					Upstream: "https://registry-1.docker.io",
 					Port:     5000,
 				},
 				{
 					Name:     "gcr-io",
-					Upstream: "http://localhost:5001",
+					Upstream: "https://gcr.io",
 					Port:     5001,
 				},
 			},
@@ -162,7 +162,7 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			expected: []RegistryInfo{
 				{
 					Name:     "docker-io",
-					Upstream: "http://localhost:5000",
+					Upstream: "https://registry-1.docker.io",
 					Port:     5000,
 				},
 			},
@@ -178,7 +178,7 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			expected: []RegistryInfo{
 				{
 					Name:     "registry-example-com-5000-path",
-					Upstream: "http://mirror.example.com",
+					Upstream: "https://registry.example.com:5000/path",
 					Port:     5000,
 				},
 			},
@@ -201,7 +201,7 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			expected: []RegistryInfo{
 				{
 					Name:     "docker-io",
-					Upstream: "http://localhost:5000",
+					Upstream: "https://registry-1.docker.io",
 					Port:     5000,
 				},
 			},
