@@ -90,6 +90,17 @@ func handleCreateRunE(
 		return fmt.Errorf("cluster creation failed: %w", err)
 	}
 
+	// Connect registries to the Kind network after cluster is created
+	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager)
+	if err != nil {
+		// Log warning but don't fail - registries can still work via localhost
+		notify.WriteMessage(notify.Message{
+			Type:    notify.WarningType,
+			Content: fmt.Sprintf("failed to connect registries to kind network: %v", err),
+			Writer:  cmd.OutOrStdout(),
+		})
+	}
+
 	// Install CNI if Cilium is configured
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		// Add newline separator before CNI installation
@@ -314,6 +325,73 @@ func setupMirrorRegistries(
 	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient)
 	if err != nil {
 		return fmt.Errorf("failed to setup registries: %w", err)
+	}
+
+	return nil
+}
+
+// connectRegistriesToKindNetwork connects registry containers to the Kind network after cluster creation.
+// This is necessary because the Kind network doesn't exist until after the cluster is created.
+func connectRegistriesToKindNetwork(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	cfgManager *ksailconfigmanager.ConfigManager,
+) error {
+	// Only for Kind distribution
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
+		return nil
+	}
+
+	// Load Kind config to check if containerd patches exist
+	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
+	// We don't need to show timer for this quick operation
+	err := kindConfigMgr.LoadConfig(timer.New())
+	if err != nil {
+		return fmt.Errorf("failed to load kind config: %w", err)
+	}
+
+	kindConfig := kindConfigMgr.GetConfig()
+
+	// Check for --mirror-registry flag overrides
+	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
+	if len(mirrorRegistries) > 0 {
+		// Add containerd patches from flag
+		kindConfig.ContainerdConfigPatches = append(
+			kindConfig.ContainerdConfigPatches,
+			generateContainerdPatchesFromSpecs(mirrorRegistries)...,
+		)
+	}
+
+	// If no containerd patches, no registries to connect
+	if len(kindConfig.ContainerdConfigPatches) == 0 {
+		return nil
+	}
+
+	// Create Docker client
+	dockerClient, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create docker client: %w", err)
+	}
+
+	defer func() {
+		closeErr := dockerClient.Close()
+		if closeErr != nil {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
+				Writer:  cmd.OutOrStdout(),
+			})
+		}
+	}()
+
+	// Connect registries to Kind network
+	err = kindprovisioner.ConnectRegistriesToNetwork(cmd.Context(), kindConfig, dockerClient)
+	if err != nil {
+		return fmt.Errorf("failed to connect registries: %w", err)
 	}
 
 	return nil

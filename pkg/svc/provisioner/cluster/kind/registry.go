@@ -20,6 +20,8 @@ type RegistryInfo struct {
 }
 
 // SetupRegistries creates mirror registries based on Kind cluster configuration.
+// Registries are created without network attachment first, as the "kind" network
+// doesn't exist until after the cluster is created.
 func SetupRegistries(
 	ctx context.Context,
 	kindConfig *v1alpha4.Cluster,
@@ -47,11 +49,41 @@ func SetupRegistries(
 			Port:        reg.Port,
 			UpstreamURL: reg.Upstream,
 			ClusterName: clusterName,
-			NetworkName: "kind", // Kind uses "kind" network
+			NetworkName: "", // Don't attach to network yet - it doesn't exist
 		}
 
 		if err := registryMgr.CreateRegistry(ctx, config); err != nil {
 			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
+		}
+	}
+
+	return nil
+}
+
+// ConnectRegistriesToNetwork connects existing registries to the Kind network.
+// This should be called after the Kind cluster is created and the "kind" network exists.
+func ConnectRegistriesToNetwork(
+	ctx context.Context,
+	kindConfig *v1alpha4.Cluster,
+	dockerClient client.APIClient,
+) error {
+	if kindConfig == nil {
+		return nil
+	}
+
+	registries := extractRegistriesFromKind(kindConfig)
+	if len(registries) == 0 {
+		return nil
+	}
+
+	// Connect each registry to the kind network
+	for _, reg := range registries {
+		containerName := fmt.Sprintf("ksail-registry-%s", reg.Name)
+		
+		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)
+		if err != nil {
+			// Log warning but don't fail - registry can still work via localhost
+			fmt.Printf("Warning: failed to connect registry %s to kind network: %v\n", reg.Name, err)
 		}
 	}
 
