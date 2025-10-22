@@ -8,10 +8,8 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
-	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
@@ -88,14 +86,28 @@ func handleDeleteRunE(
 	return nil
 }
 
-// cleanupMirrorRegistries cleans up registries that are no longer in use.
+// cleanupMirrorRegistries cleans up registries for Kind after cluster deletion.
+// K3d handles registry cleanup natively through its own configuration.
 func cleanupMirrorRegistries(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
 ) error {
-	// Check if mirror registries are enabled
-	if !clusterCfg.Spec.IsMirrorRegistriesEnabled() {
+	// Only Kind requires registry cleanup - K3d handles it natively
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
+		return nil
+	}
+
+	// Load Kind config to check if containerd patches exist
+	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+	err := kindConfigMgr.LoadConfig(deps.Timer)
+	if err != nil {
+		return fmt.Errorf("failed to load kind config: %w", err)
+	}
+	kindConfig := kindConfigMgr.GetConfig()
+
+	// If no containerd patches, no registries to clean up
+	if len(kindConfig.ContainerdConfigPatches) == 0 {
 		return nil
 	}
 
@@ -122,33 +134,10 @@ func cleanupMirrorRegistries(
 	// Always delete volumes (can be made configurable later)
 	deleteVolumes := false
 
-	// Clean up registries based on distribution
-	switch clusterCfg.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-		err = kindConfigMgr.LoadConfig(deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to load kind config: %w", err)
-		}
-		kindConfig := kindConfigMgr.GetConfig()
-		
-		err = kindprovisioner.CleanupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient, deleteVolumes)
-		if err != nil {
-			return fmt.Errorf("failed to cleanup registries: %w", err)
-		}
-		
-	case v1alpha1.DistributionK3d:
-		k3dConfigMgr := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-		err = k3dConfigMgr.LoadConfig(deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to load k3d config: %w", err)
-		}
-		k3dConfig := k3dConfigMgr.GetConfig()
-		
-		err = k3dprovisioner.CleanupRegistries(cmd.Context(), k3dConfig, clusterName, dockerClient, deleteVolumes)
-		if err != nil {
-			return fmt.Errorf("failed to cleanup registries: %w", err)
-		}
+	// Clean up registries for Kind
+	err = kindprovisioner.CleanupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient, deleteVolumes)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup registries: %w", err)
 	}
 
 	return nil

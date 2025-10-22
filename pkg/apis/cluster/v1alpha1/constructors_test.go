@@ -380,30 +380,3 @@ func TestNewClusterOptionsKustomize(t *testing.T) {
 	// OptionsKustomize is an empty struct, just verify it's created
 	assert.NotNil(t, options)
 }
-
-func TestIsMirrorRegistriesEnabled(t *testing.T) {
-t.Parallel()
-
-t.Run("returns true when MirrorRegistries is nil (default)", func(t *testing.T) {
-spec := v1alpha1.Spec{
-MirrorRegistries: nil,
-}
-assert.True(t, spec.IsMirrorRegistriesEnabled())
-})
-
-t.Run("returns true when MirrorRegistries is explicitly true", func(t *testing.T) {
-enabled := true
-spec := v1alpha1.Spec{
-MirrorRegistries: &enabled,
-}
-assert.True(t, spec.IsMirrorRegistriesEnabled())
-})
-
-t.Run("returns false when MirrorRegistries is explicitly false", func(t *testing.T) {
-disabled := false
-spec := v1alpha1.Spec{
-MirrorRegistries: &disabled,
-}
-assert.False(t, spec.IsMirrorRegistriesEnabled())
-})
-}

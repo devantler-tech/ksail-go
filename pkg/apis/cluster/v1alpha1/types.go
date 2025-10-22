@@ -59,17 +59,7 @@ type Spec struct {
 	IngressController  IngressController `json:"ingressController,omitzero"`
 	GatewayController  GatewayController `json:"gatewayController,omitzero"`
 	GitOpsEngine       GitOpsEngine      `json:"gitOpsEngine,omitzero"`
-	MirrorRegistries   *bool             `json:"mirrorRegistries,omitzero"`
 	Options            Options           `json:"options,omitzero"`
-}
-
-// IsMirrorRegistriesEnabled returns true if mirror registries are enabled.
-// Defaults to true if not explicitly set.
-func (s *Spec) IsMirrorRegistriesEnabled() bool {
-	if s.MirrorRegistries == nil {
-		return true // Default to enabled
-	}
-	return *s.MirrorRegistries
 }
 
 // Connection defines connection options for a KSail cluster.

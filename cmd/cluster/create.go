@@ -13,11 +13,9 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
-	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -241,14 +239,28 @@ func expandKubeconfigPath(kubeconfig string) (string, error) {
 	return filepath.Join(home, kubeconfig[1:]), nil
 }
 
-// setupMirrorRegistries sets up mirror registries based on the cluster configuration.
+// setupMirrorRegistries sets up mirror registries for Kind based on the cluster configuration.
+// K3d handles registries natively through its own configuration, so no setup is needed.
 func setupMirrorRegistries(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
 ) error {
-	// Check if mirror registries are enabled
-	if !clusterCfg.Spec.IsMirrorRegistriesEnabled() {
+	// Only Kind requires registry setup - K3d handles it natively
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
+		return nil
+	}
+
+	// Load Kind config to check if containerd patches exist
+	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+	err := kindConfigMgr.LoadConfig(deps.Timer)
+	if err != nil {
+		return fmt.Errorf("failed to load kind config: %w", err)
+	}
+	kindConfig := kindConfigMgr.GetConfig()
+
+	// If no containerd patches, no registries to set up
+	if len(kindConfig.ContainerdConfigPatches) == 0 {
 		return nil
 	}
 
@@ -272,33 +284,10 @@ func setupMirrorRegistries(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Set up registries based on distribution
-	switch clusterCfg.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-		err = kindConfigMgr.LoadConfig(deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to load kind config: %w", err)
-		}
-		kindConfig := kindConfigMgr.GetConfig()
-		
-		err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient)
-		if err != nil {
-			return fmt.Errorf("failed to setup registries: %w", err)
-		}
-		
-	case v1alpha1.DistributionK3d:
-		k3dConfigMgr := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-		err = k3dConfigMgr.LoadConfig(deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to load k3d config: %w", err)
-		}
-		k3dConfig := k3dConfigMgr.GetConfig()
-		
-		err = k3dprovisioner.SetupRegistries(cmd.Context(), k3dConfig, clusterName, dockerClient)
-		if err != nil {
-			return fmt.Errorf("failed to setup registries: %w", err)
-		}
+	// Set up registries for Kind
+	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient)
+	if err != nil {
+		return fmt.Errorf("failed to setup registries: %w", err)
 	}
 
 	return nil
