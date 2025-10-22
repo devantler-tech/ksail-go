@@ -44,6 +44,9 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
+	// Add flag for controlling registry volume deletion
+	cmd.Flags().Bool("delete-registry-volumes", false, "Delete registry volumes when cleaning up registries")
+
 	cmd.RunE = newDeleteCommandRunE(runtimeContainer, cfgManager)
 
 	return cmd
@@ -142,8 +145,11 @@ func cleanupMirrorRegistries(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Always delete volumes (can be made configurable later)
-	deleteVolumes := false
+	// Get flag value for volume deletion
+	deleteVolumes, err := cmd.Flags().GetBool("delete-registry-volumes")
+	if err != nil {
+		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", err)
+	}
 
 	// Clean up registries for Kind (cluster name comes from kindConfig.Name)
 	err = kindprovisioner.CleanupRegistries(
