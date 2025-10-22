@@ -94,6 +94,8 @@ func CleanupRegistries(
 // extractRegistriesFromKind extracts registry information from Kind configuration.
 func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 	var registries []RegistryInfo
+	seenHosts := make(map[string]bool) // Track unique hosts to avoid duplicates
+	portOffset := 0
 
 	// Kind uses containerdConfigPatches to configure registry mirrors
 	for _, patch := range kindConfig.ContainerdConfigPatches {
@@ -103,15 +105,30 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 		//   endpoint = ["http://localhost:5000"]
 		
 		mirrors := parseContainerdConfig(patch)
-		for host, upstream := range mirrors {
-			// Generate a simple name from the host
+		for host, endpoints := range mirrors {
+			// Skip if we've already processed this host
+			if seenHosts[host] {
+				continue
+			}
+			seenHosts[host] = true
+
+			// Generate a simple name from the host (sanitize for container naming)
 			name := strings.ReplaceAll(host, ".", "-")
-			
+			name = strings.ReplaceAll(name, "/", "-")
+			name = strings.ReplaceAll(name, ":", "-")
+
+			// Use first endpoint as upstream (most common case)
+			var upstream string
+			if len(endpoints) > 0 {
+				upstream = endpoints[0]
+			}
+
 			registries = append(registries, RegistryInfo{
 				Name:     name,
 				Upstream: upstream,
-				Port:     5000 + len(registries), // Auto-assign ports starting from 5000
+				Port:     5000 + portOffset,
 			})
+			portOffset++
 		}
 	}
 
@@ -119,43 +136,147 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 }
 
 // parseContainerdConfig parses containerd configuration patches to extract registry mirrors.
-func parseContainerdConfig(patch string) map[string]string {
-	mirrors := make(map[string]string)
-
-	// Simple parser for containerd config format
-	// Look for patterns like:
-	// [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-	//   endpoint = ["http://registry-1.docker.io"]
-
+// Returns a map of registry host to list of endpoint URLs.
+func parseContainerdConfig(patch string) map[string][]string {
+	mirrors := make(map[string][]string)
 	lines := strings.Split(patch, "\n")
+	
 	var currentHost string
+	var inEndpointArray bool
+	var currentEndpoints []string
 
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
+	for i := 0; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
 
 		// Match registry mirror section header
+		// Format: [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
 		if strings.Contains(line, `registry.mirrors."`) {
-			start := strings.Index(line, `mirrors."`) + len(`mirrors."`)
-			end := strings.Index(line[start:], `"`)
-			if end > 0 {
-				currentHost = line[start : start+end]
+			// Save previous host's endpoints if any
+			if currentHost != "" && len(currentEndpoints) > 0 {
+				mirrors[currentHost] = currentEndpoints
+				currentEndpoints = nil
 			}
+
+			// Extract new host
+			start := strings.Index(line, `mirrors."`)
+			if start >= 0 {
+				start += len(`mirrors."`)
+				end := strings.Index(line[start:], `"`)
+				if end > 0 {
+					currentHost = line[start : start+end]
+					inEndpointArray = false
+				}
+			}
+			continue
 		}
 
 		// Match endpoint configuration
 		if currentHost != "" && strings.Contains(line, "endpoint") {
-			// Extract URL from endpoint = ["http://..."]
-			if strings.Contains(line, `["`) && strings.Contains(line, `"]`) {
-				start := strings.Index(line, `["`) + 2
-				end := strings.Index(line[start:], `"`)
-				if end > 0 {
-					endpoint := line[start : start+end]
-					mirrors[currentHost] = endpoint
+			// Handle inline array: endpoint = ["http://..."]
+			// Remove all spaces around = for robust parsing
+			cleanLine := strings.ReplaceAll(line, " ", "")
+			if strings.Contains(cleanLine, `["`) && strings.Contains(cleanLine, `"]`) {
+				endpoints := extractEndpointsFromInlineArray(line)
+				currentEndpoints = append(currentEndpoints, endpoints...)
+				// Save immediately for inline format
+				if len(currentEndpoints) > 0 {
+					mirrors[currentHost] = currentEndpoints
 					currentHost = ""
+					currentEndpoints = nil
+				}
+			} else if strings.Contains(cleanLine, "[") && !strings.Contains(cleanLine, "]") {
+				// Start of multiline array: endpoint = [
+				inEndpointArray = true
+			}
+			continue
+		}
+
+		// Handle multiline array elements
+		if inEndpointArray {
+			if strings.Contains(line, "]") {
+				// End of array
+				inEndpointArray = false
+				// Extract any endpoint on the closing line
+				if endpoint := extractEndpointFromLine(line); endpoint != "" {
+					currentEndpoints = append(currentEndpoints, endpoint)
+				}
+				// Save collected endpoints
+				if currentHost != "" && len(currentEndpoints) > 0 {
+					mirrors[currentHost] = currentEndpoints
+					currentHost = ""
+					currentEndpoints = nil
+				}
+			} else {
+				// Extract endpoint from array element line
+				if endpoint := extractEndpointFromLine(line); endpoint != "" {
+					currentEndpoints = append(currentEndpoints, endpoint)
 				}
 			}
 		}
 	}
 
+	// Save any remaining host endpoints
+	if currentHost != "" && len(currentEndpoints) > 0 {
+		mirrors[currentHost] = currentEndpoints
+	}
+
 	return mirrors
+}
+
+// extractEndpointsFromInlineArray extracts all endpoints from an inline array format.
+// Example: endpoint = ["http://localhost:5000", "http://localhost:5001"]
+func extractEndpointsFromInlineArray(line string) []string {
+	var endpoints []string
+	
+	// Find the array content between [ and ]
+	start := strings.Index(line, "[")
+	end := strings.LastIndex(line, "]")
+	if start < 0 || end < 0 || start >= end {
+		return endpoints
+	}
+
+	arrayContent := line[start+1 : end]
+	
+	// Split by comma and extract quoted strings
+	parts := strings.Split(arrayContent, ",")
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if endpoint := extractQuotedString(part); endpoint != "" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	return endpoints
+}
+
+// extractEndpointFromLine extracts an endpoint URL from a line.
+// Handles quoted strings with surrounding whitespace.
+func extractEndpointFromLine(line string) string {
+	line = strings.TrimSpace(line)
+	// Remove trailing comma if present
+	line = strings.TrimSuffix(line, ",")
+	return extractQuotedString(line)
+}
+
+// extractQuotedString extracts a string from within quotes.
+func extractQuotedString(s string) string {
+	s = strings.TrimSpace(s)
+	
+	// Find first and last quote
+	firstQuote := strings.Index(s, `"`)
+	if firstQuote < 0 {
+		return ""
+	}
+	
+	lastQuote := strings.LastIndex(s, `"`)
+	if lastQuote <= firstQuote {
+		return ""
+	}
+
+	return s[firstQuote+1 : lastQuote]
 }
