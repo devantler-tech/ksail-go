@@ -17,13 +17,12 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
-	registrymanager "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
-	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -260,16 +259,20 @@ func setupMirrorRegistries(
 	}
 	defer dockerClient.Close()
 
-	// Create registry manager
-	regMgr, err := registrymanager.NewManager(dockerClient)
-	if err != nil {
-		return fmt.Errorf("failed to create registry manager: %w", err)
+	// Get cluster name
+	clusterName := clusterCfg.Spec.Connection.Context
+	if clusterName == "" {
+		clusterName = "default"
 	}
 
-	// Load distribution-specific config to infer registries
-	var kindConfig *v1alpha4.Cluster
-	var k3dConfig *k3dv1alpha5.SimpleConfig
+	// Display activity message
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "setting up mirror registries",
+		Writer:  cmd.OutOrStdout(),
+	})
 
+	// Set up registries based on distribution
 	switch clusterCfg.Spec.Distribution {
 	case v1alpha1.DistributionKind:
 		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
@@ -277,34 +280,25 @@ func setupMirrorRegistries(
 		if err != nil {
 			return fmt.Errorf("failed to load kind config: %w", err)
 		}
-		kindConfig = kindConfigMgr.GetConfig()
+		kindConfig := kindConfigMgr.GetConfig()
+		
+		err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient)
+		if err != nil {
+			return fmt.Errorf("failed to setup registries: %w", err)
+		}
+		
 	case v1alpha1.DistributionK3d:
 		k3dConfigMgr := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
 		err = k3dConfigMgr.LoadConfig(deps.Timer)
 		if err != nil {
 			return fmt.Errorf("failed to load k3d config: %w", err)
 		}
-		k3dConfig = k3dConfigMgr.GetConfig()
-	default:
-		return nil
-	}
-
-	// Get cluster name
-	clusterName := clusterCfg.Spec.Connection.Context
-	if clusterName == "" {
-		clusterName = "default"
-	}
-
-	// Set up registries
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "setting up mirror registries",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	err = regMgr.SetupRegistries(cmd.Context(), clusterCfg, kindConfig, k3dConfig, clusterName)
-	if err != nil {
-		return fmt.Errorf("failed to setup registries: %w", err)
+		k3dConfig := k3dConfigMgr.GetConfig()
+		
+		err = k3dprovisioner.SetupRegistries(cmd.Context(), k3dConfig, clusterName, dockerClient)
+		if err != nil {
+			return fmt.Errorf("failed to setup registries: %w", err)
+		}
 	}
 
 	return nil
