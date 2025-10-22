@@ -78,7 +78,7 @@ func handleDeleteRunE(
 		// Log warning but don't fail the delete operation
 		notify.WriteMessage(notify.Message{
 			Type:    notify.WarningType,
-			Content: fmt.Sprintf("Warning: failed to cleanup registries: %v", err),
+			Content: fmt.Sprintf("failed to cleanup registries: %v", err),
 			Writer:  cmd.OutOrStdout(),
 		})
 	}
@@ -118,12 +118,6 @@ func cleanupMirrorRegistries(
 	}
 	defer dockerClient.Close()
 
-	// Get cluster name
-	clusterName := clusterCfg.Spec.Connection.Context
-	if clusterName == "" {
-		clusterName = "default"
-	}
-
 	// Display activity message
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
@@ -134,8 +128,8 @@ func cleanupMirrorRegistries(
 	// Always delete volumes (can be made configurable later)
 	deleteVolumes := false
 
-	// Clean up registries for Kind
-	err = kindprovisioner.CleanupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient, deleteVolumes)
+	// Clean up registries for Kind (cluster name comes from kindConfig.Name)
+	err = kindprovisioner.CleanupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient, deleteVolumes)
 	if err != nil {
 		return fmt.Errorf("failed to cleanup registries: %w", err)
 	}

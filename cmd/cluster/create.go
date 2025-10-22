@@ -271,12 +271,6 @@ func setupMirrorRegistries(
 	}
 	defer dockerClient.Close()
 
-	// Get cluster name
-	clusterName := clusterCfg.Spec.Connection.Context
-	if clusterName == "" {
-		clusterName = "default"
-	}
-
 	// Display activity message
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
@@ -284,8 +278,8 @@ func setupMirrorRegistries(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Set up registries for Kind
-	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, clusterName, dockerClient)
+	// Set up registries for Kind (cluster name comes from kindConfig.Name)
+	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient)
 	if err != nil {
 		return fmt.Errorf("failed to setup registries: %w", err)
 	}
