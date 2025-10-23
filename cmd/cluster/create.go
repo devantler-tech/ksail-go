@@ -11,8 +11,8 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
@@ -106,9 +106,9 @@ func handleCreateRunE(
 
 	// Create cluster using standard lifecycle
 	deps.Timer.NewStage()
-	
+
 	config := newCreateLifecycleConfig()
-	
+
 	// Manually execute the cluster creation part (without re-loading config)
 	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
@@ -372,7 +372,7 @@ func setupMirrorRegistries(
 
 	// Start timing for registry setup
 	deps.Timer.NewStage()
-	
+
 	// Display title
 	cmd.Println()
 	notify.WriteMessage(notify.Message{
@@ -383,7 +383,13 @@ func setupMirrorRegistries(
 	})
 
 	// Set up registries for Kind with detailed activity messages
-	err = kindprovisioner.SetupRegistries(cmd.Context(), kindConfig, kindConfig.Name, dockerClient, cmd.OutOrStdout())
+	err = kindprovisioner.SetupRegistries(
+		cmd.Context(),
+		kindConfig,
+		kindConfig.Name,
+		dockerClient,
+		cmd.OutOrStdout(),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to setup registries: %w", err)
 	}
@@ -449,7 +455,12 @@ func connectRegistriesToKindNetwork(
 	}()
 
 	// Connect registries to Kind network
-	err = kindprovisioner.ConnectRegistriesToNetwork(cmd.Context(), kindConfig, dockerClient, cmd.OutOrStdout())
+	err = kindprovisioner.ConnectRegistriesToNetwork(
+		cmd.Context(),
+		kindConfig,
+		dockerClient,
+		cmd.OutOrStdout(),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to connect registries to network: %w", err)
 	}

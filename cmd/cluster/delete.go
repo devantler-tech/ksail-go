@@ -45,7 +45,8 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	)
 
 	// Add flag for controlling registry volume deletion
-	cmd.Flags().Bool("delete-registry-volumes", false, "Delete registry volumes when cleaning up registries")
+	cmd.Flags().
+		Bool("delete-registry-volumes", false, "Delete registry volumes when cleaning up registries")
 
 	cmd.RunE = newDeleteCommandRunE(runtimeContainer, cfgManager)
 

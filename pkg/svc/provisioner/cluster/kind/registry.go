@@ -56,9 +56,13 @@ func SetupRegistries(
 	for _, reg := range registries {
 		// Display activity message for each registry
 		notify.WriteMessage(notify.Message{
-			Type:    notify.ActivityType,
-			Content: fmt.Sprintf("creating mirror for %s on http://localhost:%d", reg.Upstream, reg.Port),
-			Writer:  writer,
+			Type: notify.ActivityType,
+			Content: fmt.Sprintf(
+				"creating mirror for %s on http://localhost:%d",
+				reg.Upstream,
+				reg.Port,
+			),
+			Writer: writer,
 		})
 
 		config := dockerclient.RegistryConfig{
@@ -97,14 +101,18 @@ func ConnectRegistriesToNetwork(
 	// Connect each registry to the kind network
 	for _, reg := range registries {
 		containerName := fmt.Sprintf("ksail-registry-%s", reg.Name)
-		
+
 		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)
 		if err != nil {
 			// Log warning but don't fail - registry can still work via localhost
 			notify.WriteMessage(notify.Message{
-				Type:    notify.WarningType,
-				Content: fmt.Sprintf("failed to connect registry %s to kind network: %v", reg.Name, err),
-				Writer:  writer,
+				Type: notify.WarningType,
+				Content: fmt.Sprintf(
+					"failed to connect registry %s to kind network: %v",
+					reg.Name,
+					err,
+				),
+				Writer: writer,
 			})
 		}
 	}
