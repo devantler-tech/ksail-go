@@ -451,6 +451,16 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 	return patches
 }
 
+// generateRegistryContainerName generates a container name from a registry host.
+// Sanitizes the host name by replacing special characters with hyphens.
+func generateRegistryContainerName(registry string) string {
+	// Sanitize registry name for use in container name
+	sanitized := strings.ReplaceAll(registry, ".", "-")
+	sanitized = strings.ReplaceAll(sanitized, ":", "-")
+	sanitized = strings.ReplaceAll(sanitized, "/", "-")
+	return fmt.Sprintf("ksail-registry-%s", sanitized)
+}
+
 // extractPortFromURL extracts the port from a URL string.
 // Returns "5000" as default if no port is found.
 func extractPortFromURL(urlStr string) string {
