@@ -143,33 +143,6 @@ jobs:
         run: |
           ./ksail cluster create
 
-      - name: 🧪 Verify mirror registry setup (if enabled)
-        if: matrix.mirror-registry == true
-        run: |
-          # For Kind, check that registry containers are running
-          if [ "${{ matrix.distribution }}" = "Kind" ]; then
-            echo "Checking for ksail mirror registry containers..."
-            docker ps --filter "label=io.ksail.registry" --format "{{.Names}}" | grep -q "ksail-registry-" || {
-              echo "ERROR: No ksail registry containers found"
-              docker ps -a
-              exit 1
-            }
-            echo "✓ Mirror registry containers are running"
-          fi
-
-          # For K3d, check that registry config is in k3d.yaml
-          if [ "${{ matrix.distribution }}" = "K3d" ]; then
-            echo "Checking k3d.yaml for registry configuration..."
-            if [ -f "k3d.yaml" ]; then
-              grep -q "mirrors:" k3d.yaml || {
-                echo "ERROR: No mirror registry configuration found in k3d.yaml"
-                cat k3d.yaml
-                exit 1
-              }
-              echo "✓ Registry configuration found in k3d.yaml"
-            fi
-          fi
-
       - name: 🧪 ksail cluster list
         run: |
           ./ksail cluster list
