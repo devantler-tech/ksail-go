@@ -419,9 +419,8 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 }
 
 // generateContainerdPatches generates containerd config patches for Kind mirror registries.
-// Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
-// The endpoint is converted to use host.docker.internal (macOS/Windows) or 172.17.0.1 (Linux)
-// to access registries running on the host from within Kind containers.
+// Input format: "registry=endpoint" where endpoint is localhost URL
+// The endpoint is converted to registry container name for Kind network DNS resolution.
 func (s *Scaffolder) generateContainerdPatches() []string {
 	patches := make([]string, 0, len(s.MirrorRegistries))
 
@@ -433,17 +432,18 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 
 		registry := parts[0]
 		endpoint := parts[1]
-
-		// Extract port from endpoint URL
+		
+		// Extract port from endpoint
 		port := extractPortFromURL(endpoint)
-
-		// Use host.docker.internal for macOS/Windows and 172.17.0.1 for Linux
-		// These addresses allow Kind containers to reach registries on the host
-		kindEndpointMac := fmt.Sprintf("http://host.docker.internal:%s", port)
-		kindEndpointLinux := fmt.Sprintf("http://172.17.0.1:%s", port)
+		
+		// Generate registry container name using same sanitization as registry manager
+		containerName := generateRegistryContainerName(registry)
+		
+		// Use container name as endpoint for Kind network DNS resolution
+		kindEndpoint := fmt.Sprintf("http://%s:%s", containerName, port)
 
 		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s", "%s"]`, registry, kindEndpointMac, kindEndpointLinux)
+  endpoint = ["%s"]`, registry, kindEndpoint)
 
 		patches = append(patches, patch)
 	}
