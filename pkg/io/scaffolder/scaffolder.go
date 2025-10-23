@@ -486,8 +486,10 @@ func extractPortFromURL(urlStr string) string {
 // Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
 func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
 	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
-		Use:    []string{},
-		Create: &k3dv1alpha5.SimpleConfigRegistryCreateConfig{},
+		Use: []string{},
+		Create: &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
+			Name: "k3d-registry",
+		},
 	}
 
 	configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
@@ -500,11 +502,12 @@ func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		}
 
 		registry := parts[0]
-		endpoint := parts[1]
-
+		
+		// For K3d, we reference the registry that will be created
+		// K3d will create the registry and automatically configure it
 		configLines = append(configLines, fmt.Sprintf(`  "%s":`, registry))
 		configLines = append(configLines, "    endpoint:")
-		configLines = append(configLines, "      - "+endpoint)
+		configLines = append(configLines, "      - http://k3d-registry:5000")
 	}
 
 	if len(configLines) > 1 {
