@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -419,6 +420,8 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 
 // generateContainerdPatches generates containerd config patches for Kind mirror registries.
 // Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+// The endpoint is converted to use the registry container name on the Kind network
+// instead of localhost, so it's accessible from within Kind containers.
 func (s *Scaffolder) generateContainerdPatches() []string {
 	patches := make([]string, 0, len(s.MirrorRegistries))
 
@@ -428,13 +431,58 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 			continue
 		}
 
+		registry := parts[0]
+		endpoint := parts[1]
+
+		// Generate container name using same sanitization as registry manager
+		// Format: ksail-registry-{sanitized-registry-name}
+		containerName := generateRegistryContainerName(registry)
+
+		// Extract port from endpoint URL
+		port := extractPortFromURL(endpoint)
+
+		// Use container name and port for the endpoint so Kind containers can reach it
+		// via Docker's DNS resolution on the Kind network
+		kindEndpoint := fmt.Sprintf("http://%s:%s", containerName, port)
+
 		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s"]`, parts[0], parts[1])
+  endpoint = ["%s"]`, registry, kindEndpoint)
 
 		patches = append(patches, patch)
 	}
 
 	return patches
+}
+
+// generateRegistryContainerName generates a container name for a registry.
+// Uses the same sanitization logic as the registry manager.
+func generateRegistryContainerName(registry string) string {
+	// Sanitize the registry name for use in container naming
+	name := strings.ReplaceAll(registry, ".", "-")
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, ":", "-")
+	return fmt.Sprintf("ksail-registry-%s", name)
+}
+
+// extractPortFromURL extracts the port from a URL string.
+// Returns "5000" as default if no port is found.
+func extractPortFromURL(urlStr string) string {
+	// Remove protocol if present
+	urlStr = strings.TrimPrefix(urlStr, "http://")
+	urlStr = strings.TrimPrefix(urlStr, "https://")
+
+	// Find port after colon
+	if idx := strings.LastIndex(urlStr, ":"); idx >= 0 {
+		port := urlStr[idx+1:]
+		// Remove any path after the port
+		if slashIdx := strings.Index(port, "/"); slashIdx >= 0 {
+			port = port[:slashIdx]
+		}
+		return port
+	}
+
+	// Default port for registry
+	return "5000"
 }
 
 // generateK3dRegistryConfig generates K3d registry configuration for mirror registries.
