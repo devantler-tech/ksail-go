@@ -79,7 +79,7 @@ type Scaffolder struct {
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
-	MirrorRegistries       []string // Format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+	MirrorRegistries       []string // Format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
@@ -419,8 +419,8 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 }
 
 // generateContainerdPatches generates containerd config patches for Kind mirror registries.
-// Input format: "registry=endpoint" where endpoint is localhost URL
-// The endpoint is converted to registry container name for Kind network DNS resolution.
+// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+// Container names are generated as "kind-{name}" for Kind network DNS resolution.
 func (s *Scaffolder) generateContainerdPatches() []string {
 	patches := make([]string, 0, len(s.MirrorRegistries))
 
@@ -430,20 +430,23 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 			continue
 		}
 
-		registry := parts[0]
-		endpoint := parts[1]
+		name := parts[0]
+		upstream := parts[1]
 		
-		// Extract port from endpoint
-		port := extractPortFromURL(endpoint)
+		// Extract port from upstream URL (default: 5000)
+		port := extractPortFromURL(upstream)
 		
-		// Generate registry container name using same sanitization as registry manager
-		containerName := generateRegistryContainerName(registry)
+		// Generate distribution-prefixed container name: kind-{name}
+		containerName := fmt.Sprintf("kind-%s", name)
+		
+		// Infer registry host from name (e.g., docker-io -> docker.io)
+		registryHost := inferRegistryHost(name)
 		
 		// Use container name as endpoint for Kind network DNS resolution
 		kindEndpoint := fmt.Sprintf("http://%s:%s", containerName, port)
 
 		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s"]`, registry, kindEndpoint)
+  endpoint = ["%s"]`, registryHost, kindEndpoint)
 
 		patches = append(patches, patch)
 	}
@@ -451,7 +454,15 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 	return patches
 }
 
-// generateRegistryContainerName generates a container name from a registry host.
+// inferRegistryHost converts a registry name back to its host format.
+// Examples: "docker-io" -> "docker.io", "ghcr-io" -> "ghcr.io"
+func inferRegistryHost(name string) string {
+	// Replace hyphens with dots to get the registry host
+	// Handle common cases: docker-io -> docker.io, ghcr-io -> ghcr.io
+	return strings.ReplaceAll(name, "-", ".")
+}
+
+// generateRegistryContainerName is deprecated - kept for compatibility during migration
 // Sanitizes the host name by replacing special characters with hyphens.
 func generateRegistryContainerName(registry string) string {
 	// Sanitize registry name for use in container name
@@ -483,36 +494,51 @@ func extractPortFromURL(urlStr string) string {
 }
 
 // generateK3dRegistryConfig generates K3d registry configuration for mirror registries.
-// Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
+// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+// K3d requires one registry per proxy, so we generate multiple create configs.
 func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
 	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
 		Use: []string{},
-		Create: &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
-			Name: "k3d-registry",
-		},
 	}
 
-	configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
-	configLines = append(configLines, "mirrors:")
-
-	for _, mirrorSpec := range s.MirrorRegistries {
+	// K3d requires one registry per upstream proxy
+	// We'll create multiple registries with distribution-prefixed names: k3d-{name}
+	if len(s.MirrorRegistries) > 0 {
+		// For now, we'll use the first mirror as the primary registry
+		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
+		mirrorSpec := s.MirrorRegistries[0]
 		parts := splitMirrorSpec(mirrorSpec)
-		if parts == nil {
-			continue
+		if parts != nil {
+			name := parts[0]
+			// upstream := parts[1] // TODO: Use upstream for proxy configuration
+			
+			// Generate distribution-prefixed registry name
+			registryName := fmt.Sprintf("k3d-%s", name)
+			
+			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
+				Name: registryName,
+			}
+			
+			// Generate mirrors configuration
+			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
+			configLines = append(configLines, "mirrors:")
+			
+			// Infer registry host from name
+			registryHost := inferRegistryHost(name)
+			
+			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
+			configLines = append(configLines, "    endpoint:")
+			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
+			
+			// Add proxy configuration
+			configLines = append(configLines, "configs:")
+			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
+			configLines = append(configLines, "    auth: {}")
+			configLines = append(configLines, "    tls:")
+			configLines = append(configLines, "      insecure_skip_verify: false")
+			
+			registryConfig.Config = joinLines(configLines) + "\n"
 		}
-
-		registry := parts[0]
-		
-		// For K3d, we reference the registry that will be created
-		// K3d will create the registry and automatically configure it
-		configLines = append(configLines, fmt.Sprintf(`  "%s":`, registry))
-		configLines = append(configLines, "    endpoint:")
-		configLines = append(configLines, "      - http://k3d-registry:5000")
-	}
-
-	if len(configLines) > 1 {
-		// Join with newlines to create YAML config
-		registryConfig.Config = joinLines(configLines) + "\n"
 	}
 
 	return registryConfig

@@ -174,24 +174,45 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 			}
 			seenHosts[host] = true
 
-			// Generate a simple name from the host (sanitize for container naming)
-			name := strings.ReplaceAll(host, ".", "-")
-			name = strings.ReplaceAll(name, "/", "-")
-			name = strings.ReplaceAll(name, ":", "-")
+			// Extract the registry name from the endpoint URL
+			// Format: http://kind-{name}:5000
+			var name string
+			var upstream string
+			port := 5000 + portOffset
+			
+			if len(endpoints) > 0 {
+				endpoint := endpoints[0]
+				// Extract name from endpoint like "http://kind-docker-io:5000"
+				if strings.HasPrefix(endpoint, "http://kind-") || strings.HasPrefix(endpoint, "https://kind-") {
+					parts := strings.Split(endpoint, "//")
+					if len(parts) == 2 {
+						hostPort := strings.Split(parts[1], ":")
+						if len(hostPort) >= 1 {
+							fullName := hostPort[0] // "kind-docker-io"
+							name = fullName          // Keep full distribution-prefixed name
+						}
+						if len(hostPort) == 2 {
+							if extractedPort := extractPortFromEndpoint(endpoint); extractedPort > 0 {
+								port = extractedPort
+							}
+						}
+					}
+				}
+			}
+			
+			// If we couldn't extract name from endpoint, generate it
+			if name == "" {
+				// Generate a simple name from the host (sanitize for container naming)
+				simpleName := strings.ReplaceAll(host, ".", "-")
+				simpleName = strings.ReplaceAll(simpleName, "/", "-")
+				simpleName = strings.ReplaceAll(simpleName, ":", "-")
+				name = "kind-" + simpleName
+			}
 
 			// Generate upstream URL from host
 			// docker.io -> https://registry-1.docker.io
 			// ghcr.io -> https://ghcr.io
-			// custom.registry.io:5000 -> https://custom.registry.io:5000
-			upstream := generateUpstreamURL(host)
-
-			// Extract port from first endpoint if provided
-			port := 5000 + portOffset
-			if len(endpoints) > 0 {
-				if extractedPort := extractPortFromEndpoint(endpoints[0]); extractedPort > 0 {
-					port = extractedPort
-				}
-			}
+			upstream = generateUpstreamURL(host)
 
 			registries = append(registries, RegistryInfo{
 				Name:     name,
