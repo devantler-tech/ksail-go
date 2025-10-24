@@ -54,7 +54,7 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	)
 
 	cmd.Flags().
-		StringSlice("mirror-registry", []string{}, "Configure mirror registries (e.g., docker.io=http://localhost:5000)")
+		StringSlice("mirror-registry", []string{}, "Configure mirror registries (format: name=upstream, e.g., docker-io=https://registry-1.docker.io)")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)
