@@ -32,6 +32,9 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+	cmd.Flags().
+		StringSlice("mirror-registry", []string{}, "Configure mirror registries (e.g., docker.io=http://localhost:5000)")
+	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	cmd.RunE = runtime.RunEWithRuntime(
 		runtimeContainer,
@@ -60,7 +63,7 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	err := cfgManager.LoadConfig(deps.Timer)
+	_, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
@@ -78,11 +81,13 @@ func HandleInitRunE(
 	}
 
 	force := cfgManager.Viper.GetBool("force")
+	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
 
 	scaffolderInstance := scaffolder.NewScaffolder(
-		*cfgManager.GetConfig(),
+		*cfgManager.Config,
 		cmd.OutOrStdout(),
 	)
+	scaffolderInstance.MirrorRegistries = mirrorRegistries
 
 	cmd.Println()
 

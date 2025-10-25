@@ -90,14 +90,12 @@ func HandleLifecycleRunE(
 ) error {
 	deps.Timer.Start()
 
-	err := cfgManager.LoadConfig(deps.Timer)
+	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
 	deps.Timer.NewStage()
-
-	clusterCfg := cfgManager.GetConfig()
 
 	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {

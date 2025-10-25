@@ -68,20 +68,20 @@ func testLoadConfigBasicScenarios[T any](
 			configPath := setupTestConfigPath(t, scenario)
 
 			manager := newManager(configPath)
-			err := manager.LoadConfig(nil)
+			config, err := manager.LoadConfig(nil)
 
 			if scenario.ShouldError {
 				require.Error(t, err)
-				assert.Nil(t, manager.GetConfig())
+				assert.Nil(t, config)
 
 				return
 			}
 
 			require.NoError(t, err)
-			require.NotNil(t, manager.GetConfig())
+			require.NotNil(t, config)
 
 			if scenario.ValidationFunc != nil {
-				scenario.ValidationFunc(t, manager.GetConfig())
+				scenario.ValidationFunc(t, config)
 			}
 		})
 	}
@@ -127,17 +127,15 @@ func AssertConfigManagerCaches[T any](
 
 	manager := newManager(configPath)
 
-	err = manager.LoadConfig(nil)
+	first, err := manager.LoadConfig(nil)
 	require.NoError(t, err, "initial LoadConfig failed")
-
-	first := manager.GetConfig()
 	require.NotNil(t, first, "expected config to be loaded")
 
 	err = os.WriteFile(configPath, []byte("invalid: yaml: ["), testFilePermissions)
 	require.NoError(t, err, "failed to overwrite config")
 
-	err = manager.LoadConfig(nil)
+	second, err := manager.LoadConfig(nil)
 	require.NoError(t, err, "expected cached load to succeed")
 
-	require.Same(t, first, manager.GetConfig(), "expected cached configuration to be reused")
+	require.Same(t, first, second, "expected cached configuration to be reused")
 }

@@ -36,67 +36,32 @@ func (_m *MockConfigManager[T]) EXPECT() *MockConfigManager_Expecter[T] {
 	return &MockConfigManager_Expecter[T]{mock: &_m.Mock}
 }
 
-// GetConfig provides a mock function for the type MockConfigManager
-func (_mock *MockConfigManager[T]) GetConfig() *T {
-	ret := _mock.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetConfig")
-	}
-
-	var r0 *T
-	if returnFunc, ok := ret.Get(0).(func() *T); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*T)
-		}
-	}
-	return r0
-}
-
-// MockConfigManager_GetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConfig'
-type MockConfigManager_GetConfig_Call[T any] struct {
-	*mock.Call
-}
-
-// GetConfig is a helper method to define mock.On call
-func (_e *MockConfigManager_Expecter[T]) GetConfig() *MockConfigManager_GetConfig_Call[T] {
-	return &MockConfigManager_GetConfig_Call[T]{Call: _e.mock.On("GetConfig")}
-}
-
-func (_c *MockConfigManager_GetConfig_Call[T]) Run(run func()) *MockConfigManager_GetConfig_Call[T] {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockConfigManager_GetConfig_Call[T]) Return(v *T) *MockConfigManager_GetConfig_Call[T] {
-	_c.Call.Return(v)
-	return _c
-}
-
-func (_c *MockConfigManager_GetConfig_Call[T]) RunAndReturn(run func() *T) *MockConfigManager_GetConfig_Call[T] {
-	_c.Call.Return(run)
-	return _c
-}
-
 // LoadConfig provides a mock function for the type MockConfigManager
-func (_mock *MockConfigManager[T]) LoadConfig(tmr timer.Timer) error {
+func (_mock *MockConfigManager[T]) LoadConfig(tmr timer.Timer) (*T, error) {
 	ret := _mock.Called(tmr)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadConfig")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(timer.Timer) error); ok {
+	var r0 *T
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(timer.Timer) (*T, error)); ok {
+		return returnFunc(tmr)
+	}
+	if returnFunc, ok := ret.Get(0).(func(timer.Timer) *T); ok {
 		r0 = returnFunc(tmr)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*T)
+		}
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(timer.Timer) error); ok {
+		r1 = returnFunc(tmr)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockConfigManager_LoadConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadConfig'
@@ -123,12 +88,12 @@ func (_c *MockConfigManager_LoadConfig_Call[T]) Run(run func(tmr timer.Timer)) *
 	return _c
 }
 
-func (_c *MockConfigManager_LoadConfig_Call[T]) Return(err error) *MockConfigManager_LoadConfig_Call[T] {
-	_c.Call.Return(err)
+func (_c *MockConfigManager_LoadConfig_Call[T]) Return(v *T, err error) *MockConfigManager_LoadConfig_Call[T] {
+	_c.Call.Return(v, err)
 	return _c
 }
 
-func (_c *MockConfigManager_LoadConfig_Call[T]) RunAndReturn(run func(tmr timer.Timer) error) *MockConfigManager_LoadConfig_Call[T] {
+func (_c *MockConfigManager_LoadConfig_Call[T]) RunAndReturn(run func(tmr timer.Timer) (*T, error)) *MockConfigManager_LoadConfig_Call[T] {
 	_c.Call.Return(run)
 	return _c
 }

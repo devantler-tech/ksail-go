@@ -48,13 +48,10 @@ func HandleConnectRunE(
 	args []string,
 ) error {
 	// Load configuration
-	err := cfgManager.LoadConfigSilent()
+	cfg, err := cfgManager.LoadConfigSilent()
 	if err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
-
-	// Get the loaded config
-	cfg := cfgManager.GetConfig()
 
 	// Determine kubeconfig path
 	kubeConfigPath := cfg.Spec.Connection.Kubeconfig

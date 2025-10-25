@@ -75,7 +75,7 @@ func setupTestConfig(
 func loadConfigAndVerifyNoError(t *testing.T, cfgManager *ksailconfigmanager.ConfigManager) {
 	t.Helper()
 
-	err := cfgManager.LoadConfigSilent()
+	_, err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 }
 
@@ -114,7 +114,7 @@ func TestHandleConnectRunE_LoadsConfig(t *testing.T) {
 
 	loadConfigAndVerifyNoError(t, cfgManager)
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig path to be loaded from config")
 }
@@ -126,7 +126,7 @@ func TestHandleConnectRunE_DefaultKubeconfig(t *testing.T) {
 
 	loadConfigAndVerifyNoError(t, cfgManager)
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, "~/.kube/config", cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig path to have default value")
 
@@ -164,7 +164,7 @@ func TestHandleConnectRunE_WithCustomKubeconfigPath(t *testing.T) {
 
 	loadConfigAndVerifyNoError(t, cfgManager)
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, customKubeConfigPath, cfg.Spec.Connection.Kubeconfig,
 		"expected custom kubeconfig path to be loaded from config")
 }
@@ -194,7 +194,7 @@ func TestHandleConnectRunE_WithContext(t *testing.T) {
 
 	loadConfigAndVerifyNoError(t, cfgManager)
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, contextName, cfg.Spec.Connection.Context,
 		"expected context to be loaded from config")
 }
@@ -213,10 +213,10 @@ spec:
 `
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
+	_, err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Empty(t, cfg.Spec.Connection.Context,
 		"expected context to be empty when not specified in config")
 }
@@ -241,10 +241,10 @@ func TestHandleConnectRunE_ExecutionPath(t *testing.T) {
 	// This test verifies the full execution path loads config correctly
 	// Note: We cannot fully execute k9s in tests as it requires a terminal
 	// But we can verify the function properly processes config and creates commands
-	err = cfgManager.LoadConfigSilent()
+	_, err = cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig)
 }
 
@@ -253,10 +253,10 @@ func TestHandleConnectRunE_WithDefaultPath(t *testing.T) {
 	configContent := createKSailConfigYAML("", "")
 	cfgManager := setupTestConfig(t, configContent)
 
-	err := cfgManager.LoadConfigSilent()
+	_, err := cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, "~/.kube/config", cfg.Spec.Connection.Kubeconfig,
 		"expected kubeconfig to have default value")
 
@@ -281,10 +281,10 @@ func TestHandleConnectRunE_WithContextAndKubeconfig(t *testing.T) {
 	configContent := createKSailConfigYAML(kubeConfigPath, contextName)
 	cfgManager := setupTestConfig(t, configContent)
 
-	err = cfgManager.LoadConfigSilent()
+	_, err = cfgManager.LoadConfigSilent()
 	require.NoError(t, err, "expected config to load successfully")
 
-	cfg := cfgManager.GetConfig()
+	cfg := cfgManager.Config
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig)
 	require.Equal(t, contextName, cfg.Spec.Connection.Context)
 }

@@ -67,7 +67,7 @@ func HandleListRunE(
 	deps ListDeps,
 ) error {
 	// Load cluster configuration
-	err := cfgManager.LoadConfigSilent()
+	_, err := cfgManager.LoadConfigSilent()
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
@@ -86,7 +86,7 @@ func listClusters(
 	deps ListDeps,
 	cmd *cobra.Command,
 ) error {
-	clusterCfg := cfgManager.GetConfig()
+	clusterCfg := cfgManager.Config
 	includeDistribution := cfgManager.Viper.GetBool(allFlag)
 
 	primaryErr := listPrimaryClusters(cmd, clusterCfg, deps, includeDistribution)
