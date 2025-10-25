@@ -80,22 +80,19 @@ func handleCreateRunE(
 	deps.Timer.Start()
 
 	// Load config first
-	err := cfgManager.LoadConfig(deps.Timer)
+	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
-
-	clusterCfg := cfgManager.GetConfig()
 
 	// Load distribution config for Kind to check for mirror registries
 	var kindConfig *v1alpha4.Cluster
 	if clusterCfg.Spec.Distribution == v1alpha1.DistributionKind {
 		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-		err := kindConfigMgr.LoadConfig(deps.Timer)
+		kindConfig, err = kindConfigMgr.LoadConfig(deps.Timer)
 		if err != nil {
 			return fmt.Errorf("failed to load kind config: %w", err)
 		}
-		kindConfig = kindConfigMgr.GetConfig()
 	}
 
 	// Set up mirror registries before cluster creation if enabled

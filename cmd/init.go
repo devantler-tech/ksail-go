@@ -63,7 +63,7 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	err := cfgManager.LoadConfig(deps.Timer)
+	_, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
@@ -84,7 +84,7 @@ func HandleInitRunE(
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
 
 	scaffolderInstance := scaffolder.NewScaffolder(
-		*cfgManager.GetConfig(),
+		*cfgManager.Config,
 		cmd.OutOrStdout(),
 	)
 	scaffolderInstance.MirrorRegistries = mirrorRegistries

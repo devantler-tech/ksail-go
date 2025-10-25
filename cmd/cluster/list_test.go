@@ -92,7 +92,8 @@ func setupListCommandWithAllFlag(
 
 	cmd, _ := newCommandWithBuffer(t)
 	cfgManager := createConfigManagerWithFile(t, io.Discard)
-	require.NoError(t, cfgManager.LoadConfigSilent())
+	_, err := cfgManager.LoadConfigSilent()
+	require.NoError(t, err)
 	cfgManager.Viper.Set(allFlag, true)
 
 	provisioner := &recordingListProvisioner{listResult: []string{"kind-primary"}}

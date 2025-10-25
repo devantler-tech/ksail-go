@@ -75,8 +75,8 @@ func handleDeleteRunE(
 		return fmt.Errorf("cluster deletion failed: %w", err)
 	}
 
-	// Clean up registries after cluster deletion
-	clusterCfg := cfgManager.GetConfig()
+	// Access config directly from the public Config field
+	clusterCfg := cfgManager.Config
 
 	err = cleanupMirrorRegistries(cmd, clusterCfg, deps)
 	if err != nil {
@@ -106,12 +106,10 @@ func cleanupMirrorRegistries(
 	// Load Kind config to check if containerd patches exist
 	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
 
-	err := kindConfigMgr.LoadConfig(deps.Timer)
+	kindConfig, err := kindConfigMgr.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load kind config: %w", err)
 	}
-
-	kindConfig := kindConfigMgr.GetConfig()
 
 	// If no containerd patches, no registries to clean up
 	if len(kindConfig.ContainerdConfigPatches) == 0 {
