@@ -432,16 +432,16 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 
 		name := parts[0]
 		upstream := parts[1]
-		
+
 		// Extract port from upstream URL (default: 5000)
 		port := extractPortFromURL(upstream)
-		
+
 		// Generate distribution-prefixed container name: kind-{name}
 		containerName := fmt.Sprintf("kind-%s", name)
-		
+
 		// Infer registry host from name (e.g., docker-io -> docker.io)
 		registryHost := inferRegistryHost(name)
-		
+
 		// Use container name as endpoint for Kind network DNS resolution
 		kindEndpoint := fmt.Sprintf("http://%s:%s", containerName, port)
 
@@ -511,32 +511,32 @@ func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		if parts != nil {
 			name := parts[0]
 			// upstream := parts[1] // TODO: Use upstream for proxy configuration
-			
+
 			// Generate distribution-prefixed registry name
 			registryName := fmt.Sprintf("k3d-%s", name)
-			
+
 			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
 				Name: registryName,
 			}
-			
+
 			// Generate mirrors configuration
 			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
 			configLines = append(configLines, "mirrors:")
-			
+
 			// Infer registry host from name
 			registryHost := inferRegistryHost(name)
-			
+
 			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
 			configLines = append(configLines, "    endpoint:")
 			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
-			
+
 			// Add proxy configuration
 			configLines = append(configLines, "configs:")
 			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
 			configLines = append(configLines, "    auth: {}")
 			configLines = append(configLines, "    tls:")
 			configLines = append(configLines, "      insecure_skip_verify: false")
-			
+
 			registryConfig.Config = joinLines(configLines) + "\n"
 		}
 	}
