@@ -85,7 +85,7 @@ jobs:
             init-args: "--distribution Kind --cni Cilium"
           - distribution: Kind
             cni: Default
-            init-args: "--distribution Kind --mirror-registry docker.io=http://localhost:5000"
+            init-args: "--distribution Kind --mirror-registry docker-io=https://registry-1.docker.io"
             mirror-registry: true
           - distribution: K3d
             cni: Default
@@ -95,7 +95,7 @@ jobs:
             init-args: "--distribution K3d --cni Cilium"
           - distribution: K3d
             cni: Default
-            init-args: "--distribution K3d --mirror-registry docker.io=http://localhost:5000"
+            init-args: "--distribution K3d --mirror-registry docker-io=https://registry-1.docker.io"
             mirror-registry: true
     steps:
       - name: 📄 Checkout
