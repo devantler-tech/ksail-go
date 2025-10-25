@@ -72,11 +72,7 @@ func NewCommandConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
 func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
-	config, err := m.loadConfigWithOptions(tmr, false)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
+	return m.loadConfigWithOptions(tmr, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
