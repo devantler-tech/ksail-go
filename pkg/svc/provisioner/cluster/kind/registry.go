@@ -1,5 +1,3 @@
-// Package kindprovisioner provides implementations of the Provisioner interface
-// for provisioning clusters in different providers.
 package kindprovisioner
 
 import (
@@ -264,6 +262,7 @@ func parseContainerdConfig(patch string) map[string][]string {
 					inEndpointArray = false
 				}
 			}
+
 			continue
 		}
 
@@ -285,6 +284,7 @@ func parseContainerdConfig(patch string) map[string][]string {
 				// Start of multiline array: endpoint = [
 				inEndpointArray = true
 			}
+
 			continue
 		}
 
@@ -352,6 +352,7 @@ func extractEndpointFromLine(line string) string {
 	line = strings.TrimSpace(line)
 	// Remove trailing comma if present
 	line = strings.TrimSuffix(line, ",")
+
 	return extractQuotedString(line)
 }
 

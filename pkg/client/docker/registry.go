@@ -1,4 +1,3 @@
-// Package docker provides unified container engine detection and management.
 package docker
 
 import (
@@ -231,6 +230,7 @@ func (rm *RegistryManager) registryExists(ctx context.Context, name string) (boo
 	if err != nil {
 		return false, err
 	}
+
 	return len(containers) > 0, nil
 }
 

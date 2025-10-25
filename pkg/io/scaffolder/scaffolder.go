@@ -443,7 +443,7 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 		registryHost := inferRegistryHost(name)
 
 		// Use container name as endpoint for Kind network DNS resolution
-		kindEndpoint := fmt.Sprintf("http://%s:%s", containerName, port)
+		kindEndpoint := "http://" + containerName + ":" + port
 
 		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
   endpoint = ["%s"]`, registryHost, kindEndpoint)
@@ -455,7 +455,7 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 }
 
 // inferRegistryHost converts a registry name back to its host format.
-// Examples: "docker-io" -> "docker.io", "ghcr-io" -> "ghcr.io"
+// Examples: "docker-io" -> "docker.io", "ghcr-io" -> "ghcr.io".
 func inferRegistryHost(name string) string {
 	// Replace hyphens with dots to get the registry host
 	// Handle common cases: docker-io -> docker.io, ghcr-io -> ghcr.io
@@ -469,6 +469,7 @@ func generateRegistryContainerName(registry string) string {
 	sanitized := strings.ReplaceAll(registry, ".", "-")
 	sanitized = strings.ReplaceAll(sanitized, ":", "-")
 	sanitized = strings.ReplaceAll(sanitized, "/", "-")
+
 	return fmt.Sprintf("ksail-registry-%s", sanitized)
 }
 
@@ -486,6 +487,7 @@ func extractPortFromURL(urlStr string) string {
 		if slashIdx := strings.Index(port, "/"); slashIdx >= 0 {
 			port = port[:slashIdx]
 		}
+
 		return port
 	}
 
