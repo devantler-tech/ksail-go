@@ -23,11 +23,19 @@ var (
 	ErrRegistryNotFound = errors.New("registry not found")
 	// ErrRegistryAlreadyExists is returned when trying to create a registry that already exists.
 	ErrRegistryAlreadyExists = errors.New("registry already exists")
+	// ErrRegistryPortNotFound is returned when the registry port cannot be determined.
+	ErrRegistryPortNotFound = errors.New("registry port not found")
 )
 
 const (
 	// RegistryImageName is the default registry image to use.
 	RegistryImageName = "registry:3"
+	// DefaultRegistryPort is the default port for registry containers.
+	DefaultRegistryPort = 5000
+	// RegistryPortBase is the base port number for calculating registry ports.
+	RegistryPortBase = 5000
+	// HostPortParts is the expected number of parts in a host:port string.
+	HostPortParts = 2
 	// RegistryLabelKey is the label key used to identify ksail registries.
 	RegistryLabelKey = "io.ksail.registry"
 	// RegistryClusterLabelKey is the label key used to track which clusters use a registry.
@@ -73,13 +81,15 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	}
 
 	// Pull registry image if not present
-	if err := rm.ensureRegistryImage(ctx); err != nil {
+	err = rm.ensureRegistryImage(ctx)
+	if err != nil {
 		return fmt.Errorf("failed to ensure registry image: %w", err)
 	}
 
 	// Create volume for registry data
 	volumeName := fmt.Sprintf("ksail-registry-%s", config.Name)
-	if err := rm.createVolume(ctx, volumeName, config.Name); err != nil {
+	err = rm.createVolume(ctx, volumeName, config.Name)
+	if err != nil {
 		return fmt.Errorf("failed to create registry volume: %w", err)
 	}
 
@@ -104,7 +114,8 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	}
 
 	// Start container
-	if err := rm.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	err = rm.client.ContainerStart(ctx, resp.ID, container.StartOptions{})
+	if err != nil {
 		return fmt.Errorf("failed to start registry container: %w", err)
 	}
 
@@ -215,12 +226,12 @@ func (rm *RegistryManager) GetRegistryPort(ctx context.Context, name string) (in
 
 	// Get port from container ports
 	for _, port := range containers[0].Ports {
-		if port.PrivatePort == 5000 {
+		if port.PrivatePort == DefaultRegistryPort {
 			return int(port.PublicPort), nil
 		}
 	}
 
-	return 0, fmt.Errorf("registry port not found")
+	return 0, ErrRegistryPortNotFound
 }
 
 // Helper methods
@@ -261,7 +272,7 @@ func (rm *RegistryManager) listAllRegistryContainers(
 
 func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	// Check if image exists
-	_, _, err := rm.client.ImageInspectWithRaw(ctx, RegistryImageName)
+	_, err := rm.client.ImageInspect(ctx, RegistryImageName)
 	if err == nil {
 		return nil
 	}
@@ -271,7 +282,11 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to pull registry image: %w", err)
 	}
-	defer reader.Close()
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			err = fmt.Errorf("failed to close image pull reader: %w", closeErr)
+		}
+	}()
 
 	// Consume pull output
 	_, err = io.Copy(io.Discard, reader)
@@ -367,19 +382,19 @@ func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.Ne
 }
 
 func (rm *RegistryManager) addClusterLabel(
-	ctx context.Context,
-	registryName, clusterName string,
+	_ context.Context,
+	_, _ string,
 ) error {
-	// With the network-based tracking, we just need to ensure the registry exists
-	// The actual network connection will be made when attaching to the cluster network
+	// With the network-based tracking, we just need to ensure the registry exists.
+	// The actual network connection will be made when attaching to the cluster network.
 	return nil
 }
 
 func (rm *RegistryManager) removeClusterLabel(
-	ctx context.Context,
-	registryName, clusterName string,
+	_ context.Context,
+	_, _ string,
 ) error {
-	// With the network-based tracking, network disconnection happens when cluster is deleted
-	// This is a no-op as the network will be cleaned up automatically
+	// With the network-based tracking, network disconnection happens when cluster is deleted.
+	// This is a no-op as the network will be cleaned up automatically.
 	return nil
 }

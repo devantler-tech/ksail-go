@@ -462,16 +462,7 @@ func inferRegistryHost(name string) string {
 	return strings.ReplaceAll(name, "-", ".")
 }
 
-// generateRegistryContainerName is deprecated - kept for compatibility during migration
-// Sanitizes the host name by replacing special characters with hyphens.
-func generateRegistryContainerName(registry string) string {
-	// Sanitize registry name for use in container name
-	sanitized := strings.ReplaceAll(registry, ".", "-")
-	sanitized = strings.ReplaceAll(sanitized, ":", "-")
-	sanitized = strings.ReplaceAll(sanitized, "/", "-")
 
-	return fmt.Sprintf("ksail-registry-%s", sanitized)
-}
 
 // extractPortFromURL extracts the port from a URL string.
 // Returns "5000" as default if no port is found.

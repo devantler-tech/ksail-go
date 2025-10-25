@@ -63,7 +63,7 @@ func TestParseContainerdConfig(t *testing.T) {
 			name: "with comments",
 			patch: `# Mirror configuration
 [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  # Primary registry endpoint
+  # Primary registry
   endpoint = ["http://localhost:5000"]`,
 			expected: map[string][]string{
 				"docker.io": {"http://localhost:5000"},
