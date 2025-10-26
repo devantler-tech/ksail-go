@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
@@ -144,7 +145,7 @@ func CleanupRegistries(
 	for _, reg := range registries {
 		if err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes); err != nil {
 			// Log error but don't fail the entire cleanup
-			fmt.Printf("Warning: failed to cleanup registry %s: %v\n", reg.Name, err)
+			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to cleanup registry %s: %v\n", reg.Name, err)
 		}
 	}
 
@@ -154,6 +155,7 @@ func CleanupRegistries(
 // extractRegistriesFromKind extracts registry information from Kind configuration.
 func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 	var registries []RegistryInfo
+
 	seenHosts := make(map[string]bool) // Track unique hosts to avoid duplicates
 	portOffset := 0
 
@@ -170,11 +172,13 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 			if seenHosts[host] {
 				continue
 			}
+
 			seenHosts[host] = true
 
 			// Extract the registry name from the endpoint URL
 			// Format: http://kind-{name}:5000
 			var name string
+
 			var upstream string
 			port := 5000 + portOffset
 
@@ -232,10 +236,12 @@ func parseContainerdConfig(patch string) map[string][]string {
 	lines := strings.Split(patch, "\n")
 
 	var currentHost string
+
 	var inEndpointArray bool
+
 	var currentEndpoints []string
 
-	for i := 0; i < len(lines); i++ {
+	for i := range len(lines) {
 		line := strings.TrimSpace(lines[i])
 
 		// Skip empty lines and comments
@@ -256,6 +262,7 @@ func parseContainerdConfig(patch string) map[string][]string {
 			start := strings.Index(line, `mirrors."`)
 			if start >= 0 {
 				start += len(`mirrors."`)
+
 				end := strings.Index(line[start:], `"`)
 				if end > 0 {
 					currentHost = line[start : start+end]
@@ -327,6 +334,7 @@ func extractEndpointsFromInlineArray(line string) []string {
 
 	// Find the array content between [ and ]
 	start := strings.Index(line, "[")
+
 	end := strings.LastIndex(line, "]")
 	if start < 0 || end < 0 || start >= end {
 		return endpoints

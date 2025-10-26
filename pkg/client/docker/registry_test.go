@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var (
+	errNotFound = errors.New("not found")
+)
+
 func TestNewRegistryManager(t *testing.T) {
 	t.Run("success with valid client", func(t *testing.T) {
 		mockClient := NewMockAPIClient(t)
@@ -58,7 +62,7 @@ func TestCreateRegistry(t *testing.T) {
 		// Mock image inspect (image doesn't exist)
 		mockClient.EXPECT().
 			ImageInspectWithRaw(ctx, RegistryImageName).
-			Return(image.InspectResponse{}, []byte{}, errors.New("not found")).
+			Return(image.InspectResponse{}, []byte{}, errNotFound).
 			Once()
 
 		// Mock image pull
@@ -70,7 +74,7 @@ func TestCreateRegistry(t *testing.T) {
 		// Mock volume inspect (volume doesn't exist)
 		mockClient.EXPECT().
 			VolumeInspect(ctx, "ksail-registry-docker.io").
-			Return(volume.Volume{}, errors.New("not found")).
+			Return(volume.Volume{}, errNotFound).
 			Once()
 
 		// Mock volume create

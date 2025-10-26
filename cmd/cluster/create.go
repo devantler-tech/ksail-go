@@ -88,8 +88,10 @@ func handleCreateRunE(
 
 	// Load distribution config for Kind to check for mirror registries
 	var kindConfig *v1alpha4.Cluster
+
 	if clusterCfg.Spec.Distribution == v1alpha1.DistributionKind {
 		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
 		kindConfig, err = kindConfigMgr.LoadConfig(deps.Timer)
 		if err != nil {
 			return fmt.Errorf("failed to load kind config: %w", err)

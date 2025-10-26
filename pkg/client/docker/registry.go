@@ -75,6 +75,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	if err != nil {
 		return fmt.Errorf("failed to check if registry exists: %w", err)
 	}
+
 	if exists {
 		// Add cluster label to existing registry
 		return rm.addClusterLabel(ctx, config.Name, config.ClusterName)
@@ -88,6 +89,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 
 	// Create volume for registry data
 	volumeName := fmt.Sprintf("ksail-registry-%s", config.Name)
+
 	err = rm.createVolume(ctx, volumeName, config.Name)
 	if err != nil {
 		return fmt.Errorf("failed to create registry volume: %w", err)
@@ -282,6 +284,7 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to pull registry image: %w", err)
 	}
+
 	defer func() {
 		if closeErr := reader.Close(); closeErr != nil {
 			err = fmt.Errorf("failed to close image pull reader: %w", closeErr)

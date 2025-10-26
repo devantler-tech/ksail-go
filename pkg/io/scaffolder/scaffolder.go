@@ -10,6 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/k3d-io/k3d/v5/pkg/config/types"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	ktypes "sigs.k8s.io/kustomize/api/types"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
@@ -17,10 +22,6 @@ import (
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/k3d-io/k3d/v5/pkg/config/types"
-	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
 // Error definitions for distribution handling.
@@ -498,6 +499,7 @@ func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		// For now, we'll use the first mirror as the primary registry
 		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
 		mirrorSpec := s.MirrorRegistries[0]
+
 		parts := splitMirrorSpec(mirrorSpec)
 		if parts != nil {
 			name := parts[0]
