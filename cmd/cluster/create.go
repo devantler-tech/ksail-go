@@ -113,7 +113,7 @@ func handleCreateRunE(
 	}
 
 	// Connect registries to the Kind network after cluster is created
-	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager, kindConfig)
+	err = connectRegistriesToKindNetwork(cmd, clusterCfg, deps, cfgManager, kindConfig)
 	if err != nil {
 		// Log warning but don't fail - registries can still work via localhost
 		notify.WriteMessage(notify.Message{
@@ -417,6 +417,7 @@ func setupMirrorRegistries(
 func connectRegistriesToKindNetwork(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 ) error {
@@ -424,6 +425,18 @@ func connectRegistriesToKindNetwork(
 	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
 		return nil
 	}
+
+	// Start timing for registry network connection
+	deps.Timer.NewStage()
+
+	// Display title
+	cmd.Println()
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Connect registries to cluster network...",
+		Emoji:   "🔗",
+		Writer:  cmd.OutOrStdout(),
+	})
 
 	// Connect registries to Kind network using Docker client
 	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
@@ -436,6 +449,15 @@ func connectRegistriesToKindNetwork(
 		if err != nil {
 			return fmt.Errorf("failed to connect registries to network: %w", err)
 		}
+
+		// Display success message with timing
+		notify.WriteMessage(notify.Message{
+			Type:       notify.SuccessType,
+			Content:    "registries connected to cluster network",
+			Timer:      deps.Timer,
+			Writer:     cmd.OutOrStdout(),
+			MultiStage: true,
+		})
 
 		return nil
 	})
