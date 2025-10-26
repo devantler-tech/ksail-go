@@ -13,6 +13,7 @@ import (
 // loadTestData loads test data from testdata directory.
 func loadTestData(t *testing.T, filename string) string {
 	t.Helper()
+	//nolint:gosec // Test data files are safe
 	data, err := os.ReadFile(filepath.Join("testdata", filename))
 	if err != nil {
 		t.Fatalf("failed to load test data %s: %v", filename, err)
@@ -23,6 +24,7 @@ func loadTestData(t *testing.T, filename string) string {
 // loadExpectedMap loads expected map results from JSON file.
 func loadExpectedMap(t *testing.T, filename string) map[string][]string {
 	t.Helper()
+	//nolint:gosec // Test data files are safe
 	data, err := os.ReadFile(filepath.Join("testdata", filename))
 	if err != nil {
 		t.Fatalf("failed to load expected data %s: %v", filename, err)
@@ -40,16 +42,56 @@ func TestParseContainerdConfig(t *testing.T) {
 		inputFile    string
 		expectedFile string
 	}{
-		{name: "standard single endpoint", inputFile: "containerd_single_endpoint.toml", expectedFile: "expected_single_endpoint.json"},
-		{name: "multiple mirrors", inputFile: "containerd_multiple_mirrors.toml", expectedFile: "expected_multiple_mirrors.json"},
-		{name: "multiple endpoints inline", inputFile: "containerd_multiple_endpoints_inline.toml", expectedFile: "expected_multiple_endpoints.json"},
-		{name: "multiline array format", inputFile: "containerd_multiline_array.toml", expectedFile: "expected_multiple_endpoints.json"},
-		{name: "extra whitespace", inputFile: "containerd_extra_whitespace.toml", expectedFile: "expected_single_endpoint.json"},
-		{name: "with comments", inputFile: "containerd_with_comments.toml", expectedFile: "expected_single_endpoint.json"},
-		{name: "registry with port and path", inputFile: "containerd_registry_with_port.toml", expectedFile: "expected_registry_with_port.json"},
-		{name: "empty config", inputFile: "containerd_empty.toml", expectedFile: "expected_empty.json"},
-		{name: "no endpoint field", inputFile: "containerd_no_endpoint.toml", expectedFile: "expected_empty.json"},
-		{name: "malformed endpoint", inputFile: "containerd_malformed.toml", expectedFile: "expected_empty.json"},
+		{
+			name:         "standard single endpoint",
+			inputFile:    "containerd_single_endpoint.toml",
+			expectedFile: "expected_single_endpoint.json",
+		},
+		{
+			name:         "multiple mirrors",
+			inputFile:    "containerd_multiple_mirrors.toml",
+			expectedFile: "expected_multiple_mirrors.json",
+		},
+		{
+			name:         "multiple endpoints inline",
+			inputFile:    "containerd_multiple_endpoints_inline.toml",
+			expectedFile: "expected_multiple_endpoints.json",
+		},
+		{
+			name:         "multiline array format",
+			inputFile:    "containerd_multiline_array.toml",
+			expectedFile: "expected_multiple_endpoints.json",
+		},
+		{
+			name:         "extra whitespace",
+			inputFile:    "containerd_extra_whitespace.toml",
+			expectedFile: "expected_single_endpoint.json",
+		},
+		{
+			name:         "with comments",
+			inputFile:    "containerd_with_comments.toml",
+			expectedFile: "expected_single_endpoint.json",
+		},
+		{
+			name:         "registry with port and path",
+			inputFile:    "containerd_registry_with_port.toml",
+			expectedFile: "expected_registry_with_port.json",
+		},
+		{
+			name:         "empty config",
+			inputFile:    "containerd_empty.toml",
+			expectedFile: "expected_empty.json",
+		},
+		{
+			name:         "no endpoint field",
+			inputFile:    "containerd_no_endpoint.toml",
+			expectedFile: "expected_empty.json",
+		},
+		{
+			name:         "malformed endpoint",
+			inputFile:    "containerd_malformed.toml",
+			expectedFile: "expected_empty.json",
+		},
 	}
 
 	for _, tt := range tests {
@@ -70,6 +112,7 @@ func loadExpectedRegistries(t *testing.T, filename string) []RegistryInfo {
 	if filename == "" {
 		return nil
 	}
+	//nolint:gosec // Test data files are safe
 	data, err := os.ReadFile(filepath.Join("testdata", filename))
 	if err != nil {
 		t.Fatalf("failed to load expected data %s: %v", filename, err)
@@ -87,12 +130,36 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 		inputFile    string
 		expectedFile string
 	}{
-		{name: "single registry", inputFile: "containerd_single_endpoint.toml", expectedFile: "expected_registry_single.json"},
-		{name: "multiple registries", inputFile: "containerd_multiple_mirrors.toml", expectedFile: "expected_registry_multiple.json"},
-		{name: "duplicate registries in multiple patches", inputFile: "containerd_duplicate_patches.toml", expectedFile: "expected_registry_single.json"},
-		{name: "registry with special characters", inputFile: "containerd_registry_special_chars.toml", expectedFile: "expected_registry_special_chars.json"},
-		{name: "no containerd patches", inputFile: "", expectedFile: ""},
-		{name: "multiple endpoints uses first", inputFile: "containerd_multiple_endpoints_inline.toml", expectedFile: "expected_registry_single.json"},
+		{
+			name:         "single registry",
+			inputFile:    "containerd_single_endpoint.toml",
+			expectedFile: "expected_registry_single.json",
+		},
+		{
+			name:         "multiple registries",
+			inputFile:    "containerd_multiple_mirrors.toml",
+			expectedFile: "expected_registry_multiple.json",
+		},
+		{
+			name:         "duplicate registries in multiple patches",
+			inputFile:    "containerd_duplicate_patches.toml",
+			expectedFile: "expected_registry_single.json",
+		},
+		{
+			name:         "registry with special characters",
+			inputFile:    "containerd_registry_special_chars.toml",
+			expectedFile: "expected_registry_special_chars.json",
+		},
+		{
+			name:         "no containerd patches",
+			inputFile:    "",
+			expectedFile: "",
+		},
+		{
+			name:         "multiple endpoints uses first",
+			inputFile:    "containerd_multiple_endpoints_inline.toml",
+			expectedFile: "expected_registry_single.json",
+		},
 	}
 
 	for _, tt := range tests {
