@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 	v := m.Run()
 
 	// After all tests have run, clean up snapshots
-	snaps.Clean(m)
+	_, _ = snaps.Clean(m)
 
 	os.Exit(v)
 }
@@ -27,10 +27,13 @@ func loadTestData(t *testing.T, filename string) string {
 	if err != nil {
 		t.Fatalf("failed to load test data %s: %v", filename, err)
 	}
+
 	return string(data)
 }
 
 func TestParseContainerdConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		inputFile string
@@ -47,11 +50,11 @@ func TestParseContainerdConfig(t *testing.T) {
 		{name: "malformed endpoint", inputFile: "containerd_malformed.toml"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			patch := loadTestData(t, tt.inputFile)
+			patch := loadTestData(t, testCase.inputFile)
 			result := parseContainerdConfig(patch)
 			snaps.MatchSnapshot(t, result)
 		})
@@ -59,6 +62,8 @@ func TestParseContainerdConfig(t *testing.T) {
 }
 
 func TestExtractRegistriesFromKind(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name      string
 		inputFile string
@@ -72,15 +77,15 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 		{name: "multiple endpoints uses first", inputFile: "containerd_multiple_endpoints_inline.toml"},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			var config *v1alpha4.Cluster
-			if tt.isEmpty {
+			if testCase.isEmpty {
 				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{}}
 			} else {
-				patch := loadTestData(t, tt.inputFile)
+				patch := loadTestData(t, testCase.inputFile)
 				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{patch}}
 			}
 

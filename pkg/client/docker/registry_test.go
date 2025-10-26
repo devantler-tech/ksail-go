@@ -28,6 +28,91 @@ func setupTestRegistryManager(t *testing.T) (*MockAPIClient, *RegistryManager, c
 	return mockClient, manager, ctx
 }
 
+// mockRegistryNotExists sets up mocks for when a registry doesn't exist.
+func mockRegistryNotExists(mockClient *MockAPIClient, ctx context.Context) {
+	mockClient.EXPECT().
+		ContainerList(ctx, mock.Anything).
+		Return([]container.Summary{}, nil).
+		Once()
+}
+
+// mockImagePullSequence sets up the complete image pull mock sequence.
+func mockImagePullSequence(mockClient *MockAPIClient, ctx context.Context) {
+	// Mock image inspect (image doesn't exist)
+	mockClient.EXPECT().
+		ImageInspect(ctx, RegistryImageName).
+		Return(image.InspectResponse{}, errNotFound).
+		Once()
+
+	// Mock image pull
+	mockClient.EXPECT().
+		ImagePull(ctx, RegistryImageName, mock.Anything).
+		Return(io.NopCloser(strings.NewReader("")), nil).
+		Once()
+}
+
+// mockVolumeCreateSequence sets up the complete volume creation mock sequence.
+func mockVolumeCreateSequence(mockClient *MockAPIClient, ctx context.Context, volumeName string) {
+	// Mock volume inspect (volume doesn't exist)
+	mockClient.EXPECT().
+		VolumeInspect(ctx, volumeName).
+		Return(volume.Volume{}, errNotFound).
+		Once()
+
+	// Mock volume create
+	mockClient.EXPECT().
+		VolumeCreate(ctx, mock.Anything).
+		Return(volume.Volume{}, nil).
+		Once()
+}
+
+// mockContainerCreateStart sets up the container creation and start mock sequence.
+func mockContainerCreateStart(mockClient *MockAPIClient, ctx context.Context, containerName, containerID string) {
+	// Mock container create
+	mockClient.EXPECT().
+		ContainerCreate(
+			ctx,
+			mock.MatchedBy(func(config *container.Config) bool { return config != nil }),
+			mock.MatchedBy(func(config *container.HostConfig) bool { return config != nil }),
+			mock.MatchedBy(func(config *network.NetworkingConfig) bool { return config != nil }),
+			mock.Anything,
+			containerName,
+		).
+		Return(container.CreateResponse{ID: containerID}, nil).
+		Once()
+
+	// Mock container start
+	mockClient.EXPECT().
+		ContainerStart(ctx, containerID, mock.Anything).
+		Return(nil).
+		Once()
+}
+
+// mockRegistryContainer returns a mock container summary for a registry.
+func mockRegistryContainer(registryID, registryName, clusterName, state string) container.Summary {
+	return container.Summary{
+		ID: registryID,
+		Labels: map[string]string{
+			RegistryLabelKey:        registryName,
+			RegistryClusterLabelKey: clusterName,
+		},
+		State: state,
+	}
+}
+
+// mockContainerStopRemove sets up the container stop and remove mock sequence.
+func mockContainerStopRemove(mockClient *MockAPIClient, ctx context.Context, containerID string) {
+	mockClient.EXPECT().
+		ContainerStop(ctx, containerID, mock.MatchedBy(func(_ container.StopOptions) bool { return true })).
+		Return(nil).
+		Once()
+
+	mockClient.EXPECT().
+		ContainerRemove(ctx, containerID, mock.MatchedBy(func(_ container.RemoveOptions) bool { return true })).
+		Return(nil).
+		Once()
+}
+
 func TestNewRegistryManager(t *testing.T) {
 	t.Parallel()
 
@@ -60,9 +145,7 @@ func TestCreateRegistry(t *testing.T) {
 	t.Run("creates new registry successfully", func(t *testing.T) {
 		t.Parallel()
 
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		config := RegistryConfig{
 			Name:        "docker.io",
@@ -72,54 +155,10 @@ func TestCreateRegistry(t *testing.T) {
 			NetworkName: "kind",
 		}
 
-		// Mock registry doesn't exist
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{}, nil).
-			Once()
-
-		// Mock image inspect (image doesn't exist)
-		mockClient.EXPECT().
-			ImageInspectWithRaw(ctx, RegistryImageName).
-			Return(image.InspectResponse{}, []byte{}, errNotFound).
-			Once()
-
-		// Mock image pull
-		mockClient.EXPECT().
-			ImagePull(ctx, RegistryImageName, mock.Anything).
-			Return(io.NopCloser(strings.NewReader("")), nil).
-			Once()
-
-		// Mock volume inspect (volume doesn't exist)
-		mockClient.EXPECT().
-			VolumeInspect(ctx, "ksail-registry-docker.io").
-			Return(volume.Volume{}, errNotFound).
-			Once()
-
-		// Mock volume create
-		mockClient.EXPECT().
-			VolumeCreate(ctx, mock.Anything).
-			Return(volume.Volume{}, nil).
-			Once()
-
-		// Mock container create - use MatchedBy for complex types
-		mockClient.EXPECT().
-			ContainerCreate(
-				ctx,
-				mock.MatchedBy(func(config *container.Config) bool { return config != nil }),
-				mock.MatchedBy(func(config *container.HostConfig) bool { return config != nil }),
-				mock.MatchedBy(func(config *network.NetworkingConfig) bool { return config != nil }),
-				mock.Anything,
-				"ksail-registry-docker.io",
-			).
-			Return(container.CreateResponse{ID: "test-id"}, nil).
-			Once()
-
-		// Mock container start
-		mockClient.EXPECT().
-			ContainerStart(ctx, "test-id", mock.Anything).
-			Return(nil).
-			Once()
+		mockRegistryNotExists(mockClient, ctx)
+		mockImagePullSequence(mockClient, ctx)
+		mockVolumeCreateSequence(mockClient, ctx, "ksail-registry-docker.io")
+		mockContainerCreateStart(mockClient, ctx, "ksail-registry-docker.io", "test-id")
 
 		err := manager.CreateRegistry(ctx, config)
 
@@ -128,9 +167,7 @@ func TestCreateRegistry(t *testing.T) {
 
 	t.Run("returns error when registry already exists and adds cluster label", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		config := RegistryConfig{
 			Name:        "docker.io",
@@ -162,36 +199,17 @@ func TestDeleteRegistry(t *testing.T) {
 
 	t.Run("deletes registry when not in use", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
+
+		registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
 
 		// Mock list registry containers (2 times - initial list, IsRegistryInUse)
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry-id",
-					Labels: map[string]string{
-						RegistryLabelKey:        "docker.io",
-						RegistryClusterLabelKey: "test-cluster",
-					},
-					State: "exited",
-				},
-			}, nil).
+			Return([]container.Summary{registry}, nil).
 			Times(2)
 
-		// Mock container stop
-		mockClient.EXPECT().
-			ContainerStop(ctx, "registry-id", mock.MatchedBy(func(_ container.StopOptions) bool { return true })).
-			Return(nil).
-			Once()
-
-		// Mock container remove
-		mockClient.EXPECT().
-			ContainerRemove(ctx, "registry-id", mock.MatchedBy(func(_ container.RemoveOptions) bool { return true })).
-			Return(nil).
-			Once()
+		mockContainerStopRemove(mockClient, ctx, "registry-id")
 
 		// Mock volume remove
 		mockClient.EXPECT().
@@ -206,24 +224,19 @@ func TestDeleteRegistry(t *testing.T) {
 
 	t.Run("does not delete registry when still in use", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
+
+		registry := container.Summary{
+			ID: "registry-id",
+			Labels: map[string]string{
+				RegistryLabelKey:        "docker.io",
+				RegistryClusterLabelKey: "test-cluster,other-cluster",
+			},
+			State: "running",
+		}
 
 		// Mock list registry containers with running state (2 times - initial list, IsRegistryInUse)
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry-id",
-					Labels: map[string]string{
-						RegistryLabelKey:        "docker.io",
-						RegistryClusterLabelKey: "test-cluster,other-cluster",
-					},
-					State: "running",
-				},
-			}, nil).
-			Times(2)
+		mockClient.EXPECT().ContainerList(ctx, mock.Anything).Return([]container.Summary{registry}, nil).Times(2)
 
 		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", true)
 
@@ -232,15 +245,9 @@ func TestDeleteRegistry(t *testing.T) {
 
 	t.Run("returns error when registry not found", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		// Mock registry doesn't exist
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{}, nil).
-			Once()
+		mockRegistryNotExists(mockClient, ctx)
 
 		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false)
 
@@ -305,17 +312,12 @@ func TestIsRegistryInUse(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
+		registry := mockRegistryContainer("registry-id", "docker.io", "", "running")
+		registry.Labels = map[string]string{RegistryLabelKey: "docker.io"} // Simplified labels
+
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry-id",
-					Labels: map[string]string{
-						RegistryLabelKey: "docker.io",
-					},
-					State: "running",
-				},
-			}, nil).
+			Return([]container.Summary{registry}, nil).
 			Once()
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
@@ -328,17 +330,12 @@ func TestIsRegistryInUse(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
+		registry := mockRegistryContainer("registry-id", "docker.io", "", "exited")
+		registry.Labels = map[string]string{RegistryLabelKey: "docker.io"}
+
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry-id",
-					Labels: map[string]string{
-						RegistryLabelKey: "docker.io",
-					},
-					State: "exited",
-				},
-			}, nil).
+			Return([]container.Summary{registry}, nil).
 			Once()
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
@@ -351,10 +348,7 @@ func TestIsRegistryInUse(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{}, nil).
-			Once()
+		mockRegistryNotExists(mockClient, ctx)
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
