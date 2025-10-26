@@ -1,222 +1,113 @@
-package kindprovisioner
+package kindprovisioner_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
+	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-func TestParseContainerdConfig(t *testing.T) {
-	tests := []struct {
-		name     string
-		patch    string
-		expected map[string][]string
-	}{
-		{
-			name: "standard single endpoint",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000"]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "multiple mirrors",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
-  endpoint = ["http://localhost:5001"]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-				"gcr.io":    {"http://localhost:5001"},
-			},
-		},
-		{
-			name: "multiple endpoints inline",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000", "http://localhost:5001"]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000", "http://localhost:5001"},
-			},
-		},
-		{
-			name: "multiline array format",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = [
-    "http://localhost:5000",
-    "http://localhost:5001"
-  ]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000", "http://localhost:5001"},
-			},
-		},
-		{
-			name: "extra whitespace",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-    endpoint   =   [  "http://localhost:5000"  ]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "with comments",
-			patch: `# Mirror configuration
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  # Primary registry
-  endpoint = ["http://localhost:5000"]`,
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "registry with port and path",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.example.com:5000"]
-  endpoint = ["http://mirror.example.com:8080/v2"]`,
-			expected: map[string][]string{
-				"registry.example.com:5000": {"http://mirror.example.com:8080/v2"},
-			},
-		},
-		{
-			name:     "empty config",
-			patch:    ``,
-			expected: map[string][]string{},
-		},
-		{
-			name: "no endpoint field",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  # Missing endpoint`,
-			expected: map[string][]string{},
-		},
-		{
-			name: "malformed endpoint",
-			patch: `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = [not-a-valid-url]`,
-			expected: map[string][]string{},
-		},
+func TestMain(m *testing.M) {
+	v := m.Run()
+
+	// After all tests have run, clean up snapshots
+	_, _ = snaps.Clean(m)
+
+	os.Exit(v)
+}
+
+// loadTestData loads test data from testdata directory.
+func loadTestData(t *testing.T, filename string) string {
+	t.Helper()
+	//nolint:gosec // Test data files are safe
+	data, err := os.ReadFile(filepath.Join("testdata", filename))
+	if err != nil {
+		t.Fatalf("failed to load test data %s: %v", filename, err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := parseContainerdConfig(tt.patch)
-			assert.Equal(t, tt.expected, result, "Parsed mirrors should match expected")
+	return string(data)
+}
+
+func TestParseContainerdConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		inputFile string
+	}{
+		{name: "standard single endpoint", inputFile: "containerd_single_endpoint.toml"},
+		{name: "multiple mirrors", inputFile: "containerd_multiple_mirrors.toml"},
+		{name: "multiple endpoints inline", inputFile: "containerd_multiple_endpoints_inline.toml"},
+		{name: "multiline array format", inputFile: "containerd_multiline_array.toml"},
+		{name: "extra whitespace", inputFile: "containerd_extra_whitespace.toml"},
+		{name: "with comments", inputFile: "containerd_with_comments.toml"},
+		{name: "registry with port and path", inputFile: "containerd_registry_with_port.toml"},
+		{name: "empty config", inputFile: "containerd_empty.toml"},
+		{name: "no endpoint field", inputFile: "containerd_no_endpoint.toml"},
+		{name: "malformed endpoint", inputFile: "containerd_malformed.toml"},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			patch := loadTestData(t, testCase.inputFile)
+			result := kindprovisioner.ParseContainerdConfigForTesting(patch)
+			snaps.MatchSnapshot(t, result)
 		})
 	}
 }
 
 func TestExtractRegistriesFromKind(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		name     string
-		config   *v1alpha4.Cluster
-		expected []RegistryInfo
+		name      string
+		inputFile string
+		isEmpty   bool
 	}{
+		{name: "single registry", inputFile: "containerd_single_endpoint.toml"},
+		{name: "multiple registries", inputFile: "containerd_multiple_mirrors.toml"},
 		{
-			name: "single registry",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000"]`,
-				},
-			},
-			expected: []RegistryInfo{
-				{
-					Name:     "docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
+			name:      "duplicate registries in multiple patches",
+			inputFile: "containerd_duplicate_patches.toml",
 		},
 		{
-			name: "multiple registries",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000"]
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
-  endpoint = ["http://localhost:5001"]`,
-				},
-			},
-			expected: []RegistryInfo{
-				{
-					Name:     "docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-				{
-					Name:     "gcr-io",
-					Upstream: "https://gcr.io",
-					Port:     5001,
-				},
-			},
+			name:      "registry with special characters",
+			inputFile: "containerd_registry_special_chars.toml",
 		},
+		{name: "no containerd patches", isEmpty: true},
 		{
-			name: "duplicate registries in multiple patches",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000"]`,
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5001"]`,
-				},
-			},
-			expected: []RegistryInfo{
-				{
-					Name:     "docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
-		},
-		{
-			name: "registry with special characters",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."registry.example.com:5000/path"]
-  endpoint = ["http://mirror.example.com"]`,
-				},
-			},
-			expected: []RegistryInfo{
-				{
-					Name:     "registry-example-com-5000-path",
-					Upstream: "https://registry.example.com:5000/path",
-					Port:     5000,
-				},
-			},
-		},
-		{
-			name: "no containerd patches",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{},
-			},
-			expected: nil,
-		},
-		{
-			name: "multiple endpoints uses first",
-			config: &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{
-					`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://localhost:5000", "http://localhost:5001"]`,
-				},
-			},
-			expected: []RegistryInfo{
-				{
-					Name:     "docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
+			name:      "multiple endpoints uses first",
+			inputFile: "containerd_multiple_endpoints_inline.toml",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := extractRegistriesFromKind(tt.config)
-			assert.Equal(t, tt.expected, result, "Extracted registries should match expected")
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			var config *v1alpha4.Cluster
+			if testCase.isEmpty {
+				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{}}
+			} else {
+				patch := loadTestData(t, testCase.inputFile)
+				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{patch}}
+			}
+
+			result := kindprovisioner.ExtractRegistriesFromKindForTesting(config)
+			snaps.MatchSnapshot(t, result)
 		})
 	}
 }
 
 func TestExtractQuotedString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -251,7 +142,9 @@ func TestExtractQuotedString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := extractQuotedString(tt.input)
+			t.Parallel()
+
+			result := kindprovisioner.ExtractQuotedStringForTesting(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

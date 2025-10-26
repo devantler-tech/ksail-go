@@ -116,27 +116,6 @@ func cleanupMirrorRegistries(
 		return nil
 	}
 
-	// Create Docker client
-	dockerClient, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
-	}
-
-	defer func() {
-		closeErr := dockerClient.Close()
-		if closeErr != nil {
-			// Log error but don't fail the operation
-			notify.WriteMessage(notify.Message{
-				Type:    notify.WarningType,
-				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
-				Writer:  cmd.OutOrStdout(),
-			})
-		}
-	}()
-
 	// Display activity message
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
@@ -150,17 +129,19 @@ func cleanupMirrorRegistries(
 		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", err)
 	}
 
-	// Clean up registries for Kind (cluster name comes from kindConfig.Name)
-	err = kindprovisioner.CleanupRegistries(
-		cmd.Context(),
-		kindConfig,
-		kindConfig.Name,
-		dockerClient,
-		deleteVolumes,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to cleanup registries: %w", err)
-	}
+	// Clean up registries using Docker client
+	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+		err := kindprovisioner.CleanupRegistries(
+			cmd.Context(),
+			kindConfig,
+			kindConfig.Name,
+			dockerClient,
+			deleteVolumes,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to cleanup registries: %w", err)
+		}
 
-	return nil
+		return nil
+	})
 }

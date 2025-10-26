@@ -437,7 +437,7 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 		port := extractPortFromURL(upstream)
 
 		// Generate distribution-prefixed container name: kind-{name}
-		containerName := fmt.Sprintf("kind-%s", name)
+		containerName := "kind-" + name
 
 		// Infer registry host from name (e.g., docker-io -> docker.io)
 		registryHost := inferRegistryHost(name)
@@ -461,8 +461,6 @@ func inferRegistryHost(name string) string {
 	// Handle common cases: docker-io -> docker.io, ghcr-io -> ghcr.io
 	return strings.ReplaceAll(name, "-", ".")
 }
-
-
 
 // extractPortFromURL extracts the port from a URL string.
 // Returns "5000" as default if no port is found.
@@ -500,13 +498,14 @@ func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		// For now, we'll use the first mirror as the primary registry
 		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
 		mirrorSpec := s.MirrorRegistries[0]
+
 		parts := splitMirrorSpec(mirrorSpec)
 		if parts != nil {
 			name := parts[0]
 			// upstream := parts[1] // TODO: Use upstream for proxy configuration
 
 			// Generate distribution-prefixed registry name
-			registryName := fmt.Sprintf("k3d-%s", name)
+			registryName := "k3d-" + name
 
 			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
 				Name: registryName,

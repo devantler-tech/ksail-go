@@ -75,6 +75,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	if err != nil {
 		return fmt.Errorf("failed to check if registry exists: %w", err)
 	}
+
 	if exists {
 		// Add cluster label to existing registry
 		return rm.addClusterLabel(ctx, config.Name, config.ClusterName)
@@ -87,7 +88,8 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	}
 
 	// Create volume for registry data
-	volumeName := fmt.Sprintf("ksail-registry-%s", config.Name)
+	volumeName := "ksail-registry-" + config.Name
+
 	err = rm.createVolume(ctx, volumeName, config.Name)
 	if err != nil {
 		return fmt.Errorf("failed to create registry volume: %w", err)
@@ -98,7 +100,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	hostConfig := rm.buildHostConfig(config, volumeName)
 	networkConfig := rm.buildNetworkConfig(config)
 
-	containerName := fmt.Sprintf("ksail-registry-%s", config.Name)
+	containerName := "ksail-registry-" + config.Name
 
 	// Create container
 	resp, err := rm.client.ContainerCreate(
@@ -130,7 +132,7 @@ func (rm *RegistryManager) DeleteRegistry(
 	name, clusterName string,
 	deleteVolume bool,
 ) error {
-	containerName := fmt.Sprintf("ksail-registry-%s", name)
+	containerName := "ksail-registry-" + name
 
 	// Get container to check labels
 	containers, err := rm.listRegistryContainers(ctx, name)
@@ -145,7 +147,8 @@ func (rm *RegistryManager) DeleteRegistry(
 	registryContainer := containers[0]
 
 	// Remove cluster label
-	if err := rm.removeClusterLabel(ctx, containerName, clusterName); err != nil {
+	err = rm.removeClusterLabel(ctx, containerName, clusterName)
+	if err != nil {
 		return fmt.Errorf("failed to remove cluster label: %w", err)
 	}
 
@@ -161,18 +164,22 @@ func (rm *RegistryManager) DeleteRegistry(
 	}
 
 	// Stop and remove container
-	if err := rm.client.ContainerStop(ctx, registryContainer.ID, container.StopOptions{}); err != nil {
+	err = rm.client.ContainerStop(ctx, registryContainer.ID, container.StopOptions{})
+	if err != nil {
 		return fmt.Errorf("failed to stop registry container: %w", err)
 	}
 
-	if err := rm.client.ContainerRemove(ctx, registryContainer.ID, container.RemoveOptions{}); err != nil {
+	err = rm.client.ContainerRemove(ctx, registryContainer.ID, container.RemoveOptions{})
+	if err != nil {
 		return fmt.Errorf("failed to remove registry container: %w", err)
 	}
 
 	// Remove volume if requested
 	if deleteVolume {
-		volumeName := fmt.Sprintf("ksail-registry-%s", name)
-		if err := rm.client.VolumeRemove(ctx, volumeName, false); err != nil {
+		volumeName := "ksail-registry-" + name
+
+		err = rm.client.VolumeRemove(ctx, volumeName, false)
+		if err != nil {
 			return fmt.Errorf("failed to remove registry volume: %w", err)
 		}
 	}
@@ -252,10 +259,15 @@ func (rm *RegistryManager) listRegistryContainers(
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("label", fmt.Sprintf("%s=%s", RegistryLabelKey, name))
 
-	return rm.client.ContainerList(ctx, container.ListOptions{
+	containers, err := rm.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filterArgs,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list registry containers: %w", err)
+	}
+
+	return containers, nil
 }
 
 func (rm *RegistryManager) listAllRegistryContainers(
@@ -264,10 +276,15 @@ func (rm *RegistryManager) listAllRegistryContainers(
 	filterArgs := filters.NewArgs()
 	filterArgs.Add("label", RegistryLabelKey)
 
-	return rm.client.ContainerList(ctx, container.ListOptions{
+	containers, err := rm.client.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filterArgs,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list all registry containers: %w", err)
+	}
+
+	return containers, nil
 }
 
 func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
@@ -282,8 +299,10 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to pull registry image: %w", err)
 	}
+
 	defer func() {
-		if closeErr := reader.Close(); closeErr != nil {
+		closeErr := reader.Close()
+		if closeErr != nil {
 			err = fmt.Errorf("failed to close image pull reader: %w", closeErr)
 		}
 	}()
@@ -324,7 +343,7 @@ func (rm *RegistryManager) createVolume(
 func (rm *RegistryManager) buildContainerConfig(config RegistryConfig) *container.Config {
 	env := []string{}
 	if config.UpstreamURL != "" {
-		env = append(env, fmt.Sprintf("REGISTRY_PROXY_REMOTEURL=%s", config.UpstreamURL))
+		env = append(env, "REGISTRY_PROXY_REMOTEURL="+config.UpstreamURL)
 	}
 
 	return &container.Config{
