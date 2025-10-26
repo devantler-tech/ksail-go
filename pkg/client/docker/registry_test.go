@@ -28,6 +28,7 @@ func setupTestRegistryManager(
 	mockClient := docker.NewMockAPIClient(t)
 	manager, err := docker.NewRegistryManager(mockClient)
 	require.NoError(t, err)
+
 	ctx := context.Background()
 
 	return mockClient, manager, ctx
@@ -150,7 +151,6 @@ func TestNewRegistryManager(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, manager)
-		assert.Equal(t, mockClient, mockClient)
 	})
 
 	t.Run("error with nil client", func(t *testing.T) {
