@@ -349,27 +349,6 @@ func setupMirrorRegistries(
 		return nil
 	}
 
-	// Create Docker client
-	dockerClient, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
-	}
-
-	defer func() {
-		closeErr := dockerClient.Close()
-		if closeErr != nil {
-			// Log error but don't fail the operation
-			notify.WriteMessage(notify.Message{
-				Type:    notify.WarningType,
-				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
-				Writer:  cmd.OutOrStdout(),
-			})
-		}
-	}()
-
 	// Start timing for registry setup
 	deps.Timer.NewStage()
 
@@ -382,28 +361,30 @@ func setupMirrorRegistries(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	// Set up registries for Kind with detailed activity messages
-	err = kindprovisioner.SetupRegistries(
-		cmd.Context(),
-		kindConfig,
-		kindConfig.Name,
-		dockerClient,
-		cmd.OutOrStdout(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to setup registries: %w", err)
-	}
+	// Set up registries using Docker client
+	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+		err := kindprovisioner.SetupRegistries(
+			cmd.Context(),
+			kindConfig,
+			kindConfig.Name,
+			dockerClient,
+			cmd.OutOrStdout(),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to setup registries: %w", err)
+		}
 
-	// Display success message with timing
-	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "mirror registries created",
-		Timer:      deps.Timer,
-		Writer:     cmd.OutOrStdout(),
-		MultiStage: true,
+		// Display success message with timing
+		notify.WriteMessage(notify.Message{
+			Type:       notify.SuccessType,
+			Content:    "mirror registries created",
+			Timer:      deps.Timer,
+			Writer:     cmd.OutOrStdout(),
+			MultiStage: true,
+		})
+
+		return nil
 	})
-
-	return nil
 }
 
 // connectRegistriesToKindNetwork connects registry containers to the Kind network after cluster creation.

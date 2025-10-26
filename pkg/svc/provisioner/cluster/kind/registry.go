@@ -13,6 +13,13 @@ import (
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const (
+	// Default port for registry services.
+	defaultRegistryPort = 5000
+	// Expected parts count when splitting endpoint URLs and host:port strings.
+	expectedPartCount = 2
+)
+
 // RegistryInfo holds information about a registry to be created.
 type RegistryInfo struct {
 	Name     string
@@ -186,7 +193,7 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 			var name string
 
 			var upstream string
-			port := 5000 + portOffset
+			port := defaultRegistryPort + portOffset
 
 			if len(endpoints) > 0 {
 				endpoint := endpoints[0]
@@ -194,13 +201,13 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 				if strings.HasPrefix(endpoint, "http://kind-") ||
 					strings.HasPrefix(endpoint, "https://kind-") {
 					parts := strings.Split(endpoint, "//")
-					if len(parts) == 2 {
+					if len(parts) == expectedPartCount {
 						hostPort := strings.Split(parts[1], ":")
 						if len(hostPort) >= 1 {
 							fullName := hostPort[0] // "kind-docker-io"
 							name = fullName         // Keep full distribution-prefixed name
 						}
-						if len(hostPort) == 2 {
+						if len(hostPort) == expectedPartCount {
 							if extractedPort := extractPortFromEndpoint(endpoint); extractedPort > 0 {
 								port = extractedPort
 							}
