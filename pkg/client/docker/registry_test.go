@@ -290,23 +290,20 @@ func TestListRegistries(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry1",
-					Labels: map[string]string{
-						docker.RegistryLabelKey: "docker.io",
-					},
+		mockContainerListOnce(ctx, mockClient, []container.Summary{
+			{
+				ID: "registry1",
+				Labels: map[string]string{
+					docker.RegistryLabelKey: "docker.io",
 				},
-				{
-					ID: "registry2",
-					Labels: map[string]string{
-						docker.RegistryLabelKey: "quay.io",
-					},
+			},
+			{
+				ID: "registry2",
+				Labels: map[string]string{
+					docker.RegistryLabelKey: "quay.io",
 				},
-			}, nil).
-			Once()
+			},
+		})
 
 		registries, err := manager.ListRegistries(ctx)
 
@@ -320,10 +317,7 @@ func TestListRegistries(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{}, nil).
-			Once()
+		mockRegistryNotExists(ctx, mockClient)
 
 		registries, err := manager.ListRegistries(ctx)
 
@@ -387,23 +381,20 @@ func TestGetRegistryPort(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{
-				{
-					ID: "registry-id",
-					Labels: map[string]string{
-						docker.RegistryLabelKey: "docker.io",
-					},
-					Ports: []container.Port{
-						{
-							PrivatePort: 5000,
-							PublicPort:  5000,
-						},
+		mockContainerListOnce(ctx, mockClient, []container.Summary{
+			{
+				ID: "registry-id",
+				Labels: map[string]string{
+					docker.RegistryLabelKey: "docker.io",
+				},
+				Ports: []container.Port{
+					{
+						PrivatePort: 5000,
+						PublicPort:  5000,
 					},
 				},
-			}, nil).
-			Once()
+			},
+		})
 
 		port, err := manager.GetRegistryPort(ctx, "docker.io")
 
@@ -415,10 +406,7 @@ func TestGetRegistryPort(t *testing.T) {
 		t.Parallel()
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
-		mockClient.EXPECT().
-			ContainerList(ctx, mock.Anything).
-			Return([]container.Summary{}, nil).
-			Once()
+		mockRegistryNotExists(ctx, mockClient)
 
 		port, err := manager.GetRegistryPort(ctx, "docker.io")
 
