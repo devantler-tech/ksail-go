@@ -876,3 +876,35 @@ func setupExistingKSailFile(
 
 	return tempDir, buffer, scaffolderInstance, mocks
 }
+
+func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
+t.Parallel()
+
+scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
+scaffolder.MirrorRegistries = []string{}
+
+config := scaffolder.GenerateK3dRegistryConfig()
+assert.Empty(t, config.Use)
+assert.Nil(t, config.Create)
+}
+
+func TestGenerateK3dRegistryConfig_InvalidSpec(t *testing.T) {
+t.Parallel()
+
+scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
+scaffolder.MirrorRegistries = []string{"invalid"}
+
+config := scaffolder.GenerateK3dRegistryConfig()
+assert.Empty(t, config.Use)
+assert.Nil(t, config.Create)
+}
+
+func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
+t.Parallel()
+
+scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
+scaffolder.MirrorRegistries = []string{"invalid", "=missing", "missing="}
+
+patches := scaffolder.GenerateContainerdPatches()
+assert.Empty(t, patches)
+}
