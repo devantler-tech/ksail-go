@@ -71,10 +71,19 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 	}{
 		{name: "single registry", inputFile: "containerd_single_endpoint.toml"},
 		{name: "multiple registries", inputFile: "containerd_multiple_mirrors.toml"},
-		{name: "duplicate registries in multiple patches", inputFile: "containerd_duplicate_patches.toml"},
-		{name: "registry with special characters", inputFile: "containerd_registry_special_chars.toml"},
+		{
+			name:      "duplicate registries in multiple patches",
+			inputFile: "containerd_duplicate_patches.toml",
+		},
+		{
+			name:      "registry with special characters",
+			inputFile: "containerd_registry_special_chars.toml",
+		},
 		{name: "no containerd patches", isEmpty: true},
-		{name: "multiple endpoints uses first", inputFile: "containerd_multiple_endpoints_inline.toml"},
+		{
+			name:      "multiple endpoints uses first",
+			inputFile: "containerd_multiple_endpoints_inline.toml",
+		},
 	}
 
 	for _, testCase := range tests {
