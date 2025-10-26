@@ -18,6 +18,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -880,10 +881,10 @@ func setupExistingKSailFile(
 func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
 	t.Parallel()
 
-	scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
-	scaffolder.MirrorRegistries = []string{}
+	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	scaffolderInstance.MirrorRegistries = []string{}
 
-	config := scaffolder.GenerateK3dRegistryConfig()
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
 	assert.Empty(t, config.Use)
 	assert.Nil(t, config.Create)
 }
@@ -891,10 +892,10 @@ func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
 func TestGenerateK3dRegistryConfig_InvalidSpec(t *testing.T) {
 	t.Parallel()
 
-	scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
-	scaffolder.MirrorRegistries = []string{"invalid"}
+	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	scaffolderInstance.MirrorRegistries = []string{"invalid"}
 
-	config := scaffolder.GenerateK3dRegistryConfig()
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
 	assert.Empty(t, config.Use)
 	assert.Nil(t, config.Create)
 }
@@ -902,9 +903,9 @@ func TestGenerateK3dRegistryConfig_InvalidSpec(t *testing.T) {
 func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
 	t.Parallel()
 
-	scaffolder := NewScaffolder(v1alpha1.NewCluster(), &bytes.Buffer{})
-	scaffolder.MirrorRegistries = []string{"invalid", "=missing", "missing="}
+	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	scaffolderInstance.MirrorRegistries = []string{"invalid", "=missing", "missing="}
 
-	patches := scaffolder.GenerateContainerdPatches()
+	patches := scaffolderInstance.GenerateContainerdPatches()
 	assert.Empty(t, patches)
 }

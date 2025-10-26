@@ -10,7 +10,6 @@ import (
 	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -86,7 +85,7 @@ func mockContainerCreateStart(
 			ctx,
 			mock.MatchedBy(func(config *container.Config) bool { return config != nil }),
 			mock.MatchedBy(func(config *container.HostConfig) bool { return config != nil }),
-			mock.MatchedBy(func(config *network.NetworkingConfig) bool { return config != nil }),
+			mock.Anything, // NetworkingConfig can be nil
 			mock.Anything,
 			containerName,
 		).
@@ -794,12 +793,12 @@ func TestGetRegistryPort_NotFound(t *testing.T) {
 	assert.Equal(t, docker.ErrRegistryNotFound, err)
 }
 
-// errorReader implements io.Reader that returns an error
+// errorReader implements io.Reader that returns an error.
 type errorReader struct {
 	err error
 }
 
-func (e *errorReader) Read(_ []byte) (n int, err error) {
+func (e *errorReader) Read(_ []byte) (int, error) {
 	return 0, e.err
 }
 
