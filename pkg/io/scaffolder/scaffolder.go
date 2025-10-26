@@ -1,4 +1,6 @@
 // Package scaffolder provides utilities for scaffolding KSail project files and configuration.
+//
+//nolint:funcorder // Exported helper methods placed with related code for readability
 package scaffolder
 
 import (
@@ -315,7 +317,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 	// Add containerd config patches for mirror registries
 	if len(s.MirrorRegistries) > 0 {
-		kindConfig.ContainerdConfigPatches = s.generateContainerdPatches()
+		kindConfig.ContainerdConfigPatches = s.GenerateContainerdPatches()
 	}
 
 	opts := yamlgenerator.Options{
@@ -388,7 +390,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 
 	// Add registry configuration for mirror registries
 	if len(s.MirrorRegistries) > 0 {
-		config.Registries = s.generateK3dRegistryConfig()
+		config.Registries = s.GenerateK3dRegistryConfig()
 	}
 
 	return config
@@ -418,10 +420,10 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 	)
 }
 
-// generateContainerdPatches generates containerd config patches for Kind mirror registries.
+// GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
 // Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
 // Container names are generated as "kind-{name}" for Kind network DNS resolution.
-func (s *Scaffolder) generateContainerdPatches() []string {
+func (s *Scaffolder) GenerateContainerdPatches() []string {
 	patches := make([]string, 0, len(s.MirrorRegistries))
 
 	for _, mirrorSpec := range s.MirrorRegistries {
@@ -484,10 +486,10 @@ func extractPortFromURL(urlStr string) string {
 	return "5000"
 }
 
-// generateK3dRegistryConfig generates K3d registry configuration for mirror registries.
+// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
 // Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
 // K3d requires one registry per proxy, so we generate multiple create configs.
-func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
+func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
 	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
 		Use: []string{},
 	}
