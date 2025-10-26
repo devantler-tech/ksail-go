@@ -160,6 +160,7 @@ func TestSetupRegistries_NilKindConfig(t *testing.T) {
 
 	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
+
 	var buf bytes.Buffer
 
 	err := kindprovisioner.SetupRegistries(ctx, nil, "test-cluster", mockClient, &buf)
@@ -171,6 +172,7 @@ func TestSetupRegistries_NoRegistries(t *testing.T) {
 
 	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
+
 	var buf bytes.Buffer
 
 	kindConfig := &v1alpha4.Cluster{
@@ -186,6 +188,7 @@ func TestConnectRegistriesToNetwork_NilKindConfig(t *testing.T) {
 
 	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
+
 	var buf bytes.Buffer
 
 	err := kindprovisioner.ConnectRegistriesToNetwork(ctx, nil, mockClient, &buf)
@@ -197,6 +200,7 @@ func TestConnectRegistriesToNetwork_NoRegistries(t *testing.T) {
 
 	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
+
 	var buf bytes.Buffer
 
 	kindConfig := &v1alpha4.Cluster{
@@ -296,10 +300,12 @@ func formatEndpoints(endpoints []string) string {
 	if len(endpoints) == 0 {
 		return "[]"
 	}
+
 	quoted := make([]string, len(endpoints))
 	for i, ep := range endpoints {
 		quoted[i] = fmt.Sprintf(`"%s"`, ep)
 	}
+
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
 

@@ -21,6 +21,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -647,6 +648,7 @@ func TestAddCiliumRepository_Success(t *testing.T) {
 	// This test requires a real Helm client, so we expect an error
 	// but we're testing that the function exists and can be called
 	_ = err
+
 	assert.Equal(t, 0, helmClient.addRepoCalls) // Our fake client wasn't used
 }
 
@@ -657,6 +659,7 @@ func TestAddCiliumRepository_Error(t *testing.T) {
 	// We can't easily test the actual error without a real Helm client
 	// so we verify the function signature is correct
 	var helmClient *helm.Client
+
 	err := addCiliumRepository(context.Background(), helmClient)
 
 	// Expect an error when client is nil
@@ -681,7 +684,7 @@ func TestExecuteClusterCreation_Success(t *testing.T) {
 
 	err := executeClusterCreation(cmd, clusterCfg, deps)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, provisioner.CreateCalls)
 	assert.Contains(t, out.String(), "Create cluster")
 }
@@ -705,6 +708,6 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 
 	err := executeClusterCreation(cmd, clusterCfg, deps)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create cluster")
 }

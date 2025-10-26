@@ -1104,6 +1104,7 @@ func TestIsFieldEmptyForTesting_NilPointer(t *testing.T) {
 	t.Parallel()
 
 	var ptr *string
+
 	result := configmanager.IsFieldEmptyForTesting(ptr)
 	assert.True(t, result)
 }

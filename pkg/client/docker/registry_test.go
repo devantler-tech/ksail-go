@@ -794,12 +794,12 @@ func TestGetRegistryPort_NotFound(t *testing.T) {
 	assert.Equal(t, docker.ErrRegistryNotFound, err)
 }
 
-// errorReader implements io.Reader that returns an error
+// errorReader implements io.Reader that returns an error.
 type errorReader struct {
 	err error
 }
 
-func (e *errorReader) Read(_ []byte) (n int, err error) {
+func (e *errorReader) Read(_ []byte) (int, error) {
 	return 0, e.err
 }
 
