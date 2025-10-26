@@ -86,7 +86,7 @@ func mockContainerCreateStart(
 			ctx,
 			mock.MatchedBy(func(config *container.Config) bool { return config != nil }),
 			mock.MatchedBy(func(config *container.HostConfig) bool { return config != nil }),
-			mock.MatchedBy(func(config *network.NetworkingConfig) bool { return config != nil }),
+			mock.Anything, // NetworkingConfig can be nil
 			mock.Anything,
 			containerName,
 		).

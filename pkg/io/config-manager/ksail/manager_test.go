@@ -1082,6 +1082,8 @@ func writeFile(t *testing.T, path, contents string) {
 	err := os.WriteFile(path, []byte(contents), 0o600)
 	if err != nil {
 		t.Fatalf("failed to write %s: %v", path, err)
+	}
+}
 
 func TestIsFieldEmptyForTesting_Nil(t *testing.T) {
 t.Parallel()
