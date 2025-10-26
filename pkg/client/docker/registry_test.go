@@ -18,11 +18,19 @@ import (
 
 var errNotFound = errors.New("not found")
 
+// setupTestRegistryManager creates a test setup with mock client, manager, and context.
+func setupTestRegistryManager(t *testing.T) (*MockAPIClient, *RegistryManager, context.Context) {
+	t.Helper()
+	mockClient := NewMockAPIClient(t)
+	manager := &RegistryManager{client: mockClient}
+	ctx := context.Background()
+	return mockClient, manager, ctx
+}
+
 func TestNewRegistryManager(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success with valid client", func(t *testing.T) {
-		t.Parallel()
 		t.Parallel()
 
 		mockClient := NewMockAPIClient(t)
@@ -35,7 +43,6 @@ func TestNewRegistryManager(t *testing.T) {
 	})
 
 	t.Run("error with nil client", func(t *testing.T) {
-		t.Parallel()
 		t.Parallel()
 
 		manager, err := NewRegistryManager(nil)
@@ -50,7 +57,6 @@ func TestCreateRegistry(t *testing.T) {
 	t.Parallel()
 
 	t.Run("creates new registry successfully", func(t *testing.T) {
-		t.Parallel()
 		t.Parallel()
 
 		mockClient := NewMockAPIClient(t)
@@ -247,9 +253,7 @@ func TestListRegistries(t *testing.T) {
 
 	t.Run("lists all registries", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -279,9 +283,7 @@ func TestListRegistries(t *testing.T) {
 
 	t.Run("returns empty list when no registries", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -300,9 +302,7 @@ func TestIsRegistryInUse(t *testing.T) {
 
 	t.Run("returns true when registry is running", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -325,9 +325,7 @@ func TestIsRegistryInUse(t *testing.T) {
 
 	t.Run("returns false when registry is stopped", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -350,9 +348,7 @@ func TestIsRegistryInUse(t *testing.T) {
 
 	t.Run("returns false when registry not found", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -371,9 +367,7 @@ func TestGetRegistryPort(t *testing.T) {
 
 	t.Run("returns port for existing registry", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
@@ -401,9 +395,7 @@ func TestGetRegistryPort(t *testing.T) {
 
 	t.Run("returns error when registry not found", func(t *testing.T) {
 		t.Parallel()
-		mockClient := NewMockAPIClient(t)
-		manager := &RegistryManager{client: mockClient}
-		ctx := context.Background()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockClient.EXPECT().
 			ContainerList(ctx, mock.Anything).
