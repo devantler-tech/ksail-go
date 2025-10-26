@@ -29,7 +29,7 @@ func TestWithDockerClient_Success(t *testing.T) {
 	// Note: This test requires Docker to be available in the environment
 	// If Docker is not available, the test will fail at client creation
 	err := withDockerClient(cmd, operation)
-	
+
 	// We can't guarantee Docker is available in all test environments
 	// so we accept both success and the specific error about Docker not being available
 	if err != nil {
@@ -53,7 +53,7 @@ func TestWithDockerClient_OperationError(t *testing.T) {
 	}
 
 	err := withDockerClient(cmd, operation)
-	
+
 	// If Docker is available, we should get the operation error
 	// If Docker is not available, we'll get a Docker connection error
 	if err != nil && errors.Is(err, expectedErr) {
@@ -68,7 +68,11 @@ func TestGenerateContainerdPatchesFromSpecs_SingleRegistry(t *testing.T) {
 	patches := generateContainerdPatchesFromSpecs(specs)
 
 	assert.Len(t, patches, 1)
-	assert.Contains(t, patches[0], `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]`)
+	assert.Contains(
+		t,
+		patches[0],
+		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]`,
+	)
 	assert.Contains(t, patches[0], `endpoint = ["http://localhost:5000"]`)
 }
 
@@ -90,10 +94,10 @@ func TestGenerateContainerdPatchesFromSpecs_InvalidSpecs(t *testing.T) {
 	t.Parallel()
 
 	specs := []string{
-		"invalid",              // Missing '='
-		"=http://localhost",    // Empty registry
-		"registry=",            // Empty endpoint
-		"",                     // Empty string
+		"invalid",           // Missing '='
+		"=http://localhost", // Empty registry
+		"registry=",         // Empty endpoint
+		"",                  // Empty string
 	}
 	patches := generateContainerdPatchesFromSpecs(specs)
 
