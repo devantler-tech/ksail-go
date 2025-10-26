@@ -309,6 +309,26 @@ func formatEndpoints(endpoints []string) string {
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
+// testRegistryExtraction is a helper to test registry extraction with empty endpoints.
+func testRegistryExtraction(
+	t *testing.T,
+	host string,
+	assertFunc func(*testing.T, kindprovisioner.RegistryInfo),
+) {
+	t.Helper()
+
+	patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
+  endpoint = []`, host)
+
+	config := &v1alpha4.Cluster{
+		ContainerdConfigPatches: []string{patch},
+	}
+
+	registries := kindprovisioner.ExtractRegistriesFromKindForTesting(config)
+	assert.Len(t, registries, 1)
+	assertFunc(t, registries[0])
+}
+
 func TestGenerateUpstreamURL(t *testing.T) {
 	t.Parallel()
 
@@ -343,17 +363,14 @@ func TestGenerateUpstreamURL(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Test through extractRegistriesFromKind
-			patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = []`, testCase.host)
-
-			config := &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{patch},
-			}
-
-			registries := kindprovisioner.ExtractRegistriesFromKindForTesting(config)
-			assert.Len(t, registries, 1)
-			assert.Equal(t, testCase.expected, registries[0].Upstream)
+			testRegistryExtraction(
+				t,
+				testCase.host,
+				func(t *testing.T, reg kindprovisioner.RegistryInfo) {
+					t.Helper()
+					assert.Equal(t, testCase.expected, reg.Upstream)
+				},
+			)
 		})
 	}
 }
@@ -361,49 +378,21 @@ func TestGenerateUpstreamURL(t *testing.T) {
 func TestExtractPortFromEndpoint(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
+	portExtractionTests := []struct {
 		name     string
 		endpoint string
 		expected int
 	}{
-		{
-			name:     "http with port",
-			endpoint: "http://localhost:5000",
-			expected: 5000,
-		},
-		{
-			name:     "https with port",
-			endpoint: "https://registry:5001",
-			expected: 5001,
-		},
-		{
-			name:     "with trailing slash",
-			endpoint: "http://localhost:5002/",
-			expected: 5002,
-		},
-		{
-			name:     "with path",
-			endpoint: "http://localhost:5003/v2",
-			expected: 5003,
-		},
-		{
-			name:     "no port",
-			endpoint: "http://localhost",
-			expected: 0,
-		},
-		{
-			name:     "invalid port",
-			endpoint: "http://localhost:invalid",
-			expected: 0,
-		},
-		{
-			name:     "port too high",
-			endpoint: "http://localhost:99999",
-			expected: 0,
-		},
+		{name: "http with port", endpoint: "http://localhost:5000", expected: 5000},
+		{name: "https with port", endpoint: "https://registry:5001", expected: 5001},
+		{name: "with trailing slash", endpoint: "http://localhost:5002/", expected: 5002},
+		{name: "with path", endpoint: "http://localhost:5003/v2", expected: 5003},
+		{name: "no port", endpoint: "http://localhost", expected: 0},
+		{name: "invalid port", endpoint: "http://localhost:invalid", expected: 0},
+		{name: "port too high", endpoint: "http://localhost:99999", expected: 0},
 	}
 
-	for _, testCase := range tests {
+	for _, testCase := range portExtractionTests {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -458,17 +447,14 @@ func TestGenerateNameFromHost(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Test through extractRegistriesFromKind without endpoint
-			patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = []`, testCase.host)
-
-			config := &v1alpha4.Cluster{
-				ContainerdConfigPatches: []string{patch},
-			}
-
-			registries := kindprovisioner.ExtractRegistriesFromKindForTesting(config)
-			assert.Len(t, registries, 1)
-			assert.Equal(t, testCase.expected, registries[0].Name)
+			testRegistryExtraction(
+				t,
+				testCase.host,
+				func(t *testing.T, reg kindprovisioner.RegistryInfo) {
+					t.Helper()
+					assert.Equal(t, testCase.expected, reg.Name)
+				},
+			)
 		})
 	}
 }

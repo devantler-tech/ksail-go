@@ -30,7 +30,11 @@ const (
 	testKubeconfigPath = "kubeconfig"
 )
 
-var errCiliumReadiness = errors.New("cilium readiness failed")
+var (
+	errCiliumReadiness = errors.New("cilium readiness failed")
+	errProvisionerFail = errors.New("provisioner failed")
+	errOperationFailed = errors.New("operation failed")
+)
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -696,8 +700,7 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	clusterCfg := &v1alpha1.Cluster{}
-	expectedErr := errors.New("provisioner failed")
-	provisioner := &testutils.StubProvisioner{CreateErr: expectedErr}
+	provisioner := &testutils.StubProvisioner{CreateErr: errProvisionerFail}
 	deps := shared.LifecycleDeps{
 		Timer: &testutils.RecordingTimer{},
 		Factory: &testutils.StubFactory{
