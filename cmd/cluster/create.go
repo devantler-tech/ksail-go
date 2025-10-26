@@ -333,19 +333,16 @@ func expandKubeconfigPath(kubeconfig string) (string, error) {
 	return filepath.Join(home, kubeconfig[1:]), nil
 }
 
-// setupMirrorRegistries sets up mirror registries for Kind based on the cluster configuration.
-// K3d handles registries natively through its own configuration, so no setup is needed.
-// The --mirror-registry flag can be used to add/override mirror registry configurations.
-func setupMirrorRegistries(
-	cmd *cobra.Command,
+// prepareKindConfigWithMirrors prepares the Kind config by adding mirror registry patches if needed.
+// Returns true if there are containerd patches to process, false otherwise.
+func prepareKindConfigWithMirrors(
 	clusterCfg *v1alpha1.Cluster,
-	deps shared.LifecycleDeps,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
-) error {
-	// Only Kind requires registry setup - K3d handles it natively
-	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
-		return nil
+) bool {
+	// Only for Kind distribution
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind || kindConfig == nil {
+		return false
 	}
 
 	// Check for --mirror-registry flag overrides
@@ -358,8 +355,22 @@ func setupMirrorRegistries(
 		)
 	}
 
-	// If no containerd patches, no registries to set up
-	if len(kindConfig.ContainerdConfigPatches) == 0 {
+	// Return true if there are containerd patches to process
+	return len(kindConfig.ContainerdConfigPatches) > 0
+}
+
+// setupMirrorRegistries sets up mirror registries for Kind based on the cluster configuration.
+// K3d handles registries natively through its own configuration, so no setup is needed.
+// The --mirror-registry flag can be used to add/override mirror registry configurations.
+func setupMirrorRegistries(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+) error {
+	// Prepare Kind config with mirror registries
+	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
 		return nil
 	}
 
@@ -409,58 +420,25 @@ func connectRegistriesToKindNetwork(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 ) error {
-	// Only for Kind distribution
-	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
+	// Prepare Kind config with mirror registries
+	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
 		return nil
 	}
 
-	// Check for --mirror-registry flag overrides
-	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
-	if len(mirrorRegistries) > 0 {
-		// Add containerd patches from flag
-		kindConfig.ContainerdConfigPatches = append(
-			kindConfig.ContainerdConfigPatches,
-			generateContainerdPatchesFromSpecs(mirrorRegistries)...,
+	// Connect registries to Kind network using Docker client
+	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+		err := kindprovisioner.ConnectRegistriesToNetwork(
+			cmd.Context(),
+			kindConfig,
+			dockerClient,
+			cmd.OutOrStdout(),
 		)
-	}
-
-	// If no containerd patches, no registries to connect
-	if len(kindConfig.ContainerdConfigPatches) == 0 {
-		return nil
-	}
-
-	// Create Docker client
-	dockerClient, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %w", err)
-	}
-
-	defer func() {
-		closeErr := dockerClient.Close()
-		if closeErr != nil {
-			notify.WriteMessage(notify.Message{
-				Type:    notify.WarningType,
-				Content: fmt.Sprintf("failed to close docker client: %v", closeErr),
-				Writer:  cmd.OutOrStdout(),
-			})
+		if err != nil {
+			return fmt.Errorf("failed to connect registries to network: %w", err)
 		}
-	}()
 
-	// Connect registries to Kind network
-	err = kindprovisioner.ConnectRegistriesToNetwork(
-		cmd.Context(),
-		kindConfig,
-		dockerClient,
-		cmd.OutOrStdout(),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to connect registries to network: %w", err)
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
