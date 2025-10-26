@@ -24,6 +24,7 @@ func setupTestRegistryManager(t *testing.T) (*MockAPIClient, *RegistryManager, c
 	mockClient := NewMockAPIClient(t)
 	manager := &RegistryManager{client: mockClient}
 	ctx := context.Background()
+
 	return mockClient, manager, ctx
 }
 
