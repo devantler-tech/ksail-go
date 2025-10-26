@@ -1,0 +1,12 @@
+[
+  {
+    "Name": "kind-docker-io",
+    "Upstream": "https://registry-1.docker.io",
+    "Port": 5000
+  },
+  {
+    "Name": "kind-gcr-io",
+    "Upstream": "https://gcr.io",
+    "Port": 5001
+  }
+]

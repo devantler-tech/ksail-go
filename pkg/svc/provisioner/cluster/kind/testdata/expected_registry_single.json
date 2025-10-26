@@ -1,0 +1,7 @@
+[
+  {
+    "Name": "kind-docker-io",
+    "Upstream": "https://registry-1.docker.io",
+    "Port": 5000
+  }
+]

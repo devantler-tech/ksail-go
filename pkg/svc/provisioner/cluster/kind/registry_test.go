@@ -1,6 +1,7 @@
 package kindprovisioner
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,161 +20,79 @@ func loadTestData(t *testing.T, filename string) string {
 	return string(data)
 }
 
+// loadExpectedMap loads expected map results from JSON file.
+func loadExpectedMap(t *testing.T, filename string) map[string][]string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("testdata", filename))
+	if err != nil {
+		t.Fatalf("failed to load expected data %s: %v", filename, err)
+	}
+	var result map[string][]string
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("failed to unmarshal expected data %s: %v", filename, err)
+	}
+	return result
+}
+
 func TestParseContainerdConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		file     string
-		expected map[string][]string
+		name         string
+		inputFile    string
+		expectedFile string
 	}{
-		{
-			name: "standard single endpoint",
-			file: "containerd_single_endpoint.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "multiple mirrors",
-			file: "containerd_multiple_mirrors.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-				"gcr.io":    {"http://localhost:5001"},
-			},
-		},
-		{
-			name: "multiple endpoints inline",
-			file: "containerd_multiple_endpoints_inline.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000", "http://localhost:5001"},
-			},
-		},
-		{
-			name: "multiline array format",
-			file: "containerd_multiline_array.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000", "http://localhost:5001"},
-			},
-		},
-		{
-			name: "extra whitespace",
-			file: "containerd_extra_whitespace.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "with comments",
-			file: "containerd_with_comments.toml",
-			expected: map[string][]string{
-				"docker.io": {"http://localhost:5000"},
-			},
-		},
-		{
-			name: "registry with port and path",
-			file: "containerd_registry_with_port.toml",
-			expected: map[string][]string{
-				"registry.example.com:5000": {"http://mirror.example.com:8080/v2"},
-			},
-		},
-		{
-			name:     "empty config",
-			file:     "containerd_empty.toml",
-			expected: map[string][]string{},
-		},
-		{
-			name:     "no endpoint field",
-			file:     "containerd_no_endpoint.toml",
-			expected: map[string][]string{},
-		},
-		{
-			name:     "malformed endpoint",
-			file:     "containerd_malformed.toml",
-			expected: map[string][]string{},
-		},
+		{name: "standard single endpoint", inputFile: "containerd_single_endpoint.toml", expectedFile: "expected_single_endpoint.json"},
+		{name: "multiple mirrors", inputFile: "containerd_multiple_mirrors.toml", expectedFile: "expected_multiple_mirrors.json"},
+		{name: "multiple endpoints inline", inputFile: "containerd_multiple_endpoints_inline.toml", expectedFile: "expected_multiple_endpoints.json"},
+		{name: "multiline array format", inputFile: "containerd_multiline_array.toml", expectedFile: "expected_multiple_endpoints.json"},
+		{name: "extra whitespace", inputFile: "containerd_extra_whitespace.toml", expectedFile: "expected_single_endpoint.json"},
+		{name: "with comments", inputFile: "containerd_with_comments.toml", expectedFile: "expected_single_endpoint.json"},
+		{name: "registry with port and path", inputFile: "containerd_registry_with_port.toml", expectedFile: "expected_registry_with_port.json"},
+		{name: "empty config", inputFile: "containerd_empty.toml", expectedFile: "expected_empty.json"},
+		{name: "no endpoint field", inputFile: "containerd_no_endpoint.toml", expectedFile: "expected_empty.json"},
+		{name: "malformed endpoint", inputFile: "containerd_malformed.toml", expectedFile: "expected_empty.json"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			patch := loadTestData(t, tt.file)
+			patch := loadTestData(t, tt.inputFile)
+			expected := loadExpectedMap(t, tt.expectedFile)
 			result := parseContainerdConfig(patch)
-			assert.Equal(t, tt.expected, result, "Parsed mirrors should match expected")
+			assert.Equal(t, expected, result, "Parsed mirrors should match expected")
 		})
 	}
 }
 
+// loadExpectedRegistries loads expected RegistryInfo results from JSON file.
+func loadExpectedRegistries(t *testing.T, filename string) []RegistryInfo {
+	t.Helper()
+	if filename == "" {
+		return nil
+	}
+	data, err := os.ReadFile(filepath.Join("testdata", filename))
+	if err != nil {
+		t.Fatalf("failed to load expected data %s: %v", filename, err)
+	}
+	var result []RegistryInfo
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatalf("failed to unmarshal expected data %s: %v", filename, err)
+	}
+	return result
+}
+
 func TestExtractRegistriesFromKind(t *testing.T) {
 	tests := []struct {
-		name     string
-		file     string
-		expected []RegistryInfo
+		name         string
+		inputFile    string
+		expectedFile string
 	}{
-		{
-			name: "single registry",
-			file: "containerd_single_endpoint.toml",
-			expected: []RegistryInfo{
-				{
-					Name:     "kind-docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
-		},
-		{
-			name: "multiple registries",
-			file: "containerd_multiple_mirrors.toml",
-			expected: []RegistryInfo{
-				{
-					Name:     "kind-docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-				{
-					Name:     "kind-gcr-io",
-					Upstream: "https://gcr.io",
-					Port:     5001,
-				},
-			},
-		},
-		{
-			name: "duplicate registries in multiple patches",
-			file: "containerd_duplicate_patches.toml",
-			expected: []RegistryInfo{
-				{
-					Name:     "kind-docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
-		},
-		{
-			name: "registry with special characters",
-			file: "containerd_registry_special_chars.toml",
-			expected: []RegistryInfo{
-				{
-					Name:     "kind-registry-example-com-5000-path",
-					Upstream: "https://registry.example.com:5000/path",
-					Port:     5000,
-				},
-			},
-		},
-		{
-			name:     "no containerd patches",
-			file:     "",
-			expected: nil,
-		},
-		{
-			name: "multiple endpoints uses first",
-			file: "containerd_multiple_endpoints_inline.toml",
-			expected: []RegistryInfo{
-				{
-					Name:     "kind-docker-io",
-					Upstream: "https://registry-1.docker.io",
-					Port:     5000,
-				},
-			},
-		},
+		{name: "single registry", inputFile: "containerd_single_endpoint.toml", expectedFile: "expected_registry_single.json"},
+		{name: "multiple registries", inputFile: "containerd_multiple_mirrors.toml", expectedFile: "expected_registry_multiple.json"},
+		{name: "duplicate registries in multiple patches", inputFile: "containerd_duplicate_patches.toml", expectedFile: "expected_registry_single.json"},
+		{name: "registry with special characters", inputFile: "containerd_registry_special_chars.toml", expectedFile: "expected_registry_special_chars.json"},
+		{name: "no containerd patches", inputFile: "", expectedFile: ""},
+		{name: "multiple endpoints uses first", inputFile: "containerd_multiple_endpoints_inline.toml", expectedFile: "expected_registry_single.json"},
 	}
 
 	for _, tt := range tests {
@@ -181,15 +100,16 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 			t.Parallel()
 
 			var config *v1alpha4.Cluster
-			if tt.file == "" {
+			if tt.inputFile == "" {
 				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{}}
 			} else {
-				patch := loadTestData(t, tt.file)
+				patch := loadTestData(t, tt.inputFile)
 				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{patch}}
 			}
 
+			expected := loadExpectedRegistries(t, tt.expectedFile)
 			result := extractRegistriesFromKind(config)
-			assert.Equal(t, tt.expected, result, "Extracted registries should match expected")
+			assert.Equal(t, expected, result, "Extracted registries should match expected")
 		})
 	}
 }

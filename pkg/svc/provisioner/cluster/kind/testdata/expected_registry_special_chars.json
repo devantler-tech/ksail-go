@@ -1,0 +1,7 @@
+[
+  {
+    "Name": "kind-registry-example-com-5000-path",
+    "Upstream": "https://registry.example.com:5000/path",
+    "Port": 5000
+  }
+]
