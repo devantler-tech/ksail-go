@@ -114,6 +114,94 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	return s.generateKustomizationConfig(output, force)
 }
 
+// GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
+// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+// Container names are generated as "kind-{name}" for Kind network DNS resolution.
+func (s *Scaffolder) GenerateContainerdPatches() []string {
+	patches := make([]string, 0, len(s.MirrorRegistries))
+
+	for _, mirrorSpec := range s.MirrorRegistries {
+		parts := splitMirrorSpec(mirrorSpec)
+		if parts == nil {
+			continue
+		}
+
+		name := parts[0]
+		upstream := parts[1]
+
+		// Extract port from upstream URL (default: 5000)
+		port := extractPortFromURL(upstream)
+
+		// Generate distribution-prefixed container name: kind-{name}
+		containerName := "kind-" + name
+
+		// Infer registry host from name (e.g., docker-io -> docker.io)
+		registryHost := inferRegistryHost(name)
+
+		// Use container name as endpoint for Kind network DNS resolution
+		kindEndpoint := "http://" + containerName + ":" + port
+
+		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
+  endpoint = ["%s"]`, registryHost, kindEndpoint)
+
+		patches = append(patches, patch)
+	}
+
+	return patches
+}
+
+// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
+// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+// K3d requires one registry per proxy, so we generate multiple create configs.
+func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
+	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
+		Use: []string{},
+	}
+
+	// K3d requires one registry per upstream proxy
+	// We'll create multiple registries with distribution-prefixed names: k3d-{name}
+	if len(s.MirrorRegistries) > 0 {
+		// For now, we'll use the first mirror as the primary registry
+		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
+		mirrorSpec := s.MirrorRegistries[0]
+
+		parts := splitMirrorSpec(mirrorSpec)
+		if parts != nil {
+			name := parts[0]
+			// upstream := parts[1] // TODO: Use upstream for proxy configuration
+
+			// Generate distribution-prefixed registry name
+			registryName := "k3d-" + name
+
+			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
+				Name: registryName,
+			}
+
+			// Generate mirrors configuration
+			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
+			configLines = append(configLines, "mirrors:")
+
+			// Infer registry host from name
+			registryHost := inferRegistryHost(name)
+
+			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
+			configLines = append(configLines, "    endpoint:")
+			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
+
+			// Add proxy configuration
+			configLines = append(configLines, "configs:")
+			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
+			configLines = append(configLines, "    auth: {}")
+			configLines = append(configLines, "    tls:")
+			configLines = append(configLines, "      insecure_skip_verify: false")
+
+			registryConfig.Config = joinLines(configLines) + "\n"
+		}
+	}
+
+	return registryConfig
+}
+
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
 // This ensures the generated ksail.yaml has consistent context and distributionConfig values
 // that match the distribution-specific configuration files being generated.
@@ -315,7 +403,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 	// Add containerd config patches for mirror registries
 	if len(s.MirrorRegistries) > 0 {
-		kindConfig.ContainerdConfigPatches = s.generateContainerdPatches()
+		kindConfig.ContainerdConfigPatches = s.GenerateContainerdPatches()
 	}
 
 	opts := yamlgenerator.Options{
@@ -388,7 +476,7 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 
 	// Add registry configuration for mirror registries
 	if len(s.MirrorRegistries) > 0 {
-		config.Registries = s.generateK3dRegistryConfig()
+		config.Registries = s.GenerateK3dRegistryConfig()
 	}
 
 	return config
@@ -416,42 +504,6 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			},
 		},
 	)
-}
-
-// generateContainerdPatches generates containerd config patches for Kind mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
-// Container names are generated as "kind-{name}" for Kind network DNS resolution.
-func (s *Scaffolder) generateContainerdPatches() []string {
-	patches := make([]string, 0, len(s.MirrorRegistries))
-
-	for _, mirrorSpec := range s.MirrorRegistries {
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts == nil {
-			continue
-		}
-
-		name := parts[0]
-		upstream := parts[1]
-
-		// Extract port from upstream URL (default: 5000)
-		port := extractPortFromURL(upstream)
-
-		// Generate distribution-prefixed container name: kind-{name}
-		containerName := "kind-" + name
-
-		// Infer registry host from name (e.g., docker-io -> docker.io)
-		registryHost := inferRegistryHost(name)
-
-		// Use container name as endpoint for Kind network DNS resolution
-		kindEndpoint := "http://" + containerName + ":" + port
-
-		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s"]`, registryHost, kindEndpoint)
-
-		patches = append(patches, patch)
-	}
-
-	return patches
 }
 
 // inferRegistryHost converts a registry name back to its host format.
@@ -482,58 +534,6 @@ func extractPortFromURL(urlStr string) string {
 
 	// Default port for registry
 	return "5000"
-}
-
-// generateK3dRegistryConfig generates K3d registry configuration for mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
-// K3d requires one registry per proxy, so we generate multiple create configs.
-func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
-	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
-		Use: []string{},
-	}
-
-	// K3d requires one registry per upstream proxy
-	// We'll create multiple registries with distribution-prefixed names: k3d-{name}
-	if len(s.MirrorRegistries) > 0 {
-		// For now, we'll use the first mirror as the primary registry
-		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
-		mirrorSpec := s.MirrorRegistries[0]
-
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts != nil {
-			name := parts[0]
-			// upstream := parts[1] // TODO: Use upstream for proxy configuration
-
-			// Generate distribution-prefixed registry name
-			registryName := "k3d-" + name
-
-			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
-				Name: registryName,
-			}
-
-			// Generate mirrors configuration
-			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
-			configLines = append(configLines, "mirrors:")
-
-			// Infer registry host from name
-			registryHost := inferRegistryHost(name)
-
-			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
-			configLines = append(configLines, "    endpoint:")
-			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
-
-			// Add proxy configuration
-			configLines = append(configLines, "configs:")
-			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
-			configLines = append(configLines, "    auth: {}")
-			configLines = append(configLines, "    tls:")
-			configLines = append(configLines, "      insecure_skip_verify: false")
-
-			registryConfig.Config = joinLines(configLines) + "\n"
-		}
-	}
-
-	return registryConfig
 }
 
 // splitMirrorSpec splits a mirror specification into registry and endpoint parts.
