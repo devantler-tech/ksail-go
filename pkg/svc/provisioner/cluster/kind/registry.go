@@ -100,7 +100,7 @@ func ConnectRegistriesToNetwork(
 
 	// Connect each registry to the kind network
 	for _, reg := range registries {
-		containerName := fmt.Sprintf("ksail-registry-%s", reg.Name)
+		containerName := "ksail-registry-" + reg.Name
 
 		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)
 		if err != nil {
@@ -147,7 +147,12 @@ func CleanupRegistries(
 		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes)
 		if err != nil {
 			// Log error but don't fail the entire cleanup
-			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to cleanup registry %s: %v\n", reg.Name, err)
+			_, _ = fmt.Fprintf(
+				os.Stderr,
+				"Warning: failed to cleanup registry %s: %v\n",
+				reg.Name,
+				err,
+			)
 		}
 	}
 
@@ -243,7 +248,7 @@ func parseContainerdConfig(patch string) map[string][]string {
 
 	var currentEndpoints []string
 
-	for i := range len(lines) {
+	for i := range lines {
 		line := strings.TrimSpace(lines[i])
 
 		// Skip empty lines and comments

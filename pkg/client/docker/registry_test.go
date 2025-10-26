@@ -15,26 +15,24 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	errNotFound = errors.New("not found")
-)
+var errNotFound = errors.New("not found")
 
 func TestNewRegistryManager(t *testing.T) {
 	t.Run("success with valid client", func(t *testing.T) {
 		mockClient := NewMockAPIClient(t)
 
-		rm, err := NewRegistryManager(mockClient)
+		manager, err := NewRegistryManager(mockClient)
 
 		assert.NoError(t, err)
-		assert.NotNil(t, rm)
+		assert.NotNil(t, manager)
 		assert.Equal(t, mockClient, manager.client)
 	})
 
 	t.Run("error with nil client", func(t *testing.T) {
-		rm, err := NewRegistryManager(nil)
+		manager, err := NewRegistryManager(nil)
 
 		assert.Error(t, err)
-		assert.Nil(t, rm)
+		assert.Nil(t, manager)
 		assert.Equal(t, ErrAPIClientNil, err)
 	})
 }
@@ -160,13 +158,13 @@ func TestDeleteRegistry(t *testing.T) {
 
 		// Mock container stop
 		mockClient.EXPECT().
-			ContainerStop(ctx, "registry-id", mock.MatchedBy(func(opts container.StopOptions) bool { return true })).
+			ContainerStop(ctx, "registry-id", mock.MatchedBy(func(_ container.StopOptions) bool { return true })).
 			Return(nil).
 			Once()
 
 		// Mock container remove
 		mockClient.EXPECT().
-			ContainerRemove(ctx, "registry-id", mock.MatchedBy(func(opts container.RemoveOptions) bool { return true })).
+			ContainerRemove(ctx, "registry-id", mock.MatchedBy(func(_ container.RemoveOptions) bool { return true })).
 			Return(nil).
 			Once()
 

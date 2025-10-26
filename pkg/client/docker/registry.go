@@ -88,7 +88,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	}
 
 	// Create volume for registry data
-	volumeName := fmt.Sprintf("ksail-registry-%s", config.Name)
+	volumeName := "ksail-registry-" + config.Name
 
 	err = rm.createVolume(ctx, volumeName, config.Name)
 	if err != nil {
@@ -100,7 +100,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	hostConfig := rm.buildHostConfig(config, volumeName)
 	networkConfig := rm.buildNetworkConfig(config)
 
-	containerName := fmt.Sprintf("ksail-registry-%s", config.Name)
+	containerName := "ksail-registry-" + config.Name
 
 	// Create container
 	resp, err := rm.client.ContainerCreate(
@@ -132,7 +132,7 @@ func (rm *RegistryManager) DeleteRegistry(
 	name, clusterName string,
 	deleteVolume bool,
 ) error {
-	containerName := fmt.Sprintf("ksail-registry-%s", name)
+	containerName := "ksail-registry-" + name
 
 	// Get container to check labels
 	containers, err := rm.listRegistryContainers(ctx, name)
@@ -176,7 +176,7 @@ func (rm *RegistryManager) DeleteRegistry(
 
 	// Remove volume if requested
 	if deleteVolume {
-		volumeName := fmt.Sprintf("ksail-registry-%s", name)
+		volumeName := "ksail-registry-" + name
 
 		err = rm.client.VolumeRemove(ctx, volumeName, false)
 		if err != nil {
@@ -343,7 +343,7 @@ func (rm *RegistryManager) createVolume(
 func (rm *RegistryManager) buildContainerConfig(config RegistryConfig) *container.Config {
 	env := []string{}
 	if config.UpstreamURL != "" {
-		env = append(env, fmt.Sprintf("REGISTRY_PROXY_REMOTEURL=%s", config.UpstreamURL))
+		env = append(env, "REGISTRY_PROXY_REMOTEURL="+config.UpstreamURL)
 	}
 
 	return &container.Config{

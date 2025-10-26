@@ -438,7 +438,7 @@ func (s *Scaffolder) generateContainerdPatches() []string {
 		port := extractPortFromURL(upstream)
 
 		// Generate distribution-prefixed container name: kind-{name}
-		containerName := fmt.Sprintf("kind-%s", name)
+		containerName := "kind-" + name
 
 		// Infer registry host from name (e.g., docker-io -> docker.io)
 		registryHost := inferRegistryHost(name)
@@ -506,7 +506,7 @@ func (s *Scaffolder) generateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 			// upstream := parts[1] // TODO: Use upstream for proxy configuration
 
 			// Generate distribution-prefixed registry name
-			registryName := fmt.Sprintf("k3d-%s", name)
+			registryName := "k3d-" + name
 
 			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
 				Name: registryName,
