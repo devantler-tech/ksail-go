@@ -1110,17 +1110,17 @@ func TestIsFieldEmptyForTesting_NilPointer(t *testing.T) {
 }
 
 func TestIsFieldEmptyForTesting_EmptyString(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-value := ""
-result := configmanager.IsFieldEmptyForTesting(&value)
-assert.True(t, result)
+	value := ""
+	result := configmanager.IsFieldEmptyForTesting(&value)
+	assert.True(t, result)
 }
 
 func TestIsFieldEmptyForTesting_NonEmptyString(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-value := "test"
-result := configmanager.IsFieldEmptyForTesting(&value)
-assert.False(t, result)
+	value := "test"
+	result := configmanager.IsFieldEmptyForTesting(&value)
+	assert.False(t, result)
 }
