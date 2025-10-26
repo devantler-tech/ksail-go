@@ -642,25 +642,22 @@ func TestAddCiliumRepository_Success(t *testing.T) {
 	t.Parallel()
 
 	helmClient := &fakeHelmClient{}
-	err := addCiliumRepository(context.Background(), &helm.Client{})
+	err := addCiliumRepository(context.Background(), helmClient)
 
-	// This test requires a real Helm client, so we expect an error
-	// but we're testing that the function exists and can be called
-	_ = err
-	assert.Equal(t, 0, helmClient.addRepoCalls) // Our fake client wasn't used
+	assert.NoError(t, err)
+	assert.Equal(t, 1, helmClient.addRepoCalls)
 }
 
 func TestAddCiliumRepository_Error(t *testing.T) {
 	t.Parallel()
 
-	// This test verifies the error path exists
-	// We can't easily test the actual error without a real Helm client
-	// so we verify the function signature is correct
-	var helmClient *helm.Client
+	expectedErr := errors.New("repo error")
+	helmClient := &fakeHelmClient{addRepoErr: expectedErr}
 	err := addCiliumRepository(context.Background(), helmClient)
 
-	// Expect an error when client is nil
 	assert.Error(t, err)
+	assert.ErrorContains(t, err, "failed to add Cilium Helm repository")
+	assert.Equal(t, 1, helmClient.addRepoCalls)
 }
 
 func TestExecuteClusterCreation_Success(t *testing.T) {

@@ -226,7 +226,7 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 	return runCiliumInstallation(cmd, installer, tmr)
 }
 
-func addCiliumRepository(ctx context.Context, client *helm.Client) error {
+func addCiliumRepository(ctx context.Context, client helm.Interface) error {
 	repoErr := client.AddRepository(ctx, &helm.RepositoryEntry{
 		Name: "cilium",
 		URL:  "https://helm.cilium.io/",
