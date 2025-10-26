@@ -1082,5 +1082,42 @@ func writeFile(t *testing.T, path, contents string) {
 	err := os.WriteFile(path, []byte(contents), 0o600)
 	if err != nil {
 		t.Fatalf("failed to write %s: %v", path, err)
-	}
+
+func TestIsFieldEmptyForTesting_Nil(t *testing.T) {
+t.Parallel()
+
+result := configmanager.IsFieldEmptyForTesting(nil)
+assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NonPointer(t *testing.T) {
+t.Parallel()
+
+value := "test"
+result := configmanager.IsFieldEmptyForTesting(value)
+assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NilPointer(t *testing.T) {
+t.Parallel()
+
+var ptr *string
+result := configmanager.IsFieldEmptyForTesting(ptr)
+assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_EmptyString(t *testing.T) {
+t.Parallel()
+
+value := ""
+result := configmanager.IsFieldEmptyForTesting(&value)
+assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NonEmptyString(t *testing.T) {
+t.Parallel()
+
+value := "test"
+result := configmanager.IsFieldEmptyForTesting(&value)
+assert.False(t, result)
 }
