@@ -5,3 +5,7 @@
 # This pattern is used in git push commands for authentication
 # Lychee extracts this as "https://x-access-token/" from the auth string
 https://x-access-token/
+
+# Docker registry URL (used as mirror configuration, not a web URL)
+# Docker registries use Docker Registry HTTP API V2 and don't respond to bare GET requests
+https://registry-1.docker.io/
