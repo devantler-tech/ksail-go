@@ -1,10 +1,11 @@
-package kindprovisioner
+package kindprovisioner_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -55,7 +56,7 @@ func TestParseContainerdConfig(t *testing.T) {
 			t.Parallel()
 
 			patch := loadTestData(t, testCase.inputFile)
-			result := parseContainerdConfig(patch)
+			result := kindprovisioner.ParseContainerdConfigForTesting(patch)
 			snaps.MatchSnapshot(t, result)
 		})
 	}
@@ -98,7 +99,7 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 				config = &v1alpha4.Cluster{ContainerdConfigPatches: []string{patch}}
 			}
 
-			result := extractRegistriesFromKind(config)
+			result := kindprovisioner.ExtractRegistriesFromKindForTesting(config)
 			snaps.MatchSnapshot(t, result)
 		})
 	}
@@ -143,7 +144,7 @@ func TestExtractQuotedString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := extractQuotedString(tt.input)
+			result := kindprovisioner.ExtractQuotedStringForTesting(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

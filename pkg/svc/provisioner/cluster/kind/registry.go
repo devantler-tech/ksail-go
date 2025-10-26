@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
@@ -180,7 +181,13 @@ func CleanupRegistries(
 	return nil
 }
 
-// extractRegistriesFromKind extracts registry information from Kind configuration.
+// ExtractRegistriesFromKindForTesting extracts registry information from Kind configuration.
+// This function is exported for testing purposes.
+func ExtractRegistriesFromKindForTesting(kindConfig *v1alpha4.Cluster) []RegistryInfo {
+	return extractRegistriesFromKind(kindConfig)
+}
+
+// extractRegistriesFromKind is the internal implementation.
 func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 	var registries []RegistryInfo
 
@@ -189,77 +196,111 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 
 	// Kind uses containerdConfigPatches to configure registry mirrors
 	for _, patch := range kindConfig.ContainerdConfigPatches {
-		// Parse containerd config to extract registry mirrors
-		// Format example:
-		// [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-		//   endpoint = ["http://localhost:5000"]
 		mirrors := parseContainerdConfig(patch)
-		for host, endpoints := range mirrors {
-			// Skip if we've already processed this host
+
+		// Sort hosts for deterministic order
+		hosts := make([]string, 0, len(mirrors))
+		for host := range mirrors {
+			hosts = append(hosts, host)
+		}
+
+		sort.Strings(hosts)
+
+		for _, host := range hosts {
+			// Skip duplicates - don't increment portOffset for duplicates
 			if seenHosts[host] {
 				continue
 			}
 
 			seenHosts[host] = true
 
-			// Extract the registry name from the endpoint URL
-			// Format: http://kind-{name}:5000
-			var name string
-
-			var upstream string
-
-			port := defaultRegistryPort + portOffset
-
-			if len(endpoints) > 0 {
-				endpoint := endpoints[0]
-				// Extract name from endpoint like "http://kind-docker-io:5000"
-				if strings.HasPrefix(endpoint, "http://kind-") ||
-					strings.HasPrefix(endpoint, "https://kind-") {
-					parts := strings.Split(endpoint, "//")
-					if len(parts) == expectedPartCount {
-						hostPort := strings.Split(parts[1], ":")
-						if len(hostPort) >= 1 {
-							fullName := hostPort[0] // "kind-docker-io"
-							name = fullName         // Keep full distribution-prefixed name
-						}
-
-						if len(hostPort) == expectedPartCount {
-							if extractedPort := extractPortFromEndpoint(endpoint); extractedPort > 0 {
-								port = extractedPort
-							}
-						}
-					}
-				}
-			}
-
-			// If we couldn't extract name from endpoint, generate it
-			if name == "" {
-				// Generate a simple name from the host (sanitize for container naming)
-				simpleName := strings.ReplaceAll(host, ".", "-")
-				simpleName = strings.ReplaceAll(simpleName, "/", "-")
-				simpleName = strings.ReplaceAll(simpleName, ":", "-")
-				name = "kind-" + simpleName
-			}
-
-			// Generate upstream URL from host
-			// docker.io -> https://registry-1.docker.io
-			// ghcr.io -> https://ghcr.io
-			upstream = generateUpstreamURL(host)
-
-			registries = append(registries, RegistryInfo{
-				Name:     name,
-				Upstream: upstream,
-				Port:     port,
-			})
-			portOffset++
+			// Build registry info from host and endpoints
+			info := buildRegistryInfo(host, mirrors[host], portOffset)
+			registries = append(registries, info)
+			portOffset++ // Only increment for actually added registries
 		}
 	}
 
 	return registries
 }
 
-// parseContainerdConfig parses containerd configuration patches to extract registry mirrors.
+// buildRegistryInfo constructs a RegistryInfo from host and endpoints.
+func buildRegistryInfo(host string, endpoints []string, portOffset int) RegistryInfo {
+	name := extractRegistryName(host, endpoints)
+	port := extractRegistryPort(endpoints, portOffset)
+	upstream := generateUpstreamURL(host)
+
+	return RegistryInfo{
+		Name:     name,
+		Upstream: upstream,
+		Port:     port,
+	}
+}
+
+// extractRegistryName extracts or generates a registry name from host and endpoints.
+func extractRegistryName(host string, endpoints []string) string {
+	if len(endpoints) == 0 {
+		return generateNameFromHost(host)
+	}
+
+	endpoint := endpoints[0]
+
+	// Try to extract name from endpoint like "http://kind-docker-io:5000"
+	if strings.HasPrefix(endpoint, "http://kind-") || strings.HasPrefix(endpoint, "https://kind-") {
+		if name := extractNameFromEndpoint(endpoint); name != "" {
+			return name
+		}
+	}
+
+	return generateNameFromHost(host)
+}
+
+// extractNameFromEndpoint extracts the registry name from an endpoint URL.
+func extractNameFromEndpoint(endpoint string) string {
+	parts := strings.Split(endpoint, "//")
+	if len(parts) != expectedPartCount {
+		return ""
+	}
+
+	hostPort := strings.Split(parts[1], ":")
+	if len(hostPort) >= 1 {
+		return hostPort[0] // Return full distribution-prefixed name like "kind-docker-io"
+	}
+
+	return ""
+}
+
+// generateNameFromHost generates a registry name from a host.
+func generateNameFromHost(host string) string {
+	// Sanitize host for container naming
+	simpleName := strings.ReplaceAll(host, ".", "-")
+	simpleName = strings.ReplaceAll(simpleName, "/", "-")
+	simpleName = strings.ReplaceAll(simpleName, ":", "-")
+
+	return "kind-" + simpleName
+}
+
+// extractRegistryPort determines the registry port from endpoints or uses default with offset.
+func extractRegistryPort(endpoints []string, portOffset int) int {
+	if len(endpoints) == 0 {
+		return defaultRegistryPort + portOffset
+	}
+
+	if extractedPort := extractPortFromEndpoint(endpoints[0]); extractedPort > 0 {
+		return extractedPort
+	}
+
+	return defaultRegistryPort + portOffset
+}
+
+// ParseContainerdConfigForTesting parses containerd configuration patches to extract registry mirrors.
 // Returns a map of registry host to list of endpoint URLs.
+// This function is exported for testing purposes.
+func ParseContainerdConfigForTesting(patch string) map[string][]string {
+	return parseContainerdConfig(patch)
+}
+
+// parseContainerdConfig is the internal implementation.
 func parseContainerdConfig(patch string) map[string][]string {
 	mirrors := make(map[string][]string)
 	lines := strings.Split(patch, "\n")
@@ -278,82 +319,142 @@ func parseContainerdConfig(patch string) map[string][]string {
 			continue
 		}
 
-		// Match registry mirror section header
-		// Format: [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+		// Process registry mirror section headers
 		if strings.Contains(line, `registry.mirrors."`) {
-			// Save previous host's endpoints if any
-			if currentHost != "" && len(currentEndpoints) > 0 {
-				mirrors[currentHost] = currentEndpoints
-				currentEndpoints = nil
-			}
-
-			// Extract new host
-			start := strings.Index(line, `mirrors."`)
-			if start >= 0 {
-				start += len(`mirrors."`)
-
-				end := strings.Index(line[start:], `"`)
-				if end > 0 {
-					currentHost = line[start : start+end]
-					inEndpointArray = false
-				}
-			}
+			currentHost = processHostMirrorsLine(
+				line,
+				currentHost,
+				currentEndpoints,
+				mirrors,
+			)
+			currentEndpoints = nil
+			inEndpointArray = false
 
 			continue
 		}
 
-		// Match endpoint configuration
+		// Process endpoint configuration lines
 		if currentHost != "" && strings.Contains(line, "endpoint") {
-			// Handle inline array: endpoint = ["http://..."]
-			// Remove all spaces around = for robust parsing
-			cleanLine := strings.ReplaceAll(line, " ", "")
-			if strings.Contains(cleanLine, `["`) && strings.Contains(cleanLine, `"]`) {
-				endpoints := extractEndpointsFromInlineArray(line)
-				currentEndpoints = append(currentEndpoints, endpoints...)
-				// Save immediately for inline format
-				if len(currentEndpoints) > 0 {
-					mirrors[currentHost] = currentEndpoints
-					currentHost = ""
-					currentEndpoints = nil
-				}
-			} else if strings.Contains(cleanLine, "[") && !strings.Contains(cleanLine, "]") {
-				// Start of multiline array: endpoint = [
-				inEndpointArray = true
-			}
+			currentHost, currentEndpoints, inEndpointArray = processEndpointLine(
+				line,
+				currentHost,
+				currentEndpoints,
+				mirrors,
+			)
 
 			continue
 		}
 
-		// Handle multiline array elements
+		// Process multiline array elements
 		if inEndpointArray {
-			if strings.Contains(line, "]") {
-				// End of array
-				inEndpointArray = false
-				// Extract any endpoint on the closing line
-				if endpoint := extractEndpointFromLine(line); endpoint != "" {
-					currentEndpoints = append(currentEndpoints, endpoint)
-				}
-				// Save collected endpoints
-				if currentHost != "" && len(currentEndpoints) > 0 {
-					mirrors[currentHost] = currentEndpoints
-					currentHost = ""
-					currentEndpoints = nil
-				}
-			} else {
-				// Extract endpoint from array element line
-				if endpoint := extractEndpointFromLine(line); endpoint != "" {
-					currentEndpoints = append(currentEndpoints, endpoint)
-				}
-			}
+			currentHost, currentEndpoints, inEndpointArray = processMultilineArrayLine(
+				line,
+				currentHost,
+				currentEndpoints,
+				mirrors,
+			)
 		}
 	}
 
 	// Save any remaining host endpoints
-	if currentHost != "" && len(currentEndpoints) > 0 {
-		mirrors[currentHost] = currentEndpoints
-	}
+	saveHostEndpoints(currentHost, currentEndpoints, mirrors)
 
 	return mirrors
+}
+
+// processHostMirrorsLine processes a registry mirrors section header line.
+// Returns updated currentHost.
+func processHostMirrorsLine(
+	line string,
+	currentHost string,
+	currentEndpoints []string,
+	mirrors map[string][]string,
+) string {
+	// Save previous host's endpoints if any
+	saveHostEndpoints(currentHost, currentEndpoints, mirrors)
+
+	// Extract new host from line like: [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+	start := strings.Index(line, `mirrors."`)
+	if start < 0 {
+		return ""
+	}
+
+	start += len(`mirrors."`)
+
+	end := strings.Index(line[start:], `"`)
+	if end <= 0 {
+		return ""
+	}
+
+	newHost := line[start : start+end]
+
+	// Skip if this host is already in mirrors (preserve first occurrence)
+	if _, exists := mirrors[newHost]; exists {
+		return ""
+	}
+
+	return newHost
+}
+
+// processEndpointLine processes an endpoint configuration line.
+// Returns updated currentHost, currentEndpoints, and inEndpointArray.
+func processEndpointLine(
+	line string,
+	currentHost string,
+	currentEndpoints []string,
+	mirrors map[string][]string,
+) (string, []string, bool) {
+	// Check for inline array format: endpoint = ["http://..."]
+	cleanLine := strings.ReplaceAll(line, " ", "")
+	if strings.Contains(cleanLine, `["`) && strings.Contains(cleanLine, `"]`) {
+		endpoints := extractEndpointsFromInlineArray(line)
+		currentEndpoints = append(currentEndpoints, endpoints...)
+		// Save immediately for inline format
+		saveHostEndpoints(currentHost, currentEndpoints, mirrors)
+
+		return "", nil, false
+	}
+
+	// Check for multiline array start: endpoint = [
+	if strings.Contains(cleanLine, "[") && !strings.Contains(cleanLine, "]") {
+		return currentHost, currentEndpoints, true
+	}
+
+	return currentHost, currentEndpoints, false
+}
+
+// processMultilineArrayLine processes a line within a multiline endpoint array.
+// Returns updated currentHost, currentEndpoints, and inEndpointArray.
+func processMultilineArrayLine(
+	line string,
+	currentHost string,
+	currentEndpoints []string,
+	mirrors map[string][]string,
+) (string, []string, bool) {
+	if strings.Contains(line, "]") {
+		// End of array - extract any endpoint on the closing line
+		if endpoint := extractEndpointFromLine(line); endpoint != "" {
+			currentEndpoints = append(currentEndpoints, endpoint)
+		}
+		// Save collected endpoints
+		saveHostEndpoints(currentHost, currentEndpoints, mirrors)
+
+		return "", nil, false
+	}
+
+	// Extract endpoint from array element line
+	if endpoint := extractEndpointFromLine(line); endpoint != "" {
+		currentEndpoints = append(currentEndpoints, endpoint)
+	}
+
+	return currentHost, currentEndpoints, true
+}
+
+// saveHostEndpoints saves endpoints for a host to the mirrors map.
+func saveHostEndpoints(host string, endpoints []string, mirrors map[string][]string) {
+	if host != "" && len(endpoints) > 0 {
+		mirrors[host] = endpoints
+	}
 }
 
 // extractEndpointsFromInlineArray extracts all endpoints from an inline array format.
@@ -393,7 +494,13 @@ func extractEndpointFromLine(line string) string {
 	return extractQuotedString(line)
 }
 
-// extractQuotedString extracts a string from within quotes.
+// ExtractQuotedStringForTesting extracts a string from within quotes.
+// This function is exported for testing purposes.
+func ExtractQuotedStringForTesting(str string) string {
+	return extractQuotedString(str)
+}
+
+// extractQuotedString is the internal implementation.
 func extractQuotedString(str string) string {
 	str = strings.TrimSpace(str)
 
