@@ -72,7 +72,8 @@ func SetupRegistries(
 			NetworkName: "", // Don't attach to network yet - it doesn't exist
 		}
 
-		if err := registryMgr.CreateRegistry(ctx, config); err != nil {
+		err := registryMgr.CreateRegistry(ctx, config)
+		if err != nil {
 			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
 		}
 	}
@@ -143,7 +144,8 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		if err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes); err != nil {
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes)
+		if err != nil {
 			// Log error but don't fail the entire cleanup
 			_, _ = fmt.Fprintf(os.Stderr, "Warning: failed to cleanup registry %s: %v\n", reg.Name, err)
 		}
@@ -365,21 +367,21 @@ func extractEndpointFromLine(line string) string {
 }
 
 // extractQuotedString extracts a string from within quotes.
-func extractQuotedString(s string) string {
-	s = strings.TrimSpace(s)
+func extractQuotedString(str string) string {
+	str = strings.TrimSpace(str)
 
 	// Find first and last quote
-	firstQuote := strings.Index(s, `"`)
+	firstQuote := strings.Index(str, `"`)
 	if firstQuote < 0 {
 		return ""
 	}
 
-	lastQuote := strings.LastIndex(s, `"`)
+	lastQuote := strings.LastIndex(str, `"`)
 	if lastQuote <= firstQuote {
 		return ""
 	}
 
-	return s[firstQuote+1 : lastQuote]
+	return str[firstQuote+1 : lastQuote]
 }
 
 // generateUpstreamURL generates the upstream registry URL from the host.
@@ -416,7 +418,9 @@ func extractPortFromEndpoint(endpoint string) int {
 		}
 
 		var port int
-		if _, err := fmt.Sscanf(portStr, "%d", &port); err == nil && port > 0 && port <= 65535 {
+
+		_, err := fmt.Sscanf(portStr, "%d", &port)
+		if err == nil && port > 0 && port <= 65535 {
 			return port
 		}
 	}
