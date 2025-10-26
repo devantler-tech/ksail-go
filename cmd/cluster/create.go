@@ -107,9 +107,48 @@ func handleCreateRunE(
 	// Create cluster using standard lifecycle
 	deps.Timer.NewStage()
 
+	err = executeClusterCreation(cmd, clusterCfg, deps)
+	if err != nil {
+		return err
+	}
+
+	// Connect registries to the Kind network after cluster is created
+	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager, kindConfig)
+	if err != nil {
+		// Log warning but don't fail - registries can still work via localhost
+		notify.WriteMessage(notify.Message{
+			Type:    notify.WarningType,
+			Content: fmt.Sprintf("failed to connect registries to kind network: %v", err),
+			Writer:  cmd.OutOrStdout(),
+		})
+	}
+
+	// Install CNI if Cilium is configured
+	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
+		// Add newline separator before CNI installation
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		// Start new stage for CNI installation
+		deps.Timer.NewStage()
+
+		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
+		if err != nil {
+			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// executeClusterCreation handles the cluster provisioning and lifecycle.
+func executeClusterCreation(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
+) error {
 	config := newCreateLifecycleConfig()
 
-	// Manually execute the cluster creation part (without re-loading config)
+	// Resolve cluster provisioner
 	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
@@ -154,31 +193,6 @@ func handleCreateRunE(
 		Writer:     cmd.OutOrStdout(),
 		MultiStage: true,
 	})
-
-	// Connect registries to the Kind network after cluster is created
-	err = connectRegistriesToKindNetwork(cmd, clusterCfg, cfgManager, kindConfig)
-	if err != nil {
-		// Log warning but don't fail - registries can still work via localhost
-		notify.WriteMessage(notify.Message{
-			Type:    notify.WarningType,
-			Content: fmt.Sprintf("failed to connect registries to kind network: %v", err),
-			Writer:  cmd.OutOrStdout(),
-		})
-	}
-
-	// Install CNI if Cilium is configured
-	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		// Add newline separator before CNI installation
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-
-		// Start new stage for CNI installation
-		deps.Timer.NewStage()
-
-		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to install Cilium CNI: %w", err)
-		}
-	}
 
 	return nil
 }
