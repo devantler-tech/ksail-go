@@ -172,7 +172,6 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 		// Format example:
 		// [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
 		//   endpoint = ["http://localhost:5000"]
-
 		mirrors := parseContainerdConfig(patch)
 		for host, endpoints := range mirrors {
 			// Skip if we've already processed this host

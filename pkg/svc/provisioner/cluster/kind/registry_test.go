@@ -98,6 +98,8 @@ func TestParseContainerdConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := parseContainerdConfig(tt.patch)
 			assert.Equal(t, tt.expected, result, "Parsed mirrors should match expected")
 		})
@@ -210,6 +212,8 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := extractRegistriesFromKind(tt.config)
 			assert.Equal(t, tt.expected, result, "Extracted registries should match expected")
 		})
@@ -217,6 +221,8 @@ func TestExtractRegistriesFromKind(t *testing.T) {
 }
 
 func TestExtractQuotedString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -251,6 +257,8 @@ func TestExtractQuotedString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := extractQuotedString(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})

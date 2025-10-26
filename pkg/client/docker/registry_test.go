@@ -13,32 +13,46 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var errNotFound = errors.New("not found")
 
 func TestNewRegistryManager(t *testing.T) {
+	t.Parallel()
+
 	t.Run("success with valid client", func(t *testing.T) {
+		t.Parallel()
+		t.Parallel()
+
 		mockClient := NewMockAPIClient(t)
 
 		manager, err := NewRegistryManager(mockClient)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.NotNil(t, manager)
 		assert.Equal(t, mockClient, manager.client)
 	})
 
 	t.Run("error with nil client", func(t *testing.T) {
+		t.Parallel()
+		t.Parallel()
+
 		manager, err := NewRegistryManager(nil)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Nil(t, manager)
 		assert.Equal(t, ErrAPIClientNil, err)
 	})
 }
 
 func TestCreateRegistry(t *testing.T) {
+	t.Parallel()
+
 	t.Run("creates new registry successfully", func(t *testing.T) {
+		t.Parallel()
+		t.Parallel()
+
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -102,10 +116,11 @@ func TestCreateRegistry(t *testing.T) {
 
 		err := manager.CreateRegistry(ctx, config)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("returns error when registry already exists and adds cluster label", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -131,12 +146,15 @@ func TestCreateRegistry(t *testing.T) {
 
 		err := manager.CreateRegistry(ctx, config)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
 
 func TestDeleteRegistry(t *testing.T) {
+	t.Parallel()
+
 	t.Run("deletes registry when not in use", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -176,10 +194,11 @@ func TestDeleteRegistry(t *testing.T) {
 
 		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", true)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("does not delete registry when still in use", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -201,10 +220,11 @@ func TestDeleteRegistry(t *testing.T) {
 
 		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", true)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 
 	t.Run("returns error when registry not found", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -217,13 +237,16 @@ func TestDeleteRegistry(t *testing.T) {
 
 		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false)
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, ErrRegistryNotFound, err)
 	})
 }
 
 func TestListRegistries(t *testing.T) {
+	t.Parallel()
+
 	t.Run("lists all registries", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -248,13 +271,14 @@ func TestListRegistries(t *testing.T) {
 
 		registries, err := manager.ListRegistries(ctx)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Len(t, registries, 2)
 		assert.Contains(t, registries, "docker.io")
 		assert.Contains(t, registries, "quay.io")
 	})
 
 	t.Run("returns empty list when no registries", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -266,13 +290,16 @@ func TestListRegistries(t *testing.T) {
 
 		registries, err := manager.ListRegistries(ctx)
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Empty(t, registries)
 	})
 }
 
 func TestIsRegistryInUse(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns true when registry is running", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -292,11 +319,12 @@ func TestIsRegistryInUse(t *testing.T) {
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.True(t, inUse)
 	})
 
 	t.Run("returns false when registry is stopped", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -316,11 +344,12 @@ func TestIsRegistryInUse(t *testing.T) {
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.False(t, inUse)
 	})
 
 	t.Run("returns false when registry not found", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -332,13 +361,16 @@ func TestIsRegistryInUse(t *testing.T) {
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.False(t, inUse)
 	})
 }
 
 func TestGetRegistryPort(t *testing.T) {
+	t.Parallel()
+
 	t.Run("returns port for existing registry", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -363,11 +395,12 @@ func TestGetRegistryPort(t *testing.T) {
 
 		port, err := manager.GetRegistryPort(ctx, "docker.io")
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 5000, port)
 	})
 
 	t.Run("returns error when registry not found", func(t *testing.T) {
+		t.Parallel()
 		mockClient := NewMockAPIClient(t)
 		manager := &RegistryManager{client: mockClient}
 		ctx := context.Background()
@@ -379,7 +412,7 @@ func TestGetRegistryPort(t *testing.T) {
 
 		port, err := manager.GetRegistryPort(ctx, "docker.io")
 
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Equal(t, 0, port)
 		assert.Equal(t, ErrRegistryNotFound, err)
 	})
