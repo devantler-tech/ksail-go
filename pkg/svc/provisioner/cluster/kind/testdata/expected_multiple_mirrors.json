@@ -1,4 +1,0 @@
-{
-  "docker.io": ["http://localhost:5000"],
-  "gcr.io": ["http://localhost:5001"]
-}
