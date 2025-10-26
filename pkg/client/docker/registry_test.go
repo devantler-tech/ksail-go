@@ -57,7 +57,11 @@ func mockImagePullSequence(ctx context.Context, mockClient *docker.MockAPIClient
 }
 
 // mockVolumeCreateSequence sets up the complete volume creation mock sequence.
-func mockVolumeCreateSequence(ctx context.Context, mockClient *docker.MockAPIClient, volumeName string) {
+func mockVolumeCreateSequence(
+	ctx context.Context,
+	mockClient *docker.MockAPIClient,
+	volumeName string,
+) {
 	// Mock volume inspect (volume doesn't exist)
 	mockClient.EXPECT().
 		VolumeInspect(ctx, volumeName).
@@ -108,7 +112,11 @@ func mockRegistryContainer(registryID, registryName, clusterName, state string) 
 }
 
 // mockContainerStopRemove sets up the container stop and remove mock sequence.
-func mockContainerStopRemove(ctx context.Context, mockClient *docker.MockAPIClient, containerID string) {
+func mockContainerStopRemove(
+	ctx context.Context,
+	mockClient *docker.MockAPIClient,
+	containerID string,
+) {
 	mockClient.EXPECT().
 		ContainerStop(ctx, containerID, mock.MatchedBy(func(_ container.StopOptions) bool { return true })).
 		Return(nil).
@@ -332,7 +340,9 @@ func TestIsRegistryInUse(t *testing.T) {
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		registry := mockRegistryContainer("registry-id", "docker.io", "", "running")
-		registry.Labels = map[string]string{docker.RegistryLabelKey: "docker.io"} // Simplified labels
+		registry.Labels = map[string]string{
+			docker.RegistryLabelKey: "docker.io",
+		} // Simplified labels
 
 		mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
 
