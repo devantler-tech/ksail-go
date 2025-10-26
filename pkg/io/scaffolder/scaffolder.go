@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -79,7 +78,6 @@ type Scaffolder struct {
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
-	MirrorRegistries       []string // Format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
@@ -112,94 +110,6 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	}
 
 	return s.generateKustomizationConfig(output, force)
-}
-
-// GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
-// Container names are generated as "kind-{name}" for Kind network DNS resolution.
-func (s *Scaffolder) GenerateContainerdPatches() []string {
-	patches := make([]string, 0, len(s.MirrorRegistries))
-
-	for _, mirrorSpec := range s.MirrorRegistries {
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts == nil {
-			continue
-		}
-
-		name := parts[0]
-		upstream := parts[1]
-
-		// Extract port from upstream URL (default: 5000)
-		port := extractPortFromURL(upstream)
-
-		// Generate distribution-prefixed container name: kind-{name}
-		containerName := "kind-" + name
-
-		// Infer registry host from name (e.g., docker-io -> docker.io)
-		registryHost := inferRegistryHost(name)
-
-		// Use container name as endpoint for Kind network DNS resolution
-		kindEndpoint := "http://" + containerName + ":" + port
-
-		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s"]`, registryHost, kindEndpoint)
-
-		patches = append(patches, patch)
-	}
-
-	return patches
-}
-
-// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
-// K3d requires one registry per proxy, so we generate multiple create configs.
-func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
-	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
-		Use: []string{},
-	}
-
-	// K3d requires one registry per upstream proxy
-	// We'll create multiple registries with distribution-prefixed names: k3d-{name}
-	if len(s.MirrorRegistries) > 0 {
-		// For now, we'll use the first mirror as the primary registry
-		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
-		mirrorSpec := s.MirrorRegistries[0]
-
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts != nil {
-			name := parts[0]
-			// upstream := parts[1] // TODO: Use upstream for proxy configuration
-
-			// Generate distribution-prefixed registry name
-			registryName := "k3d-" + name
-
-			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
-				Name: registryName,
-			}
-
-			// Generate mirrors configuration
-			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
-			configLines = append(configLines, "mirrors:")
-
-			// Infer registry host from name
-			registryHost := inferRegistryHost(name)
-
-			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
-			configLines = append(configLines, "    endpoint:")
-			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
-
-			// Add proxy configuration
-			configLines = append(configLines, "configs:")
-			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
-			configLines = append(configLines, "    auth: {}")
-			configLines = append(configLines, "    tls:")
-			configLines = append(configLines, "      insecure_skip_verify: false")
-
-			registryConfig.Config = joinLines(configLines) + "\n"
-		}
-	}
-
-	return registryConfig
 }
 
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
@@ -401,11 +311,6 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		kindConfig.Networking.DisableDefaultCNI = true
 	}
 
-	// Add containerd config patches for mirror registries
-	if len(s.MirrorRegistries) > 0 {
-		kindConfig.ContainerdConfigPatches = s.GenerateContainerdPatches()
-	}
-
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, KindConfigFile),
 		Force:  force,
@@ -474,11 +379,6 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		}
 	}
 
-	// Add registry configuration for mirror registries
-	if len(s.MirrorRegistries) > 0 {
-		config.Registries = s.GenerateK3dRegistryConfig()
-	}
-
 	return config
 }
 
@@ -504,81 +404,4 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			},
 		},
 	)
-}
-
-// inferRegistryHost converts a registry name back to its host format.
-// Examples: "docker-io" -> "docker.io", "ghcr-io" -> "ghcr.io".
-func inferRegistryHost(name string) string {
-	// Replace hyphens with dots to get the registry host
-	// Handle common cases: docker-io -> docker.io, ghcr-io -> ghcr.io
-	return strings.ReplaceAll(name, "-", ".")
-}
-
-// extractPortFromURL extracts the port from a URL string.
-// Returns "5000" as default if no port is found.
-func extractPortFromURL(urlStr string) string {
-	// Remove protocol if present
-	urlStr = strings.TrimPrefix(urlStr, "http://")
-	urlStr = strings.TrimPrefix(urlStr, "https://")
-
-	// Find port after colon
-	if idx := strings.LastIndex(urlStr, ":"); idx >= 0 {
-		port := urlStr[idx+1:]
-		// Remove any path after the port
-		if slashIdx := strings.Index(port, "/"); slashIdx >= 0 {
-			port = port[:slashIdx]
-		}
-
-		return port
-	}
-
-	// Default port for registry
-	return "5000"
-}
-
-// splitMirrorSpec splits a mirror specification into registry and endpoint parts.
-// Returns nil if the spec is invalid.
-func splitMirrorSpec(spec string) []string {
-	parts := splitOnEquals(spec)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil
-	}
-
-	return parts
-}
-
-// splitOnEquals splits a string on the first '=' character.
-func splitOnEquals(str string) []string {
-	idx := findFirstEquals(str)
-	if idx == -1 {
-		return []string{str}
-	}
-
-	return []string{str[:idx], str[idx+1:]}
-}
-
-// findFirstEquals finds the index of the first '=' character.
-func findFirstEquals(s string) int {
-	for i, c := range s {
-		if c == '=' {
-			return i
-		}
-	}
-
-	return -1
-}
-
-// joinLines joins strings with newlines.
-func joinLines(lines []string) string {
-	result := ""
-
-	for idx, line := range lines {
-		if idx > 0 {
-			result += "\n"
-		}
-
-		result += line
-	}
-
-	return result
 }

@@ -9,7 +9,11 @@ import "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 //go:generate mockery
 type ConfigManager[T any] interface {
 	// LoadConfig loads the configuration from files and environment variables.
-	// Returns the loaded config, either freshly loaded or previously cached.
+	// Returns the previously loaded config if already loaded.
 	// If timer is provided, timing information will be included in the success notification.
-	LoadConfig(tmr timer.Timer) (*T, error)
+	LoadConfig(tmr timer.Timer) error
+
+	// GetConfig returns the currently loaded configuration.
+	// If the configuration has not been loaded yet, it returns nil.
+	GetConfig() *T
 }

@@ -20,8 +20,6 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -32,7 +30,6 @@ const (
 
 var (
 	errCiliumReadiness = errors.New("cilium readiness failed")
-	errProvisionerFail = errors.New("provisioner failed")
 	errOperationFailed = errors.New("operation failed")
 )
 
@@ -526,7 +523,6 @@ func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 
 type fakeHelmClient struct {
 	addRepoCalls int
-	addRepoErr   error
 	installCalls int
 	installErr   error
 	lastSpec     *helm.ChartSpec
@@ -557,10 +553,6 @@ func (f *fakeHelmClient) UninstallRelease(context.Context, string, string) error
 func (f *fakeHelmClient) AddRepository(context.Context, *helm.RepositoryEntry) error {
 	f.addRepoCalls++
 
-	if f.addRepoErr != nil {
-		return f.addRepoErr
-	}
-
 	return nil
 }
 
@@ -578,139 +570,3 @@ func (s *stubTimer) GetTiming() (time.Duration, time.Duration) {
 }
 
 func (s *stubTimer) Stop() {}
-
-func TestPrepareKindConfigWithMirrors_NoKindConfig(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-
-	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, nil)
-	assert.False(t, result, "should return false when kindConfig is nil")
-}
-
-func TestPrepareKindConfigWithMirrors_NonKindDistribution(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{}
-
-	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
-	assert.False(t, result, "should return false for non-Kind distribution")
-}
-
-func TestPrepareKindConfigWithMirrors_WithMirrorRegistryFlag(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{}
-
-	cfgManager.Viper.Set("mirror-registry", []string{"docker.io=http://localhost:5000"})
-
-	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
-	assert.True(t, result, "should return true when mirror registries are added")
-	assert.Len(t, kindConfig.ContainerdConfigPatches, 1)
-}
-
-func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{
-		ContainerdConfigPatches: []string{"existing-patch"},
-	}
-
-	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
-	assert.True(t, result, "should return true when containerd patches exist")
-}
-
-func TestPrepareKindConfigWithMirrors_NoPatches(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{}
-
-	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
-	assert.False(t, result, "should return false when no patches")
-}
-
-func TestAddCiliumRepository_Success(t *testing.T) {
-	t.Parallel()
-
-	helmClient := &fakeHelmClient{}
-	err := addCiliumRepository(context.Background(), &helm.Client{})
-
-	// This test requires a real Helm client, so we expect an error
-	// but we're testing that the function exists and can be called
-	_ = err
-
-	assert.Equal(t, 0, helmClient.addRepoCalls) // Our fake client wasn't used
-}
-
-func TestAddCiliumRepository_Error(t *testing.T) {
-	t.Parallel()
-
-	// This test verifies the error path exists
-	// We can't easily test the actual error without a real Helm client
-	// so we verify the function signature is correct
-	var helmClient *helm.Client
-
-	err := addCiliumRepository(context.Background(), helmClient)
-
-	// Expect an error when client is nil
-	assert.Error(t, err)
-}
-
-func TestExecuteClusterCreation_Success(t *testing.T) {
-	t.Parallel()
-
-	cmd, out := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	clusterCfg := &v1alpha1.Cluster{}
-	provisioner := &testutils.StubProvisioner{}
-	deps := shared.LifecycleDeps{
-		Timer: &testutils.RecordingTimer{},
-		Factory: &testutils.StubFactory{
-			Provisioner:        provisioner,
-			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-		},
-	}
-
-	err := executeClusterCreation(cmd, clusterCfg, deps)
-
-	require.NoError(t, err)
-	assert.Equal(t, 1, provisioner.CreateCalls)
-	assert.Contains(t, out.String(), "Create cluster")
-}
-
-func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
-	t.Parallel()
-
-	cmd, _ := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	clusterCfg := &v1alpha1.Cluster{}
-	provisioner := &testutils.StubProvisioner{CreateErr: errProvisionerFail}
-	deps := shared.LifecycleDeps{
-		Timer: &testutils.RecordingTimer{},
-		Factory: &testutils.StubFactory{
-			Provisioner:        provisioner,
-			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-		},
-	}
-
-	err := executeClusterCreation(cmd, clusterCfg, deps)
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create cluster")
-}

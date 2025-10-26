@@ -68,24 +68,29 @@ func NewCommandConfigManager(
 }
 
 // LoadConfig loads the configuration from files and environment variables.
-// Returns the loaded config, either freshly loaded or previously cached.
+// Returns the previously loaded config if already loaded.
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
-func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
+func (m *ConfigManager) LoadConfig(tmr timer.Timer) error {
 	return m.loadConfigWithOptions(tmr, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
-// Returns the loaded config, either freshly loaded or previously cached.
-func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
+// Returns the previously loaded config if already loaded.
+func (m *ConfigManager) LoadConfigSilent() error {
 	return m.loadConfigWithOptions(nil, true)
+}
+
+// GetConfig implements configmanager.ConfigManager by returning the loaded cluster configuration.
+func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
+	return m.Config
 }
 
 // loadConfigWithOptions is the internal implementation with silent option.
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,
-) (*v1alpha1.Cluster, error) {
+) error {
 	if !silent {
 		m.notifyLoadingStart()
 	}
@@ -95,7 +100,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 			m.notifyConfigReused()
 		}
 
-		return m.Config, nil
+		return nil
 	}
 
 	if !silent {
@@ -105,21 +110,18 @@ func (m *ConfigManager) loadConfigWithOptions(
 	// Use native Viper API to read configuration
 	err := m.readConfig(silent)
 	if err != nil {
-		// Return the config even on error so callers can inspect partial state
-		return m.Config, err
+		return err
 	}
 
 	// Unmarshal and apply defaults
 	err = m.unmarshalAndApplyDefaults()
 	if err != nil {
-		// Return the config even on error so callers can inspect partial state
-		return m.Config, err
+		return err
 	}
 
 	err = m.validateConfig()
 	if err != nil {
-		// Return the config even on validation errors so callers can inspect it
-		return m.Config, err
+		return err
 	}
 
 	if !silent {
@@ -128,7 +130,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 
 	m.configLoaded = true
 
-	return m.Config, nil
+	return nil
 }
 
 func (m *ConfigManager) readConfig(silent bool) error {
@@ -318,13 +320,13 @@ func (m *ConfigManager) loadKindConfig() *kindv1alpha4.Cluster {
 
 	kindManager := kindconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	config, err := kindManager.LoadConfig(nil)
+	err = kindManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil
 	}
 
-	return config
+	return kindManager.GetConfig()
 }
 
 // loadK3dConfig loads the K3d distribution configuration if it exists.
@@ -343,11 +345,11 @@ func (m *ConfigManager) loadK3dConfig() *k3dv1alpha5.SimpleConfig {
 
 	k3dManager := k3dconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	config, err := k3dManager.LoadConfig(nil)
+	err = k3dManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil
 	}
 
-	return config
+	return k3dManager.GetConfig()
 }

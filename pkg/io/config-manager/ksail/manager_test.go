@@ -76,8 +76,7 @@ func TestLoadConfigLoadsKindDistributionConfig(t *testing.T) {
 	manager := configmanager.NewConfigManager(io.Discard)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
-	_, err := manager.LoadConfig(nil)
-	require.NoError(t, err)
+	require.NoError(t, manager.LoadConfig(nil))
 	assert.Equal(t, kindConfigPath, manager.Config.Spec.DistributionConfig)
 }
 
@@ -106,7 +105,7 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 	manager := configmanager.NewConfigManager(io.Discard)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 	assert.Equal(t, k3dConfigPath, manager.Config.Spec.DistributionConfig)
@@ -243,7 +242,7 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
 	output.Reset()
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
@@ -286,10 +285,11 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 
 	manager := configmanager.NewConfigManager(&output, selectors...)
 
-	cluster, err := manager.LoadConfigSilent()
+	err := manager.LoadConfigSilent()
 	require.NoError(t, err)
 	assert.Empty(t, output.String(), "silent load should not emit notifications")
 
+	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
 	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
@@ -311,7 +311,7 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	manager.Config.Spec.Distribution = ""
 	manager.Config.Spec.DistributionConfig = ""
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 	assert.Contains(t, err.Error(), "4 error(s)")
@@ -349,18 +349,19 @@ func testLoadConfigCase(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 
 	if testCase.shouldSucceed {
 		require.NoError(t, err)
 
+		cluster := manager.GetConfig()
 		require.NotNil(t, cluster)
 		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
 
 		// Test that subsequent calls return the same config
-		cluster2, err := manager.LoadConfig(nil)
+		err = manager.LoadConfig(nil)
 		require.NoError(t, err)
-		assert.Same(t, cluster, cluster2)
+		assert.Equal(t, cluster, manager.GetConfig())
 	} else {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "validation reported")
@@ -493,9 +494,10 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
+	cluster := manager.GetConfig()
 	// After loading, Config property should be accessible and equal to returned cluster
 	assert.Equal(t, cluster, manager.Config)
 	assert.Equal(t, v1alpha1.DistributionKind, manager.Config.Spec.Distribution)
@@ -533,17 +535,17 @@ func testFieldValueSetting(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 
 	if expectValidationError {
 		require.Error(t, err)
-		assertFunc(t, cluster)
+		assertFunc(t, manager.GetConfig())
 
 		return
 	}
 
 	require.NoError(t, err)
-	assertFunc(t, cluster)
+	assertFunc(t, manager.GetConfig())
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
@@ -675,7 +677,7 @@ invalid yaml content
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
-	_, err = manager.LoadConfig(nil)
+	err = manager.LoadConfig(nil)
 
 	// We expect this to fail with a config reading error (not ConfigFileNotFoundError)
 	if err != nil {
@@ -687,9 +689,9 @@ invalid yaml content
 		assert.NotErrorAs(t, err, &configFileNotFoundError,
 			"Should not be ConfigFileNotFoundError")
 	} else {
-		t.Logf("No error occurred, cluster: %+v", manager.Config)
+		t.Logf("No error occurred, cluster: %+v", manager.GetConfig())
 		// If it succeeded somehow, the test should still pass
-		require.NotNil(t, manager.Config)
+		require.NotNil(t, manager.GetConfig())
 	}
 }
 
@@ -720,9 +722,10 @@ spec:
 	fieldSelectors := createFieldSelectorsWithName()
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err = manager.LoadConfig(nil)
 	require.NoError(t, err)
 
+	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 
 	// Verify config was loaded properly (this exercises the "else" branch in readConfigurationFile)
@@ -860,7 +863,7 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 		},
 	)
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 
@@ -925,11 +928,11 @@ func loadConfigAndCaptureOutput(
 	output := &bytes.Buffer{}
 	manager := configmanager.NewConfigManager(output, fieldSelectors...)
 
-	cluster, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	require.NoError(t, err)
-	require.NotNil(t, cluster)
+	require.NotNil(t, manager.GetConfig())
 
-	return manager, output, cluster
+	return manager, output, manager.GetConfig()
 }
 
 type kindCiliumScenario struct {
@@ -970,7 +973,7 @@ spec:
 		manager = configmanager.NewConfigManager(&output)
 	)
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	logOutput := output.String()
 
 	if scenario.expectValidationErr {
@@ -1002,7 +1005,7 @@ func runK3dDistributionScenario(t *testing.T, scenario k3dScenario) {
 
 	manager, output := newK3dManagerForScenario(t, scenario)
 
-	_, err := manager.LoadConfig(nil)
+	err := manager.LoadConfig(nil)
 	logOutput := output.String()
 
 	if scenario.expectErr {
@@ -1034,7 +1037,7 @@ func runK3dDistributionScenario(t *testing.T, scenario k3dScenario) {
 		)
 	}
 
-	config := manager.Config
+	config := manager.GetConfig()
 	if config == nil {
 		t.Fatalf("expected config to be loaded")
 	}

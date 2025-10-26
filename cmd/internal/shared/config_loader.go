@@ -42,7 +42,7 @@ func LoadConfig(
 		deps.Timer.Start()
 	}
 
-	_, err := cfgManager.LoadConfig(deps.Timer)
+	err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}

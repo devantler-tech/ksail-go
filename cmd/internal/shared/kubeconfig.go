@@ -38,10 +38,12 @@ func getKubeconfigPath(cfgManager *ksailconfigmanager.ConfigManager) (string, er
 	tmr := timer.New()
 	tmr.Start()
 
-	clusterCfg, err := cfgManager.LoadConfig(tmr)
+	err := cfgManager.LoadConfig(tmr)
 	if err != nil {
 		return "", fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
+
+	clusterCfg := cfgManager.GetConfig()
 
 	kubeconfigPath := clusterCfg.Spec.Connection.Kubeconfig
 	if kubeconfigPath == "" {
