@@ -10,19 +10,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var errDockerCreate = errors.New("docker client creation failed")
-
 func TestWithDockerClient_Success(t *testing.T) {
 	t.Parallel()
 
 	cmd := &cobra.Command{}
+
 	var out bytes.Buffer
+
 	cmd.SetOut(&out)
 
 	operationCalled := false
 	operation := func(dockerClient client.APIClient) error {
 		operationCalled = true
+
 		assert.NotNil(t, dockerClient)
+
 		return nil
 	}
 
@@ -44,7 +46,9 @@ func TestWithDockerClient_OperationError(t *testing.T) {
 	t.Parallel()
 
 	cmd := &cobra.Command{}
+
 	var out bytes.Buffer
+
 	cmd.SetOut(&out)
 
 	expectedErr := errors.New("operation failed")

@@ -1086,26 +1086,27 @@ func writeFile(t *testing.T, path, contents string) {
 }
 
 func TestIsFieldEmptyForTesting_Nil(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-result := configmanager.IsFieldEmptyForTesting(nil)
-assert.True(t, result)
+	result := configmanager.IsFieldEmptyForTesting(nil)
+	assert.True(t, result)
 }
 
 func TestIsFieldEmptyForTesting_NonPointer(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-value := "test"
-result := configmanager.IsFieldEmptyForTesting(value)
-assert.True(t, result)
+	value := "test"
+	result := configmanager.IsFieldEmptyForTesting(value)
+	assert.True(t, result)
 }
 
 func TestIsFieldEmptyForTesting_NilPointer(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-var ptr *string
-result := configmanager.IsFieldEmptyForTesting(ptr)
-assert.True(t, result)
+	var ptr *string
+
+	result := configmanager.IsFieldEmptyForTesting(ptr)
+	assert.True(t, result)
 }
 
 func TestIsFieldEmptyForTesting_EmptyString(t *testing.T) {
