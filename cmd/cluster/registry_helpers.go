@@ -10,7 +10,7 @@ import (
 
 // withDockerClient creates a Docker client, executes the given function, and cleans up.
 // Returns an error if client creation fails or if the function returns an error.
-func withDockerClient(cmd *cobra.Command, fn func(client.APIClient) error) error {
+func withDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
 	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -31,5 +31,5 @@ func withDockerClient(cmd *cobra.Command, fn func(client.APIClient) error) error
 		}
 	}()
 
-	return fn(dockerClient)
+	return operation(dockerClient)
 }

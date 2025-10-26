@@ -193,6 +193,7 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 			var name string
 
 			var upstream string
+
 			port := defaultRegistryPort + portOffset
 
 			if len(endpoints) > 0 {
@@ -207,6 +208,7 @@ func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
 							fullName := hostPort[0] // "kind-docker-io"
 							name = fullName         // Keep full distribution-prefixed name
 						}
+
 						if len(hostPort) == expectedPartCount {
 							if extractedPort := extractPortFromEndpoint(endpoint); extractedPort > 0 {
 								port = extractedPort
