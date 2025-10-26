@@ -462,8 +462,6 @@ func inferRegistryHost(name string) string {
 	return strings.ReplaceAll(name, "-", ".")
 }
 
-
-
 // extractPortFromURL extracts the port from a URL string.
 // Returns "5000" as default if no port is found.
 func extractPortFromURL(urlStr string) string {
