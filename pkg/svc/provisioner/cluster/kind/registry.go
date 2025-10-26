@@ -27,6 +27,30 @@ type RegistryInfo struct {
 	Port     int
 }
 
+// setupRegistryManager creates a registry manager and extracts registries from Kind config.
+// Returns nil if no setup is needed.
+func setupRegistryManager(
+	kindConfig *v1alpha4.Cluster,
+	dockerClient client.APIClient,
+) (*dockerclient.RegistryManager, []RegistryInfo, error) {
+	if kindConfig == nil {
+		return nil, nil, nil
+	}
+
+	// Create registry manager
+	registryMgr, err := dockerclient.NewRegistryManager(dockerClient)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
+	}
+
+	registries := extractRegistriesFromKind(kindConfig)
+	if len(registries) == 0 {
+		return nil, nil, nil
+	}
+
+	return registryMgr, registries, nil
+}
+
 // SetupRegistries creates mirror registries based on Kind cluster configuration.
 // Registries are created without network attachment first, as the "kind" network
 // doesn't exist until after the cluster is created.
@@ -37,18 +61,13 @@ func SetupRegistries(
 	dockerClient client.APIClient,
 	writer io.Writer,
 ) error {
-	if kindConfig == nil {
-		return nil
-	}
-
-	// Create registry manager
-	registryMgr, err := dockerclient.NewRegistryManager(dockerClient)
+	// Setup registry manager and extract registries
+	registryMgr, registries, err := setupRegistryManager(kindConfig, dockerClient)
 	if err != nil {
-		return fmt.Errorf("failed to create registry manager: %w", err)
+		return err
 	}
 
-	registries := extractRegistriesFromKind(kindConfig)
-	if len(registries) == 0 {
+	if registryMgr == nil {
 		return nil
 	}
 
@@ -135,18 +154,13 @@ func CleanupRegistries(
 	dockerClient client.APIClient,
 	deleteVolumes bool,
 ) error {
-	if kindConfig == nil {
-		return nil
-	}
-
-	// Create registry manager
-	registryMgr, err := dockerclient.NewRegistryManager(dockerClient)
+	// Setup registry manager and extract registries
+	registryMgr, registries, err := setupRegistryManager(kindConfig, dockerClient)
 	if err != nil {
-		return fmt.Errorf("failed to create registry manager: %w", err)
+		return err
 	}
 
-	registries := extractRegistriesFromKind(kindConfig)
-	if len(registries) == 0 {
+	if registryMgr == nil {
 		return nil
 	}
 
