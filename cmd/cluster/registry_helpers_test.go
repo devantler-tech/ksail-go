@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var errOperationFailed = errors.New("operation failed")
+
 func TestWithDockerClient_Success(t *testing.T) {
 	t.Parallel()
 
@@ -51,17 +53,16 @@ func TestWithDockerClient_OperationError(t *testing.T) {
 
 	cmd.SetOut(&out)
 
-	expectedErr := errors.New("operation failed")
 	operation := func(_ client.APIClient) error {
-		return expectedErr
+		return errOperationFailed
 	}
 
 	err := withDockerClient(cmd, operation)
 
 	// If Docker is available, we should get the operation error
 	// If Docker is not available, we'll get a Docker connection error
-	if err != nil && errors.Is(err, expectedErr) {
-		assert.ErrorIs(t, err, expectedErr)
+	if err != nil && errors.Is(err, errOperationFailed) {
+		assert.ErrorIs(t, err, errOperationFailed)
 	}
 }
 

@@ -32,6 +32,8 @@ const (
 
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
+var errRepoError = errors.New("repo error")
+
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
 
@@ -645,15 +647,14 @@ func TestAddCiliumRepository_Success(t *testing.T) {
 	helmClient := &fakeHelmClient{}
 	err := addCiliumRepository(context.Background(), helmClient)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, helmClient.addRepoCalls)
 }
 
 func TestAddCiliumRepository_Error(t *testing.T) {
 	t.Parallel()
 
-	expectedErr := errors.New("repo error")
-	helmClient := &fakeHelmClient{addRepoErr: expectedErr}
+	helmClient := &fakeHelmClient{addRepoErr: errRepoError}
 	err := addCiliumRepository(context.Background(), helmClient)
 
 	require.Error(t, err)
@@ -691,8 +692,7 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	clusterCfg := &v1alpha1.Cluster{}
-	expectedErr := errors.New("provisioner failed")
-	provisioner := &testutils.StubProvisioner{CreateErr: expectedErr}
+	provisioner := &testutils.StubProvisioner{CreateErr: errProvisionerFailed}
 	deps := shared.LifecycleDeps{
 		Timer: &testutils.RecordingTimer{},
 		Factory: &testutils.StubFactory{
@@ -703,6 +703,6 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 
 	err := executeClusterCreation(cmd, clusterCfg, deps)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create cluster")
 }
