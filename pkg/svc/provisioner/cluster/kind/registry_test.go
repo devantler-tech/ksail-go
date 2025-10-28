@@ -37,6 +37,16 @@ func loadTestData(t *testing.T, filename string) string {
 	return string(data)
 }
 
+// setupTestEnvironment creates a standard test environment with mock client, context, and buffer.
+func setupTestEnvironment(t *testing.T) (*docker.MockAPIClient, context.Context, *bytes.Buffer) {
+	t.Helper()
+	mockClient := docker.NewMockAPIClient(t)
+	ctx := context.Background()
+	buf := &bytes.Buffer{}
+
+	return mockClient, ctx, buf
+}
+
 func TestParseContainerdConfig(t *testing.T) {
 	t.Parallel()
 
@@ -170,16 +180,13 @@ func TestSetupRegistries_NilKindConfig(t *testing.T) {
 func TestSetupRegistries_NoRegistries(t *testing.T) {
 	t.Parallel()
 
-	mockClient := docker.NewMockAPIClient(t)
-	ctx := context.Background()
-
-	var buf bytes.Buffer
+	mockClient, ctx, buf := setupTestEnvironment(t)
 
 	kindConfig := &v1alpha4.Cluster{
 		ContainerdConfigPatches: []string{},
 	}
 
-	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test-cluster", mockClient, &buf)
+	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test-cluster", mockClient, buf)
 	assert.NoError(t, err)
 }
 
@@ -198,16 +205,13 @@ func TestConnectRegistriesToNetwork_NilKindConfig(t *testing.T) {
 func TestConnectRegistriesToNetwork_NoRegistries(t *testing.T) {
 	t.Parallel()
 
-	mockClient := docker.NewMockAPIClient(t)
-	ctx := context.Background()
-
-	var buf bytes.Buffer
+	mockClient, ctx, buf := setupTestEnvironment(t)
 
 	kindConfig := &v1alpha4.Cluster{
 		ContainerdConfigPatches: []string{},
 	}
 
-	err := kindprovisioner.ConnectRegistriesToNetwork(ctx, kindConfig, mockClient, &buf)
+	err := kindprovisioner.ConnectRegistriesToNetwork(ctx, kindConfig, mockClient, buf)
 	assert.NoError(t, err)
 }
 
@@ -339,15 +343,14 @@ func TestGenerateUpstreamURL(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			registries := testRegistryExtraction(t, testCase.host, "http://localhost:5000")
-			assert.Len(t, registries, 1)
-			assert.Equal(t, testCase.expected, registries[0].Upstream)
-		})
-	}
+	runRegistryExtractionTestCases(
+		t,
+		tests,
+		func(t *testing.T, expected string, registries []kindprovisioner.RegistryInfo) {
+			t.Helper()
+			assert.Equal(t, expected, registries[0].Upstream)
+		},
+	)
 }
 
 // testRegistryExtraction is a helper for testing registry extraction from Kind config.
@@ -362,6 +365,36 @@ func testRegistryExtraction(t *testing.T, host, endpoint string) []kindprovision
 	}
 
 	return kindprovisioner.ExtractRegistriesFromKindForTesting(config)
+}
+
+// runRegistryExtractionTest is a helper to run a single registry extraction test case.
+func runRegistryExtractionTest(t *testing.T, host string) []kindprovisioner.RegistryInfo {
+	t.Helper()
+	registries := testRegistryExtraction(t, host, "http://localhost:5000")
+	assert.Len(t, registries, 1)
+
+	return registries
+}
+
+// runRegistryExtractionTestCases runs a set of test cases with a custom assertion function.
+func runRegistryExtractionTestCases(
+	t *testing.T,
+	tests []struct {
+		name     string
+		host     string
+		expected string
+	},
+	assertFunc func(*testing.T, string, []kindprovisioner.RegistryInfo),
+) {
+	t.Helper()
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			registries := runRegistryExtractionTest(t, testCase.host)
+			assertFunc(t, testCase.expected, registries)
+		})
+	}
 }
 
 func TestExtractPortFromEndpoint(t *testing.T) {
@@ -452,15 +485,14 @@ func TestGenerateNameFromHost(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			registries := testRegistryExtraction(t, testCase.host, "http://localhost:5000")
-			assert.Len(t, registries, 1)
-			assert.Equal(t, testCase.expected, registries[0].Name)
-		})
-	}
+	runRegistryExtractionTestCases(
+		t,
+		tests,
+		func(t *testing.T, expected string, registries []kindprovisioner.RegistryInfo) {
+			t.Helper()
+			assert.Equal(t, expected, registries[0].Name)
+		},
+	)
 }
 
 func TestExtractNameFromEndpoint(t *testing.T) {

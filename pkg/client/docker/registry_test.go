@@ -53,6 +53,16 @@ func mockRegistryNotExists(ctx context.Context, mockClient *docker.MockAPIClient
 		Once()
 }
 
+// newTestRegistryConfig creates a standard test registry configuration.
+func newTestRegistryConfig() docker.RegistryConfig {
+	return docker.RegistryConfig{
+		Name:        "docker.io",
+		Port:        5000,
+		UpstreamURL: "https://registry-1.docker.io",
+		ClusterName: "test-cluster",
+	}
+}
+
 // mockImagePullSequence sets up the complete image pull mock sequence.
 func mockImagePullSequence(ctx context.Context, mockClient *docker.MockAPIClient) {
 	// Mock image inspect (image doesn't exist)
@@ -87,6 +97,53 @@ func mockVolumeCreateSequence(
 		VolumeCreate(ctx, mock.Anything).
 		Return(volume.Volume{}, nil).
 		Once()
+}
+
+// mockImageExists sets up mocks for when a registry image already exists.
+func mockImageExists(ctx context.Context, mockClient *docker.MockAPIClient) {
+	mockClient.EXPECT().
+		ImageInspect(ctx, docker.RegistryImageName).
+		Return(image.InspectResponse{}, nil).
+		Once()
+}
+
+// mockImageNotFound sets up mocks for when a registry image is not found.
+func mockImageNotFound(ctx context.Context, mockClient *docker.MockAPIClient) {
+	mockClient.EXPECT().
+		ImageInspect(ctx, docker.RegistryImageName).
+		Return(image.InspectResponse{}, errNotFound).
+		Once()
+}
+
+// mockRegistryContainerListTwice sets up mocks for listing a registry container twice.
+func mockRegistryContainerListTwice(
+	ctx context.Context, mockClient *docker.MockAPIClient, registry container.Summary,
+) {
+	mockClient.EXPECT().
+		ContainerList(ctx, mock.Anything).
+		Return([]container.Summary{registry}, nil).
+		Times(2)
+}
+
+// mockContainerListError sets up mocks for a ContainerList error.
+func mockContainerListError(ctx context.Context, mockClient *docker.MockAPIClient) {
+	mockClient.EXPECT().
+		ContainerList(ctx, mock.Anything).
+		Return(nil, errListFailed).
+		Once()
+}
+
+// setupDeleteRegistryTest creates the standard setup for delete registry tests.
+func setupDeleteRegistryTest(
+	t *testing.T,
+) (*docker.MockAPIClient, *docker.RegistryManager, context.Context) {
+	t.Helper()
+	mockClient, manager, ctx := setupTestRegistryManager(t)
+	registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
+	mockRegistryContainerListTwice(ctx, mockClient, registry)
+	mockContainerStopRemove(ctx, mockClient, "registry-id")
+
+	return mockClient, manager, ctx
 }
 
 // mockContainerCreateStart sets up the container creation and start mock sequence.
@@ -152,6 +209,22 @@ func mockContainerListOnce(
 		ContainerList(ctx, mock.Anything).
 		Return(registries, nil).
 		Once()
+}
+
+// mockRegistryContainerWithPort creates a registry container summary with specified port.
+func mockRegistryContainerWithPort(registryID, registryName string, port int) container.Summary {
+	return container.Summary{
+		ID: registryID,
+		Labels: map[string]string{
+			docker.RegistryLabelKey: registryName,
+		},
+		Ports: []container.Port{
+			{
+				PrivatePort: uint16(port), //nolint:gosec // Port values are test constants
+				PublicPort:  uint16(port), //nolint:gosec // Port values are test constants
+			},
+		},
+	}
 }
 
 func TestNewRegistryManager(t *testing.T) {
@@ -397,18 +470,7 @@ func TestGetRegistryPort(t *testing.T) {
 		mockClient, manager, ctx := setupTestRegistryManager(t)
 
 		mockContainerListOnce(ctx, mockClient, []container.Summary{
-			{
-				ID: "registry-id",
-				Labels: map[string]string{
-					docker.RegistryLabelKey: "docker.io",
-				},
-				Ports: []container.Port{
-					{
-						PrivatePort: 5000,
-						PublicPort:  5000,
-					},
-				},
-			},
+			mockRegistryContainerWithPort("registry-id", "docker.io", 5000),
 		})
 
 		port, err := manager.GetRegistryPort(ctx, "docker.io")
@@ -436,20 +498,10 @@ func TestCreateRegistry_ImagePullError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
-
-	// Mock image not found
-	mockClient.EXPECT().
-		ImageInspect(ctx, docker.RegistryImageName).
-		Return(image.InspectResponse{}, errNotFound).
-		Once()
+	mockImageNotFound(ctx, mockClient)
 
 	// Mock image pull failure
 	mockClient.EXPECT().
@@ -468,20 +520,10 @@ func TestCreateRegistry_VolumeCreateError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
-
-	// Mock image exists
-	mockClient.EXPECT().
-		ImageInspect(ctx, docker.RegistryImageName).
-		Return(image.InspectResponse{}, nil).
-		Once()
+	mockImageExists(ctx, mockClient)
 
 	// Mock volume not found
 	mockClient.EXPECT().
@@ -506,12 +548,7 @@ func TestCreateRegistry_ContainerCreateError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
@@ -534,12 +571,7 @@ func TestCreateRegistry_ContainerStartError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
@@ -568,20 +600,10 @@ func TestCreateRegistry_ImageAlreadyExists(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
-
-	// Mock image exists
-	mockClient.EXPECT().
-		ImageInspect(ctx, docker.RegistryImageName).
-		Return(image.InspectResponse{}, nil).
-		Once()
+	mockImageExists(ctx, mockClient)
 
 	mockVolumeCreateSequence(ctx, mockClient, "ksail-registry-docker.io")
 	mockContainerCreateStart(ctx, mockClient, "ksail-registry-docker.io", "test-id")
@@ -596,12 +618,7 @@ func TestCreateRegistry_VolumeAlreadyExists(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
@@ -626,11 +643,7 @@ func TestDeleteRegistry_ContainerStopError(t *testing.T) {
 
 	registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
 
-	// Mock list registry containers (2 times)
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return([]container.Summary{registry}, nil).
-		Times(2)
+	mockRegistryContainerListTwice(ctx, mockClient, registry)
 
 	// Mock container stop failure
 	mockClient.EXPECT().
@@ -651,11 +664,7 @@ func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 
 	registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
 
-	// Mock list registry containers (2 times)
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return([]container.Summary{registry}, nil).
-		Times(2)
+	mockRegistryContainerListTwice(ctx, mockClient, registry)
 
 	// Mock container stop success
 	mockClient.EXPECT().
@@ -678,17 +687,7 @@ func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
-
-	// Mock list registry containers (2 times)
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return([]container.Summary{registry}, nil).
-		Times(2)
-
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	mockClient, manager, ctx := setupDeleteRegistryTest(t)
 
 	// Mock volume remove failure
 	mockClient.EXPECT().
@@ -705,17 +704,7 @@ func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 func TestDeleteRegistry_WithoutVolumeDelete(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	registry := mockRegistryContainer("registry-id", "docker.io", "test-cluster", "exited")
-
-	// Mock list registry containers (2 times)
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return([]container.Summary{registry}, nil).
-		Times(2)
-
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	_, manager, ctx := setupDeleteRegistryTest(t)
 
 	err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false)
 
@@ -727,10 +716,7 @@ func TestListRegistries_Error(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return(nil, errListFailed).
-		Once()
+	mockContainerListError(ctx, mockClient)
 
 	_, err := manager.ListRegistries(ctx)
 
@@ -743,10 +729,7 @@ func TestIsRegistryInUse_Error(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return(nil, errListFailed).
-		Once()
+	mockContainerListError(ctx, mockClient)
 
 	_, err := manager.IsRegistryInUse(ctx, "docker.io")
 
@@ -760,18 +743,7 @@ func TestGetRegistryPort_NoPortFound(t *testing.T) {
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
 	mockContainerListOnce(ctx, mockClient, []container.Summary{
-		{
-			ID: "registry-id",
-			Labels: map[string]string{
-				docker.RegistryLabelKey: "docker.io",
-			},
-			Ports: []container.Port{
-				{
-					PrivatePort: 8080, // Wrong port
-					PublicPort:  8080,
-				},
-			},
-		},
+		mockRegistryContainerWithPort("registry-id", "docker.io", 8080), // Wrong port
 	})
 
 	_, err := manager.GetRegistryPort(ctx, "docker.io")
@@ -785,10 +757,7 @@ func TestGetRegistryPort_Error(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return(nil, errListFailed).
-		Once()
+	mockContainerListError(ctx, mockClient)
 
 	_, err := manager.GetRegistryPort(ctx, "docker.io")
 
@@ -823,20 +792,10 @@ func TestEnsureRegistryImage_ImagePullReadError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	config := docker.RegistryConfig{
-		Name:        "docker.io",
-		Port:        5000,
-		UpstreamURL: "https://registry-1.docker.io",
-		ClusterName: "test-cluster",
-	}
+	config := newTestRegistryConfig()
 
 	mockRegistryNotExists(ctx, mockClient)
-
-	// Mock image not found
-	mockClient.EXPECT().
-		ImageInspect(ctx, docker.RegistryImageName).
-		Return(image.InspectResponse{}, errNotFound).
-		Once()
+	mockImageNotFound(ctx, mockClient)
 
 	// Mock image pull with error reader
 	errorRdr := &errorReader{err: errReadFailed}
