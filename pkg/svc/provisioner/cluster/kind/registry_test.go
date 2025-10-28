@@ -37,6 +37,15 @@ func loadTestData(t *testing.T, filename string) string {
 	return string(data)
 }
 
+// setupTestEnvironment creates a standard test environment with mock client, context, and buffer.
+func setupTestEnvironment(t *testing.T) (*docker.MockAPIClient, context.Context, *bytes.Buffer) {
+	t.Helper()
+	mockClient := docker.NewMockAPIClient(t)
+	ctx := context.Background()
+	buf := &bytes.Buffer{}
+	return mockClient, ctx, buf
+}
+
 func TestParseContainerdConfig(t *testing.T) {
 	t.Parallel()
 
@@ -170,16 +179,13 @@ func TestSetupRegistries_NilKindConfig(t *testing.T) {
 func TestSetupRegistries_NoRegistries(t *testing.T) {
 	t.Parallel()
 
-	mockClient := docker.NewMockAPIClient(t)
-	ctx := context.Background()
-
-	var buf bytes.Buffer
+	mockClient, ctx, buf := setupTestEnvironment(t)
 
 	kindConfig := &v1alpha4.Cluster{
 		ContainerdConfigPatches: []string{},
 	}
 
-	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test-cluster", mockClient, &buf)
+	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test-cluster", mockClient, buf)
 	assert.NoError(t, err)
 }
 
@@ -198,16 +204,13 @@ func TestConnectRegistriesToNetwork_NilKindConfig(t *testing.T) {
 func TestConnectRegistriesToNetwork_NoRegistries(t *testing.T) {
 	t.Parallel()
 
-	mockClient := docker.NewMockAPIClient(t)
-	ctx := context.Background()
-
-	var buf bytes.Buffer
+	mockClient, ctx, buf := setupTestEnvironment(t)
 
 	kindConfig := &v1alpha4.Cluster{
 		ContainerdConfigPatches: []string{},
 	}
 
-	err := kindprovisioner.ConnectRegistriesToNetwork(ctx, kindConfig, mockClient, &buf)
+	err := kindprovisioner.ConnectRegistriesToNetwork(ctx, kindConfig, mockClient, buf)
 	assert.NoError(t, err)
 }
 

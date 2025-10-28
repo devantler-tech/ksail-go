@@ -116,13 +116,7 @@ func TestHandleCreateRunE(t *testing.T) {
 		cfgManager.Viper.SetConfigFile(cfgPath)
 
 		provisioner := &testutils.StubProvisioner{}
-		deps := shared.LifecycleDeps{
-			Timer: &testutils.RecordingTimer{},
-			Factory: &testutils.StubFactory{
-				Provisioner:        provisioner,
-				DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-			},
-		}
+		deps := newTestLifecycleDeps(provisioner)
 
 		err := handleCreateRunE(cmd, cfgManager, deps)
 		if err == nil {
@@ -577,6 +571,26 @@ func (s *stubTimer) GetTiming() (time.Duration, time.Duration) {
 
 func (s *stubTimer) Stop() {}
 
+// setupKindMirrorsTest creates the standard test setup for prepareKindConfigWithMirrors tests.
+func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManager, *kindv1alpha4.Cluster) {
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
+	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
+	kindConfig := &kindv1alpha4.Cluster{}
+	return clusterCfg, cfgManager, kindConfig
+}
+
+// newTestLifecycleDeps creates standard lifecycle dependencies for testing.
+func newTestLifecycleDeps(provisioner *testutils.StubProvisioner) shared.LifecycleDeps {
+	return shared.LifecycleDeps{
+		Timer: &testutils.RecordingTimer{},
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+}
+
 func TestPrepareKindConfigWithMirrors_NoKindConfig(t *testing.T) {
 	t.Parallel()
 
@@ -603,10 +617,7 @@ func TestPrepareKindConfigWithMirrors_NonKindDistribution(t *testing.T) {
 func TestPrepareKindConfigWithMirrors_WithMirrorRegistryFlag(t *testing.T) {
 	t.Parallel()
 
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{}
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
 
 	cfgManager.Viper.Set("mirror-registry", []string{"docker.io=http://localhost:5000"})
 
@@ -618,12 +629,8 @@ func TestPrepareKindConfigWithMirrors_WithMirrorRegistryFlag(t *testing.T) {
 func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
 	t.Parallel()
 
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{
-		ContainerdConfigPatches: []string{"existing-patch"},
-	}
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
+	kindConfig.ContainerdConfigPatches = []string{"existing-patch"}
 
 	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
 	assert.True(t, result, "should return true when containerd patches exist")
@@ -632,10 +639,7 @@ func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
 func TestPrepareKindConfigWithMirrors_NoPatches(t *testing.T) {
 	t.Parallel()
 
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
-	kindConfig := &kindv1alpha4.Cluster{}
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
 
 	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
 	assert.False(t, result, "should return false when no patches")
@@ -670,13 +674,7 @@ func TestExecuteClusterCreation_Success(t *testing.T) {
 
 	clusterCfg := &v1alpha1.Cluster{}
 	provisioner := &testutils.StubProvisioner{}
-	deps := shared.LifecycleDeps{
-		Timer: &testutils.RecordingTimer{},
-		Factory: &testutils.StubFactory{
-			Provisioner:        provisioner,
-			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-		},
-	}
+	deps := newTestLifecycleDeps(provisioner)
 
 	err := executeClusterCreation(cmd, clusterCfg, deps)
 
