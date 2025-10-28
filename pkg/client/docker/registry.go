@@ -300,17 +300,14 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 		return fmt.Errorf("failed to pull registry image: %w", err)
 	}
 
-	defer func() {
-		closeErr := reader.Close()
-		if closeErr != nil {
-			err = fmt.Errorf("failed to close image pull reader: %w", closeErr)
-		}
-	}()
-
 	// Consume pull output
 	_, err = io.Copy(io.Discard, reader)
+	closeErr := reader.Close()
 	if err != nil {
 		return fmt.Errorf("failed to read image pull output: %w", err)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("failed to close image pull reader: %w", closeErr)
 	}
 
 	return nil
