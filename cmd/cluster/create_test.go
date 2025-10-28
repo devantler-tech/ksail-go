@@ -577,6 +577,7 @@ func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManage
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
 	kindConfig := &kindv1alpha4.Cluster{}
+
 	return clusterCfg, cfgManager, kindConfig
 }
 

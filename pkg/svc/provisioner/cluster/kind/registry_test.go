@@ -43,6 +43,7 @@ func setupTestEnvironment(t *testing.T) (*docker.MockAPIClient, context.Context,
 	mockClient := docker.NewMockAPIClient(t)
 	ctx := context.Background()
 	buf := &bytes.Buffer{}
+
 	return mockClient, ctx, buf
 }
 
