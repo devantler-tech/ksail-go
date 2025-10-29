@@ -47,7 +47,7 @@ func (l *streamLogger) Warn(message string) {
 	_, _ = fmt.Fprintln(l.writer, message)
 }
 
-func (l *streamLogger) Warnf(format string, args ...interface{}) {
+func (l *streamLogger) Warnf(format string, args ...any) {
 	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
 }
 
@@ -55,7 +55,7 @@ func (l *streamLogger) Error(message string) {
 	_, _ = fmt.Fprintln(l.writer, message)
 }
 
-func (l *streamLogger) Errorf(format string, args ...interface{}) {
+func (l *streamLogger) Errorf(format string, args ...any) {
 	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
 }
 
@@ -69,9 +69,9 @@ func NewNoopInfoLogger() log.InfoLogger {
 	return noopInfoLogger{}
 }
 
-func (noopInfoLogger) Info(string)                  {}
-func (noopInfoLogger) Infof(string, ...interface{}) {}
-func (noopInfoLogger) Enabled() bool                { return false }
+func (noopInfoLogger) Info(string)          {}
+func (noopInfoLogger) Infof(string, ...any) {}
+func (noopInfoLogger) Enabled() bool        { return false }
 
 //nolint:ireturn // V must return log.InfoLogger to satisfy kind's interface
 func (l *streamLogger) V(level log.Level) log.InfoLogger {
@@ -87,7 +87,7 @@ func (l *streamLogger) Info(message string) {
 	_, _ = fmt.Fprintln(l.writer, message)
 }
 
-func (l *streamLogger) Infof(format string, args ...interface{}) {
+func (l *streamLogger) Infof(format string, args ...any) {
 	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
 }
 

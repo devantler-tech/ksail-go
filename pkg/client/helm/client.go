@@ -126,14 +126,14 @@ func NewClient(kubeConfig, kubeContext string) (*Client, error) {
 // NewClientWithDebug creates a Helm client with a custom debug logger.
 func NewClientWithDebug(
 	kubeConfig, kubeContext string,
-	debugFunc func(string, ...interface{}),
+	debugFunc func(string, ...any),
 ) (*Client, error) {
 	return newClient(kubeConfig, kubeContext, debugFunc)
 }
 
 func newClient(
 	kubeConfig, kubeContext string,
-	debug func(string, ...interface{}),
+	debug func(string, ...any),
 ) (*Client, error) {
 	inner, err := createHelmClient(kubeConfig, kubeContext, debug)
 	if err != nil {
@@ -145,11 +145,11 @@ func newClient(
 
 func createHelmClient(
 	kubeConfig, kubeContext string,
-	debug func(string, ...interface{}),
+	debug func(string, ...any),
 ) (*helmclientlib.HelmClient, error) {
 	debugLog := debug
 	if debugLog == nil {
-		debugLog = func(string, ...interface{}) {}
+		debugLog = func(string, ...any) {}
 	}
 
 	options := &helmclientlib.Options{

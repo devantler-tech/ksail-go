@@ -474,8 +474,8 @@ func extractEndpointsFromInlineArray(line string) []string {
 	arrayContent := line[start+1 : end]
 
 	// Split by comma and extract quoted strings
-	parts := strings.Split(arrayContent, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(arrayContent, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
 		if endpoint := extractQuotedString(part); endpoint != "" {
 			endpoints = append(endpoints, endpoint)

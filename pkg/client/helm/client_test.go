@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -102,7 +103,7 @@ func TestNewClientWithDebug(t *testing.T) {
 	t.Parallel()
 
 	debugCalled := false
-	debugFunc := func(string, ...interface{}) {
+	debugFunc := func(string, ...any) {
 		debugCalled = true
 	}
 
@@ -230,13 +231,7 @@ func TestChartSpec_WithValues(t *testing.T) {
 }
 
 func contains(values []string, value string) bool {
-	for _, v := range values {
-		if v == value {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(values, value)
 }
 
 func TestChartSpec_InstallOptions(t *testing.T) {
