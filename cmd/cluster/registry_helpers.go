@@ -24,9 +24,12 @@ func withDockerClient(cmd *cobra.Command, operation func(client.APIClient) error
 		if closeErr != nil {
 			// Log cleanup error but don't fail the operation
 			notify.WriteMessage(notify.Message{
-				Type:    notify.WarningType,
-				Content: fmt.Sprintf("cleanup warning: failed to close docker client: %v", closeErr),
-				Writer:  cmd.OutOrStdout(),
+				Type: notify.WarningType,
+				Content: fmt.Sprintf(
+					"cleanup warning: failed to close docker client: %v",
+					closeErr,
+				),
+				Writer: cmd.OutOrStdout(),
 			})
 		}
 	}()
