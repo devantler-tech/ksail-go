@@ -628,7 +628,11 @@ Usage:
   ksail workload reconcile [flags]
 
 Flags:
-  -h, --help   help for reconcile
+  -c, --context string               Kubernetes context of cluster
+  -d, --distribution Distribution    Kubernetes distribution to use (default Kind)
+      --distribution-config string   Configuration file for the distribution (default "kind.yaml")
+  -h, --help                         help for reconcile
+  -k, --kubeconfig string            Path to kubeconfig file (default "~/.kube/config")
 
 ---
 
