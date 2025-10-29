@@ -129,11 +129,13 @@ func cleanupMirrorRegistries(
 	}
 
 	// Clean up registries using Docker client
+	// Note: Use kindConfig.Name (distribution config) not clusterCfg metadata name
+	// The cluster name from the Kind config matches the actual cluster identifier
 	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
 		err := kindprovisioner.CleanupRegistries(
 			cmd.Context(),
 			kindConfig,
-			clusterCfg.Name,
+			kindConfig.Name,
 			dockerClient,
 			deleteVolumes,
 		)
