@@ -48,7 +48,7 @@ func TestGenerateContainerdPatches(t *testing.T) {
 		t.Parallel()
 
 		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{"docker-io=https://registry-1.docker.io"}
+		scaf.MirrorRegistries = []string{"docker.io=https://registry-1.docker.io"}
 
 		patches := scaf.GenerateContainerdPatches()
 		require.Len(t, patches, 1)
@@ -62,9 +62,9 @@ func TestGenerateContainerdPatches(t *testing.T) {
 
 		scaf := createTestScaffolderForKind()
 		scaf.MirrorRegistries = []string{
-			"docker-io=https://registry-1.docker.io",
-			"ghcr-io=https://ghcr.io",
-			"quay-io=https://quay.io",
+			"docker.io=https://registry-1.docker.io",
+			"ghcr.io=https://ghcr.io",
+			"quay.io=https://quay.io",
 		}
 
 		patches := scaf.GenerateContainerdPatches()
@@ -95,9 +95,9 @@ func testContainerdPatchesInvalidAndCustomPort(t *testing.T) {
 
 		scaf := createTestScaffolderForKind()
 		scaf.MirrorRegistries = []string{
-			"docker-io=https://registry-1.docker.io",
+			"docker.io=https://registry-1.docker.io",
 			"invalid-spec-no-equals",
-			"ghcr-io=https://ghcr.io",
+			"ghcr.io=https://ghcr.io",
 		}
 
 		patches := scaf.GenerateContainerdPatches()
@@ -127,7 +127,7 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		t.Parallel()
 
 		scaf := createTestScaffolderForK3d()
-		scaf.MirrorRegistries = []string{"docker-io=https://registry-1.docker.io"}
+		scaf.MirrorRegistries = []string{"docker.io=https://registry-1.docker.io"}
 
 		registryConfig := scaf.GenerateK3dRegistryConfig()
 		require.NotNil(t, registryConfig)
@@ -168,8 +168,8 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 
 		scaf := createTestScaffolderForK3d()
 		scaf.MirrorRegistries = []string{
-			"docker-io=https://registry-1.docker.io",
-			"ghcr-io=https://ghcr.io",
+			"docker.io=https://registry-1.docker.io",
+			"ghcr.io=https://ghcr.io",
 		}
 
 		registryConfig := scaf.GenerateK3dRegistryConfig()

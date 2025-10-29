@@ -87,7 +87,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 		return fmt.Errorf("failed to ensure registry image: %w", err)
 	}
 
-	// Create volume for registry data
+	// Create volume for registry data using the provided name for consistency
 	volumeName := config.Name
 
 	err = rm.createVolume(ctx, volumeName, config.Name)
@@ -100,7 +100,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	hostConfig := rm.buildHostConfig(config, volumeName)
 	networkConfig := rm.buildNetworkConfig(config)
 
-	// Use config.Name directly as container name (e.g., "kind-docker-io")
+	// Use provided registry name directly so other components can reference it
 	containerName := config.Name
 
 	// Create container
