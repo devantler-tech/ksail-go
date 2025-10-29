@@ -88,7 +88,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	}
 
 	// Create volume for registry data
-	volumeName := "ksail-registry-" + config.Name
+	volumeName := config.Name
 
 	err = rm.createVolume(ctx, volumeName, config.Name)
 	if err != nil {
@@ -100,7 +100,8 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	hostConfig := rm.buildHostConfig(config, volumeName)
 	networkConfig := rm.buildNetworkConfig(config)
 
-	containerName := "ksail-registry-" + config.Name
+	// Use config.Name directly as container name (e.g., "kind-docker-io")
+	containerName := config.Name
 
 	// Create container
 	resp, err := rm.client.ContainerCreate(
@@ -132,7 +133,7 @@ func (rm *RegistryManager) DeleteRegistry(
 	name, clusterName string,
 	deleteVolume bool,
 ) error {
-	containerName := "ksail-registry-" + name
+	containerName := name
 
 	// Get container to check labels
 	containers, err := rm.listRegistryContainers(ctx, name)
@@ -176,7 +177,7 @@ func (rm *RegistryManager) DeleteRegistry(
 
 	// Remove volume if requested
 	if deleteVolume {
-		volumeName := "ksail-registry-" + name
+		volumeName := name
 
 		err = rm.client.VolumeRemove(ctx, volumeName, false)
 		if err != nil {
