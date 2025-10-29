@@ -75,7 +75,6 @@ func handleDeleteRunE(
 		return fmt.Errorf("cluster deletion failed: %w", err)
 	}
 
-	// Access config directly from the public Config field
 	clusterCfg := cfgManager.Config
 
 	err = cleanupMirrorRegistries(cmd, clusterCfg, deps)
