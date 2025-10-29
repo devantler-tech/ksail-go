@@ -3,6 +3,7 @@ package cluster //nolint:testpackage // Access unexported helpers for coverage-f
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/client"
@@ -194,4 +195,23 @@ func TestSplitMirrorSpec_MultipleEquals(t *testing.T) {
 	assert.Len(t, result, 2)
 	assert.Equal(t, "registry", result[0])
 	assert.Equal(t, "endpoint=value", result[1])
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestWithDockerClient_InvalidEnvironment(t *testing.T) {
+	stubDockerClientFailure(t, errDockerClientFailure)
+
+	cmd := &cobra.Command{}
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	err := withDockerClient(cmd, func(client.APIClient) error { return nil })
+	if err == nil {
+		t.Fatal("expected error when docker host is invalid")
+	}
+
+	if !strings.Contains(err.Error(), "failed to create docker client") {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }

@@ -3,7 +3,9 @@ package kindprovisioner_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,8 +15,12 @@ import (
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
+	mock "github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
+
+var errContainerListFailed = errors.New("list failed")
 
 func TestMain(m *testing.M) {
 	v := m.Run()
@@ -188,6 +194,48 @@ func TestSetupRegistries_NoRegistries(t *testing.T) {
 
 	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test-cluster", mockClient, buf)
 	assert.NoError(t, err)
+}
+
+func TestSetupRegistries_NilDockerClient(t *testing.T) {
+	t.Parallel()
+
+	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://localhost:5000"]`
+
+	kindConfig := &v1alpha4.Cluster{
+		ContainerdConfigPatches: []string{patch},
+	}
+
+	err := kindprovisioner.SetupRegistries(
+		context.Background(),
+		kindConfig,
+		"test",
+		nil,
+		io.Discard,
+	)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create registry manager")
+}
+
+func TestSetupRegistries_CreateRegistryError(t *testing.T) {
+	t.Parallel()
+
+	mockClient, ctx, buf := setupTestEnvironment(t)
+
+	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://localhost:5000"]`
+
+	kindConfig := &v1alpha4.Cluster{
+		ContainerdConfigPatches: []string{patch},
+	}
+
+	mockClient.EXPECT().ContainerList(ctx, mock.Anything).Return(nil, errContainerListFailed).Once()
+
+	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test", mockClient, buf)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to create registry")
 }
 
 func TestConnectRegistriesToNetwork_NilKindConfig(t *testing.T) {

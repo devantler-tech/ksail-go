@@ -20,6 +20,7 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -98,39 +99,71 @@ func TestNewCreateLifecycleConfig(t *testing.T) {
 	})
 }
 
-func TestHandleCreateRunE(t *testing.T) {
+func TestHandleCreateRunE_InstallsCiliumWhenConfigured(t *testing.T) {
 	t.Parallel()
 
-	t.Run("installs_cilium_when_configured", func(t *testing.T) {
-		t.Parallel()
+	cmd, out := testutils.NewCommand(t)
 
-		cmd, out := testutils.NewCommand(t)
+	tempDir := t.TempDir()
+	cfgPath := writeCiliumClusterConfig(t, tempDir, "./missing-kubeconfig")
 
-		tempDir := t.TempDir()
-		cfgPath := writeCiliumClusterConfig(t, tempDir, "./missing-kubeconfig")
+	cfgManager := ksailconfigmanager.NewConfigManager(
+		out,
+		ksailconfigmanager.DefaultClusterFieldSelectors()...,
+	)
+	cfgManager.Viper.SetConfigFile(cfgPath)
 
-		cfgManager := ksailconfigmanager.NewConfigManager(
-			out,
-			ksailconfigmanager.DefaultClusterFieldSelectors()...,
-		)
-		cfgManager.Viper.SetConfigFile(cfgPath)
+	provisioner := &testutils.StubProvisioner{}
+	deps := newTestLifecycleDeps(provisioner)
 
-		provisioner := &testutils.StubProvisioner{}
-		deps := newTestLifecycleDeps(provisioner)
+	err := handleCreateRunE(cmd, cfgManager, deps)
 
-		err := handleCreateRunE(cmd, cfgManager, deps)
-		if err == nil {
-			t.Fatal("expected error when kubeconfig is missing")
-		}
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to install Cilium CNI")
+	assert.Equal(t, 1, provisioner.CreateCalls)
+}
 
-		if !strings.Contains(err.Error(), "failed to install Cilium CNI") {
-			t.Fatalf("unexpected error message: %v", err)
-		}
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestHandleCreateRunE_ReturnsErrorWhenMirrorSetupFails(t *testing.T) {
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
 
-		if provisioner.CreateCalls != 1 {
-			t.Fatalf("expected provisioner create to be invoked, got %d", provisioner.CreateCalls)
-		}
-	})
+	tempDir := t.TempDir()
+	kubeconfigPath := filepath.Join(tempDir, "kubeconfig")
+	cfgPath := writeCiliumClusterConfig(t, tempDir, kubeconfigPath)
+
+	kindPath := filepath.Join(tempDir, "kind.yaml")
+	ensureDisableDefaultCNI(t, kindPath)
+	appendKindPatch(t, kindPath)
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
+	cfgManager.Viper.SetConfigFile(cfgPath)
+	cfgManager.Viper.Set("spec.distributionConfig", kindPath)
+
+	provisioner := &testutils.StubProvisioner{}
+	deps := shared.LifecycleDeps{
+		Timer: &testutils.RecordingTimer{},
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+
+	_, loadErr := cfgManager.LoadConfig(&testutils.RecordingTimer{})
+	if loadErr != nil {
+		t.Logf("config output:\n%s", out.String())
+	}
+
+	require.NoError(t, loadErr)
+
+	stubDockerClientFailure(t, errDockerClientFailure)
+
+	err := handleCreateRunE(cmd, cfgManager, deps)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to setup mirror registries")
+	assert.Zero(t, provisioner.CreateCalls)
 }
 
 func TestHandleCreateRunEWithoutCilium(t *testing.T) {
@@ -704,4 +737,133 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create cluster")
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestSetupMirrorRegistries(t *testing.T) {
+	runRegistryLifecycleTests(t, setupMirrorRegistries)
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestConnectRegistriesToKindNetwork(t *testing.T) {
+	runRegistryLifecycleTests(t, connectRegistriesToKindNetwork)
+}
+
+type registryLifecycleHandler func(
+	*cobra.Command,
+	*v1alpha1.Cluster,
+	shared.LifecycleDeps,
+	*ksailconfigmanager.ConfigManager,
+	*kindv1alpha4.Cluster,
+) error
+
+func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
+	t.Helper()
+
+	testCases := []struct {
+		name          string
+		includePatch  bool
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "returns_nil_when_no_patches",
+		},
+		{
+			name:          "returns_docker_client_error",
+			includePatch:  true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+	}
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			cmd, out := testutils.NewCommand(t)
+			cmd.SetContext(context.Background())
+
+			cfg := v1alpha1.NewCluster()
+			cfg.Spec.Distribution = v1alpha1.DistributionKind
+
+			cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
+			kindConfig := &kindv1alpha4.Cluster{Name: "kind"}
+			deps := shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+
+			if testCase.includePatch {
+				kindConfig.ContainerdConfigPatches = generateContainerdPatchesFromSpecs(
+					[]string{"docker.io=http://localhost:5000"},
+				)
+
+				stubDockerClientFailure(t, errDockerClientFailure)
+			}
+
+			err := handler(cmd, cfg, deps, cfgManager, kindConfig)
+
+			if testCase.expectError {
+				require.Error(t, err)
+				require.ErrorContains(t, err, testCase.errorContains)
+
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func ensureDisableDefaultCNI(t *testing.T, path string) {
+	t.Helper()
+
+	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
+	require.NoError(t, err, "failed to read kind config")
+
+	if strings.Contains(string(content), "disableDefaultCNI: true") {
+		return
+	}
+
+	var builder strings.Builder
+	builder.Write(content)
+
+	if len(content) == 0 || content[len(content)-1] != '\n' {
+		builder.WriteByte('\n')
+	}
+
+	builder.WriteString("networking:\n")
+	builder.WriteString("  disableDefaultCNI: true\n")
+
+	require.NoError(t, os.WriteFile(path, []byte(builder.String()), 0o600))
+}
+
+func appendKindPatch(t *testing.T, path string) {
+	t.Helper()
+
+	patch := generateContainerdPatchesFromSpecs([]string{"docker.io=http://localhost:5000"})
+
+	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
+	require.NoError(t, err, "failed to read kind config")
+
+	var builder strings.Builder
+	builder.Write(content)
+
+	if len(content) == 0 || content[len(content)-1] != '\n' {
+		builder.WriteByte('\n')
+	}
+
+	builder.WriteString("containerdConfigPatches:\n")
+
+	for _, p := range patch {
+		builder.WriteString("- |\n")
+
+		lines := strings.Split(p, "\n")
+		for _, line := range lines {
+			builder.WriteString("  ")
+			builder.WriteString(line)
+			builder.WriteByte('\n')
+		}
+	}
+
+	err = os.WriteFile(path, []byte(builder.String()), 0o600)
+	require.NoError(t, err, "failed to append containerd patch")
 }

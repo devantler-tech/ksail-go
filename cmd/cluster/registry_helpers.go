@@ -8,10 +8,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type dockerClientFactoryFunc func(opts ...client.Opt) (*client.Client, error)
+
+func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
+	cli, err := client.NewClientWithOpts(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("creating docker client: %w", err)
+	}
+
+	return cli, nil
+}
+
+//nolint:gochecknoglobals // Allow tests to override Docker client creation.
+var dockerClientFactory dockerClientFactoryFunc = defaultDockerClientFactory
+
 // withDockerClient creates a Docker client, executes the given function, and cleans up.
 // Returns an error if client creation fails or if the function returns an error.
 func withDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
-	dockerClient, err := client.NewClientWithOpts(
+	dockerClient, err := dockerClientFactory(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
@@ -34,5 +48,7 @@ func withDockerClient(cmd *cobra.Command, operation func(client.APIClient) error
 		}
 	}()
 
-	return operation(dockerClient)
+	var apiClient client.APIClient = dockerClient
+
+	return operation(apiClient)
 }
