@@ -34,8 +34,7 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 	cmd.Flags().
 		StringSlice("mirror-registry", []string{},
-			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io). "+
-				"The registry host must match the actual registry domain (e.g., 'docker.io', not 'docker-io') because it is used in containerd mirror configuration.")
+			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io).")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	cmd.RunE = runtime.RunEWithRuntime(
