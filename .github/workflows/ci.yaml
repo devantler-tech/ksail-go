@@ -35,27 +35,6 @@ jobs:
       - name: 🏃 Run pre-commit hooks
         uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
 
-      - name: 📤 Commit and push changes if any
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_REF: ${{ github.ref }}
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
-          # Check if there are any changes
-          if ! git diff --quiet || ! git diff --cached --quiet; then
-            echo "Changes detected, committing and pushing..."
-            git add -A
-            git commit -m "chore: apply pre-commit hooks [skip ci]"
-
-            # Push using token explicitly (not persisted in git config)
-            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
-          else
-            echo "No changes to commit"
-          fi
-
   ci:
     needs: [pre-commit]
     if: github.event_name == 'push'
