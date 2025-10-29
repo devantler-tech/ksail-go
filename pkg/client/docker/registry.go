@@ -304,9 +304,11 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	// Consume pull output
 	_, err = io.Copy(io.Discard, reader)
 	closeErr := reader.Close()
+
 	if err != nil {
 		return fmt.Errorf("failed to read image pull output: %w", err)
 	}
+
 	if closeErr != nil {
 		return fmt.Errorf("failed to close image pull reader: %w", closeErr)
 	}
