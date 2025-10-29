@@ -87,8 +87,8 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 		return fmt.Errorf("failed to ensure registry image: %w", err)
 	}
 
-	// Create volume for registry data
-	volumeName := "ksail-registry-" + config.Name
+	// Create volume for registry data using the provided name for consistency
+	volumeName := config.Name
 
 	err = rm.createVolume(ctx, volumeName, config.Name)
 	if err != nil {
@@ -100,8 +100,8 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	hostConfig := rm.buildHostConfig(config, volumeName)
 	networkConfig := rm.buildNetworkConfig(config)
 
-	// Use ksail-registry prefix for consistent container naming
-	containerName := "ksail-registry-" + config.Name
+	// Use provided registry name directly so other components can reference it
+	containerName := config.Name
 
 	// Create container
 	resp, err := rm.client.ContainerCreate(
@@ -177,7 +177,7 @@ func (rm *RegistryManager) DeleteRegistry(
 
 	// Remove volume if requested
 	if deleteVolume {
-		volumeName := "ksail-registry-" + name
+		volumeName := name
 
 		err = rm.client.VolumeRemove(ctx, volumeName, false)
 		if err != nil {

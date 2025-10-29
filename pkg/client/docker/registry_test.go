@@ -270,8 +270,8 @@ func TestCreateRegistry(t *testing.T) {
 
 		mockRegistryNotExists(ctx, mockClient)
 		mockImagePullSequence(ctx, mockClient)
-		mockVolumeCreateSequence(ctx, mockClient, "ksail-registry-docker.io")
-		mockContainerCreateStart(ctx, mockClient, "ksail-registry-docker.io", "test-id")
+		mockVolumeCreateSequence(ctx, mockClient, "docker.io")
+		mockContainerCreateStart(ctx, mockClient, "docker.io", "test-id")
 
 		err := manager.CreateRegistry(ctx, config)
 
@@ -326,7 +326,7 @@ func TestDeleteRegistry(t *testing.T) {
 
 		// Mock volume remove
 		mockClient.EXPECT().
-			VolumeRemove(ctx, "ksail-registry-docker.io", false).
+			VolumeRemove(ctx, "docker.io", false).
 			Return(nil).
 			Once()
 
@@ -527,7 +527,7 @@ func TestCreateRegistry_VolumeCreateError(t *testing.T) {
 
 	// Mock volume not found
 	mockClient.EXPECT().
-		VolumeInspect(ctx, "ksail-registry-docker.io").
+		VolumeInspect(ctx, "docker.io").
 		Return(volume.Volume{}, errNotFound).
 		Once()
 
@@ -552,11 +552,11 @@ func TestCreateRegistry_ContainerCreateError(t *testing.T) {
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
-	mockVolumeCreateSequence(ctx, mockClient, "ksail-registry-docker.io")
+	mockVolumeCreateSequence(ctx, mockClient, "docker.io")
 
 	// Mock container create failure
 	mockClient.EXPECT().
-		ContainerCreate(ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "ksail-registry-docker.io").
+		ContainerCreate(ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "docker.io").
 		Return(container.CreateResponse{}, errContainerCreateFailed).
 		Once()
 
@@ -575,11 +575,11 @@ func TestCreateRegistry_ContainerStartError(t *testing.T) {
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
-	mockVolumeCreateSequence(ctx, mockClient, "ksail-registry-docker.io")
+	mockVolumeCreateSequence(ctx, mockClient, "docker.io")
 
 	// Mock container create success
 	mockClient.EXPECT().
-		ContainerCreate(ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "ksail-registry-docker.io").
+		ContainerCreate(ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "docker.io").
 		Return(container.CreateResponse{ID: "test-id"}, nil).
 		Once()
 
@@ -605,8 +605,8 @@ func TestCreateRegistry_ImageAlreadyExists(t *testing.T) {
 	mockRegistryNotExists(ctx, mockClient)
 	mockImageExists(ctx, mockClient)
 
-	mockVolumeCreateSequence(ctx, mockClient, "ksail-registry-docker.io")
-	mockContainerCreateStart(ctx, mockClient, "ksail-registry-docker.io", "test-id")
+	mockVolumeCreateSequence(ctx, mockClient, "docker.io")
+	mockContainerCreateStart(ctx, mockClient, "docker.io", "test-id")
 
 	err := manager.CreateRegistry(ctx, config)
 
@@ -625,11 +625,11 @@ func TestCreateRegistry_VolumeAlreadyExists(t *testing.T) {
 
 	// Mock volume exists
 	mockClient.EXPECT().
-		VolumeInspect(ctx, "ksail-registry-docker.io").
+		VolumeInspect(ctx, "docker.io").
 		Return(volume.Volume{}, nil).
 		Once()
 
-	mockContainerCreateStart(ctx, mockClient, "ksail-registry-docker.io", "test-id")
+	mockContainerCreateStart(ctx, mockClient, "docker.io", "test-id")
 
 	err := manager.CreateRegistry(ctx, config)
 
@@ -691,7 +691,7 @@ func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 
 	// Mock volume remove failure
 	mockClient.EXPECT().
-		VolumeRemove(ctx, "ksail-registry-docker.io", false).
+		VolumeRemove(ctx, "docker.io", false).
 		Return(errVolumeRemoveFailed).
 		Once()
 
