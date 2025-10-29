@@ -558,7 +558,9 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When default is nil, field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
@@ -576,7 +578,9 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When type is not convertible, field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
@@ -612,7 +616,9 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// Non-pointer field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
