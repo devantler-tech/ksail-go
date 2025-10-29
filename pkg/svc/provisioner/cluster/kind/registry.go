@@ -127,6 +127,7 @@ func ConnectRegistriesToNetwork(
 
 	// Connect each registry to the kind network
 	for _, reg := range registries {
+		// Registry manager already prefixes with "ksail-registry-", so use full container name
 		containerName := "ksail-registry-" + reg.Name
 
 		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)

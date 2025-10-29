@@ -397,20 +397,22 @@ func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.Ne
 	}
 }
 
+// addClusterLabel is a no-op with network-based tracking.
+// Previously used for label-based tracking, now replaced by network connections.
+// Kept for interface compatibility but may be removed in future refactoring.
 func (rm *RegistryManager) addClusterLabel(
 	_ context.Context,
 	_, _ string,
 ) error {
-	// With the network-based tracking, we just need to ensure the registry exists.
-	// The actual network connection will be made when attaching to the cluster network.
 	return nil
 }
 
+// removeClusterLabel is a no-op with network-based tracking.
+// Previously used for label-based tracking, now replaced by network disconnections.
+// Kept for interface compatibility but may be removed in future refactoring.
 func (rm *RegistryManager) removeClusterLabel(
 	_ context.Context,
 	_, _ string,
 ) error {
-	// With the network-based tracking, network disconnection happens when cluster is deleted.
-	// This is a no-op as the network will be cleaned up automatically.
 	return nil
 }

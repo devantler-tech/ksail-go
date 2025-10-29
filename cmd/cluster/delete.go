@@ -133,7 +133,7 @@ func cleanupMirrorRegistries(
 		err := kindprovisioner.CleanupRegistries(
 			cmd.Context(),
 			kindConfig,
-			kindConfig.Name,
+			clusterCfg.Name,
 			dockerClient,
 			deleteVolumes,
 		)

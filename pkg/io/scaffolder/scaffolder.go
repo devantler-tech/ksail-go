@@ -137,8 +137,8 @@ func (s *Scaffolder) GenerateContainerdPatches() []string {
 		sanitizedName := strings.ReplaceAll(name, ".", "-")
 		containerName := "kind-" + sanitizedName
 
-		// Use name as registry host directly (e.g., docker.io)
-		// Users must provide the full registry host in the mirror spec
+		// Registry host is the actual registry domain (e.g., docker.io)
+		// This must be the full registry host as it's used in containerd mirror configuration
 		registryHost := name
 
 		// Use container name as endpoint for Kind network DNS resolution
