@@ -105,21 +105,18 @@ func (m *ConfigManager) loadConfigWithOptions(
 	// Use native Viper API to read configuration
 	err := m.readConfig(silent)
 	if err != nil {
-		// Return the config even on error so callers can inspect partial state
-		return m.Config, err
+		return nil, err
 	}
 
 	// Unmarshal and apply defaults
 	err = m.unmarshalAndApplyDefaults()
 	if err != nil {
-		// Return the config even on error so callers can inspect partial state
-		return m.Config, err
+		return nil, err
 	}
 
 	err = m.validateConfig()
 	if err != nil {
-		// Return the config even on validation errors so callers can inspect it
-		return m.Config, err
+		return nil, err
 	}
 
 	if !silent {
