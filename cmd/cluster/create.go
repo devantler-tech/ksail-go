@@ -55,7 +55,8 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 	cmd.Flags().
 		StringSlice("mirror-registry", []string{},
-			"Configure mirror registries (format: name=upstream, e.g., docker-io=https://registry-1.docker.io)")
+			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io)."+
+				" Use dots in registry host, not hyphens")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)

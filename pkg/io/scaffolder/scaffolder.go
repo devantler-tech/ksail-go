@@ -132,11 +132,14 @@ func (s *Scaffolder) GenerateContainerdPatches() []string {
 		// Extract port from upstream URL (default: 5000)
 		port := extractPortFromURL(upstream)
 
-		// Generate distribution-prefixed container name: kind-{name}
-		containerName := "kind-" + name
+		// Generate distribution-prefixed container name: kind-{sanitized-name}
+		// Replace dots with hyphens for container naming (docker.io -> docker-io)
+		sanitizedName := strings.ReplaceAll(name, ".", "-")
+		containerName := "kind-" + sanitizedName
 
-		// Infer registry host from name (e.g., docker-io -> docker.io)
-		registryHost := inferRegistryHost(name)
+		// Use name as registry host directly (e.g., docker.io)
+		// Users must provide the full registry host in the mirror spec
+		registryHost := name
 
 		// Use container name as endpoint for Kind network DNS resolution
 		kindEndpoint := "http://" + containerName + ":" + port
@@ -173,7 +176,9 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 			// the local registry doesn't have the requested image.
 
 			// Generate distribution-prefixed registry name
-			registryName := "k3d-" + name
+			// Replace dots with hyphens for container naming (docker.io -> docker-io)
+			sanitizedName := strings.ReplaceAll(name, ".", "-")
+			registryName := "k3d-" + sanitizedName
 
 			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
 				Name: registryName,
@@ -183,8 +188,8 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
 			configLines = append(configLines, "mirrors:")
 
-			// Infer registry host from name
-			registryHost := inferRegistryHost(name)
+			// Use name as registry host directly (users provide full host)
+			registryHost := name
 
 			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
 			configLines = append(configLines, "    endpoint:")
@@ -506,14 +511,6 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			},
 		},
 	)
-}
-
-// inferRegistryHost converts a registry name back to its host format.
-// Examples: "docker-io" -> "docker.io", "ghcr-io" -> "ghcr.io".
-func inferRegistryHost(name string) string {
-	// Replace hyphens with dots to get the registry host
-	// Handle common cases: docker-io -> docker.io, ghcr-io -> ghcr.io
-	return strings.ReplaceAll(name, "-", ".")
 }
 
 // extractPortFromURL extracts the port from a URL string.
