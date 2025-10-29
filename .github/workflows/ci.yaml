@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 permissions: {}
 
@@ -43,13 +42,13 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          
+
           # Check if there are any changes
           if ! git diff --quiet || ! git diff --cached --quiet; then
             echo "Changes detected, committing and pushing..."
             git add -A
             git commit -m "chore: apply pre-commit hooks [skip ci]"
-            
+
             # Push using token explicitly (not persisted in git config)
             git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF}"
           else
