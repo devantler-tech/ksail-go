@@ -79,8 +79,6 @@ func mockImagePullSequence(ctx context.Context, mockClient *docker.MockAPIClient
 }
 
 // mockVolumeCreateSequence sets up the complete volume creation mock sequence.
-//
-//nolint:unparam // volumeName parameter kept for test clarity and consistency.
 func mockVolumeCreateSequence(
 	ctx context.Context,
 	mockClient *docker.MockAPIClient,

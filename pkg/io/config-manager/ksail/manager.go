@@ -68,7 +68,8 @@ func NewCommandConfigManager(
 }
 
 // LoadConfig loads the configuration from files and environment variables.
-// Returns the loaded config, either freshly loaded or previously cached.
+// Returns the loaded config (either freshly loaded or previously cached) and an error if loading failed.
+// Returns nil config on error.
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
 func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {

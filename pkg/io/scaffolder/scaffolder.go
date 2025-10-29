@@ -171,9 +171,7 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		parts := splitMirrorSpec(mirrorSpec)
 		if parts != nil {
 			name := parts[0]
-			// Note: upstream URL (parts[1]) is not used here because K3d's containerd
-			// mirror configuration handles the upstream fallback automatically when
-			// the local registry doesn't have the requested image.
+			_ = parts[1] // upstream URL handled by K3d's containerd mirror fallback
 
 			// Generate distribution-prefixed registry name
 			// Replace dots with hyphens for container naming (docker.io -> docker-io)
@@ -569,15 +567,5 @@ func findFirstEquals(s string) int {
 
 // joinLines joins strings with newlines.
 func joinLines(lines []string) string {
-	result := ""
-
-	for idx, line := range lines {
-		if idx > 0 {
-			result += "\n"
-		}
-
-		result += line
-	}
-
-	return result
+	return strings.Join(lines, "\n")
 }
