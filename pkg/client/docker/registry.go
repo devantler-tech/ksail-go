@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -30,16 +31,14 @@ var (
 const (
 	// RegistryImageName is the default registry image to use.
 	RegistryImageName = "registry:3"
+	// RegistryLabelKey marks registry containers as managed by ksail.
+	RegistryLabelKey = "io.ksail.registry"
 	// DefaultRegistryPort is the default port for registry containers.
 	DefaultRegistryPort = 5000
 	// RegistryPortBase is the base port number for calculating registry ports.
 	RegistryPortBase = 5000
 	// HostPortParts is the expected number of parts in a host:port string.
 	HostPortParts = 2
-	// RegistryLabelKey is the label key used to identify ksail registries.
-	RegistryLabelKey = "io.ksail.registry"
-	// RegistryClusterLabelKey is the label key used to track which clusters use a registry.
-	RegistryClusterLabelKey = "io.ksail.cluster"
 )
 
 // RegistryManager manages Docker registry containers for mirror/pull-through caching.
@@ -65,6 +64,7 @@ type RegistryConfig struct {
 	UpstreamURL string
 	ClusterName string
 	NetworkName string
+	VolumeName  string
 }
 
 // CreateRegistry creates a registry container with the given configuration.
@@ -87,10 +87,13 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 		return fmt.Errorf("failed to ensure registry image: %w", err)
 	}
 
-	// Create volume for registry data using the provided name for consistency
-	volumeName := config.Name
+	// Create volume for registry data using a distribution-agnostic name for reuse
+	volumeName := rm.resolveVolumeName(config)
+	if volumeName == "" {
+		volumeName = config.Name
+	}
 
-	err = rm.createVolume(ctx, volumeName, config.Name)
+	err = rm.createVolume(ctx, volumeName)
 	if err != nil {
 		return fmt.Errorf("failed to create registry volume: %w", err)
 	}
@@ -130,12 +133,9 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 // If the registry is still in use by other clusters, it returns an error.
 func (rm *RegistryManager) DeleteRegistry(
 	ctx context.Context,
-	name, clusterName string,
+	name, _ string,
 	deleteVolume bool,
 ) error {
-	containerName := name
-
-	// Get container to check labels
 	containers, err := rm.listRegistryContainers(ctx, name)
 	if err != nil {
 		return fmt.Errorf("failed to list registry containers: %w", err)
@@ -147,42 +147,28 @@ func (rm *RegistryManager) DeleteRegistry(
 
 	registryContainer := containers[0]
 
-	// Remove cluster label
-	err = rm.removeClusterLabel(ctx, containerName, clusterName)
-	if err != nil {
-		return fmt.Errorf("failed to remove cluster label: %w", err)
+	stopErr := rm.stopRegistryContainer(ctx, registryContainer)
+	if stopErr != nil {
+		return stopErr
 	}
 
-	// Check if registry is still in use
-	inUse, err := rm.IsRegistryInUse(ctx, name)
-	if err != nil {
-		return fmt.Errorf("failed to check if registry is in use: %w", err)
+	removeErr := rm.client.ContainerRemove(ctx, registryContainer.ID, container.RemoveOptions{})
+	if removeErr != nil {
+		return fmt.Errorf("failed to remove registry container: %w", removeErr)
 	}
 
-	if inUse {
-		// Registry is still in use by other clusters, don't delete
+	if !deleteVolume {
 		return nil
 	}
 
-	// Stop and remove container
-	err = rm.client.ContainerStop(ctx, registryContainer.ID, container.StopOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to stop registry container: %w", err)
+	volumeName := deriveRegistryVolumeName(registryContainer, name)
+	if volumeName == "" {
+		return nil
 	}
 
-	err = rm.client.ContainerRemove(ctx, registryContainer.ID, container.RemoveOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to remove registry container: %w", err)
-	}
-
-	// Remove volume if requested
-	if deleteVolume {
-		volumeName := name
-
-		err = rm.client.VolumeRemove(ctx, volumeName, false)
-		if err != nil {
-			return fmt.Errorf("failed to remove registry volume: %w", err)
-		}
+	volumeErr := rm.client.VolumeRemove(ctx, volumeName, false)
+	if volumeErr != nil {
+		return fmt.Errorf("failed to remove registry volume: %w", volumeErr)
 	}
 
 	return nil
@@ -196,10 +182,31 @@ func (rm *RegistryManager) ListRegistries(ctx context.Context) ([]string, error)
 	}
 
 	registries := make([]string, 0, len(containers))
+
+	seen := make(map[string]struct{}, len(containers))
 	for _, c := range containers {
-		if name, ok := c.Labels[RegistryLabelKey]; ok {
-			registries = append(registries, name)
+		name := c.Labels[RegistryLabelKey]
+		if name == "" {
+			for _, rawName := range c.Names {
+				trimmed := strings.TrimPrefix(rawName, "/")
+				if trimmed != "" {
+					name = trimmed
+
+					break
+				}
+			}
 		}
+
+		if name == "" {
+			continue
+		}
+
+		if _, exists := seen[name]; exists {
+			continue
+		}
+
+		seen[name] = struct{}{}
+		registries = append(registries, name)
 	}
 
 	return registries, nil
@@ -258,6 +265,8 @@ func (rm *RegistryManager) listRegistryContainers(
 	name string,
 ) ([]container.Summary, error) {
 	filterArgs := filters.NewArgs()
+	filterArgs.Add("name", name)
+	filterArgs.Add("ancestor", RegistryImageName)
 	filterArgs.Add("label", fmt.Sprintf("%s=%s", RegistryLabelKey, name))
 
 	containers, err := rm.client.ContainerList(ctx, container.ListOptions{
@@ -275,6 +284,7 @@ func (rm *RegistryManager) listAllRegistryContainers(
 	ctx context.Context,
 ) ([]container.Summary, error) {
 	filterArgs := filters.NewArgs()
+	filterArgs.Add("ancestor", RegistryImageName)
 	filterArgs.Add("label", RegistryLabelKey)
 
 	containers, err := rm.client.ContainerList(ctx, container.ListOptions{
@@ -318,7 +328,7 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 
 func (rm *RegistryManager) createVolume(
 	ctx context.Context,
-	volumeName, registryName string,
+	volumeName string,
 ) error {
 	// Check if volume already exists
 	_, err := rm.client.VolumeInspect(ctx, volumeName)
@@ -329,9 +339,6 @@ func (rm *RegistryManager) createVolume(
 	// Create volume
 	_, err = rm.client.VolumeCreate(ctx, volume.CreateOptions{
 		Name: volumeName,
-		Labels: map[string]string{
-			RegistryLabelKey: registryName,
-		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create volume: %w", err)
@@ -340,10 +347,17 @@ func (rm *RegistryManager) createVolume(
 	return nil
 }
 
-func (rm *RegistryManager) buildContainerConfig(config RegistryConfig) *container.Config {
+func (rm *RegistryManager) buildContainerConfig(
+	config RegistryConfig,
+) *container.Config {
 	env := []string{}
 	if config.UpstreamURL != "" {
 		env = append(env, "REGISTRY_PROXY_REMOTEURL="+config.UpstreamURL)
+	}
+
+	labels := map[string]string{}
+	if config.Name != "" {
+		labels[RegistryLabelKey] = config.Name
 	}
 
 	return &container.Config{
@@ -352,10 +366,7 @@ func (rm *RegistryManager) buildContainerConfig(config RegistryConfig) *containe
 		ExposedPorts: nat.PortSet{
 			"5000/tcp": struct{}{},
 		},
-		Labels: map[string]string{
-			RegistryLabelKey:        config.Name,
-			RegistryClusterLabelKey: config.ClusterName,
-		},
+		Labels: labels,
 	}
 }
 
@@ -400,6 +411,30 @@ func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.Ne
 	}
 }
 
+func (rm *RegistryManager) resolveVolumeName(config RegistryConfig) string {
+	if config.VolumeName != "" {
+		return config.VolumeName
+	}
+
+	return sanitizeVolumeName(config.Name)
+}
+
+func sanitizeVolumeName(registryName string) string {
+	trimmed := strings.TrimSpace(registryName)
+	if trimmed == "" {
+		return ""
+	}
+
+	if idx := strings.Index(trimmed, "-"); idx >= 0 && idx < len(trimmed)-1 {
+		candidate := trimmed[idx+1:]
+		if candidate != "" {
+			return candidate
+		}
+	}
+
+	return trimmed
+}
+
 // addClusterLabel is a no-op with network-based tracking.
 // Previously used for label-based tracking, now replaced by network connections.
 // Kept for interface compatibility but may be removed in future refactoring.
@@ -410,12 +445,32 @@ func (rm *RegistryManager) addClusterLabel(
 	return nil
 }
 
-// removeClusterLabel is a no-op with network-based tracking.
-// Previously used for label-based tracking, now replaced by network disconnections.
-// Kept for interface compatibility but may be removed in future refactoring.
-func (rm *RegistryManager) removeClusterLabel(
-	_ context.Context,
-	_, _ string,
+func (rm *RegistryManager) stopRegistryContainer(
+	ctx context.Context,
+	registry container.Summary,
 ) error {
+	if !strings.EqualFold(registry.State, "running") {
+		return nil
+	}
+
+	err := rm.client.ContainerStop(ctx, registry.ID, container.StopOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to stop registry container: %w", err)
+	}
+
 	return nil
+}
+
+func deriveRegistryVolumeName(registry container.Summary, fallback string) string {
+	for _, mountPoint := range registry.Mounts {
+		if mountPoint.Type == mount.TypeVolume && mountPoint.Name != "" {
+			return mountPoint.Name
+		}
+	}
+
+	if sanitized := sanitizeVolumeName(fallback); sanitized != "" {
+		return sanitized
+	}
+
+	return strings.TrimSpace(fallback)
 }

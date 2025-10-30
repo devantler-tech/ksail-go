@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -97,6 +98,27 @@ func HandleLifecycleRunE(
 
 	deps.Timer.NewStage()
 
+	return RunLifecycleWithConfig(cmd, deps, config, clusterCfg)
+}
+
+// showLifecycleTitle displays the lifecycle stage title.
+func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
+	cmd.Println()
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: content,
+		Emoji:   emoji,
+		Writer:  cmd.OutOrStdout(),
+	})
+}
+
+// RunLifecycleWithConfig executes a lifecycle operation using a preloaded cluster configuration.
+func RunLifecycleWithConfig(
+	cmd *cobra.Command,
+	deps LifecycleDeps,
+	config LifecycleConfig,
+	clusterCfg *v1alpha1.Cluster,
+) error {
 	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
@@ -111,6 +133,16 @@ func HandleLifecycleRunE(
 		return fmt.Errorf("failed to get cluster name from config: %w", err)
 	}
 
+	return runLifecycleWithProvisioner(cmd, deps, config, provisioner, clusterName)
+}
+
+func runLifecycleWithProvisioner(
+	cmd *cobra.Command,
+	deps LifecycleDeps,
+	config LifecycleConfig,
+	provisioner clusterprovisioner.ClusterProvisioner,
+	clusterName string,
+) error {
 	showLifecycleTitle(cmd, config.TitleEmoji, config.TitleContent)
 
 	notify.WriteMessage(notify.Message{
@@ -119,7 +151,7 @@ func HandleLifecycleRunE(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err = config.Action(cmd.Context(), provisioner, clusterName)
+	err := config.Action(cmd.Context(), provisioner, clusterName)
 	if err != nil {
 		return fmt.Errorf("%s: %w", config.ErrorMessagePrefix, err)
 	}
@@ -133,15 +165,4 @@ func HandleLifecycleRunE(
 	})
 
 	return nil
-}
-
-// showLifecycleTitle displays the lifecycle stage title.
-func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
-	cmd.Println()
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: content,
-		Emoji:   emoji,
-		Writer:  cmd.OutOrStdout(),
-	})
 }

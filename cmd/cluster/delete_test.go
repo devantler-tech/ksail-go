@@ -209,6 +209,8 @@ func TestCleanupMirrorRegistries_IgnoresNonKindDistribution(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
+	cmd.Flags().Bool("delete-registry-volumes", false, "")
+
 	cfg := v1alpha1.NewCluster()
 	cfg.Spec.Distribution = v1alpha1.DistributionK3d
 
@@ -221,6 +223,7 @@ func TestCleanupMirrorRegistries_ReturnsKindConfigLoadError(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
+	cmd.Flags().Bool("delete-registry-volumes", false, "")
 
 	configDir := t.TempDir()
 	configPath := filepath.Join(configDir, "kind.yaml")

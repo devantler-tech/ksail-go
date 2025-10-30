@@ -194,9 +194,7 @@ type OptionsKind struct {
 }
 
 // OptionsK3d defines options specific to the K3d distribution.
-type OptionsK3d struct {
-	// Add any specific fields for the K3d distribution here.
-}
+type OptionsK3d struct{}
 
 // OptionsCilium defines options for the Cilium CNI.
 type OptionsCilium struct {

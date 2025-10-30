@@ -1,0 +1,6 @@
+- Address golangci-lint findings for mirror registry feature: err113/static errors, wrapcheck, nosprintfhostport.
+- Reduce complexity in create.go helpers (prepareKindConfigWithMirrors, prepareK3dConfigWithMirrors, setup/connect flows) by extracting shared helpers.
+- Refactor pkg/svc/provisioner/cluster/registries to add package comments, shrink SetupRegistries, simplify ExtractRegistryPort conditional tree.
+- Update docker registry manager to remove unused parameters and lower DeleteRegistry complexity.
+- Shorten oversize tests (registry tests) using table-driven helpers; switch to registries_test package where flagged.
+- After refactors, rerun golangci-lint and jscpd to ensure clean output.

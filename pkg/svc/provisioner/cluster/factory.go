@@ -48,7 +48,9 @@ func (DefaultFactory) Create(
 			cluster.Spec.Connection.Kubeconfig,
 		)
 	case v1alpha1.DistributionK3d:
-		return createK3dProvisioner(cluster.Spec.DistributionConfig)
+		return createK3dProvisioner(
+			cluster.Spec.DistributionConfig,
+		)
 	default:
 		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
 	}

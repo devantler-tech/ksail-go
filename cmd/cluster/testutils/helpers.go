@@ -105,7 +105,7 @@ type StubFactory struct {
 
 // Create implements clusterprovisioner.Factory.
 //
-//nolint:ireturn // Tests depend on returning the interface type.
+//nolint:ireturn,nolintlint // Tests depend on returning the interface type.
 func (s *StubFactory) Create(
 	_ context.Context,
 	_ *v1alpha1.Cluster,

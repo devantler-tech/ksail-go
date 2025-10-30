@@ -17,19 +17,22 @@ import (
 var errBoom = errors.New("boom")
 
 type stubRunner struct {
-	recorded struct {
-		args []string
-	}
+	calls  []stubCall
 	result commandrunner.CommandResult
 	err    error
 }
 
 func (s *stubRunner) Run(
 	_ context.Context,
-	_ *cobra.Command,
+	cmd *cobra.Command,
 	args []string,
 ) (commandrunner.CommandResult, error) {
-	s.recorded.args = append([]string(nil), args...)
+	call := stubCall{
+		use:  commandUse(cmd),
+		args: append([]string(nil), args...),
+	}
+	s.calls = append(s.calls, call)
+
 	if s.err != nil {
 		mergeErr := commandrunner.MergeCommandError(s.err, s.result)
 
@@ -37,6 +40,27 @@ func (s *stubRunner) Run(
 	}
 
 	return s.result, nil
+}
+
+func (s *stubRunner) lastArgs() []string {
+	if len(s.calls) == 0 {
+		return nil
+	}
+
+	return append([]string(nil), s.calls[len(s.calls)-1].args...)
+}
+
+type stubCall struct {
+	use  string
+	args []string
+}
+
+func commandUse(cmd *cobra.Command) string {
+	if cmd == nil {
+		return ""
+	}
+
+	return cmd.Use
 }
 
 //nolint:paralleltest
@@ -55,7 +79,7 @@ func TestCreateUsesConfigFlag(t *testing.T) {
 	assert.ElementsMatch(
 		t,
 		[]string{"--config", "path/to/k3d.yaml", "cfg-name"},
-		runner.recorded.args,
+		runner.lastArgs(),
 	)
 }
 
@@ -72,7 +96,7 @@ func TestDeleteDefaultsToConfigName(t *testing.T) {
 	err := prov.Delete(context.Background(), "")
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"from-config"}, runner.recorded.args)
+	assert.Equal(t, []string{"from-config"}, runner.lastArgs())
 }
 
 //nolint:paralleltest
@@ -88,7 +112,7 @@ func TestStartUsesResolvedNameWithoutConfigFlag(t *testing.T) {
 	err := prov.Start(context.Background(), "")
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"cluster-a"}, runner.recorded.args)
+	assert.Equal(t, []string{"cluster-a"}, runner.lastArgs())
 }
 
 //nolint:paralleltest
@@ -104,7 +128,7 @@ func TestStopUsesExplicitName(t *testing.T) {
 	err := prov.Stop(context.Background(), "custom")
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"custom"}, runner.recorded.args)
+	assert.Equal(t, []string{"custom"}, runner.lastArgs())
 }
 
 //nolint:paralleltest
@@ -120,7 +144,7 @@ func TestListAddsJSONOutputFlag(t *testing.T) {
 	_, err := prov.List(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"--output", "json"}, runner.recorded.args)
+	assert.Equal(t, []string{"--output", "json"}, runner.lastArgs())
 }
 
 //nolint:paralleltest

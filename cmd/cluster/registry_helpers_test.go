@@ -70,7 +70,7 @@ func TestWithDockerClient_OperationError(t *testing.T) {
 func TestGenerateContainerdPatchesFromSpecs_SingleRegistry(t *testing.T) {
 	t.Parallel()
 
-	specs := []string{"docker.io=http://localhost:5000"}
+	specs := []string{"docker.io=https://registry-1.docker.io"}
 	patches := generateContainerdPatchesFromSpecs(specs)
 
 	assert.Len(t, patches, 1)
@@ -79,15 +79,15 @@ func TestGenerateContainerdPatchesFromSpecs_SingleRegistry(t *testing.T) {
 		patches[0],
 		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]`,
 	)
-	assert.Contains(t, patches[0], `endpoint = ["http://localhost:5000"]`)
+	assert.Contains(t, patches[0], `endpoint = ["http://kind-docker-io:5000"]`)
 }
 
 func TestGenerateContainerdPatchesFromSpecs_MultipleRegistries(t *testing.T) {
 	t.Parallel()
 
 	specs := []string{
-		"docker.io=http://localhost:5000",
-		"ghcr.io=http://localhost:5001",
+		"docker.io=https://registry-1.docker.io",
+		"ghcr.io=https://ghcr.io",
 	}
 	patches := generateContainerdPatchesFromSpecs(specs)
 
@@ -115,9 +115,9 @@ func TestGenerateContainerdPatchesFromSpecs_MixedValidInvalid(t *testing.T) {
 	t.Parallel()
 
 	specs := []string{
-		"docker.io=http://localhost:5000",
+		"docker.io=https://registry-1.docker.io",
 		"invalid",
-		"ghcr.io=http://localhost:5001",
+		"ghcr.io=https://ghcr.io",
 	}
 	patches := generateContainerdPatchesFromSpecs(specs)
 

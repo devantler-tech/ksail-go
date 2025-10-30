@@ -20,6 +20,7 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,6 +113,8 @@ func TestHandleCreateRunE_InstallsCiliumWhenConfigured(t *testing.T) {
 		ksailconfigmanager.DefaultClusterFieldSelectors()...,
 	)
 	cfgManager.Viper.SetConfigFile(cfgPath)
+	cfgManager.Viper.Set("spec.distribution", string(v1alpha1.DistributionK3d))
+	cfgManager.Viper.Set("spec.distributionConfig", "")
 
 	provisioner := &testutils.StubProvisioner{}
 	deps := newTestLifecycleDeps(provisioner)
@@ -173,6 +176,8 @@ func TestHandleCreateRunEWithoutCilium(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	cfgManager := testutils.CreateConfigManager(t, out)
+	cfgManager.Viper.Set("spec.distribution", string(v1alpha1.DistributionK3d))
+	cfgManager.Viper.Set("spec.distributionConfig", "")
 
 	provisioner := &testutils.StubProvisioner{}
 	timer := &testutils.RecordingTimer{}
@@ -664,7 +669,10 @@ func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
 	t.Parallel()
 
 	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
-	kindConfig.ContainerdConfigPatches = []string{"existing-patch"}
+	kindConfig.ContainerdConfigPatches = []string{
+		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+endpoint = ["http://kind-docker-io:5000"]`,
+	}
 
 	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
 	assert.True(t, result, "should return true when containerd patches exist")
@@ -700,7 +708,7 @@ func TestAddCiliumRepository_Error(t *testing.T) {
 	assert.Equal(t, 1, helmClient.addRepoCalls)
 }
 
-func TestExecuteClusterCreation_Success(t *testing.T) {
+func TestRunLifecycleWithConfig_Success(t *testing.T) {
 	t.Parallel()
 
 	cmd, out := testutils.NewCommand(t)
@@ -710,14 +718,14 @@ func TestExecuteClusterCreation_Success(t *testing.T) {
 	provisioner := &testutils.StubProvisioner{}
 	deps := newTestLifecycleDeps(provisioner)
 
-	err := executeClusterCreation(cmd, clusterCfg, deps)
+	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, provisioner.CreateCalls)
 	assert.Contains(t, out.String(), "Create cluster")
 }
 
-func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
+func TestRunLifecycleWithConfig_ProvisionerError(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
@@ -733,7 +741,7 @@ func TestExecuteClusterCreation_ProvisionerError(t *testing.T) {
 		},
 	}
 
-	err := executeClusterCreation(cmd, clusterCfg, deps)
+	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create cluster")
@@ -745,8 +753,8 @@ func TestSetupMirrorRegistries(t *testing.T) {
 }
 
 //nolint:paralleltest // Overrides docker client factory for deterministic failure.
-func TestConnectRegistriesToKindNetwork(t *testing.T) {
-	runRegistryLifecycleTests(t, connectRegistriesToKindNetwork)
+func TestConnectRegistriesToClusterNetwork(t *testing.T) {
+	runRegistryLifecycleTests(t, connectRegistriesToClusterNetwork)
 }
 
 type registryLifecycleHandler func(
@@ -755,6 +763,7 @@ type registryLifecycleHandler func(
 	shared.LifecycleDeps,
 	*ksailconfigmanager.ConfigManager,
 	*kindv1alpha4.Cluster,
+	*k3dv1alpha5.SimpleConfig,
 ) error
 
 func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
@@ -799,7 +808,9 @@ func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 				stubDockerClientFailure(t, errDockerClientFailure)
 			}
 
-			err := handler(cmd, cfg, deps, cfgManager, kindConfig)
+			var k3dConfig *k3dv1alpha5.SimpleConfig
+
+			err := handler(cmd, cfg, deps, cfgManager, kindConfig, k3dConfig)
 
 			if testCase.expectError {
 				require.Error(t, err)

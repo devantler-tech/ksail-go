@@ -130,13 +130,11 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		scaf.MirrorRegistries = []string{"docker.io=https://registry-1.docker.io"}
 
 		registryConfig := scaf.GenerateK3dRegistryConfig()
-		require.NotNil(t, registryConfig)
-		require.NotNil(t, registryConfig.Create)
-		require.Equal(t, "k3d-docker-io", registryConfig.Create.Name)
-		require.NotEmpty(t, registryConfig.Config)
-		require.Contains(t, registryConfig.Config, "mirrors:")
-		require.Contains(t, registryConfig.Config, "docker.io")
-		require.Contains(t, registryConfig.Config, "k3d-docker-io:5000")
+
+		require.Nil(t, registryConfig.Create)
+		require.Contains(t, registryConfig.Config, "\"docker.io\":")
+		require.Contains(t, registryConfig.Config, "http://k3d-docker-io:5000")
+		require.Equal(t, []string{"k3d-docker-io"}, registryConfig.Use)
 	})
 
 	t.Run("no mirror registries", func(t *testing.T) {
@@ -163,7 +161,7 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		require.Empty(t, registryConfig.Config)
 	})
 
-	t.Run("first mirror used when multiple", func(t *testing.T) {
+	t.Run("multiple mirror registries", func(t *testing.T) {
 		t.Parallel()
 
 		scaf := createTestScaffolderForK3d()
@@ -173,10 +171,12 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		}
 
 		registryConfig := scaf.GenerateK3dRegistryConfig()
-		require.NotNil(t, registryConfig.Create)
-		require.Equal(t, "k3d-docker-io", registryConfig.Create.Name)
-		require.Contains(t, registryConfig.Config, "docker.io")
-		// Currently only first mirror is used in K3d config
-		require.NotContains(t, registryConfig.Config, "ghcr.io")
+
+		require.Contains(t, registryConfig.Config, "\"docker.io\":")
+		require.Contains(t, registryConfig.Config, "\"ghcr.io\":")
+		require.Contains(t, registryConfig.Config, "http://k3d-docker-io:5000")
+		require.Contains(t, registryConfig.Config, "http://k3d-ghcr-io:5001")
+		require.Equal(t, []string{"k3d-docker-io", "k3d-ghcr-io"}, registryConfig.Use)
+		require.Nil(t, registryConfig.Create)
 	})
 }

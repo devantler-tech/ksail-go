@@ -64,7 +64,7 @@ type Injector = do.Injector
 
 // ResolveTimer retrieves the timer dependency from the injector with consistent error handling.
 //
-//nolint:ireturn // The DI container registers timer.Timer interface implementations.
+//nolint:ireturn,nolintlint // DI container exposes the timer interface.
 func ResolveTimer(injector Injector) (timer.Timer, error) {
 	tmr, err := do.Invoke[timer.Timer](injector)
 	if err != nil {
@@ -76,7 +76,7 @@ func ResolveTimer(injector Injector) (timer.Timer, error) {
 
 // ResolveClusterProvisionerFactory retrieves the cluster provisioner factory dependency.
 //
-//nolint:ireturn // The DI container registers Factory interface implementations.
+//nolint:ireturn,nolintlint // DI container exposes the factory interface.
 func ResolveClusterProvisionerFactory(
 	injector Injector,
 ) (clusterprovisioner.Factory, error) {

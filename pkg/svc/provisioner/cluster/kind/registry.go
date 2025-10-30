@@ -4,36 +4,23 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"sort"
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-const (
-	// Default port for registry services.
-	defaultRegistryPort = 5000
-	// Expected parts count when splitting endpoint URLs and host:port strings.
-	expectedPartCount = 2
-)
-
-// RegistryInfo holds information about a registry to be created.
-type RegistryInfo struct {
-	Name     string
-	Upstream string
-	Port     int
-}
+const kindNetworkName = "kind"
 
 // setupRegistryManager creates a registry manager and extracts registries from Kind config.
 // Returns nil if no setup is needed.
 func setupRegistryManager(
 	kindConfig *v1alpha4.Cluster,
 	dockerClient client.APIClient,
-) (*dockerclient.RegistryManager, []RegistryInfo, error) {
+	upstreams map[string]string,
+) (*dockerclient.RegistryManager, []registries.Info, error) {
 	if kindConfig == nil {
 		return nil, nil, nil
 	}
@@ -44,26 +31,30 @@ func setupRegistryManager(
 		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
 	}
 
-	registries := extractRegistriesFromKind(kindConfig)
-	if len(registries) == 0 {
+	registriesInfo := extractRegistriesFromKind(kindConfig, upstreams)
+	if len(registriesInfo) == 0 {
 		return nil, nil, nil
 	}
 
-	return registryMgr, registries, nil
+	return registryMgr, registriesInfo, nil
 }
 
 // SetupRegistries creates mirror registries based on Kind cluster configuration.
 // Registries are created without network attachment first, as the "kind" network
-// doesn't exist until after the cluster is created.
+// doesn't exist until after the cluster is created. mirrorSpecs should contain the
+// user-supplied mirror definitions so upstream URLs can be preserved when creating
+// local proxy registries.
 func SetupRegistries(
 	ctx context.Context,
 	kindConfig *v1alpha4.Cluster,
 	clusterName string,
 	dockerClient client.APIClient,
+	mirrorSpecs []registries.MirrorSpec,
 	writer io.Writer,
 ) error {
-	// Setup registry manager and extract registries
-	registryMgr, registries, err := setupRegistryManager(kindConfig, dockerClient)
+	upstreams := registries.BuildUpstreamLookup(mirrorSpecs)
+
+	registryMgr, registriesInfo, err := setupRegistryManager(kindConfig, dockerClient, upstreams)
 	if err != nil {
 		return err
 	}
@@ -72,37 +63,9 @@ func SetupRegistries(
 		return nil
 	}
 
-	// Display activity message for creating registries
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "creating mirror registries",
-		Writer:  writer,
-	})
-
-	for _, reg := range registries {
-		// Display activity message for each registry
-		notify.WriteMessage(notify.Message{
-			Type: notify.ActivityType,
-			Content: fmt.Sprintf(
-				"creating mirror for %s on http://localhost:%d",
-				reg.Upstream,
-				reg.Port,
-			),
-			Writer: writer,
-		})
-
-		config := dockerclient.RegistryConfig{
-			Name:        reg.Name,
-			Port:        reg.Port,
-			UpstreamURL: reg.Upstream,
-			ClusterName: clusterName,
-			NetworkName: "", // Don't attach to network yet - it doesn't exist
-		}
-
-		err := registryMgr.CreateRegistry(ctx, config)
-		if err != nil {
-			return fmt.Errorf("failed to create registry %s: %w", reg.Name, err)
-		}
+	errSetup := registries.SetupRegistries(ctx, registryMgr, registriesInfo, clusterName, writer)
+	if errSetup != nil {
+		return fmt.Errorf("failed to setup kind registries: %w", errSetup)
 	}
 
 	return nil
@@ -120,29 +83,20 @@ func ConnectRegistriesToNetwork(
 		return nil
 	}
 
-	registries := extractRegistriesFromKind(kindConfig)
-	if len(registries) == 0 {
+	registriesInfo := extractRegistriesFromKind(kindConfig, nil)
+	if len(registriesInfo) == 0 {
 		return nil
 	}
 
-	// Connect each registry to the kind network
-	for _, reg := range registries {
-		// Use registry name directly as container name (e.g., "kind-docker-io")
-		containerName := reg.Name
-
-		err := dockerClient.NetworkConnect(ctx, "kind", containerName, nil)
-		if err != nil {
-			// Log warning but don't fail - registry can still work via localhost
-			notify.WriteMessage(notify.Message{
-				Type: notify.WarningType,
-				Content: fmt.Sprintf(
-					"failed to connect registry %s to kind network: %v",
-					reg.Name,
-					err,
-				),
-				Writer: writer,
-			})
-		}
+	errConnect := registries.ConnectRegistriesToNetwork(
+		ctx,
+		dockerClient,
+		registriesInfo,
+		kindNetworkName,
+		writer,
+	)
+	if errConnect != nil {
+		return fmt.Errorf("failed to connect kind registries to network: %w", errConnect)
 	}
 
 	return nil
@@ -156,8 +110,7 @@ func CleanupRegistries(
 	dockerClient client.APIClient,
 	deleteVolumes bool,
 ) error {
-	// Setup registry manager and extract registries
-	registryMgr, registries, err := setupRegistryManager(kindConfig, dockerClient)
+	registryMgr, registriesInfo, err := setupRegistryManager(kindConfig, dockerClient, nil)
 	if err != nil {
 		return err
 	}
@@ -166,17 +119,16 @@ func CleanupRegistries(
 		return nil
 	}
 
-	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes)
-		if err != nil {
-			// Log error but don't fail the entire cleanup
-			_, _ = fmt.Fprintf(
-				os.Stderr,
-				"Warning: failed to cleanup registry %s: %v\n",
-				reg.Name,
-				err,
-			)
-		}
+	errCleanup := registries.CleanupRegistries(
+		ctx,
+		registryMgr,
+		registriesInfo,
+		clusterName,
+		deleteVolumes,
+		nil,
+	)
+	if errCleanup != nil {
+		return fmt.Errorf("failed to cleanup kind registries: %w", errCleanup)
 	}
 
 	return nil
@@ -184,114 +136,56 @@ func CleanupRegistries(
 
 // ExtractRegistriesFromKindForTesting extracts registry information from Kind configuration.
 // This function is exported for testing purposes.
-func ExtractRegistriesFromKindForTesting(kindConfig *v1alpha4.Cluster) []RegistryInfo {
-	return extractRegistriesFromKind(kindConfig)
+func ExtractRegistriesFromKindForTesting(
+	kindConfig *v1alpha4.Cluster,
+	upstreams map[string]string,
+) []registries.Info {
+	return extractRegistriesFromKind(kindConfig, upstreams)
 }
 
 // extractRegistriesFromKind is the internal implementation.
-func extractRegistriesFromKind(kindConfig *v1alpha4.Cluster) []RegistryInfo {
-	var registries []RegistryInfo
+func extractRegistriesFromKind(
+	kindConfig *v1alpha4.Cluster,
+	upstreams map[string]string,
+) []registries.Info {
+	if kindConfig == nil {
+		return nil
+	}
 
-	seenHosts := make(map[string]bool) // Track unique hosts to avoid duplicates
-	portOffset := 0
+	var registryInfos []registries.Info
 
-	// Kind uses containerdConfigPatches to configure registry mirrors
+	seenHosts := make(map[string]bool)
+	usedPorts := make(map[int]struct{})
+	nextPort := registries.DefaultRegistryPort
+
 	for _, patch := range kindConfig.ContainerdConfigPatches {
 		mirrors := parseContainerdConfig(patch)
+		if len(mirrors) == 0 {
+			continue
+		}
 
-		// Sort hosts for deterministic order
 		hosts := make([]string, 0, len(mirrors))
 		for host := range mirrors {
 			hosts = append(hosts, host)
 		}
 
-		sort.Strings(hosts)
+		registries.SortHosts(hosts)
 
 		for _, host := range hosts {
-			// Skip duplicates - don't increment portOffset for duplicates
 			if seenHosts[host] {
 				continue
 			}
 
 			seenHosts[host] = true
 
-			// Build registry info from host and endpoints
-			info := buildRegistryInfo(host, mirrors[host], portOffset)
-			registries = append(registries, info)
-			portOffset++ // Only increment for actually added registries
+			endpoints := mirrors[host]
+			port := registries.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
+			info := registries.BuildRegistryInfo(host, endpoints, port, "kind-", upstreams[host])
+			registryInfos = append(registryInfos, info)
 		}
 	}
 
-	return registries
-}
-
-// buildRegistryInfo constructs a RegistryInfo from host and endpoints.
-func buildRegistryInfo(host string, endpoints []string, portOffset int) RegistryInfo {
-	name := extractRegistryName(host, endpoints)
-	port := extractRegistryPort(endpoints, portOffset)
-	upstream := generateUpstreamURL(host)
-
-	return RegistryInfo{
-		Name:     name,
-		Upstream: upstream,
-		Port:     port,
-	}
-}
-
-// extractRegistryName extracts or generates a registry name from host and endpoints.
-func extractRegistryName(host string, endpoints []string) string {
-	if len(endpoints) == 0 {
-		return generateNameFromHost(host)
-	}
-
-	endpoint := endpoints[0]
-
-	// Try to extract name from endpoint like "http://kind-docker-io:5000"
-	if strings.HasPrefix(endpoint, "http://kind-") || strings.HasPrefix(endpoint, "https://kind-") {
-		if name := extractNameFromEndpoint(endpoint); name != "" {
-			return name
-		}
-	}
-
-	return generateNameFromHost(host)
-}
-
-// extractNameFromEndpoint extracts the registry name from an endpoint URL.
-func extractNameFromEndpoint(endpoint string) string {
-	parts := strings.Split(endpoint, "//")
-	if len(parts) != expectedPartCount {
-		return ""
-	}
-
-	hostPort := strings.Split(parts[1], ":")
-	if len(hostPort) >= 1 {
-		return hostPort[0] // Return full distribution-prefixed name like "kind-docker-io"
-	}
-
-	return ""
-}
-
-// generateNameFromHost generates a registry name from a host.
-func generateNameFromHost(host string) string {
-	// Sanitize host for container naming
-	simpleName := strings.ReplaceAll(host, ".", "-")
-	simpleName = strings.ReplaceAll(simpleName, "/", "-")
-	simpleName = strings.ReplaceAll(simpleName, ":", "-")
-
-	return "kind-" + simpleName
-}
-
-// extractRegistryPort determines the registry port from endpoints or uses default with offset.
-func extractRegistryPort(endpoints []string, portOffset int) int {
-	if len(endpoints) == 0 {
-		return defaultRegistryPort + portOffset
-	}
-
-	if extractedPort := extractPortFromEndpoint(endpoints[0]); extractedPort > 0 {
-		return extractedPort
-	}
-
-	return defaultRegistryPort + portOffset
+	return registryInfos
 }
 
 // ParseContainerdConfigForTesting parses containerd configuration patches to extract registry mirrors.
@@ -517,48 +411,4 @@ func extractQuotedString(str string) string {
 	}
 
 	return str[firstQuote+1 : lastQuote]
-}
-
-// generateUpstreamURL generates the upstream registry URL from the host.
-// docker.io -> https://registry-1.docker.io
-// ghcr.io -> https://ghcr.io
-// quay.io -> https://quay.io
-// custom.registry.io:5000 -> https://custom.registry.io:5000
-func generateUpstreamURL(host string) string {
-	// Special case for docker.io - the actual registry is registry-1.docker.io
-	if host == "docker.io" {
-		return "https://registry-1.docker.io"
-	}
-
-	// For other registries, use https:// + host
-	return "https://" + host
-}
-
-// extractPortFromEndpoint extracts the port number from an endpoint URL.
-// Returns 0 if no port can be extracted.
-func extractPortFromEndpoint(endpoint string) int {
-	// Look for port after last colon
-	// Example: http://localhost:5000 -> 5000
-	lastColon := strings.LastIndex(endpoint, ":")
-	if lastColon < 0 {
-		return 0
-	}
-
-	// Make sure this is actually a port (not part of http://)
-	if lastColon < len(endpoint)-1 {
-		portStr := endpoint[lastColon+1:]
-		// Remove any trailing slash or path
-		if slashIdx := strings.Index(portStr, "/"); slashIdx >= 0 {
-			portStr = portStr[:slashIdx]
-		}
-
-		var port int
-
-		_, err := fmt.Sscanf(portStr, "%d", &port)
-		if err == nil && port > 0 && port <= 65535 {
-			return port
-		}
-	}
-
-	return 0
 }

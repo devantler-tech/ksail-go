@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
@@ -19,6 +22,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	k3dtypes "github.com/k3d-io/k3d/v5/pkg/types"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
@@ -142,7 +146,7 @@ func (s *Scaffolder) GenerateContainerdPatches() []string {
 		registryHost := name
 
 		// Use container name as endpoint for Kind network DNS resolution
-		kindEndpoint := "http://" + containerName + ":" + port
+		kindEndpoint := "http://" + net.JoinHostPort(containerName, port)
 
 		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
   endpoint = ["%s"]`, registryHost, kindEndpoint)
@@ -161,50 +165,100 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		Use: []string{},
 	}
 
-	// K3d requires one registry per upstream proxy
-	// We'll create multiple registries with distribution-prefixed names: k3d-{name}
-	if len(s.MirrorRegistries) > 0 {
-		// For now, we'll use the first mirror as the primary registry
-		// Multiple mirrors require multiple registries, which K3d supports via separate create configs
-		mirrorSpec := s.MirrorRegistries[0]
-
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts != nil {
-			name := parts[0]
-			_ = parts[1] // upstream URL handled by K3d's containerd mirror fallback
-
-			// Generate distribution-prefixed registry name
-			// Replace dots with hyphens for container naming (docker.io -> docker-io)
-			sanitizedName := strings.ReplaceAll(name, ".", "-")
-			registryName := "k3d-" + sanitizedName
-
-			registryConfig.Create = &k3dv1alpha5.SimpleConfigRegistryCreateConfig{
-				Name: registryName,
-			}
-
-			// Generate mirrors configuration
-			configLines := make([]string, 0, len(s.MirrorRegistries)*4+1)
-			configLines = append(configLines, "mirrors:")
-
-			// Use name as registry host directly (users provide full host)
-			registryHost := name
-
-			configLines = append(configLines, fmt.Sprintf(`  "%s":`, registryHost))
-			configLines = append(configLines, "    endpoint:")
-			configLines = append(configLines, fmt.Sprintf("      - http://%s:5000", registryName))
-
-			// Add proxy configuration
-			configLines = append(configLines, "configs:")
-			configLines = append(configLines, fmt.Sprintf(`  "%s:5000":`, registryName))
-			configLines = append(configLines, "    auth: {}")
-			configLines = append(configLines, "    tls:")
-			configLines = append(configLines, "      insecure_skip_verify: false")
-
-			registryConfig.Config = joinLines(configLines) + "\n"
-		}
+	if s.KSailConfig.Spec.Distribution != v1alpha1.DistributionK3d {
+		return registryConfig
 	}
 
+	seen := make(map[string]struct{}, len(s.MirrorRegistries))
+	parsed := make([]k3dMirrorEntry, 0, len(s.MirrorRegistries))
+	usedPorts := make(map[int]struct{}, len(s.MirrorRegistries))
+	nextPort := dockerclient.DefaultRegistryPort
+
+	for _, spec := range s.MirrorRegistries {
+		mirror, ok := s.buildK3dMirrorEntry(spec, seen, usedPorts, &nextPort)
+		if !ok {
+			continue
+		}
+
+		parsed = append(parsed, mirror)
+	}
+
+	if len(parsed) == 0 {
+		return registryConfig
+	}
+
+	const linesPerMirror = 3
+
+	configLines := make([]string, 0, len(parsed)*linesPerMirror)
+	useEntries := make([]string, 0, len(parsed))
+
+	for _, mirror := range parsed {
+		containerName := fmt.Sprintf("%s-%s", k3dtypes.DefaultObjectNamePrefix, mirror.sanitized)
+		useEntries = append(useEntries, containerName)
+
+		configLines = append(configLines,
+			"  \""+mirror.host+"\":",
+			"    endpoint:",
+			"      - "+mirror.endpoint,
+		)
+	}
+
+	if len(configLines) > 0 {
+		configLines = append([]string{"mirrors:"}, configLines...)
+		registryConfig.Config = joinLines(configLines) + "\n"
+	}
+
+	registryConfig.Use = useEntries
+
 	return registryConfig
+}
+
+type k3dMirrorEntry struct {
+	host      string
+	sanitized string
+	endpoint  string
+}
+
+func (s *Scaffolder) buildK3dMirrorEntry(
+	spec string,
+	seen map[string]struct{},
+	usedPorts map[int]struct{},
+	nextPort *int,
+) (k3dMirrorEntry, bool) {
+	parts := splitMirrorSpec(spec)
+	if parts == nil {
+		return k3dMirrorEntry{}, false
+	}
+
+	host := strings.TrimSpace(parts[0])
+	if host == "" {
+		return k3dMirrorEntry{}, false
+	}
+
+	remote := strings.TrimSpace(parts[1])
+	if remote == "" {
+		return k3dMirrorEntry{}, false
+	}
+
+	sanitized := sanitizeRegistryName(host)
+	if sanitized == "" {
+		return k3dMirrorEntry{}, false
+	}
+
+	if _, exists := seen[host]; exists {
+		return k3dMirrorEntry{}, false
+	}
+
+	seen[host] = struct{}{}
+	port := nextK3dRegistryPort(nextPort, usedPorts)
+	containerName := fmt.Sprintf("%s-%s", k3dtypes.DefaultObjectNamePrefix, sanitized)
+	endpoint := "http://" + net.JoinHostPort(containerName, strconv.Itoa(port))
+
+	return k3dMirrorEntry{
+		host:      host,
+		sanitized: sanitized,
+		endpoint:  endpoint,
+	}, true
 }
 
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
@@ -566,6 +620,39 @@ func findFirstEquals(s string) int {
 }
 
 // joinLines joins strings with newlines.
+
+func sanitizeRegistryName(name string) string {
+	sanitized := strings.TrimSpace(name)
+	if sanitized == "" {
+		return ""
+	}
+
+	return strings.ReplaceAll(sanitized, ".", "-")
+}
+
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
+}
+
+func nextK3dRegistryPort(nextPort *int, usedPorts map[int]struct{}) int {
+	if nextPort == nil {
+		value := dockerclient.DefaultRegistryPort
+		nextPort = &value
+	}
+
+	port := *nextPort
+	if port <= 0 {
+		port = dockerclient.DefaultRegistryPort
+	}
+
+	for {
+		if _, exists := usedPorts[port]; !exists {
+			usedPorts[port] = struct{}{}
+			*nextPort = port + 1
+
+			return port
+		}
+
+		port++
+	}
 }

@@ -7,9 +7,11 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
@@ -97,48 +99,96 @@ func cleanupMirrorRegistries(
 	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
 ) error {
-	// Only Kind requires registry cleanup - K3d handles it natively
-	if clusterCfg.Spec.Distribution != v1alpha1.DistributionKind {
-		return nil
-	}
-
-	// Load Kind config to check if containerd patches exist
-	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-
-	kindConfig, err := kindConfigMgr.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load kind config: %w", err)
-	}
-
-	// If no containerd patches, no registries to clean up
-	if len(kindConfig.ContainerdConfigPatches) == 0 {
-		return nil
-	}
-
-	// Display activity message
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "cleaning up mirror registries",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	// Get flag value for volume deletion
 	deleteVolumes, err := cmd.Flags().GetBool("delete-registry-volumes")
 	if err != nil {
 		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", err)
 	}
 
-	// Clean up registries using Docker client
-	// Note: Use kindConfig.Name (distribution config) not clusterCfg metadata name
-	// The cluster name from the Kind config matches the actual cluster identifier
-	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
-		err := kindprovisioner.CleanupRegistries(
+	switch clusterCfg.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		return cleanupKindMirrorRegistries(cmd, clusterCfg, deps, deleteVolumes)
+	case v1alpha1.DistributionK3d:
+		return cleanupK3dMirrorRegistries(cmd, clusterCfg, deps, deleteVolumes)
+	default:
+		return nil
+	}
+}
+
+func cleanupKindMirrorRegistries(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
+	deleteVolumes bool,
+) error {
+	kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
+	kindConfig, loadErr := kindConfigMgr.LoadConfig(deps.Timer)
+	if loadErr != nil {
+		return fmt.Errorf("failed to load kind config: %w", loadErr)
+	}
+
+	registries := kindprovisioner.ExtractRegistriesFromKindForTesting(kindConfig, nil)
+	if len(registries) == 0 {
+		return nil
+	}
+
+	return runMirrorRegistryCleanup(cmd, func(dockerClient client.APIClient) error {
+		return kindprovisioner.CleanupRegistries(
 			cmd.Context(),
 			kindConfig,
 			kindConfig.Name,
 			dockerClient,
 			deleteVolumes,
 		)
+	})
+}
+
+func cleanupK3dMirrorRegistries(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps shared.LifecycleDeps,
+	deleteVolumes bool,
+) error {
+	if clusterCfg.Spec.DistributionConfig == "" {
+		return nil
+	}
+
+	k3dConfigMgr := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
+	k3dConfig, loadErr := k3dConfigMgr.LoadConfig(deps.Timer)
+	if loadErr != nil {
+		return fmt.Errorf("failed to load k3d config: %w", loadErr)
+	}
+
+	registries := k3dprovisioner.ExtractRegistriesFromConfigForTesting(k3dConfig)
+	if len(registries) == 0 {
+		return nil
+	}
+
+	return runMirrorRegistryCleanup(cmd, func(dockerClient client.APIClient) error {
+		return k3dprovisioner.CleanupRegistries(
+			cmd.Context(),
+			k3dConfig,
+			k3dConfig.Name,
+			dockerClient,
+			deleteVolumes,
+			cmd.ErrOrStderr(),
+		)
+	})
+}
+
+func runMirrorRegistryCleanup(
+	cmd *cobra.Command,
+	cleanup func(client.APIClient) error,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "cleaning up mirror registries",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+		err := cleanup(dockerClient)
 		if err != nil {
 			return fmt.Errorf("failed to cleanup registries: %w", err)
 		}

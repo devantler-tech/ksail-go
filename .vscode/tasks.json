@@ -70,7 +70,12 @@
       "type": "shell",
       "label": "go: lint",
       "command": "golangci-lint",
-      "args": ["run", "--timeout", "5m"],
+      "args": [
+        "run",
+        "--timeout",
+        "5m",
+        "--fix"
+      ],
       "presentation": {
         "echo": true,
         "reveal": "silent",

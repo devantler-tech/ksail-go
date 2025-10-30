@@ -878,11 +878,20 @@ func setupExistingKSailFile(
 	return tempDir, buffer, scaffolderInstance, mocks
 }
 
+func newK3dScaffolder(t *testing.T, mirrors []string) *scaffolder.Scaffolder {
+	t.Helper()
+
+	instance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionK3d
+	instance.MirrorRegistries = mirrors
+
+	return instance
+}
+
 func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
 	t.Parallel()
 
-	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
-	scaffolderInstance.MirrorRegistries = []string{}
+	scaffolderInstance := newK3dScaffolder(t, nil)
 
 	config := scaffolderInstance.GenerateK3dRegistryConfig()
 	assert.Empty(t, config.Use)
@@ -892,12 +901,24 @@ func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
 func TestGenerateK3dRegistryConfig_InvalidSpec(t *testing.T) {
 	t.Parallel()
 
-	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
-	scaffolderInstance.MirrorRegistries = []string{"invalid"}
+	scaffolderInstance := newK3dScaffolder(t, []string{"invalid"})
 
 	config := scaffolderInstance.GenerateK3dRegistryConfig()
 	assert.Empty(t, config.Use)
 	assert.Nil(t, config.Create)
+}
+
+func TestGenerateK3dRegistryConfig_WithValidMirror(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, []string{"docker.io=https://registry-1.docker.io"})
+
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
+
+	require.Nil(t, config.Create)
+	assert.Contains(t, config.Config, "http://k3d-docker-io:5000")
+	assert.Contains(t, config.Config, "\"docker.io\":")
+	assert.Equal(t, []string{"k3d-docker-io"}, config.Use)
 }
 
 func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
