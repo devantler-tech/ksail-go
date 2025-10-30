@@ -9,3 +9,7 @@ https://x-access-token/
 # Docker registry URL (used as mirror configuration, not a web URL)
 # Docker registries use Docker Registry HTTP API V2 and don't respond to bare GET requests
 https://registry-1.docker.io/
+
+# Local registry endpoints used in integration tests (not publicly reachable)
+http://k3d-docker-io:5000/
+http://k3d-ghcr-io:5001/
