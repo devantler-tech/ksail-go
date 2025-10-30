@@ -277,6 +277,11 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 	t.Parallel()
 
 	var output bytes.Buffer
+	tempDir := t.TempDir()
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configStub := "apiVersion: ksail.dev/v1alpha1\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(configStub), 0o600))
 
 	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		configmanager.DefaultDistributionFieldSelector(),
@@ -285,6 +290,7 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 	}
 
 	manager := configmanager.NewConfigManager(&output, selectors...)
+	manager.Viper.SetConfigFile(configPath)
 
 	cluster, err := manager.LoadConfigSilent()
 	require.NoError(t, err)
@@ -485,8 +491,14 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 	t.Parallel()
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
+	tempDir := t.TempDir()
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configStub := "apiVersion: ksail.dev/v1alpha1\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(configStub), 0o600))
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
+	manager.Viper.SetConfigFile(configPath)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := v1alpha1.NewCluster()
