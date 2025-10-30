@@ -856,8 +856,8 @@ func appendKindPatch(t *testing.T, path string) {
 	for _, p := range patch {
 		builder.WriteString("- |\n")
 
-		lines := strings.Split(p, "\n")
-		for _, line := range lines {
+		lines := strings.SplitSeq(p, "\n")
+		for line := range lines {
 			builder.WriteString("  ")
 			builder.WriteString(line)
 			builder.WriteByte('\n')
