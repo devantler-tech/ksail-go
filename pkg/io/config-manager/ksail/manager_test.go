@@ -277,6 +277,7 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 	t.Parallel()
 
 	var output bytes.Buffer
+
 	tempDir := t.TempDir()
 
 	configPath := filepath.Join(tempDir, "ksail.yaml")
