@@ -16,6 +16,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const mirrorRegistryHelp = "Configure mirror registries with format 'host=upstream' " +
+	"(e.g., docker.io=https://registry-1.docker.io)."
+
 func newInitCommand(t *testing.T) *cobra.Command {
 	t.Helper()
 
@@ -41,7 +44,7 @@ func newConfigManager(
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = manager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
 	cmd.Flags().
-		StringSlice("mirror-registry", []string{}, "Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io).")
+		StringSlice("mirror-registry", []string{}, mirrorRegistryHelp)
 	_ = manager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
 	return manager
@@ -116,7 +119,8 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(outDir, "k3d.yaml")); err != nil {
+	_, err = os.Stat(filepath.Join(outDir, "k3d.yaml"))
+	if err != nil {
 		t.Fatalf("expected k3d.yaml to be scaffolded: %v", err)
 	}
 }

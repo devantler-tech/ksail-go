@@ -30,6 +30,7 @@ name: kind
 `
 )
 
+// CreateConfigManagerWithFieldSelectors builds a config manager populated with the provided field selectors.
 func CreateConfigManagerWithFieldSelectors(
 	writer io.Writer,
 	fieldSelectors ...configmanager.FieldSelector[v1alpha1.Cluster],
@@ -37,6 +38,7 @@ func CreateConfigManagerWithFieldSelectors(
 	return configmanager.NewConfigManager(writer, fieldSelectors...)
 }
 
+// CreateDefaultConfigManager returns a config manager configured with the standard KSail defaults used in tests.
 func CreateDefaultConfigManager() *configmanager.ConfigManager {
 	return CreateConfigManagerWithFieldSelectors(
 		io.Discard,
@@ -73,6 +75,7 @@ const (
 	testFilePerm      = 0o600
 )
 
+// WriteValidKsailConfig writes a minimal valid KSail configuration into the provided directory.
 func WriteValidKsailConfig(t *testing.T, dir string) {
 	t.Helper()
 
@@ -86,6 +89,7 @@ func WriteValidKsailConfig(t *testing.T, dir string) {
 	require.NoError(t, os.WriteFile(kindConfigPath, []byte(defaultKindConfigContent), testFilePerm))
 }
 
+// SetupCommandWithOutput returns a new cobra command with its output wired to an in-memory buffer.
 func SetupCommandWithOutput() (*cobra.Command, *bytes.Buffer) {
 	var out bytes.Buffer
 
@@ -95,6 +99,7 @@ func SetupCommandWithOutput() (*cobra.Command, *bytes.Buffer) {
 	return testCmd, &out
 }
 
+// SimpleCommandTestData describes expectations for reusable command creation tests.
 type SimpleCommandTestData struct {
 	CommandName   string
 	NewCommand    func() *cobra.Command
@@ -102,6 +107,7 @@ type SimpleCommandTestData struct {
 	ExpectedShort string
 }
 
+// TestSimpleCommandCreation validates the basic metadata of a command.
 func TestSimpleCommandCreation(t *testing.T, data SimpleCommandTestData) {
 	t.Helper()
 
@@ -119,6 +125,7 @@ func TestSimpleCommandCreation(t *testing.T, data SimpleCommandTestData) {
 	}
 }
 
+// TestSimpleCommandExecution executes a command and snapshots its standard output.
 func TestSimpleCommandExecution(t *testing.T, data SimpleCommandTestData) {
 	t.Helper()
 
@@ -135,6 +142,7 @@ func TestSimpleCommandExecution(t *testing.T, data SimpleCommandTestData) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
+// TestSimpleCommandHelp runs a command with --help and snapshots the output.
 func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	t.Helper()
 
@@ -152,6 +160,7 @@ func TestSimpleCommandHelp(t *testing.T, data SimpleCommandTestData) {
 	snaps.MatchSnapshot(t, out.String())
 }
 
+// TestCmdExecuteInCleanDir ensures commands fail validation when executed without a ksail.yaml.
 func TestCmdExecuteInCleanDir(t *testing.T, cmdFactory func() *cobra.Command, cmdName string) {
 	t.Helper()
 	tempDir := t.TempDir()

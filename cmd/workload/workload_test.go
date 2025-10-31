@@ -9,8 +9,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils" // cspell:ignore cmdtestutils
-	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -18,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(m *testing.M) { internaltestutils.RunTestMainWithSnapshotCleanup(m) }
+func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
 func TestWorkloadHelpSnapshots(t *testing.T) {
 	t.Parallel()
@@ -78,7 +77,7 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 			var out bytes.Buffer
 
 			tempDir := t.TempDir()
-			cmdtestutils.WriteValidKsailConfig(t, tempDir)
+			testutils.WriteValidKsailConfig(t, tempDir)
 
 			t.Chdir(tempDir)
 

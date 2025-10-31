@@ -10,8 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
-	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -22,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(m *testing.M) { internaltestutils.RunTestMainWithSnapshotCleanup(m) }
+func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
 type recordingListFactory struct {
 	provisioner clusterprovisioner.ClusterProvisioner
@@ -78,7 +77,7 @@ func createConfigManagerWithFile(t *testing.T, writer io.Writer) *configmanager.
 	cfgManager := configmanager.NewConfigManager(writer, selectors...)
 
 	tempDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	testutils.WriteValidKsailConfig(t, tempDir)
 
 	cfgManager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
 
@@ -450,7 +449,7 @@ func TestNewListCmd_RunESuccess(t *testing.T) {
 	cmd.SetErr(&out)
 
 	tempDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	testutils.WriteValidKsailConfig(t, tempDir)
 	t.Chdir(tempDir)
 
 	err := cmd.Execute()

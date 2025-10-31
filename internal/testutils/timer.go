@@ -12,18 +12,25 @@ type RecordingTimer struct {
 	NewStageCount int
 }
 
+// NewRecordingTimer constructs a RecordingTimer instance.
 func NewRecordingTimer() *RecordingTimer { return &RecordingTimer{} }
 
+// Start records a Start invocation and increments counters.
 func (r *RecordingTimer) Start() {
 	r.StartCalls++
 	r.StartCount++
 }
 
+// NewStage records a NewStage invocation and increments counters.
 func (r *RecordingTimer) NewStage() {
 	r.StageCalls++
 	r.NewStageCount++
 }
+
+// Stop implements timer.Timer without additional behaviour for tests.
 func (r *RecordingTimer) Stop() {}
-func (r *RecordingTimer) GetTiming() (total time.Duration, stage time.Duration) {
+
+// GetTiming returns deterministic durations for snapshot-friendly assertions.
+func (r *RecordingTimer) GetTiming() (time.Duration, time.Duration) {
 	return time.Millisecond, time.Millisecond
 }

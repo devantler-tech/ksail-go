@@ -219,8 +219,13 @@ func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
 }
 
 func setFieldValueFromFlag(fieldPtr any, raw string) error {
-	if setter, ok := fieldPtr.(interface{ Set(string) error }); ok {
-		return setter.Set(raw)
+	if setter, ok := fieldPtr.(interface{ Set(value string) error }); ok {
+		err := setter.Set(raw)
+		if err != nil {
+			return fmt.Errorf("set field value via setter: %w", err)
+		}
+
+		return nil
 	}
 
 	switch ptr := fieldPtr.(type) {
@@ -237,7 +242,7 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 
 		dur, err := time.ParseDuration(raw)
 		if err != nil {
-			return err
+			return fmt.Errorf("parse duration %q: %w", raw, err)
 		}
 
 		ptr.Duration = dur

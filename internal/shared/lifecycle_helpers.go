@@ -15,10 +15,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ErrMissingClusterProvisionerDependency indicates that a lifecycle command resolved a nil provisioner.
 var ErrMissingClusterProvisionerDependency = errors.New("missing cluster provisioner dependency")
 
-type LifecycleAction func(ctx context.Context, provisioner clusterprovisioner.ClusterProvisioner, clusterName string) error
+// LifecycleAction represents a lifecycle operation executed against a cluster provisioner.
+type LifecycleAction func(
+	ctx context.Context,
+	provisioner clusterprovisioner.ClusterProvisioner,
+	clusterName string,
+) error
 
+// LifecycleConfig describes the messaging and action behaviour for a lifecycle command.
 type LifecycleConfig struct {
 	TitleEmoji         string
 	TitleContent       string
@@ -28,11 +35,13 @@ type LifecycleConfig struct {
 	Action             LifecycleAction
 }
 
+// LifecycleDeps groups the injectable collaborators required by lifecycle commands.
 type LifecycleDeps struct {
 	Timer   timer.Timer
 	Factory clusterprovisioner.Factory
 }
 
+// NewLifecycleCommandWrapper creates a cobra RunE wrapper that resolves dependencies and calls HandleLifecycleRunE.
 func NewLifecycleCommandWrapper(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -47,6 +56,7 @@ func NewLifecycleCommandWrapper(
 	)
 }
 
+// WrapLifecycleHandler resolves lifecycle dependencies from the runtime container before calling the provided handler.
 func WrapLifecycleHandler(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -69,6 +79,7 @@ func WrapLifecycleHandler(
 	)
 }
 
+// HandleLifecycleRunE orchestrates the standard lifecycle workflow including config loading and timing.
 func HandleLifecycleRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -99,6 +110,7 @@ func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
 	)
 }
 
+// RunLifecycleWithConfig executes a lifecycle command using a pre-loaded cluster configuration.
 func RunLifecycleWithConfig(
 	cmd *cobra.Command,
 	deps LifecycleDeps,
@@ -143,19 +155,15 @@ func runLifecycleWithProvisioner(
 		return fmt.Errorf("%s: %w", config.ErrorMessagePrefix, err)
 	}
 
+	total, stage := deps.Timer.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
 	notify.WriteMessage(
 		notify.Message{
 			Type:    notify.SuccessType,
-			Content: config.SuccessContent,
+			Content: fmt.Sprintf("%s %s", config.SuccessContent, timingStr),
 			Writer:  cmd.OutOrStdout(),
 		},
-	)
-
-	total, stage := deps.Timer.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
-	// Print timing as part of success context (original code printed after success)
-	notify.WriteMessage(
-		notify.Message{Type: notify.InfoType, Content: timingStr, Writer: cmd.OutOrStdout()},
 	)
 
 	return nil

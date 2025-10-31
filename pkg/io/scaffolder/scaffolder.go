@@ -173,8 +173,10 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		return registryConfig
 	}
 
+	const linesPerMirror = 3
+
 	seen := make(map[string]struct{}, len(s.MirrorRegistries))
-	configLines := make([]string, 0, len(s.MirrorRegistries)*3)
+	configLines := make([]string, 0, len(s.MirrorRegistries)*linesPerMirror)
 
 	for _, spec := range s.MirrorRegistries {
 		parts := splitMirrorSpec(spec)
@@ -611,17 +613,6 @@ func findFirstEquals(s string) int {
 	}
 
 	return -1
-}
-
-// joinLines joins strings with newlines.
-
-func sanitizeRegistryName(name string) string {
-	sanitized := strings.TrimSpace(name)
-	if sanitized == "" {
-		return ""
-	}
-
-	return strings.ReplaceAll(sanitized, ".", "-")
 }
 
 func joinLines(lines []string) string {

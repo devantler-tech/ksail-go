@@ -10,18 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// setupConfigFile writes a config file to a temp directory and chdirs there.
-func setupConfigFile(t *testing.T, configContent string) {
-	t.Helper()
-
-	tempDir := t.TempDir()
-	configPath := filepath.Join(tempDir, "ksail.yaml")
-	err := os.WriteFile(configPath, []byte(configContent), 0o600)
-	require.NoError(t, err)
-
-	t.Chdir(tempDir)
-}
-
 func TestGetDefaultKubeconfigPath(t *testing.T) {
 	t.Parallel()
 

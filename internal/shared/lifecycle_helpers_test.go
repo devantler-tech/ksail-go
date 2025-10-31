@@ -74,7 +74,9 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 	tempDir := t.TempDir()
 
 	path := filepath.Join(tempDir, "ksail.yaml")
-	if err := os.WriteFile(path, []byte(validClusterConfigYAML), 0o600); err != nil {
+
+	err := os.WriteFile(path, []byte(validClusterConfigYAML), 0o600)
+	if err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 
@@ -89,7 +91,7 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	err = shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
 	if err == nil {
 		t.Fatal("expected factory error")
 	}

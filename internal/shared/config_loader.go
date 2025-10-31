@@ -10,10 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ConfigLoadDeps captures dependencies required for loading KSail configuration files.
 type ConfigLoadDeps struct {
 	Timer timer.Timer
 }
 
+// NewConfigLoaderRunE returns a cobra RunE that loads the KSail configuration using the runtime container.
 func NewConfigLoaderRunE(runtimeContainer *runtime.Runtime) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout())
@@ -31,12 +33,14 @@ func NewConfigLoaderRunE(runtimeContainer *runtime.Runtime) func(*cobra.Command,
 	}
 }
 
+// LoadConfig loads the KSail configuration while tracking timing information.
 func LoadConfig(cfgManager *ksailconfigmanager.ConfigManager, deps ConfigLoadDeps) error {
 	if deps.Timer != nil {
 		deps.Timer.Start()
 	}
 
-	if _, err := cfgManager.LoadConfig(deps.Timer); err != nil {
+	_, err := cfgManager.LoadConfig(deps.Timer)
+	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
