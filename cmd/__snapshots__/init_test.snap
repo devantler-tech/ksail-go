@@ -1,6 +1,5 @@
 
-[TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset - 1]
-
+[TestHandleInitRunE_SuccessWithOutputFlag - 1]
 📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
@@ -9,8 +8,7 @@
 
 ---
 
-[TestHandleInitRunE_SuccessWithOutputFlag - 1]
-
+[TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset - 1]
 📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
