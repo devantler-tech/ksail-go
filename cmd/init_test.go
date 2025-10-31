@@ -43,6 +43,7 @@ func newConfigManager(
 	cmd.Flags().
 		StringSlice("mirror-registry", []string{}, "Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io).")
 	_ = manager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
+
 	return manager
 }
 
@@ -53,6 +54,7 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 	// expectations on timing calls without maintaining a bespoke RecordingTimer helper.
 
 	outDir := t.TempDir()
+
 	var buffer bytes.Buffer
 
 	cmd := newInitCommand(t)
@@ -109,7 +111,8 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
 	deps := cmdpkg.InitDeps{Timer: tmr}
 
-	if err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps); err != nil {
+	err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
@@ -121,6 +124,7 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 //nolint:paralleltest // Uses t.Chdir for snapshot setup.
 func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	workingDir := t.TempDir()
+
 	var buffer bytes.Buffer
 
 	cmd := newInitCommand(t)

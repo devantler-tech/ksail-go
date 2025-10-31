@@ -6,16 +6,24 @@ import "time"
 // capturing the number of Start() and NewStage() calls and returning a fixed
 // duration for deterministic snapshot output.
 type RecordingTimer struct {
-	StartCalls int
-	StageCalls int
+	StartCalls    int
+	StartCount    int
+	StageCalls    int
+	NewStageCount int
 }
 
-func (r *RecordingTimer) Start()    { r.StartCalls++ }
-func (r *RecordingTimer) NewStage() { r.StageCalls++ }
-func (r *RecordingTimer) Stop()     {}
+func NewRecordingTimer() *RecordingTimer { return &RecordingTimer{} }
+
+func (r *RecordingTimer) Start() {
+	r.StartCalls++
+	r.StartCount++
+}
+
+func (r *RecordingTimer) NewStage() {
+	r.StageCalls++
+	r.NewStageCount++
+}
+func (r *RecordingTimer) Stop() {}
 func (r *RecordingTimer) GetTiming() (total time.Duration, stage time.Duration) {
 	return time.Millisecond, time.Millisecond
 }
-
-// NewRecordingTimer constructs a new RecordingTimer.
-func NewRecordingTimer() *RecordingTimer { return &RecordingTimer{} }

@@ -14,6 +14,7 @@ import (
 // GetDefaultKubeconfigPath returns the default kubeconfig path.
 func GetDefaultKubeconfigPath() string {
 	homeDir, _ := os.UserHomeDir()
+
 	return filepath.Join(homeDir, ".kube", "config")
 }
 
@@ -27,6 +28,7 @@ func GetKubeconfigPathSilently() string {
 		// If we can't load config, use default kubeconfig
 		return GetDefaultKubeconfigPath()
 	}
+
 	return kubeconfigPath
 }
 
@@ -51,5 +53,6 @@ func getKubeconfigPath(cfgManager *ksailconfigmanager.ConfigManager) (string, er
 	if err != nil {
 		return "", fmt.Errorf("failed to expand home path: %w", err)
 	}
+
 	return expandedPath, nil
 }

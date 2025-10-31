@@ -203,12 +203,14 @@ func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
 		}
 
 		flagName := m.GenerateFlagName(fieldPtr)
+
 		value, ok := overrides[flagName]
 		if !ok {
 			continue
 		}
 
-		if err := setFieldValueFromFlag(fieldPtr, value); err != nil {
+		err := setFieldValueFromFlag(fieldPtr, value)
+		if err != nil {
 			return fmt.Errorf("failed to apply flag override for %s: %w", flagName, err)
 		}
 	}
@@ -224,10 +226,12 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 	switch ptr := fieldPtr.(type) {
 	case *string:
 		*ptr = raw
+
 		return nil
 	case *metav1.Duration:
 		if raw == "" {
 			ptr.Duration = 0
+
 			return nil
 		}
 
@@ -237,6 +241,7 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 		}
 
 		ptr.Duration = dur
+
 		return nil
 	default:
 		return nil

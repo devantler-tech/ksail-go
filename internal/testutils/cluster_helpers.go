@@ -1,4 +1,3 @@
-// Package testutils provides shared helpers for cluster command tests.
 package testutils
 
 import (
@@ -8,14 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +21,7 @@ func SetupValidWorkingDir(t *testing.T) func() {
 	t.Helper()
 
 	tempDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	WriteValidKsailConfig(t, tempDir)
 
 	t.Chdir(tempDir)
 
@@ -74,26 +70,6 @@ func RunValidationErrorTest(
 		}
 	}
 }
-
-// RecordingTimer is a test double for timer.Timer that records method calls.
-type RecordingTimer struct {
-	StartCount    int
-	NewStageCount int
-}
-
-// Start implements timer.Timer.
-func (r *RecordingTimer) Start() { r.StartCount++ }
-
-// NewStage implements timer.Timer.
-func (r *RecordingTimer) NewStage() { r.NewStageCount++ }
-
-// GetTiming implements timer.Timer.
-func (r *RecordingTimer) GetTiming() (time.Duration, time.Duration) {
-	return 0, 0
-}
-
-// Stop implements timer.Timer.
-func (r *RecordingTimer) Stop() {}
 
 // StubFactory is a test double for clusterprovisioner.Factory.
 type StubFactory struct {
@@ -194,7 +170,7 @@ func CreateConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.Con
 	cfgManager := ksailconfigmanager.NewConfigManager(writer, selectors...)
 
 	tempDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, tempDir)
+	WriteValidKsailConfig(t, tempDir)
 
 	cfgManager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
 
@@ -202,7 +178,6 @@ func CreateConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.Con
 }
 
 var (
-	_ timer.Timer                           = (*RecordingTimer)(nil)
 	_ clusterprovisioner.Factory            = (*StubFactory)(nil)
 	_ clusterprovisioner.ClusterProvisioner = (*StubProvisioner)(nil)
 )

@@ -12,9 +12,8 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
 	"github.com/devantler-tech/ksail-go/internal/shared"
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
@@ -34,7 +33,10 @@ const (
 
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
-var errRepoError = errors.New("repo error")
+var (
+	errRepoError                = errors.New("repo error")
+	errClusterProvisionerFailed = errors.New("provisioner failed")
+)
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -531,7 +533,7 @@ func writeDummyKubeconfig(t *testing.T) string {
 func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 	t.Helper()
 
-	cmdtestutils.WriteValidKsailConfig(t, dir)
+	testutils.WriteValidKsailConfig(t, dir)
 
 	content := "apiVersion: ksail.dev/v1alpha1\n" +
 		"kind: Cluster\n" +
@@ -732,7 +734,7 @@ func TestRunLifecycleWithConfig_ProvisionerError(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	clusterCfg := &v1alpha1.Cluster{}
-	provisioner := &testutils.StubProvisioner{CreateErr: errProvisionerFailed}
+	provisioner := &testutils.StubProvisioner{CreateErr: errClusterProvisionerFailed}
 	deps := shared.LifecycleDeps{
 		Timer: &testutils.RecordingTimer{},
 		Factory: &testutils.StubFactory{

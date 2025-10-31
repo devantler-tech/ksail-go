@@ -60,7 +60,9 @@ func WrapLifecycleHandler(
 				if err != nil {
 					return fmt.Errorf("resolve provisioner factory dependency: %w", err)
 				}
+
 				deps := LifecycleDeps{Timer: tmr, Factory: factory}
+
 				return handler(cmd, cfgManager, deps)
 			},
 		),
@@ -74,11 +76,14 @@ func HandleLifecycleRunE(
 	config LifecycleConfig,
 ) error {
 	deps.Timer.Start()
+
 	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
+
 	deps.Timer.NewStage()
+
 	return RunLifecycleWithConfig(cmd, deps, config, clusterCfg)
 }
 
@@ -104,13 +109,16 @@ func RunLifecycleWithConfig(
 	if err != nil {
 		return fmt.Errorf("failed to resolve cluster provisioner: %w", err)
 	}
+
 	if provisioner == nil {
 		return ErrMissingClusterProvisionerDependency
 	}
+
 	clusterName, err := configmanager.GetClusterName(distributionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to get cluster name from config: %w", err)
 	}
+
 	return runLifecycleWithProvisioner(cmd, deps, config, provisioner, clusterName)
 }
 
@@ -129,9 +137,12 @@ func runLifecycleWithProvisioner(
 			Writer:  cmd.OutOrStdout(),
 		},
 	)
-	if err := config.Action(cmd.Context(), provisioner, clusterName); err != nil {
+
+	err := config.Action(cmd.Context(), provisioner, clusterName)
+	if err != nil {
 		return fmt.Errorf("%s: %w", config.ErrorMessagePrefix, err)
 	}
+
 	notify.WriteMessage(
 		notify.Message{
 			Type:    notify.SuccessType,
@@ -139,11 +150,13 @@ func runLifecycleWithProvisioner(
 			Writer:  cmd.OutOrStdout(),
 		},
 	)
+
 	total, stage := deps.Timer.GetTiming()
 	timingStr := notify.FormatTiming(total, stage, true)
 	// Print timing as part of success context (original code printed after success)
 	notify.WriteMessage(
 		notify.Message{Type: notify.InfoType, Content: timingStr, Writer: cmd.OutOrStdout()},
 	)
+
 	return nil
 }
