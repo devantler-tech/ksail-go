@@ -3,7 +3,7 @@ package cluster
 import (
 	"context"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	"github.com/devantler-tech/ksail-go/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"

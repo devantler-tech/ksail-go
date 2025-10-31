@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	"github.com/devantler-tech/ksail-go/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"

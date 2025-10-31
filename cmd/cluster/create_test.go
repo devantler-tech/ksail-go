@@ -13,8 +13,8 @@ import (
 	"unsafe"
 
 	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/internal/shared"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"

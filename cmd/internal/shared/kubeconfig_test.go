@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/internal/shared"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils" // cspell:ignore cmdtestutils
 	"github.com/devantler-tech/ksail-go/cmd/workload"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils" // cspell:ignore cmdtestutils
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	internaltestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
@@ -21,21 +22,11 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
-	selectors = append(selectors, ksailconfigmanager.DefaultCNIFieldSelector())
-	selectors = append(selectors, ksailconfigmanager.DefaultGitOpsEngineFieldSelector())
+	cfgManager := ksailconfigmanager.NewCommandConfigManager(cmd, InitFieldSelectors())
 
-	cfgManager := ksailconfigmanager.NewCommandConfigManager(cmd, selectors)
-
-	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
-	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
-	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
-	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
-	cmd.Flags().
-		StringSlice("mirror-registry", []string{},
-			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io).")
-	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
+	// Bind init-local flags (not part of shared cluster config). Keeping this scoped
+	// here avoids polluting the generic config manager with scaffolding concerns.
+	bindInitLocalFlags(cmd, cfgManager)
 
 	cmd.RunE = runtime.RunEWithRuntime(
 		runtimeContainer,
@@ -47,6 +38,31 @@ func NewInitCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	)
 
 	return cmd
+}
+
+// InitFieldSelectors returns the field selectors used by the init command.
+// Kept local (rather than separate file) to keep init-specific wiring cohesive.
+func InitFieldSelectors() []ksailconfigmanager.FieldSelector[v1alpha1.Cluster] {
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
+	selectors = append(selectors, ksailconfigmanager.DefaultCNIFieldSelector())
+	selectors = append(selectors, ksailconfigmanager.DefaultGitOpsEngineFieldSelector())
+	return selectors
+}
+
+// bindInitLocalFlags adds and binds flags that are specific to the init command only.
+// They intentionally do not belong to the shared cluster field selectors.
+func bindInitLocalFlags(cmd *cobra.Command, cfgManager *ksailconfigmanager.ConfigManager) {
+	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
+	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
+	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+	cmd.Flags().StringSlice(
+		"mirror-registry",
+		[]string{},
+		"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io).",
+	)
+	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 }
 
 // InitDeps captures dependencies required for the init command.
@@ -87,8 +103,6 @@ func HandleInitRunE(
 		cmd.OutOrStdout(),
 	)
 	scaffolderInstance.MirrorRegistries = mirrorRegistries
-
-	cmd.Println()
 
 	if deps.Timer != nil {
 		deps.Timer.NewStage()
