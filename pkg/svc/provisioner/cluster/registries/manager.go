@@ -5,6 +5,7 @@ package registries
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -37,6 +38,7 @@ func SetupRegistries(
 	registryMgr *dockerclient.RegistryManager,
 	registries []Info,
 	clusterName string,
+	networkName string,
 	writer io.Writer,
 ) error {
 	if registryMgr == nil || len(registries) == 0 {
@@ -60,7 +62,14 @@ func SetupRegistries(
 			existingRegistries,
 		)
 		if createErr != nil {
-			cleanupCreatedRegistries(ctx, registryMgr, createdRegistries, clusterName, writer)
+			cleanupCreatedRegistries(
+				ctx,
+				registryMgr,
+				createdRegistries,
+				clusterName,
+				networkName,
+				writer,
+			)
 
 			return createErr
 		}
@@ -94,6 +103,53 @@ func collectExistingRegistryNames(
 	}
 
 	return existingRegistries, nil
+}
+
+// CollectExistingRegistryPorts returns a set of host ports that are already bound by
+// existing registry containers. This allows callers to avoid host port collisions
+// when provisioning new registry mirrors for additional clusters.
+func CollectExistingRegistryPorts(
+	ctx context.Context,
+	registryMgr *dockerclient.RegistryManager,
+) (map[int]struct{}, error) {
+	ports := make(map[int]struct{})
+
+	if registryMgr == nil {
+		return ports, nil
+	}
+
+	names, err := registryMgr.ListRegistries(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list existing registries: %w", err)
+	}
+
+	for _, name := range names {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+
+		port, portErr := registryMgr.GetRegistryPort(ctx, trimmed)
+		if portErr != nil {
+			switch {
+			case errors.Is(portErr, dockerclient.ErrRegistryNotFound),
+				errors.Is(portErr, dockerclient.ErrRegistryPortNotFound):
+				continue
+			default:
+				return nil, fmt.Errorf(
+					"failed to resolve port for registry %s: %w",
+					trimmed,
+					portErr,
+				)
+			}
+		}
+
+		if port > 0 {
+			ports[port] = struct{}{}
+		}
+	}
+
+	return ports, nil
 }
 
 func ensureRegistry(
@@ -144,12 +200,13 @@ func cleanupCreatedRegistries(
 	registryMgr *dockerclient.RegistryManager,
 	created []Info,
 	clusterName string,
+	networkName string,
 	writer io.Writer,
 ) {
 	for i := len(created) - 1; i >= 0; i-- {
 		reg := created[i]
 
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type: notify.WarningType,
@@ -218,6 +275,7 @@ func CleanupRegistries(
 	registries []Info,
 	clusterName string,
 	deleteVolumes bool,
+	networkName string,
 	warningWriter io.Writer,
 ) error {
 	if registryMgr == nil || len(registries) == 0 {
@@ -230,7 +288,7 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName)
 		if err != nil {
 			_, _ = fmt.Fprintf(
 				writer,
@@ -244,10 +302,10 @@ func CleanupRegistries(
 	return nil
 }
 
-// SanitizeHostIdentifier converts a registry host string into a filesystem-safe identifier.
+// SanitizeHostIdentifier converts a registry host string into a Docker-safe identifier while keeping dots intact
+// so hosts such as docker.io remain reachable via container name resolution.
 func SanitizeHostIdentifier(host string) string {
-	sanitized := strings.ReplaceAll(host, ".", "-")
-	sanitized = strings.ReplaceAll(sanitized, "/", "-")
+	sanitized := strings.ReplaceAll(host, "/", "-")
 	sanitized = strings.ReplaceAll(sanitized, ":", "-")
 
 	return sanitized
@@ -351,9 +409,20 @@ func ExtractPortFromEndpoint(endpoint string) int {
 
 // ResolveRegistryName determines the registry container name from endpoints or falls back to prefix + host.
 func ResolveRegistryName(host string, endpoints []string, prefix string) string {
+	expected := SanitizeHostIdentifier(host)
+
 	for _, endpoint := range endpoints {
-		if name := ExtractNameFromEndpoint(endpoint); name != "" && !isLocalEndpointName(name) {
+		name := ExtractNameFromEndpoint(endpoint)
+		if name == "" {
+			continue
+		}
+
+		if expected != "" && strings.EqualFold(name, expected) {
 			return name
+		}
+
+		if isLocalEndpointName(name) {
+			continue
 		}
 	}
 

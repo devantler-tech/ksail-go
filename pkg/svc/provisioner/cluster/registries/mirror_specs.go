@@ -20,6 +20,7 @@ type MirrorEntry struct {
 	ContainerName string
 	Endpoint      string
 	Port          int
+	Remote        string
 }
 
 // ParseMirrorSpecs converts raw mirror specification strings into structured specs.
@@ -50,7 +51,8 @@ func ParseMirrorSpecs(specs []string) []MirrorSpec {
 }
 
 // BuildMirrorEntries converts mirror specs into registry entries using the provided prefix.
-// Prefix should exclude the trailing hyphen (e.g., "kind", "k3d").
+// Prefix should exclude the trailing hyphen (e.g., "kind", "k3d"). An empty prefix results in
+// container names that match the sanitized host directly, which is useful when sharing mirrors across distributions.
 // Existing hosts are skipped, and the allocations update the provided maps.
 func BuildMirrorEntries(
 	specs []MirrorSpec,
@@ -87,7 +89,12 @@ func BuildMirrorEntries(
 		}
 
 		port := AllocatePort(nextPort, allocatedPorts)
-		containerName := fmt.Sprintf("%s-%s", containerPrefix, sanitized)
+
+		containerName := sanitized
+		if trimmed := strings.TrimSpace(containerPrefix); trimmed != "" {
+			containerName = fmt.Sprintf("%s-%s", trimmed, sanitized)
+		}
+
 		endpoint := "http://" + net.JoinHostPort(containerName, strconv.Itoa(port))
 
 		entries = append(entries, MirrorEntry{
@@ -96,12 +103,179 @@ func BuildMirrorEntries(
 			ContainerName: containerName,
 			Endpoint:      endpoint,
 			Port:          port,
+			Remote:        spec.Remote,
 		})
 
 		targetHosts[host] = struct{}{}
 	}
 
 	return entries
+}
+
+// BuildHostEndpointMap merges parsed mirror specifications with existing host endpoint
+// mappings. Generated mirror endpoints are tracked internally while upstream remotes are
+// appended to preserve fallbacks. Returns the updated map and a boolean indicating
+// whether any changes were applied.
+func BuildHostEndpointMap(
+	specs []MirrorSpec,
+	containerPrefix string,
+	existing map[string][]string,
+) (map[string][]string, bool) {
+	hostEndpoints := cloneEndpointMap(existing)
+
+	usedPorts, nextPort := collectUsedPorts(hostEndpoints)
+
+	entries := BuildMirrorEntries(specs, containerPrefix, nil, usedPorts, &nextPort)
+	if len(entries) == 0 {
+		return hostEndpoints, false
+	}
+
+	updated := false
+
+	for _, entry := range entries {
+		endpoints, existed := hostEndpoints[entry.Host]
+		previousLen := len(endpoints)
+
+		if entry.Remote != "" && !containsEndpoint(endpoints, entry.Remote) {
+			endpoints = append(endpoints, entry.Remote)
+		}
+
+		if len(endpoints) == 0 {
+			endpoints = []string{GenerateUpstreamURL(entry.Host)}
+		}
+
+		if !existed || len(endpoints) != previousLen {
+			updated = true
+		}
+
+		hostEndpoints[entry.Host] = endpoints
+	}
+
+	return hostEndpoints, updated
+}
+
+func cloneEndpointMap(source map[string][]string) map[string][]string {
+	if len(source) == 0 {
+		return map[string][]string{}
+	}
+
+	clone := make(map[string][]string, len(source))
+	for host, endpoints := range source {
+		copied := make([]string, len(endpoints))
+		copy(copied, endpoints)
+		clone[host] = copied
+	}
+
+	return clone
+}
+
+func collectUsedPorts(hostEndpoints map[string][]string) (map[int]struct{}, int) {
+	used := make(map[int]struct{})
+	next := DefaultRegistryPort
+
+	for _, endpoints := range hostEndpoints {
+		for _, endpoint := range endpoints {
+			port := ExtractPortFromEndpoint(endpoint)
+			if port <= 0 {
+				continue
+			}
+
+			used[port] = struct{}{}
+			if port >= next {
+				next = port + 1
+			}
+		}
+	}
+
+	return used, next
+}
+
+func containsEndpoint(endpoints []string, candidate string) bool {
+	for _, endpoint := range endpoints {
+		if strings.TrimSpace(endpoint) == strings.TrimSpace(candidate) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// RenderK3dMirrorConfig renders a K3d-compatible mirrors configuration from the provided
+// host endpoints mapping. Hosts are sorted deterministically to ensure stable output.
+func RenderK3dMirrorConfig(hostEndpoints map[string][]string) string {
+	if len(hostEndpoints) == 0 {
+		return ""
+	}
+
+	hosts := make([]string, 0, len(hostEndpoints))
+	for host := range hostEndpoints {
+		hosts = append(hosts, host)
+	}
+
+	SortHosts(hosts)
+
+	var builder strings.Builder
+	builder.WriteString("mirrors:\n")
+
+	for _, host := range hosts {
+		endpoints := filterK3dEndpoints(host, hostEndpoints[host])
+		if len(endpoints) == 0 {
+			endpoints = []string{GenerateUpstreamURL(host)}
+		}
+
+		builder.WriteString("  \"")
+		builder.WriteString(host)
+		builder.WriteString("\":\n")
+		builder.WriteString("    endpoint:\n")
+
+		for _, endpoint := range endpoints {
+			builder.WriteString("      - ")
+			builder.WriteString(endpoint)
+			builder.WriteByte('\n')
+		}
+	}
+
+	return builder.String()
+}
+
+func filterK3dEndpoints(host string, endpoints []string) []string {
+	if len(endpoints) == 0 {
+		return endpoints
+	}
+
+	sanitized := SanitizeHostIdentifier(host)
+	filtered := make([]string, 0, len(endpoints))
+
+	for _, endpoint := range endpoints {
+		trimmed := strings.TrimSpace(endpoint)
+		if trimmed == "" {
+			continue
+		}
+
+		if isGeneratedLocalEndpoint(trimmed, sanitized) {
+			continue
+		}
+
+		filtered = append(filtered, trimmed)
+	}
+
+	return filtered
+}
+
+func isGeneratedLocalEndpoint(endpoint string, sanitizedHost string) bool {
+	if sanitizedHost == "" {
+		return false
+	}
+
+	if !strings.HasPrefix(endpoint, "http://") {
+		return false
+	}
+
+	if !strings.EqualFold(ExtractNameFromEndpoint(endpoint), sanitizedHost) {
+		return false
+	}
+
+	return ExtractPortFromEndpoint(endpoint) > 0
 }
 
 // BuildUpstreamLookup returns a map of registry host to user-specified upstream URL.

@@ -53,7 +53,7 @@ func TestGenerateContainerdPatches(t *testing.T) {
 		patches := scaf.GenerateContainerdPatches()
 		require.Len(t, patches, 1)
 		require.Contains(t, patches[0], "docker.io")
-		require.Contains(t, patches[0], "kind-docker-io")
+		require.Contains(t, patches[0], "http://docker.io:5000")
 		require.Contains(t, patches[0], "plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors")
 	})
 
@@ -70,8 +70,11 @@ func TestGenerateContainerdPatches(t *testing.T) {
 		patches := scaf.GenerateContainerdPatches()
 		require.Len(t, patches, 3)
 		require.Contains(t, patches[0], "docker.io")
+		require.Contains(t, patches[0], "http://docker.io:5000")
 		require.Contains(t, patches[1], "ghcr.io")
+		require.Contains(t, patches[1], "http://ghcr.io:5001")
 		require.Contains(t, patches[2], "quay.io")
+		require.Contains(t, patches[2], "http://quay.io:5002")
 	})
 
 	t.Run("no mirror registries", func(t *testing.T) {
@@ -103,7 +106,9 @@ func testContainerdPatchesInvalidAndCustomPort(t *testing.T) {
 		patches := scaf.GenerateContainerdPatches()
 		require.Len(t, patches, 2)
 		require.Contains(t, patches[0], "docker.io")
+		require.Contains(t, patches[0], "http://docker.io:5000")
 		require.Contains(t, patches[1], "ghcr.io")
+		require.Contains(t, patches[1], "http://ghcr.io:5001")
 	})
 
 	t.Run("custom port in upstream URL", func(t *testing.T) {
@@ -115,7 +120,7 @@ func testContainerdPatchesInvalidAndCustomPort(t *testing.T) {
 		patches := scaf.GenerateContainerdPatches()
 		require.Len(t, patches, 1)
 		require.Contains(t, patches[0], "localhost")
-		require.Contains(t, patches[0], "kind-localhost:5001")
+		require.Contains(t, patches[0], "http://localhost:5000")
 	})
 }
 
@@ -134,6 +139,7 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		require.Nil(t, registryConfig.Create)
 		require.Contains(t, registryConfig.Config, "\"docker.io\":")
 		require.Contains(t, registryConfig.Config, "https://registry-1.docker.io")
+		require.NotContains(t, registryConfig.Config, "http://docker.io:5000")
 		require.Empty(t, registryConfig.Use)
 	})
 
@@ -176,6 +182,8 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 		require.Contains(t, registryConfig.Config, "\"ghcr.io\":")
 		require.Contains(t, registryConfig.Config, "https://registry-1.docker.io")
 		require.Contains(t, registryConfig.Config, "https://ghcr.io")
+		require.NotContains(t, registryConfig.Config, "http://docker.io:5000")
+		require.NotContains(t, registryConfig.Config, "http://ghcr.io:5001")
 		require.Nil(t, registryConfig.Create)
 		require.Empty(t, registryConfig.Use)
 	})

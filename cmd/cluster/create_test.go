@@ -17,8 +17,10 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -673,7 +675,7 @@ func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
 	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
 	kindConfig.ContainerdConfigPatches = []string{
 		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-endpoint = ["http://kind-docker-io:5000"]`,
+endpoint = ["http://docker.io:5000"]`,
 	}
 
 	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
@@ -687,6 +689,49 @@ func TestPrepareKindConfigWithMirrors_NoPatches(t *testing.T) {
 
 	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
 	assert.False(t, result, "should return false when no patches")
+}
+
+func TestPrepareK3dConfigWithMirrors_NilConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, nil, nil)
+	assert.False(t, result)
+}
+
+func TestPrepareK3dConfigWithMirrors_AddsOverrides(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+	specs := registries.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, specs)
+
+	assert.True(t, result)
+	assert.Contains(t, k3dConfig.Registries.Config, "\"docker.io\"")
+	assert.Contains(t, k3dConfig.Registries.Config, "https://registry-1.docker.io")
+	assert.NotContains(t, k3dConfig.Registries.Config, "http://docker.io:5000")
+}
+
+func TestPrepareK3dConfigWithMirrors_PreservesExistingConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+	k3dConfig.Registries.Config = "mirrors:\n  \"ghcr.io\":\n    endpoint:\n      - https://ghcr.io\n"
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, nil)
+
+	assert.True(t, result)
+	assert.Contains(t, k3dConfig.Registries.Config, "\"ghcr.io\"")
+	assert.Contains(t, k3dConfig.Registries.Config, "https://ghcr.io")
 }
 
 func TestAddCiliumRepository_Success(t *testing.T) {
@@ -759,6 +804,16 @@ func TestConnectRegistriesToClusterNetwork(t *testing.T) {
 	runRegistryLifecycleTests(t, connectRegistriesToClusterNetwork)
 }
 
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestSetupMirrorRegistries_K3d(t *testing.T) {
+	runK3dRegistryLifecycleTests(t, setupMirrorRegistries)
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestConnectRegistriesToClusterNetwork_K3d(t *testing.T) {
+	runK3dRegistryLifecycleTests(t, connectRegistriesToClusterNetwork)
+}
+
 type registryLifecycleHandler func(
 	*cobra.Command,
 	*v1alpha1.Cluster,
@@ -767,6 +822,34 @@ type registryLifecycleHandler func(
 	*kindv1alpha4.Cluster,
 	*k3dv1alpha5.SimpleConfig,
 ) error
+
+type k3dRegistryLifecycleTestCase struct {
+	name          string
+	includeConfig bool
+	setOverride   bool
+	expectError   bool
+	errorContains string
+}
+
+func k3dRegistryLifecycleTestCases() []k3dRegistryLifecycleTestCase {
+	return []k3dRegistryLifecycleTestCase{
+		{
+			name: "returns_nil_when_no_registries",
+		},
+		{
+			name:          "propagates_docker_client_error",
+			includeConfig: true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+		{
+			name:          "applies_cli_overrides",
+			setOverride:   true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+	}
+}
 
 func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 	t.Helper()
@@ -824,6 +907,70 @@ func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func runK3dRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
+	t.Helper()
+
+	for _, testCase := range k3dRegistryLifecycleTestCases() {
+		t.Run(testCase.name, func(t *testing.T) {
+			executeK3dRegistryLifecycleTest(t, testCase, handler)
+		})
+	}
+}
+
+func executeK3dRegistryLifecycleTest(
+	t *testing.T,
+	testCase k3dRegistryLifecycleTestCase,
+	handler registryLifecycleHandler,
+) {
+	t.Helper()
+
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	cfg := v1alpha1.NewCluster()
+	cfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	cfgManager := ksailconfigmanager.NewConfigManager(
+		out,
+		ksailconfigmanager.DefaultClusterFieldSelectors()..., // reuse default selectors per test case
+	)
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+
+	if testCase.includeConfig {
+		k3dConfig.Registries.Config = "mirrors:\n  \"docker.io\":\n    endpoint:\n      - https://registry-1.docker.io\n"
+	}
+
+	if testCase.setOverride {
+		cfgManager.Viper.Set("mirror-registry", []string{"ghcr.io=https://ghcr.io"})
+	}
+
+	if testCase.expectError {
+		stubDockerClientFailure(t, errDockerClientFailure)
+	}
+
+	err := handler(
+		cmd,
+		cfg,
+		shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}},
+		cfgManager,
+		(*kindv1alpha4.Cluster)(nil),
+		k3dConfig,
+	)
+
+	if testCase.expectError {
+		require.Error(t, err)
+		require.ErrorContains(t, err, testCase.errorContains)
+
+		if testCase.setOverride {
+			assert.Contains(t, k3dConfig.Registries.Config, "\"ghcr.io\"")
+		}
+
+		return
+	}
+
+	require.NoError(t, err)
 }
 
 func ensureDisableDefaultCNI(t *testing.T, path string) {

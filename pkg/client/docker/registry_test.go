@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -137,6 +138,11 @@ func setupDeleteRegistryTest(
 	registry := mockRegistryContainer("registry-id", registryName, "test-cluster", state)
 	mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
 
+	mockClient.EXPECT().
+		ContainerInspect(ctx, "registry-id").
+		Return(newInspectResponse(), nil).
+		Once()
+
 	if strings.EqualFold(state, "running") {
 		mockContainerStopRemove(ctx, mockClient, "registry-id")
 	} else {
@@ -156,6 +162,11 @@ func setupRunningDeleteRegistryTest(
 	registry := mockRegistryContainer("registry-id", registryName, "test-cluster", "running")
 	mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
 
+	mockClient.EXPECT().
+		ContainerInspect(ctx, "registry-id").
+		Return(newInspectResponse(), nil).
+		Once()
+
 	return mockClient, manager, ctx
 }
 
@@ -174,7 +185,7 @@ func runDeleteRegistryVolumeRemovalTest(
 		Return(nil).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, distinctName, "test-cluster", true)
+	err := manager.DeleteRegistry(ctx, distinctName, "test-cluster", true, "")
 
 	require.NoError(t, err)
 
@@ -230,6 +241,24 @@ func mockRegistryContainer(registryID, registryName, _ string, state string) con
 	}
 }
 
+func newInspectResponse(networks ...string) container.InspectResponse {
+	entries := make(map[string]*network.EndpointSettings, len(networks))
+
+	for _, rawName := range networks {
+		trimmed := strings.TrimSpace(rawName)
+		if trimmed == "" {
+			continue
+		}
+
+		entries[trimmed] = &network.EndpointSettings{}
+	}
+
+	return container.InspectResponse{
+		ContainerJSONBase: &container.ContainerJSONBase{},
+		NetworkSettings:   &container.NetworkSettings{Networks: entries},
+	}
+}
+
 // mockContainerStopRemove sets up the container stop and remove mock sequence.
 func mockContainerStopRemove(
 	ctx context.Context,
@@ -265,17 +294,14 @@ func deriveVolumeName(registryName string) string {
 		return ""
 	}
 
-	parts := strings.Split(trimmed, "-")
-	if len(parts) <= 1 {
-		return trimmed
+	if strings.HasPrefix(trimmed, "kind-") || strings.HasPrefix(trimmed, "k3d-") {
+		parts := strings.SplitN(trimmed, "-", 2)
+		if len(parts) == 2 && parts[1] != "" {
+			return parts[1]
+		}
 	}
 
-	candidate := strings.Join(parts[1:], "-")
-	if candidate == "" {
-		return trimmed
-	}
-
-	return candidate
+	return trimmed
 }
 
 // mockContainerListOnce sets up a single ContainerList mock with specified registry.
@@ -366,7 +392,7 @@ func testCreateRegistrySharesVolume(t *testing.T) {
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
 	config := docker.RegistryConfig{
-		Name:        "kind-docker-io",
+		Name:        "kind-docker.io",
 		Port:        5000,
 		UpstreamURL: "https://registry-1.docker.io",
 		ClusterName: "test-cluster",
@@ -374,8 +400,8 @@ func testCreateRegistrySharesVolume(t *testing.T) {
 
 	mockRegistryNotExists(ctx, mockClient)
 	mockImagePullSequence(ctx, mockClient)
-	mockVolumeCreateSequence(ctx, mockClient, "docker-io")
-	mockContainerCreateStart(ctx, mockClient, "kind-docker-io", "kind-test-id")
+	mockVolumeCreateSequence(ctx, mockClient, "docker.io")
+	mockContainerCreateStart(ctx, mockClient, "kind-docker.io", "kind-test-id")
 
 	err := manager.CreateRegistry(ctx, config)
 
@@ -414,12 +440,12 @@ func TestDeleteRegistry(t *testing.T) {
 
 	t.Run("stops running registry before removal", func(t *testing.T) {
 		t.Parallel()
-		runDeleteRegistryVolumeRemovalTest(t, "kind-docker-io", "running", true)
+		runDeleteRegistryVolumeRemovalTest(t, "docker.io", "running", true)
 	})
 
-	t.Run("removes stopped registry without issuing stop", func(t *testing.T) {
+	t.Run("removes stopped legacy registry without issuing stop", func(t *testing.T) {
 		t.Parallel()
-		runDeleteRegistryVolumeRemovalTest(t, "k3d-docker-io", "exited", false)
+		runDeleteRegistryVolumeRemovalTest(t, "kind-docker.io", "exited", false)
 	})
 
 	t.Run("returns error when registry not found", func(t *testing.T) {
@@ -428,7 +454,7 @@ func TestDeleteRegistry(t *testing.T) {
 
 		mockRegistryNotExists(ctx, mockClient)
 
-		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false)
+		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "")
 
 		require.Error(t, err)
 		assert.Equal(t, docker.ErrRegistryNotFound, err)
@@ -699,7 +725,7 @@ func TestCreateRegistry_VolumeAlreadyExists(t *testing.T) {
 func TestDeleteRegistry_ContainerStopError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupRunningDeleteRegistryTest(t, "kind-docker-io")
+	mockClient, manager, ctx := setupRunningDeleteRegistryTest(t, "kind-docker.io")
 
 	// Mock container stop failure
 	mockClient.EXPECT().
@@ -707,7 +733,7 @@ func TestDeleteRegistry_ContainerStopError(t *testing.T) {
 		Return(errStopFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker-io", "test-cluster", false)
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to stop registry container")
@@ -717,7 +743,7 @@ func TestDeleteRegistry_ContainerStopError(t *testing.T) {
 func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupRunningDeleteRegistryTest(t, "kind-docker-io")
+	mockClient, manager, ctx := setupRunningDeleteRegistryTest(t, "kind-docker.io")
 
 	// Mock container stop success
 	mockClient.EXPECT().
@@ -731,7 +757,7 @@ func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 		Return(errRemoveFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker-io", "test-cluster", false)
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to remove registry container")
@@ -740,15 +766,15 @@ func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupDeleteRegistryTest(t, "running", "kind-docker-io")
+	mockClient, manager, ctx := setupDeleteRegistryTest(t, "running", "kind-docker.io")
 
 	// Mock volume remove failure
 	mockClient.EXPECT().
-		VolumeRemove(ctx, "docker-io", false).
+		VolumeRemove(ctx, "docker.io", false).
 		Return(errVolumeRemoveFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker-io", "test-cluster", true)
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", true, "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to remove registry volume")
@@ -757,11 +783,42 @@ func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 func TestDeleteRegistry_WithoutVolumeDelete(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupDeleteRegistryTest(t, "running", "kind-docker-io")
+	mockClient, manager, ctx := setupDeleteRegistryTest(t, "running", "kind-docker.io")
 
-	err := manager.DeleteRegistry(ctx, "kind-docker-io", "test-cluster", false)
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
 
 	require.NoError(t, err)
+	mockClient.AssertNotCalled(t, "VolumeRemove")
+}
+
+func TestDeleteRegistry_SkipsRemovalWhenShared(t *testing.T) {
+	t.Parallel()
+
+	mockClient, manager, ctx := setupTestRegistryManager(t)
+
+	registry := mockRegistryContainer("registry-id", "docker.io", "", "running")
+	mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
+
+	mockClient.EXPECT().
+		ContainerInspect(ctx, "registry-id").
+		Return(newInspectResponse("k3d-alpha", "k3d-beta"), nil).
+		Once()
+
+	mockClient.EXPECT().
+		NetworkDisconnect(ctx, "k3d-alpha", "registry-id", true).
+		Return(nil).
+		Once()
+
+	mockClient.EXPECT().
+		ContainerInspect(ctx, "registry-id").
+		Return(newInspectResponse("k3d-beta"), nil).
+		Once()
+
+	err := manager.DeleteRegistry(ctx, "docker.io", "alpha", false, "k3d-alpha")
+
+	require.NoError(t, err)
+	mockClient.AssertNotCalled(t, "ContainerStop")
+	mockClient.AssertNotCalled(t, "ContainerRemove")
 	mockClient.AssertNotCalled(t, "VolumeRemove")
 }
 

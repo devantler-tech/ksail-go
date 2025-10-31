@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -16,7 +17,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/errdefs"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
@@ -59,6 +62,27 @@ func setupTestEnvironment(t *testing.T) (*docker.MockAPIClient, context.Context,
 	buf := &bytes.Buffer{}
 
 	return mockClient, ctx, buf
+}
+
+func expectRegistryPortScan(
+	mockClient *docker.MockAPIClient,
+	registries []container.Summary,
+) {
+	mockClient.EXPECT().
+		ContainerList(mock.Anything, mock.Anything).
+		Return(registries, nil).
+		Once()
+}
+
+func matchListOptionsByName(name string) any {
+	return mock.MatchedBy(func(opts container.ListOptions) bool {
+		values := opts.Filters.Get("name")
+		if len(values) == 0 {
+			return false
+		}
+
+		return slices.Contains(values, name)
+	})
 }
 
 func TestParseContainerdConfig(t *testing.T) {
@@ -240,6 +264,7 @@ func TestSetupRegistries_CreateRegistryError(t *testing.T) {
 		ContainerdConfigPatches: []string{patch},
 	}
 
+	expectRegistryPortScan(mockClient, []container.Summary{})
 	mockClient.EXPECT().
 		ContainerList(mock.Anything, mock.Anything).
 		Return([]container.Summary{}, nil).
@@ -269,16 +294,16 @@ func runSetupRegistriesPartialFailureScenario(t *testing.T) {
 
 	mockClient, ctx, buf := setupTestEnvironment(t)
 	kindConfig := newTwoMirrorKindConfig()
-	firstRegistryID := "kind-docker-io-id"
+	firstRegistryID := "docker.io-id"
 
 	expectInitialRegistryScan(mockClient)
-	expectMirrorProvisionSuccess(mockClient, "docker-io", firstRegistryID)
-	expectMirrorProvisionFailure(mockClient, "ghcr-io", errRegistryCreateFailed)
-	expectCleanupRunningRegistry(mockClient, firstRegistryID, "kind-docker-io")
+	expectMirrorProvisionSuccess(mockClient, "docker.io", firstRegistryID)
+	expectMirrorProvisionFailure(mockClient, "ghcr.io", errRegistryCreateFailed)
+	expectCleanupRunningRegistry(mockClient, firstRegistryID, "docker.io")
 
 	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test", mockClient, nil, buf)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to create registry kind-ghcr-io")
+	require.ErrorContains(t, err, "failed to create registry ghcr.io")
 	mockClient.AssertExpectations(t)
 }
 
@@ -289,29 +314,34 @@ func runSetupRegistriesExistingRegistryScenario(t *testing.T) {
 	kindConfig := newTwoMirrorKindConfig()
 
 	existing := container.Summary{
-		ID:    "kind-docker-io-id",
+		ID:    "docker.io-id",
 		State: "running",
-		Names: []string{"/kind-docker-io"},
+		Names: []string{"/docker.io"},
 		Labels: map[string]string{
-			docker.RegistryLabelKey: "kind-docker-io",
+			docker.RegistryLabelKey: "docker.io",
 		},
 	}
 
 	// Existing registry is discovered before provisioning new mirrors.
+	expectRegistryPortScan(mockClient, []container.Summary{existing})
+	mockClient.EXPECT().
+		ContainerList(mock.Anything, matchListOptionsByName("docker.io")).
+		Return([]container.Summary{existing}, nil).
+		Once()
 	mockClient.EXPECT().
 		ContainerList(mock.Anything, mock.Anything).
 		Return([]container.Summary{existing}, nil).
 		Once()
 	mockClient.EXPECT().
-		ContainerList(mock.Anything, mock.Anything).
+		ContainerList(mock.Anything, matchListOptionsByName("docker.io")).
 		Return([]container.Summary{existing}, nil).
 		Once()
 
-	expectMirrorProvisionFailure(mockClient, "ghcr-io", errRegistryCreateFailed)
+	expectMirrorProvisionFailure(mockClient, "ghcr.io", errRegistryCreateFailed)
 
 	err := kindprovisioner.SetupRegistries(ctx, kindConfig, "test", mockClient, nil, buf)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to create registry kind-ghcr-io")
+	require.ErrorContains(t, err, "failed to create registry ghcr.io")
 
 	mockClient.AssertNotCalled(t, "ContainerStop", mock.Anything, mock.Anything, mock.Anything)
 	mockClient.AssertNotCalled(t, "ContainerRemove", mock.Anything, mock.Anything, mock.Anything)
@@ -328,6 +358,7 @@ func newTwoMirrorKindConfig() *v1alpha4.Cluster {
 }
 
 func expectInitialRegistryScan(mockClient *docker.MockAPIClient) {
+	expectRegistryPortScan(mockClient, []container.Summary{})
 	mockClient.EXPECT().
 		ContainerList(mock.Anything, mock.Anything).
 		Return([]container.Summary{}, nil).
@@ -339,7 +370,7 @@ func expectMirrorProvisionBase(
 	sanitized string,
 ) {
 	mockClient.EXPECT().
-		ContainerList(mock.Anything, mock.Anything).
+		ContainerList(mock.Anything, matchListOptionsByName(sanitized)).
 		Return([]container.Summary{}, nil).
 		Once()
 	mockClient.EXPECT().
@@ -396,7 +427,7 @@ func expectMirrorContainerCreate(
 	response container.CreateResponse,
 	returnErr error,
 ) {
-	containerName := "kind-" + sanitized
+	containerName := sanitized
 	mockClient.EXPECT().
 		ContainerCreate(mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, containerName).
 		Return(response, returnErr).
@@ -419,6 +450,18 @@ func expectCleanupRunningRegistry(
 		},
 	}, nil).Once()
 	mockClient.EXPECT().
+		ContainerInspect(mock.Anything, containerID).
+		Return(newInspectResponse(), nil).
+		Once()
+	mockClient.EXPECT().
+		NetworkDisconnect(mock.Anything, "kind", containerID, true).
+		Return(errdefs.NotFound(errors.New("network not found"))).
+		Once()
+	mockClient.EXPECT().
+		ContainerInspect(mock.Anything, containerID).
+		Return(newInspectResponse(), nil).
+		Once()
+	mockClient.EXPECT().
 		ContainerStop(mock.Anything, containerID, mock.Anything).
 		Return(nil).
 		Once()
@@ -426,6 +469,25 @@ func expectCleanupRunningRegistry(
 		ContainerRemove(mock.Anything, containerID, mock.Anything).
 		Return(nil).
 		Once()
+}
+
+func newInspectResponse(networks ...string) container.InspectResponse {
+	sanitized := make(map[string]*network.EndpointSettings, len(networks))
+	for _, name := range networks {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+
+		sanitized[trimmed] = &network.EndpointSettings{}
+	}
+
+	return container.InspectResponse{
+		ContainerJSONBase: &container.ContainerJSONBase{},
+		NetworkSettings: &container.NetworkSettings{
+			Networks: sanitized,
+		},
+	}
 }
 
 func TestConnectRegistriesToNetwork_NilKindConfig(t *testing.T) {
@@ -493,28 +555,28 @@ func TestBuildRegistryInfo(t *testing.T) {
 			name:             "docker.io with port in endpoint",
 			host:             "docker.io",
 			endpoints:        []string{"http://localhost:5000"},
-			expectedName:     "kind-docker-io",
+			expectedName:     "docker.io",
 			expectedPort:     5000,
 			expectedUpstream: "https://registry-1.docker.io",
-			expectedVolume:   "docker-io",
+			expectedVolume:   "docker.io",
 		},
 		{
 			name:             "ghcr.io with port offset",
 			host:             "ghcr.io",
 			endpoints:        []string{"http://localhost:5001"}, // Provide valid endpoint
-			expectedName:     "kind-ghcr-io",
+			expectedName:     "ghcr.io",
 			expectedPort:     5001,
 			expectedUpstream: "https://ghcr.io",
-			expectedVolume:   "ghcr-io",
+			expectedVolume:   "ghcr.io",
 		},
 		{
 			name:             "quay.io with endpoint name extraction",
 			host:             "quay.io",
-			endpoints:        []string{"http://kind-quay-io:5002"},
-			expectedName:     "kind-quay-io",
+			endpoints:        []string{"http://quay.io:5002"},
+			expectedName:     "quay.io",
 			expectedPort:     5002,
 			expectedUpstream: "https://quay.io",
-			expectedVolume:   "quay-io",
+			expectedVolume:   "quay.io",
 		},
 	}
 
@@ -544,7 +606,7 @@ func TestExtractRegistriesFromKind_UsesUpstreamOverride(t *testing.T) {
 	t.Parallel()
 
 	patch := `[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-  endpoint = ["http://kind-docker-io:5000"]`
+  endpoint = ["http://docker.io:5000"]`
 
 	kindConfig := &v1alpha4.Cluster{
 		ContainerdConfigPatches: []string{patch},
@@ -725,22 +787,22 @@ func TestGenerateNameFromHost(t *testing.T) {
 		{
 			name:     "simple host",
 			host:     "docker.io",
-			expected: "kind-docker-io",
+			expected: "docker.io",
 		},
 		{
 			name:     "host with subdomain",
 			host:     "registry.example.com",
-			expected: "kind-registry-example-com",
+			expected: "registry.example.com",
 		},
 		{
 			name:     "host with port",
 			host:     "registry.io:5000",
-			expected: "kind-registry-io-5000",
+			expected: "registry.io-5000",
 		},
 		{
 			name:     "host with slashes",
 			host:     "example.com/path",
-			expected: "kind-example-com-path",
+			expected: "example.com-path",
 		},
 	}
 
@@ -758,34 +820,34 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		endpoint string
-		expected string
+		name         string
+		endpoint     string
+		expectedName string
 	}{
 		{
-			name:     "kind-prefixed endpoint with port",
-			endpoint: "http://kind-docker-io:5000",
-			expected: "kind-docker-io",
+			name:         "standard endpoint with port",
+			endpoint:     "http://docker.io:5000",
+			expectedName: "test.io",
 		},
 		{
-			name:     "https kind-prefixed endpoint",
-			endpoint: "https://kind-ghcr-io:5001",
-			expected: "kind-ghcr-io",
+			name:         "https endpoint",
+			endpoint:     "https://ghcr.io:5001",
+			expectedName: "test.io",
 		},
 		{
-			name:     "non-kind endpoint",
-			endpoint: "http://localhost:5000",
-			expected: "test-io", // Name is generated from host, not endpoint
+			name:         "non-kind endpoint",
+			endpoint:     "http://localhost:5000",
+			expectedName: "test.io",
 		},
 		{
-			name:     "malformed endpoint",
-			endpoint: "invalid",
-			expected: "",
+			name:         "malformed endpoint",
+			endpoint:     "invalid",
+			expectedName: "test.io",
 		},
 		{
-			name:     "endpoint without port",
-			endpoint: "http://kind-registry",
-			expected: "kind-registry",
+			name:         "endpoint without port",
+			endpoint:     "http://kind-registry",
+			expectedName: "test.io",
 		},
 	}
 
@@ -801,12 +863,10 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 				ContainerdConfigPatches: []string{patch},
 			}
 
-			registries := kindprovisioner.ExtractRegistriesFromKindForTesting(config, nil)
-			assert.Len(t, registries, 1)
-			// The name extraction logic tries to extract from endpoint first
-			if testCase.expected != "" {
-				assert.Contains(t, registries[0].Name, strings.Split(testCase.expected, ":")[0])
-			}
+			infos := kindprovisioner.ExtractRegistriesFromKindForTesting(config, nil)
+			assert.Len(t, infos, 1)
+			assert.Equal(t, testCase.expectedName, infos[0].Name)
+			assert.Equal(t, registries.GenerateUpstreamURL("test.io"), infos[0].Upstream)
 		})
 	}
 }

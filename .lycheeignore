@@ -1,15 +1,20 @@
 # Lychee link checker ignore patterns
-# See: https://github.com/lycheeverse/lychee
+
+# See: <https://github.com/lycheeverse/lychee>
 
 # GitHub git authentication URL pattern (not a real URL to check)
+
 # This pattern is used in git push commands for authentication
-# Lychee extracts this as "https://x-access-token/" from the auth string
-https://x-access-token/
+
+# Lychee extracts this as "<https://x-access-token/>" from the auth string
+<https://x-access-token/>
 
 # Docker registry URL (used as mirror configuration, not a web URL)
+
 # Docker registries use Docker Registry HTTP API V2 and don't respond to bare GET requests
-https://registry-1.docker.io/
+<https://registry-1.docker.io/>
 
 # Local registry endpoints used in integration tests (not publicly reachable)
-http://k3d-docker-io:5000/
-http://k3d-ghcr-io:5001/
+
+<http://docker.io:5000/>
+<http://ghcr-io:5001/>

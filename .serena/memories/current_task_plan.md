@@ -1,0 +1,3 @@
+- Execute manual K3d lifecycle to confirm new registry stage behaviour (init → up → list → down).
+- Update documentation or release notes if mirror registry flow changes need communication.
+- Monitor for further lint adjustments if more helpers are introduced.

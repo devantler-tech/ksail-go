@@ -1,6 +1,6 @@
 
 [TestScaffoldBasicOperations/Unknown_distribution - 1]
-provided distribution is unknown
+unknown distribution
 ---
 
 [TestScaffoldContentValidation/K3d_configuration_content - 1]
@@ -47,7 +47,7 @@ resources: []
 ---
 
 [TestScaffoldErrorHandling/distribution_error_paths - 1]
-provided distribution is unknown
+unknown distribution
 ---
 
 [TestScaffoldErrorHandling/invalid_output_path - 1]

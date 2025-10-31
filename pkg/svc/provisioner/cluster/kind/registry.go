@@ -17,6 +17,7 @@ const kindNetworkName = "kind"
 // setupRegistryManager creates a registry manager and extracts registries from Kind config.
 // Returns nil if no setup is needed.
 func setupRegistryManager(
+	ctx context.Context,
 	kindConfig *v1alpha4.Cluster,
 	dockerClient client.APIClient,
 	upstreams map[string]string,
@@ -31,9 +32,18 @@ func setupRegistryManager(
 		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
 	}
 
-	registriesInfo := extractRegistriesFromKind(kindConfig, upstreams)
+	registriesInfo := extractRegistriesFromKind(kindConfig, upstreams, nil)
 	if len(registriesInfo) == 0 {
 		return nil, nil, nil
+	}
+
+	existingPorts, err := registries.CollectExistingRegistryPorts(ctx, registryMgr)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to collect existing registry ports: %w", err)
+	}
+
+	if len(existingPorts) != 0 {
+		registriesInfo = extractRegistriesFromKind(kindConfig, upstreams, existingPorts)
 	}
 
 	return registryMgr, registriesInfo, nil
@@ -54,7 +64,12 @@ func SetupRegistries(
 ) error {
 	upstreams := registries.BuildUpstreamLookup(mirrorSpecs)
 
-	registryMgr, registriesInfo, err := setupRegistryManager(kindConfig, dockerClient, upstreams)
+	registryMgr, registriesInfo, err := setupRegistryManager(
+		ctx,
+		kindConfig,
+		dockerClient,
+		upstreams,
+	)
 	if err != nil {
 		return err
 	}
@@ -63,7 +78,14 @@ func SetupRegistries(
 		return nil
 	}
 
-	errSetup := registries.SetupRegistries(ctx, registryMgr, registriesInfo, clusterName, writer)
+	errSetup := registries.SetupRegistries(
+		ctx,
+		registryMgr,
+		registriesInfo,
+		clusterName,
+		kindNetworkName,
+		writer,
+	)
 	if errSetup != nil {
 		return fmt.Errorf("failed to setup kind registries: %w", errSetup)
 	}
@@ -83,7 +105,7 @@ func ConnectRegistriesToNetwork(
 		return nil
 	}
 
-	registriesInfo := extractRegistriesFromKind(kindConfig, nil)
+	registriesInfo := extractRegistriesFromKind(kindConfig, nil, nil)
 	if len(registriesInfo) == 0 {
 		return nil
 	}
@@ -110,7 +132,7 @@ func CleanupRegistries(
 	dockerClient client.APIClient,
 	deleteVolumes bool,
 ) error {
-	registryMgr, registriesInfo, err := setupRegistryManager(kindConfig, dockerClient, nil)
+	registryMgr, registriesInfo, err := setupRegistryManager(ctx, kindConfig, dockerClient, nil)
 	if err != nil {
 		return err
 	}
@@ -125,6 +147,7 @@ func CleanupRegistries(
 		registriesInfo,
 		clusterName,
 		deleteVolumes,
+		kindNetworkName,
 		nil,
 	)
 	if errCleanup != nil {
@@ -140,13 +163,14 @@ func ExtractRegistriesFromKindForTesting(
 	kindConfig *v1alpha4.Cluster,
 	upstreams map[string]string,
 ) []registries.Info {
-	return extractRegistriesFromKind(kindConfig, upstreams)
+	return extractRegistriesFromKind(kindConfig, upstreams, nil)
 }
 
 // extractRegistriesFromKind is the internal implementation.
 func extractRegistriesFromKind(
 	kindConfig *v1alpha4.Cluster,
 	upstreams map[string]string,
+	baseUsedPorts map[int]struct{},
 ) []registries.Info {
 	if kindConfig == nil {
 		return nil
@@ -155,8 +179,16 @@ func extractRegistriesFromKind(
 	var registryInfos []registries.Info
 
 	seenHosts := make(map[string]bool)
-	usedPorts := make(map[int]struct{})
+	usedPorts := make(map[int]struct{}, len(baseUsedPorts))
 	nextPort := registries.DefaultRegistryPort
+
+	for port := range baseUsedPorts {
+		usedPorts[port] = struct{}{}
+
+		if port >= nextPort {
+			nextPort = port + 1
+		}
+	}
 
 	for _, patch := range kindConfig.ContainerdConfigPatches {
 		mirrors := parseContainerdConfig(patch)
@@ -180,7 +212,7 @@ func extractRegistriesFromKind(
 
 			endpoints := mirrors[host]
 			port := registries.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-			info := registries.BuildRegistryInfo(host, endpoints, port, "kind-", upstreams[host])
+			info := registries.BuildRegistryInfo(host, endpoints, port, "", upstreams[host])
 			registryInfos = append(registryInfos, info)
 		}
 	}

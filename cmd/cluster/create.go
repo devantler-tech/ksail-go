@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/internal/shared"
@@ -12,10 +13,12 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
@@ -24,6 +27,7 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	"sigs.k8s.io/yaml"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -78,34 +82,23 @@ func handleCreateRunE(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	deps shared.LifecycleDeps,
 ) error {
-	// Start timer
 	deps.Timer.Start()
 
-	// Load config first
 	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	// Load distribution config for Kind to check for mirror registries
-	var kindConfig *v1alpha4.Cluster
-
-	if clusterCfg.Spec.Distribution == v1alpha1.DistributionKind {
-		kindConfigMgr := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
-
-		kindConfig, err = kindConfigMgr.LoadConfig(deps.Timer)
-		if err != nil {
-			return fmt.Errorf("failed to load kind config: %w", err)
-		}
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	if err != nil {
+		return err
 	}
 
-	// Set up mirror registries before cluster creation if enabled
-	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, nil)
+	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig)
 	if err != nil {
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
 	}
 
-	// Create cluster using standard lifecycle
 	deps.Timer.NewStage()
 
 	err = shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
@@ -113,23 +106,25 @@ func handleCreateRunE(
 		return fmt.Errorf("failed to execute cluster lifecycle: %w", err)
 	}
 
-	// Connect registries to the Kind network after cluster is created
-	err = connectRegistriesToClusterNetwork(cmd, clusterCfg, deps, cfgManager, kindConfig, nil)
+	err = connectRegistriesToClusterNetwork(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
 	if err != nil {
-		// Log warning but don't fail - registries can still work via localhost
 		notify.WriteMessage(notify.Message{
 			Type:    notify.WarningType,
-			Content: fmt.Sprintf("failed to connect registries to kind network: %v", err),
+			Content: fmt.Sprintf("failed to connect registries to cluster network: %v", err),
 			Writer:  cmd.OutOrStdout(),
 		})
 	}
 
-	// Install CNI if Cilium is configured
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		// Add newline separator before CNI installation
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		// Start new stage for CNI installation
 		deps.Timer.NewStage()
 
 		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
@@ -141,7 +136,35 @@ func handleCreateRunE(
 	return nil
 }
 
-// setupMirrorRegistries configures mirror registries for Kind when requested.
+func loadDistributionConfigs(
+	clusterCfg *v1alpha1.Cluster,
+	lifecycleTimer timer.Timer,
+) (*v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
+	switch clusterCfg.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		manager := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
+		kindConfig, err := manager.LoadConfig(lifecycleTimer)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load kind config: %w", err)
+		}
+
+		return kindConfig, nil, nil
+	case v1alpha1.DistributionK3d:
+		manager := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+
+		k3dConfig, err := manager.LoadConfig(lifecycleTimer)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to load k3d config: %w", err)
+		}
+
+		return nil, k3dConfig, nil
+	default:
+		return nil, nil, nil
+	}
+}
+
+// setupMirrorRegistries configures mirror registries before cluster creation.
 func setupMirrorRegistries(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -154,7 +177,29 @@ func setupMirrorRegistries(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
 	)
 
-	stage := kindRegistryStage{
+	switch clusterCfg.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		return setupKindMirrorRegistries(cmd, deps, clusterCfg, cfgManager, kindConfig, mirrorSpecs)
+	case v1alpha1.DistributionK3d:
+		return setupK3dMirrorRegistries(cmd, deps, clusterCfg, k3dConfig, mirrorSpecs)
+	default:
+		return nil
+	}
+}
+
+func setupKindMirrorRegistries(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	clusterCfg *v1alpha1.Cluster,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+	mirrorSpecs []registries.MirrorSpec,
+) error {
+	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
+		return nil
+	}
+
+	stage := registryStage{
 		title:         "Create mirror registries...",
 		emoji:         "🪞",
 		success:       "mirror registries created",
@@ -171,10 +216,40 @@ func setupMirrorRegistries(
 		},
 	}
 
-	return runKindRegistryStage(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig, stage)
+	return runRegistryStage(cmd, deps, stage)
 }
 
-// connectRegistriesToClusterNetwork attaches mirror registries to the Kind network after creation.
+func setupK3dMirrorRegistries(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	clusterCfg *v1alpha1.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+	mirrorSpecs []registries.MirrorSpec,
+) error {
+	if !prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) {
+		return nil
+	}
+
+	stage := registryStage{
+		title:         "Create mirror registries...",
+		emoji:         "🪞",
+		success:       "mirror registries created",
+		failurePrefix: "failed to setup registries",
+		action: func(ctx context.Context, dockerClient client.APIClient) error {
+			return k3dprovisioner.SetupRegistries(
+				ctx,
+				k3dConfig,
+				resolveK3dClusterName(clusterCfg, k3dConfig),
+				dockerClient,
+				cmd.OutOrStdout(),
+			)
+		},
+	}
+
+	return runRegistryStage(cmd, deps, stage)
+}
+
+// connectRegistriesToClusterNetwork attaches mirror registries to the cluster network after creation.
 func connectRegistriesToClusterNetwork(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -183,7 +258,32 @@ func connectRegistriesToClusterNetwork(
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
 ) error {
-	stage := kindRegistryStage{
+	mirrorSpecs := registries.ParseMirrorSpecs(
+		cfgManager.Viper.GetStringSlice("mirror-registry"),
+	)
+
+	switch clusterCfg.Spec.Distribution {
+	case v1alpha1.DistributionKind:
+		return connectKindRegistriesToNetwork(cmd, deps, clusterCfg, cfgManager, kindConfig)
+	case v1alpha1.DistributionK3d:
+		return connectK3dRegistriesToNetwork(cmd, deps, clusterCfg, k3dConfig, mirrorSpecs)
+	default:
+		return nil
+	}
+}
+
+func connectKindRegistriesToNetwork(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	clusterCfg *v1alpha1.Cluster,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+) error {
+	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
+		return nil
+	}
+
+	stage := registryStage{
 		title:         "Connect registries...",
 		emoji:         "🔗",
 		success:       "registries connected",
@@ -198,10 +298,40 @@ func connectRegistriesToClusterNetwork(
 		},
 	}
 
-	return runKindRegistryStage(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig, stage)
+	return runRegistryStage(cmd, deps, stage)
 }
 
-type kindRegistryStage struct {
+func connectK3dRegistriesToNetwork(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	clusterCfg *v1alpha1.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+	mirrorSpecs []registries.MirrorSpec,
+) error {
+	if !prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) {
+		return nil
+	}
+
+	stage := registryStage{
+		title:         "Connect registries...",
+		emoji:         "🔗",
+		success:       "registries connected",
+		failurePrefix: "failed to connect registries",
+		action: func(ctx context.Context, dockerClient client.APIClient) error {
+			return k3dprovisioner.ConnectRegistriesToNetwork(
+				ctx,
+				k3dConfig,
+				resolveK3dClusterName(clusterCfg, k3dConfig),
+				dockerClient,
+				cmd.OutOrStdout(),
+			)
+		},
+	}
+
+	return runRegistryStage(cmd, deps, stage)
+}
+
+type registryStage struct {
 	title         string
 	emoji         string
 	success       string
@@ -209,25 +339,11 @@ type kindRegistryStage struct {
 	action        func(context.Context, client.APIClient) error
 }
 
-func runKindRegistryStage(
+func runRegistryStage(
 	cmd *cobra.Command,
-	clusterCfg *v1alpha1.Cluster,
 	deps shared.LifecycleDeps,
-	cfgManager *ksailconfigmanager.ConfigManager,
-	kindConfig *v1alpha4.Cluster,
-	k3dConfig *v1alpha5.SimpleConfig,
-	stage kindRegistryStage,
+	stage registryStage,
 ) error {
-	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d {
-		_ = k3dConfig // handled natively by K3d
-
-		return nil
-	}
-
-	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
-		return nil
-	}
-
 	deps.Timer.NewStage()
 
 	cmd.Println()
@@ -418,6 +534,100 @@ func prepareKindConfigWithMirrors(
 	return len(kindConfig.ContainerdConfigPatches) > 0
 }
 
+func prepareK3dConfigWithMirrors(
+	clusterCfg *v1alpha1.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+	mirrorSpecs []registries.MirrorSpec,
+) bool {
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
+		return false
+	}
+
+	original := k3dConfig.Registries.Config
+
+	hostEndpoints := parseK3dRegistryConfig(original)
+
+	updatedMap, _ := registries.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
+	if len(updatedMap) == 0 {
+		return false
+	}
+
+	rendered := registries.RenderK3dMirrorConfig(updatedMap)
+
+	if strings.TrimSpace(rendered) == strings.TrimSpace(original) {
+		return strings.TrimSpace(original) != ""
+	}
+
+	k3dConfig.Registries.Config = rendered
+
+	return true
+}
+
+type mirrorConfigEntry struct {
+	Endpoint []string `yaml:"endpoint"`
+}
+
+type k3dMirrorConfig struct {
+	Mirrors map[string]mirrorConfigEntry `yaml:"mirrors"`
+}
+
+func parseK3dRegistryConfig(raw string) map[string][]string {
+	result := make(map[string][]string)
+
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return result
+	}
+
+	var cfg k3dMirrorConfig
+
+	err := yaml.Unmarshal([]byte(trimmed), &cfg)
+	if err != nil {
+		return result
+	}
+
+	for host, entry := range cfg.Mirrors {
+		if len(entry.Endpoint) == 0 {
+			continue
+		}
+
+		filtered := make([]string, 0, len(entry.Endpoint))
+		for _, endpoint := range entry.Endpoint {
+			endpoint = strings.TrimSpace(endpoint)
+			if endpoint == "" {
+				continue
+			}
+
+			filtered = append(filtered, endpoint)
+		}
+
+		if len(filtered) == 0 {
+			continue
+		}
+
+		result[host] = filtered
+	}
+
+	return result
+}
+
+func resolveK3dClusterName(
+	clusterCfg *v1alpha1.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+) string {
+	if k3dConfig != nil {
+		if name := strings.TrimSpace(k3dConfig.Name); name != "" {
+			return name
+		}
+	}
+
+	if name := strings.TrimSpace(clusterCfg.Spec.Connection.Context); name != "" {
+		return name
+	}
+
+	return "k3d"
+}
+
 // generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
 // Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
 func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
@@ -426,7 +636,7 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 		return nil
 	}
 
-	entries := registries.BuildMirrorEntries(parsed, "kind", nil, nil, nil)
+	entries := registries.BuildMirrorEntries(parsed, "", nil, nil, nil)
 
 	patches := make([]string, 0, len(entries))
 	for _, entry := range entries {

@@ -43,24 +43,6 @@ func NewStreamLogger(writer io.Writer) log.Logger {
 	return &streamLogger{writer: writer}
 }
 
-func (l *streamLogger) write(message string) {
-	if l == nil {
-		return
-	}
-
-	if message == "" {
-		_, _ = io.WriteString(l.writer, "\n")
-		return
-	}
-
-	if strings.ContainsRune(message, '\r') || strings.HasSuffix(message, "\n") {
-		_, _ = io.WriteString(l.writer, message)
-		return
-	}
-
-	_, _ = io.WriteString(l.writer, message+"\n")
-}
-
 func (l *streamLogger) Warn(message string) {
 	l.write(message)
 }
@@ -111,6 +93,26 @@ func (l *streamLogger) Infof(format string, args ...any) {
 
 func (l *streamLogger) Enabled() bool {
 	return true
+}
+
+func (l *streamLogger) write(message string) {
+	if l == nil {
+		return
+	}
+
+	if message == "" {
+		_, _ = io.WriteString(l.writer, "\n")
+
+		return
+	}
+
+	if strings.ContainsRune(message, '\r') || strings.HasSuffix(message, "\n") {
+		_, _ = io.WriteString(l.writer, message)
+
+		return
+	}
+
+	_, _ = io.WriteString(l.writer, message+"\n")
 }
 
 // KindProvider describes the subset of methods from kind's Provider used here.

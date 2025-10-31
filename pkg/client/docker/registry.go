@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -135,6 +136,7 @@ func (rm *RegistryManager) DeleteRegistry(
 	ctx context.Context,
 	name, _ string,
 	deleteVolume bool,
+	networkName string,
 ) error {
 	containers, err := rm.listRegistryContainers(ctx, name)
 	if err != nil {
@@ -146,6 +148,38 @@ func (rm *RegistryManager) DeleteRegistry(
 	}
 
 	registryContainer := containers[0]
+
+	inspect, err := rm.client.ContainerInspect(ctx, registryContainer.ID)
+	if err != nil {
+		return fmt.Errorf("failed to inspect registry container: %w", err)
+	}
+
+	trimmedNetwork := strings.TrimSpace(networkName)
+	if trimmedNetwork != "" {
+		disconnectErr := rm.client.NetworkDisconnect(
+			ctx,
+			trimmedNetwork,
+			registryContainer.ID,
+			true,
+		)
+		if disconnectErr != nil && !errdefs.IsNotFound(disconnectErr) {
+			return fmt.Errorf(
+				"failed to disconnect registry %s from network %s: %w",
+				name,
+				trimmedNetwork,
+				disconnectErr,
+			)
+		}
+
+		inspect, err = rm.client.ContainerInspect(ctx, registryContainer.ID)
+		if err != nil {
+			return fmt.Errorf("failed to inspect registry container: %w", err)
+		}
+	}
+
+	if registryAttachedToOtherClusters(inspect, trimmedNetwork) {
+		return nil
+	}
 
 	stopErr := rm.stopRegistryContainer(ctx, registryContainer)
 	if stopErr != nil {
@@ -425,10 +459,12 @@ func sanitizeVolumeName(registryName string) string {
 		return ""
 	}
 
-	if idx := strings.Index(trimmed, "-"); idx >= 0 && idx < len(trimmed)-1 {
-		candidate := trimmed[idx+1:]
-		if candidate != "" {
-			return candidate
+	if strings.HasPrefix(trimmed, "kind-") || strings.HasPrefix(trimmed, "k3d-") {
+		if idx := strings.Index(trimmed, "-"); idx >= 0 && idx < len(trimmed)-1 {
+			candidate := trimmed[idx+1:]
+			if candidate != "" {
+				return candidate
+			}
 		}
 	}
 
@@ -473,4 +509,50 @@ func deriveRegistryVolumeName(registry container.Summary, fallback string) strin
 	}
 
 	return strings.TrimSpace(fallback)
+}
+
+func registryAttachedToOtherClusters(
+	inspect container.InspectResponse,
+	ignoredNetwork string,
+) bool {
+	if inspect.NetworkSettings == nil || len(inspect.NetworkSettings.Networks) == 0 {
+		return false
+	}
+
+	ignored := strings.ToLower(strings.TrimSpace(ignoredNetwork))
+
+	for name := range inspect.NetworkSettings.Networks {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+
+		lower := strings.ToLower(trimmed)
+		if ignored != "" && lower == ignored {
+			continue
+		}
+
+		if isClusterNetworkName(lower) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isClusterNetworkName(network string) bool {
+	switch {
+	case network == "":
+		return false
+	case network == "kind":
+		return true
+	case strings.HasPrefix(network, "kind-"):
+		return true
+	case network == "k3d":
+		return true
+	case strings.HasPrefix(network, "k3d-"):
+		return true
+	default:
+		return false
+	}
 }

@@ -17,10 +17,10 @@ func TestSanitizeHostIdentifier(t *testing.T) {
 		expected string
 	}{
 		{"keepsAlpha", "dockerio", "dockerio"},
-		{"replacesDots", "docker.io", "docker-io"},
-		{"replacesSlashes", "ghcr.io/library/app", "ghcr-io-library-app"},
+		{"keepsDots", "docker.io", "docker.io"},
+		{"replacesSlashes", "ghcr.io/library/app", "ghcr.io-library-app"},
 		{"replacesColons", "localhost:5000", "localhost-5000"},
-		{"preservesWhitespace", "  example.com  ", "  example-com  "},
+		{"preservesWhitespace", "  example.com  ", "  example.com  "},
 	}
 
 	for _, tc := range testCases {
@@ -60,7 +60,7 @@ func TestExtractPortFromEndpoint(t *testing.T) {
 		endpoint string
 		expected int
 	}{
-		{"withPort", "http://k3d-docker-io:5000", 5000},
+		{"withPort", "http://docker.io:5000", 5000},
 		{"withPath", "https://mirror:5443/v2", 5443},
 		{"missingPort", "https://mirror", 0},
 		{"invalidPort", "https://mirror:notaport", 0},
@@ -80,13 +80,13 @@ func TestExtractRegistryPort_UsesEndpointPortWhenAvailable(t *testing.T) {
 	usedPorts := map[int]struct{}{}
 	next := registries.DefaultRegistryPort
 
-	port := registries.ExtractRegistryPort([]string{"http://k3d-ghcr-io:5050"}, usedPorts, &next)
+	port := registries.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
 	require.Equal(t, 5050, port)
 	assert.Contains(t, usedPorts, 5050)
 	assert.Equal(t, 5051, next)
 
 	// Subsequent call with an already-used port falls back to next free port.
-	port = registries.ExtractRegistryPort([]string{"http://k3d-ghcr-io:5050"}, usedPorts, &next)
+	port = registries.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
 	require.Equal(t, 5051, port)
 	assert.Contains(t, usedPorts, 5051)
 	assert.Equal(t, 5052, next)
@@ -118,8 +118,8 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 		endpoint string
 		expected string
 	}{
-		{"valid", "http://k3d-docker-io:5000", "k3d-docker-io"},
-		{"missingScheme", "k3d-docker-io:5000", ""},
+		{"valid", "http://docker.io:5000", "docker.io"},
+		{"missingScheme", "docker.io:5000", ""},
 		{"missingHost", "http://:5000", ""},
 	}
 
@@ -139,10 +139,10 @@ func TestResolveRegistryName(t *testing.T) {
 
 		name := registries.ResolveRegistryName(
 			"docker.io",
-			[]string{"http://k3d-docker-io:5000"},
+			[]string{"http://docker.io:5000"},
 			"k3d-",
 		)
-		assert.Equal(t, "k3d-docker-io", name)
+		assert.Equal(t, "docker.io", name)
 	})
 
 	t.Run("fallsBackToPrefixAndHost", func(t *testing.T) {
@@ -153,7 +153,7 @@ func TestResolveRegistryName(t *testing.T) {
 			[]string{"invalid-endpoint"},
 			"k3d-",
 		)
-		assert.Equal(t, "k3d-ghcr-io", name)
+		assert.Equal(t, "k3d-ghcr.io", name)
 	})
 
 	t.Run("ignoresLocalhostEndpoints", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestResolveRegistryName(t *testing.T) {
 			[]string{"http://localhost:5000"},
 			"kind-",
 		)
-		assert.Equal(t, "kind-docker-io", name)
+		assert.Equal(t, "kind-docker.io", name)
 	})
 }
 
@@ -173,17 +173,17 @@ func TestBuildRegistryInfo(t *testing.T) {
 
 	info := registries.BuildRegistryInfo(
 		"docker.io",
-		[]string{"http://k3d-docker-io:5000"},
+		[]string{"http://docker.io:5000"},
 		registries.DefaultRegistryPort,
-		"k3d-",
+		"",
 		"",
 	)
 
 	require.Equal(t, "docker.io", info.Host)
-	assert.Equal(t, "k3d-docker-io", info.Name)
+	assert.Equal(t, "docker.io", info.Name)
 	assert.Equal(t, "https://registry-1.docker.io", info.Upstream)
 	assert.Equal(t, registries.DefaultRegistryPort, info.Port)
-	assert.Equal(t, "docker-io", info.Volume)
+	assert.Equal(t, "docker.io", info.Volume)
 }
 
 func TestBuildRegistryInfo_UsesOverride(t *testing.T) {
@@ -191,9 +191,9 @@ func TestBuildRegistryInfo_UsesOverride(t *testing.T) {
 
 	info := registries.BuildRegistryInfo(
 		"docker.io",
-		[]string{"http://k3d-docker-io:5000"},
+		[]string{"http://docker.io:5000"},
 		registries.DefaultRegistryPort,
-		"k3d-",
+		"",
 		"https://mirror.example.com",
 	)
 
@@ -203,13 +203,13 @@ func TestBuildRegistryInfo_UsesOverride(t *testing.T) {
 func TestBuildRegistryName(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "k3d-ghcr-io", registries.BuildRegistryName("k3d-", "ghcr.io"))
+	assert.Equal(t, "k3d-ghcr.io", registries.BuildRegistryName("k3d-", "ghcr.io"))
 }
 
 func TestGenerateVolumeName(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "ghcr-io", registries.GenerateVolumeName("ghcr.io"))
+	assert.Equal(t, "ghcr.io", registries.GenerateVolumeName("ghcr.io"))
 }
 
 func TestSortHosts(t *testing.T) {

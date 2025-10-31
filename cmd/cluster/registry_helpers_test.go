@@ -79,7 +79,7 @@ func TestGenerateContainerdPatchesFromSpecs_SingleRegistry(t *testing.T) {
 		patches[0],
 		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]`,
 	)
-	assert.Contains(t, patches[0], `endpoint = ["http://kind-docker-io:5000"]`)
+	assert.Contains(t, patches[0], `endpoint = ["http://docker.io:5000"]`)
 }
 
 func TestGenerateContainerdPatchesFromSpecs_MultipleRegistries(t *testing.T) {

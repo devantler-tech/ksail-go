@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,47 +16,33 @@ import (
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
-// Error definitions for distribution handling.
+const (
+	// KindConfigFile is the default filename for Kind distribution configuration.
+	KindConfigFile = "kind.yaml"
+	// K3dConfigFile is the default filename for K3d distribution configuration.
+	K3dConfigFile = "k3d.yaml"
+)
+
 var (
-	ErrUnknownDistribution     = errors.New("provided distribution is unknown")
-	ErrKSailConfigGeneration   = errors.New("failed to generate KSail configuration")
-	ErrKindConfigGeneration    = errors.New("failed to generate Kind configuration")
-	ErrK3dConfigGeneration     = errors.New("failed to generate K3d configuration")
+	// ErrUnknownDistribution indicates an unsupported distribution was requested.
+	ErrUnknownDistribution = errors.New("unknown distribution")
+	// ErrKSailConfigGeneration wraps failures when creating ksail.yaml.
+	ErrKSailConfigGeneration = errors.New("failed to generate ksail configuration")
+	// ErrKindConfigGeneration wraps failures when creating Kind configuration.
+	ErrKindConfigGeneration = errors.New("failed to generate kind configuration")
+	// ErrK3dConfigGeneration wraps failures when creating K3d configuration.
+	ErrK3dConfigGeneration = errors.New("failed to generate k3d configuration")
+	// ErrKustomizationGeneration wraps failures when creating kustomization.yaml.
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
-
-// Distribution config file constants.
-const (
-	KindConfigFile = "kind.yaml"
-	K3dConfigFile  = "k3d.yaml"
-)
-
-// getExpectedContextName calculates the expected context name for a distribution using default cluster names.
-// This is used during scaffolding to ensure consistent context patterns between KSail config and distribution configs.
-// Returns empty string for unsupported distributions.
-func getExpectedContextName(distribution v1alpha1.Distribution) string {
-	var distributionName string
-
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		distributionName = "kind" // Default Kind cluster name (matches generateKindConfig)
-
-		return "kind-" + distributionName
-	case v1alpha1.DistributionK3d:
-		distributionName = "k3d-default" // Default K3d cluster name (handled by config manager)
-
-		return "k3d-" + distributionName
-	default:
-		return ""
-	}
-}
 
 // getExpectedDistributionConfigName returns the expected distribution config filename for a distribution.
 // This is used during scaffolding to set the correct config file name that matches the generated files.
@@ -72,6 +57,17 @@ func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) strin
 	}
 }
 
+func getExpectedContextName(distribution v1alpha1.Distribution) string {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return "kind-kind"
+	case v1alpha1.DistributionK3d:
+		return "k3d-k3d-default"
+	default:
+		return ""
+	}
+}
+
 // Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
 	KSailConfig            v1alpha1.Cluster
@@ -80,7 +76,7 @@ type Scaffolder struct {
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
-	MirrorRegistries       []string // Format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+	MirrorRegistries       []string // Format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 }
 
 // NewScaffolder creates a new Scaffolder instance with the provided KSail cluster configuration.
@@ -125,46 +121,26 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 }
 
 // GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
-// Container names are generated as "kind-{name}" for Kind network DNS resolution.
+// Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
+// Container names match the registry host after sanitization to align with runtime provisioning.
 func (s *Scaffolder) GenerateContainerdPatches() []string {
-	patches := make([]string, 0, len(s.MirrorRegistries))
+	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
+	if len(specs) == 0 {
+		return nil
+	}
 
-	for _, mirrorSpec := range s.MirrorRegistries {
-		parts := splitMirrorSpec(mirrorSpec)
-		if parts == nil {
-			continue
-		}
+	entries := registries.BuildMirrorEntries(specs, "", nil, nil, nil)
+	patches := make([]string, 0, len(entries))
 
-		name := parts[0]
-		upstream := parts[1]
-
-		// Extract port from upstream URL (default: 5000)
-		port := extractPortFromURL(upstream)
-
-		// Generate distribution-prefixed container name: kind-{sanitized-name}
-		// Replace dots with hyphens for container naming (docker.io -> docker-io)
-		sanitizedName := strings.ReplaceAll(name, ".", "-")
-		containerName := "kind-" + sanitizedName
-
-		// Registry host is the actual registry domain (e.g., docker.io)
-		// This must be the full registry host as it's used in containerd mirror configuration
-		registryHost := name
-
-		// Use container name as endpoint for Kind network DNS resolution
-		kindEndpoint := "http://" + net.JoinHostPort(containerName, port)
-
-		patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
-  endpoint = ["%s"]`, registryHost, kindEndpoint)
-
-		patches = append(patches, patch)
+	for _, entry := range entries {
+		patches = append(patches, registries.KindPatch(entry))
 	}
 
 	return patches
 }
 
 // GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
-// Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
+// Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 // K3d requires one registry per proxy, so we generate multiple create configs.
 func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
 	registryConfig := k3dv1alpha5.SimpleConfigRegistries{}
@@ -173,43 +149,14 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		return registryConfig
 	}
 
-	const linesPerMirror = 3
+	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
 
-	seen := make(map[string]struct{}, len(s.MirrorRegistries))
-	configLines := make([]string, 0, len(s.MirrorRegistries)*linesPerMirror)
-
-	for _, spec := range s.MirrorRegistries {
-		parts := splitMirrorSpec(spec)
-		if parts == nil {
-			continue
-		}
-
-		host := strings.TrimSpace(parts[0])
-
-		remote := strings.TrimSpace(parts[1])
-		if host == "" || remote == "" {
-			continue
-		}
-
-		if _, exists := seen[host]; exists {
-			continue
-		}
-
-		seen[host] = struct{}{}
-
-		configLines = append(configLines,
-			"  \""+host+"\":",
-			"    endpoint:",
-			"      - "+remote,
-		)
-	}
-
-	if len(configLines) == 0 {
+	hostEndpoints, updated := registries.BuildHostEndpointMap(specs, "", nil)
+	if len(hostEndpoints) == 0 || !updated {
 		return registryConfig
 	}
 
-	configLines = append([]string{"mirrors:"}, configLines...)
-	registryConfig.Config = joinLines(configLines) + "\n"
+	registryConfig.Config = registries.RenderK3dMirrorConfig(hostEndpoints)
 
 	return registryConfig
 }
@@ -559,28 +506,6 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 			},
 		},
 	)
-}
-
-// extractPortFromURL extracts the port from a URL string.
-// Returns "5000" as default if no port is found.
-func extractPortFromURL(urlStr string) string {
-	// Remove protocol if present
-	urlStr = strings.TrimPrefix(urlStr, "http://")
-	urlStr = strings.TrimPrefix(urlStr, "https://")
-
-	// Find port after colon
-	if idx := strings.LastIndex(urlStr, ":"); idx >= 0 {
-		port := urlStr[idx+1:]
-		// Remove any path after the port
-		if slashIdx := strings.Index(port, "/"); slashIdx >= 0 {
-			port = port[:slashIdx]
-		}
-
-		return port
-	}
-
-	// Default port for registry
-	return "5000"
 }
 
 // splitMirrorSpec splits a mirror specification into registry and endpoint parts.
