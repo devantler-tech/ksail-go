@@ -160,15 +160,22 @@ func ensureRegistry(
 	writer io.Writer,
 	existing map[string]struct{},
 ) (bool, error) {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "creating '%s' for '%s'",
-		Writer:  writer,
-		Args: []any{
-			reg.Name,
-			reg.Upstream,
-		},
-	})
+	_, alreadyExists := existing[reg.Name]
+
+	message := notify.Message{
+		Type:   notify.ActivityType,
+		Writer: writer,
+	}
+
+	if alreadyExists {
+		message.Content = "skipping '%s' as it already exists"
+		message.Args = []any{reg.Name}
+	} else {
+		message.Content = "creating '%s' for '%s'"
+		message.Args = []any{reg.Name, reg.Upstream}
+	}
+
+	notify.WriteMessage(message)
 
 	config := dockerclient.RegistryConfig{
 		Name:        reg.Name,
@@ -178,8 +185,6 @@ func ensureRegistry(
 		NetworkName: "",
 		VolumeName:  reg.Volume,
 	}
-
-	_, alreadyExists := existing[reg.Name]
 
 	err := registryMgr.CreateRegistry(ctx, config)
 	if err != nil {

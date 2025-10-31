@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
@@ -236,19 +237,33 @@ func runMirrorRegistryCleanup(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	for _, name := range registryNames {
-		notify.WriteMessage(notify.Message{
-			Type:    notify.ActivityType,
-			Content: "deleting '%s'",
-			Writer:  cmd.OutOrStdout(),
-			Args:    []any{name},
-		})
-	}
-
 	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		registryMgr, mgrErr := dockerclient.NewRegistryManager(dockerClient)
 		err := cleanup(dockerClient)
 		if err != nil {
 			return fmt.Errorf("failed to cleanup registries: %w", err)
+		}
+
+		for _, name := range registryNames {
+			content := "deleting '%s'"
+			if mgrErr == nil {
+				inUse, checkErr := registryMgr.IsRegistryInUse(ctx, name)
+				if checkErr == nil && inUse {
+					content = "skipping '%s' as it is in use"
+				}
+			}
+
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: content,
+				Writer:  cmd.OutOrStdout(),
+				Args:    []any{name},
+			})
 		}
 
 		notify.WriteMessage(notify.Message{
