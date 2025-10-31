@@ -8,12 +8,10 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	k3dgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
@@ -22,7 +20,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	k3dtypes "github.com/k3d-io/k3d/v5/pkg/types"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
 )
@@ -105,9 +102,18 @@ func NewScaffolder(cfg v1alpha1.Cluster, writer io.Writer) *Scaffolder {
 
 // Scaffold generates project files and configurations.
 func (s *Scaffolder) Scaffold(output string, force bool) error {
+	previousDistributionConfig := strings.TrimSpace(s.KSailConfig.Spec.DistributionConfig)
+
 	err := s.generateKSailConfig(output, force)
 	if err != nil {
 		return err
+	}
+
+	if force {
+		cleanupErr := s.removeFormerDistributionConfig(output, previousDistributionConfig)
+		if cleanupErr != nil {
+			return cleanupErr
+		}
 	}
 
 	err = s.generateDistributionConfig(output, force)
@@ -161,104 +167,49 @@ func (s *Scaffolder) GenerateContainerdPatches() []string {
 // Input format: "name=upstream" (e.g., "docker-io=https://registry-1.docker.io")
 // K3d requires one registry per proxy, so we generate multiple create configs.
 func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
-	registryConfig := k3dv1alpha5.SimpleConfigRegistries{
-		Use: []string{},
-	}
+	registryConfig := k3dv1alpha5.SimpleConfigRegistries{}
 
 	if s.KSailConfig.Spec.Distribution != v1alpha1.DistributionK3d {
 		return registryConfig
 	}
 
 	seen := make(map[string]struct{}, len(s.MirrorRegistries))
-	parsed := make([]k3dMirrorEntry, 0, len(s.MirrorRegistries))
-	usedPorts := make(map[int]struct{}, len(s.MirrorRegistries))
-	nextPort := dockerclient.DefaultRegistryPort
+	configLines := make([]string, 0, len(s.MirrorRegistries)*3)
 
 	for _, spec := range s.MirrorRegistries {
-		mirror, ok := s.buildK3dMirrorEntry(spec, seen, usedPorts, &nextPort)
-		if !ok {
+		parts := splitMirrorSpec(spec)
+		if parts == nil {
 			continue
 		}
 
-		parsed = append(parsed, mirror)
-	}
+		host := strings.TrimSpace(parts[0])
 
-	if len(parsed) == 0 {
-		return registryConfig
-	}
+		remote := strings.TrimSpace(parts[1])
+		if host == "" || remote == "" {
+			continue
+		}
 
-	const linesPerMirror = 3
+		if _, exists := seen[host]; exists {
+			continue
+		}
 
-	configLines := make([]string, 0, len(parsed)*linesPerMirror)
-	useEntries := make([]string, 0, len(parsed))
-
-	for _, mirror := range parsed {
-		containerName := fmt.Sprintf("%s-%s", k3dtypes.DefaultObjectNamePrefix, mirror.sanitized)
-		useEntries = append(useEntries, containerName)
+		seen[host] = struct{}{}
 
 		configLines = append(configLines,
-			"  \""+mirror.host+"\":",
+			"  \""+host+"\":",
 			"    endpoint:",
-			"      - "+mirror.endpoint,
+			"      - "+remote,
 		)
 	}
 
-	if len(configLines) > 0 {
-		configLines = append([]string{"mirrors:"}, configLines...)
-		registryConfig.Config = joinLines(configLines) + "\n"
+	if len(configLines) == 0 {
+		return registryConfig
 	}
 
-	registryConfig.Use = useEntries
+	configLines = append([]string{"mirrors:"}, configLines...)
+	registryConfig.Config = joinLines(configLines) + "\n"
 
 	return registryConfig
-}
-
-type k3dMirrorEntry struct {
-	host      string
-	sanitized string
-	endpoint  string
-}
-
-func (s *Scaffolder) buildK3dMirrorEntry(
-	spec string,
-	seen map[string]struct{},
-	usedPorts map[int]struct{},
-	nextPort *int,
-) (k3dMirrorEntry, bool) {
-	parts := splitMirrorSpec(spec)
-	if parts == nil {
-		return k3dMirrorEntry{}, false
-	}
-
-	host := strings.TrimSpace(parts[0])
-	if host == "" {
-		return k3dMirrorEntry{}, false
-	}
-
-	remote := strings.TrimSpace(parts[1])
-	if remote == "" {
-		return k3dMirrorEntry{}, false
-	}
-
-	sanitized := sanitizeRegistryName(host)
-	if sanitized == "" {
-		return k3dMirrorEntry{}, false
-	}
-
-	if _, exists := seen[host]; exists {
-		return k3dMirrorEntry{}, false
-	}
-
-	seen[host] = struct{}{}
-	port := nextK3dRegistryPort(nextPort, usedPorts)
-	containerName := fmt.Sprintf("%s-%s", k3dtypes.DefaultObjectNamePrefix, sanitized)
-	endpoint := "http://" + net.JoinHostPort(containerName, strconv.Itoa(port))
-
-	return k3dMirrorEntry{
-		host:      host,
-		sanitized: sanitized,
-		endpoint:  endpoint,
-	}, true
 }
 
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
@@ -442,6 +393,56 @@ func (s *Scaffolder) generateDistributionConfig(output string, force bool) error
 	default:
 		return ErrUnknownDistribution
 	}
+}
+
+func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) error {
+	previous = strings.TrimSpace(previous)
+	if previous == "" {
+		return nil
+	}
+
+	newConfigName := getExpectedDistributionConfigName(s.KSailConfig.Spec.Distribution)
+	newConfigPath := filepath.Join(output, newConfigName)
+
+	previousPath := previous
+	if !filepath.IsAbs(previousPath) {
+		previousPath = filepath.Join(output, previous)
+	}
+
+	if filepath.Clean(previousPath) != filepath.Clean(newConfigPath) {
+		return nil
+	}
+
+	info, err := os.Stat(previousPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+
+		return fmt.Errorf("failed to inspect previous distribution config '%s': %w", previous, err)
+	}
+
+	if info.IsDir() {
+		return nil
+	}
+
+	removeErr := os.Remove(previousPath)
+	if removeErr != nil {
+		return fmt.Errorf(
+			"failed to remove previous distribution config '%s': %w",
+			previous,
+			removeErr,
+		)
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.WarningType,
+		Content: "removed previous distribution config '%s' before generating '%s'",
+		Args:    []any{previous, newConfigName},
+		Writer:  s.Writer,
+	})
+
+	return nil
 }
 
 // generateKindConfig generates the kind.yaml configuration file.
@@ -632,27 +633,4 @@ func sanitizeRegistryName(name string) string {
 
 func joinLines(lines []string) string {
 	return strings.Join(lines, "\n")
-}
-
-func nextK3dRegistryPort(nextPort *int, usedPorts map[int]struct{}) int {
-	if nextPort == nil {
-		value := dockerclient.DefaultRegistryPort
-		nextPort = &value
-	}
-
-	port := *nextPort
-	if port <= 0 {
-		port = dockerclient.DefaultRegistryPort
-	}
-
-	for {
-		if _, exists := usedPorts[port]; !exists {
-			usedPorts[port] = struct{}{}
-			*nextPort = port + 1
-
-			return port
-		}
-
-		port++
-	}
 }

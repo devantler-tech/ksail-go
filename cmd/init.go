@@ -98,7 +98,7 @@ func HandleInitRunE(
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
-		Content: "Initialize project......",
+		Content: "Initialize project...",
 		Emoji:   "📂",
 		Writer:  cmd.OutOrStdout(),
 	})

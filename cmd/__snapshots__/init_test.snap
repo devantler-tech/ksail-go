@@ -5,7 +5,7 @@
 ► '<config-dir>/ksail.yaml' found
 ✔ config loaded [stage: 1ms]
 
-📂 Initialize project......
+📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'
@@ -19,7 +19,7 @@
 ► '<config-dir>/ksail.yaml' found
 ✔ config loaded [stage: 1ms]
 
-📂 Initialize project......
+📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'

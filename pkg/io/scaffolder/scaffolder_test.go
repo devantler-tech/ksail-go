@@ -344,6 +344,50 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
 }
 
+func TestScaffold_PreservesPreviousDistributionConfigWhenForce(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
+	require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
+
+	cluster := createK3dCluster("force-cleanup")
+	cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
+
+	buffer := &bytes.Buffer{}
+	instance := scaffolder.NewScaffolder(cluster, buffer)
+
+	err := instance.Scaffold(outputDir, true)
+	require.NoError(t, err)
+
+	_, statErr := os.Stat(oldConfig)
+	require.NoError(t, statErr)
+
+	_, newErr := os.Stat(filepath.Join(outputDir, scaffolder.K3dConfigFile))
+	require.NoError(t, newErr)
+
+	assert.NotContains(t, buffer.String(), "removed previous distribution config")
+}
+
+func TestScaffold_KeepsPreviousDistributionConfigWithoutForce(t *testing.T) {
+	t.Parallel()
+
+	outputDir := t.TempDir()
+	oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
+	require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
+
+	cluster := createK3dCluster("no-force")
+	cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
+
+	instance := scaffolder.NewScaffolder(cluster, io.Discard)
+
+	err := instance.Scaffold(outputDir, false)
+	require.NoError(t, err)
+
+	_, statErr := os.Stat(oldConfig)
+	require.NoError(t, statErr)
+}
+
 type scaffoldContextCase struct {
 	distribution v1alpha1.Distribution
 	initial      string
@@ -916,9 +960,9 @@ func TestGenerateK3dRegistryConfig_WithValidMirror(t *testing.T) {
 	config := scaffolderInstance.GenerateK3dRegistryConfig()
 
 	require.Nil(t, config.Create)
-	assert.Contains(t, config.Config, "http://k3d-docker-io:5000")
+	assert.Contains(t, config.Config, "https://registry-1.docker.io")
 	assert.Contains(t, config.Config, "\"docker.io\":")
-	assert.Equal(t, []string{"k3d-docker-io"}, config.Use)
+	assert.Empty(t, config.Use)
 }
 
 func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {

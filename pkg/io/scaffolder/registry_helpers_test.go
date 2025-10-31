@@ -133,8 +133,8 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 
 		require.Nil(t, registryConfig.Create)
 		require.Contains(t, registryConfig.Config, "\"docker.io\":")
-		require.Contains(t, registryConfig.Config, "http://k3d-docker-io:5000")
-		require.Equal(t, []string{"k3d-docker-io"}, registryConfig.Use)
+		require.Contains(t, registryConfig.Config, "https://registry-1.docker.io")
+		require.Empty(t, registryConfig.Use)
 	})
 
 	t.Run("no mirror registries", func(t *testing.T) {
@@ -174,9 +174,9 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 
 		require.Contains(t, registryConfig.Config, "\"docker.io\":")
 		require.Contains(t, registryConfig.Config, "\"ghcr.io\":")
-		require.Contains(t, registryConfig.Config, "http://k3d-docker-io:5000")
-		require.Contains(t, registryConfig.Config, "http://k3d-ghcr-io:5001")
-		require.Equal(t, []string{"k3d-docker-io", "k3d-ghcr-io"}, registryConfig.Use)
+		require.Contains(t, registryConfig.Config, "https://registry-1.docker.io")
+		require.Contains(t, registryConfig.Config, "https://ghcr.io")
 		require.Nil(t, registryConfig.Create)
+		require.Empty(t, registryConfig.Use)
 	})
 }
