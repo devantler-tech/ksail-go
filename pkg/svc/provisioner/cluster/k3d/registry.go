@@ -125,26 +125,13 @@ func setupRegistryManager(
 		return nil, nil, nil
 	}
 
-	registryMgr, err := dockerclient.NewRegistryManager(dockerClient)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
-	}
-
-	registryInfos := extractRegistriesFromConfig(simpleCfg, nil)
-	if len(registryInfos) == 0 {
-		return nil, nil, nil
-	}
-
-	existingPorts, err := registries.CollectExistingRegistryPorts(ctx, registryMgr)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to collect existing registry ports: %w", err)
-	}
-
-	if len(existingPorts) != 0 {
-		registryInfos = extractRegistriesFromConfig(simpleCfg, existingPorts)
-	}
-
-	return registryMgr, registryInfos, nil
+	return registries.PrepareRegistryManager(
+		ctx,
+		dockerClient,
+		func(usedPorts map[int]struct{}) []registries.Info {
+			return extractRegistriesFromConfig(simpleCfg, usedPorts)
+		},
+	)
 }
 
 func resolveK3dNetworkName(clusterName string) string {
@@ -195,16 +182,7 @@ func extractRegistriesFromConfig(
 
 	registries.SortHosts(hosts)
 
-	usedPorts := make(map[int]struct{}, len(baseUsedPorts))
-	nextPort := registries.DefaultRegistryPort
-
-	for port := range baseUsedPorts {
-		usedPorts[port] = struct{}{}
-
-		if port >= nextPort {
-			nextPort = port + 1
-		}
-	}
+	usedPorts, nextPort := registries.InitPortAllocation(baseUsedPorts)
 
 	registryInfos := make([]registries.Info, 0, len(hosts))
 

@@ -44,84 +44,81 @@ func createTestScaffolderForK3d() *scaffolder.Scaffolder {
 func TestGenerateContainerdPatches(t *testing.T) {
 	t.Parallel()
 
-	t.Run("single mirror registry", func(t *testing.T) {
-		t.Parallel()
+	cases := []struct {
+		name    string
+		mirrors []string
+		assert  func(t *testing.T, patches []string)
+	}{
+		{
+			name:    "single mirror registry",
+			mirrors: []string{"docker.io=https://registry-1.docker.io"},
+			assert: func(t *testing.T, patches []string) {
+				require.Len(t, patches, 1)
+				require.Contains(t, patches[0], "docker.io")
+				require.Contains(t, patches[0], "http://docker.io:5000")
+			},
+		},
+		{
+			name: "multiple mirror registries",
+			mirrors: []string{
+				"docker.io=https://registry-1.docker.io",
+				"ghcr.io=https://ghcr.io",
+				"quay.io=https://quay.io",
+			},
+			assert: func(t *testing.T, patches []string) {
+				require.Len(t, patches, 3)
+				require.Contains(t, patches[0], "docker.io")
+				require.Contains(t, patches[0], "http://docker.io:5000")
+				require.Contains(t, patches[1], "ghcr.io")
+				require.Contains(t, patches[1], "http://ghcr.io:5001")
+				require.Contains(t, patches[2], "quay.io")
+				require.Contains(t, patches[2], "http://quay.io:5002")
+			},
+		},
+		{
+			name:    "no mirror registries",
+			mirrors: []string{},
+			assert: func(t *testing.T, patches []string) {
+				require.Empty(t, patches)
+			},
+		},
+		{
+			name: "invalid mirror spec skipped",
+			mirrors: []string{
+				"docker.io=https://registry-1.docker.io",
+				"invalid-spec-no-equals",
+				"ghcr.io=https://ghcr.io",
+			},
+			assert: func(t *testing.T, patches []string) {
+				require.Len(t, patches, 2)
+				require.Contains(t, patches[0], "docker.io")
+				require.Contains(t, patches[0], "http://docker.io:5000")
+				require.Contains(t, patches[1], "ghcr.io")
+				require.Contains(t, patches[1], "http://ghcr.io:5001")
+			},
+		},
+		{
+			name:    "custom port in upstream URL",
+			mirrors: []string{"localhost=http://localhost:5001"},
+			assert: func(t *testing.T, patches []string) {
+				require.Len(t, patches, 1)
+				require.Contains(t, patches[0], "localhost")
+				require.Contains(t, patches[0], "http://localhost:5000")
+			},
+		},
+	}
 
-		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{"docker.io=https://registry-1.docker.io"}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-		patches := scaf.GenerateContainerdPatches()
-		require.Len(t, patches, 1)
-		require.Contains(t, patches[0], "docker.io")
-		require.Contains(t, patches[0], "http://docker.io:5000")
-		require.Contains(t, patches[0], "plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors")
-	})
+			scaf := createTestScaffolderForKind()
+			scaf.MirrorRegistries = testCase.mirrors
 
-	t.Run("multiple mirror registries", func(t *testing.T) {
-		t.Parallel()
-
-		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{
-			"docker.io=https://registry-1.docker.io",
-			"ghcr.io=https://ghcr.io",
-			"quay.io=https://quay.io",
-		}
-
-		patches := scaf.GenerateContainerdPatches()
-		require.Len(t, patches, 3)
-		require.Contains(t, patches[0], "docker.io")
-		require.Contains(t, patches[0], "http://docker.io:5000")
-		require.Contains(t, patches[1], "ghcr.io")
-		require.Contains(t, patches[1], "http://ghcr.io:5001")
-		require.Contains(t, patches[2], "quay.io")
-		require.Contains(t, patches[2], "http://quay.io:5002")
-	})
-
-	t.Run("no mirror registries", func(t *testing.T) {
-		t.Parallel()
-
-		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{}
-
-		patches := scaf.GenerateContainerdPatches()
-		require.Empty(t, patches)
-	})
-
-	testContainerdPatchesInvalidAndCustomPort(t)
-}
-
-func testContainerdPatchesInvalidAndCustomPort(t *testing.T) {
-	t.Helper()
-
-	t.Run("invalid mirror spec skipped", func(t *testing.T) {
-		t.Parallel()
-
-		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{
-			"docker.io=https://registry-1.docker.io",
-			"invalid-spec-no-equals",
-			"ghcr.io=https://ghcr.io",
-		}
-
-		patches := scaf.GenerateContainerdPatches()
-		require.Len(t, patches, 2)
-		require.Contains(t, patches[0], "docker.io")
-		require.Contains(t, patches[0], "http://docker.io:5000")
-		require.Contains(t, patches[1], "ghcr.io")
-		require.Contains(t, patches[1], "http://ghcr.io:5001")
-	})
-
-	t.Run("custom port in upstream URL", func(t *testing.T) {
-		t.Parallel()
-
-		scaf := createTestScaffolderForKind()
-		scaf.MirrorRegistries = []string{"localhost=http://localhost:5001"}
-
-		patches := scaf.GenerateContainerdPatches()
-		require.Len(t, patches, 1)
-		require.Contains(t, patches[0], "localhost")
-		require.Contains(t, patches[0], "http://localhost:5000")
-	})
+			patches := scaf.GenerateContainerdPatches()
+			testCase.assert(t, patches)
+		})
+	}
 }
 
 // TestGenerateK3dRegistryConfig tests the generation of K3d registry configuration.

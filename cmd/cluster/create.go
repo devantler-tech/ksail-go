@@ -177,76 +177,43 @@ func setupMirrorRegistries(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
 	)
 
-	switch clusterCfg.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		return setupKindMirrorRegistries(cmd, deps, clusterCfg, cfgManager, kindConfig, mirrorSpecs)
-	case v1alpha1.DistributionK3d:
-		return setupK3dMirrorRegistries(cmd, deps, clusterCfg, k3dConfig, mirrorSpecs)
-	default:
-		return nil
-	}
-}
-
-func setupKindMirrorRegistries(
-	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
-	clusterCfg *v1alpha1.Cluster,
-	cfgManager *ksailconfigmanager.ConfigManager,
-	kindConfig *v1alpha4.Cluster,
-	mirrorSpecs []registries.MirrorSpec,
-) error {
-	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
-		return nil
-	}
-
-	stage := registryStage{
-		title:         "Create mirror registries...",
-		emoji:         "🪞",
-		success:       "mirror registries created",
-		failurePrefix: "failed to setup registries",
-		action: func(ctx context.Context, dockerClient client.APIClient) error {
-			return kindprovisioner.SetupRegistries(
-				ctx,
-				kindConfig,
-				kindConfig.Name,
-				dockerClient,
-				mirrorSpecs,
-				cmd.OutOrStdout(),
-			)
+	handlers := map[v1alpha1.Distribution]struct {
+		prepare func() bool
+		action  func(context.Context, client.APIClient) error
+	}{
+		v1alpha1.DistributionKind: {
+			prepare: func() bool { return prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) },
+			action: func(ctx context.Context, dockerClient client.APIClient) error {
+				return kindprovisioner.SetupRegistries(
+					ctx,
+					kindConfig,
+					kindConfig.Name,
+					dockerClient,
+					mirrorSpecs,
+					cmd.OutOrStdout(),
+				)
+			},
+		},
+		v1alpha1.DistributionK3d: {
+			prepare: func() bool { return prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) },
+			action: func(ctx context.Context, dockerClient client.APIClient) error {
+				return k3dprovisioner.SetupRegistries(
+					ctx,
+					k3dConfig,
+					resolveK3dClusterName(clusterCfg, k3dConfig),
+					dockerClient,
+					cmd.OutOrStdout(),
+				)
+			},
 		},
 	}
 
-	return runRegistryStage(cmd, deps, stage)
-}
-
-func setupK3dMirrorRegistries(
-	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
-	clusterCfg *v1alpha1.Cluster,
-	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
-) error {
-	if !prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) {
+	handler, ok := handlers[clusterCfg.Spec.Distribution]
+	if !ok {
 		return nil
 	}
 
-	stage := registryStage{
-		title:         "Create mirror registries...",
-		emoji:         "🪞",
-		success:       "mirror registries created",
-		failurePrefix: "failed to setup registries",
-		action: func(ctx context.Context, dockerClient client.APIClient) error {
-			return k3dprovisioner.SetupRegistries(
-				ctx,
-				k3dConfig,
-				resolveK3dClusterName(clusterCfg, k3dConfig),
-				dockerClient,
-				cmd.OutOrStdout(),
-			)
-		},
-	}
-
-	return runRegistryStage(cmd, deps, stage)
+	return executeMirrorStage(cmd, deps, handler.prepare, handler.action)
 }
 
 // connectRegistriesToClusterNetwork attaches mirror registries to the cluster network after creation.
@@ -262,73 +229,115 @@ func connectRegistriesToClusterNetwork(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
 	)
 
-	switch clusterCfg.Spec.Distribution {
-	case v1alpha1.DistributionKind:
-		return connectKindRegistriesToNetwork(cmd, deps, clusterCfg, cfgManager, kindConfig)
-	case v1alpha1.DistributionK3d:
-		return connectK3dRegistriesToNetwork(cmd, deps, clusterCfg, k3dConfig, mirrorSpecs)
-	default:
-		return nil
-	}
-}
-
-func connectKindRegistriesToNetwork(
-	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
-	clusterCfg *v1alpha1.Cluster,
-	cfgManager *ksailconfigmanager.ConfigManager,
-	kindConfig *v1alpha4.Cluster,
-) error {
-	if !prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) {
-		return nil
-	}
-
-	stage := registryStage{
-		title:         "Connect registries...",
-		emoji:         "🔗",
-		success:       "registries connected",
-		failurePrefix: "failed to connect registries",
-		action: func(ctx context.Context, dockerClient client.APIClient) error {
-			return kindprovisioner.ConnectRegistriesToNetwork(
-				ctx,
-				kindConfig,
-				dockerClient,
-				cmd.OutOrStdout(),
-			)
+	connectHandlers := map[v1alpha1.Distribution]struct {
+		prepare func() bool
+		action  func(context.Context, client.APIClient) error
+	}{
+		v1alpha1.DistributionKind: {
+			prepare: func() bool { return prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig) },
+			action: func(ctx context.Context, dockerClient client.APIClient) error {
+				return kindprovisioner.ConnectRegistriesToNetwork(
+					ctx,
+					kindConfig,
+					dockerClient,
+					cmd.OutOrStdout(),
+				)
+			},
+		},
+		v1alpha1.DistributionK3d: {
+			prepare: func() bool { return prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) },
+			action: func(ctx context.Context, dockerClient client.APIClient) error {
+				return k3dprovisioner.ConnectRegistriesToNetwork(
+					ctx,
+					k3dConfig,
+					resolveK3dClusterName(clusterCfg, k3dConfig),
+					dockerClient,
+					cmd.OutOrStdout(),
+				)
+			},
 		},
 	}
 
-	return runRegistryStage(cmd, deps, stage)
-}
-
-func connectK3dRegistriesToNetwork(
-	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
-	clusterCfg *v1alpha1.Cluster,
-	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
-) error {
-	if !prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, mirrorSpecs) {
+	connectHandler, ok := connectHandlers[clusterCfg.Spec.Distribution]
+	if !ok {
 		return nil
 	}
 
-	stage := registryStage{
-		title:         "Connect registries...",
-		emoji:         "🔗",
-		success:       "registries connected",
-		failurePrefix: "failed to connect registries",
-		action: func(ctx context.Context, dockerClient client.APIClient) error {
-			return k3dprovisioner.ConnectRegistriesToNetwork(
-				ctx,
-				k3dConfig,
-				resolveK3dClusterName(clusterCfg, k3dConfig),
-				dockerClient,
-				cmd.OutOrStdout(),
-			)
-		},
+	return executeConnectStage(cmd, deps, connectHandler.prepare, connectHandler.action)
+}
+
+const (
+	mirrorStageTitle   = "Create mirror registries..."
+	mirrorStageEmoji   = "🪞"
+	mirrorStageSuccess = "mirror registries created"
+	mirrorStageFailure = "failed to setup registries"
+
+	connectStageTitle   = "Connect registries..."
+	connectStageEmoji   = "🔗"
+	connectStageSuccess = "registries connected"
+	connectStageFailure = "failed to connect registries"
+)
+
+func runMirrorRegistryStage(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	action func(context.Context, client.APIClient) error,
+) error {
+	return runRegistryStage(cmd, deps, newMirrorRegistryStage(action))
+}
+
+func newMirrorRegistryStage(action func(context.Context, client.APIClient) error) registryStage {
+	return registryStage{
+		title:         mirrorStageTitle,
+		emoji:         mirrorStageEmoji,
+		success:       mirrorStageSuccess,
+		failurePrefix: mirrorStageFailure,
+		action:        action,
+	}
+}
+
+func runConnectRegistriesStage(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	action func(context.Context, client.APIClient) error,
+) error {
+	return runRegistryStage(cmd, deps, newConnectRegistriesStage(action))
+}
+
+func executeMirrorStage(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	shouldPrepare func() bool,
+	action func(context.Context, client.APIClient) error,
+) error {
+	if !shouldPrepare() {
+		return nil
 	}
 
-	return runRegistryStage(cmd, deps, stage)
+	return runMirrorRegistryStage(cmd, deps, action)
+}
+
+func executeConnectStage(
+	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	shouldPrepare func() bool,
+	action func(context.Context, client.APIClient) error,
+) error {
+	if !shouldPrepare() {
+		return nil
+	}
+
+	return runConnectRegistriesStage(cmd, deps, action)
+}
+
+func newConnectRegistriesStage(action func(context.Context, client.APIClient) error) registryStage {
+	return registryStage{
+		title:         connectStageTitle,
+		emoji:         connectStageEmoji,
+		success:       connectStageSuccess,
+		failurePrefix: connectStageFailure,
+		action:        action,
+	}
 }
 
 type registryStage struct {

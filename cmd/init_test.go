@@ -68,11 +68,7 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 		"force":  "true",
 	})
 
-	tmr := timermocks.NewMockTimer(t)
-	tmr.EXPECT().Start().Return()
-	tmr.EXPECT().NewStage().Return()
-	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	deps, _ := newInitDeps(t)
 
 	var err error
 
@@ -108,11 +104,7 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 		"force":               "true",
 	})
 
-	tmr := timermocks.NewMockTimer(t)
-	tmr.EXPECT().Start().Return()
-	tmr.EXPECT().NewStage().Return()
-	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	deps, _ := newInitDeps(t)
 
 	err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
@@ -140,11 +132,7 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 		"force": "true",
 	})
 
-	tmr := timermocks.NewMockTimer(t)
-	tmr.EXPECT().Start().Return()
-	tmr.EXPECT().NewStage().Return()
-	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	deps, _ := newInitDeps(t)
 
 	var err error
 
@@ -159,4 +147,13 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected ksail.yaml in working directory: %v", err)
 	}
+}
+
+func newInitDeps(t *testing.T) (cmdpkg.InitDeps, *timermocks.MockTimer) {
+	tmr := timermocks.NewMockTimer(t)
+	tmr.EXPECT().Start().Return()
+	tmr.EXPECT().NewStage().Return()
+	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
+
+	return cmdpkg.InitDeps{Timer: tmr}, tmr
 }

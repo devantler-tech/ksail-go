@@ -344,46 +344,54 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
 }
 
-func TestScaffold_PreservesPreviousDistributionConfigWhenForce(t *testing.T) {
+func TestScaffold_DistributionConfigPreservation(t *testing.T) {
 	t.Parallel()
 
-	outputDir := t.TempDir()
-	oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
-	require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
+	tests := []struct {
+		name            string
+		force           bool
+		writer          io.Writer
+		expectNewConfig bool
+	}{
+		{
+			name:            "force keeps old and writes new",
+			force:           true,
+			writer:          &bytes.Buffer{},
+			expectNewConfig: true,
+		},
+		{
+			name:            "no force keeps existing only",
+			force:           false,
+			writer:          io.Discard,
+			expectNewConfig: false,
+		},
+	}
 
-	cluster := createK3dCluster("force-cleanup")
-	cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	buffer := &bytes.Buffer{}
-	instance := scaffolder.NewScaffolder(cluster, buffer)
+			outputDir := t.TempDir()
+			oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
+			require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
 
-	err := instance.Scaffold(outputDir, true)
-	require.NoError(t, err)
+			cluster := createK3dCluster(testCase.name)
+			cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
 
-	_, statErr := os.Stat(oldConfig)
-	require.NoError(t, statErr)
+			instance := scaffolder.NewScaffolder(cluster, testCase.writer)
 
-	_, newErr := os.Stat(filepath.Join(outputDir, scaffolder.K3dConfigFile))
-	require.NoError(t, newErr)
-}
+			err := instance.Scaffold(outputDir, testCase.force)
+			require.NoError(t, err)
 
-func TestScaffold_KeepsPreviousDistributionConfigWithoutForce(t *testing.T) {
-	t.Parallel()
+			_, statErr := os.Stat(oldConfig)
+			require.NoError(t, statErr)
 
-	outputDir := t.TempDir()
-	oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
-	require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
-
-	cluster := createK3dCluster("no-force")
-	cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
-
-	instance := scaffolder.NewScaffolder(cluster, io.Discard)
-
-	err := instance.Scaffold(outputDir, false)
-	require.NoError(t, err)
-
-	_, statErr := os.Stat(oldConfig)
-	require.NoError(t, statErr)
+			if testCase.expectNewConfig {
+				_, newErr := os.Stat(filepath.Join(outputDir, scaffolder.K3dConfigFile))
+				require.NoError(t, newErr)
+			}
+		})
+	}
 }
 
 type scaffoldContextCase struct {

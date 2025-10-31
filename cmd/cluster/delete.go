@@ -15,6 +15,7 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
@@ -129,21 +130,9 @@ func cleanupKindMirrorRegistries(
 		return fmt.Errorf("failed to load kind config: %w", loadErr)
 	}
 
-	registries := kindprovisioner.ExtractRegistriesFromKindForTesting(kindConfig, nil)
-	if len(registries) == 0 {
-		return nil
-	}
+	registriesInfo := kindprovisioner.ExtractRegistriesFromKindForTesting(kindConfig, nil)
 
-	registryNames := make([]string, 0, len(registries))
-	for _, reg := range registries {
-		name := strings.TrimSpace(reg.Name)
-		if name == "" {
-			continue
-		}
-
-		registryNames = append(registryNames, name)
-	}
-
+	registryNames := collectRegistryNames(registriesInfo)
 	if len(registryNames) == 0 {
 		return nil
 	}
@@ -181,21 +170,9 @@ func cleanupK3dMirrorRegistries(
 		return fmt.Errorf("failed to load k3d config: %w", loadErr)
 	}
 
-	registries := k3dprovisioner.ExtractRegistriesFromConfigForTesting(k3dConfig)
-	if len(registries) == 0 {
-		return nil
-	}
+	registriesInfo := k3dprovisioner.ExtractRegistriesFromConfigForTesting(k3dConfig)
 
-	registryNames := make([]string, 0, len(registries))
-	for _, reg := range registries {
-		name := strings.TrimSpace(reg.Name)
-		if name == "" {
-			continue
-		}
-
-		registryNames = append(registryNames, name)
-	}
-
+	registryNames := collectRegistryNames(registriesInfo)
 	if len(registryNames) == 0 {
 		return nil
 	}
@@ -215,6 +192,21 @@ func cleanupK3dMirrorRegistries(
 			)
 		},
 	)
+}
+
+func collectRegistryNames(infos []registries.Info) []string {
+	names := make([]string, 0, len(infos))
+
+	for _, reg := range infos {
+		name := strings.TrimSpace(reg.Name)
+		if name == "" {
+			continue
+		}
+
+		names = append(names, name)
+	}
+
+	return names
 }
 
 func runMirrorRegistryCleanup(
@@ -244,6 +236,7 @@ func runMirrorRegistryCleanup(
 		}
 
 		registryMgr, mgrErr := dockerclient.NewRegistryManager(dockerClient)
+
 		err := cleanup(dockerClient)
 		if err != nil {
 			return fmt.Errorf("failed to cleanup registries: %w", err)
@@ -251,6 +244,7 @@ func runMirrorRegistryCleanup(
 
 		for _, name := range registryNames {
 			content := "deleting '%s'"
+
 			if mgrErr == nil {
 				inUse, checkErr := registryMgr.IsRegistryInUse(ctx, name)
 				if checkErr == nil && inUse {

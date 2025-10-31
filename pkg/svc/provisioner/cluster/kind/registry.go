@@ -26,27 +26,13 @@ func setupRegistryManager(
 		return nil, nil, nil
 	}
 
-	// Create registry manager
-	registryMgr, err := dockerclient.NewRegistryManager(dockerClient)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
-	}
-
-	registriesInfo := extractRegistriesFromKind(kindConfig, upstreams, nil)
-	if len(registriesInfo) == 0 {
-		return nil, nil, nil
-	}
-
-	existingPorts, err := registries.CollectExistingRegistryPorts(ctx, registryMgr)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to collect existing registry ports: %w", err)
-	}
-
-	if len(existingPorts) != 0 {
-		registriesInfo = extractRegistriesFromKind(kindConfig, upstreams, existingPorts)
-	}
-
-	return registryMgr, registriesInfo, nil
+	return registries.PrepareRegistryManager(
+		ctx,
+		dockerClient,
+		func(usedPorts map[int]struct{}) []registries.Info {
+			return extractRegistriesFromKind(kindConfig, upstreams, usedPorts)
+		},
+	)
 }
 
 // SetupRegistries creates mirror registries based on Kind cluster configuration.
@@ -179,16 +165,7 @@ func extractRegistriesFromKind(
 	var registryInfos []registries.Info
 
 	seenHosts := make(map[string]bool)
-	usedPorts := make(map[int]struct{}, len(baseUsedPorts))
-	nextPort := registries.DefaultRegistryPort
-
-	for port := range baseUsedPorts {
-		usedPorts[port] = struct{}{}
-
-		if port >= nextPort {
-			nextPort = port + 1
-		}
-	}
+	usedPorts, nextPort := registries.InitPortAllocation(baseUsedPorts)
 
 	for _, patch := range kindConfig.ContainerdConfigPatches {
 		mirrors := parseContainerdConfig(patch)
