@@ -507,39 +507,3 @@ func (s *Scaffolder) generateKustomizationConfig(output string, force bool) erro
 		},
 	)
 }
-
-// splitMirrorSpec splits a mirror specification into registry and endpoint parts.
-// Returns nil if the spec is invalid.
-func splitMirrorSpec(spec string) []string {
-	parts := splitOnEquals(spec)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil
-	}
-
-	return parts
-}
-
-// splitOnEquals splits a string on the first '=' character.
-func splitOnEquals(str string) []string {
-	idx := findFirstEquals(str)
-	if idx == -1 {
-		return []string{str}
-	}
-
-	return []string{str[:idx], str[idx+1:]}
-}
-
-// findFirstEquals finds the index of the first '=' character.
-func findFirstEquals(s string) int {
-	for i, c := range s {
-		if c == '=' {
-			return i
-		}
-	}
-
-	return -1
-}
-
-func joinLines(lines []string) string {
-	return strings.Join(lines, "\n")
-}

@@ -68,7 +68,7 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 		"force":  "true",
 	})
 
-	deps, _ := newInitDeps(t)
+	deps := newInitDeps(t)
 
 	var err error
 
@@ -104,7 +104,7 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 		"force":               "true",
 	})
 
-	deps, _ := newInitDeps(t)
+	deps := newInitDeps(t)
 
 	err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
@@ -132,7 +132,7 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 		"force": "true",
 	})
 
-	deps, _ := newInitDeps(t)
+	deps := newInitDeps(t)
 
 	var err error
 
@@ -149,11 +149,12 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	}
 }
 
-func newInitDeps(t *testing.T) (cmdpkg.InitDeps, *timermocks.MockTimer) {
+func newInitDeps(t *testing.T) cmdpkg.InitDeps {
+	t.Helper()
 	tmr := timermocks.NewMockTimer(t)
 	tmr.EXPECT().Start().Return()
 	tmr.EXPECT().NewStage().Return()
 	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
 
-	return cmdpkg.InitDeps{Timer: tmr}, tmr
+	return cmdpkg.InitDeps{Timer: tmr}
 }

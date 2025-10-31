@@ -125,13 +125,18 @@ func setupRegistryManager(
 		return nil, nil, nil
 	}
 
-	return registries.PrepareRegistryManager(
+	registryMgr, infos, err := registries.PrepareRegistryManager(
 		ctx,
 		dockerClient,
 		func(usedPorts map[int]struct{}) []registries.Info {
 			return extractRegistriesFromConfig(simpleCfg, usedPorts)
 		},
 	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to prepare k3d registry manager: %w", err)
+	}
+
+	return registryMgr, infos, nil
 }
 
 func resolveK3dNetworkName(clusterName string) string {

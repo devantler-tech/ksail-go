@@ -31,6 +31,7 @@ var (
 	errContainerListFailed  = errors.New("list failed")
 	errRegistryCreateFailed = errors.New("registry create failed")
 	errRegistryNotFound     = errors.New("not found")
+	errNetworkNotFound      = errors.New("network not found")
 )
 
 func TestMain(m *testing.M) {
@@ -455,7 +456,7 @@ func expectCleanupRunningRegistry(
 		Once()
 	mockClient.EXPECT().
 		NetworkDisconnect(mock.Anything, "kind", containerID, true).
-		Return(errdefs.NotFound(errors.New("network not found"))).
+		Return(errdefs.NotFound(errNetworkNotFound)).
 		Once()
 	mockClient.EXPECT().
 		ContainerInspect(mock.Anything, containerID).

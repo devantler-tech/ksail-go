@@ -15,7 +15,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/errdefs"
 	"github.com/docker/go-connections/nat"
 )
 
@@ -149,32 +148,23 @@ func (rm *RegistryManager) DeleteRegistry(
 
 	registryContainer := containers[0]
 
-	inspect, err := rm.client.ContainerInspect(ctx, registryContainer.ID)
+	trimmedNetwork := strings.TrimSpace(networkName)
+
+	inspect, err := inspectContainer(ctx, rm.client, registryContainer.ID)
 	if err != nil {
-		return fmt.Errorf("failed to inspect registry container: %w", err)
+		return err
 	}
 
-	trimmedNetwork := strings.TrimSpace(networkName)
-	if trimmedNetwork != "" {
-		disconnectErr := rm.client.NetworkDisconnect(
-			ctx,
-			trimmedNetwork,
-			registryContainer.ID,
-			true,
-		)
-		if disconnectErr != nil && !errdefs.IsNotFound(disconnectErr) {
-			return fmt.Errorf(
-				"failed to disconnect registry %s from network %s: %w",
-				name,
-				trimmedNetwork,
-				disconnectErr,
-			)
-		}
-
-		inspect, err = rm.client.ContainerInspect(ctx, registryContainer.ID)
-		if err != nil {
-			return fmt.Errorf("failed to inspect registry container: %w", err)
-		}
+	inspect, err = disconnectRegistryNetwork(
+		ctx,
+		rm.client,
+		registryContainer.ID,
+		name,
+		trimmedNetwork,
+		inspect,
+	)
+	if err != nil {
+		return err
 	}
 
 	if registryAttachedToOtherClusters(inspect, trimmedNetwork) {
@@ -191,21 +181,7 @@ func (rm *RegistryManager) DeleteRegistry(
 		return fmt.Errorf("failed to remove registry container: %w", removeErr)
 	}
 
-	if !deleteVolume {
-		return nil
-	}
-
-	volumeName := deriveRegistryVolumeName(registryContainer, name)
-	if volumeName == "" {
-		return nil
-	}
-
-	volumeErr := rm.client.VolumeRemove(ctx, volumeName, false)
-	if volumeErr != nil {
-		return fmt.Errorf("failed to remove registry volume: %w", volumeErr)
-	}
-
-	return nil
+	return cleanupRegistryVolume(ctx, rm.client, registryContainer, name, deleteVolume)
 }
 
 // ListRegistries returns a list of all ksail registry containers.
@@ -509,6 +485,72 @@ func deriveRegistryVolumeName(registry container.Summary, fallback string) strin
 	}
 
 	return strings.TrimSpace(fallback)
+}
+
+func inspectContainer(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	containerID string,
+) (container.InspectResponse, error) {
+	inspect, err := dockerClient.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return container.InspectResponse{}, fmt.Errorf(
+			"failed to inspect registry container: %w",
+			err,
+		)
+	}
+
+	return inspect, nil
+}
+
+func disconnectRegistryNetwork(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	containerID string,
+	name string,
+	network string,
+	inspect container.InspectResponse,
+) (container.InspectResponse, error) {
+	if network == "" {
+		return inspect, nil
+	}
+
+	err := dockerClient.NetworkDisconnect(ctx, network, containerID, true)
+	//nolint:staticcheck // client.IsErrNotFound avoids importing containerd errdefs, which depguard forbids
+	if err != nil && !client.IsErrNotFound(err) {
+		return container.InspectResponse{}, fmt.Errorf(
+			"failed to disconnect registry %s from network %s: %w",
+			name,
+			network,
+			err,
+		)
+	}
+
+	return inspectContainer(ctx, dockerClient, containerID)
+}
+
+func cleanupRegistryVolume(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	registryContainer container.Summary,
+	fallbackName string,
+	deleteVolume bool,
+) error {
+	if !deleteVolume {
+		return nil
+	}
+
+	volumeName := deriveRegistryVolumeName(registryContainer, fallbackName)
+	if volumeName == "" {
+		return nil
+	}
+
+	err := dockerClient.VolumeRemove(ctx, volumeName, false)
+	if err != nil {
+		return fmt.Errorf("failed to remove registry volume: %w", err)
+	}
+
+	return nil
 }
 
 func registryAttachedToOtherClusters(

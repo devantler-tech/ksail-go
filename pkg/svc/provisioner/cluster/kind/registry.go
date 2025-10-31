@@ -26,13 +26,18 @@ func setupRegistryManager(
 		return nil, nil, nil
 	}
 
-	return registries.PrepareRegistryManager(
+	registryMgr, infos, err := registries.PrepareRegistryManager(
 		ctx,
 		dockerClient,
 		func(usedPorts map[int]struct{}) []registries.Info {
 			return extractRegistriesFromKind(kindConfig, upstreams, usedPorts)
 		},
 	)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to prepare kind registry manager: %w", err)
+	}
+
+	return registryMgr, infos, nil
 }
 
 // SetupRegistries creates mirror registries based on Kind cluster configuration.
