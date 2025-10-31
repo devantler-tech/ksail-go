@@ -1,9 +1,5 @@
 
 [TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset - 1]
-⏳ Load config...
-► loading ksail config
-► '<config-dir>/ksail.yaml' found
-✔ config loaded [stage: 1ms]
 
 📂 Initialize project...
 ✚ created 'ksail.yaml'
@@ -14,10 +10,6 @@
 ---
 
 [TestHandleInitRunE_SuccessWithOutputFlag - 1]
-⏳ Load config...
-► loading ksail config
-► '<config-dir>/ksail.yaml' found
-✔ config loaded [stage: 1ms]
 
 📂 Initialize project...
 ✚ created 'ksail.yaml'

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
@@ -17,7 +18,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -28,6 +31,7 @@ type ConfigManager struct {
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
 	configLoaded   bool              // Track if config has been actually loaded
 	Writer         io.Writer         // Writer for output notifications
+	command        *cobra.Command    // Associated Cobra command for flag introspection
 }
 
 // Compile-time interface compliance verification.
@@ -62,6 +66,7 @@ func NewCommandConfigManager(
 	selectors []FieldSelector[v1alpha1.Cluster],
 ) *ConfigManager {
 	manager := NewConfigManager(cmd.OutOrStdout(), selectors...)
+	manager.command = cmd
 	manager.AddFlagsFromFields(cmd)
 
 	return manager
@@ -110,7 +115,14 @@ func (m *ConfigManager) loadConfigWithOptions(
 	}
 
 	// Unmarshal and apply defaults
+	flagOverrides := m.captureChangedFlagValues()
+
 	err = m.unmarshalAndApplyDefaults()
+	if err != nil {
+		return nil, err
+	}
+
+	err = m.applyFlagOverrides(flagOverrides)
 	if err != nil {
 		return nil, err
 	}
@@ -162,6 +174,73 @@ func (m *ConfigManager) unmarshalAndApplyDefaults() error {
 	}
 
 	return nil
+}
+
+func (m *ConfigManager) captureChangedFlagValues() map[string]string {
+	if m.command == nil {
+		return nil
+	}
+
+	flags := m.command.Flags()
+	overrides := make(map[string]string)
+
+	flags.Visit(func(f *pflag.Flag) {
+		overrides[f.Name] = f.Value.String()
+	})
+
+	return overrides
+}
+
+func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
+	if overrides == nil {
+		return nil
+	}
+
+	for _, selector := range m.fieldSelectors {
+		fieldPtr := selector.Selector(m.Config)
+		if fieldPtr == nil {
+			continue
+		}
+
+		flagName := m.GenerateFlagName(fieldPtr)
+		value, ok := overrides[flagName]
+		if !ok {
+			continue
+		}
+
+		if err := setFieldValueFromFlag(fieldPtr, value); err != nil {
+			return fmt.Errorf("failed to apply flag override for %s: %w", flagName, err)
+		}
+	}
+
+	return nil
+}
+
+func setFieldValueFromFlag(fieldPtr any, raw string) error {
+	if setter, ok := fieldPtr.(interface{ Set(string) error }); ok {
+		return setter.Set(raw)
+	}
+
+	switch ptr := fieldPtr.(type) {
+	case *string:
+		*ptr = raw
+		return nil
+	case *metav1.Duration:
+		if raw == "" {
+			ptr.Duration = 0
+			return nil
+		}
+
+		dur, err := time.ParseDuration(raw)
+		if err != nil {
+			return err
+		}
+
+		ptr.Duration = dur
+		return nil
+	default:
+		return nil
+	}
 }
 
 func (m *ConfigManager) notifyLoadingStart() {

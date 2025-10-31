@@ -112,6 +112,33 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 	assert.Equal(t, k3dConfigPath, manager.Config.Spec.DistributionConfig)
 }
 
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigAppliesFlagOverrides(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n"
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+
+	cmd := &cobra.Command{Use: "test"}
+	selectors := configmanager.DefaultClusterFieldSelectors()
+	manager := configmanager.NewCommandConfigManager(cmd, selectors)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	require.NoError(t, cmd.Flags().Set("distribution", "K3d"))
+	require.NoError(t, cmd.Flags().Set("distribution-config", "k3d.yaml"))
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.DistributionK3d, manager.Config.Spec.Distribution)
+	assert.Equal(t, "k3d.yaml", manager.Config.Spec.DistributionConfig)
+}
+
 // createFieldSelectorsWithName creates field selectors including name field.
 func createFieldSelectorsWithName() []configmanager.FieldSelector[v1alpha1.Cluster] {
 	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{

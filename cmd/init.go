@@ -64,12 +64,10 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	_, err := cfgManager.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	var targetPath string
+	var (
+		targetPath string
+		err        error
+	)
 
 	flagOutputPath := cfgManager.Viper.GetString("output")
 	if flagOutputPath != "" {
