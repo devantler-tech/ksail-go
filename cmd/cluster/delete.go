@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -132,15 +133,34 @@ func cleanupKindMirrorRegistries(
 		return nil
 	}
 
-	return runMirrorRegistryCleanup(cmd, func(dockerClient client.APIClient) error {
-		return kindprovisioner.CleanupRegistries(
-			cmd.Context(),
-			kindConfig,
-			kindConfig.Name,
-			dockerClient,
-			deleteVolumes,
-		)
-	})
+	registryNames := make([]string, 0, len(registries))
+	for _, reg := range registries {
+		name := strings.TrimSpace(reg.Name)
+		if name == "" {
+			continue
+		}
+
+		registryNames = append(registryNames, name)
+	}
+
+	if len(registryNames) == 0 {
+		return nil
+	}
+
+	return runMirrorRegistryCleanup(
+		cmd,
+		deps,
+		registryNames,
+		func(dockerClient client.APIClient) error {
+			return kindprovisioner.CleanupRegistries(
+				cmd.Context(),
+				kindConfig,
+				kindConfig.Name,
+				dockerClient,
+				deleteVolumes,
+			)
+		},
+	)
 }
 
 func cleanupK3dMirrorRegistries(
@@ -165,33 +185,79 @@ func cleanupK3dMirrorRegistries(
 		return nil
 	}
 
-	return runMirrorRegistryCleanup(cmd, func(dockerClient client.APIClient) error {
-		return k3dprovisioner.CleanupRegistries(
-			cmd.Context(),
-			k3dConfig,
-			k3dConfig.Name,
-			dockerClient,
-			deleteVolumes,
-			cmd.ErrOrStderr(),
-		)
-	})
+	registryNames := make([]string, 0, len(registries))
+	for _, reg := range registries {
+		name := strings.TrimSpace(reg.Name)
+		if name == "" {
+			continue
+		}
+
+		registryNames = append(registryNames, name)
+	}
+
+	if len(registryNames) == 0 {
+		return nil
+	}
+
+	return runMirrorRegistryCleanup(
+		cmd,
+		deps,
+		registryNames,
+		func(dockerClient client.APIClient) error {
+			return k3dprovisioner.CleanupRegistries(
+				cmd.Context(),
+				k3dConfig,
+				k3dConfig.Name,
+				dockerClient,
+				deleteVolumes,
+				cmd.ErrOrStderr(),
+			)
+		},
+	)
 }
 
 func runMirrorRegistryCleanup(
 	cmd *cobra.Command,
+	deps shared.LifecycleDeps,
+	registryNames []string,
 	cleanup func(client.APIClient) error,
 ) error {
+	if len(registryNames) == 0 {
+		return nil
+	}
+
+	deps.Timer.NewStage()
+
+	cmd.Println()
 	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "cleaning up mirror registries",
+		Type:    notify.TitleType,
+		Content: "Delete mirror registries...",
+		Emoji:   "🗑️",
 		Writer:  cmd.OutOrStdout(),
 	})
+
+	for _, name := range registryNames {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "deleting '%s'",
+			Writer:  cmd.OutOrStdout(),
+			Args:    []any{name},
+		})
+	}
 
 	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
 		err := cleanup(dockerClient)
 		if err != nil {
 			return fmt.Errorf("failed to cleanup registries: %w", err)
 		}
+
+		notify.WriteMessage(notify.Message{
+			Type:       notify.SuccessType,
+			Content:    "mirror registries deleted",
+			Timer:      deps.Timer,
+			Writer:     cmd.OutOrStdout(),
+			MultiStage: true,
+		})
 
 		return nil
 	})

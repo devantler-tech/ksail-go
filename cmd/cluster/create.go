@@ -184,10 +184,10 @@ func connectRegistriesToClusterNetwork(
 	k3dConfig *v1alpha5.SimpleConfig,
 ) error {
 	stage := kindRegistryStage{
-		title:         "Connect registries to cluster network...",
+		title:         "Connect registries...",
 		emoji:         "🔗",
-		success:       "registries connected to cluster network",
-		failurePrefix: "failed to connect registries to network",
+		success:       "registries connected",
+		failurePrefix: "failed to connect registries",
 		action: func(ctx context.Context, dockerClient client.APIClient) error {
 			return kindprovisioner.ConnectRegistriesToNetwork(
 				ctx,

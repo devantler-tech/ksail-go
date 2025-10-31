@@ -48,12 +48,6 @@ func SetupRegistries(
 		return err
 	}
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "creating mirror registries",
-		Writer:  writer,
-	})
-
 	createdRegistries := make([]Info, 0, len(registries))
 
 	for _, reg := range registries {
@@ -111,13 +105,13 @@ func ensureRegistry(
 	existing map[string]struct{},
 ) (bool, error) {
 	notify.WriteMessage(notify.Message{
-		Type: notify.ActivityType,
-		Content: fmt.Sprintf(
-			"creating mirror for %s on http://localhost:%d",
+		Type:    notify.ActivityType,
+		Content: "creating '%s' for '%s'",
+		Writer:  writer,
+		Args: []any{
+			reg.Name,
 			reg.Upstream,
-			reg.Port,
-		),
-		Writer: writer,
+		},
 	})
 
 	config := dockerclient.RegistryConfig{
@@ -188,6 +182,16 @@ func ConnectRegistriesToNetwork(
 		if strings.TrimSpace(containerName) == "" {
 			continue
 		}
+
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "connecting '%s' to '%s'",
+			Writer:  writer,
+			Args: []any{
+				containerName,
+				networkName,
+			},
+		})
 
 		err := dockerClient.NetworkConnect(ctx, networkName, containerName, nil)
 		if err != nil {
