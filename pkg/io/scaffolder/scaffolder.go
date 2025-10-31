@@ -435,13 +435,6 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 		)
 	}
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.WarningType,
-		Content: "removed previous distribution config '%s' before generating '%s'",
-		Args:    []any{previous, newConfigName},
-		Writer:  s.Writer,
-	})
-
 	return nil
 }
 

@@ -365,8 +365,6 @@ func TestScaffold_PreservesPreviousDistributionConfigWhenForce(t *testing.T) {
 
 	_, newErr := os.Stat(filepath.Join(outputDir, scaffolder.K3dConfigFile))
 	require.NoError(t, newErr)
-
-	assert.NotContains(t, buffer.String(), "removed previous distribution config")
 }
 
 func TestScaffold_KeepsPreviousDistributionConfigWithoutForce(t *testing.T) {
