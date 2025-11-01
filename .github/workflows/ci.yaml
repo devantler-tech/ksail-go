@@ -260,6 +260,21 @@ jobs:
             echo "Waiting for nodes to be ready..."
             kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
             
+            # Wait for default service account to be created (more stable)
+            echo "Waiting for default service account..."
+            for i in {1..30}; do
+              if kubectl --context="$context" get serviceaccount default -n default &>/dev/null; then
+                echo "✓ Default service account exists"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "ERROR: Default service account not found after 30 seconds"
+                kubectl --context="$context" get serviceaccounts -n default
+                exit 1
+              fi
+              sleep 1
+            done
+            
             kubectl --context="$context" run test-busybox-cluster1 \
               --image="$TEST_IMAGE" \
               --restart=Never \
@@ -293,6 +308,21 @@ jobs:
             # Wait for nodes to be ready before creating pods
             echo "Waiting for nodes to be ready..."
             kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
+            
+            # Wait for default service account to be created (more stable)
+            echo "Waiting for default service account..."
+            for i in {1..30}; do
+              if kubectl --context="$context" get serviceaccount default -n default &>/dev/null; then
+                echo "✓ Default service account exists"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "ERROR: Default service account not found after 30 seconds"
+                kubectl --context="$context" get serviceaccounts -n default
+                exit 1
+              fi
+              sleep 1
+            done
             
             kubectl --context="$context" run test-busybox-cluster2 \
               --image="$TEST_IMAGE" \
@@ -334,6 +364,21 @@ jobs:
               # Wait for nodes to be ready before creating pods
               echo "Waiting for nodes to be ready..."
               kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
+              
+              # Wait for default service account to be created (more stable)
+              echo "Waiting for default service account..."
+              for j in {1..30}; do
+                if kubectl --context="$context" get serviceaccount default -n default &>/dev/null; then
+                  echo "✓ Default service account exists"
+                  break
+                fi
+                if [ $j -eq 30 ]; then
+                  echo "ERROR: Default service account not found after 30 seconds"
+                  kubectl --context="$context" get serviceaccounts -n default
+                  exit 1
+                fi
+                sleep 1
+              done
               
               kubectl --context="$context" run "test-busybox-${cluster_name}" \
                 --image="$TEST_IMAGE" \
