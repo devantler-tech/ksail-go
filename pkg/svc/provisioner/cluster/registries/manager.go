@@ -35,6 +35,7 @@ const expectedEndpointParts = 2
 // This consolidates the common pattern of trimming and checking for emptiness.
 func trimNonEmpty(s string) (string, bool) {
 	trimmed := strings.TrimSpace(s)
+
 	return trimmed, trimmed != ""
 }
 
