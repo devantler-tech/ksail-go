@@ -39,6 +39,14 @@ const (
 	RegistryPortBase = 5000
 	// HostPortParts is the expected number of parts in a host:port string.
 	HostPortParts = 2
+	// RegistryContainerPort is the internal port exposed by the registry container.
+	RegistryContainerPort = "5000/tcp"
+	// RegistryDataPath is the path inside the container where registry data is stored.
+	RegistryDataPath = "/var/lib/registry"
+	// RegistryRestartPolicy defines the container restart policy.
+	RegistryRestartPolicy = "unless-stopped"
+	// RegistryHostIP is the host IP address to bind registry ports to.
+	RegistryHostIP = "127.0.0.1"
 )
 
 // RegistryManager manages Docker registry containers for mirror/pull-through caching.
@@ -374,7 +382,7 @@ func (rm *RegistryManager) buildContainerConfig(
 		Image: RegistryImageName,
 		Env:   env,
 		ExposedPorts: nat.PortSet{
-			"5000/tcp": struct{}{},
+			RegistryContainerPort: struct{}{},
 		},
 		Labels: labels,
 	}
@@ -386,9 +394,9 @@ func (rm *RegistryManager) buildHostConfig(
 ) *container.HostConfig {
 	portBindings := nat.PortMap{}
 	if config.Port > 0 {
-		portBindings["5000/tcp"] = []nat.PortBinding{
+		portBindings[RegistryContainerPort] = []nat.PortBinding{
 			{
-				HostIP:   "127.0.0.1",
+				HostIP:   RegistryHostIP,
 				HostPort: strconv.Itoa(config.Port),
 			},
 		}
@@ -397,13 +405,13 @@ func (rm *RegistryManager) buildHostConfig(
 	return &container.HostConfig{
 		PortBindings: portBindings,
 		RestartPolicy: container.RestartPolicy{
-			Name: "unless-stopped",
+			Name: RegistryRestartPolicy,
 		},
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeVolume,
 				Source: volumeName,
-				Target: "/var/lib/registry",
+				Target: RegistryDataPath,
 			},
 		},
 	}
