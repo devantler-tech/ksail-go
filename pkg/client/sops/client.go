@@ -33,11 +33,11 @@ func NewClient() *Client {
 func (c *Client) CreateCipherCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cipher",
-		Short: "Manage encrypted files with SOPS",
-		Long: `Cipher command provides access to all SOPS (Secrets OPerationS) functionality
-for encrypting and decrypting files.
+		Short: "Manage encrypted files",
+		Long: `Cipher command provides encryption and decryption functionality
+for managing encrypted files.
 
-SOPS supports multiple key management systems:
+ksail cipher supports multiple key management systems:
   - age recipients (-a, --age)
   - PGP fingerprints (-p, --pgp)
   - AWS KMS (-k, --kms)
