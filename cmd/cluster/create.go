@@ -530,7 +530,7 @@ func runRegistryStage(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+	err := shared.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
 		if err != nil {
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)
@@ -546,6 +546,11 @@ func runRegistryStage(
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed to execute registry stage: %w", err)
+	}
+
+	return nil
 }
 
 // installCiliumCNI installs Cilium CNI on the cluster.
@@ -820,20 +825,4 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 	}
 
 	return patches
-}
-
-// splitMirrorSpec splits a mirror specification into registry and endpoint parts.
-// Returns nil if the spec is invalid.
-func splitMirrorSpec(spec string) []string {
-	for idx, char := range spec {
-		if char == '=' {
-			if idx == 0 || idx == len(spec)-1 {
-				return nil
-			}
-
-			return []string{spec[:idx], spec[idx+1:]}
-		}
-	}
-
-	return nil
 }
