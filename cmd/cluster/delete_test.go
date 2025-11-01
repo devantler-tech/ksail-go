@@ -16,6 +16,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -331,7 +332,12 @@ func ensureKindConfigHasPatch(t *testing.T, path string) {
 
 func stubDockerClientFailure(t *testing.T, err error) {
 	t.Helper()
-	shared.StubDockerClientFailure(t, err)
+
+	restore := shared.SetDockerClientFactoryForTest(func(...client.Opt) (*client.Client, error) {
+		return nil, err
+	})
+
+	t.Cleanup(restore)
 }
 
 func writeKindWithPatch(t *testing.T, path string) {

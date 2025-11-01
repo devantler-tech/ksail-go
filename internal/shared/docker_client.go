@@ -22,6 +22,19 @@ func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
 //nolint:gochecknoglobals // Allow tests to override Docker client creation.
 var dockerClientFactory dockerClientFactoryFunc = defaultDockerClientFactory
 
+// SetDockerClientFactoryForTest allows tests to override the Docker client factory.
+// This should only be used in tests.
+func SetDockerClientFactoryForTest(
+	factory func(opts ...client.Opt) (*client.Client, error),
+) func() {
+	original := dockerClientFactory
+	dockerClientFactory = factory
+
+	return func() {
+		dockerClientFactory = original
+	}
+}
+
 // WithDockerClient creates a Docker client, executes the given function, and cleans up.
 // Returns an error if client creation fails or if the function returns an error.
 func WithDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
@@ -48,7 +61,5 @@ func WithDockerClient(cmd *cobra.Command, operation func(client.APIClient) error
 		}
 	}()
 
-	var apiClient client.APIClient = dockerClient
-
-	return operation(apiClient)
+	return operation(dockerClient)
 }

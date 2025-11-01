@@ -93,5 +93,13 @@ func TestWithDockerClient_InvalidEnvironment(t *testing.T) {
 func stubDockerClientFailure(t *testing.T, err error) {
 	t.Helper()
 
-	StubDockerClientFailure(t, err)
+	original := dockerClientFactory
+
+	t.Cleanup(func() {
+		dockerClientFactory = original
+	})
+
+	dockerClientFactory = func(...client.Opt) (*client.Client, error) {
+		return nil, err
+	}
 }
