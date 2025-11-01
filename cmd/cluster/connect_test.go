@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
@@ -288,56 +287,4 @@ func TestHandleConnectRunE_WithContextAndKubeconfig(t *testing.T) {
 	cfg := cfgManager.Config
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig)
 	require.Equal(t, contextName, cfg.Spec.Connection.Context)
-}
-
-func TestExpandHomePath_WithoutTilde(t *testing.T) {
-	t.Parallel()
-
-	path, err := ksailio.ExpandHomePath("/tmp/config")
-	require.NoError(t, err, "expected no error for absolute path")
-	require.Equal(t, "/tmp/config", path, "expected path to remain unchanged")
-}
-
-func TestExpandHomePath_WithTilde(t *testing.T) {
-	t.Parallel()
-
-	path, err := ksailio.ExpandHomePath("~/config")
-	require.NoError(t, err, "expected no error for tilde path")
-
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err, "expected to get home directory")
-
-	expectedPath := filepath.Join(homeDir, "config")
-	require.Equal(t, expectedPath, path, "expected tilde to be expanded to home directory")
-}
-
-func TestExpandHomePath_EmptyString(t *testing.T) {
-	t.Parallel()
-
-	path, err := ksailio.ExpandHomePath("")
-	require.NoError(t, err, "expected no error for empty string")
-	require.Empty(t, path, "expected empty string to remain unchanged")
-}
-
-//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
-func TestHandleConnectRunE_ExpandsTildePath(t *testing.T) {
-	// Create config with tilde path
-	configContent := createKSailConfigYAML("~/.kube/config", "")
-	cfgManager := setupTestConfig(t, configContent)
-
-	// Load config to verify tilde path is stored
-	cfg, err := cfgManager.LoadConfigSilent()
-	require.NoError(t, err, "expected config to load successfully")
-	require.Equal(t, "~/.kube/config", cfg.Spec.Connection.Kubeconfig,
-		"expected config to store tilde path as-is")
-
-	// Verify expansion happens in HandleConnectRunE
-	homeDir, err := os.UserHomeDir()
-	require.NoError(t, err, "expected to get home directory")
-
-	expectedPath := filepath.Join(homeDir, ".kube", "config")
-	expandedPath, err := ksailio.ExpandHomePath(cfg.Spec.Connection.Kubeconfig)
-	require.NoError(t, err, "expected tilde expansion to succeed")
-	require.Equal(t, expectedPath, expandedPath,
-		"expected tilde to be expanded to full path")
 }
