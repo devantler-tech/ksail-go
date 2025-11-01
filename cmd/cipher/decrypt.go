@@ -39,7 +39,12 @@ Examples:
 	}
 
 	cmd.Flags().StringVarP(&keyFlag, "key", "k", "", "Base64-encoded AES-256 key (32 bytes) used for encryption (required)")
-	cmd.MarkFlagRequired("key") //nolint:errcheck // Flag is required
+
+	if err := cmd.MarkFlagRequired("key"); err != nil {
+		// This should never happen with a valid flag name, but handle it gracefully
+		panic(fmt.Sprintf("failed to mark key flag as required: %v", err))
+	}
+
 	cmd.Flags().StringVarP(&outputFlag, "output", "o", "", "Output file path. If not provided, prints to stdout.")
 
 	return cmd

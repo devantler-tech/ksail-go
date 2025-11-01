@@ -193,7 +193,12 @@ func TestEncryptCommand_InvalidKey(t *testing.T) {
 
 	// Test with wrong length key (16 bytes instead of 32)
 	shortKey := make([]byte, 16)
-	_, _ = rand.Read(shortKey)
+
+	_, err = rand.Read(shortKey)
+	if err != nil {
+		t.Fatalf("failed to generate short key: %v", err)
+	}
+
 	encodedShortKey := base64.StdEncoding.EncodeToString(shortKey)
 
 	cmd = cipher.NewEncryptCmd()
