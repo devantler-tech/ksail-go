@@ -50,7 +50,6 @@ func NewGenCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewSecretCmd(runtimeContainer))
 	cmd.AddCommand(NewServiceCmd(runtimeContainer))
 	cmd.AddCommand(NewServiceAccountCmd(runtimeContainer))
-	cmd.AddCommand(NewTokenCmd(runtimeContainer))
 
 	return cmd
 }
