@@ -244,6 +244,11 @@ jobs:
             exit 1
           fi
           
+          # Use a unique image tag to force fresh pulls (not cached)
+          # busybox is smaller and faster to pull than nginx
+          TEST_IMAGE="busybox:1.36.1"
+          echo "Using test image: $TEST_IMAGE"
+          
           # For each cluster, test that it can pull through the mirror
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Test Kind cluster
@@ -255,25 +260,30 @@ jobs:
             echo "Waiting for nodes to be ready..."
             kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
             
-            kubectl --context="$context" run test-nginx-cluster1 \
-              --image=nginx:alpine \
-              --restart=Never
+            kubectl --context="$context" run test-busybox-cluster1 \
+              --image="$TEST_IMAGE" \
+              --restart=Never \
+              --command -- sh -c "sleep 30"
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
+            kubectl --context="$context" wait --for=condition=Ready pod/test-busybox-cluster1 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context="$context" get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context="$context" get pod test-busybox-cluster1 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context="$context" describe pod test-nginx-cluster1
+              kubectl --context="$context" describe pod test-busybox-cluster1
               exit 1
             fi
-            echo "✓ Pod test-nginx-cluster1 is running"
+            echo "✓ Pod test-busybox-cluster1 is running"
+            
+            # Show pod events to see image pull activity
+            echo "Pod events:"
+            kubectl --context="$context" get events --field-selector involvedObject.name=test-busybox-cluster1 --sort-by='.lastTimestamp'
             
             # Clean up test pod
-            kubectl --context="$context" delete pod test-nginx-cluster1
+            kubectl --context="$context" delete pod test-busybox-cluster1
             
             # Test K3d cluster
             cluster_name="${{ matrix.name }}-cluster2"
@@ -284,25 +294,30 @@ jobs:
             echo "Waiting for nodes to be ready..."
             kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
             
-            kubectl --context="$context" run test-nginx-cluster2 \
-              --image=nginx:alpine \
-              --restart=Never
+            kubectl --context="$context" run test-busybox-cluster2 \
+              --image="$TEST_IMAGE" \
+              --restart=Never \
+              --command -- sh -c "sleep 30"
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
+            kubectl --context="$context" wait --for=condition=Ready pod/test-busybox-cluster2 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context="$context" get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context="$context" get pod test-busybox-cluster2 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context="$context" describe pod test-nginx-cluster2
+              kubectl --context="$context" describe pod test-busybox-cluster2
               exit 1
             fi
-            echo "✓ Pod test-nginx-cluster2 is running"
+            echo "✓ Pod test-busybox-cluster2 is running"
+            
+            # Show pod events to see image pull activity
+            echo "Pod events:"
+            kubectl --context="$context" get events --field-selector involvedObject.name=test-busybox-cluster2 --sort-by='.lastTimestamp'
             
             # Clean up test pod
-            kubectl --context="$context" delete pod test-nginx-cluster2
+            kubectl --context="$context" delete pod test-busybox-cluster2
           else
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
               cluster_name="${{ matrix.name }}-cluster$i"
@@ -320,38 +335,45 @@ jobs:
               echo "Waiting for nodes to be ready..."
               kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
               
-              kubectl --context="$context" run "test-nginx-${cluster_name}" \
-                --image=nginx:alpine \
-                --restart=Never
+              kubectl --context="$context" run "test-busybox-${cluster_name}" \
+                --image="$TEST_IMAGE" \
+                --restart=Never \
+                --command -- sh -c "sleep 30"
               
               # Wait for pod to be ready (with timeout)
               echo "Waiting for pod to be ready..."
-              kubectl --context="$context" wait --for=condition=Ready "pod/test-nginx-${cluster_name}" --timeout=120s
+              kubectl --context="$context" wait --for=condition=Ready "pod/test-busybox-${cluster_name}" --timeout=120s
               
               # Verify pod status
-              pod_status=$(kubectl --context="$context" get pod "test-nginx-${cluster_name}" -o jsonpath='{.status.phase}')
+              pod_status=$(kubectl --context="$context" get pod "test-busybox-${cluster_name}" -o jsonpath='{.status.phase}')
               if [ "$pod_status" != "Running" ]; then
                 echo "ERROR: Pod failed to start. Status: $pod_status"
-                kubectl --context="$context" describe pod "test-nginx-${cluster_name}"
+                kubectl --context="$context" describe pod "test-busybox-${cluster_name}"
                 exit 1
               fi
-              echo "✓ Pod test-nginx-${cluster_name} is running"
+              echo "✓ Pod test-busybox-${cluster_name} is running"
+              
+              # Show pod events to see image pull activity
+              echo "Pod events:"
+              kubectl --context="$context" get events --field-selector "involvedObject.name=test-busybox-${cluster_name}" --sort-by='.lastTimestamp'
               
               # Clean up test pod
-              kubectl --context="$context" delete pod "test-nginx-${cluster_name}"
+              kubectl --context="$context" delete pod "test-busybox-${cluster_name}"
             done
           fi
           
           # Verify registry logs show pull-through activity
           echo "Verifying pull-through activity in registry logs..."
+          echo "Note: Checking for various indicators of image pull activity"
           pull_activity_found=false
           
           for registry in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
             echo "=== Checking logs for $registry ==="
-            # Look for GET requests which indicate image pulls
-            if docker logs "$registry" 2>&1 | grep -q "GET /v2/"; then
+            # Look for GET requests, blob operations, or manifest requests which indicate image pulls
+            if docker logs "$registry" 2>&1 | grep -qE "(GET /v2/|/blobs/|/manifests/)"; then
               echo "✓ Pull-through activity detected in $registry"
-              docker logs "$registry" 2>&1 | grep "GET /v2/" | tail -10
+              echo "Recent registry activity:"
+              docker logs "$registry" 2>&1 | grep -E "(GET /v2/|/blobs/|/manifests/)" | tail -20
               pull_activity_found=true
             else
               echo "⚠ No pull-through activity detected in $registry"
@@ -359,11 +381,23 @@ jobs:
           done
           
           if [ "$pull_activity_found" = false ]; then
+            echo ""
             echo "ERROR: No pull-through activity detected in any registry"
+            echo "This may indicate:"
+            echo "1. Images are cached and not being pulled"
+            echo "2. Registry is not configured correctly as a pull-through cache"
+            echo "3. Clusters are not configured to use the mirror registries"
+            echo ""
             echo "Dumping all registry logs for debugging:"
             for registry in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
               echo "=== Full logs for $registry ==="
-              docker logs "$registry" 2>&1 | tail -50
+              docker logs "$registry" 2>&1 | tail -100
+            done
+            echo ""
+            echo "Cluster configurations:"
+            for context in $(kubectl config get-contexts -o name | grep -E "(kind-|k3d-)"); do
+              echo "=== Context: $context ==="
+              kubectl --context="$context" get nodes -o wide || true
             done
             exit 1
           fi
