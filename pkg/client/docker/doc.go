@@ -16,7 +16,7 @@
 // Example usage:
 //
 //	// Create a registry manager
-//	dockerClient, err := docker.GetDockerClient(ctx)
+//	dockerClient, err := docker.GetDockerClient()
 //	if err != nil {
 //	    return err
 //	}
