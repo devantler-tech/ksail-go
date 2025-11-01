@@ -145,8 +145,21 @@ func executeKubectlCreate(
 			return
 		}
 		// Set the flag on the resource command
-		if freshResourceCmd.Flags().Lookup(flag.Name) != nil {
-			_ = freshResourceCmd.Flags().Set(flag.Name, flag.Value.String())
+		targetFlag := freshResourceCmd.Flags().Lookup(flag.Name)
+		if targetFlag != nil {
+			// For slice flags, we need to get the actual slice values
+			// pflag has StringSliceVar which stores []string internally
+			if sliceVal, ok := flag.Value.(pflag.SliceValue); ok {
+				// Get the slice as []string
+				strSlice := sliceVal.GetSlice()
+				// Set each value separately
+				for _, v := range strSlice {
+					_ = freshResourceCmd.Flags().Set(flag.Name, v)
+				}
+			} else {
+				// For non-slice flags, just copy the string value
+				_ = freshResourceCmd.Flags().Set(flag.Name, flag.Value.String())
+			}
 		}
 	})
 

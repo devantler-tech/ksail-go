@@ -21,10 +21,8 @@ func TestGenSecretGeneric(t *testing.T) {
 		[]string{
 			"generic",
 			"test-secret",
-			"--from-literal",
-			"username=admin",
-			"--from-literal",
-			"password=secret123",
+			"--from-literal=username=admin",
+			"--from-literal=password=secret123",
 		},
 	)
 

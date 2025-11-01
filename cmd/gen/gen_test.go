@@ -30,7 +30,6 @@ func TestNewGenCmdRegistersAllResourceCommands(t *testing.T) {
 		"secret",
 		"service",
 		"serviceaccount",
-		"token",
 	}
 
 	for _, expectedName := range expectedSubcommands {

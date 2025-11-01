@@ -19,10 +19,8 @@ func TestGenConfigMap(t *testing.T) {
 	cmd.SetArgs(
 		[]string{
 			"test-config",
-			"--from-literal",
-			"APP_ENV=production",
-			"--from-literal",
-			"DEBUG=false",
+			"--from-literal=APP_ENV=production",
+			"--from-literal=DEBUG=false",
 		},
 	)
 
