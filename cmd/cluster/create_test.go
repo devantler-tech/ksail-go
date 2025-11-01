@@ -899,26 +899,3 @@ func executeK3dRegistryLifecycleTest(
 
 	require.NoError(t, err)
 }
-
-func ensureDisableDefaultCNI(t *testing.T, path string) {
-	t.Helper()
-
-	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
-	require.NoError(t, err, "failed to read kind config")
-
-	if strings.Contains(string(content), "disableDefaultCNI: true") {
-		return
-	}
-
-	var builder strings.Builder
-	builder.Write(content)
-
-	if len(content) == 0 || content[len(content)-1] != '\n' {
-		builder.WriteByte('\n')
-	}
-
-	builder.WriteString("networking:\n")
-	builder.WriteString("  disableDefaultCNI: true\n")
-
-	require.NoError(t, os.WriteFile(path, []byte(builder.String()), 0o600))
-}
