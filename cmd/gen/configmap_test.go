@@ -1,16 +1,16 @@
-package gen
+package gen //nolint:testpackage // Tests need access to unexported newTestRuntime
 
 import (
 	"bytes"
 	"testing"
 
-	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 // TestGenConfigMap tests generating a configmap manifest.
+//
+//nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenConfigMap(t *testing.T) {
-	t.Parallel()
 
 	rt := newTestRuntime()
 	cmd := NewConfigMapCmd(rt)

@@ -1,16 +1,16 @@
-package gen
+package gen //nolint:testpackage // Tests need access to unexported newTestRuntime
 
 import (
 	"bytes"
 	"testing"
 
-	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 // TestGenJob tests generating a job manifest.
+//
+//nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenJob(t *testing.T) {
-	t.Parallel()
 
 	rt := newTestRuntime()
 	cmd := NewJobCmd(rt)
