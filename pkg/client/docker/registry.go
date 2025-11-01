@@ -45,6 +45,8 @@ const (
 	RegistryDataPath = "/var/lib/registry"
 	// RegistryRestartPolicy defines the container restart policy.
 	RegistryRestartPolicy = "unless-stopped"
+	// RegistryHostIP is the host IP address to bind registry ports to.
+	RegistryHostIP = "127.0.0.1"
 )
 
 // RegistryManager manages Docker registry containers for mirror/pull-through caching.
@@ -394,7 +396,7 @@ func (rm *RegistryManager) buildHostConfig(
 	if config.Port > 0 {
 		portBindings[RegistryContainerPort] = []nat.PortBinding{
 			{
-				HostIP:   "127.0.0.1",
+				HostIP:   RegistryHostIP,
 				HostPort: strconv.Itoa(config.Port),
 			},
 		}
