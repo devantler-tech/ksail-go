@@ -67,7 +67,7 @@ When reviewing Copilot's pull requests:
    Use: "Use Serena to get symbols overview of admin files and find capability-checking functions #serena"
 
 3. Instead of: "How do the three systems integrate?"
-   "Use: "Use Serena to read the system-integration-map memory and show cross-system dependencies #serena"
+   Use: "Use Serena to read the system-integration-map memory and show cross-system dependencies #serena"
 
 ## Working Effectively
 
