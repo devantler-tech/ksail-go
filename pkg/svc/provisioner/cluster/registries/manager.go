@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
 )
@@ -30,14 +31,6 @@ type Info struct {
 const DefaultRegistryPort = 5000
 
 const expectedEndpointParts = 2
-
-// trimNonEmpty returns the trimmed string and whether it's non-empty.
-// This consolidates the common pattern of trimming and checking for emptiness.
-func trimNonEmpty(s string) (string, bool) {
-	trimmed := strings.TrimSpace(s)
-
-	return trimmed, trimmed != ""
-}
 
 // Registry Lifecycle Management
 // These functions handle the creation, setup, and cleanup of registry containers.
@@ -105,7 +98,7 @@ func collectExistingRegistryNames(
 	}
 
 	for _, name := range current {
-		trimmed, ok := trimNonEmpty(name)
+		trimmed, ok := ksailio.TrimNonEmpty(name)
 		if !ok {
 			continue
 		}
@@ -249,13 +242,13 @@ func ConnectRegistriesToNetwork(
 	networkName string,
 	writer io.Writer,
 ) error {
-	networkName, networkOK := trimNonEmpty(networkName)
+	networkName, networkOK := ksailio.TrimNonEmpty(networkName)
 	if dockerClient == nil || len(registries) == 0 || !networkOK {
 		return nil
 	}
 
 	for _, reg := range registries {
-		containerName, nameOK := trimNonEmpty(reg.Name)
+		containerName, nameOK := ksailio.TrimNonEmpty(reg.Name)
 		if !nameOK {
 			continue
 		}
