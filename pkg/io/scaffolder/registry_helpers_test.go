@@ -39,10 +39,16 @@ func createTestScaffolderForK3d() *scaffolder.Scaffolder {
 	return scaffolder.NewScaffolder(*cluster, io.Discard)
 }
 
+type containerdPatchExpectation struct {
+	host     string
+	fallback string
+}
+
 type containerdPatchCase struct {
-	name    string
-	mirrors []string
-	assert  func(t *testing.T, patches []string)
+	name        string
+	mirrors     []string
+	expected    []containerdPatchExpectation
+	expectEmpty bool
 }
 
 func containerdPatchCases() []containerdPatchCase {
@@ -59,11 +65,8 @@ func containerdSingleMirrorCase() containerdPatchCase {
 	return containerdPatchCase{
 		name:    "single mirror registry",
 		mirrors: []string{"docker.io=https://registry-1.docker.io"},
-		assert: func(t *testing.T, patches []string) {
-			t.Helper()
-			require.Len(t, patches, 1)
-			require.Contains(t, patches[0], "docker.io")
-			require.Contains(t, patches[0], "http://docker.io:5000")
+		expected: []containerdPatchExpectation{
+			{host: "docker.io", fallback: "http://docker.io:5000"},
 		},
 	}
 }
@@ -76,27 +79,19 @@ func containerdMultipleMirrorCase() containerdPatchCase {
 			"ghcr.io=https://ghcr.io",
 			"quay.io=https://quay.io",
 		},
-		assert: func(t *testing.T, patches []string) {
-			t.Helper()
-			require.Len(t, patches, 3)
-			require.Contains(t, patches[0], "docker.io")
-			require.Contains(t, patches[0], "http://docker.io:5000")
-			require.Contains(t, patches[1], "ghcr.io")
-			require.Contains(t, patches[1], "http://ghcr.io:5001")
-			require.Contains(t, patches[2], "quay.io")
-			require.Contains(t, patches[2], "http://quay.io:5002")
+		expected: []containerdPatchExpectation{
+			{host: "docker.io", fallback: "http://docker.io:5000"},
+			{host: "ghcr.io", fallback: "http://ghcr.io:5001"},
+			{host: "quay.io", fallback: "http://quay.io:5002"},
 		},
 	}
 }
 
 func containerdNoMirrorCase() containerdPatchCase {
 	return containerdPatchCase{
-		name:    "no mirror registries",
-		mirrors: []string{},
-		assert: func(t *testing.T, patches []string) {
-			t.Helper()
-			require.Empty(t, patches)
-		},
+		name:        "no mirror registries",
+		mirrors:     []string{},
+		expectEmpty: true,
 	}
 }
 
@@ -108,13 +103,9 @@ func containerdInvalidMirrorCase() containerdPatchCase {
 			"invalid-spec-no-equals",
 			"ghcr.io=https://ghcr.io",
 		},
-		assert: func(t *testing.T, patches []string) {
-			t.Helper()
-			require.Len(t, patches, 2)
-			require.Contains(t, patches[0], "docker.io")
-			require.Contains(t, patches[0], "http://docker.io:5000")
-			require.Contains(t, patches[1], "ghcr.io")
-			require.Contains(t, patches[1], "http://ghcr.io:5001")
+		expected: []containerdPatchExpectation{
+			{host: "docker.io", fallback: "http://docker.io:5000"},
+			{host: "ghcr.io", fallback: "http://ghcr.io:5001"},
 		},
 	}
 }
@@ -123,19 +114,23 @@ func containerdCustomPortCase() containerdPatchCase {
 	return containerdPatchCase{
 		name:    "custom port in upstream URL",
 		mirrors: []string{"localhost=http://localhost:5001"},
-		assert: func(t *testing.T, patches []string) {
-			t.Helper()
-			require.Len(t, patches, 1)
-			require.Contains(t, patches[0], "localhost")
-			require.Contains(t, patches[0], "http://localhost:5000")
+		expected: []containerdPatchExpectation{
+			{host: "localhost", fallback: "http://localhost:5000"},
 		},
 	}
 }
 
+type k3dRegistryExpectation struct {
+	use               []string
+	contains          []string
+	notContains       []string
+	expectEmptyConfig bool
+}
+
 type k3dRegistryConfigCase struct {
-	name    string
-	mirrors []string
-	assert  func(t *testing.T, config k3dv1alpha5.SimpleConfigRegistries)
+	name     string
+	mirrors  []string
+	expected k3dRegistryExpectation
 }
 
 func k3dRegistryConfigCases() []k3dRegistryConfigCase {
@@ -143,33 +138,23 @@ func k3dRegistryConfigCases() []k3dRegistryConfigCase {
 		{
 			name:    "single mirror registry",
 			mirrors: []string{"docker.io=https://registry-1.docker.io"},
-			assert: func(t *testing.T, config k3dv1alpha5.SimpleConfigRegistries) {
-				t.Helper()
-				require.Nil(t, config.Create)
-				require.Contains(t, config.Config, "\"docker.io\":")
-				require.Contains(t, config.Config, "https://registry-1.docker.io")
-				require.NotContains(t, config.Config, "http://docker.io:5000")
-				require.Empty(t, config.Use)
+			expected: k3dRegistryExpectation{
+				contains:    []string{"\"docker.io\":", "https://registry-1.docker.io"},
+				notContains: []string{"http://docker.io:5000"},
 			},
 		},
 		{
 			name:    "no mirror registries",
 			mirrors: []string{},
-			assert: func(t *testing.T, config k3dv1alpha5.SimpleConfigRegistries) {
-				t.Helper()
-				require.Empty(t, config.Use)
-				require.Nil(t, config.Create)
-				require.Empty(t, config.Config)
+			expected: k3dRegistryExpectation{
+				expectEmptyConfig: true,
 			},
 		},
 		{
 			name:    "invalid mirror spec",
 			mirrors: []string{"invalid-no-equals"},
-			assert: func(t *testing.T, config k3dv1alpha5.SimpleConfigRegistries) {
-				t.Helper()
-				require.Empty(t, config.Use)
-				require.Nil(t, config.Create)
-				require.Empty(t, config.Config)
+			expected: k3dRegistryExpectation{
+				expectEmptyConfig: true,
 			},
 		},
 		{
@@ -178,16 +163,14 @@ func k3dRegistryConfigCases() []k3dRegistryConfigCase {
 				"docker.io=https://registry-1.docker.io",
 				"ghcr.io=https://ghcr.io",
 			},
-			assert: func(t *testing.T, config k3dv1alpha5.SimpleConfigRegistries) {
-				t.Helper()
-				require.Contains(t, config.Config, "\"docker.io\":")
-				require.Contains(t, config.Config, "\"ghcr.io\":")
-				require.Contains(t, config.Config, "https://registry-1.docker.io")
-				require.Contains(t, config.Config, "https://ghcr.io")
-				require.NotContains(t, config.Config, "http://docker.io:5000")
-				require.NotContains(t, config.Config, "http://ghcr.io:5001")
-				require.Nil(t, config.Create)
-				require.Empty(t, config.Use)
+			expected: k3dRegistryExpectation{
+				contains: []string{
+					"\"docker.io\":",
+					"\"ghcr.io\":",
+					"https://registry-1.docker.io",
+					"https://ghcr.io",
+				},
+				notContains: []string{"http://docker.io:5000", "http://ghcr.io:5001"},
 			},
 		},
 	}
@@ -204,7 +187,7 @@ func TestGenerateContainerdPatches(t *testing.T) {
 			scaf.MirrorRegistries = testCase.mirrors
 
 			patches := scaf.GenerateContainerdPatches()
-			testCase.assert(t, patches)
+			assertContainerdPatches(t, patches, testCase)
 		})
 	}
 }
@@ -220,7 +203,59 @@ func TestGenerateK3dRegistryConfig(t *testing.T) {
 			scaf.MirrorRegistries = testCase.mirrors
 
 			registryConfig := scaf.GenerateK3dRegistryConfig()
-			testCase.assert(t, registryConfig)
+			assertK3dRegistryConfig(t, registryConfig, testCase.expected)
 		})
+	}
+}
+
+func assertContainerdPatches(t *testing.T, patches []string, testCase containerdPatchCase) {
+	t.Helper()
+
+	if testCase.expectEmpty {
+		require.Empty(t, patches)
+
+		return
+	}
+
+	require.Len(t, patches, len(testCase.expected))
+
+	for idx, expected := range testCase.expected {
+		require.Contains(t, patches[idx], expected.host)
+
+		if expected.fallback != "" {
+			require.Contains(t, patches[idx], expected.fallback)
+		}
+	}
+}
+
+func assertK3dRegistryConfig(
+	t *testing.T,
+	config k3dv1alpha5.SimpleConfigRegistries,
+	expected k3dRegistryExpectation,
+) {
+	t.Helper()
+
+	require.Nil(t, config.Create)
+
+	if len(expected.use) == 0 {
+		require.Empty(t, config.Use)
+	} else {
+		require.ElementsMatch(t, expected.use, config.Use)
+	}
+
+	if expected.expectEmptyConfig {
+		require.Empty(t, config.Config)
+
+		return
+	}
+
+	require.NotEmpty(t, config.Config)
+
+	for _, contains := range expected.contains {
+		require.Contains(t, config.Config, contains)
+	}
+
+	for _, notContains := range expected.notContains {
+		require.NotContains(t, config.Config, notContains)
 	}
 }

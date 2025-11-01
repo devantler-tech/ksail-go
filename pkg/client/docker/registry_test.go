@@ -65,6 +65,64 @@ func newTestRegistryConfig() docker.RegistryConfig {
 	}
 }
 
+func setupRegistryCreationTest(
+	t *testing.T,
+) (*docker.MockAPIClient, *docker.RegistryManager, context.Context, docker.RegistryConfig) {
+	t.Helper()
+
+	mockClient, manager, ctx := setupTestRegistryManager(t)
+	config := newTestRegistryConfig()
+
+	mockRegistryNotExists(ctx, mockClient)
+
+	return mockClient, manager, ctx, config
+}
+
+func setupRegistryWithState(
+	t *testing.T,
+	registryID string,
+	registryName string,
+	state string,
+) (*docker.MockAPIClient, *docker.RegistryManager, context.Context) {
+	t.Helper()
+
+	mockClient, manager, ctx := setupTestRegistryManager(t)
+	mockContainerListOnce(ctx, mockClient, []container.Summary{
+		mockRegistryContainer(registryID, registryName, "", state),
+	})
+
+	return mockClient, manager, ctx
+}
+
+func mockVolumeInspectMissing(
+	ctx context.Context,
+	mockClient *docker.MockAPIClient,
+	registryName string,
+) string {
+	volumeName := docker.NormalizeVolumeName(registryName)
+
+	mockClient.EXPECT().
+		VolumeInspect(ctx, volumeName).
+		Return(volume.Volume{}, errNotFound).
+		Once()
+
+	return volumeName
+}
+
+func expectVolumeCreate(
+	ctx context.Context,
+	mockClient *docker.MockAPIClient,
+	volumeName string,
+	returnErr error,
+) {
+	mockClient.EXPECT().
+		VolumeCreate(ctx, mock.MatchedBy(func(opts volume.CreateOptions) bool {
+			return opts.Name == volumeName
+		})).
+		Return(volume.Volume{}, returnErr).
+		Once()
+}
+
 // mockImagePullSequence sets up the complete image pull mock sequence.
 func mockImagePullSequence(ctx context.Context, mockClient *docker.MockAPIClient) {
 	// Mock image inspect (image doesn't exist)
@@ -88,39 +146,8 @@ func mockVolumeCreateSequence(
 	mockClient *docker.MockAPIClient,
 	registryName string,
 ) {
-	volumeName := sanitizeRegistryVolumeName(registryName)
-
-	// Mock volume inspect (volume doesn't exist)
-	mockClient.EXPECT().
-		VolumeInspect(ctx, volumeName).
-		Return(volume.Volume{}, errNotFound).
-		Once()
-
-	// Mock volume create
-	mockClient.EXPECT().
-		VolumeCreate(ctx, mock.MatchedBy(func(opts volume.CreateOptions) bool {
-			return opts.Name == volumeName
-		})).
-		Return(volume.Volume{}, nil).
-		Once()
-}
-
-func sanitizeRegistryVolumeName(registryName string) string {
-	trimmed := strings.TrimSpace(registryName)
-	if trimmed == "" {
-		return ""
-	}
-
-	if strings.HasPrefix(trimmed, "kind-") || strings.HasPrefix(trimmed, "k3d-") {
-		if idx := strings.Index(trimmed, "-"); idx >= 0 && idx < len(trimmed)-1 {
-			candidate := trimmed[idx+1:]
-			if candidate != "" {
-				return candidate
-			}
-		}
-	}
-
-	return trimmed
+	volumeName := mockVolumeInspectMissing(ctx, mockClient, registryName)
+	expectVolumeCreate(ctx, mockClient, volumeName, nil)
 }
 
 // mockImageExists sets up mocks for when a registry image already exists.
@@ -242,7 +269,7 @@ func mockContainerCreateStart(
 
 // mockRegistryContainer returns a mock container summary for a registry.
 //
-//nolint:unparam // registryID parameter kept for test clarity and consistency.
+
 func mockRegistryContainer(registryID, registryName, _ string, state string) container.Summary {
 	volumeName := deriveVolumeName(registryName)
 
@@ -529,11 +556,7 @@ func TestIsRegistryInUse(t *testing.T) {
 
 	t.Run("returns true when registry is running", func(t *testing.T) {
 		t.Parallel()
-		mockClient, manager, ctx := setupTestRegistryManager(t)
-
-		registry := mockRegistryContainer("registry-id", "docker.io", "", "running")
-
-		mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
+		_, manager, ctx := setupRegistryWithState(t, "registry-id", "docker.io", "running")
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
@@ -543,11 +566,7 @@ func TestIsRegistryInUse(t *testing.T) {
 
 	t.Run("returns false when registry is stopped", func(t *testing.T) {
 		t.Parallel()
-		mockClient, manager, ctx := setupTestRegistryManager(t)
-
-		registry := mockRegistryContainer("registry-id", "docker.io", "", "exited")
-
-		mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
+		_, manager, ctx := setupRegistryWithState(t, "registry-id", "docker.io", "exited")
 
 		inUse, err := manager.IsRegistryInUse(ctx, "docker.io")
 
@@ -624,24 +643,10 @@ func TestCreateRegistry_ImagePullError(t *testing.T) {
 func TestCreateRegistry_VolumeCreateError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	config := newTestRegistryConfig()
-
-	mockRegistryNotExists(ctx, mockClient)
-	mockImageExists(ctx, mockClient)
-
-	// Mock volume not found
-	mockClient.EXPECT().
-		VolumeInspect(ctx, "docker.io").
-		Return(volume.Volume{}, errNotFound).
-		Once()
-
-	// Mock volume create failure
-	mockClient.EXPECT().
-		VolumeCreate(ctx, mock.Anything).
-		Return(volume.Volume{}, errVolumeCreateFailed).
-		Once()
+	mockClient, manager, ctx, config := setupRegistryCreationTest(t)
+	mockImagePullSequence(ctx, mockClient)
+	volumeName := mockVolumeInspectMissing(ctx, mockClient, config.Name)
+	expectVolumeCreate(ctx, mockClient, volumeName, errVolumeCreateFailed)
 
 	err := manager.CreateRegistry(ctx, config)
 
@@ -652,11 +657,7 @@ func TestCreateRegistry_VolumeCreateError(t *testing.T) {
 func TestCreateRegistry_ContainerCreateError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	config := newTestRegistryConfig()
-
-	mockRegistryNotExists(ctx, mockClient)
+	mockClient, manager, ctx, config := setupRegistryCreationTest(t)
 	mockImagePullSequence(ctx, mockClient)
 	mockVolumeCreateSequence(ctx, mockClient, config.Name)
 
@@ -675,11 +676,7 @@ func TestCreateRegistry_ContainerCreateError(t *testing.T) {
 func TestCreateRegistry_ContainerStartError(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	config := newTestRegistryConfig()
-
-	mockRegistryNotExists(ctx, mockClient)
+	mockClient, manager, ctx, config := setupRegistryCreationTest(t)
 	mockImagePullSequence(ctx, mockClient)
 	mockVolumeCreateSequence(ctx, mockClient, config.Name)
 
@@ -704,14 +701,11 @@ func TestCreateRegistry_ContainerStartError(t *testing.T) {
 func TestCreateRegistry_ImageAlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	config := newTestRegistryConfig()
-
-	mockRegistryNotExists(ctx, mockClient)
+	mockClient, manager, ctx, config := setupRegistryCreationTest(t)
 	mockImageExists(ctx, mockClient)
 
-	mockVolumeCreateSequence(ctx, mockClient, config.Name)
+	volumeName := mockVolumeInspectMissing(ctx, mockClient, config.Name)
+	expectVolumeCreate(ctx, mockClient, volumeName, nil)
 	mockContainerCreateStart(ctx, mockClient, "docker.io", "test-id")
 
 	err := manager.CreateRegistry(ctx, config)
@@ -722,20 +716,18 @@ func TestCreateRegistry_ImageAlreadyExists(t *testing.T) {
 func TestCreateRegistry_VolumeAlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	config := newTestRegistryConfig()
-
-	mockRegistryNotExists(ctx, mockClient)
+	mockClient, manager, ctx, config := setupRegistryCreationTest(t)
 	mockImagePullSequence(ctx, mockClient)
+
+	volumeName := docker.NormalizeVolumeName(config.Name)
 
 	// Mock volume exists
 	mockClient.EXPECT().
-		VolumeInspect(ctx, "docker.io").
+		VolumeInspect(ctx, volumeName).
 		Return(volume.Volume{}, nil).
 		Once()
 
-	mockContainerCreateStart(ctx, mockClient, "docker.io", "test-id")
+	mockContainerCreateStart(ctx, mockClient, volumeName, "test-id")
 
 	err := manager.CreateRegistry(ctx, config)
 
@@ -814,10 +806,7 @@ func TestDeleteRegistry_WithoutVolumeDelete(t *testing.T) {
 func TestDeleteRegistry_SkipsRemovalWhenShared(t *testing.T) {
 	t.Parallel()
 
-	mockClient, manager, ctx := setupTestRegistryManager(t)
-
-	registry := mockRegistryContainer("registry-id", "docker.io", "", "running")
-	mockContainerListOnce(ctx, mockClient, []container.Summary{registry})
+	mockClient, manager, ctx := setupRegistryWithState(t, "registry-id", "docker.io", "running")
 
 	mockClient.EXPECT().
 		ContainerInspect(ctx, "registry-id").

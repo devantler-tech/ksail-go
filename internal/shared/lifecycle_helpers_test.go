@@ -30,8 +30,96 @@ func (r *lifecycleTimer) NewStage()                                 { r.newStage
 func (r *lifecycleTimer) GetTiming() (time.Duration, time.Duration) { return 0, 0 }
 func (r *lifecycleTimer) Stop()                                     {}
 
-func TestHandleLifecycleRunE_ConfigLoadError(t *testing.T) {
+func assertTimerState(t *testing.T, timer *lifecycleTimer, expectedStages int) {
+	t.Helper()
+
+	if !timer.started {
+		t.Error("expected timer to be started")
+	}
+
+	if timer.newStageCalls != expectedStages {
+		t.Fatalf("expected newStageCalls=%d, got %d", expectedStages, timer.newStageCalls)
+	}
+}
+
+func assertLifecycleErrorContains(t *testing.T, err error, substring string) {
+	t.Helper()
+
+	if err == nil {
+		t.Fatalf("expected error containing %q", substring)
+	}
+
+	if !strings.Contains(err.Error(), substring) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func assertLifecycleFailure(
+	t *testing.T,
+	timer *lifecycleTimer,
+	err error,
+	substring string,
+	expectedStages int,
+) {
+	t.Helper()
+
+	assertLifecycleErrorContains(t, err, substring)
+	assertTimerState(t, timer, expectedStages)
+}
+
+func TestHandleLifecycleRunE_ErrorPaths(t *testing.T) {
 	t.Parallel()
+
+	type lifecycleSetup func(*testing.T) (
+		*ksailconfigmanager.ConfigManager,
+		shared.LifecycleDeps,
+		shared.LifecycleConfig,
+		*lifecycleTimer,
+		*cobra.Command,
+	)
+
+	cases := []struct {
+		name           string
+		setup          lifecycleSetup
+		expectedErr    string
+		expectedStages int
+	}{
+		{
+			name:           "config load error",
+			setup:          configLoadErrorSetup,
+			expectedErr:    "failed to load cluster configuration",
+			expectedStages: 0,
+		},
+		{
+			name:           "factory create error",
+			setup:          factoryErrorSetup,
+			expectedErr:    "failed to resolve cluster provisioner",
+			expectedStages: 1,
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			cfgManager, deps, config, timer, cmd := testCase.setup(t)
+
+			err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+
+			assertLifecycleFailure(t, timer, err, testCase.expectedErr, testCase.expectedStages)
+		})
+	}
+}
+
+func configLoadErrorSetup(t *testing.T) (
+	*ksailconfigmanager.ConfigManager,
+	shared.LifecycleDeps,
+	shared.LifecycleConfig,
+	*lifecycleTimer,
+	*cobra.Command,
+) {
+	t.Helper()
+
 	tempDir := t.TempDir()
 	badPath := filepath.Join(tempDir, "ksail.yaml")
 
@@ -46,33 +134,22 @@ func TestHandleLifecycleRunE_ConfigLoadError(t *testing.T) {
 	timer := &lifecycleTimer{}
 	factory := clusterprovisioner.NewMockFactory(t)
 	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
-	config := shared.LifecycleConfig{}
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	err = shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
-	if err == nil {
-		t.Fatal("expected error for invalid config")
-	}
-
-	if !strings.Contains(err.Error(), "failed to load cluster configuration") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !timer.started {
-		t.Error("expected timer to be started")
-	}
-
-	if timer.newStageCalls != 0 {
-		t.Errorf("expected newStageCalls=0, got %d", timer.newStageCalls)
-	}
+	return cfgManager, deps, shared.LifecycleConfig{}, timer, cmd
 }
 
-// TestHandleLifecycleRunE_FactoryError validates that an error from Factory.Create is wrapped correctly.
-func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
-	t.Parallel()
-	tempDir := t.TempDir()
+func factoryErrorSetup(t *testing.T) (
+	*ksailconfigmanager.ConfigManager,
+	shared.LifecycleDeps,
+	shared.LifecycleConfig,
+	*lifecycleTimer,
+	*cobra.Command,
+) {
+	t.Helper()
 
+	tempDir := t.TempDir()
 	path := filepath.Join(tempDir, "ksail.yaml")
 
 	err := os.WriteFile(path, []byte(validClusterConfigYAML), 0o600)
@@ -84,29 +161,11 @@ func TestHandleLifecycleRunE_FactoryError(t *testing.T) {
 	cfgManager.Viper.SetConfigFile(path)
 
 	timer := &lifecycleTimer{}
-	// Stub factory implementing only Create to force error path after config load.
-	factory := &errorFactory{err: errFactoryError}
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
-	config := shared.LifecycleConfig{}
+	deps := shared.LifecycleDeps{Timer: timer, Factory: &errorFactory{err: errFactoryError}}
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	err = shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
-	if err == nil {
-		t.Fatal("expected factory error")
-	}
-
-	if !strings.Contains(err.Error(), "failed to resolve cluster provisioner") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !timer.started {
-		t.Error("expected timer to be started")
-	}
-
-	if timer.newStageCalls != 1 {
-		t.Errorf("expected newStageCalls=1, got %d", timer.newStageCalls)
-	}
+	return cfgManager, deps, shared.LifecycleConfig{}, timer, cmd
 }
 
 // errorFactory satisfies clusterprovisioner.Factory for testing.

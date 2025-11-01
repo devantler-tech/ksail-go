@@ -426,10 +426,11 @@ func (rm *RegistryManager) resolveVolumeName(config RegistryConfig) string {
 		return config.VolumeName
 	}
 
-	return sanitizeVolumeName(config.Name)
+	return NormalizeVolumeName(config.Name)
 }
 
-func sanitizeVolumeName(registryName string) string {
+// NormalizeVolumeName trims registry names and removes distribution prefixes such as kind- or k3d-.
+func NormalizeVolumeName(registryName string) string {
 	trimmed := strings.TrimSpace(registryName)
 	if trimmed == "" {
 		return ""
@@ -480,7 +481,7 @@ func deriveRegistryVolumeName(registry container.Summary, fallback string) strin
 		}
 	}
 
-	if sanitized := sanitizeVolumeName(fallback); sanitized != "" {
+	if sanitized := NormalizeVolumeName(fallback); sanitized != "" {
 		return sanitized
 	}
 
