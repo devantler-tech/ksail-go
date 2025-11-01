@@ -127,25 +127,229 @@ jobs:
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
+  system-test-mirror-registries:
+    runs-on: ubuntu-latest
+    needs: [pre-commit, ci]
+    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    strategy:
+      matrix:
+        include:
+          # Single mirror with single cluster (Kind)
+          - name: "1-mirror-1-kind"
+            distribution: Kind
+            cluster-count: 1
+            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
+          # Single mirror with single cluster (K3d)
+          - name: "1-mirror-1-k3d"
+            distribution: K3d
+            cluster-count: 1
+            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
+          # Single mirror with two Kind clusters
+          - name: "1-mirror-2-kind"
+            distribution: Kind
+            cluster-count: 2
+            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
+          # Single mirror with two K3d clusters
+          - name: "1-mirror-2-k3d"
+            distribution: K3d
+            cluster-count: 2
+            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
+          # Single mirror with mixed clusters (1 Kind + 1 K3d)
+          - name: "1-mirror-1-kind-1-k3d"
+            distribution: Mixed
+            cluster-count: 2
+            init-args: "--mirror-registry docker.io=https://registry-1.docker.io"
+          # Two mirrors with single Kind cluster
+          - name: "2-mirrors-1-kind"
+            distribution: Kind
+            cluster-count: 1
+            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry quay.io=https://quay.io"
+          # Two mirrors with single K3d cluster
+          - name: "2-mirrors-1-k3d"
+            distribution: K3d
+            cluster-count: 1
+            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry quay.io=https://quay.io"
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: 📦 Download dependencies
+        run: go mod download
+
+      - name: 🏗️ Build application
+        run: go build -o ksail .
+
+      - name: 🧪 Create clusters (${{ matrix.name }})
+        run: |
+          set -e
+          
+          if [ "${{ matrix.distribution }}" = "Mixed" ]; then
+            # Create one Kind cluster and one K3d cluster
+            echo "Creating Kind cluster..."
+            mkdir -p test-cluster1
+            cd test-cluster1
+            ../ksail init --distribution Kind ${{ matrix.init-args }} --context cluster1
+            ../ksail cluster create --context cluster1
+            cd ..
+            
+            echo "Creating K3d cluster..."
+            mkdir -p test-cluster2
+            cd test-cluster2
+            ../ksail init --distribution K3d ${{ matrix.init-args }} --context cluster2
+            ../ksail cluster create --context cluster2
+            cd ..
+          else
+            # Create clusters of the same distribution
+            for i in $(seq 1 ${{ matrix.cluster-count }}); do
+              echo "Creating ${{ matrix.distribution }} cluster $i..."
+              cluster_name="cluster$i"
+              cluster_dir="test-$cluster_name"
+              mkdir -p "$cluster_dir"
+              cd "$cluster_dir"
+              ../ksail init ${{ matrix.init-args }} --context "$cluster_name"
+              ../ksail cluster create --context "$cluster_name"
+              cd ..
+            done
+          fi
+
+      - name: 🧪 Test pull-through (${{ matrix.name }})
+        run: |
+          set -e
+          
+          # Wait for clusters to be fully ready
+          sleep 5
+          
+          # Check that registry containers exist and are running
+          echo "Checking registry containers..."
+          docker ps --filter "label=io.ksail.registry" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          
+          # Count running registries
+          registry_count=$(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}" | wc -l)
+          echo "Found $registry_count registry container(s)"
+          
+          if [ "$registry_count" -eq 0 ]; then
+            echo "ERROR: No registry containers found"
+            exit 1
+          fi
+          
+          # For each cluster, test that it can pull through the mirror
+          if [ "${{ matrix.distribution }}" = "Mixed" ]; then
+            # Test Kind cluster
+            echo "Testing pull-through for Kind cluster1..."
+            kubectl --context=kind-cluster1 run test-nginx-cluster1 \
+              --image=nginx:alpine \
+              --restart=Never \
+              --timeout=60s || true
+            sleep 3
+            kubectl --context=kind-cluster1 get pod test-nginx-cluster1 || true
+            kubectl --context=kind-cluster1 delete pod test-nginx-cluster1 --ignore-not-found=true || true
+            
+            # Test K3d cluster
+            echo "Testing pull-through for K3d cluster2..."
+            kubectl --context=k3d-cluster2 run test-nginx-cluster2 \
+              --image=nginx:alpine \
+              --restart=Never \
+              --timeout=60s || true
+            sleep 3
+            kubectl --context=k3d-cluster2 get pod test-nginx-cluster2 || true
+            kubectl --context=k3d-cluster2 delete pod test-nginx-cluster2 --ignore-not-found=true || true
+          else
+            for i in $(seq 1 ${{ matrix.cluster-count }}); do
+              cluster_name="cluster$i"
+              
+              if [ "${{ matrix.distribution }}" = "Kind" ]; then
+                context="kind-$cluster_name"
+              else
+                context="k3d-$cluster_name"
+              fi
+              
+              echo "Testing pull-through for $context..."
+              kubectl --context="$context" run test-nginx-$cluster_name \
+                --image=nginx:alpine \
+                --restart=Never \
+                --timeout=60s || true
+              sleep 3
+              kubectl --context="$context" get pod test-nginx-$cluster_name || true
+              kubectl --context="$context" delete pod test-nginx-$cluster_name --ignore-not-found=true || true
+            done
+          fi
+          
+          # Check registry logs to verify pull-through activity
+          echo "Checking registry logs for pull activity..."
+          for registry in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
+            echo "=== Logs for $registry ==="
+            docker logs "$registry" 2>&1 | tail -30 || true
+          done
+
+      - name: 🧪 Delete clusters (${{ matrix.name }})
+        if: always()
+        run: |
+          if [ "${{ matrix.distribution }}" = "Mixed" ]; then
+            # Delete Kind cluster
+            cd test-cluster1
+            ../ksail cluster delete --context cluster1 || true
+            cd ..
+            rm -rf test-cluster1
+            
+            # Delete K3d cluster
+            cd test-cluster2
+            ../ksail cluster delete --context cluster2 || true
+            cd ..
+            rm -rf test-cluster2
+          else
+            for i in $(seq 1 ${{ matrix.cluster-count }}); do
+              cluster_name="cluster$i"
+              cluster_dir="test-$cluster_name"
+              
+              if [ -d "$cluster_dir" ]; then
+                cd "$cluster_dir"
+                ../ksail cluster delete --context "$cluster_name" || true
+                cd ..
+                rm -rf "$cluster_dir"
+              fi
+            done
+          fi
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          # Clean up any remaining test directories
+          rm -rf test-cluster* || true
+          
+          # Verify registries were cleaned up appropriately
+          echo "Remaining registry containers:"
+          docker ps -a --filter "label=io.ksail.registry" --format "table {{.Names}}\t{{.Status}}" || true
+
   system-test-status:
     runs-on: ubuntu-latest
-    needs: [system-test]
+    needs: [system-test, system-test-mirror-registries]
     if: always()
     steps:
       - name: Summarize matrix result
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "system-test result: $MATRIX_RESULT"
-          case "$MATRIX_RESULT" in
-            success|skipped)
-              echo "All matrix runs succeeded or were skipped."
-              exit 0
-              ;;
-            *)
-              echo "At least one matrix run failed."
-              exit 1
-              ;;
-          esac
+          echo "system-test result: $SYSTEM_TEST_RESULT"
+          echo "system-test-mirror-registries result: $MIRROR_TEST_RESULT"
+          
+          # Check if both jobs succeeded or were skipped
+          if [[ "$SYSTEM_TEST_RESULT" =~ ^(success|skipped)$ ]] && [[ "$MIRROR_TEST_RESULT" =~ ^(success|skipped)$ ]]; then
+            echo "All system tests succeeded or were skipped."
+            exit 0
+          else
+            echo "At least one system test failed."
+            echo "  system-test: $SYSTEM_TEST_RESULT"
+            echo "  system-test-mirror-registries: $MIRROR_TEST_RESULT"
+            exit 1
+          fi
         env:
-          MATRIX_RESULT: ${{ needs.system-test.result }}
+          SYSTEM_TEST_RESULT: ${{ needs.system-test.result }}
+          MIRROR_TEST_RESULT: ${{ needs.system-test-mirror-registries.result }}
