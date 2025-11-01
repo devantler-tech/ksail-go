@@ -6,6 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
 )
 
 func TestNewCipherCmd(t *testing.T) {
@@ -22,9 +23,26 @@ func TestNewCipherCmd(t *testing.T) {
 		t.Errorf("expected Use to be 'cipher', got %q", cmd.Use)
 	}
 
-	// Verify the short description is set (wrapped from urfave/cli app)
+	// Verify the short description is set
 	if cmd.Short == "" {
 		t.Error("expected Short description to be set")
+	}
+
+	// Verify subcommands are registered
+	if !cmd.HasSubCommands() {
+		t.Error("expected cipher command to have subcommands")
+	}
+
+	// Verify encrypt subcommand exists
+	encryptCmd := findSubcommand(cmd, "encrypt")
+	if encryptCmd == nil {
+		t.Error("expected encrypt subcommand to be registered")
+	}
+
+	// Verify decrypt subcommand exists
+	decryptCmd := findSubcommand(cmd, "decrypt")
+	if decryptCmd == nil {
+		t.Error("expected decrypt subcommand to be registered")
 	}
 }
 
@@ -38,11 +56,36 @@ func TestCipherCommandHelp(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--help"})
 
-	// Since DisableFlagParsing is true, --help is passed to sops binary
-	// We can't easily test this without sops installed, so just verify
-	// the command executes (it will try to run sops --help)
-	_ = cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error executing help: %v", err)
+	}
 
-	// The command structure is correct even if execution fails
-	// (e.g., if sops is not installed in the test environment)
+	output := out.String()
+	if output == "" {
+		t.Error("expected non-empty help output")
+	}
+
+	// Verify help mentions subcommands
+	if !contains(output, "encrypt") {
+		t.Error("expected help to mention encrypt subcommand")
+	}
+	if !contains(output, "decrypt") {
+		t.Error("expected help to mention decrypt subcommand")
+	}
+}
+
+// Helper function to find a subcommand by name
+func findSubcommand(cmd *cobra.Command, name string) *cobra.Command {
+	for _, sub := range cmd.Commands() {
+		if sub.Name() == name {
+			return sub
+		}
+	}
+	return nil
+}
+
+// Helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return bytes.Contains([]byte(s), []byte(substr))
 }
