@@ -4,6 +4,49 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
+## Task Suitability for GitHub Copilot
+
+### ✅ Tasks Well-Suited for Copilot
+
+Copilot excels at focused, well-defined tasks such as:
+
+- **Bug fixes**: Addressing specific, reproducible bugs with clear acceptance criteria
+- **Test improvements**: Adding unit tests, improving test coverage, fixing flaky tests
+- **Documentation updates**: Updating README, API docs, code comments, or contribution guidelines
+- **Code refactoring**: Improving code structure, removing duplication, optimizing performance
+- **Dependency updates**: Updating Go modules, addressing security vulnerabilities
+- **CLI enhancements**: Adding new commands, flags, or improving command output
+- **Technical debt**: Addressing linting issues, improving error handling, cleaning up deprecated code
+
+### ❌ Tasks Better Handled by Humans
+
+Reserve these tasks for human developers:
+
+- **Architecture decisions**: Major design changes, new subsystem designs, API redesigns
+- **Complex integrations**: Deep cross-system changes requiring domain expertise
+- **Security-critical changes**: Authentication, authorization, encryption implementations
+- **Production incidents**: Critical bug fixes in production requiring deep understanding
+- **Business logic**: Changes requiring business domain knowledge or stakeholder input
+
+### 📝 Writing Issues for Copilot
+
+When creating issues to assign to Copilot:
+
+- **Be specific**: Clearly describe the problem and expected outcome
+- **Include context**: Reference related files, functions, or documentation
+- **Define acceptance criteria**: Specify tests that should pass, expected behavior
+- **Provide examples**: Include code snippets, error messages, or expected output
+- **Limit scope**: Keep issues focused on a single, well-defined change
+
+### 💬 Providing Feedback to Copilot
+
+When reviewing Copilot's pull requests:
+
+- **Use PR comments**: Tag @copilot in comments on specific lines or files
+- **Be specific**: Clearly describe what needs to change and why
+- **Iterate**: Copilot will update the PR based on your feedback
+- **Approve when ready**: Merge the PR once all feedback is addressed
+
 ## **CRITICAL: Always Use Serena First (#serena MCP server)**
 
 **For ALL analysis, investigation, and code understanding tasks, use Serena semantic tools:**
@@ -24,7 +67,7 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
    Use: "Use Serena to get symbols overview of admin files and find capability-checking functions #serena"
 
 3. Instead of: "How do the three systems integrate?"
-   "Use: "Use Serena to read the system-integration-map memory and show cross-system dependencies #serena"
+   Use: "Use Serena to read the system-integration-map memory and show cross-system dependencies #serena"
 
 ## Working Effectively
 
