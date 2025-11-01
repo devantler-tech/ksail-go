@@ -202,11 +202,7 @@ jobs:
             mkdir -p test-cluster1
             cd test-cluster1
             cluster_name="${{ matrix.name }}-cluster1"
-            ../ksail init --distribution Kind ${{ matrix.init-args }}
-            # Update kind.yaml to set the cluster name
-            sed -i "s/^name:.*/name: $cluster_name/" kind.yaml
-            # Update ksail.yaml to set the correct context
-            sed -i "s/context:.*/context: kind-$cluster_name/" ksail.yaml
+            ../ksail init --distribution Kind --name "$cluster_name" ${{ matrix.init-args }}
             ../ksail cluster create
             cd ..
             
@@ -214,16 +210,7 @@ jobs:
             mkdir -p test-cluster2
             cd test-cluster2
             cluster_name="${{ matrix.name }}-cluster2"
-            ../ksail init --distribution K3d ${{ matrix.init-args }}
-            # Update k3d.yaml to set the cluster name
-            if grep -q "^name:" k3d.yaml; then
-              sed -i "s/^name:.*/name: $cluster_name/" k3d.yaml
-            else
-              # Add name field if it doesn't exist
-              sed -i "/^apiVersion:/a name: $cluster_name" k3d.yaml
-            fi
-            # Update ksail.yaml to set the correct context
-            sed -i "s/context:.*/context: k3d-$cluster_name/" ksail.yaml
+            ../ksail init --distribution K3d --name "$cluster_name" ${{ matrix.init-args }}
             ../ksail cluster create
             cd ..
           else
@@ -234,25 +221,7 @@ jobs:
               cluster_dir="test-$cluster_name"
               mkdir -p "$cluster_dir"
               cd "$cluster_dir"
-              ../ksail init ${{ matrix.init-args }}
-              
-              # Update config file to set the cluster name
-              if [ "${{ matrix.distribution }}" = "Kind" ]; then
-                sed -i "s/^name:.*/name: $cluster_name/" kind.yaml
-                # Update ksail.yaml to set the correct context
-                sed -i "s/context:.*/context: kind-$cluster_name/" ksail.yaml
-              else
-                # K3d
-                if grep -q "^name:" k3d.yaml; then
-                  sed -i "s/^name:.*/name: $cluster_name/" k3d.yaml
-                else
-                  # Add name field if it doesn't exist
-                  sed -i "/^apiVersion:/a name: $cluster_name" k3d.yaml
-                fi
-                # Update ksail.yaml to set the correct context
-                sed -i "s/context:.*/context: k3d-$cluster_name/" ksail.yaml
-              fi
-              
+              ../ksail init --name "$cluster_name" ${{ matrix.init-args }}
               ../ksail cluster create
               cd ..
             done
