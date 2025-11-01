@@ -229,7 +229,7 @@ func runMirrorRegistryCleanup(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	return withDockerClient(cmd, func(dockerClient client.APIClient) error {
+	err := shared.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
 		ctx := cmd.Context()
 		if ctx == nil {
 			ctx = context.Background()
@@ -270,4 +270,9 @@ func runMirrorRegistryCleanup(
 
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("failed to delete mirror registries: %w", err)
+	}
+
+	return nil
 }

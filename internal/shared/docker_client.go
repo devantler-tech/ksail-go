@@ -1,4 +1,4 @@
-package cluster
+package shared
 
 import (
 	"fmt"
@@ -22,9 +22,9 @@ func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
 //nolint:gochecknoglobals // Allow tests to override Docker client creation.
 var dockerClientFactory dockerClientFactoryFunc = defaultDockerClientFactory
 
-// withDockerClient creates a Docker client, executes the given function, and cleans up.
+// WithDockerClient creates a Docker client, executes the given function, and cleans up.
 // Returns an error if client creation fails or if the function returns an error.
-func withDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
+func WithDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
 	dockerClient, err := dockerClientFactory(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
