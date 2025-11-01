@@ -8,35 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DockerClientFactoryFunc is a function type for creating Docker clients.
-type DockerClientFactoryFunc func(opts ...client.Opt) (*client.Client, error)
-
-func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
-	cli, err := client.NewClientWithOpts(opts...)
-	if err != nil {
-		return nil, fmt.Errorf("creating docker client: %w", err)
-	}
-
-	return cli, nil
-}
-
-//nolint:gochecknoglobals // Allow tests to override Docker client creation.
-var dockerClientFactory DockerClientFactoryFunc = defaultDockerClientFactory
-
-// SetDockerClientFactory sets the Docker client factory. Used by test utilities.
-func SetDockerClientFactory(factory DockerClientFactoryFunc) {
-	dockerClientFactory = factory
-}
-
-// GetDockerClientFactory returns the current Docker client factory. Used by test utilities.
-func GetDockerClientFactory() DockerClientFactoryFunc {
-	return dockerClientFactory
-}
-
 // WithDockerClient creates a Docker client, executes the given function, and cleans up.
 // Returns an error if client creation fails or if the function returns an error.
+// For testing, use WithDockerClientInstance with a mock client instead.
 func WithDockerClient(cmd *cobra.Command, operation func(client.APIClient) error) error {
-	dockerClient, err := dockerClientFactory(
+	dockerClient, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
 	)
@@ -44,6 +20,17 @@ func WithDockerClient(cmd *cobra.Command, operation func(client.APIClient) error
 		return fmt.Errorf("failed to create docker client: %w", err)
 	}
 
+	return WithDockerClientInstance(cmd, dockerClient, operation)
+}
+
+// WithDockerClientInstance executes the given function with a provided Docker client and handles cleanup.
+// This is useful for testing with mock clients.
+// The client will be closed after the operation completes.
+func WithDockerClientInstance(
+	cmd *cobra.Command,
+	dockerClient client.APIClient,
+	operation func(client.APIClient) error,
+) error {
 	defer func() {
 		closeErr := dockerClient.Close()
 		if closeErr != nil {

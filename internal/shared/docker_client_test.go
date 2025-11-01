@@ -3,18 +3,15 @@ package shared //nolint:testpackage // Access unexported helpers for coverage-fo
 import (
 	"bytes"
 	"errors"
-	"strings"
 	"testing"
 
+	dockermocks "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	errOperationFailed     = errors.New("operation failed")
-	errDockerClientFailure = errors.New("docker client creation failed")
-)
+var errOperationFailed = errors.New("operation failed")
 
 func TestWithDockerClient_Success(t *testing.T) {
 	t.Parallel()
@@ -70,37 +67,97 @@ func TestWithDockerClient_OperationError(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest // Overrides docker client factory for deterministic failure.
-func TestWithDockerClient_InvalidEnvironment(t *testing.T) {
-	stubDockerClientFailure(t, errDockerClientFailure)
+func TestWithDockerClientInstance_Success(t *testing.T) {
+	t.Parallel()
+
+	mockClient := dockermocks.NewMockAPIClient(t)
+	mockClient.EXPECT().Close().Return(nil)
 
 	cmd := &cobra.Command{}
 
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 
-	err := WithDockerClient(cmd, func(client.APIClient) error { return nil })
-	if err == nil {
-		t.Fatal("expected error when docker host is invalid")
+	operationCalled := false
+	operation := func(dockerClient client.APIClient) error {
+		operationCalled = true
+
+		assert.NotNil(t, dockerClient)
+
+		return nil
 	}
 
-	if !strings.Contains(err.Error(), "failed to create docker client") {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	err := WithDockerClientInstance(cmd, mockClient, operation)
+
+	assert.NoError(t, err)
+	assert.True(t, operationCalled)
 }
 
-// stubDockerClientFailure overrides the default docker client factory to return an error.
-// This is used internally by docker_client_test.go which is in the same package.
-func stubDockerClientFailure(t *testing.T, err error) {
-	t.Helper()
+func TestWithDockerClientInstance_OperationError(t *testing.T) {
+	t.Parallel()
 
-	original := dockerClientFactory
+	mockClient := dockermocks.NewMockAPIClient(t)
+	mockClient.EXPECT().Close().Return(nil)
 
-	t.Cleanup(func() {
-		dockerClientFactory = original
-	})
+	cmd := &cobra.Command{}
 
-	dockerClientFactory = func(...client.Opt) (*client.Client, error) {
-		return nil, err
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	operation := func(_ client.APIClient) error {
+		return errOperationFailed
 	}
+
+	err := WithDockerClientInstance(cmd, mockClient, operation)
+
+	assert.ErrorIs(t, err, errOperationFailed)
 }
+
+func TestWithDockerClientInstance_CloseError(t *testing.T) {
+	t.Parallel()
+
+	errCloseFailure := errors.New("close failed")
+	mockClient := dockermocks.NewMockAPIClient(t)
+	mockClient.EXPECT().Close().Return(errCloseFailure)
+
+	cmd := &cobra.Command{}
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	operation := func(_ client.APIClient) error {
+		return nil
+	}
+
+	err := WithDockerClientInstance(cmd, mockClient, operation)
+
+	// Operation succeeds even if close fails (cleanup warning is logged)
+	assert.NoError(t, err)
+	assert.Contains(t, out.String(), "cleanup warning")
+	assert.Contains(t, out.String(), "close failed")
+}
+
+func TestWithDockerClientInstance_OperationAndCloseError(t *testing.T) {
+	t.Parallel()
+
+	errCloseFailure := errors.New("close failed")
+	mockClient := dockermocks.NewMockAPIClient(t)
+	mockClient.EXPECT().Close().Return(errCloseFailure)
+
+	cmd := &cobra.Command{}
+
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+
+	operation := func(_ client.APIClient) error {
+		return errOperationFailed
+	}
+
+	err := WithDockerClientInstance(cmd, mockClient, operation)
+
+	// Operation error is returned, cleanup warning is logged
+	assert.ErrorIs(t, err, errOperationFailed)
+	assert.Contains(t, out.String(), "cleanup warning")
+	assert.Contains(t, out.String(), "close failed")
+}
+

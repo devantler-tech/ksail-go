@@ -6,7 +6,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/internal/shared"
@@ -22,10 +21,7 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-var (
-	errFactoryFailure      = errors.New("factory failed")
-	errDockerClientFailure = errors.New("docker client failure")
-)
+var errFactoryFailure = errors.New("factory failed")
 
 type (
 	deleteConfigurator func(
@@ -69,23 +65,6 @@ func buildDeleteScenarios() []deleteScenario {
 			},
 			expectedFactoryCalls: 1,
 			expectedDeleteCalls:  1,
-		},
-		{
-			name: "logs_cleanup_warning",
-			configure: func(t *testing.T, _ *cobra.Command, _ *ksailconfigmanager.ConfigManager, configDir string) {
-				t.Helper()
-				ensureKindConfigHasPatch(t, filepath.Join(configDir, "kind.yaml"))
-				stubDockerClientFailure(t, errDockerClientFailure)
-			},
-			factory: func() *testutils.StubFactory {
-				return &testutils.StubFactory{
-					Provisioner:        &testutils.StubProvisioner{},
-					DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-				}
-			},
-			expectedFactoryCalls: 1,
-			expectedDeleteCalls:  1,
-			expectCleanupWarning: true,
 		},
 	}
 }
@@ -256,27 +235,6 @@ func TestCleanupMirrorRegistries_ReturnsFlagLookupError(t *testing.T) {
 	require.ErrorContains(t, err, "failed to get delete-registry-volumes flag")
 }
 
-//nolint:paralleltest // Overrides docker client factory for deterministic failure.
-func TestCleanupMirrorRegistries_ReturnsDockerClientCreationError(t *testing.T) {
-	cmd, _ := testutils.NewCommand(t)
-	cmd.Flags().Bool("delete-registry-volumes", false, "")
-
-	configDir := t.TempDir()
-	kindPath := filepath.Join(configDir, "kind.yaml")
-	writeKindWithPatch(t, kindPath)
-
-	cfg := v1alpha1.NewCluster()
-	cfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfg.Spec.DistributionConfig = kindPath
-
-	stubDockerClientFailure(t, errDockerClientFailure)
-
-	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil))
-
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to create docker client")
-}
-
 func setupDeleteCommand(
 	t *testing.T,
 ) (*cobra.Command, *bytes.Buffer, *ksailconfigmanager.ConfigManager, string) {
@@ -306,33 +264,6 @@ func newDeleteTestConfigManager(
 	manager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
 
 	return manager, tempDir
-}
-
-func ensureKindConfigHasPatch(t *testing.T, path string) {
-	t.Helper()
-
-	const patch = "" +
-		"containerdConfigPatches:\n" +
-		"- |\n" +
-		"  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]\n" +
-		"    endpoint = [\"http://localhost:5000\"]\n"
-
-	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
-	require.NoError(t, err, "failed to read kind config")
-
-	if strings.Contains(string(content), "containerdConfigPatches") {
-		return
-	}
-
-	content = append(content, []byte(patch)...)
-	err = os.WriteFile(path, content, 0o600)
-	require.NoError(t, err, "failed to update kind config")
-}
-
-func stubDockerClientFailure(t *testing.T, err error) {
-	t.Helper()
-
-	testutils.StubDockerClientFailure(t, err)
 }
 
 func writeKindWithPatch(t *testing.T, path string) {
