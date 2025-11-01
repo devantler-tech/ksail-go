@@ -17,6 +17,7 @@ import (
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
@@ -230,49 +231,68 @@ func runMirrorRegistryCleanup(
 	})
 
 	err := shared.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
-		ctx := cmd.Context()
-		if ctx == nil {
-			ctx = context.Background()
-		}
-
-		registryMgr, mgrErr := dockerclient.NewRegistryManager(dockerClient)
-
-		err := cleanup(dockerClient)
-		if err != nil {
-			return fmt.Errorf("failed to cleanup registries: %w", err)
-		}
-
-		for _, name := range registryNames {
-			content := "deleting '%s'"
-
-			if mgrErr == nil {
-				inUse, checkErr := registryMgr.IsRegistryInUse(ctx, name)
-				if checkErr == nil && inUse {
-					content = "skipping '%s' as it is in use"
-				}
-			}
-
-			notify.WriteMessage(notify.Message{
-				Type:    notify.ActivityType,
-				Content: content,
-				Writer:  cmd.OutOrStdout(),
-				Args:    []any{name},
-			})
-		}
-
-		notify.WriteMessage(notify.Message{
-			Type:       notify.SuccessType,
-			Content:    "mirror registries deleted",
-			Timer:      deps.Timer,
-			Writer:     cmd.OutOrStdout(),
-			MultiStage: true,
-		})
-
-		return nil
+		return executeRegistryCleanup(cmd, dockerClient, registryNames, cleanup, deps.Timer)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to delete mirror registries: %w", err)
 	}
 
 	return nil
+}
+
+func executeRegistryCleanup(
+	cmd *cobra.Command,
+	dockerClient client.APIClient,
+	registryNames []string,
+	cleanup func(client.APIClient) error,
+	tmr timer.Timer,
+) error {
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	registryMgr, _ := dockerclient.NewRegistryManager(dockerClient)
+
+	err := cleanup(dockerClient)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup registries: %w", err)
+	}
+
+	notifyRegistryDeletions(ctx, cmd, registryNames, registryMgr)
+
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    "mirror registries deleted",
+		Timer:      tmr,
+		Writer:     cmd.OutOrStdout(),
+		MultiStage: true,
+	})
+
+	return nil
+}
+
+func notifyRegistryDeletions(
+	ctx context.Context,
+	cmd *cobra.Command,
+	registryNames []string,
+	registryMgr *dockerclient.RegistryManager,
+) {
+	for _, name := range registryNames {
+		content := "deleting '%s'"
+
+		if registryMgr != nil {
+			inUse, checkErr := registryMgr.IsRegistryInUse(ctx, name)
+			if checkErr == nil && inUse {
+				content = "skipping '%s' as it is in use"
+			}
+		}
+
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: content,
+			Writer:  cmd.OutOrStdout(),
+			Args:    []any{name},
+		})
+	}
 }
