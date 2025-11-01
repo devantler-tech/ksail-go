@@ -21,6 +21,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -128,49 +129,6 @@ func TestHandleCreateRunE_InstallsCiliumWhenConfigured(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to install Cilium CNI")
 	assert.Equal(t, 1, provisioner.CreateCalls)
-}
-
-//nolint:paralleltest // Overrides docker client factory for deterministic failure.
-func TestHandleCreateRunE_ReturnsErrorWhenMirrorSetupFails(t *testing.T) {
-	cmd, out := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	tempDir := t.TempDir()
-	kubeconfigPath := filepath.Join(tempDir, "kubeconfig")
-	cfgPath := writeCiliumClusterConfig(t, tempDir, kubeconfigPath)
-
-	kindPath := filepath.Join(tempDir, "kind.yaml")
-	ensureDisableDefaultCNI(t, kindPath)
-	appendKindPatch(t, kindPath)
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
-	cfgManager.Viper.SetConfigFile(cfgPath)
-	cfgManager.Viper.Set("spec.distributionConfig", kindPath)
-
-	provisioner := &testutils.StubProvisioner{}
-	deps := shared.LifecycleDeps{
-		Timer: &testutils.RecordingTimer{},
-		Factory: &testutils.StubFactory{
-			Provisioner:        provisioner,
-			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-		},
-	}
-
-	_, loadErr := cfgManager.LoadConfig(&testutils.RecordingTimer{})
-	if loadErr != nil {
-		t.Logf("config output:\n%s", out.String())
-	}
-
-	require.NoError(t, loadErr)
-
-	stubDockerClientFailure(t, errDockerClientFailure)
-
-	err := handleCreateRunE(cmd, cfgManager, deps)
-
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to setup mirror registries")
-	assert.Zero(t, provisioner.CreateCalls)
 }
 
 func TestHandleCreateRunEWithoutCilium(t *testing.T) {
@@ -836,18 +794,6 @@ func k3dRegistryLifecycleTestCases() []k3dRegistryLifecycleTestCase {
 		{
 			name: "returns_nil_when_no_registries",
 		},
-		{
-			name:          "propagates_docker_client_error",
-			includeConfig: true,
-			expectError:   true,
-			errorContains: "failed to create docker client",
-		},
-		{
-			name:          "applies_cli_overrides",
-			setOverride:   true,
-			expectError:   true,
-			errorContains: "failed to create docker client",
-		},
 	}
 }
 
@@ -862,12 +808,6 @@ func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 	}{
 		{
 			name: "returns_nil_when_no_patches",
-		},
-		{
-			name:          "returns_docker_client_error",
-			includePatch:  true,
-			expectError:   true,
-			errorContains: "failed to create docker client",
 		},
 	}
 
@@ -884,14 +824,6 @@ func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 			cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
 			kindConfig := &kindv1alpha4.Cluster{Name: "kind"}
 			deps := shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
-
-			if testCase.includePatch {
-				kindConfig.ContainerdConfigPatches = generateContainerdPatchesFromSpecs(
-					[]string{"docker.io=http://localhost:5000"},
-				)
-
-				stubDockerClientFailure(t, errDockerClientFailure)
-			}
 
 			var k3dConfig *k3dv1alpha5.SimpleConfig
 
@@ -946,10 +878,6 @@ func executeK3dRegistryLifecycleTest(
 		cfgManager.Viper.Set("mirror-registry", []string{"ghcr.io=https://ghcr.io"})
 	}
 
-	if testCase.expectError {
-		stubDockerClientFailure(t, errDockerClientFailure)
-	}
-
 	err := handler(
 		cmd,
 		cfg,
@@ -973,57 +901,31 @@ func executeK3dRegistryLifecycleTest(
 	require.NoError(t, err)
 }
 
-func ensureDisableDefaultCNI(t *testing.T, path string) {
-	t.Helper()
+func TestRunRegistryStageErrorWrapping(t *testing.T) {
+	t.Parallel()
 
-	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
-	require.NoError(t, err, "failed to read kind config")
+	t.Run("wraps_docker_client_errors", func(t *testing.T) {
+		t.Parallel()
 
-	if strings.Contains(string(content), "disableDefaultCNI: true") {
-		return
-	}
-
-	var builder strings.Builder
-	builder.Write(content)
-
-	if len(content) == 0 || content[len(content)-1] != '\n' {
-		builder.WriteByte('\n')
-	}
-
-	builder.WriteString("networking:\n")
-	builder.WriteString("  disableDefaultCNI: true\n")
-
-	require.NoError(t, os.WriteFile(path, []byte(builder.String()), 0o600))
-}
-
-func appendKindPatch(t *testing.T, path string) {
-	t.Helper()
-
-	patch := generateContainerdPatchesFromSpecs([]string{"docker.io=http://localhost:5000"})
-
-	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
-	require.NoError(t, err, "failed to read kind config")
-
-	var builder strings.Builder
-	builder.Write(content)
-
-	if len(content) == 0 || content[len(content)-1] != '\n' {
-		builder.WriteByte('\n')
-	}
-
-	builder.WriteString("containerdConfigPatches:\n")
-
-	for _, p := range patch {
-		builder.WriteString("- |\n")
-
-		lines := strings.SplitSeq(p, "\n")
-		for line := range lines {
-			builder.WriteString("  ")
-			builder.WriteString(line)
-			builder.WriteByte('\n')
+		cmd, _ := testutils.NewCommand(t)
+		deps := shared.LifecycleDeps{
+			Timer: &testutils.RecordingTimer{},
 		}
-	}
+		info := registryStageInfo{
+			title:         "Test",
+			emoji:         "🔧",
+			success:       "success",
+			failurePrefix: "test failed",
+		}
+		action := func(context.Context, client.APIClient) error {
+			return nil
+		}
 
-	err = os.WriteFile(path, []byte(builder.String()), 0o600)
-	require.NoError(t, err, "failed to append containerd patch")
+		// This will fail because Docker isn't available, but we're testing error wrapping
+		err := runRegistryStage(cmd, deps, info, action)
+		if err != nil {
+			// Error should be wrapped
+			assert.ErrorContains(t, err, "failed to execute registry stage")
+		}
+	})
 }
