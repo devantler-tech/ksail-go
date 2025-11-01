@@ -65,6 +65,12 @@ func HandleConnectRunE(
 		kubeConfigPath = filepath.Join(homeDir, ".kube", "config")
 	}
 
+	// Expand tilde in kubeconfig path if present
+	kubeConfigPath, err = expandKubeconfigPath(kubeConfigPath)
+	if err != nil {
+		return fmt.Errorf("expand kubeconfig path: %w", err)
+	}
+
 	// Get context from config
 	context := cfg.Spec.Connection.Context
 
