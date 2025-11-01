@@ -201,15 +201,30 @@ jobs:
             echo "Creating Kind cluster..."
             mkdir -p test-cluster1
             cd test-cluster1
-            ../ksail init --distribution Kind ${{ matrix.init-args }} --context ${{ matrix.name }}-cluster1
-            ../ksail cluster create --context ${{ matrix.name }}-cluster1
+            cluster_name="${{ matrix.name }}-cluster1"
+            ../ksail init --distribution Kind ${{ matrix.init-args }}
+            # Update kind.yaml to set the cluster name
+            sed -i "s/^name:.*/name: $cluster_name/" kind.yaml
+            # Update ksail.yaml to set the correct context
+            sed -i "s/context:.*/context: kind-$cluster_name/" ksail.yaml
+            ../ksail cluster create
             cd ..
             
             echo "Creating K3d cluster..."
             mkdir -p test-cluster2
             cd test-cluster2
-            ../ksail init --distribution K3d ${{ matrix.init-args }} --context ${{ matrix.name }}-cluster2
-            ../ksail cluster create --context ${{ matrix.name }}-cluster2
+            cluster_name="${{ matrix.name }}-cluster2"
+            ../ksail init --distribution K3d ${{ matrix.init-args }}
+            # Update k3d.yaml to set the cluster name
+            if grep -q "^name:" k3d.yaml; then
+              sed -i "s/^name:.*/name: $cluster_name/" k3d.yaml
+            else
+              # Add name field if it doesn't exist
+              sed -i "/^apiVersion:/a name: $cluster_name" k3d.yaml
+            fi
+            # Update ksail.yaml to set the correct context
+            sed -i "s/context:.*/context: k3d-$cluster_name/" ksail.yaml
+            ../ksail cluster create
             cd ..
           else
             # Create clusters of the same distribution
@@ -219,8 +234,26 @@ jobs:
               cluster_dir="test-$cluster_name"
               mkdir -p "$cluster_dir"
               cd "$cluster_dir"
-              ../ksail init ${{ matrix.init-args }} --context "$cluster_name"
-              ../ksail cluster create --context "$cluster_name"
+              ../ksail init ${{ matrix.init-args }}
+              
+              # Update config file to set the cluster name
+              if [ "${{ matrix.distribution }}" = "Kind" ]; then
+                sed -i "s/^name:.*/name: $cluster_name/" kind.yaml
+                # Update ksail.yaml to set the correct context
+                sed -i "s/context:.*/context: kind-$cluster_name/" ksail.yaml
+              else
+                # K3d
+                if grep -q "^name:" k3d.yaml; then
+                  sed -i "s/^name:.*/name: $cluster_name/" k3d.yaml
+                else
+                  # Add name field if it doesn't exist
+                  sed -i "/^apiVersion:/a name: $cluster_name" k3d.yaml
+                fi
+                # Update ksail.yaml to set the correct context
+                sed -i "s/context:.*/context: k3d-$cluster_name/" ksail.yaml
+              fi
+              
+              ../ksail cluster create
               cd ..
             done
           fi
@@ -245,52 +278,62 @@ jobs:
           # For each cluster, test that it can pull through the mirror
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Test Kind cluster
-            echo "Testing pull-through for Kind cluster1..."
-            kubectl --context=${{ matrix.name }}-cluster1 run test-nginx-cluster1 \
+            cluster_name="${{ matrix.name }}-cluster1"
+            context="kind-$cluster_name"
+            echo "Testing pull-through for Kind cluster: $context..."
+            kubectl --context="$context" run test-nginx-cluster1 \
               --image=nginx:alpine \
               --restart=Never
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context=${{ matrix.name }}-cluster1 wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
+            kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context=${{ matrix.name }}-cluster1 get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context="$context" get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context=${{ matrix.name }}-cluster1 describe pod test-nginx-cluster1
+              kubectl --context="$context" describe pod test-nginx-cluster1
               exit 1
             fi
             echo "✓ Pod test-nginx-cluster1 is running"
             
             # Clean up test pod
-            kubectl --context=${{ matrix.name }}-cluster1 delete pod test-nginx-cluster1
+            kubectl --context="$context" delete pod test-nginx-cluster1
             
             # Test K3d cluster
-            echo "Testing pull-through for K3d cluster2..."
-            kubectl --context=${{ matrix.name }}-cluster2 run test-nginx-cluster2 \
+            cluster_name="${{ matrix.name }}-cluster2"
+            context="k3d-$cluster_name"
+            echo "Testing pull-through for K3d cluster: $context..."
+            kubectl --context="$context" run test-nginx-cluster2 \
               --image=nginx:alpine \
               --restart=Never
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context=${{ matrix.name }}-cluster2 wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
+            kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context=${{ matrix.name }}-cluster2 get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context="$context" get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context=${{ matrix.name }}-cluster2 describe pod test-nginx-cluster2
+              kubectl --context="$context" describe pod test-nginx-cluster2
               exit 1
             fi
             echo "✓ Pod test-nginx-cluster2 is running"
             
             # Clean up test pod
-            kubectl --context=${{ matrix.name }}-cluster2 delete pod test-nginx-cluster2
+            kubectl --context="$context" delete pod test-nginx-cluster2
           else
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
               cluster_name="${{ matrix.name }}-cluster$i"
-              context="$cluster_name"
+              
+              # Set context based on distribution
+              if [ "${{ matrix.distribution }}" = "Kind" ]; then
+                context="kind-$cluster_name"
+              else
+                context="k3d-$cluster_name"
+              fi
               
               echo "Testing pull-through for $context..."
               kubectl --context="$context" run test-nginx-$cluster_name \
@@ -349,13 +392,13 @@ jobs:
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Delete Kind cluster
             cd test-cluster1
-            ../ksail cluster delete --context ${{ matrix.name }}-cluster1 || true
+            ../ksail cluster delete || true
             cd ..
             rm -rf test-cluster1
             
             # Delete K3d cluster
             cd test-cluster2
-            ../ksail cluster delete --context ${{ matrix.name }}-cluster2 || true
+            ../ksail cluster delete || true
             cd ..
             rm -rf test-cluster2
           else
@@ -365,7 +408,7 @@ jobs:
               
               if [ -d "$cluster_dir" ]; then
                 cd "$cluster_dir"
-                ../ksail cluster delete --context "$cluster_name" || true
+                ../ksail cluster delete || true
                 cd ..
                 rm -rf "$cluster_dir"
               fi
