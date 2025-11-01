@@ -46,7 +46,7 @@ jobs:
       packages: read
       pull-requests: write
 
-  system-test:
+  system-test-lifecycle:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
     needs: [pre-commit, ci]
@@ -229,9 +229,6 @@ jobs:
         run: |
           set -e
           
-          # Wait for clusters to be fully ready
-          sleep 5
-          
           # Check that registry containers exist and are running
           echo "Checking registry containers..."
           docker ps --filter "label=io.ksail.registry" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -251,21 +248,45 @@ jobs:
             echo "Testing pull-through for Kind cluster1..."
             kubectl --context=kind-cluster1 run test-nginx-cluster1 \
               --image=nginx:alpine \
-              --restart=Never \
-              --timeout=60s || true
-            sleep 3
-            kubectl --context=kind-cluster1 get pod test-nginx-cluster1 || true
-            kubectl --context=kind-cluster1 delete pod test-nginx-cluster1 --ignore-not-found=true || true
+              --restart=Never
+            
+            # Wait for pod to be ready (with timeout)
+            echo "Waiting for pod to be ready..."
+            kubectl --context=kind-cluster1 wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
+            
+            # Verify pod status
+            pod_status=$(kubectl --context=kind-cluster1 get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
+            if [ "$pod_status" != "Running" ]; then
+              echo "ERROR: Pod failed to start. Status: $pod_status"
+              kubectl --context=kind-cluster1 describe pod test-nginx-cluster1
+              exit 1
+            fi
+            echo "✓ Pod test-nginx-cluster1 is running"
+            
+            # Clean up test pod
+            kubectl --context=kind-cluster1 delete pod test-nginx-cluster1
             
             # Test K3d cluster
             echo "Testing pull-through for K3d cluster2..."
             kubectl --context=k3d-cluster2 run test-nginx-cluster2 \
               --image=nginx:alpine \
-              --restart=Never \
-              --timeout=60s || true
-            sleep 3
-            kubectl --context=k3d-cluster2 get pod test-nginx-cluster2 || true
-            kubectl --context=k3d-cluster2 delete pod test-nginx-cluster2 --ignore-not-found=true || true
+              --restart=Never
+            
+            # Wait for pod to be ready (with timeout)
+            echo "Waiting for pod to be ready..."
+            kubectl --context=k3d-cluster2 wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
+            
+            # Verify pod status
+            pod_status=$(kubectl --context=k3d-cluster2 get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
+            if [ "$pod_status" != "Running" ]; then
+              echo "ERROR: Pod failed to start. Status: $pod_status"
+              kubectl --context=k3d-cluster2 describe pod test-nginx-cluster2
+              exit 1
+            fi
+            echo "✓ Pod test-nginx-cluster2 is running"
+            
+            # Clean up test pod
+            kubectl --context=k3d-cluster2 delete pod test-nginx-cluster2
           else
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
               cluster_name="cluster$i"
@@ -279,20 +300,53 @@ jobs:
               echo "Testing pull-through for $context..."
               kubectl --context="$context" run test-nginx-$cluster_name \
                 --image=nginx:alpine \
-                --restart=Never \
-                --timeout=60s || true
-              sleep 3
-              kubectl --context="$context" get pod test-nginx-$cluster_name || true
-              kubectl --context="$context" delete pod test-nginx-$cluster_name --ignore-not-found=true || true
+                --restart=Never
+              
+              # Wait for pod to be ready (with timeout)
+              echo "Waiting for pod to be ready..."
+              kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-$cluster_name --timeout=120s
+              
+              # Verify pod status
+              pod_status=$(kubectl --context="$context" get pod test-nginx-$cluster_name -o jsonpath='{.status.phase}')
+              if [ "$pod_status" != "Running" ]; then
+                echo "ERROR: Pod failed to start. Status: $pod_status"
+                kubectl --context="$context" describe pod test-nginx-$cluster_name
+                exit 1
+              fi
+              echo "✓ Pod test-nginx-$cluster_name is running"
+              
+              # Clean up test pod
+              kubectl --context="$context" delete pod test-nginx-$cluster_name
             done
           fi
           
-          # Check registry logs to verify pull-through activity
-          echo "Checking registry logs for pull activity..."
+          # Verify registry logs show pull-through activity
+          echo "Verifying pull-through activity in registry logs..."
+          pull_activity_found=false
+          
           for registry in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
-            echo "=== Logs for $registry ==="
-            docker logs "$registry" 2>&1 | tail -30 || true
+            echo "=== Checking logs for $registry ==="
+            # Look for GET requests which indicate image pulls
+            if docker logs "$registry" 2>&1 | grep -q "GET /v2/"; then
+              echo "✓ Pull-through activity detected in $registry"
+              docker logs "$registry" 2>&1 | grep "GET /v2/" | tail -10
+              pull_activity_found=true
+            else
+              echo "⚠ No pull-through activity detected in $registry"
+            fi
           done
+          
+          if [ "$pull_activity_found" = false ]; then
+            echo "ERROR: No pull-through activity detected in any registry"
+            echo "Dumping all registry logs for debugging:"
+            for registry in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
+              echo "=== Full logs for $registry ==="
+              docker logs "$registry" 2>&1 | tail -50
+            done
+            exit 1
+          fi
+          
+          echo "✓ Pull-through verification successful"
 
       - name: 🧪 Delete clusters (${{ matrix.name }})
         if: always()
@@ -335,26 +389,26 @@ jobs:
 
   system-test-status:
     runs-on: ubuntu-latest
-    needs: [system-test, system-test-mirror-registries]
+    needs: [system-test-lifecycle, system-test-mirror-registries]
     if: always()
     steps:
       - name: Summarize matrix result
         shell: bash
         run: |
           set -Eeuo pipefail
-          echo "system-test result: $SYSTEM_TEST_RESULT"
+          echo "system-test-lifecycle result: $LIFECYCLE_TEST_RESULT"
           echo "system-test-mirror-registries result: $MIRROR_TEST_RESULT"
           
           # Check if both jobs succeeded or were skipped
-          if [[ "$SYSTEM_TEST_RESULT" =~ ^(success|skipped)$ ]] && [[ "$MIRROR_TEST_RESULT" =~ ^(success|skipped)$ ]]; then
+          if [[ "$LIFECYCLE_TEST_RESULT" =~ ^(success|skipped)$ ]] && [[ "$MIRROR_TEST_RESULT" =~ ^(success|skipped)$ ]]; then
             echo "All system tests succeeded or were skipped."
             exit 0
           else
             echo "At least one system test failed."
-            echo "  system-test: $SYSTEM_TEST_RESULT"
+            echo "  system-test-lifecycle: $LIFECYCLE_TEST_RESULT"
             echo "  system-test-mirror-registries: $MIRROR_TEST_RESULT"
             exit 1
           fi
         env:
-          SYSTEM_TEST_RESULT: ${{ needs.system-test.result }}
+          LIFECYCLE_TEST_RESULT: ${{ needs.system-test-lifecycle.result }}
           MIRROR_TEST_RESULT: ${{ needs.system-test-mirror-registries.result }}
