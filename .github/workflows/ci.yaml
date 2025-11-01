@@ -201,21 +201,21 @@ jobs:
             echo "Creating Kind cluster..."
             mkdir -p test-cluster1
             cd test-cluster1
-            ../ksail init --distribution Kind ${{ matrix.init-args }} --context cluster1
-            ../ksail cluster create --context cluster1
+            ../ksail init --distribution Kind ${{ matrix.init-args }} --context ${{ matrix.name }}-cluster1
+            ../ksail cluster create --context ${{ matrix.name }}-cluster1
             cd ..
             
             echo "Creating K3d cluster..."
             mkdir -p test-cluster2
             cd test-cluster2
-            ../ksail init --distribution K3d ${{ matrix.init-args }} --context cluster2
-            ../ksail cluster create --context cluster2
+            ../ksail init --distribution K3d ${{ matrix.init-args }} --context ${{ matrix.name }}-cluster2
+            ../ksail cluster create --context ${{ matrix.name }}-cluster2
             cd ..
           else
             # Create clusters of the same distribution
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
               echo "Creating ${{ matrix.distribution }} cluster $i..."
-              cluster_name="cluster$i"
+              cluster_name="${{ matrix.name }}-cluster$i"
               cluster_dir="test-$cluster_name"
               mkdir -p "$cluster_dir"
               cd "$cluster_dir"
@@ -246,50 +246,50 @@ jobs:
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Test Kind cluster
             echo "Testing pull-through for Kind cluster1..."
-            kubectl --context=cluster1 run test-nginx-cluster1 \
+            kubectl --context=${{ matrix.name }}-cluster1 run test-nginx-cluster1 \
               --image=nginx:alpine \
               --restart=Never
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context=cluster1 wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
+            kubectl --context=${{ matrix.name }}-cluster1 wait --for=condition=Ready pod/test-nginx-cluster1 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context=cluster1 get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context=${{ matrix.name }}-cluster1 get pod test-nginx-cluster1 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context=cluster1 describe pod test-nginx-cluster1
+              kubectl --context=${{ matrix.name }}-cluster1 describe pod test-nginx-cluster1
               exit 1
             fi
             echo "✓ Pod test-nginx-cluster1 is running"
             
             # Clean up test pod
-            kubectl --context=cluster1 delete pod test-nginx-cluster1
+            kubectl --context=${{ matrix.name }}-cluster1 delete pod test-nginx-cluster1
             
             # Test K3d cluster
             echo "Testing pull-through for K3d cluster2..."
-            kubectl --context=cluster2 run test-nginx-cluster2 \
+            kubectl --context=${{ matrix.name }}-cluster2 run test-nginx-cluster2 \
               --image=nginx:alpine \
               --restart=Never
             
             # Wait for pod to be ready (with timeout)
             echo "Waiting for pod to be ready..."
-            kubectl --context=cluster2 wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
+            kubectl --context=${{ matrix.name }}-cluster2 wait --for=condition=Ready pod/test-nginx-cluster2 --timeout=120s
             
             # Verify pod status
-            pod_status=$(kubectl --context=cluster2 get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
+            pod_status=$(kubectl --context=${{ matrix.name }}-cluster2 get pod test-nginx-cluster2 -o jsonpath='{.status.phase}')
             if [ "$pod_status" != "Running" ]; then
               echo "ERROR: Pod failed to start. Status: $pod_status"
-              kubectl --context=cluster2 describe pod test-nginx-cluster2
+              kubectl --context=${{ matrix.name }}-cluster2 describe pod test-nginx-cluster2
               exit 1
             fi
             echo "✓ Pod test-nginx-cluster2 is running"
             
             # Clean up test pod
-            kubectl --context=cluster2 delete pod test-nginx-cluster2
+            kubectl --context=${{ matrix.name }}-cluster2 delete pod test-nginx-cluster2
           else
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
-              cluster_name="cluster$i"
+              cluster_name="${{ matrix.name }}-cluster$i"
               context="$cluster_name"
               
               echo "Testing pull-through for $context..."
@@ -349,18 +349,18 @@ jobs:
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Delete Kind cluster
             cd test-cluster1
-            ../ksail cluster delete --context cluster1 || true
+            ../ksail cluster delete --context ${{ matrix.name }}-cluster1 || true
             cd ..
             rm -rf test-cluster1
             
             # Delete K3d cluster
             cd test-cluster2
-            ../ksail cluster delete --context cluster2 || true
+            ../ksail cluster delete --context ${{ matrix.name }}-cluster2 || true
             cd ..
             rm -rf test-cluster2
           else
             for i in $(seq 1 ${{ matrix.cluster-count }}); do
-              cluster_name="cluster$i"
+              cluster_name="${{ matrix.name }}-cluster$i"
               cluster_dir="test-$cluster_name"
               
               if [ -d "$cluster_dir" ]; then
