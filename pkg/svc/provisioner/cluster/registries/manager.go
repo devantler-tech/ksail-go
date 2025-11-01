@@ -31,9 +31,11 @@ const DefaultRegistryPort = 5000
 
 const expectedEndpointParts = 2
 
-// isEmptyString returns true if the string is empty or contains only whitespace.
-func isEmptyString(s string) bool {
-	return strings.TrimSpace(s) == ""
+// trimNonEmpty returns the trimmed string and whether it's non-empty.
+// This consolidates the common pattern of trimming and checking for emptiness.
+func trimNonEmpty(s string) (string, bool) {
+	trimmed := strings.TrimSpace(s)
+	return trimmed, trimmed != ""
 }
 
 // Registry Lifecycle Management
@@ -102,11 +104,11 @@ func collectExistingRegistryNames(
 	}
 
 	for _, name := range current {
-		if isEmptyString(name) {
+		trimmed, ok := trimNonEmpty(name)
+		if !ok {
 			continue
 		}
 
-		trimmed := strings.TrimSpace(name)
 		existingRegistries[trimmed] = struct{}{}
 	}
 
@@ -246,13 +248,14 @@ func ConnectRegistriesToNetwork(
 	networkName string,
 	writer io.Writer,
 ) error {
-	if dockerClient == nil || len(registries) == 0 || isEmptyString(networkName) {
+	networkName, networkOK := trimNonEmpty(networkName)
+	if dockerClient == nil || len(registries) == 0 || !networkOK {
 		return nil
 	}
 
 	for _, reg := range registries {
-		containerName := reg.Name
-		if isEmptyString(containerName) {
+		containerName, nameOK := trimNonEmpty(reg.Name)
+		if !nameOK {
 			continue
 		}
 
