@@ -320,25 +320,25 @@ jobs:
               echo "Waiting for nodes to be ready..."
               kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
               
-              kubectl --context="$context" run test-nginx-$cluster_name \
+              kubectl --context="$context" run "test-nginx-${cluster_name}" \
                 --image=nginx:alpine \
                 --restart=Never
               
               # Wait for pod to be ready (with timeout)
               echo "Waiting for pod to be ready..."
-              kubectl --context="$context" wait --for=condition=Ready pod/test-nginx-$cluster_name --timeout=120s
+              kubectl --context="$context" wait --for=condition=Ready "pod/test-nginx-${cluster_name}" --timeout=120s
               
               # Verify pod status
-              pod_status=$(kubectl --context="$context" get pod test-nginx-$cluster_name -o jsonpath='{.status.phase}')
+              pod_status=$(kubectl --context="$context" get pod "test-nginx-${cluster_name}" -o jsonpath='{.status.phase}')
               if [ "$pod_status" != "Running" ]; then
                 echo "ERROR: Pod failed to start. Status: $pod_status"
-                kubectl --context="$context" describe pod test-nginx-$cluster_name
+                kubectl --context="$context" describe pod "test-nginx-${cluster_name}"
                 exit 1
               fi
-              echo "✓ Pod test-nginx-$cluster_name is running"
+              echo "✓ Pod test-nginx-${cluster_name} is running"
               
               # Clean up test pod
-              kubectl --context="$context" delete pod test-nginx-$cluster_name
+              kubectl --context="$context" delete pod "test-nginx-${cluster_name}"
             done
           fi
           
