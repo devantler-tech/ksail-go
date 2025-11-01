@@ -160,4 +160,3 @@ func TestWithDockerClientInstance_OperationAndCloseError(t *testing.T) {
 	assert.Contains(t, out.String(), "cleanup warning")
 	assert.Contains(t, out.String(), "close failed")
 }
-
