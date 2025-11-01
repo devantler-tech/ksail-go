@@ -25,7 +25,8 @@ func TestGetDefaultKubeconfigPath(t *testing.T) {
 func TestGetKubeconfigPathFromConfig(t *testing.T) {
 	t.Parallel()
 
-	homeDir, _ := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name           string

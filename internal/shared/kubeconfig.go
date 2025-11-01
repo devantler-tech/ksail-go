@@ -25,17 +25,15 @@ func GetKubeconfigPathFromConfig(cfg *v1alpha1.Cluster) (string, error) {
 	kubeconfigPath := cfg.Spec.Connection.Kubeconfig
 	if kubeconfigPath == "" {
 		kubeconfigPath = GetDefaultKubeconfigPath()
-	} else {
-		// Expand tilde in kubeconfig path if present
-		expandedPath, err := iopath.ExpandHomePath(kubeconfigPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to expand home path: %w", err)
-		}
-
-		kubeconfigPath = expandedPath
 	}
 
-	return kubeconfigPath, nil
+	// Always expand tilde in kubeconfig path, regardless of source
+	expandedPath, err := iopath.ExpandHomePath(kubeconfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to expand home path: %w", err)
+	}
+
+	return expandedPath, nil
 }
 
 // GetKubeconfigPathSilently tries to load config and get kubeconfig path without any output.
