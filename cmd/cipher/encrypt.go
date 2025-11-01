@@ -15,6 +15,7 @@ import (
 // NewEncryptCmd creates the encrypt subcommand.
 func NewEncryptCmd() *cobra.Command {
 	var keyFlag string
+
 	var outputFlag string
 
 	cmd := &cobra.Command{
@@ -64,12 +65,14 @@ func handleEncryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 		if err != nil {
 			return fmt.Errorf("failed to decode key: %w", err)
 		}
-		if len(key) != 32 {
-			return fmt.Errorf("key must be 32 bytes for AES-256, got %d bytes", len(key))
+
+		if len(key) != aesKeySize {
+			return fmt.Errorf("key must be %d bytes for AES-256, got %d bytes", aesKeySize, len(key))
 		}
 	} else {
 		// Generate a random 32-byte key for AES-256
-		key = make([]byte, 32)
+		key = make([]byte, aesKeySize)
+
 		_, err = rand.Read(key)
 		if err != nil {
 			return fmt.Errorf("failed to generate random key: %w", err)
@@ -78,7 +81,7 @@ func handleEncryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 		encodedKey := base64.StdEncoding.EncodeToString(key)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.InfoType,
-			Content: fmt.Sprintf("Generated key: %s", encodedKey),
+			Content: "Generated key: " + encodedKey,
 			Writer:  cmd.OutOrStdout(),
 		})
 		notify.WriteMessage(notify.Message{
@@ -90,6 +93,7 @@ func handleEncryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 
 	// Encrypt the data
 	cipher := aes.NewCipher()
+
 	encrypted, err := cipher.Encrypt(string(plaintext), key, "")
 	if err != nil {
 		return fmt.Errorf("failed to encrypt data: %w", err)
@@ -97,24 +101,26 @@ func handleEncryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 
 	// Write output
 	if outputFlag != "" {
-		err = os.WriteFile(outputFlag, []byte(encrypted), 0o600)
+		err = os.WriteFile(outputFlag, []byte(encrypted), filePermOwner)
 		if err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
+
 		total, stage := tmr.GetTiming()
 		timingStr := notify.FormatTiming(total, stage, false)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("encrypted file written to %s %s", outputFlag, timingStr),
+			Content: "encrypted file written to " + outputFlag + " " + timingStr,
 			Writer:  cmd.OutOrStdout(),
 		})
 	} else {
 		fmt.Fprintln(cmd.OutOrStdout(), encrypted)
+
 		total, stage := tmr.GetTiming()
 		timingStr := notify.FormatTiming(total, stage, false)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("encryption complete %s", timingStr),
+			Content: "encryption complete " + timingStr,
 			Writer:  cmd.OutOrStdout(),
 		})
 	}

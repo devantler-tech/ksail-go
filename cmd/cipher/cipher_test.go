@@ -2,6 +2,7 @@ package cipher_test
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
@@ -70,6 +71,7 @@ func TestCipherCommandHelp(t *testing.T) {
 	if !contains(output, "encrypt") {
 		t.Error("expected help to mention encrypt subcommand")
 	}
+
 	if !contains(output, "decrypt") {
 		t.Error("expected help to mention decrypt subcommand")
 	}
@@ -82,10 +84,11 @@ func findSubcommand(cmd *cobra.Command, name string) *cobra.Command {
 			return sub
 		}
 	}
+
 	return nil
 }
 
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
-	return bytes.Contains([]byte(s), []byte(substr))
+	return strings.Contains(s, substr)
 }

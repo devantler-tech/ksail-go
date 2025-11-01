@@ -14,6 +14,7 @@ import (
 // NewDecryptCmd creates the decrypt subcommand.
 func NewDecryptCmd() *cobra.Command {
 	var keyFlag string
+
 	var outputFlag string
 
 	cmd := &cobra.Command{
@@ -62,6 +63,7 @@ func handleDecryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 
 	// Decrypt the data
 	cipher := aes.NewCipher()
+
 	decrypted, err := cipher.Decrypt(string(encryptedData), key, "")
 	if err != nil {
 		return fmt.Errorf("failed to decrypt data: %w", err)
@@ -75,24 +77,26 @@ func handleDecryptRunE(cmd *cobra.Command, inputFile, keyFlag, outputFlag string
 
 	// Write output
 	if outputFlag != "" {
-		err = os.WriteFile(outputFlag, []byte(decryptedStr), 0o600)
+		err = os.WriteFile(outputFlag, []byte(decryptedStr), filePermOwner)
 		if err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}
+
 		total, stage := tmr.GetTiming()
 		timingStr := notify.FormatTiming(total, stage, false)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("decrypted file written to %s %s", outputFlag, timingStr),
+			Content: "decrypted file written to " + outputFlag + " " + timingStr,
 			Writer:  cmd.OutOrStdout(),
 		})
 	} else {
 		fmt.Fprintln(cmd.OutOrStdout(), decryptedStr)
+
 		total, stage := tmr.GetTiming()
 		timingStr := notify.FormatTiming(total, stage, false)
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("decryption complete %s", timingStr),
+			Content: "decryption complete " + timingStr,
 			Writer:  cmd.OutOrStdout(),
 		})
 	}
@@ -106,8 +110,9 @@ func base64DecodeKey(keyFlag string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode key: %w", err)
 	}
-	if len(key) != 32 {
-		return nil, fmt.Errorf("key must be 32 bytes for AES-256, got %d bytes", len(key))
+	if len(key) != aesKeySize {
+		return nil, fmt.Errorf("key must be %d bytes for AES-256, got %d bytes", aesKeySize, len(key))
 	}
+
 	return key, nil
 }

@@ -117,7 +117,8 @@ func TestDecryptCommand_WithOutputFile(t *testing.T) {
 	}
 
 	// Verify output file was created
-	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+	_, statErr := os.Stat(outputFile)
+	if os.IsNotExist(statErr) {
 		t.Error("expected output file to be created")
 	}
 
@@ -210,6 +211,7 @@ func TestDecryptCommand_InvalidKey(t *testing.T) {
 	if err == nil {
 		t.Error("expected error with wrong length key")
 	}
+
 	if !strings.Contains(err.Error(), "32 bytes") {
 		t.Errorf("expected error message about 32 bytes, got: %v", err)
 	}
