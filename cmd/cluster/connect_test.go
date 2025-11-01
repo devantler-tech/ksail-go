@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
@@ -289,18 +290,18 @@ func TestHandleConnectRunE_WithContextAndKubeconfig(t *testing.T) {
 	require.Equal(t, contextName, cfg.Spec.Connection.Context)
 }
 
-func TestExpandKubeconfigPath_WithoutTilde(t *testing.T) {
+func TestExpandHomePath_WithoutTilde(t *testing.T) {
 	t.Parallel()
 
-	path, err := expandKubeconfigPath("/tmp/config")
+	path, err := ksailio.ExpandHomePath("/tmp/config")
 	require.NoError(t, err, "expected no error for absolute path")
 	require.Equal(t, "/tmp/config", path, "expected path to remain unchanged")
 }
 
-func TestExpandKubeconfigPath_WithTilde(t *testing.T) {
+func TestExpandHomePath_WithTilde(t *testing.T) {
 	t.Parallel()
 
-	path, err := expandKubeconfigPath("~/config")
+	path, err := ksailio.ExpandHomePath("~/config")
 	require.NoError(t, err, "expected no error for tilde path")
 
 	homeDir, err := os.UserHomeDir()
@@ -310,10 +311,10 @@ func TestExpandKubeconfigPath_WithTilde(t *testing.T) {
 	require.Equal(t, expectedPath, path, "expected tilde to be expanded to home directory")
 }
 
-func TestExpandKubeconfigPath_EmptyString(t *testing.T) {
+func TestExpandHomePath_EmptyString(t *testing.T) {
 	t.Parallel()
 
-	path, err := expandKubeconfigPath("")
+	path, err := ksailio.ExpandHomePath("")
 	require.NoError(t, err, "expected no error for empty string")
 	require.Empty(t, path, "expected empty string to remain unchanged")
 }
@@ -335,7 +336,7 @@ func TestHandleConnectRunE_ExpandsTildePath(t *testing.T) {
 	require.NoError(t, err, "expected to get home directory")
 
 	expectedPath := filepath.Join(homeDir, ".kube", "config")
-	expandedPath, err := expandKubeconfigPath(cfg.Spec.Connection.Kubeconfig)
+	expandedPath, err := ksailio.ExpandHomePath(cfg.Spec.Connection.Kubeconfig)
 	require.NoError(t, err, "expected tilde expansion to succeed")
 	require.Equal(t, expectedPath, expandedPath,
 		"expected tilde to be expanded to full path")

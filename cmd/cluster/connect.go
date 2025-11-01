@@ -7,6 +7,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/spf13/cobra"
 )
@@ -66,7 +67,7 @@ func HandleConnectRunE(
 	}
 
 	// Expand tilde in kubeconfig path if present
-	kubeConfigPath, err = expandKubeconfigPath(kubeConfigPath)
+	kubeConfigPath, err = ksailio.ExpandHomePath(kubeConfigPath)
 	if err != nil {
 		return fmt.Errorf("expand kubeconfig path: %w", err)
 	}
