@@ -31,6 +31,14 @@ const DefaultRegistryPort = 5000
 
 const expectedEndpointParts = 2
 
+// isEmptyString returns true if the string is empty or contains only whitespace.
+func isEmptyString(s string) bool {
+	return strings.TrimSpace(s) == ""
+}
+
+// Registry Lifecycle Management
+// These functions handle the creation, setup, and cleanup of registry containers.
+
 // SetupRegistries ensures that the provided registries exist. Any newly created
 // registries are cleaned up if a later creation fails.
 func SetupRegistries(
@@ -94,11 +102,11 @@ func collectExistingRegistryNames(
 	}
 
 	for _, name := range current {
-		trimmed := strings.TrimSpace(name)
-		if trimmed == "" {
+		if isEmptyString(name) {
 			continue
 		}
 
+		trimmed := strings.TrimSpace(name)
 		existingRegistries[trimmed] = struct{}{}
 	}
 
@@ -226,6 +234,9 @@ func cleanupCreatedRegistries(
 	}
 }
 
+// Network Operations
+// These functions manage network connections between registry containers and clusters.
+
 // ConnectRegistriesToNetwork attaches each registry container to the provided network.
 // Any connection failures are logged as warnings but do not abort the operation.
 func ConnectRegistriesToNetwork(
@@ -235,13 +246,13 @@ func ConnectRegistriesToNetwork(
 	networkName string,
 	writer io.Writer,
 ) error {
-	if dockerClient == nil || len(registries) == 0 || strings.TrimSpace(networkName) == "" {
+	if dockerClient == nil || len(registries) == 0 || isEmptyString(networkName) {
 		return nil
 	}
 
 	for _, reg := range registries {
 		containerName := reg.Name
-		if strings.TrimSpace(containerName) == "" {
+		if isEmptyString(containerName) {
 			continue
 		}
 
@@ -306,6 +317,9 @@ func CleanupRegistries(
 
 	return nil
 }
+
+// Naming and Identification Utilities
+// These functions handle registry naming conventions and identifier generation.
 
 // SanitizeHostIdentifier converts a registry host string into a Docker-safe identifier while keeping dots intact
 // so hosts such as docker.io remain reachable via container name resolution.
@@ -465,6 +479,9 @@ func BuildRegistryName(prefix, host string) string {
 
 	return prefix + sanitized
 }
+
+// Registry Configuration Builders
+// These functions construct Info structures from various inputs.
 
 // BuildRegistryInfo creates an Info populated with derived fields using the supplied prefix for container names.
 func BuildRegistryInfo(
