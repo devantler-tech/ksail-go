@@ -5,51 +5,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	cmdpkg "github.com/devantler-tech/ksail-go/cmd"
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	timermocks "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
 
-type recordingInitTimer struct {
-	startCount int
-	stageCount int
-}
-
-func (r *recordingInitTimer) Start() {
-	r.startCount++
-}
-
-func (r *recordingInitTimer) NewStage() {
-	r.stageCount++
-}
-
-func (r *recordingInitTimer) Stop() {}
-
-func (r *recordingInitTimer) GetTiming() (time.Duration, time.Duration) {
-	return time.Millisecond, time.Millisecond
-}
-
-func newConfigManagerWithFile(
-	t *testing.T,
-	writer io.Writer,
-	configPath string,
-) *ksailconfigmanager.ConfigManager {
-	t.Helper()
-
-	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
-	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
-
-	manager := ksailconfigmanager.NewConfigManager(writer, selectors...)
-	manager.Viper.SetConfigFile(configPath)
-
-	return manager
-}
+const mirrorRegistryHelp = "Configure mirror registries with format 'host=upstream' " +
+	"(e.g., docker.io=https://registry-1.docker.io)."
 
 func newInitCommand(t *testing.T) *cobra.Command {
 	t.Helper()
@@ -61,24 +29,46 @@ func newInitCommand(t *testing.T) *cobra.Command {
 	return cmd
 }
 
+func newConfigManager(
+	t *testing.T,
+	cmd *cobra.Command,
+	writer io.Writer,
+) *ksailconfigmanager.ConfigManager {
+	t.Helper()
+	cmd.SetOut(writer)
+	cmd.SetErr(writer)
+	manager := ksailconfigmanager.NewCommandConfigManager(cmd, cmdpkg.InitFieldSelectors())
+	// bind init-local flags like production code
+	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
+	_ = manager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
+	_ = manager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+	cmd.Flags().
+		StringSlice("mirror-registry", []string{}, mirrorRegistryHelp)
+	_ = manager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
+
+	return manager
+}
+
 func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 	t.Parallel()
 
+	// Using mockery-generated Timer (pkg/ui/timer/mocks.go) so we can set deterministic
+	// expectations on timing calls without maintaining a bespoke RecordingTimer helper.
+
 	outDir := t.TempDir()
-	configDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, configDir)
 
 	var buffer bytes.Buffer
 
-	cfgManager := newConfigManagerWithFile(t, &buffer, filepath.Join(configDir, "ksail.yaml"))
-	cfgManager.Viper.Set("output", outDir)
-
 	cmd := newInitCommand(t)
-	cmd.SetOut(&buffer)
-	cmd.SetErr(&buffer)
+	cfgManager := newConfigManager(t, cmd, &buffer)
 
-	tmr := &recordingInitTimer{}
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"output": outDir,
+		"force":  "true",
+	})
+
+	deps := newInitDeps(t)
 
 	var err error
 
@@ -87,18 +77,9 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	if tmr.startCount == 0 {
-		t.Fatal("expected timer Start to be called")
-	}
+	// Expectations asserted via mock cleanup
 
-	if tmr.stageCount == 0 {
-		t.Fatal("expected timer NewStage to be called")
-	}
-
-	// Normalize temp directory paths for snapshot comparison
-	output := strings.ReplaceAll(buffer.String(), configDir, "<config-dir>")
-
-	snaps.MatchSnapshot(t, output)
+	snaps.MatchSnapshot(t, buffer.String())
 
 	_, err = os.Stat(filepath.Join(outDir, "ksail.yaml"))
 	if err != nil {
@@ -106,57 +87,52 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 	}
 }
 
-func TestHandleInitRunE_ReturnsErrorForInvalidConfig(t *testing.T) {
+func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 	t.Parallel()
 
-	configDir := t.TempDir()
-	configPath := filepath.Join(configDir, "ksail.yaml")
+	outDir := t.TempDir()
 
-	err := os.WriteFile(configPath, []byte(": invalid"), 0o600)
-	if err != nil {
-		t.Fatalf("failed to write invalid config: %v", err)
-	}
+	var buffer bytes.Buffer
 
-	cfgManager := newConfigManagerWithFile(t, io.Discard, configPath)
 	cmd := newInitCommand(t)
+	cfgManager := newConfigManager(t, cmd, &buffer)
 
-	tmr := &recordingInitTimer{}
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"output":              outDir,
+		"distribution":        "K3d",
+		"distribution-config": "k3d.yaml",
+		"force":               "true",
+	})
 
-	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
-	if err == nil {
-		t.Fatal("expected error from invalid config")
+	deps := newInitDeps(t)
+
+	err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err != nil {
+		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	if !strings.Contains(err.Error(), "failed to load cluster configuration") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if tmr.startCount == 0 {
-		t.Fatal("expected timer Start to be called even on failure")
+	_, err = os.Stat(filepath.Join(outDir, "k3d.yaml"))
+	if err != nil {
+		t.Fatalf("expected k3d.yaml to be scaffolded: %v", err)
 	}
 }
 
 //nolint:paralleltest // Uses t.Chdir for snapshot setup.
 func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	workingDir := t.TempDir()
-	configDir := t.TempDir()
-	cmdtestutils.WriteValidKsailConfig(t, configDir)
-
-	configPath := filepath.Join(configDir, "ksail.yaml")
 
 	var buffer bytes.Buffer
 
-	cfgManager := newConfigManagerWithFile(t, &buffer, configPath)
-
 	cmd := newInitCommand(t)
-	cmd.SetOut(&buffer)
-	cmd.SetErr(&buffer)
+	cfgManager := newConfigManager(t, cmd, &buffer)
 
 	t.Chdir(workingDir)
 
-	tmr := &recordingInitTimer{}
-	deps := cmdpkg.InitDeps{Timer: tmr}
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"force": "true",
+	})
+
+	deps := newInitDeps(t)
 
 	var err error
 
@@ -165,13 +141,20 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
-	// Normalize temp directory paths for snapshot comparison
-	output := strings.ReplaceAll(buffer.String(), configDir, "<config-dir>")
-
-	snaps.MatchSnapshot(t, output)
+	snaps.MatchSnapshot(t, buffer.String())
 
 	_, err = os.Stat(filepath.Join(workingDir, "ksail.yaml"))
 	if err != nil {
 		t.Fatalf("expected ksail.yaml in working directory: %v", err)
 	}
+}
+
+func newInitDeps(t *testing.T) cmdpkg.InitDeps {
+	t.Helper()
+	tmr := timermocks.NewMockTimer(t)
+	tmr.EXPECT().Start().Return()
+	tmr.EXPECT().NewStage().Return()
+	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
+
+	return cmdpkg.InitDeps{Timer: tmr}
 }

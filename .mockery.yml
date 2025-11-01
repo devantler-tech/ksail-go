@@ -32,7 +32,7 @@ packages:
     config:
       recursive: false
       dir: pkg/client/k9s
-      filename: mocks_test.go
+      filename: mocks.go
       pkgname: k9s
     interfaces:
       Executor:
@@ -66,7 +66,7 @@ packages:
     config:
       recursive: false
       dir: pkg/svc/installer/applyset
-      filename: apiextensions_mocks_test.go
+      filename: apiextensions_mocks.go
       pkgname: applysetinstaller
     interfaces:
       CustomResourceDefinitionInterface:
@@ -74,7 +74,71 @@ packages:
     config:
       recursive: false
       dir: pkg/svc/installer/applyset
-      filename: dynamic_mocks_test.go
+      filename: dynamic_mocks.go
       pkgname: applysetinstaller
     interfaces:
       ResourceInterface:
+  github.com/devantler-tech/ksail-go/pkg/ui/timer:
+    config:
+      recursive: false
+      dir: pkg/ui/timer
+      filename: mocks.go
+      pkgname: timer
+    interfaces:
+      Timer:
+  github.com/devantler-tech/ksail-go/pkg/ui/error-handler:
+    config:
+      recursive: false
+      dir: pkg/ui/error-handler
+      filename: mocks.go
+      pkgname: errorhandler
+    interfaces:
+      Normalizer:
+  github.com/devantler-tech/ksail-go/pkg/svc/commandrunner:
+    config:
+      recursive: false
+      dir: pkg/svc/commandrunner
+      filename: mocks.go
+      pkgname: commandrunner
+    interfaces:
+      CommandRunner:
+  github.com/devantler-tech/ksail-go/pkg/svc/installer/flux:
+    config:
+      recursive: false
+      dir: pkg/svc/installer/flux
+      filename: mocks.go
+      pkgname: fluxinstaller
+    interfaces:
+      HelmClient:
+  github.com/devantler-tech/ksail-go/pkg/svc/installer:
+    config:
+      recursive: false
+      dir: pkg/svc/installer
+      filename: mocks.go
+      pkgname: installer
+    interfaces:
+      Installer:
+  github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind:
+    config:
+      recursive: false
+      dir: pkg/svc/provisioner/cluster/kind
+      filename: mocks.go
+      pkgname: kindprovisioner
+    interfaces:
+      KindProvider:
+  github.com/devantler-tech/ksail-go/pkg/di:
+    config:
+      recursive: false
+      dir: pkg/di
+      filename: mocks.go
+      pkgname: di
+    interfaces:
+      Injector:
+  github.com/devantler-tech/ksail-go/pkg/io/marshaller:
+    config:
+      recursive: false
+      dir: pkg/io/marshaller
+      filename: mocks.go
+      pkgname: marshaller
+    interfaces:
+      Marshaller:

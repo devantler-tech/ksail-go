@@ -18,6 +18,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -341,6 +342,56 @@ func TestScaffoldWrapsKustomizationGenerationErrors(t *testing.T) {
 
 	require.Error(t, err)
 	require.ErrorIs(t, err, scaffolder.ErrKustomizationGeneration)
+}
+
+func TestScaffold_DistributionConfigPreservation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		force           bool
+		writer          io.Writer
+		expectNewConfig bool
+	}{
+		{
+			name:            "force keeps old and writes new",
+			force:           true,
+			writer:          &bytes.Buffer{},
+			expectNewConfig: true,
+		},
+		{
+			name:            "no force keeps existing only",
+			force:           false,
+			writer:          io.Discard,
+			expectNewConfig: false,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			outputDir := t.TempDir()
+			oldConfig := filepath.Join(outputDir, scaffolder.KindConfigFile)
+			require.NoError(t, os.WriteFile(oldConfig, []byte("old"), 0o600))
+
+			cluster := createK3dCluster(testCase.name)
+			cluster.Spec.DistributionConfig = scaffolder.KindConfigFile
+
+			instance := scaffolder.NewScaffolder(cluster, testCase.writer)
+
+			err := instance.Scaffold(outputDir, testCase.force)
+			require.NoError(t, err)
+
+			_, statErr := os.Stat(oldConfig)
+			require.NoError(t, statErr)
+
+			if testCase.expectNewConfig {
+				_, newErr := os.Stat(filepath.Join(outputDir, scaffolder.K3dConfigFile))
+				require.NoError(t, newErr)
+			}
+		})
+	}
 }
 
 type scaffoldContextCase struct {
@@ -875,4 +926,57 @@ func setupExistingKSailFile(
 	scaffolderInstance, mocks := newScaffolderWithMocks(t, buffer)
 
 	return tempDir, buffer, scaffolderInstance, mocks
+}
+
+func newK3dScaffolder(t *testing.T, mirrors []string) *scaffolder.Scaffolder {
+	t.Helper()
+
+	instance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	instance.KSailConfig.Spec.Distribution = v1alpha1.DistributionK3d
+	instance.MirrorRegistries = mirrors
+
+	return instance
+}
+
+func TestGenerateK3dRegistryConfig_EmptyMirrors(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, nil)
+
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
+	assert.Empty(t, config.Use)
+	assert.Nil(t, config.Create)
+}
+
+func TestGenerateK3dRegistryConfig_InvalidSpec(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, []string{"invalid"})
+
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
+	assert.Empty(t, config.Use)
+	assert.Nil(t, config.Create)
+}
+
+func TestGenerateK3dRegistryConfig_WithValidMirror(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, []string{"docker.io=https://registry-1.docker.io"})
+
+	config := scaffolderInstance.GenerateK3dRegistryConfig()
+
+	require.Nil(t, config.Create)
+	assert.Contains(t, config.Config, "https://registry-1.docker.io")
+	assert.Contains(t, config.Config, "\"docker.io\":")
+	assert.Empty(t, config.Use)
+}
+
+func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := scaffolder.NewScaffolder(*v1alpha1.NewCluster(), &bytes.Buffer{})
+	scaffolderInstance.MirrorRegistries = []string{"invalid", "=missing", "missing="}
+
+	patches := scaffolderInstance.GenerateContainerdPatches()
+	assert.Empty(t, patches)
 }

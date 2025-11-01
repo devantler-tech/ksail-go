@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
@@ -29,7 +30,6 @@ import (
 // ErrClusterNotFound is returned when a cluster is not found.
 var ErrClusterNotFound = errors.New("cluster not found")
 
-// streamLogger implements kind's log.Logger interface by writing to io.Writers.
 // This allows kind's console output to be displayed in real-time.
 // Only info-level messages (V(0)) are enabled to avoid verbose debug output.
 type streamLogger struct {
@@ -44,19 +44,19 @@ func NewStreamLogger(writer io.Writer) log.Logger {
 }
 
 func (l *streamLogger) Warn(message string) {
-	_, _ = fmt.Fprintln(l.writer, message)
+	l.write(message)
 }
 
-func (l *streamLogger) Warnf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+func (l *streamLogger) Warnf(format string, args ...any) {
+	l.write(fmt.Sprintf(format, args...))
 }
 
 func (l *streamLogger) Error(message string) {
-	_, _ = fmt.Fprintln(l.writer, message)
+	l.write(message)
 }
 
-func (l *streamLogger) Errorf(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+func (l *streamLogger) Errorf(format string, args ...any) {
+	l.write(fmt.Sprintf(format, args...))
 }
 
 // noopInfoLogger discards verbose/debug messages (V(1) and higher).
@@ -69,9 +69,9 @@ func NewNoopInfoLogger() log.InfoLogger {
 	return noopInfoLogger{}
 }
 
-func (noopInfoLogger) Info(string)                  {}
-func (noopInfoLogger) Infof(string, ...interface{}) {}
-func (noopInfoLogger) Enabled() bool                { return false }
+func (noopInfoLogger) Info(string)          {}
+func (noopInfoLogger) Infof(string, ...any) {}
+func (noopInfoLogger) Enabled() bool        { return false }
 
 //nolint:ireturn // V must return log.InfoLogger to satisfy kind's interface
 func (l *streamLogger) V(level log.Level) log.InfoLogger {
@@ -84,15 +84,35 @@ func (l *streamLogger) V(level log.Level) log.InfoLogger {
 }
 
 func (l *streamLogger) Info(message string) {
-	_, _ = fmt.Fprintln(l.writer, message)
+	l.write(message)
 }
 
-func (l *streamLogger) Infof(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(l.writer, format+"\n", args...)
+func (l *streamLogger) Infof(format string, args ...any) {
+	l.write(fmt.Sprintf(format, args...))
 }
 
 func (l *streamLogger) Enabled() bool {
 	return true
+}
+
+func (l *streamLogger) write(message string) {
+	if l == nil {
+		return
+	}
+
+	if message == "" {
+		_, _ = io.WriteString(l.writer, "\n")
+
+		return
+	}
+
+	if strings.ContainsRune(message, '\r') || strings.HasSuffix(message, "\n") {
+		_, _ = io.WriteString(l.writer, message)
+
+		return
+	}
+
+	_, _ = io.WriteString(l.writer, message+"\n")
 }
 
 // KindProvider describes the subset of methods from kind's Provider used here.

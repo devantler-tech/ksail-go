@@ -12,14 +12,19 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/devantler-tech/ksail-go/cmd/cluster/testutils"
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
-	cmdtestutils "github.com/devantler-tech/ksail-go/cmd/internal/testutils"
+	"github.com/devantler-tech/ksail-go/internal/shared"
+	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -29,6 +34,11 @@ const (
 )
 
 var errCiliumReadiness = errors.New("cilium readiness failed")
+
+var (
+	errRepoError                = errors.New("repo error")
+	errClusterProvisionerFailed = errors.New("provisioner failed")
+)
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -94,45 +104,73 @@ func TestNewCreateLifecycleConfig(t *testing.T) {
 	})
 }
 
-func TestHandleCreateRunE(t *testing.T) {
+func TestHandleCreateRunE_InstallsCiliumWhenConfigured(t *testing.T) {
 	t.Parallel()
 
-	t.Run("installs_cilium_when_configured", func(t *testing.T) {
-		t.Parallel()
+	cmd, out := testutils.NewCommand(t)
 
-		cmd, out := testutils.NewCommand(t)
+	tempDir := t.TempDir()
+	cfgPath := writeCiliumClusterConfig(t, tempDir, "./missing-kubeconfig")
 
-		tempDir := t.TempDir()
-		cfgPath := writeCiliumClusterConfig(t, tempDir, "./missing-kubeconfig")
+	cfgManager := ksailconfigmanager.NewConfigManager(
+		out,
+		ksailconfigmanager.DefaultClusterFieldSelectors()...,
+	)
+	cfgManager.Viper.SetConfigFile(cfgPath)
+	cfgManager.Viper.Set("spec.distribution", string(v1alpha1.DistributionK3d))
+	cfgManager.Viper.Set("spec.distributionConfig", "")
 
-		cfgManager := ksailconfigmanager.NewConfigManager(
-			out,
-			ksailconfigmanager.DefaultClusterFieldSelectors()...,
-		)
-		cfgManager.Viper.SetConfigFile(cfgPath)
+	provisioner := &testutils.StubProvisioner{}
+	deps := newTestLifecycleDeps(provisioner)
 
-		provisioner := &testutils.StubProvisioner{}
-		deps := shared.LifecycleDeps{
-			Timer: &testutils.RecordingTimer{},
-			Factory: &testutils.StubFactory{
-				Provisioner:        provisioner,
-				DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
-			},
-		}
+	err := handleCreateRunE(cmd, cfgManager, deps)
 
-		err := handleCreateRunE(cmd, cfgManager, deps)
-		if err == nil {
-			t.Fatal("expected error when kubeconfig is missing")
-		}
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to install Cilium CNI")
+	assert.Equal(t, 1, provisioner.CreateCalls)
+}
 
-		if !strings.Contains(err.Error(), "failed to install Cilium CNI") {
-			t.Fatalf("unexpected error message: %v", err)
-		}
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestHandleCreateRunE_ReturnsErrorWhenMirrorSetupFails(t *testing.T) {
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
 
-		if provisioner.CreateCalls != 1 {
-			t.Fatalf("expected provisioner create to be invoked, got %d", provisioner.CreateCalls)
-		}
-	})
+	tempDir := t.TempDir()
+	kubeconfigPath := filepath.Join(tempDir, "kubeconfig")
+	cfgPath := writeCiliumClusterConfig(t, tempDir, kubeconfigPath)
+
+	kindPath := filepath.Join(tempDir, "kind.yaml")
+	ensureDisableDefaultCNI(t, kindPath)
+	appendKindPatch(t, kindPath)
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
+	cfgManager.Viper.SetConfigFile(cfgPath)
+	cfgManager.Viper.Set("spec.distributionConfig", kindPath)
+
+	provisioner := &testutils.StubProvisioner{}
+	deps := shared.LifecycleDeps{
+		Timer: &testutils.RecordingTimer{},
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+
+	_, loadErr := cfgManager.LoadConfig(&testutils.RecordingTimer{})
+	if loadErr != nil {
+		t.Logf("config output:\n%s", out.String())
+	}
+
+	require.NoError(t, loadErr)
+
+	stubDockerClientFailure(t, errDockerClientFailure)
+
+	err := handleCreateRunE(cmd, cfgManager, deps)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to setup mirror registries")
+	assert.Zero(t, provisioner.CreateCalls)
 }
 
 func TestHandleCreateRunEWithoutCilium(t *testing.T) {
@@ -142,6 +180,8 @@ func TestHandleCreateRunEWithoutCilium(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	cfgManager := testutils.CreateConfigManager(t, out)
+	cfgManager.Viper.Set("spec.distribution", string(v1alpha1.DistributionK3d))
+	cfgManager.Viper.Set("spec.distributionConfig", "")
 
 	provisioner := &testutils.StubProvisioner{}
 	timer := &testutils.RecordingTimer{}
@@ -495,7 +535,7 @@ func writeDummyKubeconfig(t *testing.T) string {
 func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 	t.Helper()
 
-	cmdtestutils.WriteValidKsailConfig(t, dir)
+	testutils.WriteValidKsailConfig(t, dir)
 
 	content := "apiVersion: ksail.dev/v1alpha1\n" +
 		"kind: Cluster\n" +
@@ -520,6 +560,7 @@ func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 
 type fakeHelmClient struct {
 	addRepoCalls int
+	addRepoErr   error
 	installCalls int
 	installErr   error
 	lastSpec     *helm.ChartSpec
@@ -550,6 +591,10 @@ func (f *fakeHelmClient) UninstallRelease(context.Context, string, string) error
 func (f *fakeHelmClient) AddRepository(context.Context, *helm.RepositoryEntry) error {
 	f.addRepoCalls++
 
+	if f.addRepoErr != nil {
+		return f.addRepoErr
+	}
+
 	return nil
 }
 
@@ -567,3 +612,418 @@ func (s *stubTimer) GetTiming() (time.Duration, time.Duration) {
 }
 
 func (s *stubTimer) Stop() {}
+
+// setupKindMirrorsTest creates the standard test setup for prepareKindConfigWithMirrors tests.
+func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManager, *kindv1alpha4.Cluster) {
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
+	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
+	kindConfig := &kindv1alpha4.Cluster{}
+
+	return clusterCfg, cfgManager, kindConfig
+}
+
+// newTestLifecycleDeps creates standard lifecycle dependencies for testing.
+func newTestLifecycleDeps(provisioner *testutils.StubProvisioner) shared.LifecycleDeps {
+	return shared.LifecycleDeps{
+		Timer: &testutils.RecordingTimer{},
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+}
+
+func TestPrepareKindConfigWithMirrors_NoKindConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
+	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
+
+	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, nil)
+	assert.False(t, result, "should return false when kindConfig is nil")
+}
+
+func TestPrepareKindConfigWithMirrors_NonKindDistribution(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+	cfgManager := ksailconfigmanager.NewConfigManager(bytes.NewBuffer(nil))
+	kindConfig := &kindv1alpha4.Cluster{}
+
+	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
+	assert.False(t, result, "should return false for non-Kind distribution")
+}
+
+func TestPrepareKindConfigWithMirrors_WithMirrorRegistryFlag(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
+
+	cfgManager.Viper.Set("mirror-registry", []string{"docker.io=http://localhost:5000"})
+
+	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
+	assert.True(t, result, "should return true when mirror registries are added")
+	assert.Len(t, kindConfig.ContainerdConfigPatches, 1)
+}
+
+func TestPrepareKindConfigWithMirrors_WithExistingPatches(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
+	kindConfig.ContainerdConfigPatches = []string{
+		`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+endpoint = ["http://docker.io:5000"]`,
+	}
+
+	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
+	assert.True(t, result, "should return true when containerd patches exist")
+}
+
+func TestPrepareKindConfigWithMirrors_NoPatches(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg, cfgManager, kindConfig := setupKindMirrorsTest()
+
+	result := prepareKindConfigWithMirrors(clusterCfg, cfgManager, kindConfig)
+	assert.False(t, result, "should return false when no patches")
+}
+
+func TestPrepareK3dConfigWithMirrors_NilConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, nil, nil)
+	assert.False(t, result)
+}
+
+func TestPrepareK3dConfigWithMirrors_AddsOverrides(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+	specs := registries.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, specs)
+
+	assert.True(t, result)
+	assert.Contains(t, k3dConfig.Registries.Config, "\"docker.io\"")
+	assert.Contains(t, k3dConfig.Registries.Config, "https://registry-1.docker.io")
+	assert.NotContains(t, k3dConfig.Registries.Config, "http://docker.io:5000")
+}
+
+func TestPrepareK3dConfigWithMirrors_PreservesExistingConfig(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{}
+	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+	k3dConfig.Registries.Config = "mirrors:\n  \"ghcr.io\":\n    endpoint:\n      - https://ghcr.io\n"
+
+	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, nil)
+
+	assert.True(t, result)
+	assert.Contains(t, k3dConfig.Registries.Config, "\"ghcr.io\"")
+	assert.Contains(t, k3dConfig.Registries.Config, "https://ghcr.io")
+}
+
+func TestAddCiliumRepository_Success(t *testing.T) {
+	t.Parallel()
+
+	helmClient := &fakeHelmClient{}
+	err := addCiliumRepository(context.Background(), helmClient)
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, helmClient.addRepoCalls)
+}
+
+func TestAddCiliumRepository_Error(t *testing.T) {
+	t.Parallel()
+
+	helmClient := &fakeHelmClient{addRepoErr: errRepoError}
+	err := addCiliumRepository(context.Background(), helmClient)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "failed to add Cilium Helm repository")
+	assert.Equal(t, 1, helmClient.addRepoCalls)
+}
+
+func TestRunLifecycleWithConfig_Success(t *testing.T) {
+	t.Parallel()
+
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := &v1alpha1.Cluster{}
+	provisioner := &testutils.StubProvisioner{}
+	deps := newTestLifecycleDeps(provisioner)
+
+	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+
+	require.NoError(t, err)
+	assert.Equal(t, 1, provisioner.CreateCalls)
+	assert.Contains(t, out.String(), "Create cluster")
+}
+
+func TestRunLifecycleWithConfig_ProvisionerError(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := &v1alpha1.Cluster{}
+	provisioner := &testutils.StubProvisioner{CreateErr: errClusterProvisionerFailed}
+	deps := shared.LifecycleDeps{
+		Timer: &testutils.RecordingTimer{},
+		Factory: &testutils.StubFactory{
+			Provisioner:        provisioner,
+			DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+		},
+	}
+
+	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create cluster")
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestSetupMirrorRegistries(t *testing.T) {
+	runRegistryLifecycleTests(t, setupMirrorRegistries)
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestConnectRegistriesToClusterNetwork(t *testing.T) {
+	runRegistryLifecycleTests(t, connectRegistriesToClusterNetwork)
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestSetupMirrorRegistries_K3d(t *testing.T) {
+	runK3dRegistryLifecycleTests(t, setupMirrorRegistries)
+}
+
+//nolint:paralleltest // Overrides docker client factory for deterministic failure.
+func TestConnectRegistriesToClusterNetwork_K3d(t *testing.T) {
+	runK3dRegistryLifecycleTests(t, connectRegistriesToClusterNetwork)
+}
+
+type registryLifecycleHandler func(
+	*cobra.Command,
+	*v1alpha1.Cluster,
+	shared.LifecycleDeps,
+	*ksailconfigmanager.ConfigManager,
+	*kindv1alpha4.Cluster,
+	*k3dv1alpha5.SimpleConfig,
+) error
+
+type k3dRegistryLifecycleTestCase struct {
+	name          string
+	includeConfig bool
+	setOverride   bool
+	expectError   bool
+	errorContains string
+}
+
+func k3dRegistryLifecycleTestCases() []k3dRegistryLifecycleTestCase {
+	return []k3dRegistryLifecycleTestCase{
+		{
+			name: "returns_nil_when_no_registries",
+		},
+		{
+			name:          "propagates_docker_client_error",
+			includeConfig: true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+		{
+			name:          "applies_cli_overrides",
+			setOverride:   true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+	}
+}
+
+func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
+	t.Helper()
+
+	testCases := []struct {
+		name          string
+		includePatch  bool
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "returns_nil_when_no_patches",
+		},
+		{
+			name:          "returns_docker_client_error",
+			includePatch:  true,
+			expectError:   true,
+			errorContains: "failed to create docker client",
+		},
+	}
+
+	selectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			cmd, out := testutils.NewCommand(t)
+			cmd.SetContext(context.Background())
+
+			cfg := v1alpha1.NewCluster()
+			cfg.Spec.Distribution = v1alpha1.DistributionKind
+
+			cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
+			kindConfig := &kindv1alpha4.Cluster{Name: "kind"}
+			deps := shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+
+			if testCase.includePatch {
+				kindConfig.ContainerdConfigPatches = generateContainerdPatchesFromSpecs(
+					[]string{"docker.io=http://localhost:5000"},
+				)
+
+				stubDockerClientFailure(t, errDockerClientFailure)
+			}
+
+			var k3dConfig *k3dv1alpha5.SimpleConfig
+
+			err := handler(cmd, cfg, deps, cfgManager, kindConfig, k3dConfig)
+
+			if testCase.expectError {
+				require.Error(t, err)
+				require.ErrorContains(t, err, testCase.errorContains)
+
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
+func runK3dRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
+	t.Helper()
+
+	for _, testCase := range k3dRegistryLifecycleTestCases() {
+		t.Run(testCase.name, func(t *testing.T) {
+			executeK3dRegistryLifecycleTest(t, testCase, handler)
+		})
+	}
+}
+
+func executeK3dRegistryLifecycleTest(
+	t *testing.T,
+	testCase k3dRegistryLifecycleTestCase,
+	handler registryLifecycleHandler,
+) {
+	t.Helper()
+
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	cfg := v1alpha1.NewCluster()
+	cfg.Spec.Distribution = v1alpha1.DistributionK3d
+
+	cfgManager := ksailconfigmanager.NewConfigManager(
+		out,
+		ksailconfigmanager.DefaultClusterFieldSelectors()..., // reuse default selectors per test case
+	)
+	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
+
+	if testCase.includeConfig {
+		k3dConfig.Registries.Config = "mirrors:\n  \"docker.io\":\n    endpoint:\n      - https://registry-1.docker.io\n"
+	}
+
+	if testCase.setOverride {
+		cfgManager.Viper.Set("mirror-registry", []string{"ghcr.io=https://ghcr.io"})
+	}
+
+	if testCase.expectError {
+		stubDockerClientFailure(t, errDockerClientFailure)
+	}
+
+	err := handler(
+		cmd,
+		cfg,
+		shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}},
+		cfgManager,
+		(*kindv1alpha4.Cluster)(nil),
+		k3dConfig,
+	)
+
+	if testCase.expectError {
+		require.Error(t, err)
+		require.ErrorContains(t, err, testCase.errorContains)
+
+		if testCase.setOverride {
+			assert.Contains(t, k3dConfig.Registries.Config, "\"ghcr.io\"")
+		}
+
+		return
+	}
+
+	require.NoError(t, err)
+}
+
+func ensureDisableDefaultCNI(t *testing.T, path string) {
+	t.Helper()
+
+	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
+	require.NoError(t, err, "failed to read kind config")
+
+	if strings.Contains(string(content), "disableDefaultCNI: true") {
+		return
+	}
+
+	var builder strings.Builder
+	builder.Write(content)
+
+	if len(content) == 0 || content[len(content)-1] != '\n' {
+		builder.WriteByte('\n')
+	}
+
+	builder.WriteString("networking:\n")
+	builder.WriteString("  disableDefaultCNI: true\n")
+
+	require.NoError(t, os.WriteFile(path, []byte(builder.String()), 0o600))
+}
+
+func appendKindPatch(t *testing.T, path string) {
+	t.Helper()
+
+	patch := generateContainerdPatchesFromSpecs([]string{"docker.io=http://localhost:5000"})
+
+	content, err := os.ReadFile(path) //nolint:gosec // test helper operates on generated file paths
+	require.NoError(t, err, "failed to read kind config")
+
+	var builder strings.Builder
+	builder.Write(content)
+
+	if len(content) == 0 || content[len(content)-1] != '\n' {
+		builder.WriteByte('\n')
+	}
+
+	builder.WriteString("containerdConfigPatches:\n")
+
+	for _, p := range patch {
+		builder.WriteString("- |\n")
+
+		lines := strings.SplitSeq(p, "\n")
+		for line := range lines {
+			builder.WriteString("  ")
+			builder.WriteString(line)
+			builder.WriteByte('\n')
+		}
+	}
+
+	err = os.WriteFile(path, []byte(builder.String()), 0o600)
+	require.NoError(t, err, "failed to append containerd patch")
+}

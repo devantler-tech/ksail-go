@@ -3,7 +3,7 @@ package workload
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/cmd/internal/shared"
+	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"

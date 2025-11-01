@@ -76,7 +76,8 @@ func TestLoadConfigLoadsKindDistributionConfig(t *testing.T) {
 	manager := configmanager.NewConfigManager(io.Discard)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
-	require.NoError(t, manager.LoadConfig(nil))
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
 	assert.Equal(t, kindConfigPath, manager.Config.Spec.DistributionConfig)
 }
 
@@ -105,10 +106,37 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 	manager := configmanager.NewConfigManager(io.Discard)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 	assert.Equal(t, k3dConfigPath, manager.Config.Spec.DistributionConfig)
+}
+
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigAppliesFlagOverrides(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n"
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+
+	cmd := &cobra.Command{Use: "test"}
+	selectors := configmanager.DefaultClusterFieldSelectors()
+	manager := configmanager.NewCommandConfigManager(cmd, selectors)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	require.NoError(t, cmd.Flags().Set("distribution", "K3d"))
+	require.NoError(t, cmd.Flags().Set("distribution-config", "k3d.yaml"))
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.DistributionK3d, manager.Config.Spec.Distribution)
+	assert.Equal(t, "k3d.yaml", manager.Config.Spec.DistributionConfig)
 }
 
 // createFieldSelectorsWithName creates field selectors including name field.
@@ -242,7 +270,7 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	manager, output, _ := loadConfigAndCaptureOutput(t, createStandardFieldSelectors()...)
 	output.Reset()
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
@@ -277,6 +305,12 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 
 	var output bytes.Buffer
 
+	tempDir := t.TempDir()
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configStub := "apiVersion: ksail.dev/v1alpha1\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(configStub), 0o600))
+
 	selectors := []configmanager.FieldSelector[v1alpha1.Cluster]{
 		configmanager.DefaultDistributionFieldSelector(),
 		configmanager.DefaultDistributionConfigFieldSelector(),
@@ -284,12 +318,12 @@ func TestLoadConfigSilentSkipsNotifications(t *testing.T) {
 	}
 
 	manager := configmanager.NewConfigManager(&output, selectors...)
+	manager.Viper.SetConfigFile(configPath)
 
-	err := manager.LoadConfigSilent()
+	cluster, err := manager.LoadConfigSilent()
 	require.NoError(t, err)
 	assert.Empty(t, output.String(), "silent load should not emit notifications")
 
-	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 	assert.Equal(t, v1alpha1.DistributionKind, cluster.Spec.Distribution)
 	assert.Equal(t, "kind.yaml", cluster.Spec.DistributionConfig)
@@ -311,7 +345,7 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	manager.Config.Spec.Distribution = ""
 	manager.Config.Spec.DistributionConfig = ""
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 	assert.Contains(t, err.Error(), "4 error(s)")
@@ -349,19 +383,18 @@ func testLoadConfigCase(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	err := manager.LoadConfig(nil)
+	cluster, err := manager.LoadConfig(nil)
 
 	if testCase.shouldSucceed {
 		require.NoError(t, err)
 
-		cluster := manager.GetConfig()
 		require.NotNil(t, cluster)
 		assert.Equal(t, testCase.expectedDistribution, cluster.Spec.Distribution)
 
 		// Test that subsequent calls return the same config
-		err = manager.LoadConfig(nil)
+		cluster2, err := manager.LoadConfig(nil)
 		require.NoError(t, err)
-		assert.Equal(t, cluster, manager.GetConfig())
+		assert.Same(t, cluster, cluster2)
 	} else {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "validation reported")
@@ -486,18 +519,23 @@ func TestLoadConfigConfigProperty(t *testing.T) {
 	t.Parallel()
 
 	fieldSelectors := createDistributionOnlyFieldSelectors()
+	tempDir := t.TempDir()
+
+	configPath := filepath.Join(tempDir, "ksail.yaml")
+	configStub := "apiVersion: ksail.dev/v1alpha1\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(configStub), 0o600))
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
+	manager.Viper.SetConfigFile(configPath)
 
 	// Before loading, Config should be initialized with proper TypeMeta
 	expectedEmpty := v1alpha1.NewCluster()
 	assert.Equal(t, expectedEmpty, manager.Config)
 
 	// Load config
-	err := manager.LoadConfig(nil)
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
-	cluster := manager.GetConfig()
 	// After loading, Config property should be accessible and equal to returned cluster
 	assert.Equal(t, cluster, manager.Config)
 	assert.Equal(t, v1alpha1.DistributionKind, manager.Config.Spec.Distribution)
@@ -535,17 +573,17 @@ func testFieldValueSetting(
 
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	err := manager.LoadConfig(nil)
+	cluster, err := manager.LoadConfig(nil)
 
 	if expectValidationError {
 		require.Error(t, err)
-		assertFunc(t, manager.GetConfig())
+		assertFunc(t, cluster)
 
 		return
 	}
 
 	require.NoError(t, err)
-	assertFunc(t, manager.GetConfig())
+	assertFunc(t, cluster)
 }
 
 // TestManager_SetFieldValueWithNilDefault tests setFieldValue with nil default value.
@@ -560,7 +598,9 @@ func TestSetFieldValueWithNilDefault(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When default is nil, field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
@@ -578,7 +618,9 @@ func TestSetFieldValueWithNonConvertibleTypes(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// When type is not convertible, field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
@@ -614,7 +656,9 @@ func TestSetFieldValueWithNonPointerField(t *testing.T) {
 		func(t *testing.T, cluster *v1alpha1.Cluster) {
 			t.Helper()
 			// Non-pointer field should remain empty
-			assert.Empty(t, cluster.Spec.Distribution)
+			if cluster != nil {
+				assert.Empty(t, cluster.Spec.Distribution)
+			}
 		},
 		true,
 	)
@@ -677,7 +721,7 @@ invalid yaml content
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
 	// Try to load config - this should trigger the error path in readConfigurationFile
-	err = manager.LoadConfig(nil)
+	_, err = manager.LoadConfig(nil)
 
 	// We expect this to fail with a config reading error (not ConfigFileNotFoundError)
 	if err != nil {
@@ -689,9 +733,9 @@ invalid yaml content
 		assert.NotErrorAs(t, err, &configFileNotFoundError,
 			"Should not be ConfigFileNotFoundError")
 	} else {
-		t.Logf("No error occurred, cluster: %+v", manager.GetConfig())
+		t.Logf("No error occurred, cluster: %+v", manager.Config)
 		// If it succeeded somehow, the test should still pass
-		require.NotNil(t, manager.GetConfig())
+		require.NotNil(t, manager.Config)
 	}
 }
 
@@ -722,10 +766,9 @@ spec:
 	fieldSelectors := createFieldSelectorsWithName()
 	manager := configmanager.NewConfigManager(io.Discard, fieldSelectors...)
 
-	err = manager.LoadConfig(nil)
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
 
-	cluster := manager.GetConfig()
 	require.NotNil(t, cluster)
 
 	// Verify config was loaded properly (this exercises the "else" branch in readConfigurationFile)
@@ -863,7 +906,7 @@ func TestLoadConfig_ValidationFailureOutputs(t *testing.T) {
 		},
 	)
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 
@@ -928,11 +971,11 @@ func loadConfigAndCaptureOutput(
 	output := &bytes.Buffer{}
 	manager := configmanager.NewConfigManager(output, fieldSelectors...)
 
-	err := manager.LoadConfig(nil)
+	cluster, err := manager.LoadConfig(nil)
 	require.NoError(t, err)
-	require.NotNil(t, manager.GetConfig())
+	require.NotNil(t, cluster)
 
-	return manager, output, manager.GetConfig()
+	return manager, output, cluster
 }
 
 type kindCiliumScenario struct {
@@ -973,7 +1016,7 @@ spec:
 		manager = configmanager.NewConfigManager(&output)
 	)
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	logOutput := output.String()
 
 	if scenario.expectValidationErr {
@@ -1005,7 +1048,7 @@ func runK3dDistributionScenario(t *testing.T, scenario k3dScenario) {
 
 	manager, output := newK3dManagerForScenario(t, scenario)
 
-	err := manager.LoadConfig(nil)
+	_, err := manager.LoadConfig(nil)
 	logOutput := output.String()
 
 	if scenario.expectErr {
@@ -1037,7 +1080,7 @@ func runK3dDistributionScenario(t *testing.T, scenario k3dScenario) {
 		)
 	}
 
-	config := manager.GetConfig()
+	config := manager.Config
 	if config == nil {
 		t.Fatalf("expected config to be loaded")
 	}
@@ -1086,4 +1129,44 @@ func writeFile(t *testing.T, path, contents string) {
 	if err != nil {
 		t.Fatalf("failed to write %s: %v", path, err)
 	}
+}
+
+func TestIsFieldEmptyForTesting_Nil(t *testing.T) {
+	t.Parallel()
+
+	result := configmanager.IsFieldEmptyForTesting(nil)
+	assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NonPointer(t *testing.T) {
+	t.Parallel()
+
+	value := "test"
+	result := configmanager.IsFieldEmptyForTesting(value)
+	assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NilPointer(t *testing.T) {
+	t.Parallel()
+
+	var ptr *string
+
+	result := configmanager.IsFieldEmptyForTesting(ptr)
+	assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_EmptyString(t *testing.T) {
+	t.Parallel()
+
+	value := ""
+	result := configmanager.IsFieldEmptyForTesting(&value)
+	assert.True(t, result)
+}
+
+func TestIsFieldEmptyForTesting_NonEmptyString(t *testing.T) {
+	t.Parallel()
+
+	value := "test"
+	result := configmanager.IsFieldEmptyForTesting(&value)
+	assert.False(t, result)
 }

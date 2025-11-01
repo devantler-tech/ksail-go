@@ -61,14 +61,14 @@ func NewConfigManager(configPath string) *ConfigManager {
 }
 
 // LoadConfig loads the Kind configuration from the specified file.
-// Returns the previously loaded config if already loaded.
+// Returns the loaded config, either freshly loaded or previously cached.
 // If the file doesn't exist, returns a default Kind cluster configuration.
 // Validates the configuration after loading and returns an error if validation fails.
 // The timer parameter is accepted for interface compliance but not currently used.
-func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
+func (m *ConfigManager) LoadConfig(_ timer.Timer) (*v1alpha4.Cluster, error) {
 	// If config is already loaded, return it
 	if m.configLoaded {
-		return nil
+		return m.config, nil
 	}
 
 	config, err := helpers.LoadAndValidateConfig(
@@ -84,16 +84,11 @@ func (m *ConfigManager) LoadConfig(_ timer.Timer) error {
 		kindvalidator.NewValidator(),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to load Kind config: %w", err)
+		return nil, fmt.Errorf("failed to load Kind config: %w", err)
 	}
 
 	m.config = config
 	m.configLoaded = true
 
-	return nil
-}
-
-// GetConfig implements configmanager.ConfigManager.
-func (m *ConfigManager) GetConfig() *v1alpha4.Cluster {
-	return m.config
+	return m.config, nil
 }

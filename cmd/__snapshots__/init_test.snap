@@ -1,11 +1,6 @@
 
-[TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset - 1]
-⏳ Load config...
-► loading ksail config
-► '<config-dir>/ksail.yaml' found
-✔ config loaded [stage: 1ms]
-
-📂 Initialize project......
+[TestHandleInitRunE_SuccessWithOutputFlag - 1]
+📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'
@@ -13,13 +8,8 @@
 
 ---
 
-[TestHandleInitRunE_SuccessWithOutputFlag - 1]
-⏳ Load config...
-► loading ksail config
-► '<config-dir>/ksail.yaml' found
-✔ config loaded [stage: 1ms]
-
-📂 Initialize project......
+[TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset - 1]
+📂 Initialize project...
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'

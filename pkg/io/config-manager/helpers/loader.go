@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
@@ -105,20 +106,25 @@ func FormatValidationErrors(result *validator.ValidationResult) string {
 		return ""
 	}
 
-	var errorMsg string
+	var builder strings.Builder
 
 	for i, err := range result.Errors {
 		if i > 0 {
-			errorMsg += "; "
+			builder.WriteString("; ")
 		}
 
-		errorMsg += fmt.Sprintf("%s: %s", err.Field, err.Message)
+		builder.WriteString(err.Field)
+		builder.WriteString(": ")
+		builder.WriteString(err.Message)
+
 		if err.FixSuggestion != "" {
-			errorMsg += fmt.Sprintf(" (%s)", err.FixSuggestion)
+			builder.WriteString(" (")
+			builder.WriteString(err.FixSuggestion)
+			builder.WriteString(")")
 		}
 	}
 
-	return errorMsg
+	return builder.String()
 }
 
 // FormatValidationErrorsMultiline formats validation errors into a multi-line string for CLI display.
@@ -133,23 +139,27 @@ func FormatValidationErrorsMultiline(result *validator.ValidationResult) string 
 		return ""
 	}
 
-	var errorMsg string
+	var builder strings.Builder
 
 	for i, err := range result.Errors {
 		if i > 0 {
-			errorMsg += "\n"
+			builder.WriteString("\n")
 		}
 
-		errorMsg += fmt.Sprintf("error: %s\nfield: %s", err.Message, err.Field)
+		builder.WriteString("error: ")
+		builder.WriteString(err.Message)
+		builder.WriteString("\nfield: ")
+		builder.WriteString(err.Field)
 
 		if err.FixSuggestion != "" {
-			errorMsg += "\nfix: " + err.FixSuggestion
+			builder.WriteString("\nfix: ")
+			builder.WriteString(err.FixSuggestion)
 		}
 
-		errorMsg += "\n"
+		builder.WriteString("\n")
 	}
 
-	return errorMsg
+	return builder.String()
 }
 
 // FormatValidationFixSuggestions formats fix suggestions for validation errors.

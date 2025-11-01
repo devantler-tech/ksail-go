@@ -36,28 +36,28 @@ func newFakeConfigManager(path string) configmanager.ConfigManager[sampleConfig]
 	return &fakeConfigManager{path: path}
 }
 
-func (m *fakeConfigManager) LoadConfig(_ timer.Timer) error {
+func (m *fakeConfigManager) LoadConfig(_ timer.Timer) (*sampleConfig, error) {
 	data, err := os.ReadFile(m.path)
 	if err != nil {
-		return fmt.Errorf("read config: %w", err)
+		return nil, fmt.Errorf("read config: %w", err)
 	}
 
 	content := strings.TrimSpace(string(data))
 	switch {
 	case content == "":
-		return errEmptyConfig
+		return nil, errEmptyConfig
 	case strings.Contains(content, "invalid"):
 		if m.config != nil {
 			// Simulate cached response when the on-disk content becomes invalid.
-			return nil
+			return m.config, nil
 		}
 
-		return errInvalidState
+		return nil, errInvalidState
 	default:
 		m.config = &sampleConfig{Name: content}
 	}
 
-	return nil
+	return m.config, nil
 }
 
 func (m *fakeConfigManager) GetConfig() *sampleConfig {

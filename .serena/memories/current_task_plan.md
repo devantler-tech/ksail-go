@@ -1,0 +1,4 @@
+- Run golangci-lint, jscpd, and mega-linter to gather issues.
+- Refactor duplicate code highlighted by jscpd (cluster cleanup helpers, create workflow sections, docker registry tests, scaffolder tests, lifecycle helpers) to satisfy zero-threshold policy.
+- Re-run jscpd and remaining analyzers until clean.
+- Document actions, outstanding concerns, and next steps for the user.

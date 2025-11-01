@@ -1,0 +1,4 @@
+- Preserve user-provided mirror upstream URLs when building containerd patches.
+- Update Kind/K3d registry provisioning to consume preserved upstream endpoints.
+- Add regression test asserting upstream URLs are not overwritten.
+- Re-run go test ./... and golangci-lint run after code updates.

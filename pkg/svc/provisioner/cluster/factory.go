@@ -48,7 +48,9 @@ func (DefaultFactory) Create(
 			cluster.Spec.Connection.Kubeconfig,
 		)
 	case v1alpha1.DistributionK3d:
-		return createK3dProvisioner(cluster.Spec.DistributionConfig)
+		return createK3dProvisioner(
+			cluster.Spec.DistributionConfig,
+		)
 	default:
 		return nil, "", fmt.Errorf("%w: %s", ErrUnsupportedDistribution, cluster.Spec.Distribution)
 	}
@@ -60,17 +62,17 @@ func createKindProvisioner(
 ) (*kindprovisioner.KindClusterProvisioner, *v1alpha4.Cluster, error) {
 	kindConfigMgr := kindconfigmanager.NewConfigManager(distributionConfigPath)
 
-	err := kindConfigMgr.LoadConfig(nil)
+	kindConfig, err := kindConfigMgr.LoadConfig(nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load Kind configuration: %w", err)
 	}
 
-	provisioner, err := createKindProvisionerFromConfig(kindConfigMgr.GetConfig(), kubeconfigPath)
+	provisioner, err := createKindProvisionerFromConfig(kindConfig, kubeconfigPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return provisioner, kindConfigMgr.GetConfig(), nil
+	return provisioner, kindConfig, nil
 }
 
 func createKindProvisionerFromConfig(
@@ -101,15 +103,15 @@ func createK3dProvisioner(
 ) (*k3dprovisioner.K3dClusterProvisioner, *k3dv1alpha5.SimpleConfig, error) {
 	k3dConfigMgr := k3dconfigmanager.NewConfigManager(distributionConfigPath)
 
-	err := k3dConfigMgr.LoadConfig(nil)
+	k3dConfig, err := k3dConfigMgr.LoadConfig(nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to load K3d configuration: %w", err)
 	}
 
 	provisioner := k3dprovisioner.NewK3dClusterProvisioner(
-		k3dConfigMgr.GetConfig(),
+		k3dConfig,
 		distributionConfigPath,
 	)
 
-	return provisioner, k3dConfigMgr.GetConfig(), nil
+	return provisioner, k3dConfig, nil
 }

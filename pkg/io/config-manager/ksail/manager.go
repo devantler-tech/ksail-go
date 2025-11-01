@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
@@ -17,7 +18,9 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -28,6 +31,7 @@ type ConfigManager struct {
 	Config         *v1alpha1.Cluster // Exposed config property as suggested
 	configLoaded   bool              // Track if config has been actually loaded
 	Writer         io.Writer         // Writer for output notifications
+	command        *cobra.Command    // Associated Cobra command for flag introspection
 }
 
 // Compile-time interface compliance verification.
@@ -62,35 +66,32 @@ func NewCommandConfigManager(
 	selectors []FieldSelector[v1alpha1.Cluster],
 ) *ConfigManager {
 	manager := NewConfigManager(cmd.OutOrStdout(), selectors...)
+	manager.command = cmd
 	manager.AddFlagsFromFields(cmd)
 
 	return manager
 }
 
 // LoadConfig loads the configuration from files and environment variables.
-// Returns the previously loaded config if already loaded.
+// Returns the loaded config (either freshly loaded or previously cached) and an error if loading failed.
+// Returns nil config on error.
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
-func (m *ConfigManager) LoadConfig(tmr timer.Timer) error {
+func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
 	return m.loadConfigWithOptions(tmr, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
-// Returns the previously loaded config if already loaded.
-func (m *ConfigManager) LoadConfigSilent() error {
+// Returns the loaded config, either freshly loaded or previously cached.
+func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
 	return m.loadConfigWithOptions(nil, true)
-}
-
-// GetConfig implements configmanager.ConfigManager by returning the loaded cluster configuration.
-func (m *ConfigManager) GetConfig() *v1alpha1.Cluster {
-	return m.Config
 }
 
 // loadConfigWithOptions is the internal implementation with silent option.
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,
-) error {
+) (*v1alpha1.Cluster, error) {
 	if !silent {
 		m.notifyLoadingStart()
 	}
@@ -100,7 +101,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 			m.notifyConfigReused()
 		}
 
-		return nil
+		return m.Config, nil
 	}
 
 	if !silent {
@@ -110,18 +111,25 @@ func (m *ConfigManager) loadConfigWithOptions(
 	// Use native Viper API to read configuration
 	err := m.readConfig(silent)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Unmarshal and apply defaults
+	flagOverrides := m.captureChangedFlagValues()
+
 	err = m.unmarshalAndApplyDefaults()
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	err = m.applyFlagOverrides(flagOverrides)
+	if err != nil {
+		return nil, err
 	}
 
 	err = m.validateConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !silent {
@@ -130,7 +138,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 
 	m.configLoaded = true
 
-	return nil
+	return m.Config, nil
 }
 
 func (m *ConfigManager) readConfig(silent bool) error {
@@ -166,6 +174,83 @@ func (m *ConfigManager) unmarshalAndApplyDefaults() error {
 	}
 
 	return nil
+}
+
+func (m *ConfigManager) captureChangedFlagValues() map[string]string {
+	if m.command == nil {
+		return nil
+	}
+
+	flags := m.command.Flags()
+	overrides := make(map[string]string)
+
+	flags.Visit(func(f *pflag.Flag) {
+		overrides[f.Name] = f.Value.String()
+	})
+
+	return overrides
+}
+
+func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
+	if overrides == nil {
+		return nil
+	}
+
+	for _, selector := range m.fieldSelectors {
+		fieldPtr := selector.Selector(m.Config)
+		if fieldPtr == nil {
+			continue
+		}
+
+		flagName := m.GenerateFlagName(fieldPtr)
+
+		value, ok := overrides[flagName]
+		if !ok {
+			continue
+		}
+
+		err := setFieldValueFromFlag(fieldPtr, value)
+		if err != nil {
+			return fmt.Errorf("failed to apply flag override for %s: %w", flagName, err)
+		}
+	}
+
+	return nil
+}
+
+func setFieldValueFromFlag(fieldPtr any, raw string) error {
+	if setter, ok := fieldPtr.(interface{ Set(value string) error }); ok {
+		err := setter.Set(raw)
+		if err != nil {
+			return fmt.Errorf("set field value via setter: %w", err)
+		}
+
+		return nil
+	}
+
+	switch ptr := fieldPtr.(type) {
+	case *string:
+		*ptr = raw
+
+		return nil
+	case *metav1.Duration:
+		if raw == "" {
+			ptr.Duration = 0
+
+			return nil
+		}
+
+		dur, err := time.ParseDuration(raw)
+		if err != nil {
+			return fmt.Errorf("parse duration %q: %w", raw, err)
+		}
+
+		ptr.Duration = dur
+
+		return nil
+	default:
+		return nil
+	}
 }
 
 func (m *ConfigManager) notifyLoadingStart() {
@@ -320,13 +405,13 @@ func (m *ConfigManager) loadKindConfig() *kindv1alpha4.Cluster {
 
 	kindManager := kindconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	err = kindManager.LoadConfig(nil)
+	config, err := kindManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil
 	}
 
-	return kindManager.GetConfig()
+	return config
 }
 
 // loadK3dConfig loads the K3d distribution configuration if it exists.
@@ -345,11 +430,11 @@ func (m *ConfigManager) loadK3dConfig() *k3dv1alpha5.SimpleConfig {
 
 	k3dManager := k3dconfigmanager.NewConfigManager(m.Config.Spec.DistributionConfig)
 
-	err = k3dManager.LoadConfig(nil)
+	config, err := k3dManager.LoadConfig(nil)
 	if err != nil {
 		// Config not found or invalid, return nil for validation to continue
 		return nil
 	}
 
-	return k3dManager.GetConfig()
+	return config
 }
