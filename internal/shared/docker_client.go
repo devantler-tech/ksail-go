@@ -8,7 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type dockerClientFactoryFunc func(opts ...client.Opt) (*client.Client, error)
+// DockerClientFactoryFunc is a function type for creating Docker clients.
+type DockerClientFactoryFunc func(opts ...client.Opt) (*client.Client, error)
 
 func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
 	cli, err := client.NewClientWithOpts(opts...)
@@ -20,19 +21,16 @@ func defaultDockerClientFactory(opts ...client.Opt) (*client.Client, error) {
 }
 
 //nolint:gochecknoglobals // Allow tests to override Docker client creation.
-var dockerClientFactory dockerClientFactoryFunc = defaultDockerClientFactory
+var dockerClientFactory DockerClientFactoryFunc = defaultDockerClientFactory
 
-// SetDockerClientFactoryForTest allows tests to override the Docker client factory.
-// This should only be used in tests.
-func SetDockerClientFactoryForTest(
-	factory func(opts ...client.Opt) (*client.Client, error),
-) func() {
-	original := dockerClientFactory
+// SetDockerClientFactory sets the Docker client factory. Used by test utilities.
+func SetDockerClientFactory(factory DockerClientFactoryFunc) {
 	dockerClientFactory = factory
+}
 
-	return func() {
-		dockerClientFactory = original
-	}
+// GetDockerClientFactory returns the current Docker client factory. Used by test utilities.
+func GetDockerClientFactory() DockerClientFactoryFunc {
+	return dockerClientFactory
 }
 
 // WithDockerClient creates a Docker client, executes the given function, and cleans up.

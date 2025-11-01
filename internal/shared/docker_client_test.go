@@ -90,6 +90,7 @@ func TestWithDockerClient_InvalidEnvironment(t *testing.T) {
 }
 
 // stubDockerClientFailure overrides the default docker client factory to return an error.
+// This is used internally by docker_client_test.go which is in the same package.
 func stubDockerClientFailure(t *testing.T, err error) {
 	t.Helper()
 
