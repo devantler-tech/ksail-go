@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
 )
@@ -30,6 +31,9 @@ type Info struct {
 const DefaultRegistryPort = 5000
 
 const expectedEndpointParts = 2
+
+// Registry Lifecycle Management
+// These functions handle the creation, setup, and cleanup of registry containers.
 
 // SetupRegistries ensures that the provided registries exist. Any newly created
 // registries are cleaned up if a later creation fails.
@@ -94,8 +98,8 @@ func collectExistingRegistryNames(
 	}
 
 	for _, name := range current {
-		trimmed := strings.TrimSpace(name)
-		if trimmed == "" {
+		trimmed, ok := ksailio.TrimNonEmpty(name)
+		if !ok {
 			continue
 		}
 
@@ -226,6 +230,9 @@ func cleanupCreatedRegistries(
 	}
 }
 
+// Network Operations
+// These functions manage network connections between registry containers and clusters.
+
 // ConnectRegistriesToNetwork attaches each registry container to the provided network.
 // Any connection failures are logged as warnings but do not abort the operation.
 func ConnectRegistriesToNetwork(
@@ -235,13 +242,14 @@ func ConnectRegistriesToNetwork(
 	networkName string,
 	writer io.Writer,
 ) error {
-	if dockerClient == nil || len(registries) == 0 || strings.TrimSpace(networkName) == "" {
+	networkName, networkOK := ksailio.TrimNonEmpty(networkName)
+	if dockerClient == nil || len(registries) == 0 || !networkOK {
 		return nil
 	}
 
 	for _, reg := range registries {
-		containerName := reg.Name
-		if strings.TrimSpace(containerName) == "" {
+		containerName, nameOK := ksailio.TrimNonEmpty(reg.Name)
+		if !nameOK {
 			continue
 		}
 
@@ -306,6 +314,9 @@ func CleanupRegistries(
 
 	return nil
 }
+
+// Naming and Identification Utilities
+// These functions handle registry naming conventions and identifier generation.
 
 // SanitizeHostIdentifier converts a registry host string into a Docker-safe identifier while keeping dots intact
 // so hosts such as docker.io remain reachable via container name resolution.
@@ -465,6 +476,9 @@ func BuildRegistryName(prefix, host string) string {
 
 	return prefix + sanitized
 }
+
+// Registry Configuration Builders
+// These functions construct Info structures from various inputs.
 
 // BuildRegistryInfo creates an Info populated with derived fields using the supplied prefix for container names.
 func BuildRegistryInfo(
