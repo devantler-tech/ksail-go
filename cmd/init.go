@@ -58,6 +58,8 @@ func bindInitLocalFlags(cmd *cobra.Command, cfgManager *ksailconfigmanager.Confi
 	_ = cfgManager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	cmd.Flags().BoolP("force", "f", false, "Overwrite existing files")
 	_ = cfgManager.Viper.BindPFlag("force", cmd.Flags().Lookup("force"))
+	cmd.Flags().StringP("name", "n", "", "Cluster name (defaults to distribution-specific name)")
+	_ = cfgManager.Viper.BindPFlag("name", cmd.Flags().Lookup("name"))
 	cmd.Flags().StringSlice(
 		"mirror-registry",
 		[]string{},
@@ -97,12 +99,14 @@ func HandleInitRunE(
 	}
 
 	force := cfgManager.Viper.GetBool("force")
+	clusterName := cfgManager.Viper.GetString("name")
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
 
 	scaffolderInstance := scaffolder.NewScaffolder(
 		*cfgManager.Config,
 		cmd.OutOrStdout(),
 	)
+	scaffolderInstance.ClusterName = clusterName
 	scaffolderInstance.MirrorRegistries = mirrorRegistries
 
 	if deps.Timer != nil {

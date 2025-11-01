@@ -57,7 +57,20 @@ func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) strin
 	}
 }
 
-func getExpectedContextName(distribution v1alpha1.Distribution) string {
+func getExpectedContextName(distribution v1alpha1.Distribution, clusterName string) string {
+	// If a custom cluster name is provided, use it with the distribution prefix
+	if clusterName != "" {
+		switch distribution {
+		case v1alpha1.DistributionKind:
+			return "kind-" + clusterName
+		case v1alpha1.DistributionK3d:
+			return "k3d-" + clusterName
+		default:
+			return ""
+		}
+	}
+
+	// Otherwise, use the default cluster names
 	switch distribution {
 	case v1alpha1.DistributionKind:
 		return "kind-kind"
@@ -76,6 +89,7 @@ type Scaffolder struct {
 	K3dGenerator           generator.Generator[*k3dv1alpha5.SimpleConfig, yamlgenerator.Options]
 	KustomizationGenerator generator.Generator[*ktypes.Kustomization, yamlgenerator.Options]
 	Writer                 io.Writer
+	ClusterName            string   // Custom cluster name (optional)
 	MirrorRegistries       []string // Format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 }
 
@@ -167,9 +181,9 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 	config := s.KSailConfig
 
-	// Set the expected context if it's empty, based on the distribution and default cluster names
+	// Set the expected context if it's empty, based on the distribution and cluster name
 	if config.Spec.Connection.Context == "" {
-		expectedContext := getExpectedContextName(config.Spec.Distribution)
+		expectedContext := getExpectedContextName(config.Spec.Distribution, s.ClusterName)
 		if expectedContext != "" {
 			config.Spec.Connection.Context = expectedContext
 		}
@@ -389,13 +403,19 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 
 // generateKindConfig generates the kind.yaml configuration file.
 func (s *Scaffolder) generateKindConfig(output string, force bool) error {
-	// Create Kind cluster configuration with standard KSail name
+	// Determine the cluster name to use
+	clusterName := "kind"
+	if s.ClusterName != "" {
+		clusterName = s.ClusterName
+	}
+
+	// Create Kind cluster configuration
 	kindConfig := &v1alpha4.Cluster{
 		TypeMeta: v1alpha4.TypeMeta{
 			APIVersion: "kind.x-k8s.io/v1alpha4",
 			Kind:       "Cluster",
 		},
-		Name: "kind",
+		Name: clusterName,
 	}
 
 	// Disable default CNI if Cilium is requested
@@ -460,6 +480,11 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		},
 		// Additional configuration will be handled by the provisioner with sensible defaults
 		// Users can override any settings in this generated config file
+	}
+
+	// Set custom cluster name if provided
+	if s.ClusterName != "" {
+		config.Name = s.ClusterName
 	}
 
 	// Disable default CNI (Flannel) if Cilium is requested
