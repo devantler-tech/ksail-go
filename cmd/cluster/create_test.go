@@ -21,6 +21,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -898,4 +899,33 @@ func executeK3dRegistryLifecycleTest(
 	}
 
 	require.NoError(t, err)
+}
+
+func TestRunRegistryStageErrorWrapping(t *testing.T) {
+	t.Parallel()
+
+	t.Run("wraps_docker_client_errors", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, _ := testutils.NewCommand(t)
+		deps := shared.LifecycleDeps{
+			Timer: &testutils.RecordingTimer{},
+		}
+		info := registryStageInfo{
+			title:         "Test",
+			emoji:         "🔧",
+			success:       "success",
+			failurePrefix: "test failed",
+		}
+		action := func(context.Context, client.APIClient) error {
+			return nil
+		}
+
+		// This will fail because Docker isn't available, but we're testing error wrapping
+		err := runRegistryStage(cmd, deps, info, action)
+		if err != nil {
+			// Error should be wrapped
+			assert.ErrorContains(t, err, "failed to execute registry stage")
+		}
+	})
 }

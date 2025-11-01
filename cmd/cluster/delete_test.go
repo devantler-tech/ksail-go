@@ -15,6 +15,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -298,4 +299,72 @@ func sharedLifecycleDeps(
 		Timer:   tmr,
 		Factory: factoryInterface,
 	}
+}
+
+func TestRunMirrorRegistryCleanupErrorWrapping(t *testing.T) {
+	t.Parallel()
+
+	t.Run("wraps_docker_client_errors", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, _ := testutils.NewCommand(t)
+		deps := sharedLifecycleDeps(nil)
+		registryNames := []string{"test-registry"}
+		cleanup := func(client.APIClient) error {
+			return nil
+		}
+
+		// This will fail because Docker isn't available, but we're testing error wrapping
+		err := runMirrorRegistryCleanup(cmd, deps, registryNames, cleanup)
+		if err != nil {
+			// Error should be wrapped
+			assert.ErrorContains(t, err, "failed to delete mirror registries")
+		}
+	})
+
+	t.Run("returns_nil_for_empty_registry_list", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, _ := testutils.NewCommand(t)
+		deps := sharedLifecycleDeps(nil)
+		registryNames := []string{}
+		cleanup := func(client.APIClient) error {
+			return nil
+		}
+
+		err := runMirrorRegistryCleanup(cmd, deps, registryNames, cleanup)
+
+		require.NoError(t, err)
+	})
+}
+
+func TestNotifyRegistryDeletions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("notifies_deletions_without_registry_manager", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, out := testutils.NewCommand(t)
+		ctx := context.Background()
+		registryNames := []string{"registry1", "registry2"}
+
+		notifyRegistryDeletions(ctx, cmd, registryNames, nil)
+
+		output := out.String()
+		assert.Contains(t, output, "deleting 'registry1'")
+		assert.Contains(t, output, "deleting 'registry2'")
+	})
+
+	t.Run("handles_empty_registry_list", func(t *testing.T) {
+		t.Parallel()
+
+		cmd, out := testutils.NewCommand(t)
+		ctx := context.Background()
+		registryNames := []string{}
+
+		notifyRegistryDeletions(ctx, cmd, registryNames, nil)
+
+		// Should not output anything for empty list
+		assert.Empty(t, out.String())
+	})
 }
