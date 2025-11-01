@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenPriorityClass(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewPriorityClassCmd(rt)
 	buffer := &bytes.Buffer{}

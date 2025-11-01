@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenQuota(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewQuotaCmd(rt)
 	buffer := &bytes.Buffer{}

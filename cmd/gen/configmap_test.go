@@ -11,13 +11,20 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenConfigMap(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewConfigMapCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{"test-config", "--from-literal", "APP_ENV=production", "--from-literal", "DEBUG=false"})
+	cmd.SetArgs(
+		[]string{
+			"test-config",
+			"--from-literal",
+			"APP_ENV=production",
+			"--from-literal",
+			"DEBUG=false",
+		},
+	)
 
 	err := cmd.Execute()
 	if err != nil {

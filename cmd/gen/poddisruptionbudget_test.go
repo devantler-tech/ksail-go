@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenPodDisruptionBudget(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewPodDisruptionBudgetCmd(rt)
 	buffer := &bytes.Buffer{}

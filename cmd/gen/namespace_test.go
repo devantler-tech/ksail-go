@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 func setupTestKubeconfig() {
 	homeDir, _ := os.UserHomeDir()
 	kubeDir := filepath.Join(homeDir, ".kube")
-	_ = os.MkdirAll(kubeDir, 0750)
+	_ = os.MkdirAll(kubeDir, 0o750)
 
 	kubeconfigContent := `apiVersion: v1
 kind: Config
@@ -46,7 +46,7 @@ users:
 - name: test
   user: {}
 `
-	_ = os.WriteFile(filepath.Join(kubeDir, "config"), []byte(kubeconfigContent), 0600)
+	_ = os.WriteFile(filepath.Join(kubeDir, "config"), []byte(kubeconfigContent), 0o600)
 }
 
 func cleanupTestKubeconfig() {

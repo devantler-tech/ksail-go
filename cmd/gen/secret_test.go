@@ -17,7 +17,16 @@ func TestGenSecretGeneric(t *testing.T) {
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{"generic", "test-secret", "--from-literal", "username=admin", "--from-literal", "password=secret123"})
+	cmd.SetArgs(
+		[]string{
+			"generic",
+			"test-secret",
+			"--from-literal",
+			"username=admin",
+			"--from-literal",
+			"password=secret123",
+		},
+	)
 
 	err := cmd.Execute()
 	if err != nil {
@@ -90,5 +99,5 @@ func TestGenSecretDockerRegistry(t *testing.T) {
 
 // writeFile is a helper to write test files.
 func writeFile(path, content string) error {
-	return os.WriteFile(path, []byte(content), 0600)
+	return os.WriteFile(path, []byte(content), 0o600)
 }

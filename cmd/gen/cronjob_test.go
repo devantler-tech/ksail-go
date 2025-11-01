@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenCronJob(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewCronJobCmd(rt)
 	buffer := &bytes.Buffer{}

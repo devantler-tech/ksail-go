@@ -10,7 +10,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestNewGenCmdRegistersAllResourceCommands(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewGenCmd(rt)
 
@@ -36,7 +35,6 @@ func TestNewGenCmdRegistersAllResourceCommands(t *testing.T) {
 
 	for _, expectedName := range expectedSubcommands {
 		t.Run(expectedName, func(t *testing.T) {
-
 			found := false
 
 			for _, subCmd := range cmd.Commands() {
@@ -58,7 +56,6 @@ func TestNewGenCmdRegistersAllResourceCommands(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenCommandRunEDisplaysHelp(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewGenCmd(rt)
 	buffer := &bytes.Buffer{}
@@ -81,7 +78,6 @@ func TestGenCommandRunEDisplaysHelp(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenCommandMetadata(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewGenCmd(rt)
 

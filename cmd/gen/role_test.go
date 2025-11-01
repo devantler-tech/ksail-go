@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenRole(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewRoleCmd(rt)
 	buffer := &bytes.Buffer{}

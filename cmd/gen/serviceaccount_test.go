@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenServiceAccount(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewServiceAccountCmd(rt)
 	buffer := &bytes.Buffer{}

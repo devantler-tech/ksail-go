@@ -11,13 +11,14 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenClusterRoleBinding(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewClusterRoleBindingCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{"test-clusterrolebinding", "--clusterrole=test-clusterrole", "--user=test-user"})
+	cmd.SetArgs(
+		[]string{"test-clusterrolebinding", "--clusterrole=test-clusterrole", "--user=test-user"},
+	)
 
 	err := cmd.Execute()
 	if err != nil {

@@ -35,7 +35,9 @@ func TestGenIngressWithTLS(t *testing.T) {
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{"test-ingress-tls", "--rule=secure.example.com/*=svc:443,tls=my-tls-secret"})
+	cmd.SetArgs(
+		[]string{"test-ingress-tls", "--rule=secure.example.com/*=svc:443,tls=my-tls-secret"},
+	)
 
 	err := cmd.Execute()
 	if err != nil {

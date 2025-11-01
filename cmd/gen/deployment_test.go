@@ -11,7 +11,6 @@ import (
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenDeployment(t *testing.T) {
-
 	rt := newTestRuntime()
 	cmd := NewDeploymentCmd(rt)
 	buffer := &bytes.Buffer{}
