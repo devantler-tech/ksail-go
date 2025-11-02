@@ -10,23 +10,18 @@ import (
 
 // ArgoCDInstaller implements the installer.Installer interface for ArgoCD.
 type ArgoCDInstaller struct {
-	kubeconfig string // stored for consistency and future extensibility (e.g., readiness checks)
-	context    string // stored for consistency and future extensibility (e.g., readiness checks)
-	timeout    time.Duration
-	client     helm.Interface
+	timeout time.Duration
+	client  helm.Interface
 }
 
 // NewArgoCDInstaller creates a new ArgoCD installer instance.
 func NewArgoCDInstaller(
 	client helm.Interface,
-	kubeconfig, context string,
 	timeout time.Duration,
 ) *ArgoCDInstaller {
 	return &ArgoCDInstaller{
-		client:     client,
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
+		client:  client,
+		timeout: timeout,
 	}
 }
 

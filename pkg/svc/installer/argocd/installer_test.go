@@ -15,12 +15,10 @@ import (
 func TestNewArgoCDInstaller(t *testing.T) {
 	t.Parallel()
 
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
 
 	client := helm.NewMockInterface(t)
-	installer := argocdinstaller.NewArgoCDInstaller(client, kubeconfig, context, timeout)
+	installer := argocdinstaller.NewArgoCDInstaller(client, timeout)
 
 	assert.NotNil(t, installer)
 }
@@ -90,8 +88,6 @@ func newArgoCDInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := argocdinstaller.NewArgoCDInstaller(
 		client,
-		"~/.kube/config",
-		"test-context",
 		5*time.Second,
 	)
 
