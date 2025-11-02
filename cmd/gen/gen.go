@@ -2,9 +2,7 @@
 package gen
 
 import (
-	"github.com/devantler-tech/ksail-go/internal/shared"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/gen"
 	"github.com/spf13/cobra"
 )
 
@@ -39,16 +37,4 @@ func NewGenCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewServiceAccountCmd(runtimeContainer))
 
 	return cmd
-}
-
-// createGenCommand creates a gen subcommand that wraps kubectl create with forced --dry-run=client -o yaml.
-func createGenCommand(_ *runtime.Runtime, resourceType string) *cobra.Command {
-	// Try to load config silently to get kubeconfig path
-	kubeconfigPath := shared.GetKubeconfigPathSilently()
-
-	// Create a kubectl generator
-	generator := gen.NewKubectlGenerator(kubeconfigPath)
-
-	// Use the generator to create the command
-	return generator.GenerateCommand(resourceType)
 }
