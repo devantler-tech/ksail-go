@@ -1,10 +1,10 @@
-package kubectl_test
+package kubernetes_test
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/gen/kubectl"
+	"github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +12,7 @@ import (
 func TestGenerator_Generate_Namespace(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "namespace")
+	generator := kubernetes.NewGenerator("namespace")
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -24,7 +24,7 @@ func TestGenerator_Generate_Namespace(t *testing.T) {
 func TestGenerator_Generate_Deployment(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "deployment")
+	generator := kubernetes.NewGenerator("deployment")
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -36,7 +36,7 @@ func TestGenerator_Generate_Deployment(t *testing.T) {
 func TestGenerator_Generate_Service(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "service")
+	generator := kubernetes.NewGenerator("service")
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -52,7 +52,7 @@ func TestGenerator_Generate_Service(t *testing.T) {
 func TestGenerator_Generate_Secret(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "secret")
+	generator := kubernetes.NewGenerator("secret")
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -68,7 +68,7 @@ func TestGenerator_Generate_Secret(t *testing.T) {
 func TestGenerator_Generate_InvalidResource(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "nonexistent-resource")
+	generator := kubernetes.NewGenerator("nonexistent-resource")
 
 	assert.Panics(t, func() {
 		generator.Generate()
@@ -78,7 +78,7 @@ func TestGenerator_Generate_InvalidResource(t *testing.T) {
 func TestGenerator_ExecutesWithDryRun(t *testing.T) {
 	t.Parallel()
 
-	generator := kubectl.NewGenerator("", "namespace")
+	generator := kubernetes.NewGenerator("namespace")
 	cmd := generator.Generate()
 
 	// Capture output - need to capture both stdout and stderr

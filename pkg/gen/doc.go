@@ -1,25 +1,27 @@
 // Package gen provides interfaces and implementations for generating Kubernetes resource manifests.
 //
 // The package exposes a Generator interface that can be implemented to support different
-// manifest generation strategies. The primary implementation is KubectlGenerator, which
-// wraps kubectl create commands with forced --dry-run=client -o yaml flags.
+// manifest generation strategies. The primary implementation is in the kubernetes subpackage,
+// which wraps kubectl create commands with forced --dry-run=client -o yaml flags.
 //
 // # Usage
 //
-// Create a generator and use it to generate commands:
+// Create a generator for a specific resource type and use it to generate a command:
 //
-//	generator := gen.NewKubectlGenerator("/path/to/kubeconfig")
-//	namespaceCmd := generator.GenerateCommand("namespace")
-//	deploymentCmd := generator.GenerateCommand("deployment")
+//	import "github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
+//
+//	generator := kubernetes.NewGenerator("namespace")
+//	namespaceCmd := generator.Generate()
 //
 // The generated commands can be integrated into CLI applications or used standalone.
+// No kubeconfig is required since --dry-run=client doesn't need cluster access.
 //
 // # Generator Interface
 //
 // The Generator interface allows for custom implementations:
 //
 //	type Generator interface {
-//	    GenerateCommand(resourceType string) *cobra.Command
+//	    Generate() *cobra.Command
 //	}
 //
 // # Supported Resource Types

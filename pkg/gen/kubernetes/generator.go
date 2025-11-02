@@ -1,6 +1,6 @@
-// Package kubectl provides a Generator implementation that wraps kubectl create commands
+// Package kubernetes provides a Generator implementation that wraps kubectl create commands
 // with forced --dry-run=client -o yaml flags to generate Kubernetes resource manifests.
-package kubectl
+package kubernetes
 
 import (
 	"errors"
@@ -22,15 +22,14 @@ var (
 
 // Generator generates Kubernetes resource manifests using kubectl create with --dry-run=client -o yaml.
 type Generator struct {
-	kubeconfigPath string
-	resourceType   string
+	resourceType string
 }
 
 // NewGenerator creates a new kubectl-based generator for a specific resource type.
-func NewGenerator(kubeconfigPath, resourceType string) *Generator {
+// The generator uses --dry-run=client which doesn't require cluster access or kubeconfig.
+func NewGenerator(resourceType string) *Generator {
 	return &Generator{
-		kubeconfigPath: kubeconfigPath,
-		resourceType:   resourceType,
+		resourceType: resourceType,
 	}
 }
 
@@ -43,7 +42,8 @@ func (g *Generator) Generate() *cobra.Command {
 		ErrOut: os.Stderr,
 	}
 	tempClient := kubectl.NewClient(tempIOStreams)
-	tempCreateCmd := tempClient.CreateCreateCommand(g.kubeconfigPath)
+	// Use empty string for kubeconfig since --dry-run=client doesn't need cluster access
+	tempCreateCmd := tempClient.CreateCreateCommand("")
 
 	// Find the subcommand for this resource type
 	var resourceCmd *cobra.Command
@@ -95,7 +95,8 @@ func (g *Generator) executeKubectlCreate(
 
 	// Create a fresh kubectl client and command
 	client := kubectl.NewClient(ioStreams)
-	createCmd := client.CreateCreateCommand(g.kubeconfigPath)
+	// Use empty string for kubeconfig since --dry-run=client doesn't need cluster access
+	createCmd := client.CreateCreateCommand("")
 
 	// Find the resource command again with the new IO streams
 	freshResourceCmd := findResourceCommand(createCmd, g.resourceType)
