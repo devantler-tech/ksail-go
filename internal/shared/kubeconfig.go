@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -16,6 +17,23 @@ func GetDefaultKubeconfigPath() string {
 	homeDir, _ := os.UserHomeDir()
 
 	return filepath.Join(homeDir, ".kube", "config")
+}
+
+// GetKubeconfigPathFromConfig extracts and expands the kubeconfig path from a loaded cluster config.
+// If the config doesn't specify a path, returns the default kubeconfig path.
+func GetKubeconfigPathFromConfig(cfg *v1alpha1.Cluster) (string, error) {
+	kubeconfigPath := cfg.Spec.Connection.Kubeconfig
+	if kubeconfigPath == "" {
+		kubeconfigPath = GetDefaultKubeconfigPath()
+	}
+
+	// Always expand tilde in kubeconfig path, regardless of source
+	expandedPath, err := iopath.ExpandHomePath(kubeconfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to expand home path: %w", err)
+	}
+
+	return expandedPath, nil
 }
 
 // GetKubeconfigPathSilently tries to load config and get kubeconfig path without any output.
@@ -43,16 +61,5 @@ func getKubeconfigPath(cfgManager *ksailconfigmanager.ConfigManager) (string, er
 		return "", fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	kubeconfigPath := clusterCfg.Spec.Connection.Kubeconfig
-	if kubeconfigPath == "" {
-		kubeconfigPath = GetDefaultKubeconfigPath()
-	}
-
-	// Expand home path
-	expandedPath, err := iopath.ExpandHomePath(kubeconfigPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to expand home path: %w", err)
-	}
-
-	return expandedPath, nil
+	return GetKubeconfigPathFromConfig(clusterCfg)
 }
