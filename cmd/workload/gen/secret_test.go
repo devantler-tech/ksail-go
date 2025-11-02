@@ -23,7 +23,7 @@ func TestGenSecretGeneric(t *testing.T) {
 			"generic",
 			"test-secret",
 			"--from-literal=username=admin",
-			"--from-literal=password=secret123",
+			"--from-literal=password=<PASSWORD>", // nosec G101 - test placeholder
 		},
 	)
 
@@ -84,7 +84,7 @@ func TestGenSecretDockerRegistry(t *testing.T) {
 		"test-docker-secret",
 		"--docker-server=https://registry.example.com",
 		"--docker-username=user",
-		"--docker-password=pass",
+		"--docker-password=<PASSWORD>", // nosec G101 - test placeholder
 		"--docker-email=user@example.com",
 	})
 
