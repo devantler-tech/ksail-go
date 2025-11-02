@@ -1,14 +1,22 @@
 package gen
 
 import (
+	"os"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // NewJobCmd creates the gen job command.
 func NewJobCmd(_ *runtime.Runtime) *cobra.Command {
-	generator := kubernetes.NewJobGenerator()
+	ioStreams := genericiooptions.IOStreams{
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
+	}
+	client := kubectl.NewClient(ioStreams)
 
-	return generator.Command()
+	return client.NewJobCmd()
 }

@@ -1,14 +1,22 @@
 package gen
 
 import (
+	"os"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // NewClusterRoleBindingCmd creates the gen clusterrolebinding command.
 func NewClusterRoleBindingCmd(_ *runtime.Runtime) *cobra.Command {
-	generator := kubernetes.NewClusterRoleBindingGenerator()
+	ioStreams := genericiooptions.IOStreams{
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
+	}
+	client := kubectl.NewClient(ioStreams)
 
-	return generator.Command()
+	return client.NewClusterRoleBindingCmd()
 }

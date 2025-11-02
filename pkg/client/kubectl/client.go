@@ -2,9 +2,12 @@
 package kubectl
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/kubectl/pkg/cmd/apply"
@@ -21,6 +24,13 @@ import (
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+)
+
+var (
+	// ErrResourceCommandNotFound is returned when a kubectl create subcommand is not found.
+	ErrResourceCommandNotFound = errors.New("kubectl create command not found for resource type")
+	// ErrNoRunFunction is returned when a kubectl command has neither RunE nor Run function.
+	ErrNoRunFunction = errors.New("no run function found for kubectl create command")
 )
 
 // Client wraps kubectl command functionality.
@@ -349,4 +359,223 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 	replaceKubectlInExamples(execCmd)
 
 	return execCmd
+}
+
+// NewNamespaceCmd creates a command to generate a Namespace manifest.
+func (c *Client) NewNamespaceCmd() *cobra.Command {
+	return c.newResourceCmd("namespace")
+}
+
+// NewConfigMapCmd creates a command to generate a ConfigMap manifest.
+func (c *Client) NewConfigMapCmd() *cobra.Command {
+	return c.newResourceCmd("configmap")
+}
+
+// NewSecretCmd creates a command to generate a Secret manifest.
+func (c *Client) NewSecretCmd() *cobra.Command {
+	return c.newResourceCmd("secret")
+}
+
+// NewServiceAccountCmd creates a command to generate a ServiceAccount manifest.
+func (c *Client) NewServiceAccountCmd() *cobra.Command {
+	return c.newResourceCmd("serviceaccount")
+}
+
+// NewDeploymentCmd creates a command to generate a Deployment manifest.
+func (c *Client) NewDeploymentCmd() *cobra.Command {
+	return c.newResourceCmd("deployment")
+}
+
+// NewJobCmd creates a command to generate a Job manifest.
+func (c *Client) NewJobCmd() *cobra.Command {
+	return c.newResourceCmd("job")
+}
+
+// NewCronJobCmd creates a command to generate a CronJob manifest.
+func (c *Client) NewCronJobCmd() *cobra.Command {
+	return c.newResourceCmd("cronjob")
+}
+
+// NewServiceCmd creates a command to generate a Service manifest.
+func (c *Client) NewServiceCmd() *cobra.Command {
+	return c.newResourceCmd("service")
+}
+
+// NewIngressCmd creates a command to generate an Ingress manifest.
+func (c *Client) NewIngressCmd() *cobra.Command {
+	return c.newResourceCmd("ingress")
+}
+
+// NewRoleCmd creates a command to generate a Role manifest.
+func (c *Client) NewRoleCmd() *cobra.Command {
+	return c.newResourceCmd("role")
+}
+
+// NewRoleBindingCmd creates a command to generate a RoleBinding manifest.
+func (c *Client) NewRoleBindingCmd() *cobra.Command {
+	return c.newResourceCmd("rolebinding")
+}
+
+// NewClusterRoleCmd creates a command to generate a ClusterRole manifest.
+func (c *Client) NewClusterRoleCmd() *cobra.Command {
+	return c.newResourceCmd("clusterrole")
+}
+
+// NewClusterRoleBindingCmd creates a command to generate a ClusterRoleBinding manifest.
+func (c *Client) NewClusterRoleBindingCmd() *cobra.Command {
+	return c.newResourceCmd("clusterrolebinding")
+}
+
+// NewQuotaCmd creates a command to generate a ResourceQuota manifest.
+func (c *Client) NewQuotaCmd() *cobra.Command {
+	return c.newResourceCmd("quota")
+}
+
+// NewPodDisruptionBudgetCmd creates a command to generate a PodDisruptionBudget manifest.
+func (c *Client) NewPodDisruptionBudgetCmd() *cobra.Command {
+	return c.newResourceCmd("poddisruptionbudget")
+}
+
+// NewPriorityClassCmd creates a command to generate a PriorityClass manifest.
+func (c *Client) NewPriorityClassCmd() *cobra.Command {
+	return c.newResourceCmd("priorityclass")
+}
+
+// newResourceCmd creates a gen command that wraps kubectl create with forced --dry-run=client -o yaml.
+func (c *Client) newResourceCmd(resourceType string) *cobra.Command {
+	// Use empty string for kubeconfig since --dry-run=client doesn't need cluster access
+	tempCreateCmd := c.CreateCreateCommand("")
+
+	// Find the subcommand for this resource type
+	var resourceCmd *cobra.Command
+
+	for _, subCmd := range tempCreateCmd.Commands() {
+		if subCmd.Name() == resourceType {
+			resourceCmd = subCmd
+
+			break
+		}
+	}
+
+	if resourceCmd == nil {
+		panic("kubectl create " + resourceType + " command not found")
+	}
+
+	// Create a wrapper command
+	wrapperCmd := &cobra.Command{
+		Use:          resourceCmd.Use,
+		Short:        resourceCmd.Short,
+		Long:         resourceCmd.Long,
+		Example:      resourceCmd.Example,
+		Aliases:      resourceCmd.Aliases,
+		SilenceUsage: true,
+	}
+
+	// Create our custom RunE that calls kubectl with forced flags
+	wrapperCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return c.executeResourceGen(resourceType, cmd, args)
+	}
+
+	// Copy all flags from the resource command
+	wrapperCmd.Flags().AddFlagSet(resourceCmd.Flags())
+
+	return wrapperCmd
+}
+
+// executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
+func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, args []string) error {
+	// Create a fresh kubectl create command
+	createCmd := c.CreateCreateCommand("")
+
+	// Find the resource command
+	freshResourceCmd := c.findResourceCommand(createCmd, resourceType)
+	if freshResourceCmd == nil {
+		return fmt.Errorf("%w: %s", ErrResourceCommandNotFound, resourceType)
+	}
+
+	// Force --dry-run=client and -o yaml FIRST
+	err := c.setForcedFlags(freshResourceCmd)
+	if err != nil {
+		return err
+	}
+
+	// Copy user flags
+	c.copyUserFlags(cmd, freshResourceCmd)
+
+	// Execute
+	return c.executeCommand(freshResourceCmd, args)
+}
+
+// findResourceCommand finds a kubectl create subcommand by resource type name.
+func (c *Client) findResourceCommand(createCmd *cobra.Command, resourceType string) *cobra.Command {
+	for _, subCmd := range createCmd.Commands() {
+		if subCmd.Name() == resourceType {
+			return subCmd
+		}
+	}
+
+	return nil
+}
+
+// setForcedFlags sets the --dry-run=client and -o yaml flags.
+func (c *Client) setForcedFlags(cmd *cobra.Command) error {
+	err := cmd.Flags().Set("dry-run", "client")
+	if err != nil {
+		return fmt.Errorf("failed to set dry-run flag: %w", err)
+	}
+
+	err = cmd.Flags().Set("output", "yaml")
+	if err != nil {
+		return fmt.Errorf("failed to set output flag: %w", err)
+	}
+
+	return nil
+}
+
+// copyUserFlags copies user-provided flags from wrapper command to kubectl command.
+func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) {
+	wrapperCmd.Flags().Visit(func(flag *pflag.Flag) {
+		if flag.Name == "dry-run" || flag.Name == "output" {
+			return
+		}
+
+		targetFlag := targetCmd.Flags().Lookup(flag.Name)
+		if targetFlag != nil {
+			c.copyFlagValue(flag, targetCmd)
+		}
+	})
+}
+
+// copyFlagValue copies a flag value, handling slice flags specially.
+func (c *Client) copyFlagValue(flag *pflag.Flag, targetCmd *cobra.Command) {
+	// For slice flags, we need to get the actual slice values
+	if sliceVal, ok := flag.Value.(pflag.SliceValue); ok {
+		strSlice := sliceVal.GetSlice()
+		for _, v := range strSlice {
+			_ = targetCmd.Flags().Set(flag.Name, v)
+		}
+	} else {
+		// For non-slice flags, just copy the string value
+		_ = targetCmd.Flags().Set(flag.Name, flag.Value.String())
+	}
+}
+
+// executeCommand executes the kubectl command's Run or RunE function.
+func (c *Client) executeCommand(cmd *cobra.Command, args []string) error {
+	if cmd.RunE != nil {
+		err := cmd.RunE(cmd, args)
+		if err != nil {
+			return fmt.Errorf("kubectl command execution failed: %w", err)
+		}
+
+		return nil
+	}
+
+	if cmd.Run != nil {
+		cmd.Run(cmd, args)
+
+		return nil
+	}
+
+	return ErrNoRunFunction
 }
