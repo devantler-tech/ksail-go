@@ -231,25 +231,74 @@ jobs:
         run: |
           set -e
           
-          # Check that registry containers exist and are running
-          echo "Checking registry containers..."
-          docker ps --filter "label=io.ksail.registry" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+          # Define helper functions
+          wait_for_cluster_ready() {
+            local context="$1"
+            echo "Waiting for cluster $context to be ready..."
+            
+            # Wait for nodes
+            kubectl --context="$context" wait --for=condition=Ready nodes --all --timeout=60s
+            
+            # Wait for default service account
+            for i in {1..30}; do
+              if kubectl --context="$context" get serviceaccount default -n default &>/dev/null; then
+                echo "✓ Cluster $context is ready"
+                return 0
+              fi
+              [ $i -eq 30 ] && echo "ERROR: Service account timeout" && return 1
+              sleep 1
+            done
+          }
           
-          # Count running registries
-          registry_count=$(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}" | wc -l)
-          echo "Found $registry_count registry container(s)"
+          test_image_pull() {
+            local context="$1"
+            local pod_name="$2"
+            local image="$3"
+            
+            echo "Testing image pull: $image -> pod $pod_name"
+            kubectl --context="$context" run "$pod_name" \
+              --image="$image" \
+              --restart=Never \
+              --command -- sh -c "sleep 30"
+            
+            kubectl --context="$context" wait --for=condition=Ready "pod/$pod_name" --timeout=120s
+            
+            pod_status=$(kubectl --context="$context" get pod "$pod_name" -o jsonpath='{.status.phase}')
+            if [ "$pod_status" != "Running" ]; then
+              echo "ERROR: Pod $pod_name failed (status: $pod_status)"
+              kubectl --context="$context" describe pod "$pod_name"
+              return 1
+            fi
+            echo "✓ Pod $pod_name is running"
+            kubectl --context="$context" delete pod "$pod_name" --wait=false
+          }
           
-          if [ "$registry_count" -eq 0 ]; then
-            echo "ERROR: No registry containers found"
-            exit 1
+          verify_registries() {
+            echo "=== Verifying Registry Setup ==="
+            docker ps --filter "label=io.ksail.registry" --format "table {{.Names}}\t{{.Status}}"
+            
+            registry_count=$(docker ps --filter "label=io.ksail.registry" | grep -c "registry" || true)
+            [ "$registry_count" -eq 0 ] && echo "ERROR: No registries found" && return 1
+            echo "✓ Found $registry_count registry container(s)"
+            
+            # Check registry volumes for cached data
+            for container in $(docker ps --filter "label=io.ksail.registry" --format "{{.Names}}"); do
+              echo "Inspecting $container..."
+              repo_count=$(docker exec "$container" sh -c "ls -1 /var/lib/registry/docker/registry/v2/repositories 2>/dev/null | wc -l" || echo "0")
+              echo "  Cached repositories: $repo_count"
+            done
+          }
+          
+          # Determine test images based on mirror count
+          if echo "${{ matrix.init-args }}" | grep -q "quay.io"; then
+            TEST_IMAGES=("busybox:1.36.1" "quay.io/prometheus/busybox:latest")
+            echo "Testing with docker.io and quay.io images"
+          else
+            TEST_IMAGES=("busybox:1.36.1")
+            echo "Testing with docker.io image"
           fi
           
-          # Use a unique image tag to force fresh pulls (not cached)
-          # busybox is smaller and faster to pull than nginx
-          TEST_IMAGE="busybox:1.36.1"
-          echo "Using test image: $TEST_IMAGE"
-          
-          # For each cluster, test that it can pull through the mirror
+          # Test pull-through for each cluster
           if [ "${{ matrix.distribution }}" = "Mixed" ]; then
             # Test Kind cluster
             cluster_name="${{ matrix.name }}-cluster1"
