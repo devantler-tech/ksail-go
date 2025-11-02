@@ -13,12 +13,12 @@ type FluxInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
-	client     HelmClient
+	client     helm.Interface
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
 func NewFluxInstaller(
-	client HelmClient,
+	client helm.Interface,
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *FluxInstaller {
