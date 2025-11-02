@@ -74,10 +74,7 @@ func (m *MetricsServerInstaller) helmInstallOrUpgradeMetricsServer(ctx context.C
 		Timeout:     m.timeout,
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, m.timeout)
-	defer cancel()
-
-	_, err := m.client.InstallOrUpgradeChart(timeoutCtx, spec)
+	_, err := m.client.InstallOrUpgradeChart(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install metrics-server chart: %w", err)
 	}
