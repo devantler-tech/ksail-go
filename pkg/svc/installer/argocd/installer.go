@@ -10,8 +10,8 @@ import (
 
 // ArgoCDInstaller implements the installer.Installer interface for ArgoCD.
 type ArgoCDInstaller struct {
-	kubeconfig string
-	context    string
+	kubeconfig string // stored for consistency and future extensibility (e.g., readiness checks)
+	context    string // stored for consistency and future extensibility (e.g., readiness checks)
 	timeout    time.Duration
 	client     helm.Interface
 }
