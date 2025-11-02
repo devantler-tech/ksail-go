@@ -15,12 +15,10 @@ import (
 func TestNewTraefikInstaller(t *testing.T) {
 	t.Parallel()
 
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
 
 	client := helm.NewMockInterface(t)
-	installer := traefikinstaller.NewTraefikInstaller(client, kubeconfig, context, timeout)
+	installer := traefikinstaller.NewTraefikInstaller(client, timeout)
 
 	assert.NotNil(t, installer)
 }
@@ -102,8 +100,6 @@ func newTraefikInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := traefikinstaller.NewTraefikInstaller(
 		client,
-		"~/.kube/config",
-		"test-context",
 		5*time.Second,
 	)
 
