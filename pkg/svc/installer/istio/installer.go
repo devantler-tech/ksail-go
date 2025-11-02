@@ -8,6 +8,8 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
+const istioRepoURL = "https://istio-release.storage.googleapis.com/charts"
+
 // IstioInstaller implements the installer.Installer interface for Istio.
 type IstioInstaller struct {
 	kubeconfig string
@@ -66,7 +68,7 @@ func (i *IstioInstaller) Uninstall(ctx context.Context) error {
 func (i *IstioInstaller) helmInstallOrUpgradeIstioBase(ctx context.Context) error {
 	repoEntry := &helm.RepositoryEntry{
 		Name: "istio",
-		URL:  "https://istio-release.storage.googleapis.com/charts",
+		URL:  istioRepoURL,
 	}
 
 	addRepoErr := i.client.AddRepository(ctx, repoEntry)
@@ -78,7 +80,7 @@ func (i *IstioInstaller) helmInstallOrUpgradeIstioBase(ctx context.Context) erro
 		ReleaseName:     "istio-base",
 		ChartName:       "istio/base",
 		Namespace:       "istio-system",
-		RepoURL:         "https://istio-release.storage.googleapis.com/charts",
+		RepoURL:         istioRepoURL,
 		CreateNamespace: true,
 		Atomic:          true,
 		UpgradeCRDs:     true,
@@ -99,16 +101,28 @@ func (i *IstioInstaller) helmInstallOrUpgradeIstioBase(ctx context.Context) erro
 }
 
 func (i *IstioInstaller) helmInstallOrUpgradeIstiod(ctx context.Context) error {
+	// Ensure repository is available for istiod installation
+	repoEntry := &helm.RepositoryEntry{
+		Name: "istio",
+		URL:  istioRepoURL,
+	}
+
+	addRepoErr := i.client.AddRepository(ctx, repoEntry)
+	if addRepoErr != nil {
+		return fmt.Errorf("failed to add istio repository: %w", addRepoErr)
+	}
+
 	spec := &helm.ChartSpec{
-		ReleaseName: "istiod",
-		ChartName:   "istio/istiod",
-		Namespace:   "istio-system",
-		RepoURL:     "https://istio-release.storage.googleapis.com/charts",
-		Atomic:      true,
-		UpgradeCRDs: true,
-		Timeout:     i.timeout,
-		Wait:        true,
-		WaitForJobs: true,
+		ReleaseName:     "istiod",
+		ChartName:       "istio/istiod",
+		Namespace:       "istio-system",
+		RepoURL:         istioRepoURL,
+		CreateNamespace: true,
+		Atomic:          true,
+		UpgradeCRDs:     true,
+		Timeout:         i.timeout,
+		Wait:            true,
+		WaitForJobs:     true,
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, i.timeout)

@@ -157,6 +157,15 @@ func expectIstioBaseInstall(t *testing.T, client *helm.MockInterface, err error)
 
 func expectIstiodInstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
+	// Expect repository to be added for istiod as well
+	client.EXPECT().
+		AddRepository(mock.Anything, mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
+			return entry.Name == "istio" &&
+				entry.URL == "https://istio-release.storage.googleapis.com/charts"
+		})).
+		Return(nil).
+		Once()
+
 	client.EXPECT().
 		InstallOrUpgradeChart(
 			mock.Anything,
