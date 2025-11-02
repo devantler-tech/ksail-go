@@ -10,23 +10,18 @@ import (
 
 // FluxInstaller implements the installer.Installer interface for Flux.
 type FluxInstaller struct {
-	kubeconfig string
-	context    string
-	timeout    time.Duration
-	client     helm.Interface
+	timeout time.Duration
+	client  helm.Interface
 }
 
 // NewFluxInstaller creates a new Flux installer instance.
 func NewFluxInstaller(
 	client helm.Interface,
-	kubeconfig, context string,
 	timeout time.Duration,
 ) *FluxInstaller {
 	return &FluxInstaller{
-		client:     client,
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
+		client:  client,
+		timeout: timeout,
 	}
 }
 
