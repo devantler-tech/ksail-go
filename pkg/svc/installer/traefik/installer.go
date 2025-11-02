@@ -10,23 +10,18 @@ import (
 
 // TraefikInstaller implements the installer.Installer interface for Traefik.
 type TraefikInstaller struct {
-	kubeconfig string
-	context    string
-	timeout    time.Duration
-	client     helm.Interface
+	timeout time.Duration
+	client  helm.Interface
 }
 
 // NewTraefikInstaller creates a new Traefik installer instance.
 func NewTraefikInstaller(
 	client helm.Interface,
-	kubeconfig, context string,
 	timeout time.Duration,
 ) *TraefikInstaller {
 	return &TraefikInstaller{
-		client:     client,
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
+		client:  client,
+		timeout: timeout,
 	}
 }
 
