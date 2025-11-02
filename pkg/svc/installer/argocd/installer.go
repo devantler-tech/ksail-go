@@ -69,10 +69,7 @@ func (a *ArgoCDInstaller) helmInstallOrUpgradeArgoCD(ctx context.Context) error 
 		Timeout:         a.timeout,
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, a.timeout)
-	defer cancel()
-
-	_, err := a.client.InstallOrUpgradeChart(timeoutCtx, spec)
+	_, err := a.client.InstallOrUpgradeChart(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install argocd chart: %w", err)
 	}

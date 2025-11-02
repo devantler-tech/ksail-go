@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testTimeout = 5 * time.Second
+
 func TestNewArgoCDInstaller(t *testing.T) {
 	t.Parallel()
 
-	timeout := 5 * time.Second
-
 	client := helm.NewMockInterface(t)
-	installer := argocdinstaller.NewArgoCDInstaller(client, timeout)
+	installer := argocdinstaller.NewArgoCDInstaller(client, testTimeout)
 
 	assert.NotNil(t, installer)
 }
@@ -88,7 +88,7 @@ func newArgoCDInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := argocdinstaller.NewArgoCDInstaller(
 		client,
-		5*time.Second,
+		testTimeout,
 	)
 
 	return installer, client
