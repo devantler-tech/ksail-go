@@ -10,5 +10,5 @@ import (
 func NewRoleCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewRoleGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

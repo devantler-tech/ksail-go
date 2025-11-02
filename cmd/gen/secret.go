@@ -10,5 +10,5 @@ import (
 func NewSecretCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewSecretGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

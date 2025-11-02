@@ -10,5 +10,5 @@ import (
 func NewDeploymentCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewDeploymentGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

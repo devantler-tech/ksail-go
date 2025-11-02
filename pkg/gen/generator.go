@@ -6,6 +6,6 @@ import (
 
 // Generator is the interface for generating Kubernetes resource manifests.
 type Generator interface {
-	// Generate creates a cobra command that generates a Kubernetes resource manifest.
-	Generate() *cobra.Command
+	// Command returns the cobra command for generating the Kubernetes resource manifest.
+	Command() *cobra.Command
 }

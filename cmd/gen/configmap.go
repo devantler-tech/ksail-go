@@ -10,5 +10,5 @@ import (
 func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewConfigMapGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

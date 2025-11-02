@@ -10,5 +10,5 @@ import (
 func NewQuotaCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewQuotaGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

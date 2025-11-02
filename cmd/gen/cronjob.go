@@ -10,5 +10,5 @@ import (
 func NewCronJobCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewCronJobGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

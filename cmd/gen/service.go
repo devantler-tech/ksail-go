@@ -10,5 +10,5 @@ import (
 func NewServiceCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewServiceGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

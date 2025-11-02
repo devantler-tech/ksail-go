@@ -6,16 +6,16 @@
 //
 // # Usage
 //
-// Create a generator for a specific resource type and use it to generate a command:
+// Create a generator for a specific resource type and retrieve its command:
 //
 //	import "github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
 //
 //	generator := kubernetes.NewNamespaceGenerator()
-//	namespaceCmd := generator.Generate()
+//	namespaceCmd := generator.Command()
 //
 //	// Or for other resources:
 //	deploymentGenerator := kubernetes.NewDeploymentGenerator()
-//	deploymentCmd := deploymentGenerator.Generate()
+//	deploymentCmd := deploymentGenerator.Command()
 //
 // The generated commands can be integrated into CLI applications or used standalone.
 // No kubeconfig is required since --dry-run=client doesn't need cluster access.
@@ -25,7 +25,7 @@
 // The Generator interface allows for custom implementations:
 //
 //	type Generator interface {
-//	    Generate() *cobra.Command
+//	    Command() *cobra.Command
 //	}
 //
 // # Supported Resource Types

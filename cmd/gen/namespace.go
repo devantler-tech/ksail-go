@@ -10,5 +10,5 @@ import (
 func NewNamespaceCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewNamespaceGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

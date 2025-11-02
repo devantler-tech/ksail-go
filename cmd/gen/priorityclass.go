@@ -10,5 +10,5 @@ import (
 func NewPriorityClassCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewPriorityClassGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

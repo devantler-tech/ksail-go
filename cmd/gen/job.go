@@ -10,5 +10,5 @@ import (
 func NewJobCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewJobGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

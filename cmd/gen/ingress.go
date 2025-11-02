@@ -10,5 +10,5 @@ import (
 func NewIngressCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewIngressGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

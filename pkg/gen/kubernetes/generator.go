@@ -23,18 +23,27 @@ var (
 // Generator generates Kubernetes resource manifests using kubectl create with --dry-run=client -o yaml.
 type Generator struct {
 	resourceType string
+	command      *cobra.Command
 }
 
 // NewGenerator creates a new kubectl-based generator for a specific resource type.
 // The generator uses --dry-run=client which doesn't require cluster access or kubeconfig.
 func NewGenerator(resourceType string) *Generator {
-	return &Generator{
+	g := &Generator{
 		resourceType: resourceType,
 	}
+	g.buildCommand()
+
+	return g
 }
 
-// Generate creates a gen subcommand that wraps kubectl create with forced --dry-run=client -o yaml.
-func (g *Generator) Generate() *cobra.Command {
+// Command returns the cobra command for generating the Kubernetes resource manifest.
+func (g *Generator) Command() *cobra.Command {
+	return g.command
+}
+
+// buildCommand creates a gen subcommand that wraps kubectl create with forced --dry-run=client -o yaml.
+func (g *Generator) buildCommand() {
 	// Create temporary kubectl client to get the resource command
 	tempIOStreams := genericiooptions.IOStreams{
 		In:     os.Stdin,
@@ -78,7 +87,7 @@ func (g *Generator) Generate() *cobra.Command {
 	// Copy all flags from the resource command
 	wrapperCmd.Flags().AddFlagSet(resourceCmd.Flags())
 
-	return wrapperCmd
+	g.command = wrapperCmd
 }
 
 // executeKubectlCreate executes the kubectl create command with forced --dry-run=client -o yaml flags.

@@ -13,7 +13,7 @@ func TestNamespaceGenerator(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewNamespaceGenerator()
-	cmd := generator.Generate()
+	cmd := generator.Command()
 
 	require.NotNil(t, cmd)
 	assert.Equal(t, "namespace", cmd.Name())
@@ -25,7 +25,7 @@ func TestDeploymentGenerator(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewDeploymentGenerator()
-	cmd := generator.Generate()
+	cmd := generator.Command()
 
 	require.NotNil(t, cmd)
 	assert.Equal(t, "deployment", cmd.Name())
@@ -37,7 +37,7 @@ func TestServiceGenerator(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewServiceGenerator()
-	cmd := generator.Generate()
+	cmd := generator.Command()
 
 	require.NotNil(t, cmd)
 	assert.Equal(t, "service", cmd.Name())
@@ -53,7 +53,7 @@ func TestSecretGenerator(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewSecretGenerator()
-	cmd := generator.Generate()
+	cmd := generator.Command()
 
 	require.NotNil(t, cmd)
 	assert.Equal(t, "secret", cmd.Name())
@@ -68,10 +68,8 @@ func TestSecretGenerator(t *testing.T) {
 func TestGenerator_InvalidResource(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("nonexistent-resource")
-
 	assert.Panics(t, func() {
-		generator.Generate()
+		kubernetes.NewGenerator("nonexistent-resource")
 	})
 }
 
@@ -79,7 +77,7 @@ func TestNamespaceGenerator_ExecutesWithDryRun(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewNamespaceGenerator()
-	cmd := generator.Generate()
+	cmd := generator.Command()
 
 	// Capture output - need to capture both stdout and stderr
 	outBuf := new(bytes.Buffer)

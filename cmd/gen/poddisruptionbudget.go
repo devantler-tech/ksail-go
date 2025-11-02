@@ -10,5 +10,5 @@ import (
 func NewPodDisruptionBudgetCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewPodDisruptionBudgetGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }

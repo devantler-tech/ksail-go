@@ -10,5 +10,5 @@ import (
 func NewClusterRoleCmd(_ *runtime.Runtime) *cobra.Command {
 	generator := kubernetes.NewClusterRoleGenerator()
 
-	return generator.Generate()
+	return generator.Command()
 }
