@@ -2,6 +2,7 @@ package gen //nolint:testpackage // Tests need access to unexported helpers
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -97,5 +98,10 @@ func TestGenSecretDockerRegistry(t *testing.T) {
 
 // writeFile is a helper to write test files.
 func writeFile(path, content string) error {
-	return os.WriteFile(path, []byte(content), 0o600)
+	err := os.WriteFile(path, []byte(content), 0o600)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
 }

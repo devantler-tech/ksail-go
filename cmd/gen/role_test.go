@@ -8,7 +8,8 @@ import (
 )
 
 // TestGenRole tests generating a role manifest.
-// NOTE: This test requires cluster access for API discovery and is skipped in environments without kubectl cluster connectivity.
+// NOTE: This test requires cluster access for API discovery and is skipped
+// in environments without kubectl cluster connectivity.
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenRole(t *testing.T) {

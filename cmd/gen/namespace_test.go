@@ -12,7 +12,9 @@ import (
 
 func TestMain(m *testing.M) {
 	setupTestKubeconfig()
+
 	exitCode := m.Run()
+
 	cleanupTestKubeconfig()
 
 	// Clean snapshots
