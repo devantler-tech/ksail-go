@@ -8,9 +8,7 @@ import (
 
 // NewRoleBindingCmd creates the gen rolebinding command.
 func NewRoleBindingCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for rolebinding
-	generator := kubernetes.NewGenerator("rolebinding")
+	generator := kubernetes.NewRoleBindingGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

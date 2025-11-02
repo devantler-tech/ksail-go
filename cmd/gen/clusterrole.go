@@ -8,9 +8,7 @@ import (
 
 // NewClusterRoleCmd creates the gen clusterrole command.
 func NewClusterRoleCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for clusterrole
-	generator := kubernetes.NewGenerator("clusterrole")
+	generator := kubernetes.NewClusterRoleGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

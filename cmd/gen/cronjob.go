@@ -8,9 +8,7 @@ import (
 
 // NewCronJobCmd creates the gen cronjob command.
 func NewCronJobCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for cronjob
-	generator := kubernetes.NewGenerator("cronjob")
+	generator := kubernetes.NewCronJobGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

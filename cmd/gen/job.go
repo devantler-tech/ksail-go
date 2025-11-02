@@ -8,9 +8,7 @@ import (
 
 // NewJobCmd creates the gen job command.
 func NewJobCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for job
-	generator := kubernetes.NewGenerator("job")
+	generator := kubernetes.NewJobGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerator_Generate_Namespace(t *testing.T) {
+func TestNamespaceGenerator(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("namespace")
+	generator := kubernetes.NewNamespaceGenerator()
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -21,10 +21,10 @@ func TestGenerator_Generate_Namespace(t *testing.T) {
 	assert.NotNil(t, cmd.RunE)
 }
 
-func TestGenerator_Generate_Deployment(t *testing.T) {
+func TestDeploymentGenerator(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("deployment")
+	generator := kubernetes.NewDeploymentGenerator()
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -33,10 +33,10 @@ func TestGenerator_Generate_Deployment(t *testing.T) {
 	assert.NotNil(t, cmd.RunE)
 }
 
-func TestGenerator_Generate_Service(t *testing.T) {
+func TestServiceGenerator(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("service")
+	generator := kubernetes.NewServiceGenerator()
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -49,10 +49,10 @@ func TestGenerator_Generate_Service(t *testing.T) {
 	}
 }
 
-func TestGenerator_Generate_Secret(t *testing.T) {
+func TestSecretGenerator(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("secret")
+	generator := kubernetes.NewSecretGenerator()
 	cmd := generator.Generate()
 
 	require.NotNil(t, cmd)
@@ -65,7 +65,7 @@ func TestGenerator_Generate_Secret(t *testing.T) {
 	}
 }
 
-func TestGenerator_Generate_InvalidResource(t *testing.T) {
+func TestGenerator_InvalidResource(t *testing.T) {
 	t.Parallel()
 
 	generator := kubernetes.NewGenerator("nonexistent-resource")
@@ -75,10 +75,10 @@ func TestGenerator_Generate_InvalidResource(t *testing.T) {
 	})
 }
 
-func TestGenerator_ExecutesWithDryRun(t *testing.T) {
+func TestNamespaceGenerator_ExecutesWithDryRun(t *testing.T) {
 	t.Parallel()
 
-	generator := kubernetes.NewGenerator("namespace")
+	generator := kubernetes.NewNamespaceGenerator()
 	cmd := generator.Generate()
 
 	// Capture output - need to capture both stdout and stderr

@@ -8,9 +8,7 @@ import (
 
 // NewNamespaceCmd creates the gen namespace command.
 func NewNamespaceCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for namespace
-	generator := kubernetes.NewGenerator("namespace")
+	generator := kubernetes.NewNamespaceGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

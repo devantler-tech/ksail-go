@@ -8,9 +8,7 @@ import (
 
 // NewPriorityClassCmd creates the gen priorityclass command.
 func NewPriorityClassCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for priorityclass
-	generator := kubernetes.NewGenerator("priorityclass")
+	generator := kubernetes.NewPriorityClassGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

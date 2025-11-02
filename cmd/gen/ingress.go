@@ -8,9 +8,7 @@ import (
 
 // NewIngressCmd creates the gen ingress command.
 func NewIngressCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for ingress
-	generator := kubernetes.NewGenerator("ingress")
+	generator := kubernetes.NewIngressGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

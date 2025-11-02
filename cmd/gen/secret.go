@@ -8,9 +8,7 @@ import (
 
 // NewSecretCmd creates the gen secret command.
 func NewSecretCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for secret
-	generator := kubernetes.NewGenerator("secret")
+	generator := kubernetes.NewSecretGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

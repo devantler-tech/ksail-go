@@ -8,9 +8,7 @@ import (
 
 // NewConfigMapCmd creates the gen configmap command.
 func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for configmap
-	generator := kubernetes.NewGenerator("configmap")
+	generator := kubernetes.NewConfigMapGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

@@ -8,9 +8,7 @@ import (
 
 // NewQuotaCmd creates the gen quota command.
 func NewQuotaCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for quota
-	generator := kubernetes.NewGenerator("quota")
+	generator := kubernetes.NewQuotaGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

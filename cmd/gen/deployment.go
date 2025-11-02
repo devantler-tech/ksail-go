@@ -8,9 +8,7 @@ import (
 
 // NewDeploymentCmd creates the gen deployment command.
 func NewDeploymentCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for deployment
-	generator := kubernetes.NewGenerator("deployment")
+	generator := kubernetes.NewDeploymentGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

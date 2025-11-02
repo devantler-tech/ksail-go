@@ -10,8 +10,12 @@
 //
 //	import "github.com/devantler-tech/ksail-go/pkg/gen/kubernetes"
 //
-//	generator := kubernetes.NewGenerator("namespace")
+//	generator := kubernetes.NewNamespaceGenerator()
 //	namespaceCmd := generator.Generate()
+//
+//	// Or for other resources:
+//	deploymentGenerator := kubernetes.NewDeploymentGenerator()
+//	deploymentCmd := deploymentGenerator.Generate()
 //
 // The generated commands can be integrated into CLI applications or used standalone.
 // No kubeconfig is required since --dry-run=client doesn't need cluster access.
@@ -26,19 +30,19 @@
 //
 // # Supported Resource Types
 //
-// All kubectl create resource types are supported:
-//   - clusterrole, clusterrolebinding
-//   - configmap
-//   - cronjob
-//   - deployment
-//   - ingress
-//   - job
-//   - namespace
-//   - poddisruptionbudget
-//   - priorityclass
-//   - quota
-//   - role, rolebinding
-//   - secret (with subcommands: generic, tls, docker-registry)
-//   - service (with subcommands: clusterip, nodeport, loadbalancer, externalname)
-//   - serviceaccount
+// Each resource type has its own generator constructor:
+//   - NewClusterRoleGenerator(), NewClusterRoleBindingGenerator()
+//   - NewConfigMapGenerator()
+//   - NewCronJobGenerator()
+//   - NewDeploymentGenerator()
+//   - NewIngressGenerator()
+//   - NewJobGenerator()
+//   - NewNamespaceGenerator()
+//   - NewPodDisruptionBudgetGenerator()
+//   - NewPriorityClassGenerator()
+//   - NewQuotaGenerator()
+//   - NewRoleGenerator(), NewRoleBindingGenerator()
+//   - NewSecretGenerator() (with subcommands: generic, tls, docker-registry)
+//   - NewServiceGenerator() (with subcommands: clusterip, nodeport, loadbalancer, externalname)
+//   - NewServiceAccountGenerator()
 package gen

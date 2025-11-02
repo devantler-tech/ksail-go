@@ -8,9 +8,7 @@ import (
 
 // NewClusterRoleBindingCmd creates the gen clusterrolebinding command.
 func NewClusterRoleBindingCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for clusterrolebinding
-	generator := kubernetes.NewGenerator("clusterrolebinding")
+	generator := kubernetes.NewClusterRoleBindingGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

@@ -8,9 +8,7 @@ import (
 
 // NewServiceCmd creates the gen service command.
 func NewServiceCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for service
-	generator := kubernetes.NewGenerator("service")
+	generator := kubernetes.NewServiceGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }

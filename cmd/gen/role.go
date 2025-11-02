@@ -8,9 +8,7 @@ import (
 
 // NewRoleCmd creates the gen role command.
 func NewRoleCmd(_ *runtime.Runtime) *cobra.Command {
-	// Create a generator for role
-	generator := kubernetes.NewGenerator("role")
+	generator := kubernetes.NewRoleGenerator()
 
-	// Use the generator to create the command
 	return generator.Generate()
 }
