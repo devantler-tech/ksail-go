@@ -10,13 +10,8 @@ import (
 )
 
 // NewDeploymentCmd creates the gen deployment command.
-func NewDeploymentCmd(_ *runtime.Runtime) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	client := kubectl.NewClient(ioStreams)
-
-	return client.NewDeploymentCmd()
+func NewDeploymentCmd(rt *runtime.Runtime) *cobra.Command {
+	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
+		return client.NewDeploymentCmd()
+	})
 }

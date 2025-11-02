@@ -10,13 +10,8 @@ import (
 )
 
 // NewConfigMapCmd creates the gen configmap command.
-func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	client := kubectl.NewClient(ioStreams)
-
-	return client.NewConfigMapCmd()
+func NewConfigMapCmd(rt *runtime.Runtime) *cobra.Command {
+	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
+		return client.NewConfigMapCmd()
+	})
 }

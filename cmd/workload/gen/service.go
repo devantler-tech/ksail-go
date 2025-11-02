@@ -10,13 +10,8 @@ import (
 )
 
 // NewServiceCmd creates the gen service command.
-func NewServiceCmd(_ *runtime.Runtime) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	client := kubectl.NewClient(ioStreams)
-
-	return client.NewServiceCmd()
+func NewServiceCmd(rt *runtime.Runtime) *cobra.Command {
+	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
+		return client.NewServiceCmd()
+	})
 }

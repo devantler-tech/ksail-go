@@ -10,13 +10,8 @@ import (
 )
 
 // NewSecretCmd creates the gen secret command.
-func NewSecretCmd(_ *runtime.Runtime) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	client := kubectl.NewClient(ioStreams)
-
-	return client.NewSecretCmd()
+func NewSecretCmd(rt *runtime.Runtime) *cobra.Command {
+	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
+		return client.NewSecretCmd()
+	})
 }
