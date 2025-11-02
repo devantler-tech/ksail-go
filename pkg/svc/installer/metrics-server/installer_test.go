@@ -16,14 +16,14 @@ func TestNewMetricsServerInstaller(t *testing.T) {
 	t.Parallel()
 
 	kubeconfig := "~/.kube/config"
-	context := "test-context"
+	kubeContext := "test-context"
 	timeout := 5 * time.Minute
 
 	client := helm.NewMockInterface(t)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		client,
 		kubeconfig,
-		context,
+		kubeContext,
 		timeout,
 	)
 
@@ -92,12 +92,17 @@ func newMetricsServerInstallerWithDefaults(
 	t *testing.T,
 ) (*metricsserverinstaller.MetricsServerInstaller, *helm.MockInterface) {
 	t.Helper()
+
+	kubeconfig := "~/.kube/config"
+	kubeContext := "test-context"
+	timeout := 5 * time.Second
+
 	client := helm.NewMockInterface(t)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		client,
-		"~/.kube/config",
-		"test-context",
-		5*time.Second,
+		kubeconfig,
+		kubeContext,
+		timeout,
 	)
 
 	return installer, client
