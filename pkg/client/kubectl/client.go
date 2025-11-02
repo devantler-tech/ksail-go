@@ -363,86 +363,166 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 
 // NewNamespaceCmd creates a command to generate a Namespace manifest.
 func (c *Client) NewNamespaceCmd() *cobra.Command {
-	return c.newResourceCmd("namespace")
+	cmd, err := c.newResourceCmd("namespace")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create namespace command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewConfigMapCmd creates a command to generate a ConfigMap manifest.
 func (c *Client) NewConfigMapCmd() *cobra.Command {
-	return c.newResourceCmd("configmap")
+	cmd, err := c.newResourceCmd("configmap")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create configmap command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewSecretCmd creates a command to generate a Secret manifest.
 func (c *Client) NewSecretCmd() *cobra.Command {
-	return c.newResourceCmd("secret")
+	cmd, err := c.newResourceCmd("secret")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create secret command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewServiceAccountCmd creates a command to generate a ServiceAccount manifest.
 func (c *Client) NewServiceAccountCmd() *cobra.Command {
-	return c.newResourceCmd("serviceaccount")
+	cmd, err := c.newResourceCmd("serviceaccount")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create serviceaccount command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewDeploymentCmd creates a command to generate a Deployment manifest.
 func (c *Client) NewDeploymentCmd() *cobra.Command {
-	return c.newResourceCmd("deployment")
+	cmd, err := c.newResourceCmd("deployment")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create deployment command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewJobCmd creates a command to generate a Job manifest.
 func (c *Client) NewJobCmd() *cobra.Command {
-	return c.newResourceCmd("job")
+	cmd, err := c.newResourceCmd("job")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create job command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewCronJobCmd creates a command to generate a CronJob manifest.
 func (c *Client) NewCronJobCmd() *cobra.Command {
-	return c.newResourceCmd("cronjob")
+	cmd, err := c.newResourceCmd("cronjob")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create cronjob command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewServiceCmd creates a command to generate a Service manifest.
 func (c *Client) NewServiceCmd() *cobra.Command {
-	return c.newResourceCmd("service")
+	cmd, err := c.newResourceCmd("service")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create service command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewIngressCmd creates a command to generate an Ingress manifest.
 func (c *Client) NewIngressCmd() *cobra.Command {
-	return c.newResourceCmd("ingress")
+	cmd, err := c.newResourceCmd("ingress")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create ingress command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewRoleCmd creates a command to generate a Role manifest.
 func (c *Client) NewRoleCmd() *cobra.Command {
-	return c.newResourceCmd("role")
+	cmd, err := c.newResourceCmd("role")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create role command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewRoleBindingCmd creates a command to generate a RoleBinding manifest.
 func (c *Client) NewRoleBindingCmd() *cobra.Command {
-	return c.newResourceCmd("rolebinding")
+	cmd, err := c.newResourceCmd("rolebinding")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create rolebinding command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewClusterRoleCmd creates a command to generate a ClusterRole manifest.
 func (c *Client) NewClusterRoleCmd() *cobra.Command {
-	return c.newResourceCmd("clusterrole")
+	cmd, err := c.newResourceCmd("clusterrole")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create clusterrole command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewClusterRoleBindingCmd creates a command to generate a ClusterRoleBinding manifest.
 func (c *Client) NewClusterRoleBindingCmd() *cobra.Command {
-	return c.newResourceCmd("clusterrolebinding")
+	cmd, err := c.newResourceCmd("clusterrolebinding")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create clusterrolebinding command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewQuotaCmd creates a command to generate a ResourceQuota manifest.
 func (c *Client) NewQuotaCmd() *cobra.Command {
-	return c.newResourceCmd("quota")
+	cmd, err := c.newResourceCmd("quota")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create quota command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewPodDisruptionBudgetCmd creates a command to generate a PodDisruptionBudget manifest.
 func (c *Client) NewPodDisruptionBudgetCmd() *cobra.Command {
-	return c.newResourceCmd("poddisruptionbudget")
+	cmd, err := c.newResourceCmd("poddisruptionbudget")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create poddisruptionbudget command: %v", err))
+	}
+
+	return cmd
 }
 
 // NewPriorityClassCmd creates a command to generate a PriorityClass manifest.
 func (c *Client) NewPriorityClassCmd() *cobra.Command {
-	return c.newResourceCmd("priorityclass")
+	cmd, err := c.newResourceCmd("priorityclass")
+	if err != nil {
+		panic(fmt.Sprintf("failed to create priorityclass command: %v", err))
+	}
+
+	return cmd
 }
 
 // newResourceCmd creates a gen command that wraps kubectl create with forced --dry-run=client -o yaml.
-func (c *Client) newResourceCmd(resourceType string) *cobra.Command {
+func (c *Client) newResourceCmd(resourceType string) (*cobra.Command, error) {
 	// Use empty string for kubeconfig since --dry-run=client doesn't need cluster access
 	tempCreateCmd := c.CreateCreateCommand("")
 
@@ -458,7 +538,7 @@ func (c *Client) newResourceCmd(resourceType string) *cobra.Command {
 	}
 
 	if resourceCmd == nil {
-		panic("kubectl create " + resourceType + " command not found")
+		return nil, fmt.Errorf("%w: %s", ErrResourceCommandNotFound, resourceType)
 	}
 
 	// Create a wrapper command
@@ -479,7 +559,7 @@ func (c *Client) newResourceCmd(resourceType string) *cobra.Command {
 	// Copy all flags from the resource command
 	wrapperCmd.Flags().AddFlagSet(resourceCmd.Flags())
 
-	return wrapperCmd
+	return wrapperCmd, nil
 }
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
@@ -500,7 +580,10 @@ func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, arg
 	}
 
 	// Copy user flags
-	c.copyUserFlags(cmd, freshResourceCmd)
+	err = c.copyUserFlags(cmd, freshResourceCmd)
+	if err != nil {
+		return err
+	}
 
 	// Execute
 	return c.executeCommand(freshResourceCmd, args)
@@ -533,7 +616,9 @@ func (c *Client) setForcedFlags(cmd *cobra.Command) error {
 }
 
 // copyUserFlags copies user-provided flags from wrapper command to kubectl command.
-func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) {
+func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) error {
+	var copyErr error
+
 	wrapperCmd.Flags().Visit(func(flag *pflag.Flag) {
 		if flag.Name == "dry-run" || flag.Name == "output" {
 			return
@@ -541,23 +626,33 @@ func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) {
 
 		targetFlag := targetCmd.Flags().Lookup(flag.Name)
 		if targetFlag != nil {
-			c.copyFlagValue(flag, targetCmd)
+			if err := c.copyFlagValue(flag, targetCmd); err != nil && copyErr == nil {
+				copyErr = err
+			}
 		}
 	})
+
+	return copyErr
 }
 
 // copyFlagValue copies a flag value, handling slice flags specially.
-func (c *Client) copyFlagValue(flag *pflag.Flag, targetCmd *cobra.Command) {
+func (c *Client) copyFlagValue(flag *pflag.Flag, targetCmd *cobra.Command) error {
 	// For slice flags, we need to get the actual slice values
 	if sliceVal, ok := flag.Value.(pflag.SliceValue); ok {
 		strSlice := sliceVal.GetSlice()
 		for _, v := range strSlice {
-			_ = targetCmd.Flags().Set(flag.Name, v)
+			if err := targetCmd.Flags().Set(flag.Name, v); err != nil {
+				return fmt.Errorf("failed to set flag %s: %w", flag.Name, err)
+			}
 		}
 	} else {
 		// For non-slice flags, just copy the string value
-		_ = targetCmd.Flags().Set(flag.Name, flag.Value.String())
+		if err := targetCmd.Flags().Set(flag.Name, flag.Value.String()); err != nil {
+			return fmt.Errorf("failed to set flag %s: %w", flag.Name, err)
+		}
 	}
+
+	return nil
 }
 
 // executeCommand executes the kubectl command's Run or RunE function.
