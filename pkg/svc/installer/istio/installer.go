@@ -93,10 +93,7 @@ func (i *IstioInstaller) installChart(ctx context.Context, releaseName, chartNam
 		WaitForJobs:     true,
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, i.timeout)
-	defer cancel()
-
-	_, err := i.client.InstallOrUpgradeChart(timeoutCtx, spec)
+	_, err := i.client.InstallOrUpgradeChart(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install %s chart: %w", releaseName, err)
 	}
