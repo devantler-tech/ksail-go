@@ -15,12 +15,10 @@ import (
 func TestNewIstioInstaller(t *testing.T) {
 	t.Parallel()
 
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
 
 	client := helm.NewMockInterface(t)
-	installer := istioinstaller.NewIstioInstaller(client, kubeconfig, context, timeout)
+	installer := istioinstaller.NewIstioInstaller(client, timeout)
 
 	assert.NotNil(t, installer)
 }
@@ -110,8 +108,6 @@ func newIstioInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := istioinstaller.NewIstioInstaller(
 		client,
-		"~/.kube/config",
-		"test-context",
 		5*time.Second,
 	)
 

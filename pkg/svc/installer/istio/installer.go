@@ -12,23 +12,18 @@ const istioRepoURL = "https://istio-release.storage.googleapis.com/charts"
 
 // IstioInstaller implements the installer.Installer interface for Istio.
 type IstioInstaller struct {
-	kubeconfig string
-	context    string
-	timeout    time.Duration
-	client     helm.Interface
+	timeout time.Duration
+	client  helm.Interface
 }
 
 // NewIstioInstaller creates a new Istio installer instance.
 func NewIstioInstaller(
 	client helm.Interface,
-	kubeconfig, context string,
 	timeout time.Duration,
 ) *IstioInstaller {
 	return &IstioInstaller{
-		client:     client,
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
+		client:  client,
+		timeout: timeout,
 	}
 }
 
