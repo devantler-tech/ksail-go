@@ -22,8 +22,8 @@ func TestGenSecretGeneric(t *testing.T) {
 		[]string{
 			"generic",
 			"test-secret",
-			"--from-literal=username=admin",
-			"--from-literal=password=<PASSWORD>", // nosec G101 - test placeholder
+			"--from-literal=key1=value1",
+			"--from-literal=key2=value2",
 		},
 	)
 
@@ -109,9 +109,9 @@ func TestGenSecretDockerRegistry(t *testing.T) {
 		"docker-registry",
 		"test-docker-secret",
 		"--docker-server=https://registry.example.com",
-		"--docker-username=user",
-		"--docker-password=<PASSWORD>", // nosec G101 - test placeholder
-		"--docker-email=user@example.com",
+		"--docker-username=testuser",
+		"--docker-password=testpass123",
+		"--docker-email=testuser@example.com",
 	})
 
 	err := cmd.Execute()
