@@ -15,12 +15,10 @@ import (
 func TestNewFluxInstaller(t *testing.T) {
 	t.Parallel()
 
-	kubeconfig := "~/.kube/config"
-	context := "test-context"
 	timeout := 5 * time.Minute
 
 	client := helm.NewMockInterface(t)
-	installer := fluxinstaller.NewFluxInstaller(client, kubeconfig, context, timeout)
+	installer := fluxinstaller.NewFluxInstaller(client, timeout)
 
 	assert.NotNil(t, installer)
 }
@@ -78,8 +76,6 @@ func newFluxInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
-		"~/.kube/config",
-		"test-context",
 		5*time.Second,
 	)
 
