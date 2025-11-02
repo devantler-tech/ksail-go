@@ -13,12 +13,12 @@ type TraefikInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
-	client     HelmClient
+	client     helm.Interface
 }
 
 // NewTraefikInstaller creates a new Traefik installer instance.
 func NewTraefikInstaller(
-	client HelmClient,
+	client helm.Interface,
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *TraefikInstaller {

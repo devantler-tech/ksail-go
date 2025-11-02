@@ -19,7 +19,7 @@ func TestNewTraefikInstaller(t *testing.T) {
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	client := traefikinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := traefikinstaller.NewTraefikInstaller(client, kubeconfig, context, timeout)
 
 	assert.NotNil(t, installer)
@@ -97,9 +97,9 @@ func TestTraefikInstallerUninstallError(t *testing.T) {
 
 func newTraefikInstallerWithDefaults(
 	t *testing.T,
-) (*traefikinstaller.TraefikInstaller, *traefikinstaller.MockHelmClient) {
+) (*traefikinstaller.TraefikInstaller, *helm.MockInterface) {
 	t.Helper()
-	client := traefikinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := traefikinstaller.NewTraefikInstaller(
 		client,
 		"~/.kube/config",
@@ -110,7 +110,7 @@ func newTraefikInstallerWithDefaults(
 	return installer, client
 }
 
-func expectTraefikInstall(t *testing.T, client *traefikinstaller.MockHelmClient, installErr error) {
+func expectTraefikInstall(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 
 	client.EXPECT().
@@ -145,7 +145,7 @@ func expectTraefikInstall(t *testing.T, client *traefikinstaller.MockHelmClient,
 
 func expectTraefikUninstall(
 	t *testing.T,
-	client *traefikinstaller.MockHelmClient,
+	client *helm.MockInterface,
 	uninstallErr error,
 ) {
 	t.Helper()
