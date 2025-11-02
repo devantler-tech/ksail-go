@@ -15,7 +15,7 @@ import (
 func TestNewArgoCDInstaller(t *testing.T) {
 	t.Parallel()
 
-	timeout := 5 * time.Minute
+	timeout := 5 * time.Second
 
 	client := helm.NewMockInterface(t)
 	installer := argocdinstaller.NewArgoCDInstaller(client, timeout)
