@@ -16,16 +16,18 @@ func TestMain(m *testing.M) {
 	exitCode := m.Run()
 
 	cleanupTestKubeconfig()
+	cleanupSnapshots(m)
 
-	// Clean snapshots
+	os.Exit(exitCode)
+}
+
+func cleanupSnapshots(m *testing.M) {
 	_, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
 	if err != nil {
 		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
 
 		os.Exit(1)
 	}
-
-	os.Exit(exitCode)
 }
 
 func setupTestKubeconfig() {
