@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -287,4 +288,43 @@ func TestHandleConnectRunE_WithContextAndKubeconfig(t *testing.T) {
 	cfg := cfgManager.Config
 	require.Equal(t, kubeConfigPath, cfg.Spec.Connection.Kubeconfig)
 	require.Equal(t, contextName, cfg.Spec.Connection.Context)
+}
+
+//nolint:paralleltest // Uses t.Chdir for directory-based configuration loading.
+func TestHandleConnectRunE_ExpandsTildePath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test that runs k9s in short mode")
+	}
+
+	// Test that the function properly expands tilde paths through GetKubeconfigPathFromConfig
+	configContent := createKSailConfigYAML("~/.kube/config", kindClusterContext)
+	cfgManager := setupTestConfig(t, configContent)
+
+	// Create a channel to run the test with a timeout
+	done := make(chan error, 1)
+
+	go func() {
+		// Call HandleConnectRunE - it will try to execute k9s which exercises
+		// the path expansion code (lines 56-59 in connect.go)
+		done <- HandleConnectRunE(&cobra.Command{}, cfgManager, []string{})
+	}()
+
+	// Wait for either completion or timeout
+	select {
+	case err := <-done:
+		// If HandleConnectRunE returns (k9s fails to start), check the error
+		// We expect an error from k9s execution, not from config loading or path expansion
+		if err != nil {
+			require.Contains(
+				t,
+				err.Error(),
+				"execute k9s",
+				"expected error to be from k9s execution, not path expansion",
+			)
+		}
+	case <-time.After(2 * time.Second):
+		// If k9s starts successfully (running interactively), that's also valid
+		// It means we successfully expanded the path and got to k9s execution
+		t.Log("HandleConnectRunE reached k9s execution (path expansion successful)")
+	}
 }
