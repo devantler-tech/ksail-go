@@ -13,12 +13,12 @@ type MetricsServerInstaller struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
-	client     HelmClient
+	client     helm.Interface
 }
 
 // NewMetricsServerInstaller creates a new metrics-server installer instance.
 func NewMetricsServerInstaller(
-	client HelmClient,
+	client helm.Interface,
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *MetricsServerInstaller {

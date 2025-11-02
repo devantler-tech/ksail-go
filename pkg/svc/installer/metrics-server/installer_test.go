@@ -19,7 +19,7 @@ func TestNewMetricsServerInstaller(t *testing.T) {
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	client := metricsserverinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		client,
 		kubeconfig,
@@ -90,9 +90,9 @@ func TestMetricsServerInstallerUninstallError(t *testing.T) {
 
 func newMetricsServerInstallerWithDefaults(
 	t *testing.T,
-) (*metricsserverinstaller.MetricsServerInstaller, *metricsserverinstaller.MockHelmClient) {
+) (*metricsserverinstaller.MetricsServerInstaller, *helm.MockInterface) {
 	t.Helper()
-	client := metricsserverinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		client,
 		"~/.kube/config",
@@ -105,7 +105,7 @@ func newMetricsServerInstallerWithDefaults(
 
 func expectMetricsServerAddRepository(
 	t *testing.T,
-	client *metricsserverinstaller.MockHelmClient,
+	client *helm.MockInterface,
 	err error,
 ) {
 	t.Helper()
@@ -124,7 +124,7 @@ func expectMetricsServerAddRepository(
 
 func expectMetricsServerInstall(
 	t *testing.T,
-	client *metricsserverinstaller.MockHelmClient,
+	client *helm.MockInterface,
 	installErr error,
 ) {
 	t.Helper()
@@ -149,7 +149,7 @@ func expectMetricsServerInstall(
 
 func expectMetricsServerUninstall(
 	t *testing.T,
-	client *metricsserverinstaller.MockHelmClient,
+	client *helm.MockInterface,
 	err error,
 ) {
 	t.Helper()
