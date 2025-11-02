@@ -551,15 +551,100 @@ func (c *Client) newResourceCmd(resourceType string) (*cobra.Command, error) {
 		SilenceUsage: true,
 	}
 
-	// Create our custom RunE that calls kubectl with forced flags
-	wrapperCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return c.executeResourceGen(resourceType, cmd, args)
+	// If the resource has subcommands (like secret/service), recursively copy them
+	if len(resourceCmd.Commands()) > 0 {
+		for _, subCmd := range resourceCmd.Commands() {
+			subWrapper := c.createSubcommandWrapper(resourceType, subCmd)
+			wrapperCmd.AddCommand(subWrapper)
+		}
+	} else {
+		// Create our custom RunE that calls kubectl with forced flags
+		wrapperCmd.RunE = func(cmd *cobra.Command, args []string) error {
+			return c.executeResourceGen(resourceType, cmd, args)
+		}
+
+		// Copy all flags from the resource command
+		wrapperCmd.Flags().AddFlagSet(resourceCmd.Flags())
 	}
 
-	// Copy all flags from the resource command
-	wrapperCmd.Flags().AddFlagSet(resourceCmd.Flags())
-
 	return wrapperCmd, nil
+}
+
+// createSubcommandWrapper creates a wrapper for a subcommand (e.g., secret generic).
+func (c *Client) createSubcommandWrapper(parentType string, subCmd *cobra.Command) *cobra.Command {
+	wrapper := &cobra.Command{
+		Use:          subCmd.Use,
+		Short:        subCmd.Short,
+		Long:         subCmd.Long,
+		Example:      subCmd.Example,
+		Aliases:      subCmd.Aliases,
+		SilenceUsage: true,
+	}
+
+	// Create RunE for the subcommand
+	wrapper.RunE = func(cmd *cobra.Command, args []string) error {
+		return c.executeSubcommandGen(parentType, subCmd.Name(), cmd, args)
+	}
+
+	// Copy all flags from the subcommand
+	wrapper.Flags().AddFlagSet(subCmd.Flags())
+
+	return wrapper
+}
+
+// executeSubcommandGen executes kubectl create with subcommand and forced flags.
+func (c *Client) executeSubcommandGen(
+	parentType, subType string,
+	cmd *cobra.Command,
+	args []string,
+) error {
+	// Create a fresh kubectl create command
+	createCmd := c.CreateCreateCommand("")
+
+	// Find the parent resource command
+	var parentCmd *cobra.Command
+
+	for _, subCmd := range createCmd.Commands() {
+		if subCmd.Name() == parentType {
+			parentCmd = subCmd
+
+			break
+		}
+	}
+
+	if parentCmd == nil {
+		return fmt.Errorf("%w: %s", ErrResourceCommandNotFound, parentType)
+	}
+
+	// Find the subcommand
+	var freshSubCmd *cobra.Command
+
+	for _, sub := range parentCmd.Commands() {
+		if sub.Name() == subType {
+			freshSubCmd = sub
+
+			break
+		}
+	}
+
+	if freshSubCmd == nil {
+		return fmt.Errorf("%w: %s %s", ErrResourceCommandNotFound, parentType, subType)
+	}
+
+	// Force --dry-run=client and -o yaml
+	err := c.setForcedFlags(freshSubCmd)
+	if err != nil {
+		return err
+	}
+
+	// Copy user flags
+	err = c.copyUserFlags(cmd, freshSubCmd)
+	if err != nil {
+		return err
+	}
+
+	// Execute
+	return c.executeCommand(freshSubCmd, args)
 }
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
