@@ -2,9 +2,8 @@ package cluster
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -53,16 +52,10 @@ func HandleConnectRunE(
 		return fmt.Errorf("load configuration: %w", err)
 	}
 
-	// Determine kubeconfig path
-	kubeConfigPath := cfg.Spec.Connection.Kubeconfig
-	if kubeConfigPath == "" {
-		// Default to ~/.kube/config if not specified
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("get home directory: %w", err)
-		}
-
-		kubeConfigPath = filepath.Join(homeDir, ".kube", "config")
+	// Get kubeconfig path with tilde expansion
+	kubeConfigPath, err := shared.GetKubeconfigPathFromConfig(cfg)
+	if err != nil {
+		return fmt.Errorf("get kubeconfig path: %w", err)
 	}
 
 	// Get context from config

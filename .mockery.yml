@@ -102,14 +102,6 @@ packages:
       pkgname: commandrunner
     interfaces:
       CommandRunner:
-  github.com/devantler-tech/ksail-go/pkg/svc/installer/flux:
-    config:
-      recursive: false
-      dir: pkg/svc/installer/flux
-      filename: mocks.go
-      pkgname: fluxinstaller
-    interfaces:
-      HelmClient:
   github.com/devantler-tech/ksail-go/pkg/svc/installer:
     config:
       recursive: false

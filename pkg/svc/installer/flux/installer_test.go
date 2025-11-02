@@ -19,7 +19,7 @@ func TestNewFluxInstaller(t *testing.T) {
 	context := "test-context"
 	timeout := 5 * time.Minute
 
-	client := fluxinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := fluxinstaller.NewFluxInstaller(client, kubeconfig, context, timeout)
 
 	assert.NotNil(t, installer)
@@ -73,9 +73,9 @@ func TestFluxInstallerUninstallError(t *testing.T) {
 
 func newFluxInstallerWithDefaults(
 	t *testing.T,
-) (*fluxinstaller.FluxInstaller, *fluxinstaller.MockHelmClient) {
+) (*fluxinstaller.FluxInstaller, *helm.MockInterface) {
 	t.Helper()
-	client := fluxinstaller.NewMockHelmClient(t)
+	client := helm.NewMockInterface(t)
 	installer := fluxinstaller.NewFluxInstaller(
 		client,
 		"~/.kube/config",
@@ -86,7 +86,7 @@ func newFluxInstallerWithDefaults(
 	return installer, client
 }
 
-func expectFluxInstall(t *testing.T, client *fluxinstaller.MockHelmClient, installErr error) {
+func expectFluxInstall(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 	client.EXPECT().
 		InstallChart(
@@ -106,7 +106,7 @@ func expectFluxInstall(t *testing.T, client *fluxinstaller.MockHelmClient, insta
 		Return(nil, installErr)
 }
 
-func expectFluxUninstall(t *testing.T, client *fluxinstaller.MockHelmClient, err error) {
+func expectFluxUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
 	client.EXPECT().
 		UninstallRelease(mock.Anything, "flux-operator", "flux-system").

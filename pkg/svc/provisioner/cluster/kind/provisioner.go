@@ -222,7 +222,10 @@ func (k *KindClusterProvisioner) Create(ctx context.Context, name string) error 
 func (k *KindClusterProvisioner) Delete(ctx context.Context, name string) error {
 	target := setName(name, k.kindConfig.Name)
 
-	kubeconfigPath, _ := iopath.ExpandHomePath(k.kubeConfig)
+	kubeconfigPath, err := iopath.ExpandHomePath(k.kubeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to expand kubeconfig path: %w", err)
+	}
 
 	// Kind writes output through its logger interface - send directly to stdout
 	logger := &streamLogger{writer: os.Stdout}
@@ -240,7 +243,7 @@ func (k *KindClusterProvisioner) Delete(ctx context.Context, name string) error 
 		args = append(args, "--kubeconfig", kubeconfigPath)
 	}
 
-	_, err := k.runner.Run(ctx, cmd, args)
+	_, err = k.runner.Run(ctx, cmd, args)
 	if err != nil {
 		return fmt.Errorf("failed to delete kind cluster: %w", err)
 	}
