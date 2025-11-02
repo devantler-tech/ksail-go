@@ -130,30 +130,23 @@ func expectIstioInstall(
 
 func expectIstioBaseInstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	client.EXPECT().
-		AddRepository(mock.Anything, mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-			return entry.Name == "istio" &&
-				entry.URL == "https://istio-release.storage.googleapis.com/charts"
-		})).
-		Return(nil).
-		Once()
-
-	client.EXPECT().
-		InstallOrUpgradeChart(
-			mock.Anything,
-			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				return spec.ReleaseName == "istio-base" &&
-					spec.ChartName == "istio/base" &&
-					spec.Namespace == "istio-system"
-			}),
-		).
-		Return(nil, err).
-		Once()
+	expectChartInstall(t, client, "istio-base", "istio/base", err)
 }
 
 func expectIstiodInstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	// Expect repository to be added for istiod as well
+	expectChartInstall(t, client, "istiod", "istio/istiod", err)
+}
+
+// expectChartInstall is a helper function to set up mock expectations for chart installation.
+func expectChartInstall(
+	t *testing.T,
+	client *helm.MockInterface,
+	releaseName, chartName string,
+	err error,
+) {
+	t.Helper()
+
 	client.EXPECT().
 		AddRepository(mock.Anything, mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
 			return entry.Name == "istio" &&
@@ -166,8 +159,8 @@ func expectIstiodInstall(t *testing.T, client *helm.MockInterface, err error) {
 		InstallOrUpgradeChart(
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				return spec.ReleaseName == "istiod" &&
-					spec.ChartName == "istio/istiod" &&
+				return spec.ReleaseName == releaseName &&
+					spec.ChartName == chartName &&
 					spec.Namespace == "istio-system"
 			}),
 		).
