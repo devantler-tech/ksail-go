@@ -1,4 +1,4 @@
-package gen
+package gen //nolint:testpackage // Tests need access to unexported newTestRuntime
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func newTestRuntime() *runtime.Runtime {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenNamespace(t *testing.T) {
-	rt := runtime.NewRuntime()
+	rt := newTestRuntime()
 	cmd := NewNamespaceCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)

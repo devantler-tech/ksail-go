@@ -617,7 +617,7 @@ func (c *Client) setForcedFlags(cmd *cobra.Command) error {
 
 // copyUserFlags copies user-provided flags from wrapper command to kubectl command.
 func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) error {
-	var copyErr error
+	var errs []error
 
 	wrapperCmd.Flags().Visit(func(flag *pflag.Flag) {
 		if flag.Name == "dry-run" || flag.Name == "output" {
@@ -626,13 +626,18 @@ func (c *Client) copyUserFlags(wrapperCmd, targetCmd *cobra.Command) error {
 
 		targetFlag := targetCmd.Flags().Lookup(flag.Name)
 		if targetFlag != nil {
-			if err := c.copyFlagValue(flag, targetCmd); err != nil && copyErr == nil {
-				copyErr = err
+			err := c.copyFlagValue(flag, targetCmd)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to copy flag %s: %w", flag.Name, err))
 			}
 		}
 	})
 
-	return copyErr
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to copy flags: %w", errors.Join(errs...))
+	}
+
+	return nil
 }
 
 // copyFlagValue copies a flag value, handling slice flags specially.
@@ -641,13 +646,15 @@ func (c *Client) copyFlagValue(flag *pflag.Flag, targetCmd *cobra.Command) error
 	if sliceVal, ok := flag.Value.(pflag.SliceValue); ok {
 		strSlice := sliceVal.GetSlice()
 		for _, v := range strSlice {
-			if err := targetCmd.Flags().Set(flag.Name, v); err != nil {
+			err := targetCmd.Flags().Set(flag.Name, v)
+			if err != nil {
 				return fmt.Errorf("failed to set flag %s: %w", flag.Name, err)
 			}
 		}
 	} else {
 		// For non-slice flags, just copy the string value
-		if err := targetCmd.Flags().Set(flag.Name, flag.Value.String()); err != nil {
+		err := targetCmd.Flags().Set(flag.Name, flag.Value.String())
+		if err != nil {
 			return fmt.Errorf("failed to set flag %s: %w", flag.Name, err)
 		}
 	}
