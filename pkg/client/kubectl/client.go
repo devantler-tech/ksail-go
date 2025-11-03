@@ -362,163 +362,83 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 }
 
 // NewNamespaceCmd creates a command to generate a Namespace manifest.
-func (c *Client) NewNamespaceCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("namespace")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create namespace command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewNamespaceCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("namespace")
 }
 
 // NewConfigMapCmd creates a command to generate a ConfigMap manifest.
-func (c *Client) NewConfigMapCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("configmap")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create configmap command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewConfigMapCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("configmap")
 }
 
 // NewSecretCmd creates a command to generate a Secret manifest.
-func (c *Client) NewSecretCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("secret")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create secret command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewSecretCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("secret")
 }
 
 // NewServiceAccountCmd creates a command to generate a ServiceAccount manifest.
-func (c *Client) NewServiceAccountCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("serviceaccount")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create serviceaccount command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewServiceAccountCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("serviceaccount")
 }
 
 // NewDeploymentCmd creates a command to generate a Deployment manifest.
-func (c *Client) NewDeploymentCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("deployment")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create deployment command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewDeploymentCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("deployment")
 }
 
 // NewJobCmd creates a command to generate a Job manifest.
-func (c *Client) NewJobCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("job")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create job command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewJobCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("job")
 }
 
 // NewCronJobCmd creates a command to generate a CronJob manifest.
-func (c *Client) NewCronJobCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("cronjob")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create cronjob command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewCronJobCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("cronjob")
 }
 
 // NewServiceCmd creates a command to generate a Service manifest.
-func (c *Client) NewServiceCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("service")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create service command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewServiceCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("service")
 }
 
 // NewIngressCmd creates a command to generate an Ingress manifest.
-func (c *Client) NewIngressCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("ingress")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create ingress command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewIngressCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("ingress")
 }
 
 // NewRoleCmd creates a command to generate a Role manifest.
-func (c *Client) NewRoleCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("role")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create role command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewRoleCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("role")
 }
 
 // NewRoleBindingCmd creates a command to generate a RoleBinding manifest.
-func (c *Client) NewRoleBindingCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("rolebinding")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create rolebinding command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewRoleBindingCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("rolebinding")
 }
 
 // NewClusterRoleCmd creates a command to generate a ClusterRole manifest.
-func (c *Client) NewClusterRoleCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("clusterrole")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create clusterrole command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewClusterRoleCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("clusterrole")
 }
 
 // NewClusterRoleBindingCmd creates a command to generate a ClusterRoleBinding manifest.
-func (c *Client) NewClusterRoleBindingCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("clusterrolebinding")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create clusterrolebinding command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewClusterRoleBindingCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("clusterrolebinding")
 }
 
 // NewQuotaCmd creates a command to generate a ResourceQuota manifest.
-func (c *Client) NewQuotaCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("quota")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create quota command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewQuotaCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("quota")
 }
 
 // NewPodDisruptionBudgetCmd creates a command to generate a PodDisruptionBudget manifest.
-func (c *Client) NewPodDisruptionBudgetCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("poddisruptionbudget")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create poddisruptionbudget command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewPodDisruptionBudgetCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("poddisruptionbudget")
 }
 
 // NewPriorityClassCmd creates a command to generate a PriorityClass manifest.
-func (c *Client) NewPriorityClassCmd() *cobra.Command {
-	cmd, err := c.newResourceCmd("priorityclass")
-	if err != nil {
-		panic(fmt.Sprintf("failed to create priorityclass command: %v", err))
-	}
-
-	return cmd
+func (c *Client) NewPriorityClassCmd() (*cobra.Command, error) {
+	return c.newResourceCmd("priorityclass")
 }
 
 // newResourceCmd creates a gen command that wraps kubectl create with forced --dry-run=client -o yaml.

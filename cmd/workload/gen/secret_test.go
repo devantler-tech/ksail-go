@@ -164,7 +164,7 @@ func createTLSFixtures(t *testing.T) (string, string) {
 		t.Fatalf("failed to write cert file: %v", err)
 	}
 
-	err := writeFile(keyFile, testTLSKey)
+	err = writeFile(keyFile, testTLSKey)
 	if err != nil {
 		t.Fatalf("failed to write key file: %v", err)
 	}

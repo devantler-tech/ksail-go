@@ -12,8 +12,8 @@ import (
 // newResourceCmd is a helper to create a gen resource command.
 func newResourceCmd(
 	_ *runtime.Runtime,
-	constructor func(client *kubectl.Client) *cobra.Command,
-) *cobra.Command {
+	constructor func(client *kubectl.Client) (*cobra.Command, error),
+) (*cobra.Command, error) {
 	ioStreams := genericiooptions.IOStreams{
 		In:     os.Stdin,
 		Out:    os.Stdout,

@@ -1,22 +1,19 @@
 package gen
 
 import (
-	"os"
+	"fmt"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // NewRoleCmd creates the gen role command.
-func NewRoleCmd(_ *runtime.Runtime) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
+func NewRoleCmd(rt *runtime.Runtime) *cobra.Command {
+	cmd, err := newResourceCmd(rt, (*kubectl.Client).NewRoleCmd)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create role command: %v", err))
 	}
-	client := kubectl.NewClient(ioStreams)
 
-	return client.NewRoleCmd()
+	return cmd
 }
