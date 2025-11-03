@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testTimeout = 5 * time.Second
+
 func TestNewIstioInstaller(t *testing.T) {
 	t.Parallel()
 
@@ -108,7 +110,7 @@ func newIstioInstallerWithDefaults(
 	client := helm.NewMockInterface(t)
 	installer := istioinstaller.NewIstioInstaller(
 		client,
-		5*time.Second,
+		testTimeout,
 	)
 
 	return installer, client
@@ -167,7 +169,7 @@ func expectChartInstall(
 					spec.UpgradeCRDs == true &&
 					spec.Wait == true &&
 					spec.WaitForJobs == true &&
-					spec.Timeout == 5*time.Second
+					spec.Timeout == testTimeout
 			}),
 		).
 		Return(nil, err).
