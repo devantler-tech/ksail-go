@@ -18,6 +18,7 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
@@ -132,6 +133,12 @@ func handleCreateRunE(
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
 		}
+	}
+
+	// Handle Metrics Server installation/uninstallation
+	err = handleMetricsServer(cmd, clusterCfg, deps.Timer)
+	if err != nil {
+		return fmt.Errorf("failed to handle metrics server: %w", err)
 	}
 
 	return nil
@@ -825,4 +832,177 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 	}
 
 	return patches
+}
+
+// handleMetricsServer manages metrics-server installation/uninstallation based on cluster configuration.
+func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	// Default means do nothing - let distribution decide
+	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerDefault {
+		return nil
+	}
+
+	// Check if distribution provides metrics-server by default
+	hasMetricsByDefault := distributionProvidesMetricsByDefault(clusterCfg.Spec.Distribution)
+
+	// Enabled: Install if not present by default
+	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerEnabled {
+		if hasMetricsByDefault {
+			// Already present, no action needed
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		tmr.NewStage()
+
+		return installMetricsServer(cmd, clusterCfg, tmr)
+	}
+
+	// Disabled: Uninstall if present by default
+	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
+		if !hasMetricsByDefault {
+			// Not present, no action needed
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		tmr.NewStage()
+
+		return uninstallMetricsServer(cmd, clusterCfg, tmr)
+	}
+
+	return nil
+}
+
+// distributionProvidesMetricsByDefault returns true if the distribution includes metrics-server by default.
+// K3d (based on K3s) includes metrics-server, Kind does not.
+func distributionProvidesMetricsByDefault(distribution v1alpha1.Distribution) bool {
+	switch distribution {
+	case v1alpha1.DistributionK3d:
+		return true
+	case v1alpha1.DistributionKind:
+		return false
+	default:
+		return false
+	}
+}
+
+// installMetricsServer installs metrics-server on the cluster.
+func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install Metrics Server...",
+		Emoji:   "📊",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	timeout := getMetricsServerInstallTimeout(clusterCfg)
+	installer := metricsserverinstaller.NewMetricsServerInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+
+	return runMetricsServerInstallation(cmd, installer, tmr)
+}
+
+// uninstallMetricsServer uninstalls metrics-server from the cluster.
+func uninstallMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Uninstall Metrics Server...",
+		Emoji:   "📊",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	timeout := getMetricsServerInstallTimeout(clusterCfg)
+	installer := metricsserverinstaller.NewMetricsServerInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "uninstalling metrics-server",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	uninstallErr := installer.Uninstall(cmd.Context())
+	if uninstallErr != nil {
+		return fmt.Errorf("metrics-server uninstallation failed: %w", uninstallErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Metrics Server uninstalled " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
+// getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
+func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+	const defaultTimeout = 5
+
+	timeout := defaultTimeout * time.Minute
+	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
+		timeout = clusterCfg.Spec.Connection.Timeout.Duration
+	}
+
+	return timeout
+}
+
+// runMetricsServerInstallation performs the metrics-server installation.
+func runMetricsServerInstallation(
+	cmd *cobra.Command,
+	installer *metricsserverinstaller.MetricsServerInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing metrics-server",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("metrics-server installation failed: %w", installErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Metrics Server installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
 }
