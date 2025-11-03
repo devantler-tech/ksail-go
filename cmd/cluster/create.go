@@ -625,7 +625,7 @@ func newCiliumInstaller(
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *ciliuminstaller.CiliumInstaller {
-	timeout := getCiliumInstallTimeout(clusterCfg)
+	timeout := getCNIInstallTimeout(clusterCfg)
 
 	return ciliuminstaller.NewCiliumInstaller(
 		helmClient,
@@ -702,7 +702,7 @@ func newIstioInstaller(
 	helmClient *helm.Client,
 	clusterCfg *v1alpha1.Cluster,
 ) *istioinstaller.IstioInstaller {
-	timeout := getIstioInstallTimeout(clusterCfg)
+	timeout := getCNIInstallTimeout(clusterCfg)
 
 	return istioinstaller.NewIstioInstaller(
 		helmClient,
@@ -753,20 +753,8 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 	return kubeconfig, kubeconfigData, nil
 }
 
-// getCiliumInstallTimeout determines the timeout for Cilium installation.
-func getCiliumInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
-	const defaultTimeout = 5
-
-	timeout := defaultTimeout * time.Minute
-	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
-		timeout = clusterCfg.Spec.Connection.Timeout.Duration
-	}
-
-	return timeout
-}
-
-// getIstioInstallTimeout determines the timeout for Istio installation.
-func getIstioInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+// getCNIInstallTimeout determines the timeout for CNI installation.
+func getCNIInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
 
 	timeout := defaultTimeout * time.Minute

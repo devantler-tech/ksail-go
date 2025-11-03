@@ -169,7 +169,7 @@ func TestHandleCreateRunEWithoutCilium(t *testing.T) {
 	}
 }
 
-func TestGetCiliumInstallTimeout(t *testing.T) {
+func TestGetCNIInstallTimeout(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -196,7 +196,7 @@ func TestGetCiliumInstallTimeout(t *testing.T) {
 			cfg := &v1alpha1.Cluster{}
 			cfg.Spec.Connection.Timeout.Duration = test.duration
 
-			result := getCiliumInstallTimeout(cfg)
+			result := getCNIInstallTimeout(cfg)
 			if result != test.expected {
 				t.Fatalf("expected %v, got %v", test.expected, result)
 			}
