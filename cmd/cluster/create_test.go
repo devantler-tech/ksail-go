@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -928,4 +930,172 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 			assert.ErrorContains(t, err, "failed to execute registry stage")
 		}
 	})
+}
+
+func TestDistributionProvidesMetricsByDefault(t *testing.T) {
+t.Parallel()
+
+tests := []struct {
+name         string
+distribution v1alpha1.Distribution
+expected     bool
+}{
+{
+name:         "Kind does not provide metrics-server",
+distribution: v1alpha1.DistributionKind,
+expected:     false,
+},
+{
+name:         "K3d provides metrics-server",
+distribution: v1alpha1.DistributionK3d,
+expected:     true,
+},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+t.Parallel()
+
+result := distributionProvidesMetricsByDefault(tt.distribution)
+assert.Equal(t, tt.expected, result)
+})
+}
+}
+
+func TestHandleMetricsServer_Enabled_KindShouldInstall(t *testing.T) {
+t.Parallel()
+
+cmd := &cobra.Command{}
+cmd.SetOut(io.Discard)
+
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Distribution:  v1alpha1.DistributionKind,
+MetricsServer: v1alpha1.MetricsServerEnabled,
+Connection: v1alpha1.Connection{
+Kubeconfig: "/tmp/test-kubeconfig",
+},
+},
+}
+
+tmr := &testutils.RecordingTimer{}
+
+
+// This will fail because kubeconfig doesn't exist, but we can test the logic flow
+err := handleMetricsServer(cmd, clusterCfg, tmr)
+// Expect error since we're trying to read non-existent kubeconfig
+require.Error(t, err)
+assert.ErrorContains(t, err, "failed to read kubeconfig file")
+}
+
+func TestHandleMetricsServer_Enabled_K3dNoAction(t *testing.T) {
+t.Parallel()
+
+cmd := &cobra.Command{}
+cmd.SetOut(io.Discard)
+
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Distribution:  v1alpha1.DistributionK3d,
+MetricsServer: v1alpha1.MetricsServerEnabled,
+},
+}
+
+tmr := &testutils.RecordingTimer{}
+
+// K3d already has metrics-server, so no action should be taken
+err := handleMetricsServer(cmd, clusterCfg, tmr)
+assert.NoError(t, err)
+}
+
+func TestHandleMetricsServer_Disabled_KindNoAction(t *testing.T) {
+t.Parallel()
+
+cmd := &cobra.Command{}
+cmd.SetOut(io.Discard)
+
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Distribution:  v1alpha1.DistributionKind,
+MetricsServer: v1alpha1.MetricsServerDisabled,
+},
+}
+
+tmr := &testutils.RecordingTimer{}
+
+// Kind doesn't have metrics-server by default, so no action should be taken
+err := handleMetricsServer(cmd, clusterCfg, tmr)
+assert.NoError(t, err)
+}
+
+func TestHandleMetricsServer_Disabled_K3dShouldUninstall(t *testing.T) {
+t.Parallel()
+
+cmd := &cobra.Command{}
+cmd.SetOut(io.Discard)
+
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Distribution:  v1alpha1.DistributionK3d,
+MetricsServer: v1alpha1.MetricsServerDisabled,
+Connection: v1alpha1.Connection{
+Kubeconfig: "/tmp/test-kubeconfig",
+},
+},
+}
+
+tmr := &testutils.RecordingTimer{}
+
+
+// This will fail because kubeconfig doesn't exist, but we can test the logic flow
+err := handleMetricsServer(cmd, clusterCfg, tmr)
+// Expect error since we're trying to read non-existent kubeconfig
+require.Error(t, err)
+assert.ErrorContains(t, err, "failed to read kubeconfig file")
+}
+
+
+func TestGetMetricsServerInstallTimeout(t *testing.T) {
+t.Parallel()
+
+t.Run("Uses default timeout when not specified", func(t *testing.T) {
+t.Parallel()
+
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Connection: v1alpha1.Connection{},
+},
+}
+
+timeout := getMetricsServerInstallTimeout(clusterCfg)
+assert.Equal(t, 5*time.Minute, timeout)
+})
+
+t.Run("Uses custom timeout when specified", func(t *testing.T) {
+t.Parallel()
+
+customTimeout := 10 * time.Minute
+clusterCfg := &v1alpha1.Cluster{
+Spec: v1alpha1.Spec{
+Connection: v1alpha1.Connection{
+Timeout: metav1.Duration{Duration: customTimeout},
+},
+},
+}
+
+timeout := getMetricsServerInstallTimeout(clusterCfg)
+assert.Equal(t, customTimeout, timeout)
+})
+}
+
+func TestNewCreateCmd_IncludesMetricsServerFlag(t *testing.T) {
+t.Parallel()
+
+runtimeContainer := &runtime.Runtime{}
+cmd := NewCreateCmd(runtimeContainer)
+
+// Check that metrics-server flag exists
+flag := cmd.Flags().Lookup("metrics-server")
+require.NotNil(t, flag, "metrics-server flag should be registered")
+assert.Equal(t, "MetricsServer", flag.Value.Type())
 }

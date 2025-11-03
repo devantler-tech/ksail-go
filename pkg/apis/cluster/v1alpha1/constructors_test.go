@@ -233,6 +233,52 @@ func TestGatewayControllerSet(t *testing.T) {
 	)
 }
 
+func TestMetricsServerSet(t *testing.T) {
+	t.Parallel()
+
+	validCases := []struct{ input, expected string }{
+		{"Enabled", "Enabled"},
+		{"enabled", "Enabled"},
+		{"ENABLED", "Enabled"},
+		{"Disabled", "Disabled"},
+		{"disabled", "Disabled"},
+		{"DISABLED", "Disabled"},
+	}
+	for _, validCase := range validCases {
+		var ms v1alpha1.MetricsServer
+
+		require.NoError(t, ms.Set(validCase.input))
+		assert.Equal(t, validCase.expected, string(ms))
+	}
+
+	err := func() error {
+		var ms v1alpha1.MetricsServer
+
+		return ms.Set("invalid")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidMetricsServer,
+		"invalid",
+		"Set(invalid)",
+	)
+
+	// Test that Default is no longer valid
+	err = func() error {
+		var ms v1alpha1.MetricsServer
+
+		return ms.Set("Default")
+	}()
+	testutils.AssertErrWrappedContains(
+		t,
+		err,
+		v1alpha1.ErrInvalidMetricsServer,
+		"Default",
+		"Set(Default)",
+	)
+}
+
 func TestStringAndTypeMethods(t *testing.T) {
 	t.Parallel()
 
@@ -260,6 +306,14 @@ func TestStringAndTypeMethods(t *testing.T) {
 	gc := v1alpha1.GatewayControllerDefault
 	assert.Equal(t, "Default", gc.String())
 	assert.Equal(t, "GatewayController", gc.Type())
+
+	ms := v1alpha1.MetricsServerEnabled
+	assert.Equal(t, "Enabled", ms.String())
+	assert.Equal(t, "MetricsServer", ms.Type())
+
+	msDisabled := v1alpha1.MetricsServerDisabled
+	assert.Equal(t, "Disabled", msDisabled.String())
+	assert.Equal(t, "MetricsServer", msDisabled.Type())
 }
 
 // Tests for constructor functions

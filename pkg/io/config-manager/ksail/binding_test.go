@@ -157,6 +157,7 @@ func getConnectionFieldTests() []struct {
 }
 
 // getNetworkingFieldTests returns test cases for networking field testing.
+//nolint:funlen // Test data structure is inherently long
 func getNetworkingFieldTests() []struct {
 	name          string
 	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
@@ -208,6 +209,16 @@ func getNetworkingFieldTests() []struct {
 			),
 			expectedFlag: "gateway-controller",
 			expectedType: "GatewayController",
+		},
+		{
+			name: "MetricsServer field",
+			fieldSelector: configmanager.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.MetricsServer },
+				v1alpha1.MetricsServerEnabled,
+				"Metrics Server configuration",
+			),
+			expectedFlag: "metrics-server",
+			expectedType: "MetricsServer",
 		},
 	}
 }
@@ -316,6 +327,11 @@ func TestGenerateFlagName(t *testing.T) {
 			"GatewayController field",
 			&manager.Config.Spec.GatewayController,
 			"gateway-controller",
+		},
+		{
+			"MetricsServer field",
+			&manager.Config.Spec.MetricsServer,
+			"metrics-server",
 		},
 	}
 
