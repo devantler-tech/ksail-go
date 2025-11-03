@@ -18,6 +18,7 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	istioinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/istio"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
@@ -131,6 +132,17 @@ func handleCreateRunE(
 		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+	}
+
+	if clusterCfg.Spec.CNI == v1alpha1.CNIIstio {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		deps.Timer.NewStage()
+
+		err = installIstioCNI(cmd, clusterCfg, deps.Timer)
+		if err != nil {
+			return fmt.Errorf("failed to install Istio CNI: %w", err)
 		}
 	}
 
@@ -648,6 +660,70 @@ func runCiliumInstallation(
 	return nil
 }
 
+// installIstioCNI installs Istio CNI on the cluster.
+func installIstioCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	installer := newIstioInstaller(helmClient, clusterCfg)
+
+	return runIstioInstallation(cmd, installer, tmr)
+}
+
+func newIstioInstaller(
+	helmClient *helm.Client,
+	clusterCfg *v1alpha1.Cluster,
+) *istioinstaller.IstioInstaller {
+	timeout := getIstioInstallTimeout(clusterCfg)
+
+	return istioinstaller.NewIstioInstaller(
+		helmClient,
+		timeout,
+	)
+}
+
+func runIstioInstallation(
+	cmd *cobra.Command,
+	installer *istioinstaller.IstioInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing istio",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("istio installation failed: %w", installErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "CNI installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
 // loadKubeconfig loads and returns the kubeconfig path and data.
 func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
@@ -665,6 +741,18 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 
 // getCiliumInstallTimeout determines the timeout for Cilium installation.
 func getCiliumInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+	const defaultTimeout = 5
+
+	timeout := defaultTimeout * time.Minute
+	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
+		timeout = clusterCfg.Spec.Connection.Timeout.Duration
+	}
+
+	return timeout
+}
+
+// getIstioInstallTimeout determines the timeout for Istio installation.
+func getIstioInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
 
 	timeout := defaultTimeout * time.Minute

@@ -127,6 +127,9 @@ func TestCNISet(t *testing.T) {
 		{"Default", "Default"},
 		{"cilium", "Cilium"},
 		{"CILIUM", "Cilium"},
+		{"istio", "Istio"},
+		{"Istio", "Istio"},
+		{"ISTIO", "Istio"},
 	}
 	for _, validCase := range validCases {
 		var cni v1alpha1.CNI

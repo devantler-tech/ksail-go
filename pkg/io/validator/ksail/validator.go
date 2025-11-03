@@ -203,19 +203,19 @@ func (v *Validator) getK3dConfigName() string {
 }
 
 // validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
-// When Cilium CNI is requested, the distribution config must have CNI disabled.
+// When Cilium or Istio CNI is requested, the distribution config must have CNI disabled.
 // When Default CNI is used, the distribution config must NOT have CNI disabled.
 func (v *Validator) validateCNIAlignment(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Validate Cilium CNI alignment
-	if config.Spec.CNI == v1alpha1.CNICilium {
+	// Validate Cilium or Istio CNI alignment
+	if config.Spec.CNI == v1alpha1.CNICilium || config.Spec.CNI == v1alpha1.CNIIstio {
 		switch config.Spec.Distribution {
 		case v1alpha1.DistributionKind:
-			v.validateKindCiliumCNIAlignment(result)
+			v.validateKindCustomCNIAlignment(config.Spec.CNI, result)
 		case v1alpha1.DistributionK3d:
-			v.validateK3dCiliumCNIAlignment(result)
+			v.validateK3dCustomCNIAlignment(config.Spec.CNI, result)
 		}
 
 		return
@@ -232,8 +232,8 @@ func (v *Validator) validateCNIAlignment(
 	}
 }
 
-// validateKindCiliumCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
-func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationResult) {
+// validateKindCustomCNIAlignment validates that Kind configuration has CNI disabled when custom CNI is requested.
+func (v *Validator) validateKindCustomCNIAlignment(cni v1alpha1.CNI, result *validator.ValidationResult) {
 	if v.kindConfig == nil {
 		// No Kind config provided for validation, skip
 		return
@@ -242,10 +242,16 @@ func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationR
 	if !v.kindConfig.Networking.DisableDefaultCNI {
 		result.AddError(validator.ValidationError{
 			Field:         "spec.cni",
-			Message:       "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
+			Message:       fmt.Sprintf("%s CNI requires disableDefaultCNI to be true in Kind configuration", cni),
 			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
 		})
 	}
+}
+
+// validateKindCiliumCNIAlignment validates that Kind configuration has CNI disabled when Cilium is requested.
+// Deprecated: Use validateKindCustomCNIAlignment instead.
+func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationResult) {
+	v.validateKindCustomCNIAlignment(v1alpha1.CNICilium, result)
 }
 
 // validateKindDefaultCNIAlignment validates that Kind configuration does NOT have CNI disabled when Default is used.
@@ -287,8 +293,8 @@ func (v *Validator) checkK3dFlannelAndNetworkPolicyStatus() (bool, bool) {
 	return hasFlannelDisabled, hasNetworkPolicyDisabled
 }
 
-// validateK3dCiliumCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
-func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationResult) {
+// validateK3dCustomCNIAlignment validates that K3d configuration has Flannel disabled when custom CNI is requested.
+func (v *Validator) validateK3dCustomCNIAlignment(cni v1alpha1.CNI, result *validator.ValidationResult) {
 	if v.k3dConfig == nil {
 		// No K3d config provided for validation, skip
 		return
@@ -312,7 +318,8 @@ func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationRe
 	result.AddError(validator.ValidationError{
 		Field: "spec.cni",
 		Message: fmt.Sprintf(
-			"Cilium CNI requires %s in K3d configuration",
+			"%s CNI requires %s in K3d configuration",
+			cni,
 			strings.Join(missingArgs, " and "),
 		),
 		FixSuggestion: fmt.Sprintf(
@@ -320,6 +327,12 @@ func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationRe
 			strings.Join(missingArgs, " and "),
 		),
 	})
+}
+
+// validateK3dCiliumCNIAlignment validates that K3d configuration has Flannel disabled when Cilium is requested.
+// Deprecated: Use validateK3dCustomCNIAlignment instead.
+func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationResult) {
+	v.validateK3dCustomCNIAlignment(v1alpha1.CNICilium, result)
 }
 
 // validateK3dDefaultCNIAlignment validates that K3d configuration does NOT have Flannel disabled when Default is used.

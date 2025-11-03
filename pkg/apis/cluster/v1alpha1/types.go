@@ -86,7 +86,7 @@ func validDistributions() []Distribution {
 
 // validCNIs returns supported CNI values.
 func validCNIs() []CNI {
-	return []CNI{CNIDefault, CNICilium}
+	return []CNI{CNIDefault, CNICilium, CNIIstio}
 }
 
 // validCSIs returns supported CSI values.
@@ -121,6 +121,8 @@ const (
 	CNIDefault CNI = "Default"
 	// CNICilium is the Cilium CNI.
 	CNICilium CNI = "Cilium"
+	// CNIIstio is the Istio CNI.
+	CNIIstio CNI = "Istio"
 )
 
 // CSI defines the CSI options for a KSail cluster.
@@ -180,6 +182,7 @@ type Options struct {
 	K3d  OptionsK3d  `json:"k3d,omitzero"`
 
 	Cilium OptionsCilium `json:"cilium,omitzero"`
+	Istio  OptionsIstio  `json:"istio,omitzero"`
 
 	Flux   OptionsFlux   `json:"flux,omitzero"`
 	ArgoCD OptionsArgoCD `json:"argocd,omitzero"`
@@ -199,6 +202,11 @@ type OptionsK3d struct{}
 // OptionsCilium defines options for the Cilium CNI.
 type OptionsCilium struct {
 	// Add any specific fields for the Cilium CNI here.
+}
+
+// OptionsIstio defines options for the Istio CNI.
+type OptionsIstio struct {
+	// Add any specific fields for the Istio CNI here.
 }
 
 // OptionsFlux defines options for the Flux deployment tool.
@@ -268,8 +276,8 @@ func (c *CNI) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s)",
-		ErrInvalidCNI, value, CNIDefault, CNICilium)
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidCNI, value, CNIDefault, CNICilium, CNIIstio)
 }
 
 // Set for CSI.
