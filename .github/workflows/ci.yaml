@@ -61,6 +61,9 @@ jobs:
             cni: Cilium
             init-args: "--distribution Kind --cni Cilium"
           - distribution: Kind
+            cni: Istio
+            init-args: "--distribution Kind --cni Istio"
+          - distribution: Kind
             cni: Default
             init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
             mirror-registry: true
@@ -70,6 +73,9 @@ jobs:
           - distribution: K3d
             cni: Cilium
             init-args: "--distribution K3d --cni Cilium"
+          - distribution: K3d
+            cni: Istio
+            init-args: "--distribution K3d --cni Istio"
           - distribution: K3d
             cni: Default
             init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
