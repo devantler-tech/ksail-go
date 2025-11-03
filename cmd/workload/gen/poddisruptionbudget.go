@@ -8,5 +8,9 @@ import (
 
 // NewPodDisruptionBudgetCmd creates the gen poddisruptionbudget command.
 func NewPodDisruptionBudgetCmd(_ *runtime.Runtime) *cobra.Command {
-	return kubectl.MustNewCommand((*kubectl.Client).NewPodDisruptionBudgetCmd)
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreatePodDisruptionBudgetCmd()
+	cobra.CheckErr(err)
+
+	return cmd
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -32,6 +33,9 @@ var (
 	ErrResourceCommandNotFound = errors.New("kubectl create command not found for resource type")
 	// ErrNoRunFunction is returned when a kubectl command has neither RunE nor Run function.
 	ErrNoRunFunction = errors.New("no run function found for kubectl create command")
+
+	defaultClientOnce sync.Once
+	defaultClient     *Client
 )
 
 // Client wraps kubectl command functionality.
@@ -40,24 +44,23 @@ type Client struct {
 }
 
 // NewClient creates a new kubectl client instance.
-func NewClient(ioStreams genericiooptions.IOStreams) *Client {
+func NewClient(genericiooptions.IOStreams) *Client {
 	return &Client{
 		ioStreams: ioStreams,
 	}
 }
 
-// MustNewCommand constructs a kubectl-backed command using default stdio streams and panics on error.
-func MustNewCommand(constructor func(*Client) (*cobra.Command, error)) *cobra.Command {
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	client := NewClient(ioStreams)
-	cmd, err := constructor(client)
-	cobra.CheckErr(err)
+// DefaultClient returns a kubectl client wired to the default stdio streams. The instance is reused.
+func DefaultClient() *Client {
+	defaultClientOnce.Do(func() {
+		defaultClient = NewClient(genericiooptions.IOStreams{
+			In:     os.Stdin,
+			Out:    os.Stdout,
+			ErrOut: os.Stderr,
+		})
+	})
 
-	return cmd
+	return defaultClient
 }
 
 // replaceKubectlInExamples replaces "kubectl" with "ksail workload" in command examples.
@@ -376,83 +379,83 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 	return execCmd
 }
 
-// NewNamespaceCmd creates a command to generate a Namespace manifest.
-func (c *Client) NewNamespaceCmd() (*cobra.Command, error) {
+// CreateNamespaceCmd creates a Namespace manifest generator command using the client's IO streams.
+func (c *Client) CreateNamespaceCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("namespace")
 }
 
-// NewConfigMapCmd creates a command to generate a ConfigMap manifest.
-func (c *Client) NewConfigMapCmd() (*cobra.Command, error) {
+// CreateConfigMapCmd creates a ConfigMap manifest generator command using the client's IO streams.
+func (c *Client) CreateConfigMapCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("configmap")
 }
 
-// NewSecretCmd creates a command to generate a Secret manifest.
-func (c *Client) NewSecretCmd() (*cobra.Command, error) {
+// CreateSecretCmd creates a Secret manifest generator command using the client's IO streams.
+func (c *Client) CreateSecretCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("secret")
 }
 
-// NewServiceAccountCmd creates a command to generate a ServiceAccount manifest.
-func (c *Client) NewServiceAccountCmd() (*cobra.Command, error) {
+// CreateServiceAccountCmd creates a ServiceAccount manifest generator command using the client's IO streams.
+func (c *Client) CreateServiceAccountCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("serviceaccount")
 }
 
-// NewDeploymentCmd creates a command to generate a Deployment manifest.
-func (c *Client) NewDeploymentCmd() (*cobra.Command, error) {
+// CreateDeploymentCmd creates a Deployment manifest generator command using the client's IO streams.
+func (c *Client) CreateDeploymentCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("deployment")
 }
 
-// NewJobCmd creates a command to generate a Job manifest.
-func (c *Client) NewJobCmd() (*cobra.Command, error) {
+// CreateJobCmd creates a Job manifest generator command using the client's IO streams.
+func (c *Client) CreateJobCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("job")
 }
 
-// NewCronJobCmd creates a command to generate a CronJob manifest.
-func (c *Client) NewCronJobCmd() (*cobra.Command, error) {
+// CreateCronJobCmd creates a CronJob manifest generator command using the client's IO streams.
+func (c *Client) CreateCronJobCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("cronjob")
 }
 
-// NewServiceCmd creates a command to generate a Service manifest.
-func (c *Client) NewServiceCmd() (*cobra.Command, error) {
+// CreateServiceCmd creates a Service manifest generator command using the client's IO streams.
+func (c *Client) CreateServiceCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("service")
 }
 
-// NewIngressCmd creates a command to generate an Ingress manifest.
-func (c *Client) NewIngressCmd() (*cobra.Command, error) {
+// CreateIngressCmd creates an Ingress manifest generator command using the client's IO streams.
+func (c *Client) CreateIngressCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("ingress")
 }
 
-// NewRoleCmd creates a command to generate a Role manifest.
-func (c *Client) NewRoleCmd() (*cobra.Command, error) {
+// CreateRoleCmd creates a Role manifest generator command using the client's IO streams.
+func (c *Client) CreateRoleCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("role")
 }
 
-// NewRoleBindingCmd creates a command to generate a RoleBinding manifest.
-func (c *Client) NewRoleBindingCmd() (*cobra.Command, error) {
+// CreateRoleBindingCmd creates a RoleBinding manifest generator command using the client's IO streams.
+func (c *Client) CreateRoleBindingCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("rolebinding")
 }
 
-// NewClusterRoleCmd creates a command to generate a ClusterRole manifest.
-func (c *Client) NewClusterRoleCmd() (*cobra.Command, error) {
+// CreateClusterRoleCmd creates a ClusterRole manifest generator command using the client's IO streams.
+func (c *Client) CreateClusterRoleCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("clusterrole")
 }
 
-// NewClusterRoleBindingCmd creates a command to generate a ClusterRoleBinding manifest.
-func (c *Client) NewClusterRoleBindingCmd() (*cobra.Command, error) {
+// CreateClusterRoleBindingCmd creates a ClusterRoleBinding manifest generator command using the client's IO streams.
+func (c *Client) CreateClusterRoleBindingCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("clusterrolebinding")
 }
 
-// NewQuotaCmd creates a command to generate a ResourceQuota manifest.
-func (c *Client) NewQuotaCmd() (*cobra.Command, error) {
+// CreateQuotaCmd creates a ResourceQuota manifest generator command using the client's IO streams.
+func (c *Client) CreateQuotaCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("quota")
 }
 
-// NewPodDisruptionBudgetCmd creates a command to generate a PodDisruptionBudget manifest.
-func (c *Client) NewPodDisruptionBudgetCmd() (*cobra.Command, error) {
+// CreatePodDisruptionBudgetCmd creates a PodDisruptionBudget manifest generator command using the client's IO streams.
+func (c *Client) CreatePodDisruptionBudgetCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("poddisruptionbudget")
 }
 
-// NewPriorityClassCmd creates a command to generate a PriorityClass manifest.
-func (c *Client) NewPriorityClassCmd() (*cobra.Command, error) {
+// CreatePriorityClassCmd creates a PriorityClass manifest generator command using the client's IO streams.
+func (c *Client) CreatePriorityClassCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("priorityclass")
 }
 

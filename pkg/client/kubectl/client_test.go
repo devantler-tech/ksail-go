@@ -29,6 +29,16 @@ func TestNewClient(t *testing.T) {
 	require.NotNil(t, client, "expected client to be created")
 }
 
+func TestCreateConfigMapCmd(t *testing.T) {
+	t.Parallel()
+
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreateConfigMapCmd()
+
+	require.NoError(t, err)
+	require.NotNil(t, cmd)
+}
+
 // testCommandCreation is a helper function to test command creation with various kubeconfig paths.
 func testCommandCreation(
 	t *testing.T,

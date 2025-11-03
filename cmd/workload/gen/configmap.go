@@ -8,5 +8,9 @@ import (
 
 // NewConfigMapCmd creates the gen configmap command.
 func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
-	return kubectl.MustNewCommand((*kubectl.Client).NewConfigMapCmd)
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreateConfigMapCmd()
+	cobra.CheckErr(err)
+
+	return cmd
 }

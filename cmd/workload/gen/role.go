@@ -8,5 +8,9 @@ import (
 
 // NewRoleCmd creates the gen role command.
 func NewRoleCmd(_ *runtime.Runtime) *cobra.Command {
-	return kubectl.MustNewCommand((*kubectl.Client).NewRoleCmd)
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreateRoleCmd()
+	cobra.CheckErr(err)
+
+	return cmd
 }

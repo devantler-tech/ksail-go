@@ -8,5 +8,9 @@ import (
 
 // NewCronJobCmd creates the gen cronjob command.
 func NewCronJobCmd(_ *runtime.Runtime) *cobra.Command {
-	return kubectl.MustNewCommand((*kubectl.Client).NewCronJobCmd)
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreateCronJobCmd()
+	cobra.CheckErr(err)
+
+	return cmd
 }

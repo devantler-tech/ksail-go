@@ -8,5 +8,9 @@ import (
 
 // NewJobCmd creates the gen job command.
 func NewJobCmd(_ *runtime.Runtime) *cobra.Command {
-	return kubectl.MustNewCommand((*kubectl.Client).NewJobCmd)
+	client := kubectl.DefaultClient()
+	cmd, err := client.CreateJobCmd()
+	cobra.CheckErr(err)
+
+	return cmd
 }
