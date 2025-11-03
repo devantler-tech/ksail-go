@@ -598,6 +598,10 @@ func (c *Client) executeSubcommandGen(
 	cmd *cobra.Command,
 	args []string,
 ) error {
+	// Align client IO streams with the wrapper command's writers
+	c.ioStreams.Out = cmd.OutOrStdout()
+	c.ioStreams.ErrOut = cmd.ErrOrStderr()
+
 	// Create a fresh kubectl create command
 	createCmd := c.CreateCreateCommand("")
 
@@ -637,6 +641,10 @@ func (c *Client) executeSubcommandGen(
 		return err
 	}
 
+	// Ensure command output is captured by the wrapper command
+	freshSubCmd.SetOut(cmd.OutOrStdout())
+	freshSubCmd.SetErr(cmd.ErrOrStderr())
+
 	// Copy user flags
 	err = c.copyUserFlags(cmd, freshSubCmd)
 	if err != nil {
@@ -649,6 +657,10 @@ func (c *Client) executeSubcommandGen(
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
 func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, args []string) error {
+	// Align client IO streams with the wrapper command's writers
+	c.ioStreams.Out = cmd.OutOrStdout()
+	c.ioStreams.ErrOut = cmd.ErrOrStderr()
+
 	// Create a fresh kubectl create command
 	createCmd := c.CreateCreateCommand("")
 
@@ -663,6 +675,10 @@ func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, arg
 	if err != nil {
 		return err
 	}
+
+	// Ensure command output is captured by the wrapper command
+	freshResourceCmd.SetOut(cmd.OutOrStdout())
+	freshResourceCmd.SetErr(cmd.ErrOrStderr())
 
 	// Copy user flags
 	err = c.copyUserFlags(cmd, freshResourceCmd)
