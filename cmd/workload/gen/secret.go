@@ -7,8 +7,6 @@ import (
 )
 
 // NewSecretCmd creates the gen secret command.
-func NewSecretCmd(rt *runtime.Runtime) *cobra.Command {
-	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
-		return client.NewSecretCmd()
-	})
+func NewSecretCmd(_ *runtime.Runtime) *cobra.Command {
+	return kubectl.MustNewCommand((*kubectl.Client).NewSecretCmd)
 }

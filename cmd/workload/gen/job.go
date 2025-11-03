@@ -7,8 +7,6 @@ import (
 )
 
 // NewJobCmd creates the gen job command.
-func NewJobCmd(rt *runtime.Runtime) *cobra.Command {
-	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
-		return client.NewJobCmd()
-	})
+func NewJobCmd(_ *runtime.Runtime) *cobra.Command {
+	return kubectl.MustNewCommand((*kubectl.Client).NewJobCmd)
 }

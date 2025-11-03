@@ -7,8 +7,6 @@ import (
 )
 
 // NewServiceAccountCmd creates the gen serviceaccount command.
-func NewServiceAccountCmd(rt *runtime.Runtime) *cobra.Command {
-	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
-		return client.NewServiceAccountCmd()
-	})
+func NewServiceAccountCmd(_ *runtime.Runtime) *cobra.Command {
+	return kubectl.MustNewCommand((*kubectl.Client).NewServiceAccountCmd)
 }

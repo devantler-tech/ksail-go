@@ -4,6 +4,7 @@ package kubectl
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,6 +44,20 @@ func NewClient(ioStreams genericiooptions.IOStreams) *Client {
 	return &Client{
 		ioStreams: ioStreams,
 	}
+}
+
+// MustNewCommand constructs a kubectl-backed command using default stdio streams and panics on error.
+func MustNewCommand(constructor func(*Client) (*cobra.Command, error)) *cobra.Command {
+	ioStreams := genericiooptions.IOStreams{
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
+	}
+	client := NewClient(ioStreams)
+	cmd, err := constructor(client)
+	cobra.CheckErr(err)
+
+	return cmd
 }
 
 // replaceKubectlInExamples replaces "kubectl" with "ksail workload" in command examples.

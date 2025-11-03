@@ -7,8 +7,6 @@ import (
 )
 
 // NewConfigMapCmd creates the gen configmap command.
-func NewConfigMapCmd(rt *runtime.Runtime) *cobra.Command {
-	return newResourceCmd(rt, func(client *kubectl.Client) *cobra.Command {
-		return client.NewConfigMapCmd()
-	})
+func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
+	return kubectl.MustNewCommand((*kubectl.Client).NewConfigMapCmd)
 }

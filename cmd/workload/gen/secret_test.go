@@ -93,8 +93,7 @@ func TestGenSecretGeneric(t *testing.T) {
 
 // TestGenSecretTLS tests generating a TLS secret manifest.
 //
-//nolint:paralleltest,gosec // Snapshot tests should not run in parallel; test uses hardcoded RSA key
-
+//nolint:paralleltest // Snapshot tests should not run in parallel; TLS fixtures use hardcoded key material
 func TestGenSecretTLS(t *testing.T) {
 	certFile, keyFile := createTLSFixtures(t)
 
@@ -115,13 +114,18 @@ func TestGenSecretTLS(t *testing.T) {
 
 // TestTLSFixturesParse verifies the TLS fixtures are valid.
 func TestTLSFixturesParse(t *testing.T) {
+	t.Parallel()
+
 	// Validate the in-memory PEM pair first to ensure test data stays consistent.
-	if _, err := tls.X509KeyPair([]byte(testTLSCert), []byte(testTLSKey)); err != nil {
+	_, err := tls.X509KeyPair([]byte(testTLSCert), []byte(testTLSKey))
+	if err != nil {
 		t.Fatalf("TLS fixtures should parse in-memory: %v", err)
 	}
 
 	certPath, keyPath := createTLSFixtures(t)
-	if _, err := tls.LoadX509KeyPair(certPath, keyPath); err != nil {
+
+	_, err = tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
 		t.Fatalf("TLS fixtures should parse from disk: %v", err)
 	}
 }
