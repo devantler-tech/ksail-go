@@ -161,7 +161,13 @@ func expectChartInstall(
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				return spec.ReleaseName == releaseName &&
 					spec.ChartName == chartName &&
-					spec.Namespace == "istio-system"
+					spec.Namespace == "istio-system" &&
+					spec.CreateNamespace == true &&
+					spec.Atomic == true &&
+					spec.UpgradeCRDs == true &&
+					spec.Wait == true &&
+					spec.WaitForJobs == true &&
+					spec.Timeout == 5*time.Second
 			}),
 		).
 		Return(nil, err).

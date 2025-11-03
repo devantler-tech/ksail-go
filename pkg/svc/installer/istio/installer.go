@@ -68,7 +68,17 @@ func (i *IstioInstaller) helmInstallOrUpgradeIstiod(ctx context.Context) error {
 	return i.installChart(ctx, "istiod", "istio/istiod")
 }
 
-// installChart is a helper method to install or upgrade an Istio chart.
+// installChart is a helper method that installs or upgrades an Istio Helm chart.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout control.
+//   - releaseName: The name of the Helm release to install or upgrade (e.g., "istio-base", "istiod").
+//   - chartName: The name of the Istio chart to install (e.g., "istio/base", "istio/istiod").
+//
+// Behavior:
+//   - Ensures the Istio Helm repository is added.
+//   - Installs or upgrades the specified chart in the "istio-system" namespace.
+//   - Waits for resources to be ready, applies timeouts, and returns an error if the operation fails.
 func (i *IstioInstaller) installChart(ctx context.Context, releaseName, chartName string) error {
 	repoEntry := &helm.RepositoryEntry{
 		Name: "istio",
