@@ -6,20 +6,16 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/devantler-tech/ksail-go/internal/shared"
 	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -34,12 +30,7 @@ const (
 	testKubeconfigPath = "kubeconfig"
 )
 
-var errCiliumReadiness = errors.New("cilium readiness failed")
-
-var (
-	errRepoError                = errors.New("repo error")
-	errClusterProvisionerFailed = errors.New("provisioner failed")
-)
+var errClusterProvisionerFailed = errors.New("provisioner failed")
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -204,64 +195,6 @@ func TestGetCNIInstallTimeout(t *testing.T) {
 	}
 }
 
-func TestNewCiliumInstaller(t *testing.T) {
-	t.Parallel()
-
-	clusterCfg := &v1alpha1.Cluster{}
-	clusterCfg.Spec.Connection.Context = "kind-dev"
-	clusterCfg.Spec.Connection.Timeout.Duration = 2 * time.Minute
-
-	installer := newCiliumInstaller(nil, "/tmp/kubeconfig", clusterCfg)
-	if installer == nil {
-		t.Fatal("expected installer to be created")
-	}
-
-	value := reflect.ValueOf(installer).Elem()
-
-	kubeconfig := readUnexportedString(t, value, "kubeconfig")
-	if kubeconfig != "/tmp/kubeconfig" {
-		t.Fatalf("expected kubeconfig to propagate, got %q", kubeconfig)
-	}
-
-	contextName := readUnexportedString(t, value, "context")
-	if contextName != "kind-dev" {
-		t.Fatalf("expected context to propagate, got %q", contextName)
-	}
-
-	timeout := readUnexportedDuration(t, value, "timeout")
-	if timeout != 2*time.Minute {
-		t.Fatalf("expected timeout to use cluster override, got %v", timeout)
-	}
-}
-
-// readUnexportedString inspects the value of an unexported string field for assertions.
-//
-//nolint:gosec // Using unsafe pointer conversion for read-only test verification.
-func readUnexportedString(t *testing.T, value reflect.Value, field string) string {
-	t.Helper()
-
-	f := value.FieldByName(field)
-	if !f.IsValid() {
-		t.Fatalf("field %s not found", field)
-	}
-
-	return *(*string)(unsafe.Pointer(f.UnsafeAddr()))
-}
-
-// readUnexportedDuration inspects the value of an unexported duration field for assertions.
-//
-//nolint:gosec // Using unsafe pointer conversion for read-only test verification.
-func readUnexportedDuration(t *testing.T, value reflect.Value, field string) time.Duration {
-	t.Helper()
-
-	f := value.FieldByName(field)
-	if !f.IsValid() {
-		t.Fatalf("field %s not found", field)
-	}
-
-	return *(*time.Duration)(unsafe.Pointer(f.UnsafeAddr()))
-}
-
 //nolint:paralleltest // Uses t.Setenv to control home directory.
 func TestExpandKubeconfigPath(t *testing.T) {
 	t.Run("returns_unmodified_when_no_tilde", func(t *testing.T) {
@@ -335,98 +268,6 @@ func TestLoadKubeconfig(t *testing.T) {
 			t.Fatal("expected error for missing kubeconfig")
 		}
 	})
-}
-
-func TestRunCiliumInstallationWritesSuccessMessage(t *testing.T) {
-	t.Parallel()
-
-	cmd, out := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	helmClient := &fakeHelmClient{}
-	installer := newReadyCiliumInstaller(helmClient, time.Second)
-
-	err := runCiliumInstallation(
-		cmd,
-		installer,
-		&stubTimer{total: time.Second, stage: time.Second},
-	)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	output := out.String()
-	if !strings.Contains(output, "CNI installed") {
-		t.Fatalf("expected install success in output, got %q", output)
-	}
-
-	if helmClient.installCalls != 1 {
-		t.Fatalf("expected helm install to be invoked once, got %d", helmClient.installCalls)
-	}
-
-	if helmClient.addRepoCalls != 1 {
-		t.Fatalf("expected repository add to be invoked once, got %d", helmClient.addRepoCalls)
-	}
-
-	if helmClient.lastSpec == nil || helmClient.lastSpec.Timeout != time.Second {
-		t.Fatalf("expected chart spec to use provided timeout")
-	}
-}
-
-func TestRunCiliumInstallationReturnsInstallErrors(t *testing.T) {
-	t.Parallel()
-
-	cmd, _ := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	helmClient := &fakeHelmClient{installErr: context.DeadlineExceeded}
-	installer := newReadyCiliumInstaller(helmClient, time.Second)
-
-	err := runCiliumInstallation(cmd, installer, &stubTimer{})
-	if err == nil {
-		t.Fatal("expected installation error")
-	}
-
-	if !strings.Contains(err.Error(), "cilium installation failed") {
-		t.Fatalf("unexpected error message: %v", err)
-	}
-}
-
-func TestRunCiliumInstallationReturnsReadinessErrors(t *testing.T) {
-	t.Parallel()
-
-	cmd, _ := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	helmClient := &fakeHelmClient{}
-	installer := newReadyCiliumInstaller(helmClient, time.Second)
-	installer.SetWaitForReadinessFunc(func(context.Context) error {
-		return errCiliumReadiness
-	})
-
-	err := runCiliumInstallation(cmd, installer, &stubTimer{})
-	if err == nil {
-		t.Fatal("expected readiness error")
-	}
-
-	if !strings.Contains(err.Error(), "cilium readiness check failed") {
-		t.Fatalf("unexpected error message: %v", err)
-	}
-}
-
-func newReadyCiliumInstaller(
-	helmClient *fakeHelmClient,
-	timeout time.Duration,
-) *ciliuminstaller.CiliumInstaller {
-	installer := ciliuminstaller.NewCiliumInstaller(
-		helmClient,
-		testKubeconfigPath,
-		testCiliumContext,
-		timeout,
-	)
-	installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
-
-	return installer
 }
 
 func TestInstallCiliumCNI(t *testing.T) {
@@ -514,46 +355,6 @@ func writeCiliumClusterConfig(t *testing.T, dir, kubeconfig string) string {
 	}
 
 	return configPath
-}
-
-type fakeHelmClient struct {
-	addRepoCalls int
-	addRepoErr   error
-	installCalls int
-	installErr   error
-	lastSpec     *helm.ChartSpec
-}
-
-func (f *fakeHelmClient) InstallChart(context.Context, *helm.ChartSpec) (*helm.ReleaseInfo, error) {
-	return &helm.ReleaseInfo{}, nil
-}
-
-func (f *fakeHelmClient) InstallOrUpgradeChart(
-	_ context.Context,
-	spec *helm.ChartSpec,
-) (*helm.ReleaseInfo, error) {
-	f.installCalls++
-	f.lastSpec = spec
-
-	if f.installErr != nil {
-		return nil, f.installErr
-	}
-
-	return &helm.ReleaseInfo{}, nil
-}
-
-func (f *fakeHelmClient) UninstallRelease(context.Context, string, string) error {
-	return nil
-}
-
-func (f *fakeHelmClient) AddRepository(context.Context, *helm.RepositoryEntry) error {
-	f.addRepoCalls++
-
-	if f.addRepoErr != nil {
-		return f.addRepoErr
-	}
-
-	return nil
 }
 
 type stubTimer struct {
@@ -690,27 +491,6 @@ func TestPrepareK3dConfigWithMirrors_PreservesExistingConfig(t *testing.T) {
 	assert.True(t, result)
 	assert.Contains(t, k3dConfig.Registries.Config, "\"ghcr.io\"")
 	assert.Contains(t, k3dConfig.Registries.Config, "https://ghcr.io")
-}
-
-func TestAddCiliumRepository_Success(t *testing.T) {
-	t.Parallel()
-
-	helmClient := &fakeHelmClient{}
-	err := addCiliumRepository(context.Background(), helmClient)
-
-	require.NoError(t, err)
-	assert.Equal(t, 1, helmClient.addRepoCalls)
-}
-
-func TestAddCiliumRepository_Error(t *testing.T) {
-	t.Parallel()
-
-	helmClient := &fakeHelmClient{addRepoErr: errRepoError}
-	err := addCiliumRepository(context.Background(), helmClient)
-
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to add Cilium Helm repository")
-	assert.Equal(t, 1, helmClient.addRepoCalls)
 }
 
 func TestRunLifecycleWithConfig_Success(t *testing.T) {

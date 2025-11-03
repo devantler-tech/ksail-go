@@ -580,102 +580,100 @@ func runRegistryStage(
 }
 
 // installCiliumCNI installs Cilium CNI on the cluster.
-func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: "Install CNI...",
-		Emoji:   "🌐",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
-	if err != nil {
-		return err
-	}
-
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	repoErr := addCiliumRepository(cmd.Context(), helmClient)
-	if repoErr != nil {
-		return repoErr
-	}
-
-	installer := newCiliumInstaller(helmClient, kubeconfig, clusterCfg)
-
-	return runCiliumInstallation(cmd, installer, tmr)
-}
-
-func addCiliumRepository(ctx context.Context, client helm.Interface) error {
-	repoErr := client.AddRepository(ctx, &helm.RepositoryEntry{
-		Name: "cilium",
-		URL:  "https://helm.cilium.io/",
-	})
-	if repoErr != nil {
-		return fmt.Errorf("failed to add Cilium Helm repository: %w", repoErr)
-	}
-
-	return nil
-}
-
-func newCiliumInstaller(
-	helmClient *helm.Client,
-	kubeconfig string,
-	clusterCfg *v1alpha1.Cluster,
-) *ciliuminstaller.CiliumInstaller {
-	timeout := getCNIInstallTimeout(clusterCfg)
-
-	return ciliuminstaller.NewCiliumInstaller(
-		helmClient,
-		kubeconfig,
-		clusterCfg.Spec.Connection.Context,
-		timeout,
-	)
-}
-
-func runCiliumInstallation(
+func installCiliumCNI(
 	cmd *cobra.Command,
-	installer *ciliuminstaller.CiliumInstaller,
+	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "installing cilium",
-		Writer:  cmd.OutOrStdout(),
-	})
+	return installCNI(
+		cmd,
+		clusterCfg,
+		tmr,
+		func(helmClient *helm.Client, kubeconfig string) error {
+			timeout := getCNIInstallTimeout(clusterCfg)
+			installer := ciliuminstaller.NewCiliumInstaller(
+				helmClient,
+				kubeconfig,
+				clusterCfg.Spec.Connection.Context,
+				timeout,
+			)
 
-	installErr := installer.Install(cmd.Context())
-	if installErr != nil {
-		return fmt.Errorf("cilium installation failed: %w", installErr)
-	}
+			// Add Cilium repository
+			repoErr := helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+				Name: "cilium",
+				URL:  "https://helm.cilium.io/",
+			})
+			if repoErr != nil {
+				return fmt.Errorf("failed to add Cilium Helm repository: %w", repoErr)
+			}
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "awaiting cilium to be ready",
-		Writer:  cmd.OutOrStdout(),
-	})
+			// Install Cilium
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: "installing cilium",
+				Writer:  cmd.OutOrStdout(),
+			})
 
-	readinessErr := installer.WaitForReadiness(cmd.Context())
-	if readinessErr != nil {
-		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
-	}
+			installErr := installer.Install(cmd.Context())
+			if installErr != nil {
+				return fmt.Errorf("cilium installation failed: %w", installErr)
+			}
 
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
+			// Wait for Cilium to be ready
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: "awaiting cilium to be ready",
+				Writer:  cmd.OutOrStdout(),
+			})
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "CNI installed " + timingStr,
-		Writer:  cmd.OutOrStdout(),
-	})
+			readinessErr := installer.WaitForReadiness(cmd.Context())
+			if readinessErr != nil {
+				return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
+			}
 
-	return nil
+			return nil
+		},
+	)
 }
 
 // installIstioCNI installs Istio CNI on the cluster.
-func installIstioCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+func installIstioCNI(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
+	return installCNI(
+		cmd,
+		clusterCfg,
+		tmr,
+		func(helmClient *helm.Client, _ string) error {
+			timeout := getCNIInstallTimeout(clusterCfg)
+			installer := istioinstaller.NewIstioInstaller(helmClient, timeout)
+
+			// Install Istio
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ActivityType,
+				Content: "installing istio",
+				Writer:  cmd.OutOrStdout(),
+			})
+
+			installErr := installer.Install(cmd.Context())
+			if installErr != nil {
+				return fmt.Errorf("istio installation failed: %w", installErr)
+			}
+
+			return nil
+		},
+	)
+}
+
+// installCNI is a generic function for installing CNI components.
+func installCNI(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+	installFunc func(*helm.Client, string) error,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: "Install CNI...",
@@ -693,37 +691,9 @@ func installIstioCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	installer := newIstioInstaller(helmClient, clusterCfg)
-
-	return runIstioInstallation(cmd, installer, tmr)
-}
-
-func newIstioInstaller(
-	helmClient *helm.Client,
-	clusterCfg *v1alpha1.Cluster,
-) *istioinstaller.IstioInstaller {
-	timeout := getCNIInstallTimeout(clusterCfg)
-
-	return istioinstaller.NewIstioInstaller(
-		helmClient,
-		timeout,
-	)
-}
-
-func runIstioInstallation(
-	cmd *cobra.Command,
-	installer *istioinstaller.IstioInstaller,
-	tmr timer.Timer,
-) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "installing istio",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	installErr := installer.Install(cmd.Context())
-	if installErr != nil {
-		return fmt.Errorf("istio installation failed: %w", installErr)
+	err = installFunc(helmClient, kubeconfig)
+	if err != nil {
+		return err
 	}
 
 	total, stage := tmr.GetTiming()
