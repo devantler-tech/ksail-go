@@ -67,8 +67,6 @@ ksail workload reconcile
 ksail cluster delete
 ```
 
-For detailed command reference, run `ksail --help`.
-
 ## Documentation 📚
 
 ### For Contributors 👥
