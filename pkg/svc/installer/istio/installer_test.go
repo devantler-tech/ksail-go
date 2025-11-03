@@ -160,7 +160,7 @@ func expectIstiodInstall(t *testing.T, client *helm.MockInterface, err error) {
 	expectChartInstall(t, client, "istiod", "istio/istiod", err)
 }
 
-// expectChartInstall is a helper function to set up mock expectations for chart installation.
+// expectChartInstall sets up mock expectations for Istio repository addition and chart installation.
 func expectChartInstall(
 	t *testing.T,
 	client *helm.MockInterface,
