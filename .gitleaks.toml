@@ -16,5 +16,5 @@ useDefault = true
     '''.mypy_cache''',
     '''(.*?)gitleaks\.toml$''',
     '''(?i)(.*?)(png|jpeg|jpg|gif|doc|docx|pdf|bin|xls|xlsx|pyc|zip)$''',
-    '''(go.mod|go.sum)$'''
+    '''(go.mod|go.sum)$''',
     '''(?i).*_test\.go$''']
