@@ -368,7 +368,7 @@ func IsFieldEmptyForTesting(fieldPtr any) bool {
 // Only loads distribution config when custom CNI (Cilium or Istio) is requested for validation.
 func (m *ConfigManager) createValidatorForDistribution() *ksailvalidator.Validator {
 	// Only load distribution config for custom CNI validation
-	if m.Config.Spec.DistributionConfig == "" || 
+	if m.Config.Spec.DistributionConfig == "" ||
 		(m.Config.Spec.CNI != v1alpha1.CNICilium && m.Config.Spec.CNI != v1alpha1.CNIIstio) {
 		return ksailvalidator.NewValidator()
 	}

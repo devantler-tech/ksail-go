@@ -124,12 +124,26 @@ func handleCreateRunE(
 		})
 	}
 
+	err = installCNIIfNeeded(cmd, clusterCfg, deps.Timer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// installCNIIfNeeded installs the specified CNI if it's not the default.
+func installCNIIfNeeded(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		deps.Timer.NewStage()
+		tmr.NewStage()
 
-		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
+		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
 		}
@@ -138,9 +152,9 @@ func handleCreateRunE(
 	if clusterCfg.Spec.CNI == v1alpha1.CNIIstio {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		deps.Timer.NewStage()
+		tmr.NewStage()
 
-		err = installIstioCNI(cmd, clusterCfg, deps.Timer)
+		err := installIstioCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Istio CNI: %w", err)
 		}
