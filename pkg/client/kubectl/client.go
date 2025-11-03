@@ -44,9 +44,9 @@ type Client struct {
 }
 
 // NewClient creates a new kubectl client instance.
-func NewClient(ioStreams genericiooptions.IOStreams) *Client {
+func NewClient(streams genericiooptions.IOStreams) *Client {
 	return &Client{
-		ioStreams: ioStreams,
+		ioStreams: streams,
 	}
 }
 
