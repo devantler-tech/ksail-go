@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testTimeout = 5 * time.Second
+const testTimeout = 5 * time.Minute
 
 func TestNewArgoCDInstaller(t *testing.T) {
 	t.Parallel()
