@@ -48,6 +48,26 @@ func TestIstioInstallerInstallErrorOnBase(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to install Istio base")
 }
 
+func TestIstioInstallerInstallErrorOnAddRepository(t *testing.T) {
+	t.Parallel()
+
+	installer, client := newIstioInstallerWithDefaults(t)
+
+	// Mock AddRepository to fail
+	client.EXPECT().
+		AddRepository(mock.Anything, mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
+			return entry.Name == "istio" &&
+				entry.URL == "https://istio-release.storage.googleapis.com/charts"
+		})).
+		Return(assert.AnError).
+		Once()
+
+	err := installer.Install(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to add istio repository")
+}
+
 func TestIstioInstallerInstallErrorOnIstiod(t *testing.T) {
 	t.Parallel()
 
