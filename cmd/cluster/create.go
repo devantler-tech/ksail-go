@@ -124,19 +124,28 @@ func handleCreateRunE(
 		})
 	}
 
+	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+}
+
+// handlePostCreationSetup installs CNI and metrics-server after cluster creation.
+func handlePostCreationSetup(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		deps.Timer.NewStage()
+		tmr.NewStage()
 
-		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
+		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
 		}
 	}
 
 	// Handle Metrics Server installation/uninstallation
-	err = handleMetricsServer(cmd, clusterCfg, deps.Timer)
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
 	if err != nil {
 		return fmt.Errorf("failed to handle metrics server: %w", err)
 	}
@@ -852,6 +861,7 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
 		tmr.NewStage()
 
 		return installMetricsServer(cmd, clusterCfg, tmr)
@@ -865,6 +875,7 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 		}
 
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
 		tmr.NewStage()
 
 		return uninstallMetricsServer(cmd, clusterCfg, tmr)
@@ -917,7 +928,11 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 }
 
 // uninstallMetricsServer uninstalls metrics-server from the cluster.
-func uninstallMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+func uninstallMetricsServer(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: "Uninstall Metrics Server...",
