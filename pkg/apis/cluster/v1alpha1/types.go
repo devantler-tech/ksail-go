@@ -29,6 +29,9 @@ var ErrInvalidIngressController = errors.New("invalid ingress controller")
 // ErrInvalidGatewayController is returned when an invalid gateway controller is specified.
 var ErrInvalidGatewayController = errors.New("invalid gateway controller")
 
+// ErrInvalidMetricsServer is returned when an invalid metrics server is specified.
+var ErrInvalidMetricsServer = errors.New("invalid metrics server")
+
 const (
 	// Group is the API group for KSail.
 	Group = "ksail.dev"
@@ -58,6 +61,7 @@ type Spec struct {
 	CSI                CSI               `json:"csi,omitzero"`
 	IngressController  IngressController `json:"ingressController,omitzero"`
 	GatewayController  GatewayController `json:"gatewayController,omitzero"`
+	MetricsServer      MetricsServer     `json:"metricsServer,omitzero"`
 	GitOpsEngine       GitOpsEngine      `json:"gitOpsEngine,omitzero"`
 	Options            Options           `json:"options,omitzero"`
 }
@@ -113,6 +117,15 @@ func validGatewayControllers() []GatewayController {
 	}
 }
 
+// validMetricsServers returns supported metrics server values.
+func validMetricsServers() []MetricsServer {
+	return []MetricsServer{
+		MetricsServerDefault,
+		MetricsServerEnabled,
+		MetricsServerDisabled,
+	}
+}
+
 // CNI defines the CNI options for a KSail cluster.
 type CNI string
 
@@ -157,6 +170,18 @@ const (
 	GatewayControllerCilium GatewayController = "Cilium"
 	// GatewayControllerNone is no Gateway Controller.
 	GatewayControllerNone GatewayController = "None"
+)
+
+// MetricsServer defines the Metrics Server options for a KSail cluster.
+type MetricsServer string
+
+const (
+	// MetricsServerDefault is the default Metrics Server behavior (distribution decides).
+	MetricsServerDefault MetricsServer = "Default"
+	// MetricsServerEnabled ensures Metrics Server is installed.
+	MetricsServerEnabled MetricsServer = "Enabled"
+	// MetricsServerDisabled ensures Metrics Server is not installed.
+	MetricsServerDisabled MetricsServer = "Disabled"
 )
 
 // GitOpsEngine defines the GitOps Engine options for a KSail cluster.
@@ -330,6 +355,27 @@ func (g *GatewayController) Set(value string) error {
 	)
 }
 
+// Set for MetricsServer.
+func (m *MetricsServer) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
+	for _, ms := range validMetricsServers() {
+		if strings.EqualFold(value, string(ms)) {
+			*m = ms
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s, %s)",
+		ErrInvalidMetricsServer,
+		value,
+		MetricsServerDefault,
+		MetricsServerEnabled,
+		MetricsServerDisabled,
+	)
+}
+
 // IsValid checks if the distribution value is supported.
 func (d *Distribution) IsValid() bool {
 	return slices.Contains(validDistributions(), *d)
@@ -393,4 +439,14 @@ func (g *GatewayController) String() string {
 // Type returns the type of the GatewayController.
 func (g *GatewayController) Type() string {
 	return "GatewayController"
+}
+
+// String returns the string representation of the MetricsServer.
+func (m *MetricsServer) String() string {
+	return string(*m)
+}
+
+// Type returns the type of the MetricsServer.
+func (m *MetricsServer) Type() string {
+	return "MetricsServer"
 }
