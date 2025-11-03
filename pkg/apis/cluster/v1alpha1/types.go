@@ -120,7 +120,6 @@ func validGatewayControllers() []GatewayController {
 // validMetricsServers returns supported metrics server values.
 func validMetricsServers() []MetricsServer {
 	return []MetricsServer{
-		MetricsServerDefault,
 		MetricsServerEnabled,
 		MetricsServerDisabled,
 	}
@@ -176,8 +175,6 @@ const (
 type MetricsServer string
 
 const (
-	// MetricsServerDefault is the default Metrics Server behavior (distribution decides).
-	MetricsServerDefault MetricsServer = "Default"
 	// MetricsServerEnabled ensures Metrics Server is installed.
 	MetricsServerEnabled MetricsServer = "Enabled"
 	// MetricsServerDisabled ensures Metrics Server is not installed.
@@ -367,10 +364,9 @@ func (m *MetricsServer) Set(value string) error {
 	}
 
 	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s, %s)",
+		"%w: %s (valid options: %s, %s)",
 		ErrInvalidMetricsServer,
 		value,
-		MetricsServerDefault,
 		MetricsServerEnabled,
 		MetricsServerDisabled,
 	)

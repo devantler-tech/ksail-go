@@ -94,8 +94,8 @@ func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 func DefaultMetricsServerFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.MetricsServer },
-		Description:  "Metrics Server configuration (Default: distribution decides, Enabled: install, Disabled: uninstall)",
-		DefaultValue: v1alpha1.MetricsServerDefault,
+		Description:  "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
+		DefaultValue: v1alpha1.MetricsServerEnabled,
 	}
 }
 

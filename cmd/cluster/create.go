@@ -55,9 +55,13 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
+	// Create field selectors including metrics-server
+	fieldSelectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	fieldSelectors = append(fieldSelectors, ksailconfigmanager.DefaultMetricsServerFieldSelector())
+
 	cfgManager := ksailconfigmanager.NewCommandConfigManager(
 		cmd,
-		ksailconfigmanager.DefaultClusterFieldSelectors(),
+		fieldSelectors,
 	)
 
 	cmd.Flags().
@@ -845,11 +849,6 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 
 // handleMetricsServer manages metrics-server installation/uninstallation based on cluster configuration.
 func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
-	// Default means do nothing - let distribution decide
-	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerDefault {
-		return nil
-	}
-
 	// Check if distribution provides metrics-server by default
 	hasMetricsByDefault := distributionProvidesMetricsByDefault(clusterCfg.Spec.Distribution)
 
