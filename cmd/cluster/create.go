@@ -137,18 +137,15 @@ func handleCreateRunE(
 	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
-// handlePostCreationSetup installs metrics-server and CNI after cluster creation.
+// handlePostCreationSetup installs CNI and metrics-server after cluster creation.
+// Order depends on CNI configuration to resolve dependencies.
 func handlePostCreationSetup(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
-	// Handle Metrics Server installation first (before CNI and other components)
-	err := handleMetricsServer(cmd, clusterCfg, tmr)
-	if err != nil {
-		return fmt.Errorf("failed to handle metrics server: %w", err)
-	}
-
+	// For custom CNI (Cilium), install CNI first as metrics-server needs networking
+	// For default CNI, install metrics-server first as it's independent
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
@@ -157,6 +154,18 @@ func handlePostCreationSetup(
 		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+
+		// Install metrics-server after CNI is ready
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
+		}
+	} else {
+		// For default CNI, install metrics-server first
+		err := handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
 		}
 	}
 
