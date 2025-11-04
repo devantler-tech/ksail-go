@@ -1,4 +1,4 @@
-package cmd_test
+package cluster_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	cmdpkg "github.com/devantler-tech/ksail-go/cmd"
+	clusterpkg "github.com/devantler-tech/ksail-go/cmd/cluster"
 	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	timermocks "github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -37,7 +37,7 @@ func newConfigManager(
 	t.Helper()
 	cmd.SetOut(writer)
 	cmd.SetErr(writer)
-	manager := ksailconfigmanager.NewCommandConfigManager(cmd, cmdpkg.InitFieldSelectors())
+	manager := ksailconfigmanager.NewCommandConfigManager(cmd, clusterpkg.InitFieldSelectors())
 	// bind init-local flags like production code
 	cmd.Flags().StringP("output", "o", "", "Output directory for the project")
 	_ = manager.Viper.BindPFlag("output", cmd.Flags().Lookup("output"))
@@ -72,7 +72,7 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 
 	var err error
 
-	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	err = clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestHandleInitRunE_RespectsDistributionFlag(t *testing.T) {
 
 	deps := newInitDeps(t)
 
-	err := cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 
 	var err error
 
-	err = cmdpkg.HandleInitRunE(cmd, cfgManager, deps)
+	err = clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
 	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
@@ -149,12 +149,12 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	}
 }
 
-func newInitDeps(t *testing.T) cmdpkg.InitDeps {
+func newInitDeps(t *testing.T) clusterpkg.InitDeps {
 	t.Helper()
 	tmr := timermocks.NewMockTimer(t)
 	tmr.EXPECT().Start().Return()
 	tmr.EXPECT().NewStage().Return()
 	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
 
-	return cmdpkg.InitDeps{Timer: tmr}
+	return clusterpkg.InitDeps{Timer: tmr}
 }

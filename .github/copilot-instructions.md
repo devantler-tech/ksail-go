@@ -139,7 +139,7 @@ go build -o ksail .       # Ensure clean build
 ./ksail --version
 
 # Test all command help outputs
-./ksail init --help
+./ksail cluster init --help
 ./ksail up --help
 ./ksail down --help
 ./ksail status --help
@@ -154,7 +154,7 @@ Run this complete scenario in a temporary directory to validate changes:
 mkdir -p /tmp/ksail-test && cd /tmp/ksail-test
 
 # Test Kind distribution (most common)
-./ksail init --distribution Kind
+./ksail cluster init --distribution Kind
 ./ksail up
 ./ksail status
 ./ksail list
@@ -170,10 +170,10 @@ rm -rf k8s kind.yaml ksail.yaml
 
 ```bash
 # Test K3d distribution
-./ksail init --distribution K3d
+./ksail cluster init --distribution K3d
 
 # Test EKS distribution
-./ksail init --distribution EKS
+./ksail cluster init --distribution EKS
 ```
 
 ### System Tests
@@ -446,6 +446,6 @@ go test ./pkg/ui/timer/... -v
 go test ./pkg/ui/notify/... -run FormatTiming -v
 
 # Test CLI command with timing
-./ksail init --distribution Kind
+./ksail cluster init --distribution Kind
 # Expected output: "✔ initialized project [1.2s]"
 ```

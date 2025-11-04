@@ -55,7 +55,7 @@ Get a Kubernetes cluster running in seconds:
 
 ```bash
 # Initialize a new project with Kind
-ksail init --distribution Kind
+ksail cluster init --distribution Kind
 
 # Create and start the cluster
 ksail cluster create
