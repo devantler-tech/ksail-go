@@ -338,14 +338,9 @@ func TestClient_ExecuteSubcommandGen_SecretGeneric(t *testing.T) {
 	cmd, err := client.CreateSecretCmd()
 	require.NoError(t, err)
 
-	// Find the generic subcommand
-	genericCmd, _, err := cmd.Find([]string{"generic"})
-	require.NoError(t, err)
-	require.NotNil(t, genericCmd)
-
-	// Execute with secret name and data
-	genericCmd.SetArgs([]string{"test-secret", "--from-literal=key1=value1"})
-	err = genericCmd.Execute()
+	// Execute parent command with subcommand args
+	cmd.SetArgs([]string{"generic", "test-secret", "--from-literal=key1=value1"})
+	err = cmd.Execute()
 	require.NoError(t, err)
 
 	// Verify output contains YAML
@@ -370,14 +365,9 @@ func TestClient_ExecuteSubcommandGen_ServiceClusterIP(t *testing.T) {
 	cmd, err := client.CreateServiceCmd()
 	require.NoError(t, err)
 
-	// Find the clusterip subcommand
-	clusterIPCmd, _, err := cmd.Find([]string{"clusterip"})
-	require.NoError(t, err)
-	require.NotNil(t, clusterIPCmd)
-
-	// Execute with service name and port
-	clusterIPCmd.SetArgs([]string{"test-service", "--tcp=8080:80"})
-	err = clusterIPCmd.Execute()
+	// Execute parent command with subcommand args
+	cmd.SetArgs([]string{"clusterip", "test-service", "--tcp=8080:80"})
+	err = cmd.Execute()
 	require.NoError(t, err)
 
 	// Verify output contains YAML

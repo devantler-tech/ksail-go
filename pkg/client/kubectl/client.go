@@ -482,6 +482,10 @@ func (c *Client) newResourceCmd(resourceType string) (*cobra.Command, error) {
 		SilenceUsage: true,
 	}
 
+	// Set wrapper command output to use client's IO streams
+	wrapperCmd.SetOut(c.ioStreams.Out)
+	wrapperCmd.SetErr(c.ioStreams.ErrOut)
+
 	// If the resource has subcommands (like secret/service), recursively copy them
 	if len(resourceCmd.Commands()) > 0 {
 		for _, subCmd := range resourceCmd.Commands() {
@@ -511,6 +515,10 @@ func (c *Client) createSubcommandWrapper(parentType string, subCmd *cobra.Comman
 		Aliases:      subCmd.Aliases,
 		SilenceUsage: true,
 	}
+
+	// Set wrapper command output to use client's IO streams
+	wrapper.SetOut(c.ioStreams.Out)
+	wrapper.SetErr(c.ioStreams.ErrOut)
 
 	// Create RunE for the subcommand
 	wrapper.RunE = func(cmd *cobra.Command, args []string) error {
