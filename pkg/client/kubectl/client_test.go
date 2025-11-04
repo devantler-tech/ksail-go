@@ -538,3 +538,11 @@ func TestCreateExplainCommandHasFlags(t *testing.T) {
 	require.NotNil(t, flags.Lookup("api-version"), "expected --api-version flag to be present")
 	require.NotNil(t, flags.Lookup("output"), "expected --output flag to be present")
 }
+
+func TestNewClientWithStdio(t *testing.T) {
+	t.Parallel()
+
+	client := kubectl.NewClientWithStdio()
+
+	require.NotNil(t, client, "expected client to be created")
+}
