@@ -5,71 +5,13 @@ import (
 	"context"
 	"io"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/spf13/cobra"
 )
-
-// SetupValidWorkingDir creates a valid KSail configuration in a temporary directory and switches to it.
-// The returned cleanup function restores the original working directory.
-func SetupValidWorkingDir(t *testing.T) func() {
-	t.Helper()
-
-	tempDir := t.TempDir()
-	WriteValidKsailConfig(t, tempDir)
-
-	t.Chdir(tempDir)
-
-	return func() {}
-}
-
-// RunValidationErrorTest executes the provided command factory in an empty directory and validates error output.
-func RunValidationErrorTest(
-	t *testing.T,
-	commandFactory func() *cobra.Command,
-	expectedSubstrings ...string,
-) {
-	t.Helper()
-
-	tempDir := t.TempDir()
-
-	t.Chdir(tempDir)
-
-	command := commandFactory()
-
-	var out bytes.Buffer
-	command.SetOut(&out)
-	command.SetErr(&out)
-
-	if command.RunE == nil {
-		t.Fatal("command RunE must not be nil")
-	}
-
-	err := command.RunE(command, nil)
-	if err == nil {
-		t.Fatal("expected error but got nil")
-	}
-
-	message := err.Error()
-	requiredParts := append(
-		[]string{
-			"failed to load cluster configuration",
-			helpers.ErrConfigurationValidationFailed.Error(),
-		},
-		expectedSubstrings...,
-	)
-
-	for _, substring := range requiredParts {
-		if !strings.Contains(message, substring) {
-			t.Fatalf("expected error message to contain %q, got %q", substring, message)
-		}
-	}
-}
 
 // StubFactory is a test double for clusterprovisioner.Factory.
 type StubFactory struct {
