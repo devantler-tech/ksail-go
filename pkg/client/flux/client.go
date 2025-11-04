@@ -165,7 +165,7 @@ func (c *Client) createSourceCommand(kubeConfigPath string) *cobra.Command {
 // createSecretCommand creates the flux create secret command.
 func (c *Client) createSecretCommand(kubeConfigPath string) *cobra.Command {
 	secretCmd := &cobra.Command{
-		Use:   "secret",
+		Use:   "flux-secret",
 		Short: "Create or update Flux secrets",
 	}
 
@@ -291,7 +291,7 @@ func (c *Client) createAlertCommand(kubeConfigPath string) *cobra.Command {
 	return c.createFluxCommand(
 		"alert",
 		"alert",
-		"Create or update a Alert resource",
+		"Create or update an Alert resource",
 		kubeConfigPath,
 	)
 }

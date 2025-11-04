@@ -46,7 +46,7 @@ func TestCreateCreateCommand(t *testing.T) {
 
 	// Check for expected sub-commands
 	expectedSubCommands := []string{
-		"source", "secret", "kustomization", "helmrelease",
+		"source", "flux-secret", "kustomization", "helmrelease",
 		"image", "alert", "alert-provider", "receiver", "tenant",
 	}
 
@@ -124,7 +124,7 @@ func TestCreateSecretCommand(t *testing.T) {
 	var secretCmd *cobra.Command
 
 	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == "secret" {
+		if subCmd.Use == "flux-secret" {
 			secretCmd = subCmd
 
 			break

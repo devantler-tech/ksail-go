@@ -112,13 +112,14 @@ Examples:
   ksail workload create -f registry.yaml --edit -o json
 
 Available Commands:
-  alert               Create or update a Alert resource
+  alert               Create or update an Alert resource
   alert-provider      Create or update a Provider resource
   clusterrole         Create a cluster role
   clusterrolebinding  Create a cluster role binding for a particular cluster role
   configmap           Create a config map from a local file, directory or literal value
   cronjob             Create a cron job with the specified name
   deployment          Create a deployment with the specified name
+  flux-secret         Create or update Flux secrets
   helmrelease         Create or update a HelmRelease resource
   image               Create or update Flux image automation objects
   ingress             Create an ingress with the specified name
@@ -132,7 +133,6 @@ Available Commands:
   role                Create a role with single rule
   rolebinding         Create a role binding for a particular role or cluster role
   secret              Create a secret using a specified subcommand
-  secret              Create or update Flux secrets
   service             Create a service using a specified subcommand
   serviceaccount      Create a service account with the specified name
   source              Create or update Flux sources
