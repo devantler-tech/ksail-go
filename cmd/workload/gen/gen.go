@@ -8,7 +8,10 @@ import (
 )
 
 // createGenCmd is a helper that creates a gen command by calling the provided kubectl method.
-func createGenCmd(_ *runtime.Runtime, createMethod func(*kubectl.Client) (*cobra.Command, error)) *cobra.Command {
+func createGenCmd(
+	_ *runtime.Runtime,
+	createMethod func(*kubectl.Client) (*cobra.Command, error),
+) *cobra.Command {
 	client := kubectl.NewClientWithStdio()
 	cmd, err := createMethod(client)
 	cobra.CheckErr(err)
