@@ -112,22 +112,31 @@ Examples:
   ksail workload create -f registry.yaml --edit -o json
 
 Available Commands:
+  alert               Create or update a Alert resource
+  alert-provider      Create or update a Provider resource
   clusterrole         Create a cluster role
   clusterrolebinding  Create a cluster role binding for a particular cluster role
   configmap           Create a config map from a local file, directory or literal value
   cronjob             Create a cron job with the specified name
   deployment          Create a deployment with the specified name
+  helmrelease         Create or update a HelmRelease resource
+  image               Create or update Flux image automation objects
   ingress             Create an ingress with the specified name
   job                 Create a job with the specified name
+  kustomization       Create or update a Kustomization resource
   namespace           Create a namespace with the specified name
   poddisruptionbudget Create a pod disruption budget with the specified name
   priorityclass       Create a priority class with the specified name
   quota               Create a quota with the specified name
+  receiver            Create or update a Receiver resource
   role                Create a role with single rule
   rolebinding         Create a role binding for a particular role or cluster role
   secret              Create a secret using a specified subcommand
+  secret              Create or update Flux secrets
   service             Create a service using a specified subcommand
   serviceaccount      Create a service account with the specified name
+  source              Create or update Flux sources
+  tenant              Create or update a tenant
   token               Request a service account token
 
 Flags:
@@ -707,3 +716,44 @@ Flags:
       --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
 
 ---
+
+[TestWorkloadHelpSnapshots/create_source - 1]
+Create or update Flux sources
+
+Usage:
+  ksail workload create source [command]
+
+Available Commands:
+  bucket      Create or update a Bucket source
+  chart       Create or update a HelmChart source
+  git         Create or update a GitRepository source
+  helm        Create or update a HelmRepository source
+  oci         Create or update an OCIRepository source
+
+Flags:
+  -h, --help   help for source
+
+Use "ksail workload create source [command] --help" for more information about a command.
+
+---
+
+[TestWorkloadHelpSnapshots/create_kustomization - 1]
+Create or update a Kustomization resource
+
+Usage:
+  ksail workload create kustomization [flags]
+
+Flags:
+  -h, --help   help for kustomization
+
+---
+
+[TestWorkloadHelpSnapshots/create_helmrelease - 1]
+Create or update a HelmRelease resource
+
+Usage:
+  ksail workload create helmrelease [flags]
+
+Flags:
+  -h, --help   help for helmrelease
+

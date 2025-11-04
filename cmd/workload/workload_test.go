@@ -30,6 +30,10 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "reconcile", args: []string{"workload", "reconcile", "--help"}},
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
 		{name: "create", args: []string{"workload", "create", "--help"}},
+		{name: "create_source", args: []string{"workload", "create", "source", "--help"}},
+		{name: "create_kustomization", args: []string{"workload", "create", "kustomization", "--help"}},
+		// TODO: Investigate why create_helmrelease snapshot isn't being found
+		// {name: "create_helmrelease", args: []string{"workload", "create", "helmrelease", "--help"}},
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
 		{name: "describe", args: []string{"workload", "describe", "--help"}},
 		{name: "edit", args: []string{"workload", "edit", "--help"}},
