@@ -30,7 +30,6 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
 
 	// Add all subcommands
-	cmd.AddCommand(NewInitCmd(runtimeContainer))
 	cmd.AddCommand(cluster.NewClusterCmd(runtimeContainer))
 	cmd.AddCommand(workload.NewWorkloadCmd(runtimeContainer))
 	cmd.AddCommand(cipher.NewCipherCmd(runtimeContainer))

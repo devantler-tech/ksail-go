@@ -36,7 +36,7 @@ func TestRunWithArgsScenarios(t *testing.T) {
 		{name: "help", args: []string{"--help"}, want: 0},
 		{name: "version", args: []string{"--version"}, want: 0},
 		{name: "invalid", args: []string{"invalid-command"}, want: 1},
-		{name: "init-help", args: []string{"init", "--help"}, want: 0},
+		{name: "cluster-init-help", args: []string{"cluster", "init", "--help"}, want: 0},
 	}
 
 	for i := range tests {
