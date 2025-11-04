@@ -111,43 +111,6 @@ func GetStandardGenerateTestCasesWithForce(expectedFileName string) []GenerateTe
 	return append(standardCases, forceCase)
 }
 
-// TestExistingFile runs a common test pattern for generators with existing files.
-func TestExistingFile[T any](
-	t *testing.T,
-	gen generator.Generator[T, yamlgenerator.Options],
-	cluster T,
-	filename string,
-	assertContent func(*testing.T, string, string),
-	clusterName string,
-	force bool,
-) {
-	t.Helper()
-
-	tempDir, outputPath, existingContent := testutils.SetupExistingFile(t, filename)
-	opts := yamlgenerator.Options{
-		Output: outputPath,
-		Force:  force,
-	}
-
-	result, err := gen.Generate(cluster, opts)
-
-	require.NoError(t, err, "Generate should succeed")
-	assertContent(t, result, clusterName)
-
-	if force {
-		// Verify file was overwritten
-		testutils.AssertFileEquals(t, tempDir, outputPath, result)
-
-		// Additional check: ensure old content was replaced
-		fileContent, err := ioutils.ReadFileSafe(tempDir, outputPath)
-		require.NoError(t, err, "File should exist")
-		assert.NotEqual(t, existingContent, string(fileContent), "Old content should be replaced")
-	} else {
-		// Verify file was NOT overwritten
-		testutils.AssertFileEquals(t, tempDir, outputPath, existingContent)
-	}
-}
-
 // RunStandardGeneratorTests runs the standard generator test suite.
 func RunStandardGeneratorTests[T any](
 	t *testing.T,
