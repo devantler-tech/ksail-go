@@ -137,12 +137,18 @@ func handleCreateRunE(
 	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
-// handlePostCreationSetup installs CNI and metrics-server after cluster creation.
+// handlePostCreationSetup installs metrics-server and CNI after cluster creation.
 func handlePostCreationSetup(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
+	// Handle Metrics Server installation first (before CNI and other components)
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	if err != nil {
+		return fmt.Errorf("failed to handle metrics server: %w", err)
+	}
+
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
@@ -152,12 +158,6 @@ func handlePostCreationSetup(
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
 		}
-	}
-
-	// Handle Metrics Server installation/uninstallation
-	err := handleMetricsServer(cmd, clusterCfg, tmr)
-	if err != nil {
-		return fmt.Errorf("failed to handle metrics server: %w", err)
 	}
 
 	return nil
