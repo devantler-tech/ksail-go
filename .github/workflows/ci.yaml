@@ -64,10 +64,6 @@ jobs:
             cni: Default
             init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
             mirror-registry: true
-          - distribution: Kind
-            cni: Default
-            metrics-server: Enabled
-            init-args: "--distribution Kind --metrics-server Enabled"
           - distribution: K3d
             cni: Default
             init-args: "--distribution K3d"
