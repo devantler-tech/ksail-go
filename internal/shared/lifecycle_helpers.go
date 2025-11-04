@@ -41,8 +41,9 @@ type LifecycleDeps struct {
 	Factory clusterprovisioner.Factory
 }
 
-// NewLifecycleCommandWrapper creates a cobra RunE wrapper that resolves dependencies and calls HandleLifecycleRunE.
-func NewLifecycleCommandWrapper(
+// NewStandardLifecycleRunE creates a standard RunE handler for simple lifecycle commands.
+// It handles dependency injection and calls HandleLifecycleRunE with the provided config.
+func NewStandardLifecycleRunE(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	config LifecycleConfig,
