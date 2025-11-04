@@ -7,10 +7,6 @@ import (
 )
 
 // NewDeploymentCmd creates the gen deployment command.
-func NewDeploymentCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateDeploymentCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewDeploymentCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateDeploymentCmd)
 }

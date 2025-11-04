@@ -7,10 +7,6 @@ import (
 )
 
 // NewSecretCmd creates the gen secret command.
-func NewSecretCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateSecretCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewSecretCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateSecretCmd)
 }

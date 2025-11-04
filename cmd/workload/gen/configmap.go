@@ -7,10 +7,6 @@ import (
 )
 
 // NewConfigMapCmd creates the gen configmap command.
-func NewConfigMapCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateConfigMapCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewConfigMapCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateConfigMapCmd)
 }

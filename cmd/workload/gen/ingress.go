@@ -7,10 +7,6 @@ import (
 )
 
 // NewIngressCmd creates the gen ingress command.
-func NewIngressCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateIngressCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewIngressCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateIngressCmd)
 }

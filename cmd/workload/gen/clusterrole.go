@@ -7,10 +7,6 @@ import (
 )
 
 // NewClusterRoleCmd creates the gen clusterrole command.
-func NewClusterRoleCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateClusterRoleCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewClusterRoleCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateClusterRoleCmd)
 }

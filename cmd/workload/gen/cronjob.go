@@ -7,10 +7,6 @@ import (
 )
 
 // NewCronJobCmd creates the gen cronjob command.
-func NewCronJobCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateCronJobCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewCronJobCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateCronJobCmd)
 }

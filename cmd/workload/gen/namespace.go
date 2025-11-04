@@ -7,10 +7,6 @@ import (
 )
 
 // NewNamespaceCmd creates the gen namespace command.
-func NewNamespaceCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateNamespaceCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewNamespaceCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateNamespaceCmd)
 }

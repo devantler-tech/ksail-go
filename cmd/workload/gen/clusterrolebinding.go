@@ -7,10 +7,6 @@ import (
 )
 
 // NewClusterRoleBindingCmd creates the gen clusterrolebinding command.
-func NewClusterRoleBindingCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateClusterRoleBindingCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewClusterRoleBindingCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateClusterRoleBindingCmd)
 }

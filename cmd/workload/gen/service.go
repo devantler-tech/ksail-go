@@ -7,10 +7,6 @@ import (
 )
 
 // NewServiceCmd creates the gen service command.
-func NewServiceCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.NewClientWithStdio()
-	cmd, err := client.CreateServiceCmd()
-	cobra.CheckErr(err)
-
-	return cmd
+func NewServiceCmd(rt *runtime.Runtime) *cobra.Command {
+	return createGenCmd(rt, (*kubectl.Client).CreateServiceCmd)
 }
