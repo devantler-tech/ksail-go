@@ -41,21 +41,6 @@ type LifecycleDeps struct {
 	Factory clusterprovisioner.Factory
 }
 
-// NewLifecycleCommandWrapper creates a cobra RunE wrapper that resolves dependencies and calls HandleLifecycleRunE.
-func NewLifecycleCommandWrapper(
-	runtimeContainer *runtime.Runtime,
-	cfgManager *ksailconfigmanager.ConfigManager,
-	config LifecycleConfig,
-) func(*cobra.Command, []string) error {
-	return WrapLifecycleHandler(
-		runtimeContainer,
-		cfgManager,
-		func(cmd *cobra.Command, manager *ksailconfigmanager.ConfigManager, deps LifecycleDeps) error {
-			return HandleLifecycleRunE(cmd, manager, deps, config)
-		},
-	)
-}
-
 // WrapLifecycleHandler resolves lifecycle dependencies from the runtime container before calling the provided handler.
 func WrapLifecycleHandler(
 	runtimeContainer *runtime.Runtime,

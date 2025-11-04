@@ -38,10 +38,12 @@ func NewStopCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = shared.NewLifecycleCommandWrapper(
+	cmd.RunE = shared.WrapLifecycleHandler(
 		runtimeContainer,
 		cfgManager,
-		newStopLifecycleConfig(),
+		func(cmd *cobra.Command, manager *ksailconfigmanager.ConfigManager, deps shared.LifecycleDeps) error {
+			return shared.HandleLifecycleRunE(cmd, manager, deps, newStopLifecycleConfig())
+		},
 	)
 
 	return cmd
