@@ -12,9 +12,6 @@ type RecordingTimer struct {
 	NewStageCount int
 }
 
-// NewRecordingTimer constructs a RecordingTimer instance.
-func NewRecordingTimer() *RecordingTimer { return &RecordingTimer{} }
-
 // Start records a Start invocation and increments counters.
 func (r *RecordingTimer) Start() {
 	r.StartCalls++
