@@ -72,6 +72,11 @@ func (m *MetricsServerInstaller) helmInstallOrUpgradeMetricsServer(ctx context.C
 		Wait:        true,
 		WaitForJobs: true,
 		Timeout:     m.timeout,
+		// Values for Kind compatibility - metrics-server needs to skip TLS verification
+		// and use InternalIP for Kind clusters with self-signed certificates
+		ValuesYaml: `args:
+  - --kubelet-insecure-tls
+  - --kubelet-preferred-address-types=InternalIP`,
 	}
 
 	_, err := m.client.InstallOrUpgradeChart(ctx, spec)
