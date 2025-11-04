@@ -430,7 +430,7 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 
 // generateK3dConfig generates the k3d.yaml configuration file.
 func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
-	k3dConfig := s.createK3dConfig()
+	k3dConfig := s.CreateK3dConfig()
 
 	opts := yamlgenerator.Options{
 		Output: filepath.Join(output, "k3d.yaml"),
@@ -452,7 +452,8 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 	)
 }
 
-func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
+// CreateK3dConfig creates a K3d configuration based on the cluster specification.
+func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 	config := k3dv1alpha5.SimpleConfig{
 		TypeMeta: types.TypeMeta{
 			APIVersion: "k3d.io/v1alpha5",
@@ -462,18 +463,36 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		// Users can override any settings in this generated config file
 	}
 
+	// Initialize ExtraArgs slice
+	extraArgs := []k3dv1alpha5.K3sArgWithNodeFilters{}
+
 	// Disable default CNI (Flannel) if Cilium is requested
 	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
-		config.Options.K3sOptions.ExtraArgs = []k3dv1alpha5.K3sArgWithNodeFilters{
-			{
+		extraArgs = append(extraArgs,
+			k3dv1alpha5.K3sArgWithNodeFilters{
 				Arg:         "--flannel-backend=none",
 				NodeFilters: []string{"server:*"},
 			},
-			{
+			k3dv1alpha5.K3sArgWithNodeFilters{
 				Arg:         "--disable-network-policy",
 				NodeFilters: []string{"server:*"},
 			},
-		}
+		)
+	}
+
+	// Disable metrics-server if explicitly disabled (K3s includes it by default)
+	if s.KSailConfig.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
+		extraArgs = append(extraArgs,
+			k3dv1alpha5.K3sArgWithNodeFilters{
+				Arg:         "--disable=metrics-server",
+				NodeFilters: []string{"server:*"},
+			},
+		)
+	}
+
+	// Set ExtraArgs if we have any
+	if len(extraArgs) > 0 {
+		config.Options.K3sOptions.ExtraArgs = extraArgs
 	}
 
 	// Add registry configuration for mirror registries

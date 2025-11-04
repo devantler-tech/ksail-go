@@ -105,6 +105,12 @@ func handleCreateRunE(
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
 	}
 
+	// Configure metrics-server for K3d before cluster creation
+	err = setupK3dMetricsServer(clusterCfg, k3dConfig)
+	if err != nil {
+		return fmt.Errorf("failed to setup K3d metrics-server configuration: %w", err)
+	}
+
 	deps.Timer.NewStage()
 
 	err = shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
@@ -183,6 +189,39 @@ func loadDistributionConfigs(
 	default:
 		return nil, nil, nil
 	}
+}
+
+// setupK3dMetricsServer configures metrics-server for K3d clusters by adding K3s flags.
+// K3s includes metrics-server by default, so we add --disable=metrics-server flag when disabled.
+func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.SimpleConfig) error {
+	// Only apply to K3d distribution
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
+		return nil
+	}
+
+	// Only add disable flag if explicitly disabled
+	if clusterCfg.Spec.MetricsServer != v1alpha1.MetricsServerDisabled {
+		return nil
+	}
+
+	// Check if --disable=metrics-server is already present
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--disable=metrics-server" {
+			// Already configured, no action needed
+			return nil
+		}
+	}
+
+	// Add --disable=metrics-server flag
+	k3dConfig.Options.K3sOptions.ExtraArgs = append(
+		k3dConfig.Options.K3sOptions.ExtraArgs,
+		v1alpha5.K3sArgWithNodeFilters{
+			Arg:         "--disable=metrics-server",
+			NodeFilters: []string{"server:*"},
+		},
+	)
+
+	return nil
 }
 
 const (
@@ -847,7 +886,8 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 	return patches
 }
 
-// handleMetricsServer manages metrics-server installation/uninstallation based on cluster configuration.
+// handleMetricsServer manages metrics-server installation based on cluster configuration.
+// For K3d, metrics-server should be disabled via config (handled in setupK3dMetricsServer), not uninstalled.
 func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	// Check if distribution provides metrics-server by default
 	hasMetricsByDefault := distributionProvidesMetricsByDefault(clusterCfg.Spec.Distribution)
@@ -866,18 +906,21 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 		return installMetricsServer(cmd, clusterCfg, tmr)
 	}
 
-	// Disabled: Uninstall if present by default
+	// Disabled: For K3d, this is handled via config before cluster creation (setupK3dMetricsServer)
+	// No post-creation action needed for K3d
 	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
+		if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d {
+			// K3d metrics-server is disabled via config, no action needed here
+			return nil
+		}
+
 		if !hasMetricsByDefault {
 			// Not present, no action needed
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-
-		tmr.NewStage()
-
-		return uninstallMetricsServer(cmd, clusterCfg, tmr)
+		// For other distributions that have it by default, we would uninstall here
+		// But currently only K3d has it by default, and that's handled via config
 	}
 
 	return nil
@@ -927,58 +970,6 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 }
 
 // uninstallMetricsServer uninstalls metrics-server from the cluster.
-func uninstallMetricsServer(
-	cmd *cobra.Command,
-	clusterCfg *v1alpha1.Cluster,
-	tmr timer.Timer,
-) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.TitleType,
-		Content: "Uninstall Metrics Server...",
-		Emoji:   "📊",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
-	if err != nil {
-		return err
-	}
-
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	timeout := getMetricsServerInstallTimeout(clusterCfg)
-	installer := metricsserverinstaller.NewMetricsServerInstaller(
-		helmClient,
-		kubeconfig,
-		clusterCfg.Spec.Connection.Context,
-		timeout,
-	)
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "uninstalling metrics-server",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	uninstallErr := installer.Uninstall(cmd.Context())
-	if uninstallErr != nil {
-		return fmt.Errorf("metrics-server uninstallation failed: %w", uninstallErr)
-	}
-
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "Metrics Server uninstalled " + timingStr,
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	return nil
-}
 
 // getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
 func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
