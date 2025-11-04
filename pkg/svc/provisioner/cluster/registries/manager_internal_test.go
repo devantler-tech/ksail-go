@@ -24,13 +24,18 @@ func TestIsLocalEndpointName(t *testing.T) {
 		{name: "empty string", input: "", expected: false},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := isLocalEndpointName(tc.input)
-			if result != tc.expected {
-				t.Errorf("isLocalEndpointName(%q) = %v, want %v", tc.input, result, tc.expected)
+			result := isLocalEndpointName(testCase.input)
+			if result != testCase.expected {
+				t.Errorf(
+					"isLocalEndpointName(%q) = %v, want %v",
+					testCase.input,
+					result,
+					testCase.expected,
+				)
 			}
 		})
 	}
@@ -60,41 +65,25 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 			endpoint: "http://registry.example.com",
 			expected: "registry.example.com",
 		},
-		{
-			name:     "localhost with port",
-			endpoint: "http://localhost:5000",
-			expected: "localhost",
-		},
-		{
-			name:     "IP address with port",
-			endpoint: "http://127.0.0.1:5000",
-			expected: "127.0.0.1",
-		},
-		{
-			name:     "invalid - no protocol",
-			endpoint: "registry.example.com:5000",
-			expected: "",
-		},
-		{
-			name:     "invalid - empty string",
-			endpoint: "",
-			expected: "",
-		},
-		{
-			name:     "invalid - only protocol",
-			endpoint: "http://",
-			expected: "",
-		},
+		{name: "localhost with port", endpoint: "http://localhost:5000", expected: "localhost"},
+		{name: "IP address with port", endpoint: "http://127.0.0.1:5000", expected: "127.0.0.1"},
+		{name: "invalid - no protocol", endpoint: "registry.example.com:5000", expected: ""},
+		{name: "invalid - empty string", endpoint: "", expected: ""},
+		{name: "invalid - only protocol", endpoint: "http://", expected: ""},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := ExtractNameFromEndpoint(tc.endpoint)
-			if result != tc.expected {
-				t.Errorf("ExtractNameFromEndpoint(%q) = %q, want %q",
-					tc.endpoint, result, tc.expected)
+			result := ExtractNameFromEndpoint(testCase.endpoint)
+			if result != testCase.expected {
+				t.Errorf(
+					"ExtractNameFromEndpoint(%q) = %q, want %q",
+					testCase.endpoint,
+					result,
+					testCase.expected,
+				)
 			}
 		})
 	}
@@ -119,16 +108,8 @@ func TestExtractPortFromEndpoint(t *testing.T) {
 			endpoint: "https://registry.example.com:5001",
 			expected: 5001,
 		},
-		{
-			name:     "localhost with port",
-			endpoint: "http://localhost:8080",
-			expected: 8080,
-		},
-		{
-			name:     "IP with port",
-			endpoint: "http://127.0.0.1:3000",
-			expected: 3000,
-		},
+		{name: "localhost with port", endpoint: "http://localhost:8080", expected: 8080},
+		{name: "IP with port", endpoint: "http://127.0.0.1:3000", expected: 3000},
 		{
 			name:     "http without port returns 0",
 			endpoint: "http://registry.example.com",
@@ -139,36 +120,20 @@ func TestExtractPortFromEndpoint(t *testing.T) {
 			endpoint: "https://registry.example.com",
 			expected: 0,
 		},
-		{
-			name:     "invalid endpoint",
-			endpoint: "not-a-url",
-			expected: 0,
-		},
-		{
-			name:     "invalid port number",
-			endpoint: "http://registry.example.com:invalid",
-			expected: 0,
-		},
-		{
-			name:     "port out of range",
-			endpoint: "http://registry.example.com:99999",
-			expected: 0,
-		},
-		{
-			name:     "empty endpoint",
-			endpoint: "",
-			expected: 0,
-		},
+		{name: "invalid endpoint", endpoint: "not-a-url", expected: 0},
+		{name: "invalid port number", endpoint: "http://registry.example.com:invalid", expected: 0},
+		{name: "port out of range", endpoint: "http://registry.example.com:99999", expected: 0},
+		{name: "empty endpoint", endpoint: "", expected: 0},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := ExtractPortFromEndpoint(tc.endpoint)
-			if result != tc.expected {
+			result := ExtractPortFromEndpoint(testCase.endpoint)
+			if result != testCase.expected {
 				t.Errorf("ExtractPortFromEndpoint(%q) = %d, want %d",
-					tc.endpoint, result, tc.expected)
+					testCase.endpoint, result, testCase.expected)
 			}
 		})
 	}
@@ -190,26 +155,21 @@ func TestExtractRegistryPort(t *testing.T) {
 			t.Errorf("expected %d, got %d", DefaultRegistryPort, result)
 		}
 
-		// Check that port was marked as used
 		if _, exists := usedPorts[DefaultRegistryPort]; !exists {
 			t.Errorf("expected port %d to be marked as used", DefaultRegistryPort)
 		}
 
-		// Check nextPort was updated
-		expectedNext := DefaultRegistryPort + 1
-		if nextPort != expectedNext {
-			t.Errorf("expected nextPort to be %d, got %d", expectedNext, nextPort)
+		if nextPort != DefaultRegistryPort+1 {
+			t.Errorf("expected nextPort to be %d, got %d", DefaultRegistryPort+1, nextPort)
 		}
 	})
 
 	t.Run("allocates next available port when no endpoint", func(t *testing.T) {
 		t.Parallel()
 
-		endpoints := []string{}
-		usedPorts := make(map[int]struct{})
-		nextPort := DefaultRegistryPort
+		nextPort := ptrTo(DefaultRegistryPort)
 
-		result := ExtractRegistryPort(endpoints, usedPorts, &nextPort)
+		result := ExtractRegistryPort([]string{}, make(map[int]struct{}), nextPort)
 		if result != DefaultRegistryPort {
 			t.Errorf("expected %d, got %d", DefaultRegistryPort, result)
 		}
@@ -218,29 +178,27 @@ func TestExtractRegistryPort(t *testing.T) {
 	t.Run("skips used ports", func(t *testing.T) {
 		t.Parallel()
 
-		endpoints := []string{}
 		usedPorts := map[int]struct{}{
 			DefaultRegistryPort:     {},
 			DefaultRegistryPort + 1: {},
 		}
-		nextPort := DefaultRegistryPort
+		result := ExtractRegistryPort([]string{}, usedPorts, ptrTo(DefaultRegistryPort))
 
-		result := ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-		expectedPort := DefaultRegistryPort + 2
-		if result != expectedPort {
-			t.Errorf("expected %d, got %d", expectedPort, result)
+		if result != DefaultRegistryPort+2 {
+			t.Errorf("expected %d, got %d", DefaultRegistryPort+2, result)
 		}
 	})
 
 	t.Run("uses default port when nextPort is nil", func(t *testing.T) {
 		t.Parallel()
 
-		endpoints := []string{}
-		usedPorts := make(map[int]struct{})
-
-		result := ExtractRegistryPort(endpoints, usedPorts, nil)
+		result := ExtractRegistryPort([]string{}, make(map[int]struct{}), nil)
 		if result != DefaultRegistryPort {
 			t.Errorf("expected default port %d, got %d", DefaultRegistryPort, result)
 		}
 	})
+}
+
+func ptrTo(i int) *int {
+	return &i
 }

@@ -3,7 +3,6 @@ package docker
 import (
 	"testing"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 )
@@ -26,13 +25,18 @@ func TestIsClusterNetworkName(t *testing.T) {
 		{name: "partial match", network: "kindred", expected: false},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := isClusterNetworkName(tc.network)
-			if result != tc.expected {
-				t.Errorf("isClusterNetworkName(%q) = %v, want %v", tc.network, result, tc.expected)
+			result := isClusterNetworkName(testCase.network)
+			if result != testCase.expected {
+				t.Errorf(
+					"isClusterNetworkName(%q) = %v, want %v",
+					testCase.network,
+					result,
+					testCase.expected,
+				)
 			}
 		})
 	}
@@ -46,7 +50,7 @@ func TestDeriveRegistryVolumeName(t *testing.T) {
 		t.Parallel()
 
 		registry := container.Summary{
-			Mounts: []types.MountPoint{
+			Mounts: []container.MountPoint{
 				{
 					Type: mount.TypeVolume,
 					Name: "registry-volume",
@@ -64,7 +68,7 @@ func TestDeriveRegistryVolumeName(t *testing.T) {
 		t.Parallel()
 
 		registry := container.Summary{
-			Mounts: []types.MountPoint{
+			Mounts: []container.MountPoint{
 				{
 					Type: mount.TypeBind,
 					Name: "",
@@ -74,6 +78,7 @@ func TestDeriveRegistryVolumeName(t *testing.T) {
 
 		// NormalizeVolumeName with kind- prefix removes it
 		result := deriveRegistryVolumeName(registry, "kind-fallback")
+
 		expected := "fallback"
 		if result != expected {
 			t.Errorf("expected %q, got %q", expected, result)
@@ -84,10 +89,11 @@ func TestDeriveRegistryVolumeName(t *testing.T) {
 		t.Parallel()
 
 		registry := container.Summary{
-			Mounts: []types.MountPoint{},
+			Mounts: []container.MountPoint{},
 		}
 
 		result := deriveRegistryVolumeName(registry, "  spaces  ")
+
 		expected := "spaces"
 		if result != expected {
 			t.Errorf("expected %q, got %q", expected, result)
@@ -114,13 +120,18 @@ func TestNormalizeVolumeName(t *testing.T) {
 		{name: "no prefix removal for slashes", input: "test/registry", expected: "test/registry"},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := NormalizeVolumeName(tc.input)
-			if result != tc.expected {
-				t.Errorf("NormalizeVolumeName(%q) = %q, want %q", tc.input, result, tc.expected)
+			result := NormalizeVolumeName(testCase.input)
+			if result != testCase.expected {
+				t.Errorf(
+					"NormalizeVolumeName(%q) = %q, want %q",
+					testCase.input,
+					result,
+					testCase.expected,
+				)
 			}
 		})
 	}
@@ -132,6 +143,7 @@ func TestResolveVolumeName(t *testing.T) {
 
 	// Create a mock client and registry manager
 	mockClient := NewMockAPIClient(t)
+
 	manager, err := NewRegistryManager(mockClient)
 	if err != nil {
 		t.Fatalf("failed to create registry manager: %v", err)
@@ -144,6 +156,7 @@ func TestResolveVolumeName(t *testing.T) {
 			Name:       "test",
 			VolumeName: "custom-volume",
 		}
+
 		result := manager.resolveVolumeName(config)
 		if result != "custom-volume" {
 			t.Errorf("expected 'custom-volume', got %q", result)
@@ -157,6 +170,7 @@ func TestResolveVolumeName(t *testing.T) {
 			Name:       "test-registry",
 			VolumeName: "",
 		}
+
 		result := manager.resolveVolumeName(config)
 		if result != "test-registry" {
 			t.Errorf("expected 'test-registry', got %q", result)
