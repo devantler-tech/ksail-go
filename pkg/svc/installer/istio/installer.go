@@ -28,8 +28,15 @@ func NewIstioInstaller(
 }
 
 // Install installs or upgrades Istio via its Helm charts.
+// Installs istio-cni, istio-base, and istiod in sequence.
 func (i *IstioInstaller) Install(ctx context.Context) error {
-	err := i.helmInstallOrUpgradeIstioBase(ctx)
+	// Install Istio CNI plugin first
+	err := i.helmInstallOrUpgradeIstioCNI(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to install Istio CNI: %w", err)
+	}
+
+	err = i.helmInstallOrUpgradeIstioBase(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to install Istio base: %w", err)
 	}
@@ -44,7 +51,7 @@ func (i *IstioInstaller) Install(ctx context.Context) error {
 
 // Uninstall removes the Helm releases for Istio.
 func (i *IstioInstaller) Uninstall(ctx context.Context) error {
-	// Uninstall istiod first, then base (reverse order of installation)
+	// Uninstall in reverse order of installation: istiod, base, then cni
 	err := i.client.UninstallRelease(ctx, "istiod", "istio-system")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall istiod release: %w", err)
@@ -55,10 +62,19 @@ func (i *IstioInstaller) Uninstall(ctx context.Context) error {
 		return fmt.Errorf("failed to uninstall istio-base release: %w", err)
 	}
 
+	err = i.client.UninstallRelease(ctx, "istio-cni", "istio-system")
+	if err != nil {
+		return fmt.Errorf("failed to uninstall istio-cni release: %w", err)
+	}
+
 	return nil
 }
 
 // --- internals ---
+
+func (i *IstioInstaller) helmInstallOrUpgradeIstioCNI(ctx context.Context) error {
+	return i.installChart(ctx, "istio-cni", "istio/cni")
+}
 
 func (i *IstioInstaller) helmInstallOrUpgradeIstioBase(ctx context.Context) error {
 	return i.installChart(ctx, "istio-base", "istio/base")

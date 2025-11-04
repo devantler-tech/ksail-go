@@ -203,14 +203,15 @@ func (v *Validator) getK3dConfigName() string {
 }
 
 // validateCNIAlignment validates that the distribution configuration aligns with the CNI setting.
-// When Cilium or Istio CNI is requested, the distribution config must have CNI disabled.
+// When Cilium CNI is requested, the distribution config must have CNI disabled.
+// When Istio is requested, the default CNI should remain enabled (Istio is a service mesh, not a CNI replacement).
 // When Default CNI is used, the distribution config must NOT have CNI disabled.
 func (v *Validator) validateCNIAlignment(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Validate Cilium or Istio CNI alignment
-	if config.Spec.CNI == v1alpha1.CNICilium || config.Spec.CNI == v1alpha1.CNIIstio {
+	// Validate Cilium CNI alignment - requires disabling default CNI
+	if config.Spec.CNI == v1alpha1.CNICilium {
 		switch config.Spec.Distribution {
 		case v1alpha1.DistributionKind:
 			v.validateKindCustomCNIAlignment(config.Spec.CNI, result)
@@ -220,6 +221,9 @@ func (v *Validator) validateCNIAlignment(
 
 		return
 	}
+
+	// Istio is a service mesh, not a CNI replacement - it works on top of the default CNI
+	// No special CNI configuration required for Istio
 
 	// Validate Default CNI alignment (empty string or explicit "Default")
 	if config.Spec.CNI == "" || config.Spec.CNI == v1alpha1.CNIDefault {

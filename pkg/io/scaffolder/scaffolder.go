@@ -398,8 +398,9 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Name: "kind",
 	}
 
-	// Disable default CNI if Cilium or Istio is requested
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium || s.KSailConfig.Spec.CNI == v1alpha1.CNIIstio {
+	// Disable default CNI if Cilium is requested
+	// Note: Istio is a service mesh, not a CNI replacement, so it needs the default CNI
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
 		kindConfig.Networking.DisableDefaultCNI = true
 	}
 
@@ -462,8 +463,9 @@ func (s *Scaffolder) createK3dConfig() k3dv1alpha5.SimpleConfig {
 		// Users can override any settings in this generated config file
 	}
 
-	// Disable default CNI (Flannel) if Cilium or Istio is requested
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium || s.KSailConfig.Spec.CNI == v1alpha1.CNIIstio {
+	// Disable default CNI (Flannel) if Cilium is requested
+	// Note: Istio is a service mesh, not a CNI replacement, so it needs Flannel enabled
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
 		config.Options.K3sOptions.ExtraArgs = []k3dv1alpha5.K3sArgWithNodeFilters{
 			{
 				Arg:         "--flannel-backend=none",

@@ -36,10 +36,23 @@ func TestIstioInstallerInstallSuccess(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestIstioInstallerInstallErrorOnCNI(t *testing.T) {
+	t.Parallel()
+
+	installer, client := newIstioInstallerWithDefaults(t)
+	expectIstioCNIInstall(t, client, assert.AnError)
+
+	err := installer.Install(context.Background())
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to install Istio CNI")
+}
+
 func TestIstioInstallerInstallErrorOnBase(t *testing.T) {
 	t.Parallel()
 
 	installer, client := newIstioInstallerWithDefaults(t)
+	expectIstioCNIInstall(t, client, nil)
 	expectIstioBaseInstall(t, client, assert.AnError)
 
 	err := installer.Install(context.Background())
@@ -72,6 +85,7 @@ func TestIstioInstallerInstallErrorOnIstiod(t *testing.T) {
 	t.Parallel()
 
 	installer, client := newIstioInstallerWithDefaults(t)
+	expectIstioCNIInstall(t, client, nil)
 	expectIstioBaseInstall(t, client, nil)
 	expectIstiodInstall(t, client, assert.AnError)
 
@@ -143,11 +157,17 @@ func expectIstioInstall(
 	istiodErr error,
 ) {
 	t.Helper()
+	expectIstioCNIInstall(t, client, nil)
 	expectIstioBaseInstall(t, client, baseErr)
 
 	if baseErr == nil {
 		expectIstiodInstall(t, client, istiodErr)
 	}
+}
+
+func expectIstioCNIInstall(t *testing.T, client *helm.MockInterface, err error) {
+	t.Helper()
+	expectChartInstall(t, client, "istio-cni", "istio/cni", err)
 }
 
 func expectIstioBaseInstall(t *testing.T, client *helm.MockInterface, err error) {
@@ -211,5 +231,11 @@ func expectIstioUninstall(
 		client.EXPECT().
 			UninstallRelease(mock.Anything, "istio-base", "istio-system").
 			Return(baseErr)
+	}
+
+	if baseErr == nil {
+		client.EXPECT().
+			UninstallRelease(mock.Anything, "istio-cni", "istio-system").
+			Return(nil)
 	}
 }
