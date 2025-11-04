@@ -41,6 +41,22 @@ type LifecycleDeps struct {
 	Factory clusterprovisioner.Factory
 }
 
+// NewStandardLifecycleRunE creates a standard RunE handler for simple lifecycle commands.
+// It handles dependency injection and calls HandleLifecycleRunE with the provided config.
+func NewStandardLifecycleRunE(
+	runtimeContainer *runtime.Runtime,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	config LifecycleConfig,
+) func(*cobra.Command, []string) error {
+	return WrapLifecycleHandler(
+		runtimeContainer,
+		cfgManager,
+		func(cmd *cobra.Command, manager *ksailconfigmanager.ConfigManager, deps LifecycleDeps) error {
+			return HandleLifecycleRunE(cmd, manager, deps, config)
+		},
+	)
+}
+
 // WrapLifecycleHandler resolves lifecycle dependencies from the runtime container before calling the provided handler.
 func WrapLifecycleHandler(
 	runtimeContainer *runtime.Runtime,
