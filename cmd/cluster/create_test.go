@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -26,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -928,4 +930,395 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 			assert.ErrorContains(t, err, "failed to execute registry stage")
 		}
 	})
+}
+
+func TestDistributionProvidesMetricsByDefault(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		expected     bool
+	}{
+		{
+			name:         "Kind does not provide metrics-server",
+			distribution: v1alpha1.DistributionKind,
+			expected:     false,
+		},
+		{
+			name:         "K3d provides metrics-server",
+			distribution: v1alpha1.DistributionK3d,
+			expected:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := distributionProvidesMetricsByDefault(tt.distribution)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestHandleMetricsServer_Enabled_KindShouldInstall(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "/tmp/test-kubeconfig",
+			},
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	// This will fail because kubeconfig doesn't exist, but we can test the logic flow
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	// Expect error since we're trying to read non-existent kubeconfig
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to read kubeconfig file")
+}
+
+func TestHandleMetricsServer_Enabled_K3dNoAction(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	// K3d already has metrics-server, so no action should be taken
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
+}
+
+func TestHandleMetricsServer_Disabled_KindNoAction(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	// Kind doesn't have metrics-server by default, so no action should be taken
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
+}
+
+func TestHandleMetricsServer_Disabled_K3dNoAction(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	// K3d with Disabled should be handled via config, not post-creation action
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
+}
+
+func TestGetMetricsServerInstallTimeout(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Uses default timeout when not specified", func(t *testing.T) {
+		t.Parallel()
+
+		clusterCfg := &v1alpha1.Cluster{
+			Spec: v1alpha1.Spec{
+				Connection: v1alpha1.Connection{},
+			},
+		}
+
+		timeout := getMetricsServerInstallTimeout(clusterCfg)
+		assert.Equal(t, 5*time.Minute, timeout)
+	})
+
+	t.Run("Uses custom timeout when specified", func(t *testing.T) {
+		t.Parallel()
+
+		customTimeout := 10 * time.Minute
+		clusterCfg := &v1alpha1.Cluster{
+			Spec: v1alpha1.Spec{
+				Connection: v1alpha1.Connection{
+					Timeout: metav1.Duration{Duration: customTimeout},
+				},
+			},
+		}
+
+		timeout := getMetricsServerInstallTimeout(clusterCfg)
+		assert.Equal(t, customTimeout, timeout)
+	})
+}
+
+func TestNewCreateCmd_IncludesMetricsServerFlag(t *testing.T) {
+	t.Parallel()
+
+	runtimeContainer := &runtime.Runtime{}
+	cmd := NewCreateCmd(runtimeContainer)
+
+	// Check that metrics-server flag exists
+	flag := cmd.Flags().Lookup("metrics-server")
+	require.NotNil(t, flag, "metrics-server flag should be registered")
+	assert.Equal(t, "MetricsServer", flag.Value.Type())
+}
+
+func TestSetupK3dMetricsServer_DisabledAddsFlag(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
+
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
+
+	// Check that --disable=metrics-server flag was added
+	found := false
+
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == k3sDisableMetricsServerFlag {
+			found = true
+
+			assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
+
+			break
+		}
+	}
+
+	assert.True(t, found, "--disable=metrics-server flag should be added")
+}
+
+func TestSetupK3dMetricsServer_EnabledNoFlag(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+		},
+	}
+
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
+
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
+
+	// Check that no flags were added
+	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
+}
+
+func TestSetupK3dMetricsServer_NotK3dNoAction(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
+
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
+
+	// Check that no flags were added for Kind distribution
+	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
+}
+
+func TestSetupK3dMetricsServer_AlreadyConfigured(t *testing.T) {
+	t.Parallel()
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	k3dConfig := &k3dv1alpha5.SimpleConfig{
+		Options: k3dv1alpha5.SimpleConfigOptions{
+			K3sOptions: k3dv1alpha5.SimpleConfigOptionsK3s{
+				ExtraArgs: []k3dv1alpha5.K3sArgWithNodeFilters{
+					{
+						Arg:         k3sDisableMetricsServerFlag,
+						NodeFilters: []string{"server:*"},
+					},
+				},
+			},
+		},
+	}
+
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
+
+	// Check that flag was not duplicated
+	count := 0
+
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == k3sDisableMetricsServerFlag {
+			count++
+		}
+	}
+
+	assert.Equal(t, 1, count, "flag should not be duplicated")
+}
+
+func TestInstallMetricsServer_LoadKubeconfigError(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionKind,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "",
+			},
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	err := installMetricsServer(cmd, clusterCfg, tmr)
+	assert.Error(t, err)
+}
+
+func TestInstallMetricsServer_KubeconfigReadError(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionKind,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "/tmp/nonexistent-kubeconfig-test-file-xyz",
+				Context:    "test-context",
+			},
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	err := installMetricsServer(cmd, clusterCfg, tmr)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to read kubeconfig file")
+}
+
+func TestDistributionProvidesMetricsByDefault_UnknownDistribution(t *testing.T) {
+	t.Parallel()
+
+	result := distributionProvidesMetricsByDefault(v1alpha1.Distribution("unknown"))
+	assert.False(t, result, "Unknown distribution should default to false")
+}
+
+func TestDistributionProvidesMetricsByDefault_EmptyDistribution(t *testing.T) {
+	t.Parallel()
+
+	result := distributionProvidesMetricsByDefault(v1alpha1.Distribution(""))
+	assert.False(t, result, "Empty distribution should default to false")
+}
+
+func TestHandlePostCreationSetup_MetricsServerFirst(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	// Test with Kind and Disabled metrics-server (should not attempt installation)
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+			CNI:           v1alpha1.CNIDefault,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+	tmr.Start()
+
+	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	assert.NoError(t, err, "Should not error when metrics-server is disabled on Kind")
+}
+
+func TestHandlePostCreationSetup_K3dDisabled(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	// Test with K3d and Disabled metrics-server
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+			CNI:           v1alpha1.CNIDefault,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+	tmr.Start()
+
+	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	assert.NoError(t, err, "Should not error when metrics-server is disabled on K3d")
+}
+
+func TestHandlePostCreationSetup_K3dEnabled(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	// Test with K3d and Enabled metrics-server (no action needed)
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+			CNI:           v1alpha1.CNIDefault,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+	tmr.Start()
+
+	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	assert.NoError(
+		t,
+		err,
+		"Should not error when metrics-server is enabled on K3d (already present)",
+	)
 }

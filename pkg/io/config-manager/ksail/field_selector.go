@@ -90,6 +90,15 @@ func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
+// DefaultMetricsServerFieldSelector creates a standard field selector for Metrics Server.
+func DefaultMetricsServerFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.MetricsServer },
+		Description:  "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
+		DefaultValue: v1alpha1.MetricsServerEnabled,
+	}
+}
+
 // DefaultKubeconfigFieldSelector creates a standard field selector for kubeconfig.
 func DefaultKubeconfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
