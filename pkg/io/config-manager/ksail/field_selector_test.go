@@ -98,6 +98,13 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			expectedDefault: v1alpha1.GitOpsEngineNone,
 			assertPointer:   assertGitOpsEngineSelector,
 		},
+		{
+			name:            "metrics-server",
+			factory:         configmanager.DefaultMetricsServerFieldSelector,
+			expectedDesc:    "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
+			expectedDefault: v1alpha1.MetricsServerEnabled,
+			assertPointer:   assertMetricsServerSelector,
+		},
 	}
 }
 
@@ -190,6 +197,11 @@ func assertCNISelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 func assertGitOpsEngineSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.GitOpsEngine)
+}
+
+func assertMetricsServerSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.MetricsServer)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
@@ -363,6 +375,11 @@ func TestAddFlagFromFieldEnumTypes(t *testing.T) {
 			defaultValue: v1alpha1.GatewayControllerTraefik,
 			expectedType: "v1alpha1.GatewayController",
 		},
+		{
+			name:         "MetricsServer enum",
+			defaultValue: v1alpha1.MetricsServerEnabled,
+			expectedType: "v1alpha1.MetricsServer",
+		},
 	}
 
 	runTypeTestCases(t, tests)
@@ -500,6 +517,10 @@ func TestFieldSelectorNetworkingFields(t *testing.T) {
 		{
 			name:     "Spec.GatewayController",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
+		},
+		{
+			name:     "Spec.MetricsServer",
+			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.MetricsServer },
 		},
 	}
 
