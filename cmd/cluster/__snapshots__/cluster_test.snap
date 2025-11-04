@@ -13,6 +13,7 @@ Available Commands:
   delete      Destroy a cluster
   help        Help about any command
   info        Display cluster information
+  init        Initialize a new project
   list        List clusters
   start       Start a stopped cluster
   stop        Stop a running cluster

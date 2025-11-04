@@ -5,5 +5,5 @@
 - `mockery` – regenerate mocks per `.mockery.yml`.
 - `golangci-lint run --timeout 5m` – run lint suite (≈1m+).
 - `mega-linter-runner -f go` – comprehensive lint (≈5m, optional full validation).
-- CLI sanity checks: `./ksail --help`, `./ksail init --help`, `./ksail up --help` etc.
-- System test scenario (Kind): `./ksail init --distribution Kind && ./ksail up && ./ksail status && ./ksail list && ./ksail start && ./ksail reconcile && ./ksail down` (run in temp dir).
+- CLI sanity checks: `./ksail --help`, `./ksail cluster init --help`, `./ksail up --help` etc.
+- System test scenario (Kind): `./ksail cluster init --distribution Kind && ./ksail up && ./ksail status && ./ksail list && ./ksail start && ./ksail reconcile && ./ksail down` (run in temp dir).
