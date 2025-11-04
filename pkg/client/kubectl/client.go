@@ -596,37 +596,36 @@ func (c *Client) executeSubcommandGen(
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
 func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, args []string) error {
-	// Align client IO streams with the wrapper command's writers
-	c.ioStreams.Out = cmd.OutOrStdout()
-	c.ioStreams.ErrOut = cmd.ErrOrStderr()
+	// Create a fresh client with the command's IO streams to ensure output goes to the right place
+	freshClient := NewClient(genericiooptions.IOStreams{
+		In:     cmd.InOrStdin(),
+		Out:    cmd.OutOrStdout(),
+		ErrOut: cmd.ErrOrStderr(),
+	})
 
 	// Create a fresh kubectl create command
-	createCmd := c.CreateCreateCommand("")
+	createCmd := freshClient.CreateCreateCommand("")
 
 	// Find the resource command
-	freshResourceCmd := c.findResourceCommand(createCmd, resourceType)
+	freshResourceCmd := freshClient.findResourceCommand(createCmd, resourceType)
 	if freshResourceCmd == nil {
 		return fmt.Errorf("%w: %s", ErrResourceCommandNotFound, resourceType)
 	}
 
 	// Force --dry-run=client and -o yaml FIRST
-	err := c.setForcedFlags(freshResourceCmd)
+	err := freshClient.setForcedFlags(freshResourceCmd)
 	if err != nil {
 		return err
 	}
 
-	// Ensure command output is captured by the wrapper command
-	freshResourceCmd.SetOut(cmd.OutOrStdout())
-	freshResourceCmd.SetErr(cmd.ErrOrStderr())
-
 	// Copy user flags
-	err = c.copyUserFlags(cmd, freshResourceCmd)
+	err = freshClient.copyUserFlags(cmd, freshResourceCmd)
 	if err != nil {
 		return err
 	}
 
 	// Execute
-	return c.executeCommand(freshResourceCmd, args)
+	return freshClient.executeCommand(freshResourceCmd, args)
 }
 
 // findResourceCommand finds a kubectl create subcommand by resource type name.
