@@ -204,6 +204,10 @@ func loadDistributionConfigs(
 
 // setupK3dMetricsServer configures metrics-server for K3d clusters by adding K3s flags.
 // K3s includes metrics-server by default, so we add --disable=metrics-server flag when disabled.
+// This function is called during cluster creation to handle cases where:
+// 1. The user overrides --metrics-server flag at create time (different from init-time config).
+// 2. The k3d.yaml was manually edited and the flag needs to be added.
+// 3. Ensures consistency even if the scaffolder-generated config was modified.
 func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.SimpleConfig) {
 	// Only apply to K3d distribution
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
@@ -977,8 +981,6 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 
 	return runMetricsServerInstallation(cmd, installer, tmr)
 }
-
-// uninstallMetricsServer uninstalls metrics-server from the cluster.
 
 // getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
 func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {

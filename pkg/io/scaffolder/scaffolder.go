@@ -173,7 +173,7 @@ func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 	}
 
 	// Initialize ExtraArgs slice
-	extraArgs := []k3dv1alpha5.K3sArgWithNodeFilters{}
+	var extraArgs []k3dv1alpha5.K3sArgWithNodeFilters
 
 	// Disable default CNI (Flannel) if Cilium is requested
 	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
