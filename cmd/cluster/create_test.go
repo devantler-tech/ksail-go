@@ -933,264 +933,262 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 }
 
 func TestDistributionProvidesMetricsByDefault(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-tests := []struct {
-name         string
-distribution v1alpha1.Distribution
-expected     bool
-}{
-{
-name:         "Kind does not provide metrics-server",
-distribution: v1alpha1.DistributionKind,
-expected:     false,
-},
-{
-name:         "K3d provides metrics-server",
-distribution: v1alpha1.DistributionK3d,
-expected:     true,
-},
-}
+	tests := []struct {
+		name         string
+		distribution v1alpha1.Distribution
+		expected     bool
+	}{
+		{
+			name:         "Kind does not provide metrics-server",
+			distribution: v1alpha1.DistributionKind,
+			expected:     false,
+		},
+		{
+			name:         "K3d provides metrics-server",
+			distribution: v1alpha1.DistributionK3d,
+			expected:     true,
+		},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-result := distributionProvidesMetricsByDefault(tt.distribution)
-assert.Equal(t, tt.expected, result)
-})
-}
+			result := distributionProvidesMetricsByDefault(tt.distribution)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestHandleMetricsServer_Enabled_KindShouldInstall(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cmd := &cobra.Command{}
-cmd.SetOut(io.Discard)
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionKind,
-MetricsServer: v1alpha1.MetricsServerEnabled,
-Connection: v1alpha1.Connection{
-Kubeconfig: "/tmp/test-kubeconfig",
-},
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: "/tmp/test-kubeconfig",
+			},
+		},
+	}
 
-tmr := &testutils.RecordingTimer{}
+	tmr := &testutils.RecordingTimer{}
 
-
-// This will fail because kubeconfig doesn't exist, but we can test the logic flow
-err := handleMetricsServer(cmd, clusterCfg, tmr)
-// Expect error since we're trying to read non-existent kubeconfig
-require.Error(t, err)
-assert.ErrorContains(t, err, "failed to read kubeconfig file")
+	// This will fail because kubeconfig doesn't exist, but we can test the logic flow
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	// Expect error since we're trying to read non-existent kubeconfig
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to read kubeconfig file")
 }
 
 func TestHandleMetricsServer_Enabled_K3dNoAction(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cmd := &cobra.Command{}
-cmd.SetOut(io.Discard)
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerEnabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+		},
+	}
 
-tmr := &testutils.RecordingTimer{}
+	tmr := &testutils.RecordingTimer{}
 
-// K3d already has metrics-server, so no action should be taken
-err := handleMetricsServer(cmd, clusterCfg, tmr)
-assert.NoError(t, err)
+	// K3d already has metrics-server, so no action should be taken
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
 }
 
 func TestHandleMetricsServer_Disabled_KindNoAction(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cmd := &cobra.Command{}
-cmd.SetOut(io.Discard)
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionKind,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-tmr := &testutils.RecordingTimer{}
+	tmr := &testutils.RecordingTimer{}
 
-// Kind doesn't have metrics-server by default, so no action should be taken
-err := handleMetricsServer(cmd, clusterCfg, tmr)
-assert.NoError(t, err)
+	// Kind doesn't have metrics-server by default, so no action should be taken
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
 }
 
 func TestHandleMetricsServer_Disabled_K3dNoAction(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cmd := &cobra.Command{}
-cmd.SetOut(io.Discard)
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+
+	// K3d with Disabled should be handled via config, not post-creation action
+	err := handleMetricsServer(cmd, clusterCfg, tmr)
+	assert.NoError(t, err)
 }
-
-tmr := &testutils.RecordingTimer{}
-
-// K3d with Disabled should be handled via config, not post-creation action
-err := handleMetricsServer(cmd, clusterCfg, tmr)
-assert.NoError(t, err)
-}
-
 
 func TestGetMetricsServerInstallTimeout(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-t.Run("Uses default timeout when not specified", func(t *testing.T) {
-t.Parallel()
+	t.Run("Uses default timeout when not specified", func(t *testing.T) {
+		t.Parallel()
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Connection: v1alpha1.Connection{},
-},
-}
+		clusterCfg := &v1alpha1.Cluster{
+			Spec: v1alpha1.Spec{
+				Connection: v1alpha1.Connection{},
+			},
+		}
 
-timeout := getMetricsServerInstallTimeout(clusterCfg)
-assert.Equal(t, 5*time.Minute, timeout)
-})
+		timeout := getMetricsServerInstallTimeout(clusterCfg)
+		assert.Equal(t, 5*time.Minute, timeout)
+	})
 
-t.Run("Uses custom timeout when specified", func(t *testing.T) {
-t.Parallel()
+	t.Run("Uses custom timeout when specified", func(t *testing.T) {
+		t.Parallel()
 
-customTimeout := 10 * time.Minute
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Connection: v1alpha1.Connection{
-Timeout: metav1.Duration{Duration: customTimeout},
-},
-},
-}
+		customTimeout := 10 * time.Minute
+		clusterCfg := &v1alpha1.Cluster{
+			Spec: v1alpha1.Spec{
+				Connection: v1alpha1.Connection{
+					Timeout: metav1.Duration{Duration: customTimeout},
+				},
+			},
+		}
 
-timeout := getMetricsServerInstallTimeout(clusterCfg)
-assert.Equal(t, customTimeout, timeout)
-})
+		timeout := getMetricsServerInstallTimeout(clusterCfg)
+		assert.Equal(t, customTimeout, timeout)
+	})
 }
 
 func TestNewCreateCmd_IncludesMetricsServerFlag(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-runtimeContainer := &runtime.Runtime{}
-cmd := NewCreateCmd(runtimeContainer)
+	runtimeContainer := &runtime.Runtime{}
+	cmd := NewCreateCmd(runtimeContainer)
 
-// Check that metrics-server flag exists
-flag := cmd.Flags().Lookup("metrics-server")
-require.NotNil(t, flag, "metrics-server flag should be registered")
-assert.Equal(t, "MetricsServer", flag.Value.Type())
+	// Check that metrics-server flag exists
+	flag := cmd.Flags().Lookup("metrics-server")
+	require.NotNil(t, flag, "metrics-server flag should be registered")
+	assert.Equal(t, "MetricsServer", flag.Value.Type())
 }
 
 func TestSetupK3dMetricsServer_DisabledAddsFlag(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-k3dConfig := &k3dv1alpha5.SimpleConfig{}
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-require.NoError(t, err)
+	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
+	require.NoError(t, err)
 
-// Check that --disable=metrics-server flag was added
-found := false
-for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
-if arg.Arg == "--disable=metrics-server" {
-found = true
-assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
-break
-}
-}
-assert.True(t, found, "--disable=metrics-server flag should be added")
+	// Check that --disable=metrics-server flag was added
+	found := false
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--disable=metrics-server" {
+			found = true
+			assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
+			break
+		}
+	}
+	assert.True(t, found, "--disable=metrics-server flag should be added")
 }
 
 func TestSetupK3dMetricsServer_EnabledNoFlag(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerEnabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+		},
+	}
 
-k3dConfig := &k3dv1alpha5.SimpleConfig{}
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-require.NoError(t, err)
+	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
+	require.NoError(t, err)
 
-// Check that no flags were added
-assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
+	// Check that no flags were added
+	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
 }
 
 func TestSetupK3dMetricsServer_NotK3dNoAction(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionKind,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionKind,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-k3dConfig := &k3dv1alpha5.SimpleConfig{}
+	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-require.NoError(t, err)
+	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
+	require.NoError(t, err)
 
-// Check that no flags were added for Kind distribution
-assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
+	// Check that no flags were added for Kind distribution
+	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
 }
 
 func TestSetupK3dMetricsServer_AlreadyConfigured(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-clusterCfg := &v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-k3dConfig := &k3dv1alpha5.SimpleConfig{
-Options: k3dv1alpha5.SimpleConfigOptions{
-K3sOptions: k3dv1alpha5.SimpleConfigOptionsK3s{
-ExtraArgs: []k3dv1alpha5.K3sArgWithNodeFilters{
-{
-Arg:         "--disable=metrics-server",
-NodeFilters: []string{"server:*"},
-},
-},
-},
-},
-}
+	k3dConfig := &k3dv1alpha5.SimpleConfig{
+		Options: k3dv1alpha5.SimpleConfigOptions{
+			K3sOptions: k3dv1alpha5.SimpleConfigOptionsK3s{
+				ExtraArgs: []k3dv1alpha5.K3sArgWithNodeFilters{
+					{
+						Arg:         "--disable=metrics-server",
+						NodeFilters: []string{"server:*"},
+					},
+				},
+			},
+		},
+	}
 
-err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-require.NoError(t, err)
+	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
+	require.NoError(t, err)
 
-// Check that flag was not duplicated
-count := 0
-for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
-if arg.Arg == "--disable=metrics-server" {
-count++
-}
-}
-assert.Equal(t, 1, count, "flag should not be duplicated")
+	// Check that flag was not duplicated
+	count := 0
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--disable=metrics-server" {
+			count++
+		}
+	}
+	assert.Equal(t, 1, count, "flag should not be duplicated")
 }

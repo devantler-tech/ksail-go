@@ -983,81 +983,86 @@ func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
 
 // Tests for createK3dConfig with MetricsServer configuration
 func TestCreateK3dConfig_MetricsServerDisabled(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cluster := v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	cluster := v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
-config := scaffolderInstance.CreateK3dConfig()
+	scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
+	config := scaffolderInstance.CreateK3dConfig()
 
-// Check that --disable=metrics-server flag is present
-found := false
+	// Check that --disable=metrics-server flag is present
+	found := false
 
-for _, arg := range config.Options.K3sOptions.ExtraArgs {
-if arg.Arg == "--disable=metrics-server" {
-found = true
+	for _, arg := range config.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--disable=metrics-server" {
+			found = true
 
-assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
+			assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
 
-break
-}
-}
+			break
+		}
+	}
 
-assert.True(t, found, "--disable=metrics-server flag should be present")
+	assert.True(t, found, "--disable=metrics-server flag should be present")
 }
 
 func TestCreateK3dConfig_MetricsServerEnabled(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cluster := v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-MetricsServer: v1alpha1.MetricsServerEnabled,
-},
-}
+	cluster := v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			MetricsServer: v1alpha1.MetricsServerEnabled,
+		},
+	}
 
-scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
-config := scaffolderInstance.CreateK3dConfig()
+	scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
+	config := scaffolderInstance.CreateK3dConfig()
 
-// Check that --disable=metrics-server flag is NOT present
-for _, arg := range config.Options.K3sOptions.ExtraArgs {
-assert.NotEqual(t, "--disable=metrics-server", arg.Arg, "flag should not be present when enabled")
-}
+	// Check that --disable=metrics-server flag is NOT present
+	for _, arg := range config.Options.K3sOptions.ExtraArgs {
+		assert.NotEqual(
+			t,
+			"--disable=metrics-server",
+			arg.Arg,
+			"flag should not be present when enabled",
+		)
+	}
 }
 
 func TestCreateK3dConfig_MetricsServerDisabledWithCilium(t *testing.T) {
-t.Parallel()
+	t.Parallel()
 
-cluster := v1alpha1.Cluster{
-Spec: v1alpha1.Spec{
-Distribution:  v1alpha1.DistributionK3d,
-CNI:           v1alpha1.CNICilium,
-MetricsServer: v1alpha1.MetricsServerDisabled,
-},
-}
+	cluster := v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:  v1alpha1.DistributionK3d,
+			CNI:           v1alpha1.CNICilium,
+			MetricsServer: v1alpha1.MetricsServerDisabled,
+		},
+	}
 
-scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
-config := scaffolderInstance.CreateK3dConfig()
+	scaffolderInstance := scaffolder.NewScaffolder(cluster, &bytes.Buffer{})
+	config := scaffolderInstance.CreateK3dConfig()
 
-// Check that both CNI and metrics-server flags are present
-hasCNIFlag := false
-hasMetricsFlag := false
+	// Check that both CNI and metrics-server flags are present
+	hasCNIFlag := false
+	hasMetricsFlag := false
 
-for _, arg := range config.Options.K3sOptions.ExtraArgs {
-if arg.Arg == "--flannel-backend=none" {
-hasCNIFlag = true
-}
+	for _, arg := range config.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == "--flannel-backend=none" {
+			hasCNIFlag = true
+		}
 
-if arg.Arg == "--disable=metrics-server" {
-hasMetricsFlag = true
-}
-}
+		if arg.Arg == "--disable=metrics-server" {
+			hasMetricsFlag = true
+		}
+	}
 
-assert.True(t, hasCNIFlag, "CNI flag should be present")
-assert.True(t, hasMetricsFlag, "metrics-server flag should be present")
+	assert.True(t, hasCNIFlag, "CNI flag should be present")
+	assert.True(t, hasMetricsFlag, "metrics-server flag should be present")
 }

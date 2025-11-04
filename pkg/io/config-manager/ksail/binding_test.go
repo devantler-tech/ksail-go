@@ -157,6 +157,7 @@ func getConnectionFieldTests() []struct {
 }
 
 // getNetworkingFieldTests returns test cases for networking field testing.
+//
 //nolint:funlen // Test data structure is inherently long
 func getNetworkingFieldTests() []struct {
 	name          string
