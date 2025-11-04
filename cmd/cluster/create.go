@@ -32,6 +32,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
+	k3sDisableMetricsServerFlag = "--disable=metrics-server"
+)
+
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() shared.LifecycleConfig {
 	return shared.LifecycleConfig{
@@ -106,10 +111,7 @@ func handleCreateRunE(
 	}
 
 	// Configure metrics-server for K3d before cluster creation
-	err = setupK3dMetricsServer(clusterCfg, k3dConfig)
-	if err != nil {
-		return fmt.Errorf("failed to setup K3d metrics-server configuration: %w", err)
-	}
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
 	deps.Timer.NewStage()
 
@@ -202,22 +204,22 @@ func loadDistributionConfigs(
 
 // setupK3dMetricsServer configures metrics-server for K3d clusters by adding K3s flags.
 // K3s includes metrics-server by default, so we add --disable=metrics-server flag when disabled.
-func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.SimpleConfig) error {
+func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.SimpleConfig) {
 	// Only apply to K3d distribution
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
-		return nil
+		return
 	}
 
 	// Only add disable flag if explicitly disabled
 	if clusterCfg.Spec.MetricsServer != v1alpha1.MetricsServerDisabled {
-		return nil
+		return
 	}
 
 	// Check if --disable=metrics-server is already present
 	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
-		if arg.Arg == "--disable=metrics-server" {
+		if arg.Arg == k3sDisableMetricsServerFlag {
 			// Already configured, no action needed
-			return nil
+			return
 		}
 	}
 
@@ -225,12 +227,10 @@ func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.Sim
 	k3dConfig.Options.K3sOptions.ExtraArgs = append(
 		k3dConfig.Options.K3sOptions.ExtraArgs,
 		v1alpha5.K3sArgWithNodeFilters{
-			Arg:         "--disable=metrics-server",
+			Arg:         k3sDisableMetricsServerFlag,
 			NodeFilters: []string{"server:*"},
 		},
 	)
-
-	return nil
 }
 
 const (

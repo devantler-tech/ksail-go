@@ -981,7 +981,7 @@ func TestGenerateContainerdPatches_InvalidSpecs(t *testing.T) {
 	assert.Empty(t, patches)
 }
 
-// Tests for createK3dConfig with MetricsServer configuration
+// Tests for createK3dConfig with MetricsServer configuration.
 func TestCreateK3dConfig_MetricsServerDisabled(t *testing.T) {
 	t.Parallel()
 

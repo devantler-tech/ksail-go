@@ -1104,19 +1104,18 @@ func TestSetupK3dMetricsServer_DisabledAddsFlag(t *testing.T) {
 
 	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-	require.NoError(t, err)
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
 	// Check that --disable=metrics-server flag was added
 	found := false
 
 	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
-		if arg.Arg == "--disable=metrics-server" {
+		if arg.Arg == k3sDisableMetricsServerFlag {
 			found = true
+
 			assert.Equal(t, []string{"server:*"}, arg.NodeFilters)
 
 			break
-
 		}
 	}
 
@@ -1135,8 +1134,7 @@ func TestSetupK3dMetricsServer_EnabledNoFlag(t *testing.T) {
 
 	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-	require.NoError(t, err)
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
 	// Check that no flags were added
 	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
@@ -1154,8 +1152,7 @@ func TestSetupK3dMetricsServer_NotK3dNoAction(t *testing.T) {
 
 	k3dConfig := &k3dv1alpha5.SimpleConfig{}
 
-	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-	require.NoError(t, err)
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
 	// Check that no flags were added for Kind distribution
 	assert.Empty(t, k3dConfig.Options.K3sOptions.ExtraArgs)
@@ -1176,7 +1173,7 @@ func TestSetupK3dMetricsServer_AlreadyConfigured(t *testing.T) {
 			K3sOptions: k3dv1alpha5.SimpleConfigOptionsK3s{
 				ExtraArgs: []k3dv1alpha5.K3sArgWithNodeFilters{
 					{
-						Arg:         "--disable=metrics-server",
+						Arg:         k3sDisableMetricsServerFlag,
 						NodeFilters: []string{"server:*"},
 					},
 				},
@@ -1184,14 +1181,13 @@ func TestSetupK3dMetricsServer_AlreadyConfigured(t *testing.T) {
 		},
 	}
 
-	err := setupK3dMetricsServer(clusterCfg, k3dConfig)
-	require.NoError(t, err)
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
 	// Check that flag was not duplicated
 	count := 0
 
 	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
-		if arg.Arg == "--disable=metrics-server" {
+		if arg.Arg == k3sDisableMetricsServerFlag {
 			count++
 		}
 	}
@@ -1239,7 +1235,7 @@ func TestInstallMetricsServer_KubeconfigReadError(t *testing.T) {
 	tmr := &testutils.RecordingTimer{}
 
 	err := installMetricsServer(cmd, clusterCfg, tmr)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to read kubeconfig file")
 }
 

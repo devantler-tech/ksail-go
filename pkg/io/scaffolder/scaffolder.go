@@ -161,6 +161,57 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 	return registryConfig
 }
 
+// CreateK3dConfig creates a K3d configuration with distribution-specific settings.
+func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
+	config := k3dv1alpha5.SimpleConfig{
+		TypeMeta: types.TypeMeta{
+			APIVersion: "k3d.io/v1alpha5",
+			Kind:       "Simple",
+		},
+		// Additional configuration will be handled by the provisioner with sensible defaults
+		// Users can override any settings in this generated config file
+	}
+
+	// Initialize ExtraArgs slice
+	extraArgs := []k3dv1alpha5.K3sArgWithNodeFilters{}
+
+	// Disable default CNI (Flannel) if Cilium is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+		extraArgs = append(extraArgs,
+			k3dv1alpha5.K3sArgWithNodeFilters{
+				Arg:         "--flannel-backend=none",
+				NodeFilters: []string{"server:*"},
+			},
+			k3dv1alpha5.K3sArgWithNodeFilters{
+				Arg:         "--disable-network-policy",
+				NodeFilters: []string{"server:*"},
+			},
+		)
+	}
+
+	// Disable metrics-server if explicitly disabled (K3s includes it by default)
+	if s.KSailConfig.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
+		extraArgs = append(extraArgs,
+			k3dv1alpha5.K3sArgWithNodeFilters{
+				Arg:         "--disable=metrics-server",
+				NodeFilters: []string{"server:*"},
+			},
+		)
+	}
+
+	// Set ExtraArgs if we have any
+	if len(extraArgs) > 0 {
+		config.Options.K3sOptions.ExtraArgs = extraArgs
+	}
+
+	// Add registry configuration for mirror registries
+	if len(s.MirrorRegistries) > 0 {
+		config.Registries = s.GenerateK3dRegistryConfig()
+	}
+
+	return config
+}
+
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
 // This ensures the generated ksail.yaml has consistent context and distributionConfig values
 // that match the distribution-specific configuration files being generated.
@@ -450,57 +501,6 @@ func (s *Scaffolder) generateK3dConfig(output string, force bool) error {
 			},
 		},
 	)
-}
-
-// CreateK3dConfig creates a K3d configuration based on the cluster specification.
-func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
-	config := k3dv1alpha5.SimpleConfig{
-		TypeMeta: types.TypeMeta{
-			APIVersion: "k3d.io/v1alpha5",
-			Kind:       "Simple",
-		},
-		// Additional configuration will be handled by the provisioner with sensible defaults
-		// Users can override any settings in this generated config file
-	}
-
-	// Initialize ExtraArgs slice
-	extraArgs := []k3dv1alpha5.K3sArgWithNodeFilters{}
-
-	// Disable default CNI (Flannel) if Cilium is requested
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
-		extraArgs = append(extraArgs,
-			k3dv1alpha5.K3sArgWithNodeFilters{
-				Arg:         "--flannel-backend=none",
-				NodeFilters: []string{"server:*"},
-			},
-			k3dv1alpha5.K3sArgWithNodeFilters{
-				Arg:         "--disable-network-policy",
-				NodeFilters: []string{"server:*"},
-			},
-		)
-	}
-
-	// Disable metrics-server if explicitly disabled (K3s includes it by default)
-	if s.KSailConfig.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
-		extraArgs = append(extraArgs,
-			k3dv1alpha5.K3sArgWithNodeFilters{
-				Arg:         "--disable=metrics-server",
-				NodeFilters: []string{"server:*"},
-			},
-		)
-	}
-
-	// Set ExtraArgs if we have any
-	if len(extraArgs) > 0 {
-		config.Options.K3sOptions.ExtraArgs = extraArgs
-	}
-
-	// Add registry configuration for mirror registries
-	if len(s.MirrorRegistries) > 0 {
-		config.Registries = s.GenerateK3dRegistryConfig()
-	}
-
-	return config
 }
 
 // generateKustomizationConfig generates the kustomization.yaml file.
