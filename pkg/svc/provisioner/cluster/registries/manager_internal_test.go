@@ -183,21 +183,22 @@ func TestExtractRegistryPort(t *testing.T) {
 
 		endpoints := []string{"http://localhost:5000"}
 		usedPorts := make(map[int]struct{})
-		nextPort := 5000
+		nextPort := DefaultRegistryPort
 
 		result := ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-		if result != 5000 {
-			t.Errorf("expected 5000, got %d", result)
+		if result != DefaultRegistryPort {
+			t.Errorf("expected %d, got %d", DefaultRegistryPort, result)
 		}
 
 		// Check that port was marked as used
-		if _, exists := usedPorts[5000]; !exists {
-			t.Error("expected port 5000 to be marked as used")
+		if _, exists := usedPorts[DefaultRegistryPort]; !exists {
+			t.Errorf("expected port %d to be marked as used", DefaultRegistryPort)
 		}
 
 		// Check nextPort was updated
-		if nextPort != 5001 {
-			t.Errorf("expected nextPort to be 5001, got %d", nextPort)
+		expectedNext := DefaultRegistryPort + 1
+		if nextPort != expectedNext {
+			t.Errorf("expected nextPort to be %d, got %d", expectedNext, nextPort)
 		}
 	})
 
@@ -206,11 +207,11 @@ func TestExtractRegistryPort(t *testing.T) {
 
 		endpoints := []string{}
 		usedPorts := make(map[int]struct{})
-		nextPort := 5000
+		nextPort := DefaultRegistryPort
 
 		result := ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-		if result != 5000 {
-			t.Errorf("expected 5000, got %d", result)
+		if result != DefaultRegistryPort {
+			t.Errorf("expected %d, got %d", DefaultRegistryPort, result)
 		}
 	})
 
@@ -218,12 +219,16 @@ func TestExtractRegistryPort(t *testing.T) {
 		t.Parallel()
 
 		endpoints := []string{}
-		usedPorts := map[int]struct{}{5000: {}, 5001: {}}
-		nextPort := 5000
+		usedPorts := map[int]struct{}{
+			DefaultRegistryPort:     {},
+			DefaultRegistryPort + 1: {},
+		}
+		nextPort := DefaultRegistryPort
 
 		result := ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-		if result != 5002 {
-			t.Errorf("expected 5002, got %d", result)
+		expectedPort := DefaultRegistryPort + 2
+		if result != expectedPort {
+			t.Errorf("expected %d, got %d", expectedPort, result)
 		}
 	})
 
@@ -234,8 +239,8 @@ func TestExtractRegistryPort(t *testing.T) {
 		usedPorts := make(map[int]struct{})
 
 		result := ExtractRegistryPort(endpoints, usedPorts, nil)
-		if result != 5000 { // DefaultRegistryPort
-			t.Errorf("expected default port 5000, got %d", result)
+		if result != DefaultRegistryPort {
+			t.Errorf("expected default port %d, got %d", DefaultRegistryPort, result)
 		}
 	})
 }
