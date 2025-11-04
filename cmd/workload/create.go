@@ -32,7 +32,7 @@ func NewCreateCmd(_ *runtime.Runtime) *cobra.Command {
 	// Create flux client and add flux create sub-commands
 	fluxClient := flux.NewClient(ioStreams)
 	fluxCreateCmd := fluxClient.CreateCreateCommand(kubeconfigPath)
-	
+
 	// Add all flux create sub-commands to the main create command
 	for _, subCmd := range fluxCreateCmd.Commands() {
 		createCmd.AddCommand(subCmd)

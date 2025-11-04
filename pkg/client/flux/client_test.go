@@ -45,12 +45,17 @@ func TestCreateCreateCommand(t *testing.T) {
 	require.NotEmpty(t, subCommands)
 
 	// Check for expected sub-commands
-	expectedSubCommands := []string{"source", "secret", "kustomization", "helmrelease", "image", "alert", "alert-provider", "receiver", "tenant"}
+	expectedSubCommands := []string{
+		"source", "secret", "kustomization", "helmrelease",
+		"image", "alert", "alert-provider", "receiver", "tenant",
+	}
+
 	for _, expectedCmd := range expectedSubCommands {
 		found := false
 		for _, subCmd := range subCommands {
 			if subCmd.Use == expectedCmd {
 				found = true
+
 				break
 			}
 		}
@@ -72,9 +77,11 @@ func TestCreateSourceCommand(t *testing.T) {
 
 	// Find source command
 	var sourceCmd *cobra.Command
+
 	for _, subCmd := range cmd.Commands() {
 		if subCmd.Use == "source" {
 			sourceCmd = subCmd
+
 			break
 		}
 	}
@@ -87,11 +94,13 @@ func TestCreateSourceCommand(t *testing.T) {
 	require.NotEmpty(t, sourceSubCommands)
 
 	expectedSourceSubCommands := []string{"git", "helm", "bucket", "chart", "oci"}
+
 	for _, expectedCmd := range expectedSourceSubCommands {
 		found := false
 		for _, subCmd := range sourceSubCommands {
 			if subCmd.Use == expectedCmd {
 				found = true
+
 				break
 			}
 		}
@@ -113,9 +122,11 @@ func TestCreateSecretCommand(t *testing.T) {
 
 	// Find secret command
 	var secretCmd *cobra.Command
+
 	for _, subCmd := range cmd.Commands() {
 		if subCmd.Use == "secret" {
 			secretCmd = subCmd
+
 			break
 		}
 	}
@@ -127,12 +138,16 @@ func TestCreateSecretCommand(t *testing.T) {
 	secretSubCommands := secretCmd.Commands()
 	require.NotEmpty(t, secretSubCommands)
 
-	expectedSecretSubCommands := []string{"git", "helm", "oci", "tls", "github-app", "notation", "proxy"}
+	expectedSecretSubCommands := []string{
+		"git", "helm", "oci", "tls", "github-app", "notation", "proxy",
+	}
+
 	for _, expectedCmd := range expectedSecretSubCommands {
 		found := false
 		for _, subCmd := range secretSubCommands {
 			if subCmd.Use == expectedCmd {
 				found = true
+
 				break
 			}
 		}
@@ -154,9 +169,11 @@ func TestCreateImageCommand(t *testing.T) {
 
 	// Find image command
 	var imageCmd *cobra.Command
+
 	for _, subCmd := range cmd.Commands() {
 		if subCmd.Use == "image" {
 			imageCmd = subCmd
+
 			break
 		}
 	}
@@ -169,11 +186,13 @@ func TestCreateImageCommand(t *testing.T) {
 	require.NotEmpty(t, imageSubCommands)
 
 	expectedImageSubCommands := []string{"repository", "policy", "update"}
+
 	for _, expectedCmd := range expectedImageSubCommands {
 		found := false
 		for _, subCmd := range imageSubCommands {
 			if subCmd.Use == expectedCmd {
 				found = true
+
 				break
 			}
 		}
