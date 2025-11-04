@@ -32,7 +32,7 @@ func TestNewClient(t *testing.T) {
 func TestCreateConfigMapCmd(t *testing.T) {
 	t.Parallel()
 
-	client := kubectl.DefaultClient()
+	client := kubectl.NewClient(createTestIOStreams())
 	cmd, err := client.CreateConfigMapCmd()
 
 	require.NoError(t, err)

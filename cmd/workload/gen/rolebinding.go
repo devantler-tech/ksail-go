@@ -8,7 +8,7 @@ import (
 
 // NewRoleBindingCmd creates the gen rolebinding command.
 func NewRoleBindingCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.DefaultClient()
+	client := kubectl.NewClientWithStdio()
 	cmd, err := client.CreateRoleBindingCmd()
 	cobra.CheckErr(err)
 

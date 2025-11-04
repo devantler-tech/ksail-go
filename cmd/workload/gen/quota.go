@@ -8,7 +8,7 @@ import (
 
 // NewQuotaCmd creates the gen quota command.
 func NewQuotaCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.DefaultClient()
+	client := kubectl.NewClientWithStdio()
 	cmd, err := client.CreateQuotaCmd()
 	cobra.CheckErr(err)
 

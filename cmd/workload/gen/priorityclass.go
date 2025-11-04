@@ -8,7 +8,7 @@ import (
 
 // NewPriorityClassCmd creates the gen priorityclass command.
 func NewPriorityClassCmd(_ *runtime.Runtime) *cobra.Command {
-	client := kubectl.DefaultClient()
+	client := kubectl.NewClientWithStdio()
 	cmd, err := client.CreatePriorityClassCmd()
 	cobra.CheckErr(err)
 

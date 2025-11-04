@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -33,9 +32,6 @@ var (
 	ErrResourceCommandNotFound = errors.New("kubectl create command not found for resource type")
 	// ErrNoRunFunction is returned when a kubectl command has neither RunE nor Run function.
 	ErrNoRunFunction = errors.New("no run function found for kubectl create command")
-
-	defaultClientOnce sync.Once
-	defaultClient     *Client
 )
 
 // Client wraps kubectl command functionality.
@@ -45,22 +41,19 @@ type Client struct {
 
 // NewClient creates a new kubectl client instance.
 func NewClient(streams genericiooptions.IOStreams) *Client {
-	return &Client{
-		ioStreams: streams,
-	}
+	client := &Client{}
+	client.ioStreams = streams
+
+	return client
 }
 
-// DefaultClient returns a kubectl client wired to the default stdio streams. The instance is reused.
-func DefaultClient() *Client {
-	defaultClientOnce.Do(func() {
-		defaultClient = NewClient(genericiooptions.IOStreams{
-			In:     os.Stdin,
-			Out:    os.Stdout,
-			ErrOut: os.Stderr,
-		})
+// NewClientWithStdio returns a kubectl client wired to the default stdio streams.
+func NewClientWithStdio() *Client {
+	return NewClient(genericiooptions.IOStreams{
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
 	})
-
-	return defaultClient
 }
 
 // replaceKubectlInExamples replaces "kubectl" with "ksail workload" in command examples.
