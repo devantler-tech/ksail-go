@@ -18,6 +18,7 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
@@ -29,6 +30,11 @@ import (
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
+	k3sDisableMetricsServerFlag = "--disable=metrics-server"
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
@@ -54,9 +60,13 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
+	// Create field selectors including metrics-server
+	fieldSelectors := ksailconfigmanager.DefaultClusterFieldSelectors()
+	fieldSelectors = append(fieldSelectors, ksailconfigmanager.DefaultMetricsServerFieldSelector())
+
 	cfgManager := ksailconfigmanager.NewCommandConfigManager(
 		cmd,
-		ksailconfigmanager.DefaultClusterFieldSelectors(),
+		fieldSelectors,
 	)
 
 	cmd.Flags().
@@ -100,6 +110,9 @@ func handleCreateRunE(
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
 	}
 
+	// Configure metrics-server for K3d before cluster creation
+	setupK3dMetricsServer(clusterCfg, k3dConfig)
+
 	deps.Timer.NewStage()
 
 	err = shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
@@ -123,14 +136,38 @@ func handleCreateRunE(
 		})
 	}
 
+	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+}
+
+// handlePostCreationSetup installs CNI and metrics-server after cluster creation.
+// Order depends on CNI configuration to resolve dependencies.
+func handlePostCreationSetup(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
+	// For custom CNI (Cilium), install CNI first as metrics-server needs networking
+	// For default CNI, install metrics-server first as it's independent
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		deps.Timer.NewStage()
+		tmr.NewStage()
 
-		err = installCiliumCNI(cmd, clusterCfg, deps.Timer)
+		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+
+		// Install metrics-server after CNI is ready
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
+		}
+	} else {
+		// For default CNI, install metrics-server first
+		err := handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
 		}
 	}
 
@@ -163,6 +200,41 @@ func loadDistributionConfigs(
 	default:
 		return nil, nil, nil
 	}
+}
+
+// setupK3dMetricsServer configures metrics-server for K3d clusters by adding K3s flags.
+// K3s includes metrics-server by default, so we add --disable=metrics-server flag when disabled.
+// This function is called during cluster creation to handle cases where:
+// 1. The user overrides --metrics-server flag at create time (different from init-time config).
+// 2. The k3d.yaml was manually edited and the flag needs to be added.
+// 3. Ensures consistency even if the scaffolder-generated config was modified.
+func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.SimpleConfig) {
+	// Only apply to K3d distribution
+	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
+		return
+	}
+
+	// Only add disable flag if explicitly disabled
+	if clusterCfg.Spec.MetricsServer != v1alpha1.MetricsServerDisabled {
+		return
+	}
+
+	// Check if --disable=metrics-server is already present
+	for _, arg := range k3dConfig.Options.K3sOptions.ExtraArgs {
+		if arg.Arg == k3sDisableMetricsServerFlag {
+			// Already configured, no action needed
+			return
+		}
+	}
+
+	// Add --disable=metrics-server flag
+	k3dConfig.Options.K3sOptions.ExtraArgs = append(
+		k3dConfig.Options.K3sOptions.ExtraArgs,
+		v1alpha5.K3sArgWithNodeFilters{
+			Arg:         k3sDisableMetricsServerFlag,
+			NodeFilters: []string{"server:*"},
+		},
+	)
 }
 
 const (
@@ -825,4 +897,128 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 	}
 
 	return patches
+}
+
+// handleMetricsServer manages metrics-server installation based on cluster configuration.
+// For K3d, metrics-server should be disabled via config (handled in setupK3dMetricsServer), not uninstalled.
+func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	// Check if distribution provides metrics-server by default
+	hasMetricsByDefault := distributionProvidesMetricsByDefault(clusterCfg.Spec.Distribution)
+
+	// Enabled: Install if not present by default
+	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerEnabled {
+		if hasMetricsByDefault {
+			// Already present, no action needed
+			return nil
+		}
+
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		tmr.NewStage()
+
+		return installMetricsServer(cmd, clusterCfg, tmr)
+	}
+
+	// Disabled: For K3d, this is handled via config before cluster creation (setupK3dMetricsServer)
+	// No post-creation action needed for K3d
+	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerDisabled {
+		if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d {
+			// K3d metrics-server is disabled via config, no action needed here
+			return nil
+		}
+
+		if !hasMetricsByDefault {
+			// Not present, no action needed
+			return nil
+		}
+
+		// For other distributions that have it by default, we would uninstall here
+		// But currently only K3d has it by default, and that's handled via config
+	}
+
+	return nil
+}
+
+// distributionProvidesMetricsByDefault returns true if the distribution includes metrics-server by default.
+// K3d (based on K3s) includes metrics-server, Kind does not.
+func distributionProvidesMetricsByDefault(distribution v1alpha1.Distribution) bool {
+	switch distribution {
+	case v1alpha1.DistributionK3d:
+		return true
+	case v1alpha1.DistributionKind:
+		return false
+	default:
+		return false
+	}
+}
+
+// installMetricsServer installs metrics-server on the cluster.
+func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install Metrics Server...",
+		Emoji:   "📊",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	timeout := getMetricsServerInstallTimeout(clusterCfg)
+	installer := metricsserverinstaller.NewMetricsServerInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+
+	return runMetricsServerInstallation(cmd, installer, tmr)
+}
+
+// getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
+func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+	const defaultTimeout = 5
+
+	timeout := defaultTimeout * time.Minute
+	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
+		timeout = clusterCfg.Spec.Connection.Timeout.Duration
+	}
+
+	return timeout
+}
+
+// runMetricsServerInstallation performs the metrics-server installation.
+func runMetricsServerInstallation(
+	cmd *cobra.Command,
+	installer *metricsserverinstaller.MetricsServerInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing metrics-server",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("metrics-server installation failed: %w", installErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Metrics Server installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
 }
