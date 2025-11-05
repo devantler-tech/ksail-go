@@ -19,6 +19,29 @@ func createTestIOStreams() genericiooptions.IOStreams {
 	}
 }
 
+// newTestClient creates a new kubectl client with test IOStreams.
+// It returns the client and the output buffer for verification.
+func newTestClient() (*kubectl.Client, *bytes.Buffer) {
+	outBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	ioStreams := genericiooptions.IOStreams{
+		In:     &bytes.Buffer{},
+		Out:    outBuf,
+		ErrOut: errBuf,
+	}
+
+	return kubectl.NewClient(ioStreams), outBuf
+}
+
+// assertNamespaceYAML verifies that the output contains expected namespace YAML.
+func assertNamespaceYAML(t *testing.T, output, namespaceName string) {
+	t.Helper()
+
+	require.Contains(t, output, "apiVersion")
+	require.Contains(t, output, "kind: Namespace")
+	require.Contains(t, output, namespaceName)
+}
+
 func TestNewClient(t *testing.T) {
 	t.Parallel()
 
