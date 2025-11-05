@@ -732,14 +732,7 @@ func TestClient_CreatePriorityClassCmd(t *testing.T) {
 func TestClient_ExecuteResourceGen_Namespace(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateNamespaceCmd()
 	require.NoError(t, err)
@@ -750,23 +743,13 @@ func TestClient_ExecuteResourceGen_Namespace(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify output contains YAML
-	output := outBuf.String()
-	require.Contains(t, output, "apiVersion")
-	require.Contains(t, output, "kind: Namespace")
-	require.Contains(t, output, "test-namespace")
+	assertNamespaceYAML(t, outBuf.String(), "test-namespace")
 }
 
 func TestClient_ExecuteResourceGen_Deployment(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateDeploymentCmd()
 	require.NoError(t, err)
@@ -787,14 +770,7 @@ func TestClient_ExecuteResourceGen_Deployment(t *testing.T) {
 func TestClient_ExecuteSubcommandGen_SecretGeneric(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateSecretCmd()
 	require.NoError(t, err)
@@ -814,14 +790,7 @@ func TestClient_ExecuteSubcommandGen_SecretGeneric(t *testing.T) {
 func TestClient_ExecuteSubcommandGen_ServiceClusterIP(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateServiceCmd()
 	require.NoError(t, err)

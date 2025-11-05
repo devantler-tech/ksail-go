@@ -1,26 +1,15 @@
 package kubectl_test
 
 import (
-	"bytes"
-	"os"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	"github.com/stretchr/testify/require"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 func TestCreateNamespaceCmd_WithFlags(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateNamespaceCmd()
 	require.NoError(t, err)
@@ -31,23 +20,13 @@ func TestCreateNamespaceCmd_WithFlags(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify output contains YAML
-	output := outBuf.String()
-	require.Contains(t, output, "apiVersion")
-	require.Contains(t, output, "kind: Namespace")
-	require.Contains(t, output, "test-namespace")
+	assertNamespaceYAML(t, outBuf.String(), "test-namespace")
 }
 
 func TestCreateDeploymentCmd_WithMultipleFlags(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateDeploymentCmd()
 	require.NoError(t, err)
@@ -73,14 +52,7 @@ func TestCreateDeploymentCmd_WithMultipleFlags(t *testing.T) {
 func TestCreateSecretCmd_GenericWithMultipleLiterals(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateSecretCmd()
 	require.NoError(t, err)
@@ -107,12 +79,7 @@ func TestCreateSecretCmd_GenericWithMultipleLiterals(t *testing.T) {
 func TestCreateInvalidResourceType(t *testing.T) {
 	t.Parallel()
 
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, _ := newTestClient()
 
 	// Test all the exported Create*Cmd methods work (they all use newResourceCmd internally)
 	// Testing that valid resource types can be created successfully
@@ -144,14 +111,7 @@ func TestCreateInvalidResourceType(t *testing.T) {
 func TestCreateDeploymentCmd_InvalidArgs(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, _ := newTestClient()
 
 	cmd, err := client.CreateDeploymentCmd()
 	require.NoError(t, err)
@@ -165,14 +125,7 @@ func TestCreateDeploymentCmd_InvalidArgs(t *testing.T) {
 func TestCreateJobCmd_WithImage(t *testing.T) {
 	t.Parallel()
 
-	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    outBuf,
-		ErrOut: errBuf,
-	}
-	client := kubectl.NewClient(ioStreams)
+	client, outBuf := newTestClient()
 
 	cmd, err := client.CreateJobCmd()
 	require.NoError(t, err)
