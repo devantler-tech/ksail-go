@@ -130,7 +130,10 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 			}
 
 			if export {
-				fmt.Fprint(cmd.OutOrStdout(), yaml)
+				_, err = fmt.Fprint(cmd.OutOrStdout(), yaml)
+				if err != nil {
+					return fmt.Errorf("failed to write YAML: %w", err)
+				}
 			} else {
 				// TODO: Apply the HelmRelease to the cluster
 				return fmt.Errorf("applying HelmRelease to cluster is not yet implemented, use --export flag")
@@ -153,26 +156,26 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	flags := cmd.Flags()
 
 	// Required flags
-	flags.StringVar(&helmReleaseArgs.source, "source", "", "source that contains the chart (HelmRepository/name, GitRepository/name, Bucket/name)")
-	flags.StringVar(&helmReleaseArgs.chart, "chart", "", "Helm chart name or path")
-	flags.StringVar(&helmReleaseArgs.chartRef, "chart-ref", "", "Helm chart reference (HelmChart/name, OCIRepository/name)")
+	flags.String("source", "", "source that contains the chart (HelmRepository/name, GitRepository/name, Bucket/name)")
+	flags.String("chart", "", "Helm chart name or path")
+	flags.String("chart-ref", "", "Helm chart reference (HelmChart/name, OCIRepository/name)")
 
 	// Optional flags
-	flags.StringVarP(&helmReleaseArgs.namespace, "namespace", "n", "default", "namespace scope for the HelmRelease")
-	flags.DurationVar(&helmReleaseArgs.interval, "interval", defaultInterval, "reconciliation interval")
-	flags.StringVar(&helmReleaseArgs.chartVersion, "chart-version", "", "Helm chart version, accepts a semver range")
-	flags.StringVar(&helmReleaseArgs.targetNamespace, "target-namespace", "", "namespace to target when performing operations")
-	flags.StringVar(&helmReleaseArgs.storageNamespace, "storage-namespace", "", "namespace for Helm storage")
-	flags.BoolVar(&helmReleaseArgs.createNamespace, "create-target-namespace", false, "create the target namespace if not present")
-	flags.StringSliceVar(&helmReleaseArgs.dependsOn, "depends-on", nil, "HelmReleases that must be ready before this release")
-	flags.DurationVar(&helmReleaseArgs.timeout, "timeout", 5*time.Minute, "timeout for any individual Kubernetes operation")
-	flags.StringSliceVar(&helmReleaseArgs.values, "values", nil, "local values YAML files")
-	flags.StringSliceVar(&helmReleaseArgs.valuesFrom, "values-from", nil, "values from ConfigMap or Secret")
-	flags.StringVar(&helmReleaseArgs.saName, "service-account", "", "service account name to impersonate")
-	flags.StringVar(&helmReleaseArgs.crdsPolicy, "crds", "", "CRDs policy (Create, CreateReplace, Skip)")
-	flags.StringVar(&helmReleaseArgs.kubeConfigSecretRef, "kubeconfig-secret-ref", "", "KubeConfig secret reference for remote reconciliation")
-	flags.StringVar(&helmReleaseArgs.releaseName, "release-name", "", "name used for the Helm release")
-	flags.BoolVar(&helmReleaseArgs.export, "export", false, "export in YAML format to stdout")
+	flags.StringP("namespace", "n", "default", "namespace scope for the HelmRelease")
+	flags.Duration("interval", defaultInterval, "reconciliation interval")
+	flags.String("chart-version", "", "Helm chart version, accepts a semver range")
+	flags.String("target-namespace", "", "namespace to target when performing operations")
+	flags.String("storage-namespace", "", "namespace for Helm storage")
+	flags.Bool("create-target-namespace", false, "create the target namespace if not present")
+	flags.StringSlice("depends-on", nil, "HelmReleases that must be ready before this release")
+	flags.Duration("timeout", 5*time.Minute, "timeout for any individual Kubernetes operation")
+	flags.StringSlice("values", nil, "local values YAML files")
+	flags.StringSlice("values-from", nil, "values from ConfigMap or Secret")
+	flags.String("service-account", "", "service account name to impersonate")
+	flags.String("crds", "", "CRDs policy (Create, CreateReplace, Skip)")
+	flags.String("kubeconfig-secret-ref", "", "KubeConfig secret reference for remote reconciliation")
+	flags.String("release-name", "", "name used for the Helm release")
+	flags.Bool("export", false, "export in YAML format to stdout")
 
 	return cmd
 }
@@ -259,7 +262,7 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 
 		helmRelease.Spec.Chart = &helmv2.HelmChartTemplate{
 			Spec: helmv2.HelmChartTemplateSpec{
-				Chart: helmReleaseArgs.chart,
+				Chart: chart,
 				SourceRef: helmv2.CrossNamespaceObjectReference{
 					Kind:      sourceKind,
 					Name:      sourceName,
@@ -268,18 +271,18 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			},
 		}
 
-		if helmReleaseArgs.chartVersion != "" {
-			helmRelease.Spec.Chart.Spec.Version = helmReleaseArgs.chartVersion
+		if chartVersion != "" {
+			helmRelease.Spec.Chart.Spec.Version = chartVersion
 		}
-	} else if helmReleaseArgs.chartRef != "" {
-		parts := strings.Split(helmReleaseArgs.chartRef, "/")
+	} else if chartRef != "" {
+		parts := strings.Split(chartRef, "/")
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid chart-ref format, expected Kind/name or Kind/name.namespace")
 		}
 
 		chartRefKind := parts[0]
 		chartRefName := parts[1]
-		chartRefNamespace := helmReleaseArgs.namespace
+		chartRefNamespace := namespace
 
 		// Check if namespace is included
 		if strings.Contains(chartRefName, ".") {
@@ -309,37 +312,37 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	}
 
 	// Set optional fields
-	if helmReleaseArgs.releaseName != "" {
-		helmRelease.Spec.ReleaseName = helmReleaseArgs.releaseName
+	if releaseName != "" {
+		helmRelease.Spec.ReleaseName = releaseName
 	}
 
-	if helmReleaseArgs.targetNamespace != "" {
-		helmRelease.Spec.TargetNamespace = helmReleaseArgs.targetNamespace
+	if targetNamespace != "" {
+		helmRelease.Spec.TargetNamespace = targetNamespace
 	}
 
-	if helmReleaseArgs.storageNamespace != "" {
-		helmRelease.Spec.StorageNamespace = helmReleaseArgs.storageNamespace
+	if storageNamespace != "" {
+		helmRelease.Spec.StorageNamespace = storageNamespace
 	}
 
-	if helmReleaseArgs.createNamespace {
+	if createNamespace {
 		if helmRelease.Spec.Install == nil {
 			helmRelease.Spec.Install = &helmv2.Install{}
 		}
 		helmRelease.Spec.Install.CreateNamespace = true
 	}
 
-	if len(helmReleaseArgs.dependsOn) > 0 {
-		dependsOn := []helmv2.DependencyReference{}
-		for _, dep := range helmReleaseArgs.dependsOn {
+	if len(dependsOn) > 0 {
+		deps := []helmv2.DependencyReference{}
+		for _, dep := range dependsOn {
 			parts := strings.Split(dep, "/")
 			if len(parts) == 1 {
 				// Same namespace
-				dependsOn = append(dependsOn, helmv2.DependencyReference{
+				deps = append(deps, helmv2.DependencyReference{
 					Name: parts[0],
 				})
 			} else if len(parts) == 2 {
 				// Different namespace
-				dependsOn = append(dependsOn, helmv2.DependencyReference{
+				deps = append(deps, helmv2.DependencyReference{
 					Namespace: parts[0],
 					Name:      parts[1],
 				})
@@ -347,18 +350,18 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 				return nil, fmt.Errorf("invalid depends-on format %q, expected name or namespace/name", dep)
 			}
 		}
-		helmRelease.Spec.DependsOn = dependsOn
+		helmRelease.Spec.DependsOn = deps
 	}
 
-	if helmReleaseArgs.timeout > 0 {
-		helmRelease.Spec.Timeout = &metav1.Duration{Duration: helmReleaseArgs.timeout}
+	if timeout > 0 {
+		helmRelease.Spec.Timeout = &metav1.Duration{Duration: timeout}
 	}
 
-	if helmReleaseArgs.saName != "" {
-		helmRelease.Spec.ServiceAccountName = helmReleaseArgs.saName
+	if saName != "" {
+		helmRelease.Spec.ServiceAccountName = saName
 	}
 
-	if helmReleaseArgs.crdsPolicy != "" {
+	if crdsPolicy != "" {
 		if helmRelease.Spec.Install == nil {
 			helmRelease.Spec.Install = &helmv2.Install{}
 		}
@@ -367,21 +370,21 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 		if helmRelease.Spec.Upgrade == nil {
 			helmRelease.Spec.Upgrade = &helmv2.Upgrade{}
 		}
-		helmRelease.Spec.Upgrade.CRDs = helmv2.CRDsPolicy(helmReleaseArgs.crdsPolicy)
+		helmRelease.Spec.Upgrade.CRDs = helmv2.CRDsPolicy(crdsPolicy)
 	}
 
-	if helmReleaseArgs.kubeConfigSecretRef != "" {
+	if kubeConfigSecretRef != "" {
 		helmRelease.Spec.KubeConfig = &meta.KubeConfigReference{
 			SecretRef: &meta.SecretKeyReference{
-				Name: helmReleaseArgs.kubeConfigSecretRef,
+				Name: kubeConfigSecretRef,
 			},
 		}
 	}
 
 	// Handle values files
-	if len(helmReleaseArgs.values) > 0 {
+	if len(values) > 0 {
 		valuesMap := make(map[string]interface{})
-		for _, vFile := range helmReleaseArgs.values {
+		for _, vFile := range values {
 			data, err := os.ReadFile(vFile)
 			if err != nil {
 				return nil, fmt.Errorf("reading values from %s: %w", vFile, err)
@@ -409,9 +412,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	}
 
 	// Handle values from ConfigMap/Secret
-	if len(helmReleaseArgs.valuesFrom) > 0 {
-		valuesFrom := []helmv2.ValuesReference{}
-		for _, vFrom := range helmReleaseArgs.valuesFrom {
+	if len(valuesFrom) > 0 {
+		valsFrom := []helmv2.ValuesReference{}
+		for _, vFrom := range valuesFrom {
 			parts := strings.Split(vFrom, "/")
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("invalid values-from format %q, expected Kind/name", vFrom)
@@ -434,12 +437,12 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 				return nil, fmt.Errorf("invalid values-from kind %q, must be one of: %s", kind, strings.Join(validKinds, ", "))
 			}
 
-			valuesFrom = append(valuesFrom, helmv2.ValuesReference{
+			valsFrom = append(valsFrom, helmv2.ValuesReference{
 				Kind: kind,
 				Name: name,
 			})
 		}
-		helmRelease.Spec.ValuesFrom = valuesFrom
+		helmRelease.Spec.ValuesFrom = valsFrom
 	}
 
 	return helmRelease, nil
