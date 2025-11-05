@@ -2,6 +2,7 @@
 package workload
 
 import (
+	"github.com/devantler-tech/ksail-go/cmd/workload/gen"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
@@ -12,7 +13,7 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		Use:   "workload",
 		Short: "Manage workload operations",
 		Long: "Group workload commands under a single namespace to reconcile, " +
-			"apply, create, delete, describe, edit, exec, explain, expose, get, install, logs, rollout, or scale workloads.",
+			"apply, create, delete, describe, edit, exec, explain, expose, gen, get, install, logs, rollout, or scale workloads.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},
@@ -28,6 +29,7 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewExecCmd(runtimeContainer))
 	cmd.AddCommand(NewExplainCmd(runtimeContainer))
 	cmd.AddCommand(NewExposeCmd(runtimeContainer))
+	cmd.AddCommand(gen.NewGenCmd(runtimeContainer))
 	cmd.AddCommand(NewGetCmd(runtimeContainer))
 	cmd.AddCommand(NewInstallCmd(runtimeContainer))
 	cmd.AddCommand(NewLogsCmd(runtimeContainer))
