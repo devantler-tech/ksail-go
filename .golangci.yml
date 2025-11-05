@@ -33,6 +33,9 @@ linters:
           - ireturn
         path: internal/shared/lifecycle_helpers_test.go
       - linters:
+          - ireturn
+        path: pkg/svc/provisioner/cluster/factory.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
   settings:
