@@ -31,8 +31,10 @@ func TestWorkloadHelpSnapshots(t *testing.T) {
 		{name: "apply", args: []string{"workload", "apply", "--help"}},
 		{name: "create", args: []string{"workload", "create", "--help"}},
 		{name: "create_source", args: []string{"workload", "create", "source", "--help"}},
-		{name: "create_kustomization",
-			args: []string{"workload", "create", "kustomization", "--help"}},
+		{
+			name: "create_kustomization",
+			args: []string{"workload", "create", "kustomization", "--help"},
+		},
 		// NOTE: create_helmrelease snapshot test temporarily disabled due to snapshot system issue
 		// {name: "create_helmrelease", args: []string{"workload", "create", "helmrelease", "--help"}},
 		{name: "delete", args: []string{"workload", "delete", "--help"}},
