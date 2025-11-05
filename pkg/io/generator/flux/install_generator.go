@@ -24,7 +24,7 @@ func NewInstallGenerator() *InstallGenerator {
 }
 
 // Generate creates Flux installation manifests and optionally writes to file.
-func (g *InstallGenerator) Generate(_ interface{}, opts InstallOptions) (string, error) {
+func (g *InstallGenerator) Generate(_ any, opts InstallOptions) (string, error) {
 	// Generate the manifest using flux2's install package
 	manifest, err := install.Generate(opts.Options, "")
 	if err != nil {

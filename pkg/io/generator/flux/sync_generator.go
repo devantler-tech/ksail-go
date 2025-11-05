@@ -24,7 +24,7 @@ func NewSyncGenerator() *SyncGenerator {
 }
 
 // Generate creates GitRepository and Kustomization resources and optionally writes to file.
-func (g *SyncGenerator) Generate(_ interface{}, opts SyncOptions) (string, error) {
+func (g *SyncGenerator) Generate(_ any, opts SyncOptions) (string, error) {
 	// Generate the manifest using flux2's sync package
 	manifest, err := sync.Generate(opts.Options)
 	if err != nil {
