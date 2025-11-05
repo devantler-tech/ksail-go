@@ -135,8 +135,7 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 					return fmt.Errorf("failed to write YAML: %w", err)
 				}
 			} else {
-				// TODO: Apply the HelmRelease to the cluster
-				return fmt.Errorf("applying HelmRelease to cluster is not yet implemented, use --export flag")
+				return fmt.Errorf("applying HelmRelease to cluster is not yet implemented, use --export flag to generate YAML")
 			}
 
 			total, stage := tmr.GetTiming()
