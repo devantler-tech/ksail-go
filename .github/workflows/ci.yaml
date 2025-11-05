@@ -63,12 +63,10 @@ jobs:
           - distribution: Kind
             cni: Default
             init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
-            mirror-registry: one-mirror
             test-workload: true
           - distribution: Kind
             cni: Default
             init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
-            mirror-registry: two-mirrors
             test-workload: true
           - distribution: K3d
             cni: Default
@@ -79,12 +77,10 @@ jobs:
           - distribution: K3d
             cni: Default
             init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
-            mirror-registry: one-mirror
             test-workload: true
           - distribution: K3d
             cni: Default
             init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
-            mirror-registry: two-mirrors
             test-workload: true
           - distribution: K3d
             cni: Default
