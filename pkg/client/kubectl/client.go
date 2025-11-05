@@ -482,7 +482,8 @@ func (c *Client) newResourceCmd(resourceType string) (*cobra.Command, error) {
 		SilenceUsage: true,
 	}
 
-	// Set wrapper command output to use client's IO streams
+	// Set default output to client streams for standalone usage
+	// When added as subcommand to another command, this can be overridden by parent
 	wrapperCmd.SetOut(c.ioStreams.Out)
 	wrapperCmd.SetErr(c.ioStreams.ErrOut)
 
@@ -516,9 +517,8 @@ func (c *Client) createSubcommandWrapper(parentType string, subCmd *cobra.Comman
 		SilenceUsage: true,
 	}
 
-	// Set wrapper command output to use client's IO streams
-	wrapper.SetOut(c.ioStreams.Out)
-	wrapper.SetErr(c.ioStreams.ErrOut)
+	// Don't set output here - subcommand wrappers inherit from parent command
+	// This allows tests to call SetOut() on parent and have it propagate
 
 	// Create RunE for the subcommand
 	wrapper.RunE = func(cmd *cobra.Command, args []string) error {
@@ -537,12 +537,15 @@ func (c *Client) executeSubcommandGen(
 	cmd *cobra.Command,
 	args []string,
 ) error {
-	// Align client IO streams with the wrapper command's writers
-	c.ioStreams.Out = cmd.OutOrStdout()
-	c.ioStreams.ErrOut = cmd.ErrOrStderr()
+	// Create a fresh client with the command's IO streams to ensure output goes to the right place
+	freshClient := NewClient(genericiooptions.IOStreams{
+		In:     cmd.InOrStdin(),
+		Out:    cmd.OutOrStdout(),
+		ErrOut: cmd.ErrOrStderr(),
+	})
 
 	// Create a fresh kubectl create command
-	createCmd := c.CreateCreateCommand("")
+	createCmd := freshClient.CreateCreateCommand("")
 
 	// Find the parent resource command
 	var parentCmd *cobra.Command
@@ -575,7 +578,7 @@ func (c *Client) executeSubcommandGen(
 	}
 
 	// Force --dry-run=client and -o yaml
-	err := c.setForcedFlags(freshSubCmd)
+	err := freshClient.setForcedFlags(freshSubCmd)
 	if err != nil {
 		return err
 	}
@@ -585,13 +588,13 @@ func (c *Client) executeSubcommandGen(
 	freshSubCmd.SetErr(cmd.ErrOrStderr())
 
 	// Copy user flags
-	err = c.copyUserFlags(cmd, freshSubCmd)
+	err = freshClient.copyUserFlags(cmd, freshSubCmd)
 	if err != nil {
 		return err
 	}
 
 	// Execute
-	return c.executeCommand(freshSubCmd, args)
+	return freshClient.executeCommand(freshSubCmd, args)
 }
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
