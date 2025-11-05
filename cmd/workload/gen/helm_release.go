@@ -24,15 +24,15 @@ const (
 	defaultInterval = 1 * time.Minute
 )
 
-// NewHelmReleaseCmd creates the workload gen helm-release command.
+// NewHelmReleaseCmd creates the workload gen helmrelease command.
 func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "helm-release [NAME]",
-		Aliases: []string{"hr", "helmrelease"},
+		Use:     "helmrelease [NAME]",
+		Aliases: []string{"hr", "helm-release"},
 		Short:   "Generate a HelmRelease resource",
 		Long:    "Generate a HelmRelease resource for a given HelmRepository, GitRepository, Bucket, or chart reference source.",
 		Example: `  # Generate a HelmRelease with a chart from a HelmRepository source
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --interval=10m \
     --source=HelmRepository/podinfo \
     --chart=podinfo \
@@ -40,14 +40,14 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
     --export
 
   # Generate a HelmRelease with a chart from a GitRepository source
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --interval=10m \
     --source=GitRepository/podinfo \
     --chart=./charts/podinfo \
     --export
 
   # Generate a HelmRelease with values from local YAML files
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --source=HelmRepository/podinfo \
     --chart=podinfo \
     --values=./my-values1.yaml \
@@ -55,21 +55,21 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
     --export
 
   # Generate a HelmRelease with values from a Kubernetes secret
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --source=HelmRepository/podinfo \
     --chart=podinfo \
     --values-from=Secret/my-secret-values \
     --export
 
   # Generate a HelmRelease with a custom release name
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --release-name=podinfo-dev \
     --source=HelmRepository/podinfo \
     --chart=podinfo \
     --export
 
   # Generate a HelmRelease targeting another namespace
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --target-namespace=test \
     --create-target-namespace=true \
     --source=HelmRepository/podinfo \
@@ -77,7 +77,7 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
     --export
 
   # Generate a HelmRelease using a chart reference
-  ksail workload gen helm-release podinfo \
+  ksail workload gen helmrelease podinfo \
     --namespace=default \
     --chart-ref=HelmChart/podinfo.flux-system \
     --export`,
