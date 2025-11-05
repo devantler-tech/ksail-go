@@ -128,13 +128,13 @@ jobs:
         if: matrix.test-workload
         run: |
           ./ksail workload create deployment busybox --image=busybox:latest
-          kubectl wait --for=condition=Available deployment/busybox --timeout=120s
+          ./ksail workload wait --for=condition=Available deployment/busybox --timeout=120s
 
       - name: 🧪 ksail workload create deployment podinfo (ghcr.io)
         if: matrix.test-workload
         run: |
           ./ksail workload create deployment podinfo --image=ghcr.io/stefanprodan/podinfo:latest
-          kubectl wait --for=condition=Available deployment/podinfo --timeout=120s
+          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=120s
 
       - name: 🧪 ksail cluster stop
         run: |

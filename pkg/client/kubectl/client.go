@@ -20,6 +20,7 @@ import (
 	"k8s.io/kubectl/pkg/cmd/logs"
 	"k8s.io/kubectl/pkg/cmd/rollout"
 	"k8s.io/kubectl/pkg/cmd/scale"
+	"k8s.io/kubectl/pkg/cmd/wait"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
@@ -349,4 +350,26 @@ func (c *Client) CreateExecCommand(kubeConfigPath string) *cobra.Command {
 	replaceKubectlInExamples(execCmd)
 
 	return execCmd
+}
+
+// CreateWaitCommand creates a kubectl wait command with all its flags and behavior.
+func (c *Client) CreateWaitCommand(kubeConfigPath string) *cobra.Command {
+	// Create config flags with kubeconfig path
+	configFlags := genericclioptions.NewConfigFlags(true)
+	if kubeConfigPath != "" {
+		configFlags.KubeConfig = &kubeConfigPath
+	}
+
+	// Create the wait command using kubectl's NewCmdWait
+	waitCmd := wait.NewCmdWait(configFlags, c.ioStreams)
+
+	// Customize command metadata to fit ksail context
+	waitCmd.Use = "wait"
+	waitCmd.Short = "Wait for a specific condition on one or many resources"
+	waitCmd.Long = "Wait for a specific condition on one or many resources. " +
+		"The command takes multiple resources and waits until the specified condition " +
+		"is seen in the Status field of every given resource."
+	replaceKubectlInExamples(waitCmd)
+
+	return waitCmd
 }
