@@ -15,6 +15,7 @@ func createGenCmd(
 	client := kubectl.NewClientWithStdio()
 	cmd, err := createMethod(client)
 	cobra.CheckErr(err)
+
 	return cmd
 }
 
