@@ -23,11 +23,10 @@ func createTestIOStreams() genericiooptions.IOStreams {
 // It returns the client and the output buffer for verification.
 func newTestClient() (*kubectl.Client, *bytes.Buffer) {
 	outBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
 	ioStreams := genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    outBuf,
-		ErrOut: errBuf,
+		ErrOut: &bytes.Buffer{},
 	}
 
 	return kubectl.NewClient(ioStreams), outBuf
