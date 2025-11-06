@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	meta "github.com/fluxcd/pkg/apis/meta"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,7 +64,8 @@ func (c *Client) newCreateSourceGitCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flags.tag, "tag", "", "git tag")
 	cmd.Flags().StringVar(&flags.semver, "tag-semver", "", "git tag semver range")
 	cmd.Flags().StringVar(&flags.commit, "commit", "", "git commit")
-	cmd.Flags().StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing SSH or basic credentials")
+	cmd.Flags().
+		StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing SSH or basic credentials")
 	cmd.Flags().DurationVar(&flags.interval, "interval", time.Minute, "source sync interval")
 	cmd.Flags().BoolVar(&flags.export, "export", false, "export in YAML format to stdout")
 

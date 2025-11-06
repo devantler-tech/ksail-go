@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
+	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
@@ -12,10 +15,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
-
-	sourcev1 "github.com/fluxcd/source-controller/api/v1"
-	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1"
-	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 )
 
 // Client wraps flux API functionality.
@@ -72,7 +71,10 @@ func (c *Client) getRestConfig() (*rest.Config, error) {
 
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		loadingRules,
+		configOverrides,
+	)
 	return kubeConfig.ClientConfig()
 }
 
@@ -98,7 +100,8 @@ func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
 	}
 
 	// Add namespace flag to all commands
-	createCmd.PersistentFlags().StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
+	createCmd.PersistentFlags().
+		StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
 
 	// Add sub-commands for flux create
 	createCmd.AddCommand(c.createSourceCommand())
@@ -126,4 +129,3 @@ func (c *Client) createSourceCommand() *cobra.Command {
 
 	return sourceCmd
 }
-
