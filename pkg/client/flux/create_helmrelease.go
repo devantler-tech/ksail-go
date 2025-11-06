@@ -84,22 +84,11 @@ func (c *Client) createHelmRelease(
 	name, namespace string,
 	flags *helmReleaseFlags,
 ) error {
-	// Parse source
-	sourceKind := flags.sourceKind
-	sourceName := flags.sourceName
-	sourceNs := namespace
-
-	if strings.Contains(sourceName, "/") {
-		parts := strings.SplitN(sourceName, "/", SplitParts)
-		sourceKind = parts[0]
-		sourceName = parts[1]
-	}
-
-	if strings.Contains(sourceName, ".") {
-		parts := strings.SplitN(sourceName, ".", SplitParts)
-		sourceName = parts[0]
-		sourceNs = parts[1]
-	}
+	sourceKind, sourceName, sourceNs := parseSourceRef(
+		flags.sourceKind,
+		flags.sourceName,
+		namespace,
+	)
 
 	helmRelease := &helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,6 +110,22 @@ func (c *Client) createHelmRelease(
 		},
 	}
 
+	c.applyHelmReleaseOptions(helmRelease, flags, namespace)
+
+	// Export mode
+	if flags.export {
+		return c.exportResource(helmRelease)
+	}
+
+	// Create or update the resource
+	return c.upsertResource(ctx, helmRelease, &helmv2.HelmRelease{}, "HelmRelease")
+}
+
+func (c *Client) applyHelmReleaseOptions(
+	helmRelease *helmv2.HelmRelease,
+	flags *helmReleaseFlags,
+	namespace string,
+) {
 	if flags.chartVersion != "" {
 		helmRelease.Spec.Chart.Spec.Version = flags.chartVersion
 	}
@@ -135,33 +140,59 @@ func (c *Client) createHelmRelease(
 		}
 	}
 
-	// Set dependencies
 	if len(flags.dependsOn) > 0 {
-		deps := make([]helmv2.DependencyReference, 0, len(flags.dependsOn))
-		for _, dep := range flags.dependsOn {
-			depName := dep
-			depNs := namespace
+		helmRelease.Spec.DependsOn = parseDependencies(
+			flags.dependsOn,
+			namespace,
+			func(depName, depNs string) helmv2.DependencyReference {
+				return helmv2.DependencyReference{
+					Name:      depName,
+					Namespace: depNs,
+				}
+			},
+		)
+	}
+}
 
-			if strings.Contains(dep, "/") {
-				parts := strings.SplitN(dep, "/", SplitParts)
-				depNs = parts[0]
-				depName = parts[1]
-			}
+func parseSourceRef(sourceKind, sourceName, defaultNamespace string) (string, string, string) {
+	kind := sourceKind
+	name := sourceName
+	namespace := defaultNamespace
 
-			deps = append(deps, helmv2.DependencyReference{
-				Name:      depName,
-				Namespace: depNs,
-			})
+	if strings.Contains(sourceName, "/") {
+		parts := strings.SplitN(sourceName, "/", SplitParts)
+		kind = parts[0]
+		name = parts[1]
+	}
+
+	if strings.Contains(name, ".") {
+		parts := strings.SplitN(name, ".", SplitParts)
+		name = parts[0]
+		namespace = parts[1]
+	}
+
+	return kind, name, namespace
+}
+
+func parseDependencies[T any](
+	dependsOn []string,
+	defaultNamespace string,
+	factory func(name, namespace string) T,
+) []T {
+	deps := make([]T, 0, len(dependsOn))
+
+	for _, dep := range dependsOn {
+		depName := dep
+		depNs := defaultNamespace
+
+		if strings.Contains(dep, "/") {
+			parts := strings.SplitN(dep, "/", SplitParts)
+			depNs = parts[0]
+			depName = parts[1]
 		}
 
-		helmRelease.Spec.DependsOn = deps
+		deps = append(deps, factory(depName, depNs))
 	}
 
-	// Export mode
-	if flags.export {
-		return c.exportResource(helmRelease)
-	}
-
-	// Create or update the resource
-	return c.upsertResource(ctx, helmRelease, &helmv2.HelmRelease{}, "HelmRelease")
+	return deps
 }

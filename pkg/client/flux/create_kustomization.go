@@ -2,7 +2,6 @@ package flux
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1"
@@ -83,22 +82,11 @@ func (c *Client) createKustomization(
 	name, namespace string,
 	flags *kustomizationFlags,
 ) error {
-	// Parse source
-	sourceKind := flags.sourceKind
-	sourceName := flags.sourceName
-	sourceNs := namespace
-
-	if strings.Contains(sourceName, "/") {
-		parts := strings.SplitN(sourceName, "/", SplitParts)
-		sourceKind = parts[0]
-		sourceName = parts[1]
-	}
-
-	if strings.Contains(sourceName, ".") {
-		parts := strings.SplitN(sourceName, ".", SplitParts)
-		sourceName = parts[0]
-		sourceNs = parts[1]
-	}
+	sourceKind, sourceName, sourceNs := parseSourceRef(
+		flags.sourceKind,
+		flags.sourceName,
+		namespace,
+	)
 
 	kustomization := &kustomizev1.Kustomization{
 		ObjectMeta: metav1.ObjectMeta{
@@ -118,31 +106,7 @@ func (c *Client) createKustomization(
 		},
 	}
 
-	if flags.targetNamespace != "" {
-		kustomization.Spec.TargetNamespace = flags.targetNamespace
-	}
-
-	// Set dependencies
-	if len(flags.dependsOn) > 0 {
-		deps := make([]kustomizev1.DependencyReference, 0, len(flags.dependsOn))
-		for _, dep := range flags.dependsOn {
-			depName := dep
-			depNs := namespace
-
-			if strings.Contains(dep, "/") {
-				parts := strings.SplitN(dep, "/", SplitParts)
-				depNs = parts[0]
-				depName = parts[1]
-			}
-
-			deps = append(deps, kustomizev1.DependencyReference{
-				Name:      depName,
-				Namespace: depNs,
-			})
-		}
-
-		kustomization.Spec.DependsOn = deps
-	}
+	c.applyKustomizationOptions(kustomization, flags, namespace)
 
 	// Export mode
 	if flags.export {
@@ -151,4 +115,27 @@ func (c *Client) createKustomization(
 
 	// Create or update the resource
 	return c.upsertResource(ctx, kustomization, &kustomizev1.Kustomization{}, "Kustomization")
+}
+
+func (c *Client) applyKustomizationOptions(
+	kustomization *kustomizev1.Kustomization,
+	flags *kustomizationFlags,
+	namespace string,
+) {
+	if flags.targetNamespace != "" {
+		kustomization.Spec.TargetNamespace = flags.targetNamespace
+	}
+
+	if len(flags.dependsOn) > 0 {
+		kustomization.Spec.DependsOn = parseDependencies(
+			flags.dependsOn,
+			namespace,
+			func(depName, depNs string) kustomizev1.DependencyReference {
+				return kustomizev1.DependencyReference{
+					Name:      depName,
+					Namespace: depNs,
+				}
+			},
+		)
+	}
 }

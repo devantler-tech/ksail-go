@@ -89,6 +89,8 @@ func (c *Client) createSourceCommand() *cobra.Command {
 }
 
 // getClient returns a controller-runtime client configured for Flux APIs.
+//
+//nolint:ireturn // Returning interface is necessary for controller-runtime client abstraction
 func (c *Client) getClient() (client.Client, error) {
 	if c.client != nil {
 		return c.client, nil
@@ -178,10 +180,6 @@ func (c *Client) upsertResource(
 	existing client.Object,
 	resourceKind string,
 ) error {
-	name := obj.GetName()
-	namespace := obj.GetNamespace()
-
-	// Get Kubernetes client
 	k8sClient, err := c.getClient()
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %w", err)
@@ -190,18 +188,7 @@ func (c *Client) upsertResource(
 	// Try to create the resource
 	err = k8sClient.Create(ctx, obj)
 	if err == nil {
-		_, printErr := fmt.Fprintf(
-			c.ioStreams.Out,
-			"✓ %s %s/%s created\n",
-			resourceKind,
-			namespace,
-			name,
-		)
-		if printErr != nil {
-			return fmt.Errorf("failed to print success message: %w", printErr)
-		}
-
-		return nil
+		return c.printSuccess(obj, resourceKind, "created")
 	}
 
 	// If resource doesn't exist, return the error
@@ -210,15 +197,39 @@ func (c *Client) upsertResource(
 	}
 
 	// Resource exists, update it
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Name:      name,
-		Namespace: namespace,
+	return c.updateExisting(ctx, k8sClient, obj, existing, resourceKind)
+}
+
+func (c *Client) printSuccess(obj client.Object, resourceKind, action string) error {
+	_, err := fmt.Fprintf(
+		c.ioStreams.Out,
+		"✓ %s %s/%s %s\n",
+		resourceKind,
+		obj.GetNamespace(),
+		obj.GetName(),
+		action,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to print success message: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Client) updateExisting(
+	ctx context.Context,
+	k8sClient client.Client,
+	obj, existing client.Object,
+	resourceKind string,
+) error {
+	err := k8sClient.Get(ctx, client.ObjectKey{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
 	}, existing)
 	if err != nil {
 		return fmt.Errorf("failed to get existing %s: %w", resourceKind, err)
 	}
 
-	// Copy spec from obj to existing
 	err = copySpec(obj, existing)
 	if err != nil {
 		return fmt.Errorf("failed to copy spec: %w", err)
@@ -229,18 +240,7 @@ func (c *Client) upsertResource(
 		return fmt.Errorf("failed to update %s: %w", resourceKind, err)
 	}
 
-	_, printErr := fmt.Fprintf(
-		c.ioStreams.Out,
-		"✓ %s %s/%s updated\n",
-		resourceKind,
-		namespace,
-		name,
-	)
-	if printErr != nil {
-		return fmt.Errorf("failed to print success message: %w", printErr)
-	}
-
-	return nil
+	return c.printSuccess(obj, resourceKind, "updated")
 }
 
 // copySpec copies the Spec field from src to dst using type assertions.
