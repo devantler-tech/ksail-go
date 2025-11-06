@@ -20,7 +20,6 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(gen.NewGenCmd(runtimeContainer))
 	cmd.AddCommand(NewReconcileCmd(runtimeContainer))
 	cmd.AddCommand(NewApplyCmd(runtimeContainer))
 	cmd.AddCommand(NewCreateCmd(runtimeContainer))
@@ -31,6 +30,7 @@ func NewWorkloadCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewExplainCmd(runtimeContainer))
 	cmd.AddCommand(NewExposeCmd(runtimeContainer))
 	cmd.AddCommand(NewGetCmd(runtimeContainer))
+	cmd.AddCommand(gen.NewGenCmd(runtimeContainer))
 	cmd.AddCommand(NewInstallCmd(runtimeContainer))
 	cmd.AddCommand(NewLogsCmd(runtimeContainer))
 	cmd.AddCommand(NewRolloutCmd(runtimeContainer))

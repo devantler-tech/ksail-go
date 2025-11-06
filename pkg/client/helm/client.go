@@ -701,6 +701,7 @@ func runReleaseWithSilencedStderr(
 		waitGroup    sync.WaitGroup
 	)
 
+	//nolint:modernize // sync.WaitGroup does not have Go() method; that's only in errgroup.Group
 	waitGroup.Add(1)
 
 	go func() {

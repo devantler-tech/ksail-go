@@ -58,6 +58,7 @@ linters:
             - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color
+            - github.com/fluxcd
             - github.com/gkampitakis/go-snaps
             - github.com/jinzhu/copier
             - github.com/k3d-io
