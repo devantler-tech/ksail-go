@@ -37,6 +37,7 @@ func NewGenCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.AddCommand(NewConfigMapCmd(runtimeContainer))
 	cmd.AddCommand(NewCronJobCmd(runtimeContainer))
 	cmd.AddCommand(NewDeploymentCmd(runtimeContainer))
+	cmd.AddCommand(NewHelmReleaseCmd(runtimeContainer))
 	cmd.AddCommand(NewIngressCmd(runtimeContainer))
 	cmd.AddCommand(NewJobCmd(runtimeContainer))
 	cmd.AddCommand(NewNamespaceCmd(runtimeContainer))
