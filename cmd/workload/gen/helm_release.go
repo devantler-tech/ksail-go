@@ -1,4 +1,3 @@
-// Package gen provides commands for generating Kubernetes resource manifests.
 package gen
 
 import (

@@ -127,6 +127,7 @@ func TestGenHelmReleaseWithValuesFile(t *testing.T) {
 image:
   tag: v2.0.0
 `
+
 	err := os.WriteFile(valuesFile, []byte(valuesContent), 0o600)
 	if err != nil {
 		t.Fatalf("failed to create values file: %v", err)
@@ -219,11 +220,14 @@ func TestGenHelmReleaseWithAllFlags(t *testing.T) {
 // removeTimingInfo removes timing output from the command output for consistent snapshots.
 func removeTimingInfo(output string) string {
 	lines := strings.Split(output, "\n")
+
 	var filtered []string
+
 	for _, line := range lines {
 		if !strings.HasPrefix(line, "✔") {
 			filtered = append(filtered, line)
 		}
 	}
+
 	return strings.Join(filtered, "\n")
 }
