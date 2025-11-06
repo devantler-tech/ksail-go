@@ -110,7 +110,7 @@ jobs:
       - name: 🧪 ksail workload apply podinfo kustomize (ghcr.io)
         if: matrix.test-workload
         run: |
-          ./ksail workload apply -k https://github.com/stefanprodan/podinfo//kustomize?ref=6.7.0
+          ./ksail workload apply -k https://github.com/stefanprodan/podinfo//kustomize
           # Wait for deployment to become available
           ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
