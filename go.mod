@@ -1,6 +1,6 @@
 module github.com/devantler-tech/ksail-go
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/derailed/k9s v0.50.16
@@ -168,6 +168,11 @@ require (
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fluxcd/helm-controller/api v1.4.3 // indirect
+	github.com/fluxcd/pkg/apis/acl v0.9.0 // indirect
+	github.com/fluxcd/pkg/apis/kustomize v1.13.0 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.22.0 // indirect
+	github.com/fluxcd/source-controller/api v1.7.3 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
@@ -420,13 +425,14 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/metrics v0.34.1 // indirect
-	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
+	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d // indirect
 	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.39.1 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
-	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
+	sigs.k8s.io/controller-runtime v0.22.2 // indirect
+	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
