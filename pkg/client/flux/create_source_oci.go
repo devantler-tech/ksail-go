@@ -11,10 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	// ErrOCIRefRequired is returned when none of tag, semver, or digest is specified for OCI repository.
-	ErrOCIRefRequired = errors.New("one of --tag, --tag-semver or --digest is required")
-)
+// ErrOCIRefRequired is returned when none of tag, semver, or digest is specified for OCI repository.
+var ErrOCIRefRequired = errors.New("one of --tag, --tag-semver or --digest is required")
 
 type sourceOCIFlags struct {
 	url       string

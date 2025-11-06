@@ -141,7 +141,13 @@ func (c *Client) upsertResource(
 	// Try to create the resource
 	err = k8sClient.Create(ctx, obj)
 	if err == nil {
-		_, printErr := fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s created\n", resourceKind, namespace, name)
+		_, printErr := fmt.Fprintf(
+			c.ioStreams.Out,
+			"✓ %s %s/%s created\n",
+			resourceKind,
+			namespace,
+			name,
+		)
 		if printErr != nil {
 			return fmt.Errorf("failed to print success message: %w", printErr)
 		}
@@ -171,7 +177,13 @@ func (c *Client) upsertResource(
 		return fmt.Errorf("failed to update %s: %w", resourceKind, err)
 	}
 
-	_, printErr := fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s updated\n", resourceKind, namespace, name)
+	_, printErr := fmt.Fprintf(
+		c.ioStreams.Out,
+		"✓ %s %s/%s updated\n",
+		resourceKind,
+		namespace,
+		name,
+	)
 	if printErr != nil {
 		return fmt.Errorf("failed to print success message: %w", printErr)
 	}
