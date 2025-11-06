@@ -24,6 +24,75 @@ const (
 	defaultInterval = 1 * time.Minute
 )
 
+// resourceReference represents a parsed Kubernetes resource reference.
+type resourceReference struct {
+	Kind      string
+	Name      string
+	Namespace string
+}
+
+// parseResourceReference parses a string in format "Kind/name" or "Kind/name.namespace".
+func parseResourceReference(ref, defaultNamespace, errorContext string) (*resourceReference, error) {
+	parts := strings.Split(ref, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid %s format, expected Kind/name or Kind/name.namespace", errorContext)
+	}
+
+	rr := &resourceReference{
+		Kind:      parts[0],
+		Name:      parts[1],
+		Namespace: defaultNamespace,
+	}
+
+	// Check if namespace is included in the name
+	if strings.Contains(rr.Name, ".") {
+		nameParts := strings.SplitN(rr.Name, ".", 2)
+		rr.Name = nameParts[0]
+		rr.Namespace = nameParts[1]
+	}
+
+	return rr, nil
+}
+
+// validateKind checks if a kind is in the list of valid kinds.
+func validateKind(kind string, validKinds []string, errorContext string) error {
+	for _, validKind := range validKinds {
+		if kind == validKind {
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid %s kind %q, must be one of: %s", errorContext, kind, strings.Join(validKinds, ", "))
+}
+
+// validateKindCaseInsensitive checks if a kind matches (case-insensitive) one of the valid kinds and returns the canonical form.
+func validateKindCaseInsensitive(kind string, validKinds []string, errorContext string) (string, error) {
+	for _, validKind := range validKinds {
+		if strings.EqualFold(kind, validKind) {
+			return validKind, nil
+		}
+	}
+	return "", fmt.Errorf("invalid %s kind %q, must be one of: %s", errorContext, kind, strings.Join(validKinds, ", "))
+}
+
+// parseDependency parses a depends-on reference in format "name" or "namespace/name".
+func parseDependency(dep string) (*helmv2.DependencyReference, error) {
+	parts := strings.Split(dep, "/")
+	if len(parts) == 1 {
+		// Same namespace
+		return &helmv2.DependencyReference{
+			Name: parts[0],
+		}, nil
+	} else if len(parts) == 2 {
+		// Different namespace
+		return &helmv2.DependencyReference{
+			Namespace: parts[0],
+			Name:      parts[1],
+		}, nil
+	}
+	return nil, fmt.Errorf("invalid depends-on format %q, expected name or namespace/name", dep)
+}
+
+
 // NewHelmReleaseCmd creates the workload gen helmrelease command.
 func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
@@ -220,19 +289,8 @@ func validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy string) error {
 	// Validate CRDs policy if specified
 	if crdsPolicy != "" {
 		validPolicies := []string{"Create", "CreateReplace", "Skip"}
-		found := false
-		for _, p := range validPolicies {
-			if crdsPolicy == p {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf(
-				"invalid crds policy %q, must be one of: %s",
-				crdsPolicy,
-				strings.Join(validPolicies, ", "),
-			)
+		if err := validateKind(crdsPolicy, validPolicies, "crds policy"); err != nil {
+			return err
 		}
 	}
 
@@ -260,22 +318,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 
 	// Set chart or chartRef
 	if source != "" && chart != "" {
-		parts := strings.Split(source, "/")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf(
-				"invalid source format, expected Kind/name or Kind/name.namespace",
-			)
-		}
-
-		sourceKind := parts[0]
-		sourceName := parts[1]
-		sourceNamespace := namespace
-
-		// Check if namespace is included in source name
-		if strings.Contains(sourceName, ".") {
-			nameParts := strings.SplitN(sourceName, ".", 2)
-			sourceName = nameParts[0]
-			sourceNamespace = nameParts[1]
+		sourceRef, err := parseResourceReference(source, namespace, "source")
+		if err != nil {
+			return nil, err
 		}
 
 		// Validate source kind
@@ -284,28 +329,17 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			sourcev1.GitRepositoryKind,
 			sourcev1.BucketKind,
 		}
-		found := false
-		for _, kind := range validSourceKinds {
-			if sourceKind == kind {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf(
-				"invalid source kind %q, must be one of: %s",
-				sourceKind,
-				strings.Join(validSourceKinds, ", "),
-			)
+		if err := validateKind(sourceRef.Kind, validSourceKinds, "source"); err != nil {
+			return nil, err
 		}
 
 		helmRelease.Spec.Chart = &helmv2.HelmChartTemplate{
 			Spec: helmv2.HelmChartTemplateSpec{
 				Chart: chart,
 				SourceRef: helmv2.CrossNamespaceObjectReference{
-					Kind:      sourceKind,
-					Name:      sourceName,
-					Namespace: sourceNamespace,
+					Kind:      sourceRef.Kind,
+					Name:      sourceRef.Name,
+					Namespace: sourceRef.Namespace,
 				},
 			},
 		}
@@ -314,39 +348,21 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			helmRelease.Spec.Chart.Spec.Version = chartVersion
 		}
 	} else if chartRef != "" {
-		parts := strings.Split(chartRef, "/")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid chart-ref format, expected Kind/name or Kind/name.namespace")
-		}
-
-		chartRefKind := parts[0]
-		chartRefName := parts[1]
-		chartRefNamespace := namespace
-
-		// Check if namespace is included
-		if strings.Contains(chartRefName, ".") {
-			nameParts := strings.SplitN(chartRefName, ".", 2)
-			chartRefName = nameParts[0]
-			chartRefNamespace = nameParts[1]
+		chartReference, err := parseResourceReference(chartRef, namespace, "chart-ref")
+		if err != nil {
+			return nil, err
 		}
 
 		// Validate chartRef kind
 		validChartRefKinds := []string{sourcev1.OCIRepositoryKind, sourcev1.HelmChartKind}
-		found := false
-		for _, kind := range validChartRefKinds {
-			if chartRefKind == kind {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("invalid chart-ref kind %q, must be one of: %s", chartRefKind, strings.Join(validChartRefKinds, ", "))
+		if err := validateKind(chartReference.Kind, validChartRefKinds, "chart-ref"); err != nil {
+			return nil, err
 		}
 
 		helmRelease.Spec.ChartRef = &helmv2.CrossNamespaceSourceReference{
-			Kind:      chartRefKind,
-			Name:      chartRefName,
-			Namespace: chartRefNamespace,
+			Kind:      chartReference.Kind,
+			Name:      chartReference.Name,
+			Namespace: chartReference.Namespace,
 		}
 	}
 
@@ -373,21 +389,11 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	if len(dependsOn) > 0 {
 		deps := []helmv2.DependencyReference{}
 		for _, dep := range dependsOn {
-			parts := strings.Split(dep, "/")
-			if len(parts) == 1 {
-				// Same namespace
-				deps = append(deps, helmv2.DependencyReference{
-					Name: parts[0],
-				})
-			} else if len(parts) == 2 {
-				// Different namespace
-				deps = append(deps, helmv2.DependencyReference{
-					Namespace: parts[0],
-					Name:      parts[1],
-				})
-			} else {
-				return nil, fmt.Errorf("invalid depends-on format %q, expected name or namespace/name", dep)
+			depRef, err := parseDependency(dep)
+			if err != nil {
+				return nil, err
 			}
+			deps = append(deps, *depRef)
 		}
 		helmRelease.Spec.DependsOn = deps
 	}
@@ -462,26 +468,15 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			kind := parts[0]
 			name := parts[1]
 
-			// Validate kind
+			// Validate kind (case-insensitive)
 			validKinds := []string{"ConfigMap", "Secret"}
-			found := false
-			for _, validKind := range validKinds {
-				if strings.EqualFold(kind, validKind) {
-					kind = validKind
-					found = true
-					break
-				}
-			}
-			if !found {
-				return nil, fmt.Errorf(
-					"invalid values-from kind %q, must be one of: %s",
-					kind,
-					strings.Join(validKinds, ", "),
-				)
+			canonicalKind, err := validateKindCaseInsensitive(kind, validKinds, "values-from")
+			if err != nil {
+				return nil, err
 			}
 
 			valsFrom = append(valsFrom, helmv2.ValuesReference{
-				Kind: kind,
+				Kind: canonicalKind,
 				Name: name,
 			})
 		}
