@@ -1,4 +1,4 @@
-// Package flux provides a flux client implementation that wraps the flux CLI.
+// Package flux provides a flux client implementation using Flux Kubernetes APIs.
 package flux_test
 
 import (
@@ -20,7 +20,7 @@ func TestNewClient(t *testing.T) {
 		ErrOut: &bytes.Buffer{},
 	}
 
-	client := flux.NewClient(ioStreams)
+	client := flux.NewClient(ioStreams, "")
 	require.NotNil(t, client)
 }
 
@@ -33,7 +33,7 @@ func TestCreateCreateCommand(t *testing.T) {
 		ErrOut: &bytes.Buffer{},
 	}
 
-	client := flux.NewClient(ioStreams)
+	client := flux.NewClient(ioStreams, "")
 	cmd := client.CreateCreateCommand("")
 
 	require.NotNil(t, cmd)
@@ -44,26 +44,22 @@ func TestCreateCreateCommand(t *testing.T) {
 	subCommands := cmd.Commands()
 	require.NotEmpty(t, subCommands)
 
-	// Check for expected sub-commands
-	expectedSubCommands := []string{
-		"source", "flux-secret", "kustomization", "helmrelease",
-		"image", "alert", "alert-provider", "receiver", "tenant",
-	}
+	// Check for source command (currently the only implemented command)
+	var sourceCmd *cobra.Command
 
-	for _, expectedCmd := range expectedSubCommands {
-		found := false
-		for _, subCmd := range subCommands {
-			if subCmd.Use == expectedCmd {
-				found = true
+	for _, subCmd := range subCommands {
+		if subCmd.Use == "source" {
+			sourceCmd = subCmd
 
-				break
-			}
+			break
 		}
-		require.True(t, found, "Expected sub-command %s not found", expectedCmd)
 	}
+
+	require.NotNil(t, sourceCmd)
+	require.Equal(t, "Create or update Flux sources", sourceCmd.Short)
 }
 
-func TestCreateSourceCommand(t *testing.T) {
+func TestCreateSourceGitCommand(t *testing.T) {
 	t.Parallel()
 
 	ioStreams := genericiooptions.IOStreams{
@@ -72,7 +68,7 @@ func TestCreateSourceCommand(t *testing.T) {
 		ErrOut: &bytes.Buffer{},
 	}
 
-	client := flux.NewClient(ioStreams)
+	client := flux.NewClient(ioStreams, "")
 	cmd := client.CreateCreateCommand("")
 
 	// Find source command
@@ -87,115 +83,28 @@ func TestCreateSourceCommand(t *testing.T) {
 	}
 
 	require.NotNil(t, sourceCmd)
-	require.Equal(t, "Create or update Flux sources", sourceCmd.Short)
 
-	// Check for source sub-commands
-	sourceSubCommands := sourceCmd.Commands()
-	require.NotEmpty(t, sourceSubCommands)
+	// Find git sub-command
+	var gitCmd *cobra.Command
 
-	expectedSourceSubCommands := []string{"git", "helm", "bucket", "chart", "oci"}
-
-	for _, expectedCmd := range expectedSourceSubCommands {
-		found := false
-		for _, subCmd := range sourceSubCommands {
-			if subCmd.Use == expectedCmd {
-				found = true
-
-				break
-			}
-		}
-		require.True(t, found, "Expected source sub-command %s not found", expectedCmd)
-	}
-}
-
-func TestCreateSecretCommand(t *testing.T) {
-	t.Parallel()
-
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
-
-	client := flux.NewClient(ioStreams)
-	cmd := client.CreateCreateCommand("")
-
-	// Find secret command
-	var secretCmd *cobra.Command
-
-	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == "flux-secret" {
-			secretCmd = subCmd
+	for _, subCmd := range sourceCmd.Commands() {
+		if subCmd.Use == "git [name]" {
+			gitCmd = subCmd
 
 			break
 		}
 	}
 
-	require.NotNil(t, secretCmd)
-	require.Equal(t, "Create or update Flux secrets", secretCmd.Short)
+	require.NotNil(t, gitCmd)
+	require.Equal(t, "Create or update a GitRepository source", gitCmd.Short)
 
-	// Check for secret sub-commands
-	secretSubCommands := secretCmd.Commands()
-	require.NotEmpty(t, secretSubCommands)
+	// Check that required flags are present
+	urlFlag := gitCmd.Flags().Lookup("url")
+	require.NotNil(t, urlFlag)
 
-	expectedSecretSubCommands := []string{
-		"git", "helm", "oci", "tls", "github-app", "notation", "proxy",
-	}
+	branchFlag := gitCmd.Flags().Lookup("branch")
+	require.NotNil(t, branchFlag)
 
-	for _, expectedCmd := range expectedSecretSubCommands {
-		found := false
-		for _, subCmd := range secretSubCommands {
-			if subCmd.Use == expectedCmd {
-				found = true
-
-				break
-			}
-		}
-		require.True(t, found, "Expected secret sub-command %s not found", expectedCmd)
-	}
-}
-
-func TestCreateImageCommand(t *testing.T) {
-	t.Parallel()
-
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
-
-	client := flux.NewClient(ioStreams)
-	cmd := client.CreateCreateCommand("")
-
-	// Find image command
-	var imageCmd *cobra.Command
-
-	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == "image" {
-			imageCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, imageCmd)
-	require.Equal(t, "Create or update Flux image automation objects", imageCmd.Short)
-
-	// Check for image sub-commands
-	imageSubCommands := imageCmd.Commands()
-	require.NotEmpty(t, imageSubCommands)
-
-	expectedImageSubCommands := []string{"repository", "policy", "update"}
-
-	for _, expectedCmd := range expectedImageSubCommands {
-		found := false
-		for _, subCmd := range imageSubCommands {
-			if subCmd.Use == expectedCmd {
-				found = true
-
-				break
-			}
-		}
-		require.True(t, found, "Expected image sub-command %s not found", expectedCmd)
-	}
+	intervalFlag := gitCmd.Flags().Lookup("interval")
+	require.NotNil(t, intervalFlag)
 }

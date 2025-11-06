@@ -7,6 +7,9 @@ require (
 	github.com/docker/docker v28.5.1+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
+	github.com/fluxcd/helm-controller/api v1.4.3
+	github.com/fluxcd/kustomize-controller/api v1.7.2
+	github.com/fluxcd/source-controller/api v1.7.3
 	github.com/gkampitakis/go-snaps v0.5.15
 	github.com/jinzhu/copier v0.4.0
 	github.com/k3d-io/k3d/v5 v5.8.3
@@ -25,6 +28,7 @@ require (
 	k8s.io/cli-runtime v0.34.1
 	k8s.io/client-go v0.34.1
 	k8s.io/kubectl v0.34.1
+	sigs.k8s.io/controller-runtime v0.22.2
 	sigs.k8s.io/kind v0.30.0
 	sigs.k8s.io/kustomize/api v0.20.1
 	sigs.k8s.io/yaml v1.6.0
@@ -168,7 +172,9 @@ require (
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fluxcd/flux2/v2 v2.7.3 // indirect
+	github.com/fluxcd/pkg/apis/acl v0.9.0 // indirect
+	github.com/fluxcd/pkg/apis/kustomize v1.13.0 // indirect
+	github.com/fluxcd/pkg/apis/meta v1.22.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
@@ -373,6 +379,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.37.0 // indirect
+	go.opentelemetry.io/contrib/exporters/autoexport v0.63.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
@@ -380,6 +387,8 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.38.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.38.0 // indirect
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.38.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.38.0 // indirect
