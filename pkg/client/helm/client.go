@@ -701,13 +701,9 @@ func runReleaseWithSilencedStderr(
 		waitGroup    sync.WaitGroup
 	)
 
-	waitGroup.Add(1)
-
-	go func() {
-		defer waitGroup.Done()
-
+	waitGroup.Go(func() {
 		_, _ = io.Copy(&stderrBuffer, readPipe)
-	}()
+	})
 
 	os.Stderr = writePipe
 
