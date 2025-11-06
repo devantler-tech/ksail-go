@@ -549,24 +549,24 @@ func mergeMaps(mapA, mapB map[string]any) map[string]any {
 
 // helmReleaseConfig holds all configuration for building a HelmRelease.
 type helmReleaseConfig struct {
-	name                 string
-	namespace            string
-	source               string
-	chart                string
-	chartVersion         string
-	chartRef             string
-	targetNamespace      string
-	storageNamespace     string
-	createNamespace      bool
-	dependsOn            []string
-	interval             time.Duration
-	timeout              time.Duration
-	values               []string
-	valuesFrom           []string
-	saName               string
-	crdsPolicy           string
-	kubeConfigSecretRef  string
-	releaseName          string
+	name                string
+	namespace           string
+	source              string
+	chart               string
+	chartVersion        string
+	chartRef            string
+	targetNamespace     string
+	storageNamespace    string
+	createNamespace     bool
+	dependsOn           []string
+	interval            time.Duration
+	timeout             time.Duration
+	values              []string
+	valuesFrom          []string
+	saName              string
+	crdsPolicy          string
+	kubeConfigSecretRef string
+	releaseName         string
 }
 
 // setChartSpec sets the chart specification for the HelmRelease.
