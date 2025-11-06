@@ -41,6 +41,7 @@ func (c *Client) newCreateSourceHelmCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
 				namespace = DefaultNamespace
@@ -85,6 +86,7 @@ func (c *Client) createHelmRepository(
 	if err != nil {
 		return fmt.Errorf("failed to parse URL: %w", err)
 	}
+
 	if parsedURL.Scheme == sourcev1.HelmRepositoryTypeOCI {
 		helmRepo.Spec.Type = sourcev1.HelmRepositoryTypeOCI
 		helmRepo.Spec.Provider = flags.ociProvider

@@ -49,6 +49,7 @@ func (c *Client) newCreateSourceOCICmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
 				namespace = DefaultNamespace

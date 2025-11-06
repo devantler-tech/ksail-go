@@ -47,6 +47,47 @@ func NewClient(ioStreams genericiooptions.IOStreams, kubeconfigPath string) *Cli
 	}
 }
 
+// CreateCreateCommand returns the flux create command tree.
+func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
+	c.kubeconfigPath = kubeconfigPath
+
+	createCmd := &cobra.Command{
+		Use:   "flux-create",
+		Short: "Create Flux resources",
+		Long:  "Create or update Flux sources and resources using Kubernetes APIs.",
+	}
+
+	// Add namespace flag to all commands
+	createCmd.PersistentFlags().StringP(
+		"namespace",
+		"n",
+		DefaultNamespace,
+		"the namespace scope for this operation",
+	)
+
+	// Add sub-commands for flux create
+	createCmd.AddCommand(c.createSourceCommand())
+	createCmd.AddCommand(c.newCreateKustomizationCmd())
+	createCmd.AddCommand(c.newCreateHelmReleaseCmd())
+
+	return createCmd
+}
+
+// createSourceCommand creates the flux create source command.
+func (c *Client) createSourceCommand() *cobra.Command {
+	sourceCmd := &cobra.Command{
+		Use:   "source",
+		Short: "Create or update Flux sources",
+	}
+
+	// Add source sub-commands
+	sourceCmd.AddCommand(c.newCreateSourceGitCmd())
+	sourceCmd.AddCommand(c.newCreateSourceHelmCmd())
+	sourceCmd.AddCommand(c.newCreateSourceOCICmd())
+
+	return sourceCmd
+}
+
 // getClient returns a controller-runtime client configured for Flux APIs.
 func (c *Client) getClient() (client.Client, error) {
 	if c.client != nil {
@@ -103,7 +144,12 @@ func (c *Client) getRestConfig() (*rest.Config, error) {
 		configOverrides,
 	)
 
-	return kubeConfig.ClientConfig()
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
+	}
+
+	return config, nil
 }
 
 // exportResource exports a resource as YAML to stdout.
@@ -114,8 +160,11 @@ func (c *Client) exportResource(obj runtime.Object) error {
 	}
 
 	_, err = c.ioStreams.Out.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // upsertResource creates or updates a Flux resource using the Kubernetes API.
@@ -161,19 +210,22 @@ func (c *Client) upsertResource(
 	}
 
 	// Resource exists, update it
-	if err := k8sClient.Get(ctx, client.ObjectKey{
+	err = k8sClient.Get(ctx, client.ObjectKey{
 		Name:      name,
 		Namespace: namespace,
-	}, existing); err != nil {
+	}, existing)
+	if err != nil {
 		return fmt.Errorf("failed to get existing %s: %w", resourceKind, err)
 	}
 
 	// Copy spec from obj to existing
-	if err := copySpec(obj, existing); err != nil {
+	err = copySpec(obj, existing)
+	if err != nil {
 		return fmt.Errorf("failed to copy spec: %w", err)
 	}
 
-	if err := k8sClient.Update(ctx, existing); err != nil {
+	err = k8sClient.Update(ctx, existing)
+	if err != nil {
 		return fmt.Errorf("failed to update %s: %w", resourceKind, err)
 	}
 
@@ -262,45 +314,4 @@ func copyHelmReleaseSpec(src *helmv2.HelmRelease, dst client.Object) error {
 	dstObj.Spec = src.Spec
 
 	return nil
-}
-
-// CreateCreateCommand creates a flux create command that uses Flux Kubernetes APIs.
-func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
-	c.kubeconfigPath = kubeconfigPath
-
-	createCmd := &cobra.Command{
-		Use:   "flux-create",
-		Short: "Create Flux resources",
-		Long:  "Create or update Flux sources and resources using Kubernetes APIs.",
-	}
-
-	// Add namespace flag to all commands
-	createCmd.PersistentFlags().StringP(
-		"namespace",
-		"n",
-		DefaultNamespace,
-		"the namespace scope for this operation",
-	)
-
-	// Add sub-commands for flux create
-	createCmd.AddCommand(c.createSourceCommand())
-	createCmd.AddCommand(c.newCreateKustomizationCmd())
-	createCmd.AddCommand(c.newCreateHelmReleaseCmd())
-
-	return createCmd
-}
-
-// createSourceCommand creates the flux create source command.
-func (c *Client) createSourceCommand() *cobra.Command {
-	sourceCmd := &cobra.Command{
-		Use:   "source",
-		Short: "Create or update Flux sources",
-	}
-
-	// Add source sub-commands
-	sourceCmd.AddCommand(c.newCreateSourceGitCmd())
-	sourceCmd.AddCommand(c.newCreateSourceHelmCmd())
-	sourceCmd.AddCommand(c.newCreateSourceOCICmd())
-
-	return sourceCmd
 }
