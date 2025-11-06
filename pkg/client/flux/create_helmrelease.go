@@ -2,14 +2,12 @@ package flux
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type helmReleaseFlags struct {
@@ -162,34 +160,5 @@ func (c *Client) createHelmRelease(
 	}
 
 	// Create or update the resource
-	k8sClient, err := c.getClient()
-	if err != nil {
-		return fmt.Errorf("failed to create Kubernetes client: %w", err)
-	}
-
-	err = k8sClient.Create(ctx, helmRelease)
-	if err != nil {
-		if client.IgnoreAlreadyExists(err) == nil {
-			// Resource exists, update it
-			existing := &helmv2.HelmRelease{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{
-				Name:      name,
-				Namespace: namespace,
-			}, existing); err != nil {
-				return fmt.Errorf("failed to get existing HelmRelease: %w", err)
-			}
-
-			existing.Spec = helmRelease.Spec
-			if err := k8sClient.Update(ctx, existing); err != nil {
-				return fmt.Errorf("failed to update HelmRelease: %w", err)
-			}
-
-			fmt.Fprintf(c.ioStreams.Out, "✓ HelmRelease %s/%s updated\n", namespace, name)
-			return nil
-		}
-		return fmt.Errorf("failed to create HelmRelease: %w", err)
-	}
-
-	fmt.Fprintf(c.ioStreams.Out, "✓ HelmRelease %s/%s created\n", namespace, name)
-	return nil
+	return c.upsertResource(ctx, helmRelease, &helmv2.HelmRelease{}, "HelmRelease")
 }

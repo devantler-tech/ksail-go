@@ -2,14 +2,12 @@ package flux
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	meta "github.com/fluxcd/pkg/apis/meta"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type sourceGitFlags struct {
@@ -122,34 +120,5 @@ func (c *Client) createGitRepository(
 	}
 
 	// Create or update the resource
-	k8sClient, err := c.getClient()
-	if err != nil {
-		return fmt.Errorf("failed to create Kubernetes client: %w", err)
-	}
-
-	err = k8sClient.Create(ctx, gitRepo)
-	if err != nil {
-		if client.IgnoreAlreadyExists(err) == nil {
-			// Resource exists, update it
-			existing := &sourcev1.GitRepository{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{
-				Name:      name,
-				Namespace: namespace,
-			}, existing); err != nil {
-				return fmt.Errorf("failed to get existing GitRepository: %w", err)
-			}
-
-			existing.Spec = gitRepo.Spec
-			if err := k8sClient.Update(ctx, existing); err != nil {
-				return fmt.Errorf("failed to update GitRepository: %w", err)
-			}
-
-			fmt.Fprintf(c.ioStreams.Out, "✓ GitRepository %s/%s updated\n", namespace, name)
-			return nil
-		}
-		return fmt.Errorf("failed to create GitRepository: %w", err)
-	}
-
-	fmt.Fprintf(c.ioStreams.Out, "✓ GitRepository %s/%s created\n", namespace, name)
-	return nil
+	return c.upsertResource(ctx, gitRepo, &sourcev1.GitRepository{}, "GitRepository")
 }

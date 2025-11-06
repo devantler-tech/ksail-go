@@ -10,7 +10,6 @@ import (
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type sourceHelmFlags struct {
@@ -105,34 +104,5 @@ func (c *Client) createHelmRepository(
 	}
 
 	// Create or update the resource
-	k8sClient, err := c.getClient()
-	if err != nil {
-		return fmt.Errorf("failed to create Kubernetes client: %w", err)
-	}
-
-	err = k8sClient.Create(ctx, helmRepo)
-	if err != nil {
-		if client.IgnoreAlreadyExists(err) == nil {
-			// Resource exists, update it
-			existing := &sourcev1.HelmRepository{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{
-				Name:      name,
-				Namespace: namespace,
-			}, existing); err != nil {
-				return fmt.Errorf("failed to get existing HelmRepository: %w", err)
-			}
-
-			existing.Spec = helmRepo.Spec
-			if err := k8sClient.Update(ctx, existing); err != nil {
-				return fmt.Errorf("failed to update HelmRepository: %w", err)
-			}
-
-			fmt.Fprintf(c.ioStreams.Out, "✓ HelmRepository %s/%s updated\n", namespace, name)
-			return nil
-		}
-		return fmt.Errorf("failed to create HelmRepository: %w", err)
-	}
-
-	fmt.Fprintf(c.ioStreams.Out, "✓ HelmRepository %s/%s created\n", namespace, name)
-	return nil
+	return c.upsertResource(ctx, helmRepo, &sourcev1.HelmRepository{}, "HelmRepository")
 }

@@ -2,6 +2,7 @@
 package flux
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -87,6 +88,97 @@ func (c *Client) exportResource(obj runtime.Object) error {
 
 	_, err = io.WriteString(c.ioStreams.Out, string(data))
 	return err
+}
+
+// upsertResource creates or updates a Flux resource using the Kubernetes API.
+// It takes a context, the resource object to create/update, the resource name,
+// namespace, and a resourceKind string for logging purposes.
+// The obj parameter must be a pointer to a Flux resource (e.g., *sourcev1.GitRepository).
+// The existing parameter must be a pointer to the same type for fetching existing resources.
+func (c *Client) upsertResource(
+	ctx context.Context,
+	obj client.Object,
+	existing client.Object,
+	resourceKind string,
+) error {
+	name := obj.GetName()
+	namespace := obj.GetNamespace()
+
+	// Get Kubernetes client
+	k8sClient, err := c.getClient()
+	if err != nil {
+		return fmt.Errorf("failed to create Kubernetes client: %w", err)
+	}
+
+	// Try to create the resource
+	err = k8sClient.Create(ctx, obj)
+	if err != nil {
+		if client.IgnoreAlreadyExists(err) == nil {
+			// Resource exists, update it
+			if err := k8sClient.Get(ctx, client.ObjectKey{
+				Name:      name,
+				Namespace: namespace,
+			}, existing); err != nil {
+				return fmt.Errorf("failed to get existing %s: %w", resourceKind, err)
+			}
+
+			// Copy spec from obj to existing
+			// This assumes the objects have a Spec field that can be copied
+			if err := copySpec(obj, existing); err != nil {
+				return fmt.Errorf("failed to copy spec: %w", err)
+			}
+
+			if err := k8sClient.Update(ctx, existing); err != nil {
+				return fmt.Errorf("failed to update %s: %w", resourceKind, err)
+			}
+
+			fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s updated\n", resourceKind, namespace, name)
+			return nil
+		}
+		return fmt.Errorf("failed to create %s: %w", resourceKind, err)
+	}
+
+	fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s created\n", resourceKind, namespace, name)
+	return nil
+}
+
+// copySpec copies the Spec field from src to dst using type assertions.
+func copySpec(src, dst client.Object) error {
+	switch s := src.(type) {
+	case *sourcev1.GitRepository:
+		d, ok := dst.(*sourcev1.GitRepository)
+		if !ok {
+			return fmt.Errorf("type mismatch: expected *sourcev1.GitRepository")
+		}
+		d.Spec = s.Spec
+	case *sourcev1.HelmRepository:
+		d, ok := dst.(*sourcev1.HelmRepository)
+		if !ok {
+			return fmt.Errorf("type mismatch: expected *sourcev1.HelmRepository")
+		}
+		d.Spec = s.Spec
+	case *sourcev1.OCIRepository:
+		d, ok := dst.(*sourcev1.OCIRepository)
+		if !ok {
+			return fmt.Errorf("type mismatch: expected *sourcev1.OCIRepository")
+		}
+		d.Spec = s.Spec
+	case *kustomizev1.Kustomization:
+		d, ok := dst.(*kustomizev1.Kustomization)
+		if !ok {
+			return fmt.Errorf("type mismatch: expected *kustomizev1.Kustomization")
+		}
+		d.Spec = s.Spec
+	case *helmv2.HelmRelease:
+		d, ok := dst.(*helmv2.HelmRelease)
+		if !ok {
+			return fmt.Errorf("type mismatch: expected *helmv2.HelmRelease")
+		}
+		d.Spec = s.Spec
+	default:
+		return fmt.Errorf("unsupported resource type: %T", src)
+	}
+	return nil
 }
 
 // CreateCreateCommand creates a flux create command that uses Flux Kubernetes APIs.
