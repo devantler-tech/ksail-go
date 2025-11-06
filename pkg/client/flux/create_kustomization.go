@@ -13,7 +13,6 @@ import (
 type kustomizationFlags struct {
 	sourceKind      string
 	sourceName      string
-	sourceNamespace string
 	path            string
 	prune           bool
 	targetNamespace string
@@ -51,7 +50,7 @@ func (c *Client) newCreateKustomizationCmd() *cobra.Command {
 			name := args[0]
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
-				namespace = "flux-system"
+				namespace = DefaultNamespace
 			}
 
 			return c.createKustomization(cmd.Context(), name, namespace, flags)
@@ -89,13 +88,13 @@ func (c *Client) createKustomization(
 	sourceNs := namespace
 
 	if strings.Contains(sourceName, "/") {
-		parts := strings.SplitN(sourceName, "/", 2)
+		parts := strings.SplitN(sourceName, "/", SplitParts)
 		sourceKind = parts[0]
 		sourceName = parts[1]
 	}
 
 	if strings.Contains(sourceName, ".") {
-		parts := strings.SplitN(sourceName, ".", 2)
+		parts := strings.SplitN(sourceName, ".", SplitParts)
 		sourceName = parts[0]
 		sourceNs = parts[1]
 	}
@@ -129,7 +128,7 @@ func (c *Client) createKustomization(
 			depName := dep
 			depNs := namespace
 			if strings.Contains(dep, "/") {
-				parts := strings.SplitN(dep, "/", 2)
+				parts := strings.SplitN(dep, "/", SplitParts)
 				depNs = parts[0]
 				depName = parts[1]
 			}

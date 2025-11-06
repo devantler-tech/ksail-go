@@ -2,13 +2,18 @@ package flux
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	meta "github.com/fluxcd/pkg/apis/meta"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	// ErrOCIRefRequired is returned when none of tag, semver, or digest is specified for OCI repository.
+	ErrOCIRefRequired = errors.New("one of --tag, --tag-semver or --digest is required")
 )
 
 type sourceOCIFlags struct {
@@ -48,7 +53,7 @@ func (c *Client) newCreateSourceOCICmd() *cobra.Command {
 			name := args[0]
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
-				namespace = "flux-system"
+				namespace = DefaultNamespace
 			}
 
 			return c.createOCIRepository(cmd.Context(), name, namespace, flags)
@@ -77,7 +82,7 @@ func (c *Client) createOCIRepository(
 	flags *sourceOCIFlags,
 ) error {
 	if flags.tag == "" && flags.semver == "" && flags.digest == "" {
-		return fmt.Errorf("one of --tag, --tag-semver or --digest is required")
+		return ErrOCIRefRequired
 	}
 
 	ociRepo := &sourcev1.OCIRepository{
@@ -95,11 +100,12 @@ func (c *Client) createOCIRepository(
 	}
 
 	// Set reference based on flags
-	if flags.digest != "" {
+	switch {
+	case flags.digest != "":
 		ociRepo.Spec.Reference.Digest = flags.digest
-	} else if flags.semver != "" {
+	case flags.semver != "":
 		ociRepo.Spec.Reference.SemVer = flags.semver
-	} else if flags.tag != "" {
+	case flags.tag != "":
 		ociRepo.Spec.Reference.Tag = flags.tag
 	}
 

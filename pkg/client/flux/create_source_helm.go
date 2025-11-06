@@ -43,7 +43,7 @@ func (c *Client) newCreateSourceHelmCmd() *cobra.Command {
 			name := args[0]
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
-				namespace = "flux-system"
+				namespace = DefaultNamespace
 			}
 
 			return c.createHelmRepository(cmd.Context(), name, namespace, flags)

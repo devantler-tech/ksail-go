@@ -3,8 +3,8 @@ package flux
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"io"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	kustomizev1 "github.com/fluxcd/kustomize-controller/api/v1"
@@ -16,6 +16,20 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	// ErrTypeMismatch is returned when type assertion fails in copySpec.
+	ErrTypeMismatch = errors.New("type mismatch in copySpec")
+	// ErrUnsupportedResourceType is returned when an unsupported resource type is passed to copySpec.
+	ErrUnsupportedResourceType = errors.New("unsupported resource type")
+)
+
+const (
+	// DefaultNamespace is the default namespace for Flux resources.
+	DefaultNamespace = "flux-system"
+	// SplitParts is the number of parts when splitting strings like "namespace/name" or "name.namespace".
+	SplitParts = 2
 )
 
 // Client wraps flux API functionality.
@@ -45,13 +59,19 @@ func (c *Client) getClient() (client.Client, error) {
 	}
 
 	scheme := runtime.NewScheme()
-	if err := sourcev1.AddToScheme(scheme); err != nil {
+
+	err = sourcev1.AddToScheme(scheme)
+	if err != nil {
 		return nil, fmt.Errorf("failed to add source-controller scheme: %w", err)
 	}
-	if err := kustomizev1.AddToScheme(scheme); err != nil {
+
+	err = kustomizev1.AddToScheme(scheme)
+	if err != nil {
 		return nil, fmt.Errorf("failed to add kustomize-controller scheme: %w", err)
 	}
-	if err := helmv2.AddToScheme(scheme); err != nil {
+
+	err = helmv2.AddToScheme(scheme)
+	if err != nil {
 		return nil, fmt.Errorf("failed to add helm-controller scheme: %w", err)
 	}
 
@@ -61,13 +81,19 @@ func (c *Client) getClient() (client.Client, error) {
 	}
 
 	c.client = k8sClient
+
 	return k8sClient, nil
 }
 
 // getRestConfig returns a REST config for the Kubernetes cluster.
 func (c *Client) getRestConfig() (*rest.Config, error) {
 	if c.kubeconfigPath != "" {
-		return clientcmd.BuildConfigFromFlags("", c.kubeconfigPath)
+		cfg, err := clientcmd.BuildConfigFromFlags("", c.kubeconfigPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build config from kubeconfig path: %w", err)
+		}
+
+		return cfg, nil
 	}
 
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -76,6 +102,7 @@ func (c *Client) getRestConfig() (*rest.Config, error) {
 		loadingRules,
 		configOverrides,
 	)
+
 	return kubeConfig.ClientConfig()
 }
 
@@ -86,7 +113,8 @@ func (c *Client) exportResource(obj runtime.Object) error {
 		return fmt.Errorf("failed to marshal resource: %w", err)
 	}
 
-	_, err = io.WriteString(c.ioStreams.Out, string(data))
+	_, err = c.ioStreams.Out.Write(data)
+
 	return err
 }
 
@@ -112,72 +140,115 @@ func (c *Client) upsertResource(
 
 	// Try to create the resource
 	err = k8sClient.Create(ctx, obj)
-	if err != nil {
-		if client.IgnoreAlreadyExists(err) == nil {
-			// Resource exists, update it
-			if err := k8sClient.Get(ctx, client.ObjectKey{
-				Name:      name,
-				Namespace: namespace,
-			}, existing); err != nil {
-				return fmt.Errorf("failed to get existing %s: %w", resourceKind, err)
-			}
-
-			// Copy spec from obj to existing
-			// This assumes the objects have a Spec field that can be copied
-			if err := copySpec(obj, existing); err != nil {
-				return fmt.Errorf("failed to copy spec: %w", err)
-			}
-
-			if err := k8sClient.Update(ctx, existing); err != nil {
-				return fmt.Errorf("failed to update %s: %w", resourceKind, err)
-			}
-
-			fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s updated\n", resourceKind, namespace, name)
-			return nil
+	if err == nil {
+		_, printErr := fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s created\n", resourceKind, namespace, name)
+		if printErr != nil {
+			return fmt.Errorf("failed to print success message: %w", printErr)
 		}
+
+		return nil
+	}
+
+	// If resource doesn't exist, return the error
+	if client.IgnoreAlreadyExists(err) != nil {
 		return fmt.Errorf("failed to create %s: %w", resourceKind, err)
 	}
 
-	fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s created\n", resourceKind, namespace, name)
+	// Resource exists, update it
+	if err := k8sClient.Get(ctx, client.ObjectKey{
+		Name:      name,
+		Namespace: namespace,
+	}, existing); err != nil {
+		return fmt.Errorf("failed to get existing %s: %w", resourceKind, err)
+	}
+
+	// Copy spec from obj to existing
+	if err := copySpec(obj, existing); err != nil {
+		return fmt.Errorf("failed to copy spec: %w", err)
+	}
+
+	if err := k8sClient.Update(ctx, existing); err != nil {
+		return fmt.Errorf("failed to update %s: %w", resourceKind, err)
+	}
+
+	_, printErr := fmt.Fprintf(c.ioStreams.Out, "✓ %s %s/%s updated\n", resourceKind, namespace, name)
+	if printErr != nil {
+		return fmt.Errorf("failed to print success message: %w", printErr)
+	}
+
 	return nil
 }
 
 // copySpec copies the Spec field from src to dst using type assertions.
 func copySpec(src, dst client.Object) error {
-	switch s := src.(type) {
+	switch sourceObj := src.(type) {
 	case *sourcev1.GitRepository:
-		d, ok := dst.(*sourcev1.GitRepository)
-		if !ok {
-			return fmt.Errorf("type mismatch: expected *sourcev1.GitRepository")
-		}
-		d.Spec = s.Spec
+		return copyGitRepositorySpec(sourceObj, dst)
 	case *sourcev1.HelmRepository:
-		d, ok := dst.(*sourcev1.HelmRepository)
-		if !ok {
-			return fmt.Errorf("type mismatch: expected *sourcev1.HelmRepository")
-		}
-		d.Spec = s.Spec
+		return copyHelmRepositorySpec(sourceObj, dst)
 	case *sourcev1.OCIRepository:
-		d, ok := dst.(*sourcev1.OCIRepository)
-		if !ok {
-			return fmt.Errorf("type mismatch: expected *sourcev1.OCIRepository")
-		}
-		d.Spec = s.Spec
+		return copyOCIRepositorySpec(sourceObj, dst)
 	case *kustomizev1.Kustomization:
-		d, ok := dst.(*kustomizev1.Kustomization)
-		if !ok {
-			return fmt.Errorf("type mismatch: expected *kustomizev1.Kustomization")
-		}
-		d.Spec = s.Spec
+		return copyKustomizationSpec(sourceObj, dst)
 	case *helmv2.HelmRelease:
-		d, ok := dst.(*helmv2.HelmRelease)
-		if !ok {
-			return fmt.Errorf("type mismatch: expected *helmv2.HelmRelease")
-		}
-		d.Spec = s.Spec
+		return copyHelmReleaseSpec(sourceObj, dst)
 	default:
-		return fmt.Errorf("unsupported resource type: %T", src)
+		return fmt.Errorf("%w: %T", ErrUnsupportedResourceType, src)
 	}
+}
+
+func copyGitRepositorySpec(src *sourcev1.GitRepository, dst client.Object) error {
+	dstObj, ok := dst.(*sourcev1.GitRepository)
+	if !ok {
+		return fmt.Errorf("%w: expected *sourcev1.GitRepository, got %T", ErrTypeMismatch, dst)
+	}
+
+	dstObj.Spec = src.Spec
+
+	return nil
+}
+
+func copyHelmRepositorySpec(src *sourcev1.HelmRepository, dst client.Object) error {
+	dstObj, ok := dst.(*sourcev1.HelmRepository)
+	if !ok {
+		return fmt.Errorf("%w: expected *sourcev1.HelmRepository, got %T", ErrTypeMismatch, dst)
+	}
+
+	dstObj.Spec = src.Spec
+
+	return nil
+}
+
+func copyOCIRepositorySpec(src *sourcev1.OCIRepository, dst client.Object) error {
+	dstObj, ok := dst.(*sourcev1.OCIRepository)
+	if !ok {
+		return fmt.Errorf("%w: expected *sourcev1.OCIRepository, got %T", ErrTypeMismatch, dst)
+	}
+
+	dstObj.Spec = src.Spec
+
+	return nil
+}
+
+func copyKustomizationSpec(src *kustomizev1.Kustomization, dst client.Object) error {
+	dstObj, ok := dst.(*kustomizev1.Kustomization)
+	if !ok {
+		return fmt.Errorf("%w: expected *kustomizev1.Kustomization, got %T", ErrTypeMismatch, dst)
+	}
+
+	dstObj.Spec = src.Spec
+
+	return nil
+}
+
+func copyHelmReleaseSpec(src *helmv2.HelmRelease, dst client.Object) error {
+	dstObj, ok := dst.(*helmv2.HelmRelease)
+	if !ok {
+		return fmt.Errorf("%w: expected *helmv2.HelmRelease, got %T", ErrTypeMismatch, dst)
+	}
+
+	dstObj.Spec = src.Spec
+
 	return nil
 }
 
@@ -192,8 +263,12 @@ func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
 	}
 
 	// Add namespace flag to all commands
-	createCmd.PersistentFlags().
-		StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
+	createCmd.PersistentFlags().StringP(
+		"namespace",
+		"n",
+		DefaultNamespace,
+		"the namespace scope for this operation",
+	)
 
 	// Add sub-commands for flux create
 	createCmd.AddCommand(c.createSourceCommand())

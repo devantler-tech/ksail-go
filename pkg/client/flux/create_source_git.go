@@ -48,9 +48,10 @@ func (c *Client) newCreateSourceGitCmd() *cobra.Command {
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
+
 			namespace := cmd.Flag("namespace").Value.String()
 			if namespace == "" {
-				namespace = "flux-system"
+				namespace = DefaultNamespace
 			}
 
 			return c.createGitRepository(cmd.Context(), name, namespace, flags)
@@ -89,19 +90,20 @@ func (c *Client) createGitRepository(
 	}
 
 	// Set reference based on flags
-	if flags.branch != "" {
+	switch {
+	case flags.branch != "":
 		gitRepo.Spec.Reference = &sourcev1.GitRepositoryRef{
 			Branch: flags.branch,
 		}
-	} else if flags.tag != "" {
+	case flags.tag != "":
 		gitRepo.Spec.Reference = &sourcev1.GitRepositoryRef{
 			Tag: flags.tag,
 		}
-	} else if flags.semver != "" {
+	case flags.semver != "":
 		gitRepo.Spec.Reference = &sourcev1.GitRepositoryRef{
 			SemVer: flags.semver,
 		}
-	} else if flags.commit != "" {
+	case flags.commit != "":
 		gitRepo.Spec.Reference = &sourcev1.GitRepositoryRef{
 			Commit: flags.commit,
 		}
