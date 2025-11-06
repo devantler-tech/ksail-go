@@ -1,9 +1,13 @@
+// Package gen provides commands for generating Kubernetes resource manifests.
 package gen
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,7 +25,24 @@ import (
 )
 
 const (
-	defaultInterval = 1 * time.Minute
+	defaultInterval        = 1 * time.Minute
+	defaultTimeout         = 5 * time.Minute
+	kindNameSeparator      = 2
+	namespaceSeparator     = 2
+	dependencyParts        = 2
+	singleDependencyPart   = 1
+)
+
+var (
+	errInvalidFormat       = errors.New("invalid format")
+	errInvalidKind         = errors.New("invalid kind")
+	errInvalidDependency   = errors.New("invalid depends-on format")
+	errNotImplemented = errors.New(
+		"applying HelmRelease to cluster is not yet implemented, use --export flag to generate YAML",
+	)
+	errMissingSourceOrRef  = errors.New("either --source with --chart or --chart-ref must be specified")
+	errConflictingSource   = errors.New("cannot specify both --source/--chart and --chart-ref")
+	errInvalidValuesFrom   = errors.New("invalid values-from format")
 )
 
 // resourceReference represents a parsed Kubernetes resource reference.
@@ -36,45 +57,47 @@ func parseResourceReference(
 	ref, defaultNamespace, errorContext string,
 ) (*resourceReference, error) {
 	parts := strings.Split(ref, "/")
-	if len(parts) != 2 {
+	if len(parts) != kindNameSeparator {
 		return nil, fmt.Errorf(
-			"invalid %s format, expected Kind/name or Kind/name.namespace",
+			"%w: %s, expected Kind/name or Kind/name.namespace",
+			errInvalidFormat,
 			errorContext,
 		)
 	}
 
-	rr := &resourceReference{
+	resRef := &resourceReference{
 		Kind:      parts[0],
 		Name:      parts[1],
 		Namespace: defaultNamespace,
 	}
 
 	// Check if namespace is included in the name
-	if strings.Contains(rr.Name, ".") {
-		nameParts := strings.SplitN(rr.Name, ".", 2)
-		rr.Name = nameParts[0]
-		rr.Namespace = nameParts[1]
+	if strings.Contains(resRef.Name, ".") {
+		nameParts := strings.SplitN(resRef.Name, ".", namespaceSeparator)
+		resRef.Name = nameParts[0]
+		resRef.Namespace = nameParts[1]
 	}
 
-	return rr, nil
+	return resRef, nil
 }
 
 // validateKind checks if a kind is in the list of valid kinds.
 func validateKind(kind string, validKinds []string, errorContext string) error {
-	for _, validKind := range validKinds {
-		if kind == validKind {
-			return nil
-		}
+	if slices.Contains(validKinds, kind) {
+		return nil
 	}
+
 	return fmt.Errorf(
-		"invalid %s kind %q, must be one of: %s",
+		"%w: %s kind %q, must be one of: %s",
+		errInvalidKind,
 		errorContext,
 		kind,
 		strings.Join(validKinds, ", "),
 	)
 }
 
-// validateKindCaseInsensitive checks if a kind matches (case-insensitive) one of the valid kinds and returns the canonical form.
+// validateKindCaseInsensitive checks if a kind matches (case-insensitive)
+// one of the valid kinds and returns the canonical form.
 func validateKindCaseInsensitive(
 	kind string,
 	validKinds []string,
@@ -85,8 +108,10 @@ func validateKindCaseInsensitive(
 			return validKind, nil
 		}
 	}
+
 	return "", fmt.Errorf(
-		"invalid %s kind %q, must be one of: %s",
+		"%w: %s kind %q, must be one of: %s",
+		errInvalidKind,
 		errorContext,
 		kind,
 		strings.Join(validKinds, ", "),
@@ -96,19 +121,20 @@ func validateKindCaseInsensitive(
 // parseDependency parses a depends-on reference in format "name" or "namespace/name".
 func parseDependency(dep string) (*helmv2.DependencyReference, error) {
 	parts := strings.Split(dep, "/")
-	if len(parts) == 1 {
+	if len(parts) == singleDependencyPart {
 		// Same namespace
 		return &helmv2.DependencyReference{
 			Name: parts[0],
 		}, nil
-	} else if len(parts) == 2 {
+	} else if len(parts) == dependencyParts {
 		// Different namespace
 		return &helmv2.DependencyReference{
 			Namespace: parts[0],
 			Name:      parts[1],
 		}, nil
 	}
-	return nil, fmt.Errorf("invalid depends-on format %q, expected name or namespace/name", dep)
+
+	return nil, fmt.Errorf("%w: %q, expected name or namespace/name", errInvalidDependency, dep)
 }
 
 // NewHelmReleaseCmd creates the workload gen helmrelease command.
@@ -117,7 +143,8 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 		Use:     "helmrelease [NAME]",
 		Aliases: []string{"hr"},
 		Short:   "Generate a HelmRelease resource",
-		Long:    "Generate a HelmRelease resource for a given HelmRepository, GitRepository, Bucket, or chart reference source.",
+		Long: "Generate a HelmRelease resource for a given HelmRepository, " +
+			"GitRepository, Bucket, or chart reference source.",
 		Example: `  # Generate a HelmRelease with a chart from a HelmRepository source
   ksail workload gen helmrelease podinfo \
     --interval=10m \
@@ -194,7 +221,8 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 			releaseName, _ := cmd.Flags().GetString("release-name")
 			export, _ := cmd.Flags().GetBool("export")
 
-			if err := validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy); err != nil {
+			err := validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy)
+			if err != nil {
 				return err
 			}
 
@@ -239,7 +267,7 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 					return fmt.Errorf("failed to write YAML: %w", err)
 				}
 			} else {
-				return fmt.Errorf("applying HelmRelease to cluster is not yet implemented, use --export flag to generate YAML")
+				return errNotImplemented
 			}
 
 			total, stage := tmr.GetTiming()
@@ -275,7 +303,7 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	flags.String("storage-namespace", "", "namespace for Helm storage")
 	flags.Bool("create-target-namespace", false, "create the target namespace if not present")
 	flags.StringSlice("depends-on", nil, "HelmReleases that must be ready before this release")
-	flags.Duration("timeout", 5*time.Minute, "timeout for any individual Kubernetes operation")
+	flags.Duration("timeout", defaultTimeout, "timeout for any individual Kubernetes operation")
 	flags.StringSlice("values", nil, "local values YAML files")
 	flags.StringSlice("values-from", nil, "values from ConfigMap or Secret")
 	flags.String("service-account", "", "service account name to impersonate")
@@ -297,17 +325,19 @@ func validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy string) error {
 	hasChartRef := chartRef != ""
 
 	if !hasSource && !hasChartRef {
-		return fmt.Errorf("either --source with --chart or --chart-ref must be specified")
+		return errMissingSourceOrRef
 	}
 
 	if hasSource && hasChartRef {
-		return fmt.Errorf("cannot specify both --source/--chart and --chart-ref")
+		return errConflictingSource
 	}
 
 	// Validate CRDs policy if specified
 	if crdsPolicy != "" {
 		validPolicies := []string{"Create", "CreateReplace", "Skip"}
-		if err := validateKind(crdsPolicy, validPolicies, "crds policy"); err != nil {
+
+		err := validateKind(crdsPolicy, validPolicies, "crds policy")
+		if err != nil {
 			return err
 		}
 	}
@@ -347,7 +377,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			sourcev1.GitRepositoryKind,
 			sourcev1.BucketKind,
 		}
-		if err := validateKind(sourceRef.Kind, validSourceKinds, "source"); err != nil {
+
+		err = validateKind(sourceRef.Kind, validSourceKinds, "source")
+		if err != nil {
 			return nil, err
 		}
 
@@ -373,7 +405,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 
 		// Validate chartRef kind
 		validChartRefKinds := []string{sourcev1.OCIRepositoryKind, sourcev1.HelmChartKind}
-		if err := validateKind(chartReference.Kind, validChartRefKinds, "chart-ref"); err != nil {
+
+		err = validateKind(chartReference.Kind, validChartRefKinds, "chart-ref")
+		if err != nil {
 			return nil, err
 		}
 
@@ -401,18 +435,22 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 		if helmRelease.Spec.Install == nil {
 			helmRelease.Spec.Install = &helmv2.Install{}
 		}
+
 		helmRelease.Spec.Install.CreateNamespace = true
 	}
 
 	if len(dependsOn) > 0 {
 		deps := []helmv2.DependencyReference{}
+
 		for _, dep := range dependsOn {
 			depRef, err := parseDependency(dep)
 			if err != nil {
 				return nil, err
 			}
+
 			deps = append(deps, *depRef)
 		}
+
 		helmRelease.Spec.DependsOn = deps
 	}
 
@@ -428,11 +466,13 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 		if helmRelease.Spec.Install == nil {
 			helmRelease.Spec.Install = &helmv2.Install{}
 		}
+
 		helmRelease.Spec.Install.CRDs = helmv2.Create
 
 		if helmRelease.Spec.Upgrade == nil {
 			helmRelease.Spec.Upgrade = &helmv2.Upgrade{}
 		}
+
 		helmRelease.Spec.Upgrade.CRDs = helmv2.CRDsPolicy(crdsPolicy)
 	}
 
@@ -446,9 +486,10 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 
 	// Handle values files
 	if len(values) > 0 {
-		valuesMap := make(map[string]interface{})
+		valuesMap := make(map[string]any)
+
 		for _, vFile := range values {
-			data, err := os.ReadFile(vFile)
+			data, err := os.ReadFile(vFile) //#nosec G304 -- user-provided file path is expected
 			if err != nil {
 				return nil, fmt.Errorf("reading values from %s: %w", vFile, err)
 			}
@@ -458,8 +499,10 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 				return nil, fmt.Errorf("converting values to JSON from %s: %w", vFile, err)
 			}
 
-			jsonMap := make(map[string]interface{})
-			if err := json.Unmarshal(jsonBytes, &jsonMap); err != nil {
+			jsonMap := make(map[string]any)
+
+			err = json.Unmarshal(jsonBytes, &jsonMap)
+			if err != nil {
 				return nil, fmt.Errorf("unmarshaling values from %s: %w", vFile, err)
 			}
 
@@ -477,10 +520,11 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	// Handle values from ConfigMap/Secret
 	if len(valuesFrom) > 0 {
 		valsFrom := []helmv2.ValuesReference{}
+
 		for _, vFrom := range valuesFrom {
 			parts := strings.Split(vFrom, "/")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("invalid values-from format %q, expected Kind/name", vFrom)
+			if len(parts) != kindNameSeparator {
+				return nil, fmt.Errorf("%w: %q, expected Kind/name", errInvalidValuesFrom, vFrom)
 			}
 
 			kind := parts[0]
@@ -488,6 +532,7 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 
 			// Validate kind (case-insensitive)
 			validKinds := []string{"ConfigMap", "Secret"}
+
 			canonicalKind, err := validateKindCaseInsensitive(kind, validKinds, "values-from")
 			if err != nil {
 				return nil, err
@@ -498,28 +543,32 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 				Name: name,
 			})
 		}
+
 		helmRelease.Spec.ValuesFrom = valsFrom
 	}
 
 	return helmRelease, nil
 }
 
-// mergeMaps merges two maps, with values from the second map taking precedence
-func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{}, len(a))
-	for k, v := range a {
-		out[k] = v
-	}
-	for k, v := range b {
-		if v, ok := v.(map[string]interface{}); ok {
-			if bv, ok := out[k]; ok {
-				if bv, ok := bv.(map[string]interface{}); ok {
-					out[k] = mergeMaps(bv, v)
+// mergeMaps merges two maps, with values from the second map taking precedence.
+func mergeMaps(mapA, mapB map[string]any) map[string]any {
+	out := make(map[string]any, len(mapA))
+
+	maps.Copy(out, mapA)
+
+	for key, val := range mapB {
+		if valMap, ok := val.(map[string]any); ok {
+			if bVal, ok := out[key]; ok {
+				if bValMap, ok := bVal.(map[string]any); ok {
+					out[key] = mergeMaps(bValMap, valMap)
+
 					continue
 				}
 			}
 		}
-		out[k] = v
+
+		out[key] = val
 	}
+
 	return out
 }
