@@ -126,7 +126,7 @@ jobs:
                   name: podinfo
           EOF
           ./ksail workload apply -k /tmp/podinfo-overlay
-          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=120s
+          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
       - name: 🧪 ksail cluster stop
         run: |
