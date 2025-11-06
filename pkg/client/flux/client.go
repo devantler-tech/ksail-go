@@ -100,7 +100,8 @@ func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
 	}
 
 	// Add namespace flag to all commands
-	createCmd.PersistentFlags().StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
+	createCmd.PersistentFlags().
+		StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
 
 	// Add sub-commands for flux create
 	createCmd.AddCommand(c.createSourceCommand())

@@ -60,15 +60,20 @@ func (c *Client) newCreateKustomizationCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.sourceKind, "source-kind", "GitRepository", "source kind (GitRepository, OCIRepository, Bucket)")
-	cmd.Flags().StringVar(&flags.sourceName, "source", "", "source name in format 'Kind/name' or 'Kind/name.namespace'")
-	cmd.Flags().StringVar(&flags.path, "path", "./", "path to the directory containing a kustomization.yaml file")
+	cmd.Flags().
+		StringVar(&flags.sourceKind, "source-kind", "GitRepository", "source kind (GitRepository, OCIRepository, Bucket)")
+	cmd.Flags().
+		StringVar(&flags.sourceName, "source", "", "source name in format 'Kind/name' or 'Kind/name.namespace'")
+	cmd.Flags().
+		StringVar(&flags.path, "path", "./", "path to the directory containing a kustomization.yaml file")
 	cmd.Flags().BoolVar(&flags.prune, "prune", false, "enable garbage collection")
 	cmd.Flags().BoolVar(&flags.wait, "wait", false, "enable health checking")
-	cmd.Flags().StringVar(&flags.targetNamespace, "target-namespace", "", "overrides the namespace of all Kustomization objects")
+	cmd.Flags().
+		StringVar(&flags.targetNamespace, "target-namespace", "", "overrides the namespace of all Kustomization objects")
 	cmd.Flags().DurationVar(&flags.interval, "interval", time.Minute, "reconciliation interval")
 	cmd.Flags().BoolVar(&flags.export, "export", false, "export in YAML format to stdout")
-	cmd.Flags().StringSliceVar(&flags.dependsOn, "depends-on", nil, "Kustomization that must be ready before this one")
+	cmd.Flags().
+		StringSliceVar(&flags.dependsOn, "depends-on", nil, "Kustomization that must be ready before this one")
 
 	_ = cmd.MarkFlagRequired("source")
 

@@ -13,16 +13,16 @@ import (
 )
 
 type helmReleaseFlags struct {
-	sourceKind       string
-	sourceName       string
-	sourceNamespace  string
-	chart            string
-	chartVersion     string
-	targetNamespace  string
-	createNamespace  bool
-	interval         time.Duration
-	export           bool
-	dependsOn        []string
+	sourceKind      string
+	sourceName      string
+	sourceNamespace string
+	chart           string
+	chartVersion    string
+	targetNamespace string
+	createNamespace bool
+	interval        time.Duration
+	export          bool
+	dependsOn       []string
 }
 
 func (c *Client) newCreateHelmReleaseCmd() *cobra.Command {
@@ -60,15 +60,20 @@ func (c *Client) newCreateHelmReleaseCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&flags.sourceKind, "source-kind", "HelmRepository", "source kind (HelmRepository, GitRepository, Bucket)")
-	cmd.Flags().StringVar(&flags.sourceName, "source", "", "source name in format 'Kind/name' or 'Kind/name.namespace'")
+	cmd.Flags().
+		StringVar(&flags.sourceKind, "source-kind", "HelmRepository", "source kind (HelmRepository, GitRepository, Bucket)")
+	cmd.Flags().
+		StringVar(&flags.sourceName, "source", "", "source name in format 'Kind/name' or 'Kind/name.namespace'")
 	cmd.Flags().StringVar(&flags.chart, "chart", "", "Helm chart name or path")
 	cmd.Flags().StringVar(&flags.chartVersion, "chart-version", "", "Helm chart version")
-	cmd.Flags().StringVar(&flags.targetNamespace, "target-namespace", "", "namespace to install the Helm release")
-	cmd.Flags().BoolVar(&flags.createNamespace, "create-target-namespace", false, "create the target namespace if it doesn't exist")
+	cmd.Flags().
+		StringVar(&flags.targetNamespace, "target-namespace", "", "namespace to install the Helm release")
+	cmd.Flags().
+		BoolVar(&flags.createNamespace, "create-target-namespace", false, "create the target namespace if it doesn't exist")
 	cmd.Flags().DurationVar(&flags.interval, "interval", time.Minute, "reconciliation interval")
 	cmd.Flags().BoolVar(&flags.export, "export", false, "export in YAML format to stdout")
-	cmd.Flags().StringSliceVar(&flags.dependsOn, "depends-on", nil, "HelmRelease that must be ready before this one")
+	cmd.Flags().
+		StringSliceVar(&flags.dependsOn, "depends-on", nil, "HelmRelease that must be ready before this one")
 
 	_ = cmd.MarkFlagRequired("source")
 	_ = cmd.MarkFlagRequired("chart")

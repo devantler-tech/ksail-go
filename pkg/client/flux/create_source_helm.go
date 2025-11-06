@@ -14,11 +14,11 @@ import (
 )
 
 type sourceHelmFlags struct {
-	url          string
-	secretRef    string
-	interval     time.Duration
-	export       bool
-	ociProvider  string
+	url             string
+	secretRef       string
+	interval        time.Duration
+	export          bool
+	ociProvider     string
 	passCredentials bool
 }
 
@@ -52,11 +52,13 @@ func (c *Client) newCreateSourceHelmCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&flags.url, "url", "", "Helm repository address")
-	cmd.Flags().StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing credentials")
+	cmd.Flags().
+		StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing credentials")
 	cmd.Flags().DurationVar(&flags.interval, "interval", time.Minute, "source sync interval")
 	cmd.Flags().BoolVar(&flags.export, "export", false, "export in YAML format to stdout")
 	cmd.Flags().StringVar(&flags.ociProvider, "oci-provider", "", "OCI provider for authentication")
-	cmd.Flags().BoolVar(&flags.passCredentials, "pass-credentials", false, "pass credentials to all domains")
+	cmd.Flags().
+		BoolVar(&flags.passCredentials, "pass-credentials", false, "pass credentials to all domains")
 
 	_ = cmd.MarkFlagRequired("url")
 

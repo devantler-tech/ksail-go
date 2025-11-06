@@ -13,15 +13,15 @@ import (
 )
 
 type sourceOCIFlags struct {
-	url        string
-	tag        string
-	semver     string
-	digest     string
-	secretRef  string
-	provider   string
-	interval   time.Duration
-	export     bool
-	insecure   bool
+	url       string
+	tag       string
+	semver    string
+	digest    string
+	secretRef string
+	provider  string
+	interval  time.Duration
+	export    bool
+	insecure  bool
 }
 
 func (c *Client) newCreateSourceOCICmd() *cobra.Command {
@@ -60,7 +60,8 @@ func (c *Client) newCreateSourceOCICmd() *cobra.Command {
 	cmd.Flags().StringVar(&flags.tag, "tag", "", "OCI artifact tag")
 	cmd.Flags().StringVar(&flags.semver, "tag-semver", "", "OCI artifact tag semver range")
 	cmd.Flags().StringVar(&flags.digest, "digest", "", "OCI artifact digest")
-	cmd.Flags().StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing credentials")
+	cmd.Flags().
+		StringVar(&flags.secretRef, "secret-ref", "", "the name of an existing secret containing credentials")
 	cmd.Flags().StringVar(&flags.provider, "provider", "generic", "OCI provider")
 	cmd.Flags().DurationVar(&flags.interval, "interval", time.Minute, "source sync interval")
 	cmd.Flags().BoolVar(&flags.export, "export", false, "export in YAML format to stdout")
@@ -86,10 +87,10 @@ func (c *Client) createOCIRepository(
 			Namespace: namespace,
 		},
 		Spec: sourcev1.OCIRepositorySpec{
-			URL:      flags.url,
-			Provider: flags.provider,
-			Insecure: flags.insecure,
-			Interval: metav1.Duration{Duration: flags.interval},
+			URL:       flags.url,
+			Provider:  flags.provider,
+			Insecure:  flags.insecure,
+			Interval:  metav1.Duration{Duration: flags.interval},
 			Reference: &sourcev1.OCIRepositoryRef{},
 		},
 	}
