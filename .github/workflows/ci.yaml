@@ -120,11 +120,11 @@ jobs:
         run: |
           ./ksail cluster start
 
-      - name: 🧪 ksail workload create deployment busybox (docker.io)
+      - name: 🧪 ksail workload create deployment whoami (docker.io)
         if: matrix.test-workload
         run: |
-          ./ksail workload create deployment busybox --image=busybox:latest -- sleep 3600
-          ./ksail workload wait --for=condition=Available deployment/busybox --timeout=120s
+          ./ksail workload create deployment whoami --image=traefik/whoami:latest
+          ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
 
       - name: 🧪 ksail workload apply podinfo kustomize (ghcr.io)
         if: matrix.test-workload
