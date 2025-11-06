@@ -127,7 +127,7 @@ func TestGenHelmReleaseWithValuesFile(t *testing.T) {
 image:
   tag: v2.0.0
 `
-	err := os.WriteFile(valuesFile, []byte(valuesContent), 0600)
+	err := os.WriteFile(valuesFile, []byte(valuesContent), 0o600)
 	if err != nil {
 		t.Fatalf("failed to create values file: %v", err)
 	}

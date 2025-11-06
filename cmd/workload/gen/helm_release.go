@@ -32,10 +32,15 @@ type resourceReference struct {
 }
 
 // parseResourceReference parses a string in format "Kind/name" or "Kind/name.namespace".
-func parseResourceReference(ref, defaultNamespace, errorContext string) (*resourceReference, error) {
+func parseResourceReference(
+	ref, defaultNamespace, errorContext string,
+) (*resourceReference, error) {
 	parts := strings.Split(ref, "/")
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid %s format, expected Kind/name or Kind/name.namespace", errorContext)
+		return nil, fmt.Errorf(
+			"invalid %s format, expected Kind/name or Kind/name.namespace",
+			errorContext,
+		)
 	}
 
 	rr := &resourceReference{
@@ -61,17 +66,31 @@ func validateKind(kind string, validKinds []string, errorContext string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("invalid %s kind %q, must be one of: %s", errorContext, kind, strings.Join(validKinds, ", "))
+	return fmt.Errorf(
+		"invalid %s kind %q, must be one of: %s",
+		errorContext,
+		kind,
+		strings.Join(validKinds, ", "),
+	)
 }
 
 // validateKindCaseInsensitive checks if a kind matches (case-insensitive) one of the valid kinds and returns the canonical form.
-func validateKindCaseInsensitive(kind string, validKinds []string, errorContext string) (string, error) {
+func validateKindCaseInsensitive(
+	kind string,
+	validKinds []string,
+	errorContext string,
+) (string, error) {
 	for _, validKind := range validKinds {
 		if strings.EqualFold(kind, validKind) {
 			return validKind, nil
 		}
 	}
-	return "", fmt.Errorf("invalid %s kind %q, must be one of: %s", errorContext, kind, strings.Join(validKinds, ", "))
+	return "", fmt.Errorf(
+		"invalid %s kind %q, must be one of: %s",
+		errorContext,
+		kind,
+		strings.Join(validKinds, ", "),
+	)
 }
 
 // parseDependency parses a depends-on reference in format "name" or "namespace/name".
@@ -91,7 +110,6 @@ func parseDependency(dep string) (*helmv2.DependencyReference, error) {
 	}
 	return nil, fmt.Errorf("invalid depends-on format %q, expected name or namespace/name", dep)
 }
-
 
 // NewHelmReleaseCmd creates the workload gen helmrelease command.
 func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
