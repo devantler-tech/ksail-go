@@ -100,15 +100,12 @@ func (c *Client) CreateCreateCommand(kubeconfigPath string) *cobra.Command {
 	}
 
 	// Add namespace flag to all commands
-	createCmd.PersistentFlags().
-		StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
+	createCmd.PersistentFlags().StringP("namespace", "n", "flux-system", "the namespace scope for this operation")
 
 	// Add sub-commands for flux create
 	createCmd.AddCommand(c.createSourceCommand())
-	// TODO: Implement other commands
-	// createCmd.AddCommand(c.createSecretCommand())
-	// createCmd.AddCommand(c.createKustomizationCommand())
-	// createCmd.AddCommand(c.createHelmReleaseCommand())
+	createCmd.AddCommand(c.newCreateKustomizationCmd())
+	createCmd.AddCommand(c.newCreateHelmReleaseCmd())
 
 	return createCmd
 }
@@ -122,10 +119,8 @@ func (c *Client) createSourceCommand() *cobra.Command {
 
 	// Add source sub-commands
 	sourceCmd.AddCommand(c.newCreateSourceGitCmd())
-	// TODO: Add other source types
-	// sourceCmd.AddCommand(c.newCreateSourceHelmCmd())
-	// sourceCmd.AddCommand(c.newCreateSourceBucketCmd())
-	// sourceCmd.AddCommand(c.newCreateSourceOCICmd())
+	sourceCmd.AddCommand(c.newCreateSourceHelmCmd())
+	sourceCmd.AddCommand(c.newCreateSourceOCICmd())
 
 	return sourceCmd
 }
