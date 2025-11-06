@@ -54,38 +54,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - distribution: Kind
-            cni: Default
-            init-args: "--distribution Kind"
-          - distribution: Kind
-            cni: Cilium
-            init-args: "--distribution Kind --cni Cilium"
-          - distribution: Kind
-            cni: Default
-            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
+          - init-args: "--distribution Kind"
+          - init-args: "--distribution Kind --cni Cilium"
+          - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
             test-workload: true
-          - distribution: Kind
-            cni: Default
-            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
+          - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
             test-workload: true
-          - distribution: K3d
-            cni: Default
-            init-args: "--distribution K3d"
-          - distribution: K3d
-            cni: Cilium
-            init-args: "--distribution K3d --cni Cilium"
-          - distribution: K3d
-            cni: Default
-            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
+          - init-args: "--distribution K3d"
+          - init-args: "--distribution K3d --cni Cilium"
+          - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
             test-workload: true
-          - distribution: K3d
-            cni: Default
-            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
+          - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
             test-workload: true
-          - distribution: K3d
-            cni: Default
-            metrics-server: Disabled
-            init-args: "--distribution K3d --metrics-server Disabled"
+          - init-args: "--distribution K3d --metrics-server Disabled"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
