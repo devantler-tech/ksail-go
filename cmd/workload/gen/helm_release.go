@@ -177,7 +177,9 @@ func parseDependency(dep string) (*helmv2.DependencyReference, error) {
 		return &helmv2.DependencyReference{
 			Name: parts[0],
 		}, nil
-	} else if len(parts) == dependencyParts {
+	}
+
+	if len(parts) == dependencyParts {
 		// Different namespace
 		return &helmv2.DependencyReference{
 			Namespace: parts[0],
