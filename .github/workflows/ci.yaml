@@ -123,7 +123,7 @@ jobs:
       - name: 🧪 ksail workload create deployment busybox (docker.io)
         if: matrix.test-workload
         run: |
-          ./ksail workload create deployment busybox --image=busybox:latest
+          ./ksail workload create deployment busybox --image=busybox:latest -- sleep 3600
           ./ksail workload wait --for=condition=Available deployment/busybox --timeout=120s
 
       - name: 🧪 ksail workload create deployment podinfo (ghcr.io)
