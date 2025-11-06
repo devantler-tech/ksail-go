@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	"github.com/fluxcd/pkg/apis/meta"
-	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
+	"github.com/fluxcd/pkg/apis/meta"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/spf13/cobra"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,9 +111,26 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 				return err
 			}
 
-			helmRelease, err := buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
-				targetNamespace, storageNamespace, createNamespace, dependsOn, interval, timeout,
-				values, valuesFrom, saName, crdsPolicy, kubeConfigSecretRef, releaseName)
+			helmRelease, err := buildHelmRelease(
+				name,
+				namespace,
+				source,
+				chart,
+				chartVersion,
+				chartRef,
+				targetNamespace,
+				storageNamespace,
+				createNamespace,
+				dependsOn,
+				interval,
+				timeout,
+				values,
+				valuesFrom,
+				saName,
+				crdsPolicy,
+				kubeConfigSecretRef,
+				releaseName,
+			)
 			if err != nil {
 				return err
 			}
@@ -155,7 +172,11 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	flags := cmd.Flags()
 
 	// Required flags
-	flags.String("source", "", "source that contains the chart (HelmRepository/name, GitRepository/name, Bucket/name)")
+	flags.String(
+		"source",
+		"",
+		"source that contains the chart (HelmRepository/name, GitRepository/name, Bucket/name)",
+	)
 	flags.String("chart", "", "Helm chart name or path")
 	flags.String("chart-ref", "", "Helm chart reference (HelmChart/name, OCIRepository/name)")
 
@@ -172,7 +193,11 @@ func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	flags.StringSlice("values-from", nil, "values from ConfigMap or Secret")
 	flags.String("service-account", "", "service account name to impersonate")
 	flags.String("crds", "", "CRDs policy (Create, CreateReplace, Skip)")
-	flags.String("kubeconfig-secret-ref", "", "KubeConfig secret reference for remote reconciliation")
+	flags.String(
+		"kubeconfig-secret-ref",
+		"",
+		"KubeConfig secret reference for remote reconciliation",
+	)
 	flags.String("release-name", "", "name used for the Helm release")
 	flags.Bool("export", false, "export in YAML format to stdout")
 
@@ -203,7 +228,11 @@ func validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy string) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("invalid crds policy %q, must be one of: %s", crdsPolicy, strings.Join(validPolicies, ", "))
+			return fmt.Errorf(
+				"invalid crds policy %q, must be one of: %s",
+				crdsPolicy,
+				strings.Join(validPolicies, ", "),
+			)
 		}
 	}
 
@@ -213,7 +242,8 @@ func validateHelmReleaseArgs(source, chart, chartRef, crdsPolicy string) error {
 func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	targetNamespace, storageNamespace string, createNamespace bool, dependsOn []string,
 	interval, timeout time.Duration, values, valuesFrom []string, saName, crdsPolicy,
-	kubeConfigSecretRef, releaseName string) (*helmv2.HelmRelease, error) {
+	kubeConfigSecretRef, releaseName string,
+) (*helmv2.HelmRelease, error) {
 	helmRelease := &helmv2.HelmRelease{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: helmv2.GroupVersion.String(),
@@ -232,7 +262,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	if source != "" && chart != "" {
 		parts := strings.Split(source, "/")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid source format, expected Kind/name or Kind/name.namespace")
+			return nil, fmt.Errorf(
+				"invalid source format, expected Kind/name or Kind/name.namespace",
+			)
 		}
 
 		sourceKind := parts[0]
@@ -247,7 +279,11 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 		}
 
 		// Validate source kind
-		validSourceKinds := []string{sourcev1.HelmRepositoryKind, sourcev1.GitRepositoryKind, sourcev1.BucketKind}
+		validSourceKinds := []string{
+			sourcev1.HelmRepositoryKind,
+			sourcev1.GitRepositoryKind,
+			sourcev1.BucketKind,
+		}
 		found := false
 		for _, kind := range validSourceKinds {
 			if sourceKind == kind {
@@ -256,7 +292,11 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("invalid source kind %q, must be one of: %s", sourceKind, strings.Join(validSourceKinds, ", "))
+			return nil, fmt.Errorf(
+				"invalid source kind %q, must be one of: %s",
+				sourceKind,
+				strings.Join(validSourceKinds, ", "),
+			)
 		}
 
 		helmRelease.Spec.Chart = &helmv2.HelmChartTemplate{
@@ -433,7 +473,11 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 				}
 			}
 			if !found {
-				return nil, fmt.Errorf("invalid values-from kind %q, must be one of: %s", kind, strings.Join(validKinds, ", "))
+				return nil, fmt.Errorf(
+					"invalid values-from kind %q, must be one of: %s",
+					kind,
+					strings.Join(validKinds, ", "),
+				)
 			}
 
 			valsFrom = append(valsFrom, helmv2.ValuesReference{

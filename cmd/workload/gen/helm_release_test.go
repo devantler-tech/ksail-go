@@ -198,7 +198,7 @@ replicaCount: 3
 image:
   tag: v2.0.0
 `
-	err := os.WriteFile(valuesFile, []byte(valuesContent), 0600)
+	err := os.WriteFile(valuesFile, []byte(valuesContent), 0o600)
 	require.NoError(t, err)
 
 	cmd := gen.NewHelmReleaseCmd(runtime.NewRuntime())
