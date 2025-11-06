@@ -129,7 +129,7 @@ jobs:
       - name: 🧪 ksail workload create deployment podinfo (ghcr.io)
         if: matrix.test-workload
         run: |
-          ./ksail workload create deployment podinfo --image=ghcr.io/stefanprodan/podinfo:latest
+          ./ksail workload create deployment podinfo --image=ghcr.io/stefanprodan/podinfo:latest --port=9898
           ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=120s
 
       - name: 🧪 ksail cluster stop
