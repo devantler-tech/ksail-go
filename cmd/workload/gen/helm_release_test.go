@@ -2,6 +2,7 @@ package gen //nolint:testpackage // Tests need access to unexported newTestRunti
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -12,23 +13,33 @@ import (
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }
 
-// TestGenHelmReleaseSimple tests generating a simple HelmRelease manifest.
-//
-//nolint:paralleltest // Snapshot tests should not run in parallel
-func TestGenHelmReleaseSimple(t *testing.T) {
+// setupHelmReleaseTest is a helper function to set up a test for generating a HelmRelease.
+func setupHelmReleaseTest(args []string) (*bytes.Buffer, error) {
 	rt := newTestRuntime()
 	cmd := NewHelmReleaseCmd(rt)
 	buffer := &bytes.Buffer{}
 	cmd.SetOut(buffer)
 	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	cmd.SetArgs(args)
+
+	err := cmd.Execute()
+	if err != nil {
+		return buffer, fmt.Errorf("failed to execute helm release command: %w", err)
+	}
+
+	return buffer, nil
+}
+
+// TestGenHelmReleaseSimple tests generating a simple HelmRelease manifest.
+//
+//nolint:paralleltest // Snapshot tests should not run in parallel
+func TestGenHelmReleaseSimple(t *testing.T) {
+	buffer, err := setupHelmReleaseTest([]string{
 		"podinfo",
 		"--source=HelmRepository/podinfo",
 		"--chart=podinfo",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease to succeed, got %v", err)
 	}
@@ -42,12 +53,7 @@ func TestGenHelmReleaseSimple(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenHelmReleaseWithVersion(t *testing.T) {
-	rt := newTestRuntime()
-	cmd := NewHelmReleaseCmd(rt)
-	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	buffer, err := setupHelmReleaseTest([]string{
 		"webapp",
 		"--namespace=production",
 		"--source=HelmRepository/charts",
@@ -55,8 +61,6 @@ func TestGenHelmReleaseWithVersion(t *testing.T) {
 		"--chart-version=^1.0.0",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease with version to succeed, got %v", err)
 	}
@@ -69,18 +73,11 @@ func TestGenHelmReleaseWithVersion(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenHelmReleaseWithChartRef(t *testing.T) {
-	rt := newTestRuntime()
-	cmd := NewHelmReleaseCmd(rt)
-	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	buffer, err := setupHelmReleaseTest([]string{
 		"webapp",
 		"--chart-ref=OCIRepository/webapp.flux-system",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease with chart-ref to succeed, got %v", err)
 	}
@@ -93,12 +90,7 @@ func TestGenHelmReleaseWithChartRef(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenHelmReleaseWithDependencies(t *testing.T) {
-	rt := newTestRuntime()
-	cmd := NewHelmReleaseCmd(rt)
-	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	buffer, err := setupHelmReleaseTest([]string{
 		"webapp",
 		"--source=HelmRepository/charts",
 		"--chart=webapp",
@@ -106,8 +98,6 @@ func TestGenHelmReleaseWithDependencies(t *testing.T) {
 		"--depends-on=production/redis",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease with dependencies to succeed, got %v", err)
 	}
@@ -159,12 +149,7 @@ image:
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenHelmReleaseWithValuesFrom(t *testing.T) {
-	rt := newTestRuntime()
-	cmd := NewHelmReleaseCmd(rt)
-	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	buffer, err := setupHelmReleaseTest([]string{
 		"webapp",
 		"--source=HelmRepository/charts",
 		"--chart=webapp",
@@ -172,8 +157,6 @@ func TestGenHelmReleaseWithValuesFrom(t *testing.T) {
 		"--values-from=ConfigMap/common-config",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease with values-from to succeed, got %v", err)
 	}
@@ -186,12 +169,7 @@ func TestGenHelmReleaseWithValuesFrom(t *testing.T) {
 //
 //nolint:paralleltest // Snapshot tests should not run in parallel
 func TestGenHelmReleaseWithAllFlags(t *testing.T) {
-	rt := newTestRuntime()
-	cmd := NewHelmReleaseCmd(rt)
-	buffer := &bytes.Buffer{}
-	cmd.SetOut(buffer)
-	cmd.SetErr(buffer)
-	cmd.SetArgs([]string{
+	buffer, err := setupHelmReleaseTest([]string{
 		"webapp",
 		"--namespace=production",
 		"--source=HelmRepository/charts.flux-system",
@@ -207,8 +185,6 @@ func TestGenHelmReleaseWithAllFlags(t *testing.T) {
 		"--timeout=10m",
 		"--export",
 	})
-
-	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("expected gen helmrelease with all flags to succeed, got %v", err)
 	}

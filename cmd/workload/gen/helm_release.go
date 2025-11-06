@@ -308,6 +308,16 @@ func readHelmReleaseFlags(cmd *cobra.Command, args []string) helmReleaseConfig {
 	kubeConfigSecretRef, _ := cmd.Flags().GetString("kubeconfig-secret-ref")
 	releaseName, _ := cmd.Flags().GetString("release-name")
 
+	return newHelmReleaseConfig(name, namespace, source, chart, chartVersion, chartRef,
+		targetNamespace, storageNamespace, createNamespace, dependsOn, interval, timeout,
+		values, valuesFrom, saName, crdsPolicy, kubeConfigSecretRef, releaseName)
+}
+
+func newHelmReleaseConfig(name, namespace, source, chart, chartVersion, chartRef,
+	targetNamespace, storageNamespace string, createNamespace bool, dependsOn []string,
+	interval, timeout time.Duration, values, valuesFrom []string, saName, crdsPolicy,
+	kubeConfigSecretRef, releaseName string,
+) helmReleaseConfig {
 	return helmReleaseConfig{
 		name:                name,
 		namespace:           namespace,
@@ -395,26 +405,9 @@ func buildHelmRelease(name, namespace, source, chart, chartVersion, chartRef,
 	interval, timeout time.Duration, values, valuesFrom []string, saName, crdsPolicy,
 	kubeConfigSecretRef, releaseName string,
 ) (*helmv2.HelmRelease, error) {
-	cfg := helmReleaseConfig{
-		name:                name,
-		namespace:           namespace,
-		source:              source,
-		chart:               chart,
-		chartVersion:        chartVersion,
-		chartRef:            chartRef,
-		targetNamespace:     targetNamespace,
-		storageNamespace:    storageNamespace,
-		createNamespace:     createNamespace,
-		dependsOn:           dependsOn,
-		interval:            interval,
-		timeout:             timeout,
-		values:              values,
-		valuesFrom:          valuesFrom,
-		saName:              saName,
-		crdsPolicy:          crdsPolicy,
-		kubeConfigSecretRef: kubeConfigSecretRef,
-		releaseName:         releaseName,
-	}
+	cfg := newHelmReleaseConfig(name, namespace, source, chart, chartVersion, chartRef,
+		targetNamespace, storageNamespace, createNamespace, dependsOn, interval, timeout,
+		values, valuesFrom, saName, crdsPolicy, kubeConfigSecretRef, releaseName)
 
 	return buildHelmReleaseFromConfig(cfg)
 }
