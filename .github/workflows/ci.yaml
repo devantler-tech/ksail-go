@@ -110,28 +110,7 @@ jobs:
       - name: 🧪 ksail workload apply podinfo kustomize (ghcr.io)
         if: matrix.test-workload
         run: |
-          # Create a temporary kustomization that excludes HPA (not supported without metrics-server)
-          mkdir -p /tmp/podinfo-overlay
-          cat > /tmp/podinfo-overlay/kustomization.yaml << 'EOF'
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-          namespace: default
-          resources:
-            - https://github.com/stefanprodan/podinfo//kustomize?ref=6.7.0
-          patches:
-            - target:
-                kind: HorizontalPodAutoscaler
-                name: podinfo
-              patch: |-
-                $patch: delete
-                apiVersion: autoscaling/v2
-                kind: HorizontalPodAutoscaler
-                metadata:
-                  name: podinfo
-          EOF
-          ./ksail workload apply -k /tmp/podinfo-overlay
-          # Wait for deployment to be created first
-          sleep 5
+          ./ksail workload apply -k https://github.com/stefanprodan/podinfo//kustomize?ref=6.7.0
           # Wait for deployment to become available
           ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
