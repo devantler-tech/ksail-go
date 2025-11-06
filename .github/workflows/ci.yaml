@@ -85,7 +85,7 @@ jobs:
       - name: 🏗️ Build application
         run: go build -o ksail .
 
-      - name: 🧪 ksail cluster init (${{ matrix.distribution }} + ${{ matrix.cni }})
+      - name: 🧪 ksail cluster init
         run: |
           ./ksail cluster init ${{ matrix.init-args }}
 
