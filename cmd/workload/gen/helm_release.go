@@ -28,7 +28,7 @@ const (
 func NewHelmReleaseCmd(_ *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "helmrelease [NAME]",
-		Aliases: []string{"hr", "helm-release"},
+		Aliases: []string{"hr"},
 		Short:   "Generate a HelmRelease resource",
 		Long:    "Generate a HelmRelease resource for a given HelmRepository, GitRepository, Bucket, or chart reference source.",
 		Example: `  # Generate a HelmRelease with a chart from a HelmRepository source

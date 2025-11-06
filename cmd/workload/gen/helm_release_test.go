@@ -357,7 +357,6 @@ func TestHelmReleaseCmdAliases(t *testing.T) {
 	}{
 		{name: "hr", alias: "hr"},
 		{name: "helmrelease", alias: "helmrelease"},
-		{name: "helm-release", alias: "helm-release"},
 	}
 
 	for _, tc := range testCases {
