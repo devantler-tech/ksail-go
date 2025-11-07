@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/samber/do/v2"
 	"github.com/spf13/cobra"

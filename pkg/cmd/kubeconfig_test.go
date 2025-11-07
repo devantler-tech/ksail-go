@@ -1,20 +1,20 @@
-package shared_test
+package cmd_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
+	cmdtestutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetDefaultKubeconfigPath(t *testing.T) {
 	t.Parallel()
 
-	path := shared.GetDefaultKubeconfigPath()
+	path := pkgcmd.GetDefaultKubeconfigPath()
 
 	homeDir, _ := os.UserHomeDir()
 	expected := filepath.Join(homeDir, ".kube", "config")
@@ -67,7 +67,7 @@ func TestGetKubeconfigPathFromConfig(t *testing.T) {
 				},
 			}
 
-			path, err := shared.GetKubeconfigPathFromConfig(cfg)
+			path, err := pkgcmd.GetKubeconfigPathFromConfig(cfg)
 			require.NoError(t, err)
 			require.Equal(t, testCase.expectedPath, path)
 		})
@@ -77,7 +77,7 @@ func TestGetKubeconfigPathFromConfig(t *testing.T) {
 func TestGetKubeconfigPathSilently(t *testing.T) {
 	t.Parallel()
 
-	path := shared.GetKubeconfigPathSilently()
+	path := pkgcmd.GetKubeconfigPathSilently()
 
 	require.NotEmpty(t, path, "expected non-empty kubeconfig path")
 	require.True(
@@ -94,7 +94,7 @@ func TestGetKubeconfigPathSilentlyWithValidConfig(t *testing.T) {
 	cmdtestutils.WriteValidKsailConfig(t, tempDir)
 	t.Chdir(tempDir)
 
-	path := shared.GetKubeconfigPathSilently()
+	path := pkgcmd.GetKubeconfigPathSilently()
 
 	require.True(t, filepath.IsAbs(path), "expected absolute path")
 }
@@ -104,6 +104,6 @@ func TestGetKubeconfigPathSilentlyWithMissingConfig(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
 
-	path := shared.GetKubeconfigPathSilently()
+	path := pkgcmd.GetKubeconfigPathSilently()
 	require.True(t, filepath.IsAbs(path), "expected absolute path")
 }

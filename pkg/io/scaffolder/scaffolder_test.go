@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/generator"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"

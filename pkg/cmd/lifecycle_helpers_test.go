@@ -1,4 +1,4 @@
-package shared_test
+package cmd_test
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/spf13/cobra"
@@ -72,8 +72,8 @@ func TestHandleLifecycleRunE_ErrorPaths(t *testing.T) {
 
 	type lifecycleSetup func(*testing.T) (
 		*ksailconfigmanager.ConfigManager,
-		shared.LifecycleDeps,
-		shared.LifecycleConfig,
+		pkgcmd.LifecycleDeps,
+		pkgcmd.LifecycleConfig,
 		*lifecycleTimer,
 		*cobra.Command,
 	)
@@ -104,7 +104,7 @@ func TestHandleLifecycleRunE_ErrorPaths(t *testing.T) {
 
 			cfgManager, deps, config, timer, cmd := testCase.setup(t)
 
-			err := shared.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+			err := pkgcmd.HandleLifecycleRunE(cmd, cfgManager, deps, config)
 
 			assertLifecycleFailure(t, timer, err, testCase.expectedErr, testCase.expectedStages)
 		})
@@ -113,8 +113,8 @@ func TestHandleLifecycleRunE_ErrorPaths(t *testing.T) {
 
 func configLoadErrorSetup(t *testing.T) (
 	*ksailconfigmanager.ConfigManager,
-	shared.LifecycleDeps,
-	shared.LifecycleConfig,
+	pkgcmd.LifecycleDeps,
+	pkgcmd.LifecycleConfig,
 	*lifecycleTimer,
 	*cobra.Command,
 ) {
@@ -133,17 +133,17 @@ func configLoadErrorSetup(t *testing.T) (
 
 	timer := &lifecycleTimer{}
 	factory := clusterprovisioner.NewMockFactory(t)
-	deps := shared.LifecycleDeps{Timer: timer, Factory: factory}
+	deps := pkgcmd.LifecycleDeps{Timer: timer, Factory: factory}
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	return cfgManager, deps, shared.LifecycleConfig{}, timer, cmd
+	return cfgManager, deps, pkgcmd.LifecycleConfig{}, timer, cmd
 }
 
 func factoryErrorSetup(t *testing.T) (
 	*ksailconfigmanager.ConfigManager,
-	shared.LifecycleDeps,
-	shared.LifecycleConfig,
+	pkgcmd.LifecycleDeps,
+	pkgcmd.LifecycleConfig,
 	*lifecycleTimer,
 	*cobra.Command,
 ) {
@@ -161,11 +161,11 @@ func factoryErrorSetup(t *testing.T) (
 	cfgManager.Viper.SetConfigFile(path)
 
 	timer := &lifecycleTimer{}
-	deps := shared.LifecycleDeps{Timer: timer, Factory: &errorFactory{err: errFactoryError}}
+	deps := pkgcmd.LifecycleDeps{Timer: timer, Factory: &errorFactory{err: errFactoryError}}
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	return cfgManager, deps, shared.LifecycleConfig{}, timer, cmd
+	return cfgManager, deps, pkgcmd.LifecycleConfig{}, timer, cmd
 }
 
 // errorFactory satisfies clusterprovisioner.Factory for testing.

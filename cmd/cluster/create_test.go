@@ -13,15 +13,15 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
-	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
@@ -145,7 +145,7 @@ func TestHandleCreateRunEWithoutCilium(t *testing.T) {
 
 	provisioner := &testutils.StubProvisioner{}
 	timer := &testutils.RecordingTimer{}
-	deps := shared.LifecycleDeps{
+	deps := cmdhelpers.LifecycleDeps{
 		Timer: timer,
 		Factory: &testutils.StubFactory{
 			Provisioner:        provisioner,
@@ -584,8 +584,8 @@ func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManage
 }
 
 // newTestLifecycleDeps creates standard lifecycle dependencies for testing.
-func newTestLifecycleDeps(provisioner *testutils.StubProvisioner) shared.LifecycleDeps {
-	return shared.LifecycleDeps{
+func newTestLifecycleDeps(provisioner *testutils.StubProvisioner) cmdhelpers.LifecycleDeps {
+	return cmdhelpers.LifecycleDeps{
 		Timer: &testutils.RecordingTimer{},
 		Factory: &testutils.StubFactory{
 			Provisioner:        provisioner,
@@ -725,7 +725,7 @@ func TestRunLifecycleWithConfig_Success(t *testing.T) {
 	provisioner := &testutils.StubProvisioner{}
 	deps := newTestLifecycleDeps(provisioner)
 
-	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, provisioner.CreateCalls)
@@ -740,7 +740,7 @@ func TestRunLifecycleWithConfig_ProvisionerError(t *testing.T) {
 
 	clusterCfg := &v1alpha1.Cluster{}
 	provisioner := &testutils.StubProvisioner{CreateErr: errClusterProvisionerFailed}
-	deps := shared.LifecycleDeps{
+	deps := cmdhelpers.LifecycleDeps{
 		Timer: &testutils.RecordingTimer{},
 		Factory: &testutils.StubFactory{
 			Provisioner:        provisioner,
@@ -748,7 +748,7 @@ func TestRunLifecycleWithConfig_ProvisionerError(t *testing.T) {
 		},
 	}
 
-	err := shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create cluster")
@@ -777,7 +777,7 @@ func TestConnectRegistriesToClusterNetwork_K3d(t *testing.T) {
 type registryLifecycleHandler func(
 	*cobra.Command,
 	*v1alpha1.Cluster,
-	shared.LifecycleDeps,
+	cmdhelpers.LifecycleDeps,
 	*ksailconfigmanager.ConfigManager,
 	*kindv1alpha4.Cluster,
 	*k3dv1alpha5.SimpleConfig,
@@ -825,7 +825,7 @@ func runRegistryLifecycleTests(t *testing.T, handler registryLifecycleHandler) {
 
 			cfgManager := ksailconfigmanager.NewConfigManager(out, selectors...)
 			kindConfig := &kindv1alpha4.Cluster{Name: "kind"}
-			deps := shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+			deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 			var k3dConfig *k3dv1alpha5.SimpleConfig
 
@@ -883,7 +883,7 @@ func executeK3dRegistryLifecycleTest(
 	err := handler(
 		cmd,
 		cfg,
-		shared.LifecycleDeps{Timer: &testutils.RecordingTimer{}},
+		cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}},
 		cfgManager,
 		(*kindv1alpha4.Cluster)(nil),
 		k3dConfig,
@@ -910,7 +910,7 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 		t.Parallel()
 
 		cmd, _ := testutils.NewCommand(t)
-		deps := shared.LifecycleDeps{
+		deps := cmdhelpers.LifecycleDeps{
 			Timer: &testutils.RecordingTimer{},
 		}
 		info := registryStageInfo{

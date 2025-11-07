@@ -1,4 +1,4 @@
-package shared_test
+package cmd_test
 
 import (
 	"io"
@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
+	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -46,9 +46,9 @@ func TestLoadConfigStartsTimer(t *testing.T) {
 	cfgManager.Viper.SetConfigFile(path)
 
 	recorder := &recordingTimer{}
-	deps := shared.ConfigLoadDeps{Timer: recorder}
+	deps := pkgcmd.ConfigLoadDeps{Timer: recorder}
 
-	err := shared.LoadConfig(cfgManager, deps)
+	err := pkgcmd.LoadConfig(cfgManager, deps)
 	if err != nil {
 		t.Fatalf("LoadConfig returned error: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestLoadConfigReturnsWrappedError(t *testing.T) {
 	cfgManager := ksailconfigmanager.NewConfigManager(io.Discard)
 	cfgManager.Viper.SetConfigFile(path)
 
-	err := shared.LoadConfig(cfgManager, shared.ConfigLoadDeps{})
+	err := pkgcmd.LoadConfig(cfgManager, pkgcmd.ConfigLoadDeps{})
 	if err == nil {
 		t.Fatal("expected load error")
 	}
@@ -102,7 +102,7 @@ func TestNewConfigLoaderRunESuccess(t *testing.T) {
 
 	t.Chdir(dir)
 
-	err := shared.NewConfigLoaderRunE(runtimeContainer)(cmd, nil)
+	err := pkgcmd.NewConfigLoaderRunE(runtimeContainer)(cmd, nil)
 	if err != nil {
 		t.Fatalf("RunE returned error: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestNewConfigLoaderRunETimerResolutionError(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.SetOut(io.Discard)
 
-	err := shared.NewConfigLoaderRunE(runtime.New())(cmd, nil)
+	err := pkgcmd.NewConfigLoaderRunE(runtime.New())(cmd, nil)
 	if err == nil {
 		t.Fatal("expected timer resolution error")
 	}
