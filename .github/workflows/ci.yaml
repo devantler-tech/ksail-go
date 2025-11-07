@@ -113,7 +113,7 @@ jobs:
           # Apply podinfo without HPA (patch out HPA to avoid metrics-server dependency)
           kubectl kustomize https://github.com/stefanprodan/podinfo//kustomize | \
             yq eval 'select(.kind != "HorizontalPodAutoscaler")' - | \
-            kubectl apply -f -
+            ./ksail workload apply -f -
           # Wait for deployment to become available
           ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
