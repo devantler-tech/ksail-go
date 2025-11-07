@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 

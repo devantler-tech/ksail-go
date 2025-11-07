@@ -9,8 +9,8 @@ import (
 	"time"
 
 	clusterpkg "github.com/devantler-tech/ksail-go/cmd/cluster"
-	cmdtestutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	cmdtestutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	timermocks "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"

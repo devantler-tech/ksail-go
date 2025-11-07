@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
@@ -38,8 +38,8 @@ const (
 )
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
-func newCreateLifecycleConfig() shared.LifecycleConfig {
-	return shared.LifecycleConfig{
+func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
+	return cmdhelpers.LifecycleConfig{
 		TitleEmoji:         "🚀",
 		TitleContent:       "Create cluster...",
 		ActivityContent:    "creating cluster",
@@ -84,14 +84,14 @@ func newCreateCommandRunE(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
 ) func(*cobra.Command, []string) error {
-	return shared.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
+	return cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 }
 
 // handleCreateRunE executes cluster creation with mirror registry setup and CNI installation.
 func handleCreateRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
-	deps shared.LifecycleDeps,
+	deps cmdhelpers.LifecycleDeps,
 ) error {
 	deps.Timer.Start()
 
@@ -115,7 +115,7 @@ func handleCreateRunE(
 
 	deps.Timer.NewStage()
 
-	err = shared.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+	err = cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to execute cluster lifecycle: %w", err)
 	}
@@ -342,7 +342,7 @@ func registryActionFor(
 func makeRegistryStageRunner(role registryStageRole) func(
 	*cobra.Command,
 	*v1alpha1.Cluster,
-	shared.LifecycleDeps,
+	cmdhelpers.LifecycleDeps,
 	*ksailconfigmanager.ConfigManager,
 	*v1alpha4.Cluster,
 	*v1alpha5.SimpleConfig,
@@ -350,7 +350,7 @@ func makeRegistryStageRunner(role registryStageRole) func(
 	return func(
 		cmd *cobra.Command,
 		clusterCfg *v1alpha1.Cluster,
-		deps shared.LifecycleDeps,
+		deps cmdhelpers.LifecycleDeps,
 		cfgManager *ksailconfigmanager.ConfigManager,
 		kindConfig *v1alpha4.Cluster,
 		k3dConfig *v1alpha5.SimpleConfig,
@@ -502,7 +502,7 @@ func newRegistryHandlers(
 func handleRegistryStage(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
-	deps shared.LifecycleDeps,
+	deps cmdhelpers.LifecycleDeps,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
@@ -532,7 +532,7 @@ func handleRegistryStage(
 func runRegistryStageWithRole(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
-	deps shared.LifecycleDeps,
+	deps cmdhelpers.LifecycleDeps,
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
@@ -574,7 +574,7 @@ func runRegistryStageWithRole(
 
 func executeRegistryStage(
 	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
+	deps cmdhelpers.LifecycleDeps,
 	info registryStageInfo,
 	shouldPrepare func() bool,
 	action func(context.Context, client.APIClient) error,
@@ -588,7 +588,7 @@ func executeRegistryStage(
 
 func runRegistryStage(
 	cmd *cobra.Command,
-	deps shared.LifecycleDeps,
+	deps cmdhelpers.LifecycleDeps,
 	info registryStageInfo,
 	action func(context.Context, client.APIClient) error,
 ) error {
@@ -602,7 +602,7 @@ func runRegistryStage(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err := shared.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
+	err := cmdhelpers.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
 		if err != nil {
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)

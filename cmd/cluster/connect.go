@@ -3,8 +3,8 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
 	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/spf13/cobra"
@@ -53,7 +53,7 @@ func HandleConnectRunE(
 	}
 
 	// Get kubeconfig path with tilde expansion
-	kubeConfigPath, err := shared.GetKubeconfigPathFromConfig(cfg)
+	kubeConfigPath, err := cmdhelpers.GetKubeconfigPathFromConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("get kubeconfig path: %w", err)
 	}

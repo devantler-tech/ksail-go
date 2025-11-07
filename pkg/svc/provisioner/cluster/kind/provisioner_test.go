@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	cmdrunner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

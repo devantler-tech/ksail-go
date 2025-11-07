@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	helmclientlib "github.com/mittwald/go-helm-client"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
