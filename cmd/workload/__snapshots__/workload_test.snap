@@ -118,8 +118,10 @@ Available Commands:
   configmap           Create a config map from a local file, directory or literal value
   cronjob             Create a cron job with the specified name
   deployment          Create a deployment with the specified name
+  helmrelease         Create or update a HelmRelease resource
   ingress             Create an ingress with the specified name
   job                 Create a job with the specified name
+  kustomization       Create or update a Kustomization resource
   namespace           Create a namespace with the specified name
   poddisruptionbudget Create a pod disruption budget with the specified name
   priorityclass       Create a priority class with the specified name
@@ -129,6 +131,7 @@ Available Commands:
   secret              Create a secret using a specified subcommand
   service             Create a service using a specified subcommand
   serviceaccount      Create a service account with the specified name
+  source              Create or update Flux sources
   token               Request a service account token
 
 Flags:
@@ -709,3 +712,93 @@ Flags:
       --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
 
 ---
+
+[TestWorkloadHelpSnapshots/create_source - 1]
+Create or update Flux sources
+
+Usage:
+  ksail workload create source [command]
+
+Available Commands:
+  git         Create or update a GitRepository source
+  helm        Create or update a HelmRepository source
+  oci         Create or update an OCIRepository source
+
+Flags:
+  -h, --help   help for source
+
+Use "ksail workload create source [command] --help" for more information about a command.
+
+---
+
+[TestWorkloadHelpSnapshots/create_kustomization - 1]
+Create or update a Kustomization resource using Flux APIs
+
+Usage:
+  ksail workload create kustomization [name] [flags]
+
+Examples:
+  # Create a Kustomization from a GitRepository source
+  ksail workload create kustomization podinfo \
+    --source=GitRepository/podinfo \
+    --path="./kustomize" \
+    --prune=true \
+    --interval=5m
+
+  # Create a Kustomization with a target namespace
+  ksail workload create kustomization podinfo \
+    --source=GitRepository/podinfo \
+    --path="./kustomize" \
+    --target-namespace=default \
+    --prune=true
+
+Flags:
+      --depends-on strings        Kustomization that must be ready before this one
+      --export                    export in YAML format to stdout
+  -h, --help                      help for kustomization
+      --interval duration         reconciliation interval (default 1m0s)
+      --path string               path to the directory containing a kustomization.yaml file (default "./")
+      --prune                     enable garbage collection
+      --source string             source name in format 'Kind/name' or 'Kind/name.namespace'
+      --source-kind string        source kind (GitRepository, OCIRepository, Bucket) (default "GitRepository")
+      --target-namespace string   overrides the namespace of all Kustomization objects
+      --wait                      enable health checking
+
+---
+
+[TestWorkloadHelpSnapshots/create_helmrelease - 1]
+Create or update a HelmRelease resource using Flux APIs
+
+Usage:
+  ksail workload create helmrelease [name] [flags]
+
+Aliases:
+  helmrelease, hr
+
+Examples:
+  # Create a HelmRelease with a chart from a HelmRepository source
+  ksail workload create helmrelease podinfo \
+    --source=HelmRepository/podinfo \
+    --chart=podinfo \
+    --chart-version=6.6.2 \
+    --namespace=flux-system
+
+  # Create a HelmRelease targeting a different namespace
+  ksail workload create helmrelease podinfo \
+    --source=HelmRepository/podinfo \
+    --chart=podinfo \
+    --target-namespace=production \
+    --create-target-namespace=true
+
+Flags:
+      --chart string              Helm chart name or path
+      --chart-version string      Helm chart version
+      --create-target-namespace   create the target namespace if it doesn't exist
+      --depends-on strings        HelmRelease that must be ready before this one
+      --export                    export in YAML format to stdout
+  -h, --help                      help for helmrelease
+      --interval duration         reconciliation interval (default 1m0s)
+      --source string             source name in format 'Kind/name' or 'Kind/name.namespace'
+      --source-kind string        source kind (HelmRepository, GitRepository, Bucket) (default "HelmRepository")
+      --target-namespace string   namespace to install the Helm release
+
