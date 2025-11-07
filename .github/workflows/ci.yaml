@@ -107,7 +107,7 @@ jobs:
           ./ksail workload create deployment whoami --image=traefik/whoami:latest
           ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
 
-      - name: 🧪 ksail workload apply podinfo kustomize (ghcr.io)
+      - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
           ./ksail workload apply -k https://github.com/stefanprodan/podinfo//kustomize
