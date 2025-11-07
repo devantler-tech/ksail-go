@@ -7,6 +7,9 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
+	github.com/fluxcd/helm-controller/api v1.4.3
+	github.com/fluxcd/pkg/apis/meta v1.22.0
+	github.com/fluxcd/source-controller/api v1.7.3
 	github.com/gkampitakis/go-snaps v0.5.15
 	github.com/jinzhu/copier v0.4.0
 	github.com/k3d-io/k3d/v5 v5.8.3
@@ -168,11 +171,8 @@ require (
 	github.com/fatih/camelcase v1.0.0 // indirect
 	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fluxcd/helm-controller/api v1.4.3 // indirect
 	github.com/fluxcd/pkg/apis/acl v0.9.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v1.13.0 // indirect
-	github.com/fluxcd/pkg/apis/meta v1.22.0 // indirect
-	github.com/fluxcd/source-controller/api v1.7.3 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
