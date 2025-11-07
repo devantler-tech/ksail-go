@@ -1,7 +1,7 @@
 package workload
 
 import (
-	"github.com/devantler-tech/ksail-go/internal/shared"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		SilenceUsage: true,
 	}
 
-	cmd.RunE = shared.NewConfigLoaderRunE(runtimeContainer)
+	cmd.RunE = cmdhelpers.NewConfigLoaderRunE(runtimeContainer)
 
 	return cmd
 }

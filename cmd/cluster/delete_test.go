@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/shared"
-	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
+	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
@@ -285,7 +285,7 @@ func writeKindWithPatch(t *testing.T, path string) {
 
 func sharedLifecycleDeps(
 	factory *testutils.StubFactory,
-) shared.LifecycleDeps {
+) cmdhelpers.LifecycleDeps {
 	var tmr timer.Timer = &testutils.RecordingTimer{}
 
 	var factoryInterface clusterprovisioner.Factory
@@ -295,7 +295,7 @@ func sharedLifecycleDeps(
 		factoryInterface = &testutils.StubFactory{}
 	}
 
-	return shared.LifecycleDeps{
+	return cmdhelpers.LifecycleDeps{
 		Timer:   tmr,
 		Factory: factoryInterface,
 	}

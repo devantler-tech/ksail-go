@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	testutils "github.com/devantler-tech/ksail-go/internal/testutils"
+	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 )
 

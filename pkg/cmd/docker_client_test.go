@@ -1,4 +1,4 @@
-package shared //nolint:testpackage // Access unexported helpers for coverage-focused tests.
+package cmd //nolint:testpackage // Access unexported helpers for coverage-focused tests.
 
 import (
 	"bytes"
