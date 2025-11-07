@@ -156,14 +156,18 @@ func parseSourceRef(sourceKind, sourceName, defaultNamespace string) (string, st
 
 	if strings.Contains(sourceName, "/") {
 		parts := strings.SplitN(sourceName, "/", SplitParts)
-		kind = parts[0]
-		name = parts[1]
+		if len(parts) == SplitParts {
+			kind = parts[0]
+			name = parts[1]
+		}
 	}
 
 	if strings.Contains(name, ".") {
 		parts := strings.SplitN(name, ".", SplitParts)
-		name = parts[0]
-		namespace = parts[1]
+		if len(parts) == SplitParts {
+			name = parts[0]
+			namespace = parts[1]
+		}
 	}
 
 	return kind, name, namespace
@@ -182,8 +186,10 @@ func parseDependencies[T any](
 
 		if strings.Contains(dep, "/") {
 			parts := strings.SplitN(dep, "/", SplitParts)
-			depNs = parts[0]
-			depName = parts[1]
+			if len(parts) == SplitParts {
+				depNs = parts[0]
+				depName = parts[1]
+			}
 		}
 
 		deps = append(deps, factory(depName, depNs))
