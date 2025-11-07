@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	runner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
-	commandrunner "github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
@@ -131,7 +131,7 @@ type KindClusterProvisioner struct {
 	kindConfig *v1alpha4.Cluster
 	provider   KindProvider
 	client     client.ContainerAPIClient
-	runner     commandrunner.CommandRunner
+	runner     runner.CommandRunner
 }
 
 // NewKindClusterProvisioner constructs a KindClusterProvisioner with explicit dependencies
@@ -148,7 +148,7 @@ func NewKindClusterProvisioner(
 		kubeConfig,
 		provider,
 		client,
-		commandrunner.NewCobraCommandRunner(os.Stdout, os.Stderr),
+		runner.NewCobraCommandRunner(os.Stdout, os.Stderr),
 	)
 }
 
@@ -159,7 +159,7 @@ func NewKindClusterProvisionerWithRunner(
 	kubeConfig string,
 	provider KindProvider,
 	client client.ContainerAPIClient,
-	runner commandrunner.CommandRunner,
+	runner runner.CommandRunner,
 ) *KindClusterProvisioner {
 	return &KindClusterProvisioner{
 		kubeConfig: kubeConfig,

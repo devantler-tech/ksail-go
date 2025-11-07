@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	commandrunner "github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
+	runner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	clustercommand "github.com/k3d-io/k3d/v5/cmd/cluster"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ type Option func(*K3dClusterProvisioner)
 type K3dClusterProvisioner struct {
 	simpleCfg  *v1alpha5.SimpleConfig
 	configPath string
-	runner     commandrunner.CommandRunner
+	runner     runner.CommandRunner
 	builders   CommandBuilders
 }
 
@@ -55,7 +55,7 @@ func NewK3dClusterProvisioner(
 	prov := &K3dClusterProvisioner{
 		simpleCfg:  simpleCfg,
 		configPath: configPath,
-		runner:     commandrunner.NewCobraCommandRunner(nil, nil),
+		runner:     runner.NewCobraCommandRunner(nil, nil),
 		builders: CommandBuilders{
 			Create: clustercommand.NewCmdClusterCreate,
 			Delete: clustercommand.NewCmdClusterDelete,
@@ -75,7 +75,7 @@ func NewK3dClusterProvisioner(
 }
 
 // WithCommandRunner overrides the command runner (primarily for tests).
-func WithCommandRunner(runner commandrunner.CommandRunner) Option {
+func WithCommandRunner(runner runner.CommandRunner) Option {
 	return func(provisioner *K3dClusterProvisioner) {
 		if runner != nil {
 			provisioner.runner = runner
