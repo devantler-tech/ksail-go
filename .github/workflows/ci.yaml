@@ -101,7 +101,7 @@ jobs:
         run: |
           ./ksail cluster start
 
-      - name: 🧪 ksail workload create deployment whoami (docker.io)
+      - name: 🧪 ksail workload create
         if: matrix.test-workload
         run: |
           ./ksail workload create deployment whoami --image=traefik/whoami:latest
