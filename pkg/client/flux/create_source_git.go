@@ -47,12 +47,7 @@ func (c *Client) newCreateSourceGitCmd() *cobra.Command {
     --secret-ref=git-credentials`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
-
-			namespace := cmd.Flag("namespace").Value.String()
-			if namespace == "" {
-				namespace = DefaultNamespace
-			}
+			name, namespace := extractNameAndNamespace(cmd, args)
 
 			return c.createGitRepository(cmd.Context(), name, namespace, flags)
 		},

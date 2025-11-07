@@ -46,12 +46,7 @@ func (c *Client) newCreateKustomizationCmd() *cobra.Command {
     --prune=true`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
-
-			namespace := cmd.Flag("namespace").Value.String()
-			if namespace == "" {
-				namespace = DefaultNamespace
-			}
+			name, namespace := extractNameAndNamespace(cmd, args)
 
 			return c.createKustomization(cmd.Context(), name, namespace, flags)
 		},

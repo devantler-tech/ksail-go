@@ -40,12 +40,7 @@ func (c *Client) newCreateSourceHelmCmd() *cobra.Command {
     --secret-ref=docker-config`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
-
-			namespace := cmd.Flag("namespace").Value.String()
-			if namespace == "" {
-				namespace = DefaultNamespace
-			}
+			name, namespace := extractNameAndNamespace(cmd, args)
 
 			return c.createHelmRepository(cmd.Context(), name, namespace, flags)
 		},

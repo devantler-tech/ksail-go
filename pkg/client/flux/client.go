@@ -88,6 +88,19 @@ func (c *Client) createSourceCommand() *cobra.Command {
 	return sourceCmd
 }
 
+// extractNameAndNamespace extracts the resource name and namespace from cobra command arguments.
+// Returns name and namespace, with namespace defaulting to DefaultNamespace if not specified.
+func extractNameAndNamespace(cmd *cobra.Command, args []string) (string, string) {
+	name := args[0]
+
+	namespace := cmd.Flag("namespace").Value.String()
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+
+	return name, namespace
+}
+
 // getClient returns a controller-runtime client configured for Flux APIs.
 //
 //nolint:ireturn // Returning interface is necessary for controller-runtime client abstraction

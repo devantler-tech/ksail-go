@@ -11,29 +11,28 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
-func TestNewClient(t *testing.T) {
-	t.Parallel()
-
+// setupTestClient creates a flux client with test IOStreams for testing purposes.
+func setupTestClient() *flux.Client {
 	ioStreams := genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &bytes.Buffer{},
 		ErrOut: &bytes.Buffer{},
 	}
 
-	client := flux.NewClient(ioStreams, "")
+	return flux.NewClient(ioStreams, "")
+}
+
+func TestNewClient(t *testing.T) {
+	t.Parallel()
+
+	client := setupTestClient()
 	require.NotNil(t, client)
 }
 
 func TestCreateCreateCommand(t *testing.T) {
 	t.Parallel()
 
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
-
-	client := flux.NewClient(ioStreams, "")
+	client := setupTestClient()
 	cmd := client.CreateCreateCommand("")
 
 	require.NotNil(t, cmd)
@@ -62,13 +61,7 @@ func TestCreateCreateCommand(t *testing.T) {
 func TestCreateSourceGitCommand(t *testing.T) {
 	t.Parallel()
 
-	ioStreams := genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}
-
-	client := flux.NewClient(ioStreams, "")
+	client := setupTestClient()
 	cmd := client.CreateCreateCommand("")
 
 	// Find source command
