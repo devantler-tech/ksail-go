@@ -107,6 +107,12 @@ jobs:
           ./ksail workload create deployment whoami --image=traefik/whoami:latest
           ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
 
+      - name: 🧪 Wait for metrics-server (required for HPA)
+        if: matrix.test-workload
+        run: |
+          # Wait for metrics-server deployment to be ready (ensures autoscaling/v2 API is available for podinfo HPA)
+          ./ksail workload wait --for=condition=Available deployment --field-selector metadata.name=metrics-server -A --timeout=120s
+
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
