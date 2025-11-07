@@ -94,12 +94,12 @@ packages:
       pkgname: errorhandler
     interfaces:
       Normalizer:
-  github.com/devantler-tech/ksail-go/pkg/svc/commandrunner:
+  github.com/devantler-tech/ksail-go/pkg/cmd/runner:
     config:
       recursive: false
-      dir: pkg/svc/commandrunner
+      dir: pkg/cmd/runner
       filename: mocks.go
-      pkgname: commandrunner
+      pkgname: runner
     interfaces:
       CommandRunner:
   github.com/devantler-tech/ksail-go/pkg/svc/installer:

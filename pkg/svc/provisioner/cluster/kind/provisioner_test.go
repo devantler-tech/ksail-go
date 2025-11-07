@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
+	cmdrunner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
 	clustertestutils "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -31,20 +31,20 @@ func (m *mockCommandRunner) Run(
 	_ context.Context,
 	_ *cobra.Command,
 	args []string,
-) (commandrunner.CommandResult, error) {
+) (cmdrunner.CommandResult, error) {
 	callArgs := m.Called()
 
 	// capture last arguments for tests that need to assert CLI flags
 	m.lastArgs = append([]string(nil), args...)
 
-	result, ok := callArgs.Get(0).(commandrunner.CommandResult)
+	result, ok := callArgs.Get(0).(cmdrunner.CommandResult)
 	if !ok {
 		err := callArgs.Error(1)
 		if err != nil {
-			return commandrunner.CommandResult{}, fmt.Errorf("mock run error: %w", err)
+			return cmdrunner.CommandResult{}, fmt.Errorf("mock run error: %w", err)
 		}
 
-		return commandrunner.CommandResult{}, nil
+		return cmdrunner.CommandResult{}, nil
 	}
 
 	err := callArgs.Error(1)
@@ -73,7 +73,7 @@ func TestCreateErrorCreateFailed(t *testing.T) {
 
 	// Mock command runner to return error
 	runner.On("Run").
-		Return(commandrunner.CommandResult{}, clustertestutils.ErrCreateClusterFailed)
+		Return(cmdrunner.CommandResult{}, clustertestutils.ErrCreateClusterFailed)
 
 	err := provisioner.Create(context.Background(), "my-cluster")
 
@@ -102,7 +102,7 @@ func TestDeleteIncludesKubeconfigFlag(t *testing.T) {
 	t.Parallel()
 
 	provisioner, _, _, runner := newProvisionerForTest(t)
-	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+	runner.On("Run").Return(cmdrunner.CommandResult{}, nil)
 
 	err := provisioner.Delete(context.Background(), "")
 
@@ -140,7 +140,7 @@ func TestDeleteErrorDeleteFailed(t *testing.T) {
 
 	// Mock command runner to return error
 	runner.On("Run").
-		Return(commandrunner.CommandResult{}, clustertestutils.ErrDeleteClusterFailed)
+		Return(cmdrunner.CommandResult{}, clustertestutils.ErrDeleteClusterFailed)
 
 	err := provisioner.Delete(context.Background(), "bad")
 
@@ -159,7 +159,7 @@ func TestExistsSuccessFalse(t *testing.T) {
 
 	// Mock command runner to return cluster names that don't include "not-here"
 	runner.On("Run").
-		Return(commandrunner.CommandResult{Stdout: "x\ny\n", Stderr: ""}, nil)
+		Return(cmdrunner.CommandResult{Stdout: "x\ny\n", Stderr: ""}, nil)
 
 	exists, err := provisioner.Exists(context.Background(), "not-here")
 	if err != nil {
@@ -177,7 +177,7 @@ func TestExistsSuccessTrue(t *testing.T) {
 
 	// Mock command runner to return cluster names including cfg-name
 	runner.On("Run").
-		Return(commandrunner.CommandResult{Stdout: "x\ncfg-name\n", Stderr: ""}, nil)
+		Return(cmdrunner.CommandResult{Stdout: "x\ncfg-name\n", Stderr: ""}, nil)
 
 	exists, err := provisioner.Exists(context.Background(), "")
 	if err != nil {
@@ -195,7 +195,7 @@ func TestExistsErrorListFailed(t *testing.T) {
 
 	// Mock command runner to return error
 	runner.On("Run").
-		Return(commandrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
+		Return(cmdrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
 
 	exists, err := provisioner.Exists(context.Background(), "any")
 
@@ -212,7 +212,7 @@ func TestListSuccess(t *testing.T) {
 	provisioner, _, _, runner := newProvisionerForTest(t)
 	// Mock command runner to return cluster names
 	runner.On("Run").
-		Return(commandrunner.CommandResult{Stdout: "a\nb\n", Stderr: ""}, nil)
+		Return(cmdrunner.CommandResult{Stdout: "a\nb\n", Stderr: ""}, nil)
 
 	got, err := provisioner.List(context.Background())
 
@@ -225,7 +225,7 @@ func TestListErrorListFailed(t *testing.T) {
 	provisioner, _, _, runner := newProvisionerForTest(t)
 	// Mock command runner to return error
 	runner.On("Run").
-		Return(commandrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
+		Return(cmdrunner.CommandResult{}, clustertestutils.ErrListClustersFailed)
 
 	_, err := provisioner.List(context.Background())
 
@@ -237,7 +237,7 @@ func TestListFiltersNoKindClustersMessage(t *testing.T) {
 	t.Parallel()
 	provisioner, _, _, runner := newProvisionerForTest(t)
 
-	runner.On("Run").Return(commandrunner.CommandResult{
+	runner.On("Run").Return(cmdrunner.CommandResult{
 		Stdout: "No kind clusters found.\n",
 		Stderr: "",
 	}, nil)
@@ -442,7 +442,7 @@ func runProvisionerRunnerSuccessTest(
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			provisioner, _, _, runner := newProvisionerForTest(t)
-			runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+			runner.On("Run").Return(cmdrunner.CommandResult{}, nil)
 
 			err := action(context.Background(), provisioner, testCase.inputName)
 			require.NoErrorf(t, err, "%s()", actionName)
@@ -476,7 +476,7 @@ func assertNameFlagPropagation(
 	t.Helper()
 
 	provisioner, _, _, runner := newProvisionerForTest(t)
-	runner.On("Run").Return(commandrunner.CommandResult{}, nil)
+	runner.On("Run").Return(cmdrunner.CommandResult{}, nil)
 
 	err := action(provisioner)
 
