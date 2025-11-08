@@ -13,7 +13,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -703,16 +702,17 @@ func runCiliumInstallation(
 	return nil
 }
 
-// loadKubeconfig loads and returns the kubeconfig path with tilde expansion and validation.
+// loadKubeconfig loads and returns the kubeconfig path.
 func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
 	if err != nil {
 		return "", fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	_, err = ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
+	// Validate file exists
+	_, err = os.Stat(kubeconfig)
 	if err != nil {
-		return "", fmt.Errorf("failed to read kubeconfig file: %w", err)
+		return "", fmt.Errorf("failed to access kubeconfig file: %w", err)
 	}
 
 	return kubeconfig, nil
