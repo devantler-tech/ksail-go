@@ -427,20 +427,26 @@ health:
 	return baseConfig
 }
 
-func (rm *RegistryManager) createRegistryConfigFile(registryName, upstreamURL string) (string, error) {
+func (rm *RegistryManager) createRegistryConfigFile(
+	registryName, upstreamURL string,
+) (string, error) {
 	configContent := rm.generateRegistryConfig(upstreamURL)
-	
+
 	// Create temp file
 	tmpFile, err := os.CreateTemp("", "registry-config-"+registryName+"-*.yml")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp config file: %w", err)
 	}
-	defer tmpFile.Close()
+
+	defer func() {
+		_ = tmpFile.Close()
+	}()
 
 	// Write config content
 	_, err = tmpFile.WriteString(configContent)
 	if err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
+
 		return "", fmt.Errorf("failed to write config content: %w", err)
 	}
 
