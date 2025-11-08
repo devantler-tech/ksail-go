@@ -62,4 +62,3 @@ coverage_summary.txt
 
 # act (GitHub Actions local testing)
 bin/
-actionlint

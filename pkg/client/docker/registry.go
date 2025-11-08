@@ -97,60 +97,21 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 		return fmt.Errorf("failed to ensure registry image: %w", err)
 	}
 
-	// Create volume for registry data using a distribution-agnostic name for reuse
-	volumeName := rm.resolveVolumeName(config)
-	if volumeName == "" {
-		volumeName = config.Name
-	}
-
-	err = rm.createVolume(ctx, volumeName)
+	// Prepare registry resources (volume and config file)
+	volumeName, configFilePath, err := rm.prepareRegistryResources(ctx, config)
 	if err != nil {
-		return fmt.Errorf("failed to create registry volume: %w", err)
+		return err
 	}
 
-	// Create config file if upstream URL is provided
-	var configFilePath string
-	if config.UpstreamURL != "" {
-		configFilePath, err = rm.createRegistryConfigFile(config.Name, config.UpstreamURL)
-		if err != nil {
-			return fmt.Errorf("failed to create registry config file: %w", err)
-		}
-		// Clean up config file when done (defer after successful creation)
+	// Clean up config file when done
+	if configFilePath != "" {
 		defer func() {
-			if configFilePath != "" {
-				_ = os.Remove(configFilePath)
-			}
+			_ = os.Remove(configFilePath)
 		}()
 	}
 
-	// Prepare container configuration
-	containerConfig := rm.buildContainerConfig(config)
-	hostConfig := rm.buildHostConfig(config, volumeName, configFilePath)
-	networkConfig := rm.buildNetworkConfig(config)
-
-	// Use provided registry name directly so other components can reference it
-	containerName := config.Name
-
-	// Create container
-	resp, err := rm.client.ContainerCreate(
-		ctx,
-		containerConfig,
-		hostConfig,
-		networkConfig,
-		nil,
-		containerName,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create registry container: %w", err)
-	}
-
-	// Start container
-	err = rm.client.ContainerStart(ctx, resp.ID, container.StartOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to start registry container: %w", err)
-	}
-
-	return nil
+	// Create and start the container
+	return rm.createAndStartContainer(ctx, config, volumeName, configFilePath)
 }
 
 // DeleteRegistry removes a registry container and optionally its volume.
@@ -282,6 +243,67 @@ func (rm *RegistryManager) GetRegistryPort(ctx context.Context, name string) (in
 	}
 
 	return 0, ErrRegistryPortNotFound
+}
+
+// prepareRegistryResources creates the volume and config file for a registry.
+func (rm *RegistryManager) prepareRegistryResources(
+	ctx context.Context,
+	config RegistryConfig,
+) (string, string, error) {
+	// Create volume for registry data using a distribution-agnostic name for reuse
+	volumeName := rm.resolveVolumeName(config)
+	if volumeName == "" {
+		volumeName = config.Name
+	}
+
+	err := rm.createVolume(ctx, volumeName)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create registry volume: %w", err)
+	}
+
+	// Create config file if upstream URL is provided
+	var configFilePath string
+	if config.UpstreamURL != "" {
+		configFilePath, err = rm.createRegistryConfigFile(config.Name, config.UpstreamURL)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to create registry config file: %w", err)
+		}
+	}
+
+	return volumeName, configFilePath, nil
+}
+
+// createAndStartContainer creates and starts a registry container.
+func (rm *RegistryManager) createAndStartContainer(
+	ctx context.Context,
+	config RegistryConfig,
+	volumeName, configFilePath string,
+) error {
+	// Prepare container configuration
+	containerConfig := rm.buildContainerConfig(config)
+	hostConfig := rm.buildHostConfig(config, volumeName, configFilePath)
+	networkConfig := rm.buildNetworkConfig(config)
+
+	// Create container
+	resp, err := rm.client.ContainerCreate(
+		ctx,
+		containerConfig,
+		hostConfig,
+		networkConfig,
+		nil,
+		config.Name,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create registry container: %w", err)
+	}
+
+	// Start container
+	err = rm.client.ContainerStart(ctx, resp.ID, container.StartOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to start registry container: %w", err)
+	}
+
+	return nil
 }
 
 // Helper methods
