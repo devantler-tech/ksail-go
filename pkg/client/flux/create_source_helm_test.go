@@ -25,7 +25,7 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 	var sourceCmd *cobra.Command
 
 	for _, subCmd := range createCmd.Commands() {
-		if subCmd.Use == "source" {
+		if subCmd.Use == sourceCommandName {
 			sourceCmd = subCmd
 
 			break

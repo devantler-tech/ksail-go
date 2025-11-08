@@ -38,6 +38,9 @@ linters:
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
+      - linters:
+          - funlen
+        path: ".*_test\\.go$"
   settings:
     wsl_v5:
       allow-first-in-block: true

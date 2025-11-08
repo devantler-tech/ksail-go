@@ -11,6 +11,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
+const sourceCommandName = "source"
+
 // setupTestClient creates a flux client with test IOStreams for testing purposes.
 func setupTestClient() *flux.Client {
 	ioStreams := genericiooptions.IOStreams{
@@ -47,7 +49,7 @@ func TestCreateCreateCommand(t *testing.T) {
 	var sourceCmd *cobra.Command
 
 	for _, subCmd := range subCommands {
-		if subCmd.Use == "source" {
+		if subCmd.Use == sourceCommandName {
 			sourceCmd = subCmd
 
 			break
@@ -68,7 +70,7 @@ func TestCreateSourceGitCommand(t *testing.T) {
 	var sourceCmd *cobra.Command
 
 	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == "source" {
+		if subCmd.Use == sourceCommandName {
 			sourceCmd = subCmd
 
 			break
