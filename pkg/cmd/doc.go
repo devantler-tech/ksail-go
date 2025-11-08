@@ -1,5 +1,5 @@
-// Package shared provides reusable helpers for command wiring.
+// Package cmd provides reusable helpers for command wiring.
 //
 // This package contains shared utilities for command construction including
 // configuration loading and kubeconfig path resolution.
-package shared
+package cmd

@@ -1,6 +1,6 @@
-// Package commandrunner provides helpers for executing Cobra commands while
+// Package runner provides helpers for executing Cobra commands while
 // capturing their output and displaying it to the console.
-package commandrunner
+package runner
 
 import (
 	"bytes"

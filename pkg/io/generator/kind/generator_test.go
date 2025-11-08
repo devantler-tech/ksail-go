@@ -3,9 +3,9 @@ package kindgenerator_test
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )

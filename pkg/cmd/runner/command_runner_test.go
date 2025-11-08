@@ -1,4 +1,4 @@
-package commandrunner_test
+package runner_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
+	"github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +22,7 @@ func TestCobraCommandRunner_RunPropagatesStdout(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 
-	runner := commandrunner.NewCobraCommandRunner(&stdout, &stderr)
+	runner := runner.NewCobraCommandRunner(&stdout, &stderr)
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, _ []string) {
@@ -49,7 +49,7 @@ func TestCobraCommandRunner_RunReturnsError(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 
-	runner := commandrunner.NewCobraCommandRunner(&stdout, &stderr)
+	runner := runner.NewCobraCommandRunner(&stdout, &stderr)
 
 	cmd := &cobra.Command{
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -82,7 +82,7 @@ func TestCobraCommandRunner_DefaultsToOsStdout(t *testing.T) {
 	t.Parallel()
 
 	// Test that nil defaults work
-	runner := commandrunner.NewCobraCommandRunner(nil, nil)
+	runner := runner.NewCobraCommandRunner(nil, nil)
 
 	cmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, _ []string) {
@@ -103,9 +103,9 @@ func TestCobraCommandRunner_DefaultsToOsStdout(t *testing.T) {
 func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 	t.Parallel()
 
-	res := commandrunner.CommandResult{Stdout: "info", Stderr: "fail"}
+	res := runner.CommandResult{Stdout: "info", Stderr: "fail"}
 
-	err := commandrunner.MergeCommandError(errBaseFailure, res)
+	err := runner.MergeCommandError(errBaseFailure, res)
 	if err == nil {
 		t.Fatal("expected merged error")
 	}
@@ -123,7 +123,7 @@ func TestMergeCommandError_AppendsStdStreams(t *testing.T) {
 func TestMergeCommandError_NilBaseReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	err := commandrunner.MergeCommandError(nil, commandrunner.CommandResult{})
+	err := runner.MergeCommandError(nil, runner.CommandResult{})
 	if err != nil {
 		t.Fatalf("expected nil when base error nil, got %v", err)
 	}
@@ -133,9 +133,9 @@ func TestMergeCommandError_NoDetailsReturnsBase(t *testing.T) {
 	t.Parallel()
 
 	base := errBaseOnly
-	res := commandrunner.CommandResult{Stdout: "\n\t", Stderr: ""}
+	res := runner.CommandResult{Stdout: "\n\t", Stderr: ""}
 
-	merged := commandrunner.MergeCommandError(base, res)
+	merged := runner.MergeCommandError(base, res)
 	if !errors.Is(merged, base) {
 		t.Fatalf("expected original error when no details, got %v", merged)
 	}

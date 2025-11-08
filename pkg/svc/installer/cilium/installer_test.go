@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/internal/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

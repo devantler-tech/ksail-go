@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/internal/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )

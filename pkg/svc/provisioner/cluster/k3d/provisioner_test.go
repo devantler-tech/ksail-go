@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/svc/commandrunner"
+	"github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
@@ -18,7 +18,7 @@ var errBoom = errors.New("boom")
 
 type stubRunner struct {
 	calls  []stubCall
-	result commandrunner.CommandResult
+	result runner.CommandResult
 	err    error
 }
 
@@ -26,7 +26,7 @@ func (s *stubRunner) Run(
 	_ context.Context,
 	cmd *cobra.Command,
 	args []string,
-) (commandrunner.CommandResult, error) {
+) (runner.CommandResult, error) {
 	call := stubCall{
 		use:  commandUse(cmd),
 		args: append([]string(nil), args...),
@@ -34,7 +34,7 @@ func (s *stubRunner) Run(
 	s.calls = append(s.calls, call)
 
 	if s.err != nil {
-		mergeErr := commandrunner.MergeCommandError(s.err, s.result)
+		mergeErr := runner.MergeCommandError(s.err, s.result)
 
 		return s.result, fmt.Errorf("merge command error: %w", mergeErr)
 	}
