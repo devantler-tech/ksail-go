@@ -161,7 +161,7 @@ func loadFile(opts encryptOpts) ([]byte, error) {
 		fileBytes, err = io.ReadAll(os.Stdin)
 		if err != nil {
 			return nil, common.NewExitError(
-				fmt.Sprintf("Error reading from stdin: %s", err),
+				fmt.Sprintf("error reading from stdin: %s", err),
 				codes.CouldNotReadInputFile,
 			)
 		}
