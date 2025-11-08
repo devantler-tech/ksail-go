@@ -73,17 +73,9 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io)")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
-	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)
+	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 
 	return cmd
-}
-
-// newCreateCommandRunE creates the RunE handler for cluster creation with CNI installation support.
-func newCreateCommandRunE(
-	runtimeContainer *runtime.Runtime,
-	cfgManager *ksailconfigmanager.ConfigManager,
-) func(*cobra.Command, []string) error {
-	return cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 }
 
 // handleCreateRunE executes cluster creation with mirror registry setup and CNI installation.
@@ -624,6 +616,21 @@ func runRegistryStage(
 	return nil
 }
 
+// createHelmClientForCluster creates a Helm client configured for the cluster.
+func createHelmClientForCluster(clusterCfg *v1alpha1.Cluster) (*helm.Client, string, error) {
+	kubeconfig, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return nil, "", err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	return helmClient, kubeconfig, nil
+}
+
 // installCiliumCNI installs Cilium CNI on the cluster.
 func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	notify.WriteMessage(notify.Message{
@@ -633,19 +640,17 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, err := loadKubeconfig(clusterCfg)
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
 	if err != nil {
 		return err
 	}
 
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+		Name: "cilium",
+		URL:  "https://helm.cilium.io/",
+	})
 	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	repoErr := addCiliumRepository(cmd.Context(), helmClient)
-	if repoErr != nil {
-		return repoErr
+		return fmt.Errorf("failed to add Cilium Helm repository: %w", err)
 	}
 
 	installer := newCiliumInstaller(helmClient, kubeconfig, clusterCfg)
@@ -653,24 +658,12 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 	return runCiliumInstallation(cmd, installer, tmr)
 }
 
-func addCiliumRepository(ctx context.Context, client helm.Interface) error {
-	repoErr := client.AddRepository(ctx, &helm.RepositoryEntry{
-		Name: "cilium",
-		URL:  "https://helm.cilium.io/",
-	})
-	if repoErr != nil {
-		return fmt.Errorf("failed to add Cilium Helm repository: %w", repoErr)
-	}
-
-	return nil
-}
-
 func newCiliumInstaller(
 	helmClient *helm.Client,
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *ciliuminstaller.CiliumInstaller {
-	timeout := getCiliumInstallTimeout(clusterCfg)
+	timeout := getInstallTimeout(clusterCfg)
 
 	return ciliuminstaller.NewCiliumInstaller(
 		helmClient,
@@ -735,8 +728,9 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	return kubeconfig, nil
 }
 
-// getCiliumInstallTimeout determines the timeout for Cilium installation.
-func getCiliumInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+// getInstallTimeout determines the timeout for component installation (Cilium, metrics-server, etc.).
+// Uses cluster connection timeout if configured, otherwise defaults to 5 minutes.
+func getInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
 
 	timeout := defaultTimeout * time.Minute
@@ -961,17 +955,12 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, err := loadKubeconfig(clusterCfg)
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
 	if err != nil {
 		return err
 	}
 
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
-	}
-
-	timeout := getMetricsServerInstallTimeout(clusterCfg)
+	timeout := getInstallTimeout(clusterCfg)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		helmClient,
 		kubeconfig,
@@ -980,18 +969,6 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 	)
 
 	return runMetricsServerInstallation(cmd, installer, tmr)
-}
-
-// getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
-func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
-	const defaultTimeout = 5
-
-	timeout := defaultTimeout * time.Minute
-	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
-		timeout = clusterCfg.Spec.Connection.Timeout.Duration
-	}
-
-	return timeout
 }
 
 // runMetricsServerInstallation performs the metrics-server installation.

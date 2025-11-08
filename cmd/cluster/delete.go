@@ -54,17 +54,9 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd.Flags().
 		Bool("delete-registry-volumes", false, "Delete registry volumes when cleaning up registries")
 
-	cmd.RunE = newDeleteCommandRunE(runtimeContainer, cfgManager)
+	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleDeleteRunE)
 
 	return cmd
-}
-
-// newDeleteCommandRunE creates the RunE handler for cluster deletion with registry cleanup.
-func newDeleteCommandRunE(
-	runtimeContainer *runtime.Runtime,
-	cfgManager *ksailconfigmanager.ConfigManager,
-) func(*cobra.Command, []string) error {
-	return cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleDeleteRunE)
 }
 
 // handleDeleteRunE executes cluster deletion with registry cleanup.
