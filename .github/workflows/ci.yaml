@@ -126,9 +126,9 @@ jobs:
               spec:
                 containers:
                 - name: nginx
-                  image: ghcr.io/nginxinc/nginx-unprivileged:latest
+                  image: nginx:alpine
                   ports:
-                  - containerPort: 8080
+                  - containerPort: 80
           EOF
           # Apply nginx deployment using ksail
           ./ksail workload apply -f /tmp/nginx-deployment.yaml
