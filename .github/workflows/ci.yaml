@@ -106,16 +106,8 @@ jobs:
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
-          # Use ghcr.io image if ghcr.io mirror is configured, otherwise use docker.io
-          if echo "${{ matrix.init-args }}" | grep -q "ghcr.io"; then
-            IMAGE="ghcr.io/nginxinc/nginx-unprivileged:alpine"
-            PORT="8080"
-          else
-            IMAGE="nginx:alpine"
-            PORT="80"
-          fi
-          # Create a simple deployment manifest
-          cat > /tmp/test-deployment.yaml <<EOF
+          # Create a simple deployment manifest using ghcr.io image
+          cat > /tmp/test-deployment.yaml <<'EOF'
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -134,14 +126,31 @@ jobs:
               spec:
                 containers:
                 - name: test-app
-                  image: ${IMAGE}
+                  image: ghcr.io/nginxinc/nginx-unprivileged:alpine
                   ports:
-                  - containerPort: ${PORT}
+                  - containerPort: 8080
           EOF
           # Apply deployment using ksail
           ./ksail workload apply -f /tmp/test-deployment.yaml
-          # Wait for deployment to become available
-          ./ksail workload wait --for=condition=Available deployment/test-app --timeout=300s
+          # Wait for deployment to become available, with debugging on failure
+          if ! ./ksail workload wait --for=condition=Available deployment/test-app --timeout=300s; then
+            echo "::group::Deployment status"
+            kubectl get deployment test-app -o yaml
+            echo "::endgroup::"
+            echo "::group::Pod status"
+            kubectl get pods -l app=test-app -o wide
+            echo "::endgroup::"
+            echo "::group::Pod events"
+            kubectl get events --field-selector involvedObject.name=$(kubectl get pods -l app=test-app -o jsonpath='{.items[0].metadata.name}') --sort-by='.lastTimestamp'
+            echo "::endgroup::"
+            echo "::group::Pod logs"
+            kubectl logs -l app=test-app --all-containers=true --tail=100 || echo "No logs available"
+            echo "::endgroup::"
+            echo "::group::Pod describe"
+            kubectl describe pods -l app=test-app
+            echo "::endgroup::"
+            exit 1
+          fi
 
       - name: 🧪 ksail workload reconcile
         run: |
