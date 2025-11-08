@@ -23,22 +23,28 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 
 	// Find source command
 	var sourceCmd *cobra.Command
+
 	for _, subCmd := range createCmd.Commands() {
 		if subCmd.Use == "source" {
 			sourceCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, sourceCmd)
 
 	// Find helm command
 	var helmCmd *cobra.Command
+
 	for _, subCmd := range sourceCmd.Commands() {
 		if subCmd.Use == "helm [name]" {
 			helmCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, helmCmd)
 	require.Equal(t, "Create or update a HelmRepository source", helmCmd.Short)
 
@@ -123,10 +129,10 @@ func TestCreateHelmRepository_Export(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runFluxCommandTest(t, []string{"source", "helm"}, tc)
+			runFluxCommandTest(t, []string{"source", "helm"}, testCase)
 		})
 	}
 }
@@ -135,6 +141,7 @@ func TestCreateHelmRepository_MissingRequiredURL(t *testing.T) {
 	t.Parallel()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,

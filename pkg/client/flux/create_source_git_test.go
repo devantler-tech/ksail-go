@@ -23,22 +23,28 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 
 	// Find source command
 	var sourceCmd *cobra.Command
+
 	for _, subCmd := range createCmd.Commands() {
 		if subCmd.Use == "source" {
 			sourceCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, sourceCmd)
 
 	// Find git command
 	var gitCmd *cobra.Command
+
 	for _, subCmd := range sourceCmd.Commands() {
 		if subCmd.Use == "git [name]" {
 			gitCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, gitCmd)
 	require.Equal(t, "Create or update a GitRepository source", gitCmd.Short)
 
@@ -133,10 +139,10 @@ func TestCreateGitRepository_Export(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runFluxCommandTest(t, []string{"source", "git"}, tc)
+			runFluxCommandTest(t, []string{"source", "git"}, testCase)
 		})
 	}
 }
@@ -145,6 +151,7 @@ func TestCreateGitRepository_MissingRequiredURL(t *testing.T) {
 	t.Parallel()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,

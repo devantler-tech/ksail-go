@@ -23,12 +23,15 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 
 	// Find kustomization command
 	var kustomizationCmd *cobra.Command
+
 	for _, subCmd := range createCmd.Commands() {
 		if subCmd.Use == "kustomization [name]" {
 			kustomizationCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, kustomizationCmd)
 	require.Equal(t, "Create or update a Kustomization resource", kustomizationCmd.Short)
 
@@ -146,10 +149,10 @@ func TestCreateKustomization_Export(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runFluxCommandTest(t, []string{"kustomization"}, tc)
+			runFluxCommandTest(t, []string{"kustomization"}, testCase)
 		})
 	}
 }
@@ -158,6 +161,7 @@ func TestCreateKustomization_MissingRequiredSource(t *testing.T) {
 	t.Parallel()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,

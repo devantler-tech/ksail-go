@@ -23,22 +23,28 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 
 	// Find source command
 	var sourceCmd *cobra.Command
+
 	for _, subCmd := range createCmd.Commands() {
 		if subCmd.Use == "source" {
 			sourceCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, sourceCmd)
 
 	// Find oci command
 	var ociCmd *cobra.Command
+
 	for _, subCmd := range sourceCmd.Commands() {
 		if subCmd.Use == "oci [name]" {
 			ociCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, ociCmd)
 	require.Equal(t, "Create or update an OCIRepository source", ociCmd.Short)
 
@@ -155,10 +161,10 @@ func TestCreateOCIRepository_Export(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runFluxCommandTest(t, []string{"source", "oci"}, tc)
+			runFluxCommandTest(t, []string{"source", "oci"}, testCase)
 		})
 	}
 }
@@ -167,6 +173,7 @@ func TestCreateOCIRepository_MissingRequiredURL(t *testing.T) {
 	t.Parallel()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,

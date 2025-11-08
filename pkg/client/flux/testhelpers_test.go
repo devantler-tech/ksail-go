@@ -18,10 +18,11 @@ type testCase struct {
 }
 
 // runFluxCommandTest executes a flux command test with the given parameters.
-func runFluxCommandTest(t *testing.T, cmdPath []string, tc testCase) {
+func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 	t.Helper()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,
@@ -33,36 +34,38 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, tc testCase) {
 	createCmd.SetErr(&bytes.Buffer{})
 
 	// Build command line
-	cmdLine := make([]string, 0, len(cmdPath)+len(tc.args)+len(tc.flags)*2)
+	cmdLine := make([]string, 0, len(cmdPath)+len(testCase.args)+len(testCase.flags)*2)
 	cmdLine = append(cmdLine, cmdPath...)
-	cmdLine = append(cmdLine, tc.args...)
+	cmdLine = append(cmdLine, testCase.args...)
 
-	for k, v := range tc.flags {
-		if k == "namespace" {
+	for flagKey, flagValue := range testCase.flags {
+		if flagKey == "namespace" {
 			// Namespace is a persistent flag that goes before the subcommand
 			continue
 		}
 		// For boolean flags, only add the flag name without a value
-		if v == "true" {
-			cmdLine = append(cmdLine, "--"+k)
+		if flagValue == "true" {
+			cmdLine = append(cmdLine, "--"+flagKey)
 		} else {
-			cmdLine = append(cmdLine, "--"+k, v)
+			cmdLine = append(cmdLine, "--"+flagKey, flagValue)
 		}
 	}
 
 	// Add namespace flag if present at the beginning
-	if ns, ok := tc.flags["namespace"]; ok {
+	if ns, ok := testCase.flags["namespace"]; ok {
 		cmdLine = append([]string{"--namespace", ns}, cmdLine...)
 	}
 
 	createCmd.SetArgs(cmdLine)
 	err := createCmd.Execute()
 
-	if tc.wantErr {
+	if testCase.wantErr {
 		require.Error(t, err)
-		if tc.errMsg != "" {
-			require.Contains(t, err.Error(), tc.errMsg)
+
+		if testCase.errMsg != "" {
+			require.Contains(t, err.Error(), testCase.errMsg)
 		}
+
 		return
 	}
 

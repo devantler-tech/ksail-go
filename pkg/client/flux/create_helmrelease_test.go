@@ -23,12 +23,15 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 
 	// Find helmrelease command
 	var helmReleaseCmd *cobra.Command
+
 	for _, subCmd := range createCmd.Commands() {
 		if subCmd.Use == "helmrelease [name]" {
 			helmReleaseCmd = subCmd
+
 			break
 		}
 	}
+
 	require.NotNil(t, helmReleaseCmd)
 	require.Equal(t, "Create or update a HelmRelease resource", helmReleaseCmd.Short)
 	require.Contains(t, helmReleaseCmd.Aliases, "hr")
@@ -156,10 +159,10 @@ func TestCreateHelmRelease_Export(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-			runFluxCommandTest(t, []string{"helmrelease"}, tc)
+			runFluxCommandTest(t, []string{"helmrelease"}, testCase)
 		})
 	}
 }
@@ -181,11 +184,12 @@ func TestCreateHelmRelease_MissingRequiredFlags(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for testName, testCase := range tests {
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			var outBuf bytes.Buffer
+
 			client := flux.NewClient(genericiooptions.IOStreams{
 				In:     &bytes.Buffer{},
 				Out:    &outBuf,
@@ -195,11 +199,11 @@ func TestCreateHelmRelease_MissingRequiredFlags(t *testing.T) {
 			createCmd := client.CreateCreateCommand("")
 			createCmd.SetOut(&outBuf)
 			createCmd.SetErr(&bytes.Buffer{})
-			createCmd.SetArgs(append([]string{"helmrelease"}, tc.args...))
+			createCmd.SetArgs(append([]string{"helmrelease"}, testCase.args...))
 
 			err := createCmd.Execute()
 			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.errMsg)
+			require.Contains(t, err.Error(), testCase.errMsg)
 		})
 	}
 }
@@ -208,6 +212,7 @@ func TestCreateHelmRelease_AliasWorks(t *testing.T) {
 	t.Parallel()
 
 	var outBuf bytes.Buffer
+
 	client := flux.NewClient(genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
 		Out:    &outBuf,
