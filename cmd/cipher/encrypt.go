@@ -99,7 +99,7 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 	branches, err := opts.InputStore.LoadPlainFile(fileBytes)
 	if err != nil {
 		return nil, common.NewExitError(
-			fmt.Sprintf("Error unmarshalling file: %s", err),
+			fmt.Sprintf("error unmarshalling file: %s", err),
 			codes.CouldNotReadInputFile,
 		)
 	}
