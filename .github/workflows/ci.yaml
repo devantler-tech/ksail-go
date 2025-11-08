@@ -106,27 +106,34 @@ jobs:
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
-          # Create temporary kustomization that excludes HPA from podinfo
-          mkdir -p /tmp/podinfo-overlay
-          cat > /tmp/podinfo-overlay/kustomization.yaml <<'EOF'
-          apiVersion: kustomize.config.k8s.io/v1beta1
-          kind: Kustomization
-          resources:
-            - https://github.com/stefanprodan/podinfo//kustomize
-          patches:
-            - target:
-                kind: HorizontalPodAutoscaler
-              patch: |-
-                $patch: delete
-                apiVersion: autoscaling/v2
-                kind: HorizontalPodAutoscaler
-                metadata:
-                  name: podinfo
+          # Create a simple deployment manifest
+          cat > /tmp/nginx-deployment.yaml <<'EOF'
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: nginx
+            labels:
+              app: nginx
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: nginx
+            template:
+              metadata:
+                labels:
+                  app: nginx
+              spec:
+                containers:
+                - name: nginx
+                  image: ghcr.io/nginxinc/nginx-unprivileged:latest
+                  ports:
+                  - containerPort: 8080
           EOF
-          # Apply podinfo without HPA using ksail
-          ./ksail workload apply -k /tmp/podinfo-overlay
+          # Apply nginx deployment using ksail
+          ./ksail workload apply -f /tmp/nginx-deployment.yaml
           # Wait for deployment to become available
-          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
+          ./ksail workload wait --for=condition=Available deployment/nginx --timeout=300s
 
       - name: 🧪 ksail workload reconcile
         run: |
