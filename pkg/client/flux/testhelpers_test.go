@@ -116,27 +116,52 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 
 	createCmd := setupFluxCommand(&outBuf)
 
-	// Build command line
-	cmdLine := make([]string, 0, len(cmdPath)+len(testCase.args)+len(testCase.flags)*2)
-	cmdLine = append(cmdLine, cmdPath...)
-	cmdLine = append(cmdLine, testCase.args...)
+	// Build command line with accurate capacity calculation
+	// Pre-calculate exact capacity by counting flag elements
+	flagElems := 0
+	var namespaceValue string
+	hasNamespace := false
 
 	for flagKey, flagValue := range testCase.flags {
 		if flagKey == "namespace" {
-			// Namespace is a persistent flag that goes before the subcommand
+			// Namespace is a persistent flag that must be prepended before the subcommand
+			namespaceValue = flagValue
+			hasNamespace = true
+			flagElems += 2 // --namespace <value>
+
 			continue
 		}
-		// For boolean flags, only add the flag name without a value
+
+		// Boolean flags (value "true") only add the flag name
+		if flagValue == "true" {
+			flagElems++
+		} else {
+			flagElems += 2 // --flag <value>
+		}
+	}
+
+	cmdLine := make([]string, 0, len(cmdPath)+len(testCase.args)+flagElems)
+
+	// Prepend namespace flag first if present (persistent flag requirement)
+	if hasNamespace {
+		cmdLine = append(cmdLine, "--namespace", namespaceValue)
+	}
+
+	cmdLine = append(cmdLine, cmdPath...)
+	cmdLine = append(cmdLine, testCase.args...)
+
+	// Add remaining flags
+	for flagKey, flagValue := range testCase.flags {
+		if flagKey == "namespace" {
+			continue
+		}
+
+		// Boolean flags (value "true") only add the flag name
 		if flagValue == "true" {
 			cmdLine = append(cmdLine, "--"+flagKey)
 		} else {
 			cmdLine = append(cmdLine, "--"+flagKey, flagValue)
 		}
-	}
-
-	// Add namespace flag if present at the beginning
-	if ns, ok := testCase.flags["namespace"]; ok {
-		cmdLine = append([]string{"--namespace", ns}, cmdLine...)
 	}
 
 	createCmd.SetArgs(cmdLine)
