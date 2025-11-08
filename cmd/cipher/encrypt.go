@@ -20,6 +20,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// encryptConfig holds configuration options for SOPS encryption.
+// It defines patterns for which values should be encrypted/unencrypted,
+// key groups for encryption, and Shamir secret sharing threshold.
 type encryptConfig struct {
 	UnencryptedSuffix       string
 	EncryptedSuffix         string
@@ -32,6 +35,9 @@ type encryptConfig struct {
 	GroupThreshold          int
 }
 
+// encryptOpts contains all options needed for the encryption operation.
+// It combines encryption configuration with runtime parameters like cipher,
+// stores, and key services.
 type encryptOpts struct {
 	encryptConfig
 
@@ -43,6 +49,8 @@ type encryptOpts struct {
 	KeyServices   []keyservice.KeyServiceClient
 }
 
+// fileAlreadyEncryptedError indicates that a file already contains SOPS metadata
+// and cannot be re-encrypted without first decrypting it.
 type fileAlreadyEncryptedError struct{}
 
 func (err *fileAlreadyEncryptedError) Error() string {
@@ -65,6 +73,8 @@ func (err *fileAlreadyEncryptedError) UserError() string {
 	return wordwrap.WrapString(message, wrapWidth)
 }
 
+// ensureNoMetadata checks whether a file already contains SOPS metadata.
+// This prevents re-encryption of already encrypted files, which would corrupt them.
 func ensureNoMetadata(opts encryptOpts, branch sops.TreeBranch) error {
 	if opts.OutputStore.HasSopsTopLevelKey(branch) {
 		return &fileAlreadyEncryptedError{}
@@ -73,6 +83,9 @@ func ensureNoMetadata(opts encryptOpts, branch sops.TreeBranch) error {
 	return nil
 }
 
+// metadataFromEncryptionConfig creates SOPS metadata from the encryption configuration.
+// It converts the encryptConfig fields into a sops.Metadata structure that will be
+// stored in the encrypted file.
 func metadataFromEncryptionConfig(config encryptConfig) sops.Metadata {
 	return sops.Metadata{
 		KeyGroups:               config.KeyGroups,
@@ -90,6 +103,10 @@ func metadataFromEncryptionConfig(config encryptConfig) sops.Metadata {
 
 var errCouldNotGenerateDataKey = errors.New("could not generate data key")
 
+// encrypt performs the core encryption logic for a file.
+// It loads the file, validates that it's not already encrypted, generates
+// encryption keys using the configured key services, encrypts the data,
+// and returns the encrypted file content.
 func encrypt(opts encryptOpts) ([]byte, error) {
 	fileBytes, err := loadFile(opts)
 	if err != nil {
@@ -152,6 +169,8 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 	return encryptedFile, nil
 }
 
+// loadFile reads file content either from stdin or from a file path.
+// The source is determined by the ReadFromStdin option.
 func loadFile(opts encryptOpts) ([]byte, error) {
 	var fileBytes []byte
 
@@ -207,6 +226,10 @@ const encryptedFilePermissions = 0o600
 
 var errUnsupportedFileFormat = errors.New("unsupported file format")
 
+// handleEncryptRunE is the main handler for the encrypt command.
+// It orchestrates the encryption workflow: determining file stores,
+// setting up encryption options, encrypting the file, and writing
+// the encrypted content back to disk.
 func handleEncryptRunE(cmd *cobra.Command, args []string) error {
 	inputPath := args[0]
 
@@ -246,6 +269,8 @@ func handleEncryptRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// getStores returns the appropriate SOPS stores (input and output) based on file extension.
+// It supports YAML (.yaml, .yml) and JSON (.json) file formats.
 func getStores(inputPath string) (sops.Store, sops.Store, error) {
 	ext := filepath.Ext(inputPath)
 
