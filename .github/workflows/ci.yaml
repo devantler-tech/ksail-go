@@ -93,6 +93,18 @@ jobs:
         run: |
           ./ksail cluster create
 
+      - name: 🔐 Configure GHCR authentication
+        if: matrix.test-workload
+        run: |
+          # Create image pull secret for GHCR
+          kubectl create secret docker-registry ghcr-secret \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GITHUB_TOKEN }} \
+            --docker-email=${{ github.actor }}@users.noreply.github.com
+          # Patch default service account to use the secret
+          kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "ghcr-secret"}]}'
+
       - name: 🧪 ksail cluster list
         run: |
           ./ksail cluster list
