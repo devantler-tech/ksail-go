@@ -20,7 +20,7 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 	}, "")
 
 	createCmd := client.CreateCreateCommand("")
-	
+
 	// Find helmrelease command
 	var helmReleaseCmd *cobra.Command
 	for _, subCmd := range createCmd.Commands() {
@@ -36,13 +36,13 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 	// Verify flags
 	sourceKindFlag := helmReleaseCmd.Flags().Lookup("source-kind")
 	require.NotNil(t, sourceKindFlag)
-	
+
 	sourceFlag := helmReleaseCmd.Flags().Lookup("source")
 	require.NotNil(t, sourceFlag)
-	
+
 	chartFlag := helmReleaseCmd.Flags().Lookup("chart")
 	require.NotNil(t, chartFlag)
-	
+
 	chartVersionFlag := helmReleaseCmd.Flags().Lookup("chart-version")
 	require.NotNil(t, chartVersionFlag)
 
@@ -51,10 +51,10 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 
 	createNamespaceFlag := helmReleaseCmd.Flags().Lookup("create-target-namespace")
 	require.NotNil(t, createNamespaceFlag)
-	
+
 	intervalFlag := helmReleaseCmd.Flags().Lookup("interval")
 	require.NotNil(t, intervalFlag)
-	
+
 	exportFlag := helmReleaseCmd.Flags().Lookup("export")
 	require.NotNil(t, exportFlag)
 
@@ -99,11 +99,11 @@ func TestCreateHelmRelease_Export(t *testing.T) {
 		"export with create namespace": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
-				"source":                   "HelmRepository/podinfo",
-				"chart":                    "podinfo",
-				"target-namespace":         "new-ns",
-				"create-target-namespace":  "true",
-				"export":                   "true",
+				"source":                  "HelmRepository/podinfo",
+				"chart":                   "podinfo",
+				"target-namespace":        "new-ns",
+				"create-target-namespace": "true",
+				"export":                  "true",
 			},
 		},
 		"export with custom interval": {
@@ -205,7 +205,7 @@ func TestCreateHelmRelease_Export(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// Validate YAML output
 			output := outBuf.String()
 			require.NotEmpty(t, output, "output should not be empty")
@@ -221,8 +221,8 @@ func TestCreateHelmRelease_MissingRequiredFlags(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		args    []string
-		errMsg  string
+		args   []string
+		errMsg string
 	}{
 		"missing source": {
 			args:   []string{"podinfo", "--chart", "podinfo", "--export"},
@@ -270,11 +270,21 @@ func TestCreateHelmRelease_AliasWorks(t *testing.T) {
 	createCmd := client.CreateCreateCommand("")
 	createCmd.SetOut(&outBuf)
 	createCmd.SetErr(&bytes.Buffer{})
-	createCmd.SetArgs([]string{"hr", "podinfo", "--source", "HelmRepository/podinfo", "--chart", "podinfo", "--export"})
+	createCmd.SetArgs(
+		[]string{
+			"hr",
+			"podinfo",
+			"--source",
+			"HelmRepository/podinfo",
+			"--chart",
+			"podinfo",
+			"--export",
+		},
+	)
 
 	err := createCmd.Execute()
 	require.NoError(t, err)
-	
+
 	output := outBuf.String()
 	require.NotEmpty(t, output, "output should not be empty")
 	require.Contains(t, output, "metadata:")

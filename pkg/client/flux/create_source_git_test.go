@@ -20,7 +20,7 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 	}, "")
 
 	createCmd := client.CreateCreateCommand("")
-	
+
 	// Find source command
 	var sourceCmd *cobra.Command
 	for _, subCmd := range createCmd.Commands() {
@@ -45,25 +45,25 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 	// Verify required flags
 	urlFlag := gitCmd.Flags().Lookup("url")
 	require.NotNil(t, urlFlag)
-	
+
 	branchFlag := gitCmd.Flags().Lookup("branch")
 	require.NotNil(t, branchFlag)
-	
+
 	tagFlag := gitCmd.Flags().Lookup("tag")
 	require.NotNil(t, tagFlag)
-	
+
 	semverFlag := gitCmd.Flags().Lookup("tag-semver")
 	require.NotNil(t, semverFlag)
-	
+
 	commitFlag := gitCmd.Flags().Lookup("commit")
 	require.NotNil(t, commitFlag)
-	
+
 	secretRefFlag := gitCmd.Flags().Lookup("secret-ref")
 	require.NotNil(t, secretRefFlag)
-	
+
 	intervalFlag := gitCmd.Flags().Lookup("interval")
 	require.NotNil(t, intervalFlag)
-	
+
 	exportFlag := gitCmd.Flags().Lookup("export")
 	require.NotNil(t, exportFlag)
 }
@@ -72,24 +72,24 @@ func TestCreateGitRepository_Export(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		args     []string
-		flags    map[string]string
-		wantErr  bool
+		args    []string
+		flags   map[string]string
+		wantErr bool
 	}{
 		"export with branch": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
-				"url":      "https://github.com/stefanprodan/podinfo",
-				"branch":   "master",
-				"export":   "true",
+				"url":    "https://github.com/stefanprodan/podinfo",
+				"branch": "master",
+				"export": "true",
 			},
 		},
 		"export with tag": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
-				"url":      "https://github.com/stefanprodan/podinfo",
-				"tag":      "6.6.2",
-				"export":   "true",
+				"url":    "https://github.com/stefanprodan/podinfo",
+				"tag":    "6.6.2",
+				"export": "true",
 			},
 		},
 		"export with semver": {
@@ -103,9 +103,9 @@ func TestCreateGitRepository_Export(t *testing.T) {
 		"export with commit": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
-				"url":      "https://github.com/stefanprodan/podinfo",
-				"commit":   "abc123",
-				"export":   "true",
+				"url":    "https://github.com/stefanprodan/podinfo",
+				"commit": "abc123",
+				"export": "true",
 			},
 		},
 		"export with secret ref": {
@@ -182,7 +182,7 @@ func TestCreateGitRepository_Export(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// Validate YAML output
 			output := outBuf.String()
 			require.NotEmpty(t, output, "output should not be empty")

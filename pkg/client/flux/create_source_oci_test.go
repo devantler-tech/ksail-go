@@ -20,7 +20,7 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 	}, "")
 
 	createCmd := client.CreateCreateCommand("")
-	
+
 	// Find source command
 	var sourceCmd *cobra.Command
 	for _, subCmd := range createCmd.Commands() {
@@ -45,25 +45,25 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 	// Verify flags
 	urlFlag := ociCmd.Flags().Lookup("url")
 	require.NotNil(t, urlFlag)
-	
+
 	tagFlag := ociCmd.Flags().Lookup("tag")
 	require.NotNil(t, tagFlag)
-	
+
 	semverFlag := ociCmd.Flags().Lookup("tag-semver")
 	require.NotNil(t, semverFlag)
-	
+
 	digestFlag := ociCmd.Flags().Lookup("digest")
 	require.NotNil(t, digestFlag)
-	
+
 	secretRefFlag := ociCmd.Flags().Lookup("secret-ref")
 	require.NotNil(t, secretRefFlag)
 
 	providerFlag := ociCmd.Flags().Lookup("provider")
 	require.NotNil(t, providerFlag)
-	
+
 	intervalFlag := ociCmd.Flags().Lookup("interval")
 	require.NotNil(t, intervalFlag)
-	
+
 	exportFlag := ociCmd.Flags().Lookup("export")
 	require.NotNil(t, exportFlag)
 
@@ -208,7 +208,7 @@ func TestCreateOCIRepository_Export(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// Validate YAML output
 			output := outBuf.String()
 			require.NotEmpty(t, output, "output should not be empty")

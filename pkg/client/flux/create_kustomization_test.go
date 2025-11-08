@@ -20,7 +20,7 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 	}, "")
 
 	createCmd := client.CreateCreateCommand("")
-	
+
 	// Find kustomization command
 	var kustomizationCmd *cobra.Command
 	for _, subCmd := range createCmd.Commands() {
@@ -35,25 +35,25 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 	// Verify flags
 	sourceKindFlag := kustomizationCmd.Flags().Lookup("source-kind")
 	require.NotNil(t, sourceKindFlag)
-	
+
 	sourceFlag := kustomizationCmd.Flags().Lookup("source")
 	require.NotNil(t, sourceFlag)
-	
+
 	pathFlag := kustomizationCmd.Flags().Lookup("path")
 	require.NotNil(t, pathFlag)
-	
+
 	pruneFlag := kustomizationCmd.Flags().Lookup("prune")
 	require.NotNil(t, pruneFlag)
 
 	waitFlag := kustomizationCmd.Flags().Lookup("wait")
 	require.NotNil(t, waitFlag)
-	
+
 	targetNamespaceFlag := kustomizationCmd.Flags().Lookup("target-namespace")
 	require.NotNil(t, targetNamespaceFlag)
-	
+
 	intervalFlag := kustomizationCmd.Flags().Lookup("interval")
 	require.NotNil(t, intervalFlag)
-	
+
 	exportFlag := kustomizationCmd.Flags().Lookup("export")
 	require.NotNil(t, exportFlag)
 
@@ -195,7 +195,7 @@ func TestCreateKustomization_Export(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// Validate YAML output
 			output := outBuf.String()
 			require.NotEmpty(t, output, "output should not be empty")

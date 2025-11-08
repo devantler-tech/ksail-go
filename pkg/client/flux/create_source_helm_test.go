@@ -20,7 +20,7 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 	}, "")
 
 	createCmd := client.CreateCreateCommand("")
-	
+
 	// Find source command
 	var sourceCmd *cobra.Command
 	for _, subCmd := range createCmd.Commands() {
@@ -45,13 +45,13 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 	// Verify flags
 	urlFlag := helmCmd.Flags().Lookup("url")
 	require.NotNil(t, urlFlag)
-	
+
 	secretRefFlag := helmCmd.Flags().Lookup("secret-ref")
 	require.NotNil(t, secretRefFlag)
-	
+
 	intervalFlag := helmCmd.Flags().Lookup("interval")
 	require.NotNil(t, intervalFlag)
-	
+
 	exportFlag := helmCmd.Flags().Lookup("export")
 	require.NotNil(t, exportFlag)
 
@@ -172,7 +172,7 @@ func TestCreateHelmRepository_Export(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			
+
 			// Validate YAML output
 			output := outBuf.String()
 			require.NotEmpty(t, output, "output should not be empty")
