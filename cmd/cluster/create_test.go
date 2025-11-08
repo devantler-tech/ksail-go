@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -171,7 +170,7 @@ func TestHandleCreateRunEWithoutCilium(t *testing.T) {
 	}
 }
 
-func TestGetCiliumInstallTimeout(t *testing.T) {
+func TestGetInstallTimeout(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -198,7 +197,7 @@ func TestGetCiliumInstallTimeout(t *testing.T) {
 			cfg := &v1alpha1.Cluster{}
 			cfg.Spec.Connection.Timeout.Duration = test.duration
 
-			result := getCiliumInstallTimeout(cfg)
+			result := getInstallTimeout(cfg)
 			if result != test.expected {
 				t.Fatalf("expected %v, got %v", test.expected, result)
 			}
@@ -1047,38 +1046,7 @@ func TestHandleMetricsServer_Disabled_K3dNoAction(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetMetricsServerInstallTimeout(t *testing.T) {
-	t.Parallel()
 
-	t.Run("Uses default timeout when not specified", func(t *testing.T) {
-		t.Parallel()
-
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{},
-			},
-		}
-
-		timeout := getMetricsServerInstallTimeout(clusterCfg)
-		assert.Equal(t, 5*time.Minute, timeout)
-	})
-
-	t.Run("Uses custom timeout when specified", func(t *testing.T) {
-		t.Parallel()
-
-		customTimeout := 10 * time.Minute
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: customTimeout},
-				},
-			},
-		}
-
-		timeout := getMetricsServerInstallTimeout(clusterCfg)
-		assert.Equal(t, customTimeout, timeout)
-	})
-}
 
 func TestNewCreateCmd_IncludesMetricsServerFlag(t *testing.T) {
 	t.Parallel()

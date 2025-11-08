@@ -671,7 +671,7 @@ func newCiliumInstaller(
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *ciliuminstaller.CiliumInstaller {
-	timeout := getCiliumInstallTimeout(clusterCfg)
+	timeout := getInstallTimeout(clusterCfg)
 
 	return ciliuminstaller.NewCiliumInstaller(
 		helmClient,
@@ -735,8 +735,9 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
 	return kubeconfig, kubeconfigData, nil
 }
 
-// getCiliumInstallTimeout determines the timeout for Cilium installation.
-func getCiliumInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
+// getInstallTimeout determines the timeout for component installation (Cilium, metrics-server, etc.).
+// Uses cluster connection timeout if configured, otherwise defaults to 5 minutes.
+func getInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
 
 	timeout := defaultTimeout * time.Minute
@@ -971,7 +972,7 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	timeout := getMetricsServerInstallTimeout(clusterCfg)
+	timeout := getInstallTimeout(clusterCfg)
 	installer := metricsserverinstaller.NewMetricsServerInstaller(
 		helmClient,
 		kubeconfig,
@@ -982,17 +983,7 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 	return runMetricsServerInstallation(cmd, installer, tmr)
 }
 
-// getMetricsServerInstallTimeout determines the timeout for metrics-server installation.
-func getMetricsServerInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
-	const defaultTimeout = 5
 
-	timeout := defaultTimeout * time.Minute
-	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
-		timeout = clusterCfg.Spec.Connection.Timeout.Duration
-	}
-
-	return timeout
-}
 
 // runMetricsServerInstallation performs the metrics-server installation.
 func runMetricsServerInstallation(
