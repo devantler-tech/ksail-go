@@ -57,10 +57,8 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 	require.NotNil(t, insecureFlag)
 }
 
-func TestCreateOCIRepository_Export(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]testCase{
+func ociRepositoryExportTests() map[string]testCase {
+	return map[string]testCase{
 		"export with tag": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -140,8 +138,12 @@ func TestCreateOCIRepository_Export(t *testing.T) {
 			errMsg:  "one of --tag, --tag-semver or --digest is required",
 		},
 	}
+}
 
-	for testName, testCase := range tests {
+func TestCreateOCIRepository_Export(t *testing.T) {
+	t.Parallel()
+
+	for testName, testCase := range ociRepositoryExportTests() {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runFluxCommandTest(t, []string{"source", "oci"}, testCase)

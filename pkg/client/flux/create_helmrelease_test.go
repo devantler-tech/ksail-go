@@ -57,10 +57,8 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 	require.NotNil(t, dependsOnFlag)
 }
 
-func TestCreateHelmRelease_Export(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]testCase{
+func helmReleaseExportTests() map[string]testCase {
+	return map[string]testCase{
 		"export basic helmrelease": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -150,8 +148,12 @@ func TestCreateHelmRelease_Export(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for testName, testCase := range tests {
+func TestCreateHelmRelease_Export(t *testing.T) {
+	t.Parallel()
+
+	for testName, testCase := range helmReleaseExportTests() {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runFluxCommandTest(t, []string{"helmrelease"}, testCase)

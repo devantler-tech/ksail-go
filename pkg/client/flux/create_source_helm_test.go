@@ -48,10 +48,8 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 	require.NotNil(t, passCredentialsFlag)
 }
 
-func TestCreateHelmRepository_Export(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]testCase{
+func helmRepositoryExportTests() map[string]testCase {
+	return map[string]testCase{
 		"export HTTPS repository": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -108,8 +106,12 @@ func TestCreateHelmRepository_Export(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for testName, testCase := range tests {
+func TestCreateHelmRepository_Export(t *testing.T) {
+	t.Parallel()
+
+	for testName, testCase := range helmRepositoryExportTests() {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runFluxCommandTest(t, []string{"source", "helm"}, testCase)

@@ -41,10 +41,8 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 	require.NotNil(t, exportFlag)
 }
 
-func TestCreateGitRepository_Export(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]testCase{
+func gitRepositoryExportTests() map[string]testCase {
+	return map[string]testCase{
 		"export with branch": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -105,8 +103,12 @@ func TestCreateGitRepository_Export(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for testName, testCase := range tests {
+func TestCreateGitRepository_Export(t *testing.T) {
+	t.Parallel()
+
+	for testName, testCase := range gitRepositoryExportTests() {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runFluxCommandTest(t, []string{"source", "git"}, testCase)

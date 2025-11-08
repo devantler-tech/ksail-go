@@ -56,10 +56,8 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 	require.NotNil(t, dependsOnFlag)
 }
 
-func TestCreateKustomization_Export(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]testCase{
+func kustomizationExportTests() map[string]testCase {
+	return map[string]testCase{
 		"export basic kustomization": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -140,8 +138,12 @@ func TestCreateKustomization_Export(t *testing.T) {
 			},
 		},
 	}
+}
 
-	for testName, testCase := range tests {
+func TestCreateKustomization_Export(t *testing.T) {
+	t.Parallel()
+
+	for testName, testCase := range kustomizationExportTests() {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 			runFluxCommandTest(t, []string{"kustomization"}, testCase)
