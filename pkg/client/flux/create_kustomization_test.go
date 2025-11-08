@@ -1,24 +1,16 @@
 package flux_test
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 func TestNewCreateKustomizationCmd(t *testing.T) {
 	t.Parallel()
 
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
+	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
 
 	// Find kustomization command
@@ -160,20 +152,9 @@ func TestCreateKustomization_Export(t *testing.T) {
 func TestCreateKustomization_MissingRequiredSource(t *testing.T) {
 	t.Parallel()
 
-	var outBuf bytes.Buffer
-
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
-	createCmd := client.CreateCreateCommand("")
-	createCmd.SetOut(&outBuf)
-	createCmd.SetErr(&bytes.Buffer{})
-	createCmd.SetArgs([]string{"kustomization", "podinfo", "--path", "./kustomize", "--export"})
-
-	err := createCmd.Execute()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "required flag(s)")
+	testMissingRequiredFlag(
+		t,
+		[]string{"kustomization"},
+		[]string{"podinfo", "--path", "./kustomize", "--export"},
+	)
 }

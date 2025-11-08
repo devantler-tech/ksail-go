@@ -13,12 +13,7 @@ import (
 func TestNewCreateHelmReleaseCmd(t *testing.T) {
 	t.Parallel()
 
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
+	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
 
 	// Find helmrelease command

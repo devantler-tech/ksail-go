@@ -1,38 +1,18 @@
 package flux_test
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 func TestNewCreateSourceHelmCmd(t *testing.T) {
 	t.Parallel()
 
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
+	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
-
-	// Find source command
-	var sourceCmd *cobra.Command
-
-	for _, subCmd := range createCmd.Commands() {
-		if subCmd.Use == sourceCommandName {
-			sourceCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, sourceCmd)
+	sourceCmd := findSourceCommand(t, createCmd)
 
 	// Find helm command
 	var helmCmd *cobra.Command
@@ -140,20 +120,9 @@ func TestCreateHelmRepository_Export(t *testing.T) {
 func TestCreateHelmRepository_MissingRequiredURL(t *testing.T) {
 	t.Parallel()
 
-	var outBuf bytes.Buffer
-
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
-	createCmd := client.CreateCreateCommand("")
-	createCmd.SetOut(&outBuf)
-	createCmd.SetErr(&bytes.Buffer{})
-	createCmd.SetArgs([]string{"source", "helm", "podinfo", "--export"})
-
-	err := createCmd.Execute()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "required flag(s)")
+	testMissingRequiredFlag(
+		t,
+		[]string{"source", "helm"},
+		[]string{"podinfo", "--export"},
+	)
 }

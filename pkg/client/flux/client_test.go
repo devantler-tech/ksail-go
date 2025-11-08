@@ -65,19 +65,7 @@ func TestCreateSourceGitCommand(t *testing.T) {
 
 	client := setupTestClient()
 	cmd := client.CreateCreateCommand("")
-
-	// Find source command
-	var sourceCmd *cobra.Command
-
-	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == sourceCommandName {
-			sourceCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, sourceCmd)
+	sourceCmd := findSourceCommand(t, cmd)
 
 	// Find git sub-command
 	var gitCmd *cobra.Command

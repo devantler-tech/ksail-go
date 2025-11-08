@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/flux"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
@@ -15,6 +16,51 @@ type testCase struct {
 	flags   map[string]string
 	wantErr bool
 	errMsg  string
+}
+
+// findSourceCommand finds the source command from the create command.
+func findSourceCommand(t *testing.T, createCmd *cobra.Command) *cobra.Command {
+	t.Helper()
+
+	var sourceCmd *cobra.Command
+
+	for _, subCmd := range createCmd.Commands() {
+		if subCmd.Use == sourceCommandName {
+			sourceCmd = subCmd
+
+			break
+		}
+	}
+
+	require.NotNil(t, sourceCmd)
+
+	return sourceCmd
+}
+
+// testMissingRequiredFlag tests that a command fails when a required flag is missing.
+func testMissingRequiredFlag(t *testing.T, cmdPath []string, args []string) {
+	t.Helper()
+
+	var outBuf bytes.Buffer
+
+	client := flux.NewClient(genericiooptions.IOStreams{
+		In:     &bytes.Buffer{},
+		Out:    &outBuf,
+		ErrOut: &bytes.Buffer{},
+	}, "")
+
+	createCmd := client.CreateCreateCommand("")
+	createCmd.SetOut(&outBuf)
+	createCmd.SetErr(&bytes.Buffer{})
+
+	fullArgs := make([]string, 0, len(cmdPath)+len(args))
+	fullArgs = append(fullArgs, cmdPath...)
+	fullArgs = append(fullArgs, args...)
+	createCmd.SetArgs(fullArgs)
+
+	err := createCmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "required flag(s)")
 }
 
 // runFluxCommandTest executes a flux command test with the given parameters.
