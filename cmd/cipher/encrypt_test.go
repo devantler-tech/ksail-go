@@ -66,14 +66,14 @@ func TestEncryptCommandRequiresFile(t *testing.T) {
 	}
 }
 
-func TestEncryptCommandUnsupportedFormat(t *testing.T) {
-	t.Parallel()
+// setupEncryptTest is a helper function to create a test file and execute encrypt command.
+func setupEncryptTest(t *testing.T, filename, content string) error {
+	t.Helper()
 
-	// Create a temporary txt file
 	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.txt")
+	testFile := filepath.Join(tmpDir, filename)
 
-	err := os.WriteFile(testFile, []byte("test content"), 0o600)
+	err := os.WriteFile(testFile, []byte(content), 0o600)
 	if err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
@@ -86,18 +86,34 @@ func TestEncryptCommandUnsupportedFormat(t *testing.T) {
 	cipherCmd.SetErr(&errOut)
 	cipherCmd.SetArgs([]string{"encrypt", testFile})
 
-	err = cipherCmd.Execute()
+	// Execute returns an error which we pass through for test assertions
+	//nolint:wrapcheck // Test helper intentionally returns unwrapped error for assertion
+	return cipherCmd.Execute()
+}
+
+func TestEncryptCommandUnsupportedFormat(t *testing.T) {
+	t.Parallel()
+
+	err := setupEncryptTest(t, "test.txt", "test content")
 	if err == nil {
 		t.Error("expected error for unsupported file format")
 	}
 }
 
+// testEncryptWithFormat tests encryption with supported file formats.
+func testEncryptWithFormat(t *testing.T, filename, content string) {
+	t.Helper()
+
+	err := setupEncryptTest(t, filename, content)
+	// We expect an error about missing keys, not about file format
+	if err != nil {
+		// Error is from SOPS (expected - no keys configured)
+		t.Logf("Expected SOPS error (no keys configured): %v", err)
+	}
+}
+
 func TestEncryptCommandYAMLFormat(t *testing.T) {
 	t.Parallel()
-
-	// Create a temporary yaml file
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.yaml")
 
 	yamlContent := `apiVersion: v1
 kind: Secret
@@ -106,37 +122,11 @@ metadata:
 data:
   key: value
 `
-
-	err := os.WriteFile(testFile, []byte(yamlContent), 0o600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
-
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"encrypt", testFile})
-
-	// This will fail because no SOPS keys are configured, but we're testing
-	// that it gets past file format validation
-	err = cipherCmd.Execute()
-
-	// We expect an error about missing keys, not about file format
-	if err != nil && errOut.String() == "" {
-		// Error is from SOPS (expected)
-		t.Logf("Expected SOPS error (no keys configured): %v", err)
-	}
+	testEncryptWithFormat(t, "test.yaml", yamlContent)
 }
 
 func TestEncryptCommandJSONFormat(t *testing.T) {
 	t.Parallel()
-
-	// Create a temporary json file
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.json")
 
 	jsonContent := `{
   "apiVersion": "v1",
@@ -149,27 +139,5 @@ func TestEncryptCommandJSONFormat(t *testing.T) {
   }
 }
 `
-
-	err := os.WriteFile(testFile, []byte(jsonContent), 0o600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
-
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"encrypt", testFile})
-
-	// This will fail because no SOPS keys are configured, but we're testing
-	// that it gets past file format validation
-	err = cipherCmd.Execute()
-
-	// We expect an error about missing keys, not about file format
-	if err != nil && errOut.String() == "" {
-		// Error is from SOPS (expected)
-		t.Logf("Expected SOPS error (no keys configured): %v", err)
-	}
+	testEncryptWithFormat(t, "test.json", jsonContent)
 }
