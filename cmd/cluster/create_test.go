@@ -297,14 +297,13 @@ func TestExpandKubeconfigPath(t *testing.T) {
 func TestLoadKubeconfig(t *testing.T) {
 	t.Parallel()
 
-	t.Run("reads_config_file", func(t *testing.T) {
+	t.Run("validates_config_file_exists", func(t *testing.T) {
 		t.Parallel()
 
 		dir := t.TempDir()
 		kubeconfigPath := filepath.Join(dir, "kubeconfig")
-		expected := []byte("kube-config-data")
 
-		err := os.WriteFile(kubeconfigPath, expected, 0o600)
+		err := os.WriteFile(kubeconfigPath, []byte("kube-config-data"), 0o600)
 		if err != nil {
 			t.Fatalf("failed to write kubeconfig: %v", err)
 		}
@@ -312,17 +311,13 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = kubeconfigPath
 
-		path, data, err := loadKubeconfig(clusterCfg)
+		path, err := loadKubeconfig(clusterCfg)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		if path != kubeconfigPath {
 			t.Fatalf("expected path %q, got %q", kubeconfigPath, path)
-		}
-
-		if string(data) != string(expected) {
-			t.Fatalf("unexpected kubeconfig contents: %q", string(data))
 		}
 	})
 
@@ -332,7 +327,7 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = filepath.Join(t.TempDir(), "missing")
 
-		_, _, err := loadKubeconfig(clusterCfg)
+		_, err := loadKubeconfig(clusterCfg)
 		if err == nil {
 			t.Fatal("expected error for missing kubeconfig")
 		}
@@ -447,7 +442,7 @@ func TestInstallCiliumCNI(t *testing.T) {
 		t.Fatal("expected error when kubeconfig file is missing")
 	}
 
-	if !strings.Contains(err.Error(), "failed to read kubeconfig file") {
+	if !strings.Contains(err.Error(), "failed to access kubeconfig file") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -982,9 +977,9 @@ func TestHandleMetricsServer_Enabled_KindShouldInstall(t *testing.T) {
 
 	// This will fail because kubeconfig doesn't exist, but we can test the logic flow
 	err := handleMetricsServer(cmd, clusterCfg, tmr)
-	// Expect error since we're trying to read non-existent kubeconfig
+	// Expect error since we're trying to access non-existent kubeconfig
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "failed to read kubeconfig file")
+	assert.ErrorContains(t, err, "failed to access kubeconfig file")
 }
 
 func TestHandleMetricsServer_Enabled_K3dNoAction(t *testing.T) {
@@ -1236,7 +1231,7 @@ func TestInstallMetricsServer_KubeconfigReadError(t *testing.T) {
 
 	err := installMetricsServer(cmd, clusterCfg, tmr)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "failed to read kubeconfig file")
+	assert.ErrorContains(t, err, "failed to access kubeconfig file")
 }
 
 func TestDistributionProvidesMetricsByDefault_UnknownDistribution(t *testing.T) {

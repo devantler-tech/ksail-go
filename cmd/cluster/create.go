@@ -13,7 +13,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -634,7 +633,7 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	kubeconfig, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
@@ -720,19 +719,20 @@ func runCiliumInstallation(
 	return nil
 }
 
-// loadKubeconfig loads and returns the kubeconfig path and data.
-func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
+// loadKubeconfig loads and returns the kubeconfig path.
+func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
+		return "", fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
+	// Validate file exists
+	_, err = os.Stat(kubeconfig)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to read kubeconfig file: %w", err)
+		return "", fmt.Errorf("failed to access kubeconfig file: %w", err)
 	}
 
-	return kubeconfig, kubeconfigData, nil
+	return kubeconfig, nil
 }
 
 // getCiliumInstallTimeout determines the timeout for Cilium installation.
@@ -961,7 +961,7 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	kubeconfig, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
