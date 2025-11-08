@@ -106,34 +106,42 @@ jobs:
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
+          # Use ghcr.io image if ghcr.io mirror is configured, otherwise use docker.io
+          if echo "${{ matrix.init-args }}" | grep -q "ghcr.io"; then
+            IMAGE="ghcr.io/nginxinc/nginx-unprivileged:alpine"
+            PORT="8080"
+          else
+            IMAGE="nginx:alpine"
+            PORT="80"
+          fi
           # Create a simple deployment manifest
-          cat > /tmp/nginx-deployment.yaml <<'EOF'
+          cat > /tmp/test-deployment.yaml <<EOF
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: nginx
+            name: test-app
             labels:
-              app: nginx
+              app: test-app
           spec:
             replicas: 1
             selector:
               matchLabels:
-                app: nginx
+                app: test-app
             template:
               metadata:
                 labels:
-                  app: nginx
+                  app: test-app
               spec:
                 containers:
-                - name: nginx
-                  image: nginx:alpine
+                - name: test-app
+                  image: ${IMAGE}
                   ports:
-                  - containerPort: 80
+                  - containerPort: ${PORT}
           EOF
-          # Apply nginx deployment using ksail
-          ./ksail workload apply -f /tmp/nginx-deployment.yaml
+          # Apply deployment using ksail
+          ./ksail workload apply -f /tmp/test-deployment.yaml
           # Wait for deployment to become available
-          ./ksail workload wait --for=condition=Available deployment/nginx --timeout=300s
+          ./ksail workload wait --for=condition=Available deployment/test-app --timeout=300s
 
       - name: 🧪 ksail workload reconcile
         run: |
