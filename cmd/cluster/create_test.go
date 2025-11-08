@@ -311,13 +311,19 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = kubeconfigPath
 
-		path, data, err := loadKubeconfig(clusterCfg)
+		path, err := loadKubeconfig(clusterCfg)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
 		if path != kubeconfigPath {
 			t.Fatalf("expected path %q, got %q", kubeconfigPath, path)
+		}
+
+		// Verify file was actually read by checking it exists and has the expected content
+		data, err := os.ReadFile(kubeconfigPath)
+		if err != nil {
+			t.Fatalf("failed to read kubeconfig: %v", err)
 		}
 
 		if string(data) != string(expected) {
@@ -331,7 +337,7 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = filepath.Join(t.TempDir(), "missing")
 
-		_, _, err := loadKubeconfig(clusterCfg)
+		_, err := loadKubeconfig(clusterCfg)
 		if err == nil {
 			t.Fatal("expected error for missing kubeconfig")
 		}

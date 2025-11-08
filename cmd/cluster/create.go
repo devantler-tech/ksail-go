@@ -626,7 +626,7 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	kubeconfig, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
@@ -703,19 +703,19 @@ func runCiliumInstallation(
 	return nil
 }
 
-// loadKubeconfig loads and returns the kubeconfig path and data.
-func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, []byte, error) {
+// loadKubeconfig loads and returns the kubeconfig path with tilde expansion and validation.
+func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to expand kubeconfig path: %w", err)
+		return "", fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	kubeconfigData, err := ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
+	_, err = ksailio.ReadFileSafe(filepath.Dir(kubeconfig), kubeconfig)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to read kubeconfig file: %w", err)
+		return "", fmt.Errorf("failed to read kubeconfig file: %w", err)
 	}
 
-	return kubeconfig, kubeconfigData, nil
+	return kubeconfig, nil
 }
 
 // getInstallTimeout determines the timeout for component installation (Cilium, metrics-server, etc.).
@@ -945,7 +945,7 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, _, err := loadKubeconfig(clusterCfg)
+	kubeconfig, err := loadKubeconfig(clusterCfg)
 	if err != nil {
 		return err
 	}
@@ -965,8 +965,6 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 
 	return runMetricsServerInstallation(cmd, installer, tmr)
 }
-
-
 
 // runMetricsServerInstallation performs the metrics-server installation.
 func runMetricsServerInstallation(
