@@ -97,10 +97,6 @@ jobs:
         run: |
           ./ksail cluster list
 
-      - name: 🧪 ksail cluster start
-        run: |
-          ./ksail cluster start
-
       - name: 🧪 ksail workload create
         if: matrix.test-workload
         run: |
@@ -114,13 +110,17 @@ jobs:
           # Wait for deployment to become available
           ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
+      - name: 🧪 ksail workload reconcile
+        run: |
+          ./ksail workload reconcile
+
       - name: 🧪 ksail cluster stop
         run: |
           ./ksail cluster stop
 
-      - name: 🧪 ksail workload reconcile
+      - name: 🧪 ksail cluster start
         run: |
-          ./ksail workload reconcile
+          ./ksail cluster start
 
       - name: 🧪 ksail cluster delete
         run: |
