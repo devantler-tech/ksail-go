@@ -106,7 +106,7 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 
 	if len(branches) < 1 {
 		return nil, common.NewExitError(
-			"File cannot be completely empty, it must contain at least one document",
+			"file cannot be completely empty, it must contain at least one document",
 			codes.NeedAtLeastOneDocument,
 		)
 	}
