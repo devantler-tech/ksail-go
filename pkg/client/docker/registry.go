@@ -49,6 +49,26 @@ const (
 	RegistryRestartPolicy = "unless-stopped"
 	// RegistryHostIP is the host IP address to bind registry ports to.
 	RegistryHostIP = "127.0.0.1"
+	// RegistryConfigTemplate is the base configuration template for registry containers.
+	RegistryConfigTemplate = `version: 0.1
+log:
+  level: info
+  fields:
+    service: registry
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
+http:
+  addr: :5000
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3`
 )
 
 // RegistryManager manages Docker registry containers for mirror/pull-through caching.
@@ -266,6 +286,8 @@ func (rm *RegistryManager) prepareRegistryResources(
 	if config.UpstreamURL != "" {
 		configFilePath, err = rm.createRegistryConfigFile(config.Name, config.UpstreamURL)
 		if err != nil {
+			// Clean up the volume we just created since config file creation failed
+			_ = rm.client.VolumeRemove(ctx, volumeName, false)
 			return "", "", fmt.Errorf("failed to create registry config file: %w", err)
 		}
 	}
@@ -422,25 +444,7 @@ func (rm *RegistryManager) buildContainerConfig(
 }
 
 func (rm *RegistryManager) generateRegistryConfig(upstreamURL string) string {
-	baseConfig := `version: 0.1
-log:
-  level: info
-  fields:
-    service: registry
-storage:
-  cache:
-    blobdescriptor: inmemory
-  filesystem:
-    rootdirectory: /var/lib/registry
-  delete:
-    enabled: true
-http:
-  addr: :5000
-health:
-  storagedriver:
-    enabled: true
-    interval: 10s
-    threshold: 3`
+	baseConfig := RegistryConfigTemplate
 
 	if upstreamURL != "" {
 		baseConfig += "\nproxy:\n  remoteurl: " + upstreamURL
@@ -501,7 +505,11 @@ func (rm *RegistryManager) buildHostConfig(
 	// If config file path is provided, mount it
 	if configFilePath != "" {
 		absPath, err := filepath.Abs(configFilePath)
-		if err == nil {
+		if err != nil {
+			// Log error but continue - registry will run without proxy config
+			// This is better than failing the entire registry creation
+			fmt.Fprintf(os.Stderr, "warning: failed to resolve absolute path for config file: %v\n", err)
+		} else {
 			mounts = append(mounts, mount.Mount{
 				Type:     mount.TypeBind,
 				Source:   absPath,
