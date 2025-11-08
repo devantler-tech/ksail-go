@@ -726,7 +726,7 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 		return "", fmt.Errorf("failed to expand kubeconfig path: %w", err)
 	}
 
-	// Validate file exists and is readable
+	// Validate file exists
 	_, err = os.Stat(kubeconfig)
 	if err != nil {
 		return "", fmt.Errorf("failed to access kubeconfig file: %w", err)
