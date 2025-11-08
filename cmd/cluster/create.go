@@ -74,17 +74,9 @@ func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 			"Configure mirror registries with format 'host=upstream' (e.g., docker.io=https://registry-1.docker.io)")
 	_ = cfgManager.Viper.BindPFlag("mirror-registry", cmd.Flags().Lookup("mirror-registry"))
 
-	cmd.RunE = newCreateCommandRunE(runtimeContainer, cfgManager)
+	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 
 	return cmd
-}
-
-// newCreateCommandRunE creates the RunE handler for cluster creation with CNI installation support.
-func newCreateCommandRunE(
-	runtimeContainer *runtime.Runtime,
-	cfgManager *ksailconfigmanager.ConfigManager,
-) func(*cobra.Command, []string) error {
-	return cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleCreateRunE)
 }
 
 // handleCreateRunE executes cluster creation with mirror registry setup and CNI installation.
