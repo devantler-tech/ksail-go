@@ -46,7 +46,7 @@ type encryptOpts struct {
 type fileAlreadyEncryptedError struct{}
 
 func (err *fileAlreadyEncryptedError) Error() string {
-	return "File already encrypted"
+	return "file already encrypted"
 }
 
 const wrapWidth = 75
