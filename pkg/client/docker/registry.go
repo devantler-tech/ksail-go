@@ -100,7 +100,7 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 	// Prepare registry resources (volume and config file)
 	volumeName, configFilePath, err := rm.prepareRegistryResources(ctx, config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to prepare registry resources: %w", err)
 	}
 
 	// Clean up config file when done
