@@ -37,10 +37,7 @@ const (
 
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
-var (
-	errRepoError                = errors.New("repo error")
-	errClusterProvisionerFailed = errors.New("provisioner failed")
-)
+var errClusterProvisionerFailed = errors.New("provisioner failed")
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
