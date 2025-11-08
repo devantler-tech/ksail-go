@@ -56,7 +56,7 @@ func (err *fileAlreadyEncryptedError) UserError() string {
 		"'" + stores.SopsMetadataKey + "', or for flat file formats top-level entries starting with " +
 		"'" + stores.SopsMetadataKey + "_'. This is generally due to the file already being encrypted. " +
 		"SOPS uses a top-level entry called '" + stores.SopsMetadataKey + "' to store the metadata " +
-		"required to decrypt the file. For this reason, SOPS can not " +
+		"required to decrypt the file. For this reason, SOPS cannot " +
 		"encrypt files that already contain such an entry.\n\n" +
 		"If this is an unencrypted file, rename the '" + stores.SopsMetadataKey + "' entry.\n\n" +
 		"If this is an encrypted file and you want to edit it, use the " +
