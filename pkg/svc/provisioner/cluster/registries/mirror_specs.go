@@ -95,7 +95,9 @@ func BuildMirrorEntries(
 			containerName = fmt.Sprintf("%s-%s", trimmed, sanitized)
 		}
 
-		endpoint := "http://" + net.JoinHostPort(containerName, strconv.Itoa(port))
+		// Use DefaultRegistryPort for the endpoint since all registry containers
+		// listen on port 5000 internally (port is the host-mapped port)
+		endpoint := "http://" + net.JoinHostPort(containerName, strconv.Itoa(DefaultRegistryPort))
 
 		entries = append(entries, MirrorEntry{
 			Host:          host,

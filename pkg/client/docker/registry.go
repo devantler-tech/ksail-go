@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -106,9 +108,24 @@ func (rm *RegistryManager) CreateRegistry(ctx context.Context, config RegistryCo
 		return fmt.Errorf("failed to create registry volume: %w", err)
 	}
 
+	// Create config file if upstream URL is provided
+	var configFilePath string
+	if config.UpstreamURL != "" {
+		configFilePath, err = rm.createRegistryConfigFile(config.Name, config.UpstreamURL)
+		if err != nil {
+			return fmt.Errorf("failed to create registry config file: %w", err)
+		}
+		// Clean up config file when done (defer after successful creation)
+		defer func() {
+			if configFilePath != "" {
+				_ = os.Remove(configFilePath)
+			}
+		}()
+	}
+
 	// Prepare container configuration
 	containerConfig := rm.buildContainerConfig(config)
-	hostConfig := rm.buildHostConfig(config, volumeName)
+	hostConfig := rm.buildHostConfig(config, volumeName, configFilePath)
 	networkConfig := rm.buildNetworkConfig(config)
 
 	// Use provided registry name directly so other components can reference it
@@ -368,11 +385,6 @@ func (rm *RegistryManager) createVolume(
 func (rm *RegistryManager) buildContainerConfig(
 	config RegistryConfig,
 ) *container.Config {
-	env := []string{}
-	if config.UpstreamURL != "" {
-		env = append(env, "REGISTRY_PROXY_REMOTEURL="+config.UpstreamURL)
-	}
-
 	labels := map[string]string{}
 	if config.Name != "" {
 		labels[RegistryLabelKey] = config.Name
@@ -380,7 +392,6 @@ func (rm *RegistryManager) buildContainerConfig(
 
 	return &container.Config{
 		Image: RegistryImageName,
-		Env:   env,
 		ExposedPorts: nat.PortSet{
 			RegistryContainerPort: struct{}{},
 		},
@@ -388,9 +399,58 @@ func (rm *RegistryManager) buildContainerConfig(
 	}
 }
 
+func (rm *RegistryManager) generateRegistryConfig(upstreamURL string) string {
+	baseConfig := `version: 0.1
+log:
+  level: info
+  fields:
+    service: registry
+storage:
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
+http:
+  addr: :5000
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3`
+
+	if upstreamURL != "" {
+		baseConfig += "\nproxy:\n  remoteurl: " + upstreamURL
+	}
+
+	return baseConfig
+}
+
+func (rm *RegistryManager) createRegistryConfigFile(registryName, upstreamURL string) (string, error) {
+	configContent := rm.generateRegistryConfig(upstreamURL)
+	
+	// Create temp file
+	tmpFile, err := os.CreateTemp("", "registry-config-"+registryName+"-*.yml")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp config file: %w", err)
+	}
+	defer tmpFile.Close()
+
+	// Write config content
+	_, err = tmpFile.WriteString(configContent)
+	if err != nil {
+		os.Remove(tmpFile.Name())
+		return "", fmt.Errorf("failed to write config content: %w", err)
+	}
+
+	return tmpFile.Name(), nil
+}
+
 func (rm *RegistryManager) buildHostConfig(
 	config RegistryConfig,
 	volumeName string,
+	configFilePath string,
 ) *container.HostConfig {
 	portBindings := nat.PortMap{}
 	if config.Port > 0 {
@@ -402,18 +462,33 @@ func (rm *RegistryManager) buildHostConfig(
 		}
 	}
 
+	mounts := []mount.Mount{
+		{
+			Type:   mount.TypeVolume,
+			Source: volumeName,
+			Target: RegistryDataPath,
+		},
+	}
+
+	// If config file path is provided, mount it
+	if configFilePath != "" {
+		absPath, err := filepath.Abs(configFilePath)
+		if err == nil {
+			mounts = append(mounts, mount.Mount{
+				Type:     mount.TypeBind,
+				Source:   absPath,
+				Target:   "/etc/distribution/config.yml",
+				ReadOnly: true,
+			})
+		}
+	}
+
 	return &container.HostConfig{
 		PortBindings: portBindings,
 		RestartPolicy: container.RestartPolicy{
 			Name: RegistryRestartPolicy,
 		},
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeVolume,
-				Source: volumeName,
-				Target: RegistryDataPath,
-			},
-		},
+		Mounts: mounts,
 	}
 }
 
