@@ -616,6 +616,21 @@ func runRegistryStage(
 	return nil
 }
 
+// createHelmClientForCluster creates a Helm client configured for the cluster.
+func createHelmClientForCluster(clusterCfg *v1alpha1.Cluster) (*helm.Client, string, error) {
+	kubeconfig, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return nil, "", err
+	}
+
+	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to create Helm client: %w", err)
+	}
+
+	return helmClient, kubeconfig, nil
+}
+
 // installCiliumCNI installs Cilium CNI on the cluster.
 func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	notify.WriteMessage(notify.Message{
@@ -625,14 +640,9 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, err := loadKubeconfig(clusterCfg)
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
 	if err != nil {
 		return err
-	}
-
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
 	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
@@ -945,14 +955,9 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	kubeconfig, err := loadKubeconfig(clusterCfg)
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
 	if err != nil {
 		return err
-	}
-
-	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
-	if err != nil {
-		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
 	timeout := getInstallTimeout(clusterCfg)
