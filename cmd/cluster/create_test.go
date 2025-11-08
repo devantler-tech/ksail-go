@@ -693,27 +693,6 @@ func TestPrepareK3dConfigWithMirrors_PreservesExistingConfig(t *testing.T) {
 	assert.Contains(t, k3dConfig.Registries.Config, "https://ghcr.io")
 }
 
-func TestAddCiliumRepository_Success(t *testing.T) {
-	t.Parallel()
-
-	helmClient := &fakeHelmClient{}
-	err := addCiliumRepository(context.Background(), helmClient)
-
-	require.NoError(t, err)
-	assert.Equal(t, 1, helmClient.addRepoCalls)
-}
-
-func TestAddCiliumRepository_Error(t *testing.T) {
-	t.Parallel()
-
-	helmClient := &fakeHelmClient{addRepoErr: errRepoError}
-	err := addCiliumRepository(context.Background(), helmClient)
-
-	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to add Cilium Helm repository")
-	assert.Equal(t, 1, helmClient.addRepoCalls)
-}
-
 func TestRunLifecycleWithConfig_Success(t *testing.T) {
 	t.Parallel()
 

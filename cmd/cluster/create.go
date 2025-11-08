@@ -644,26 +644,17 @@ func installCiliumCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		return fmt.Errorf("failed to create Helm client: %w", err)
 	}
 
-	repoErr := addCiliumRepository(cmd.Context(), helmClient)
-	if repoErr != nil {
-		return repoErr
+	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+		Name: "cilium",
+		URL:  "https://helm.cilium.io/",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add Cilium Helm repository: %w", err)
 	}
 
 	installer := newCiliumInstaller(helmClient, kubeconfig, clusterCfg)
 
 	return runCiliumInstallation(cmd, installer, tmr)
-}
-
-func addCiliumRepository(ctx context.Context, client helm.Interface) error {
-	repoErr := client.AddRepository(ctx, &helm.RepositoryEntry{
-		Name: "cilium",
-		URL:  "https://helm.cilium.io/",
-	})
-	if repoErr != nil {
-		return fmt.Errorf("failed to add Cilium Helm repository: %w", repoErr)
-	}
-
-	return nil
 }
 
 func newCiliumInstaller(
