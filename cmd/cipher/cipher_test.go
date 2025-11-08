@@ -6,6 +6,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
 )
 
 func TestNewCipherCmd(t *testing.T) {
@@ -22,9 +23,15 @@ func TestNewCipherCmd(t *testing.T) {
 		t.Errorf("expected Use to be 'cipher', got %q", cmd.Use)
 	}
 
-	// Verify the short description is set (wrapped from urfave/cli app)
+	// Verify the short description is set
 	if cmd.Short == "" {
 		t.Error("expected Short description to be set")
+	}
+
+	// Verify encrypt subcommand exists
+	encryptCmd := findSubcommand(cmd, "encrypt")
+	if encryptCmd == nil {
+		t.Error("expected encrypt subcommand to exist")
 	}
 }
 
@@ -38,11 +45,24 @@ func TestCipherCommandHelp(t *testing.T) {
 	cmd.SetOut(&out)
 	cmd.SetArgs([]string{"--help"})
 
-	// Since DisableFlagParsing is true, --help is passed to sops binary
-	// We can't easily test this without sops installed, so just verify
-	// the command executes (it will try to run sops --help)
-	_ = cmd.Execute()
+	err := cmd.Execute()
+	if err != nil {
+		t.Errorf("expected no error executing --help, got: %v", err)
+	}
 
-	// The command structure is correct even if execution fails
-	// (e.g., if sops is not installed in the test environment)
+	// Verify help output contains information about cipher
+	if out.Len() == 0 {
+		t.Error("expected help output to not be empty")
+	}
+}
+
+// findSubcommand searches for a subcommand by name.
+func findSubcommand(parent *cobra.Command, name string) *cobra.Command {
+	for _, cmd := range parent.Commands() {
+		if cmd.Name() == name {
+			return cmd
+		}
+	}
+
+	return nil
 }
