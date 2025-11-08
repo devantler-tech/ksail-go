@@ -1,6 +1,7 @@
 package flux_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 	require.NotNil(t, exportFlag)
 }
 
-func gitRepositoryExportTests() map[string]testCase {
+func gitRepositoryExportTestsBasic() map[string]testCase {
 	return map[string]testCase{
 		"export with branch": {
 			args: []string{"podinfo"},
@@ -75,6 +76,11 @@ func gitRepositoryExportTests() map[string]testCase {
 				"export": "true",
 			},
 		},
+	}
+}
+
+func gitRepositoryExportTestsAdvanced() map[string]testCase {
+	return map[string]testCase{
 		"export with secret ref": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -103,6 +109,14 @@ func gitRepositoryExportTests() map[string]testCase {
 			},
 		},
 	}
+}
+
+func gitRepositoryExportTests() map[string]testCase {
+	tests := make(map[string]testCase)
+	maps.Copy(tests, gitRepositoryExportTestsBasic())
+	maps.Copy(tests, gitRepositoryExportTestsAdvanced())
+
+	return tests
 }
 
 func TestCreateGitRepository_Export(t *testing.T) {

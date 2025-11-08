@@ -41,9 +41,6 @@ linters:
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
-      - linters:
-          - funlen
-        text: "(gitRepositoryExportTests|helmRepositoryExportTests|ociRepositoryExportTests|kustomizationExportTests|helmReleaseExportTests)"
   settings:
     wsl_v5:
       allow-first-in-block: true

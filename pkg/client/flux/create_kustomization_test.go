@@ -1,6 +1,7 @@
 package flux_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -56,7 +57,7 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 	require.NotNil(t, dependsOnFlag)
 }
 
-func kustomizationExportTests() map[string]testCase {
+func kustomizationExportTestsBasic() map[string]testCase {
 	return map[string]testCase{
 		"export basic kustomization": {
 			args: []string{"podinfo"},
@@ -102,6 +103,11 @@ func kustomizationExportTests() map[string]testCase {
 				"export":   "true",
 			},
 		},
+	}
+}
+
+func kustomizationExportTestsAdvanced() map[string]testCase {
+	return map[string]testCase{
 		"export with namespace": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -138,6 +144,14 @@ func kustomizationExportTests() map[string]testCase {
 			},
 		},
 	}
+}
+
+func kustomizationExportTests() map[string]testCase {
+	tests := make(map[string]testCase)
+	maps.Copy(tests, kustomizationExportTestsBasic())
+	maps.Copy(tests, kustomizationExportTestsAdvanced())
+
+	return tests
 }
 
 func TestCreateKustomization_Export(t *testing.T) {

@@ -1,6 +1,7 @@
 package flux_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ func TestNewCreateSourceHelmCmd(t *testing.T) {
 	require.NotNil(t, passCredentialsFlag)
 }
 
-func helmRepositoryExportTests() map[string]testCase {
+func helmRepositoryExportTestsBasic() map[string]testCase {
 	return map[string]testCase{
 		"export HTTPS repository": {
 			args: []string{"podinfo"},
@@ -80,6 +81,11 @@ func helmRepositoryExportTests() map[string]testCase {
 				"export":       "true",
 			},
 		},
+	}
+}
+
+func helmRepositoryExportTestsAdvanced() map[string]testCase {
+	return map[string]testCase{
 		"export with pass credentials": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -106,6 +112,14 @@ func helmRepositoryExportTests() map[string]testCase {
 			},
 		},
 	}
+}
+
+func helmRepositoryExportTests() map[string]testCase {
+	tests := make(map[string]testCase)
+	maps.Copy(tests, helmRepositoryExportTestsBasic())
+	maps.Copy(tests, helmRepositoryExportTestsAdvanced())
+
+	return tests
 }
 
 func TestCreateHelmRepository_Export(t *testing.T) {

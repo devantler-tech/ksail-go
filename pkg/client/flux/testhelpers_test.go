@@ -74,19 +74,7 @@ func findSubCommand(t *testing.T, parentCmd *cobra.Command, use string) *cobra.C
 // testMissingRequiredFlag tests that a command fails when a required flag is missing.
 func testMissingRequiredFlag(t *testing.T, cmdPath []string, args []string) {
 	t.Helper()
-
-	var outBuf bytes.Buffer
-
-	createCmd := setupFluxCommand(&outBuf)
-
-	fullArgs := make([]string, 0, len(cmdPath)+len(args))
-	fullArgs = append(fullArgs, cmdPath...)
-	fullArgs = append(fullArgs, args...)
-	createCmd.SetArgs(fullArgs)
-
-	err := createCmd.Execute()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "required flag(s)")
+	testCommandError(t, cmdPath, args, "required flag(s)")
 }
 
 // testCommandError tests that a command fails with a specific error message.

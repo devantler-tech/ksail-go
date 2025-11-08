@@ -1,6 +1,7 @@
 package flux_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 	require.NotNil(t, insecureFlag)
 }
 
-func ociRepositoryExportTests() map[string]testCase {
+func ociRepositoryExportTestsBasic() map[string]testCase {
 	return map[string]testCase{
 		"export with tag": {
 			args: []string{"podinfo"},
@@ -101,6 +102,11 @@ func ociRepositoryExportTests() map[string]testCase {
 				"export":   "true",
 			},
 		},
+	}
+}
+
+func ociRepositoryExportTestsAdvanced() map[string]testCase {
+	return map[string]testCase{
 		"export with insecure": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -138,6 +144,14 @@ func ociRepositoryExportTests() map[string]testCase {
 			errMsg:  "one of --tag, --tag-semver or --digest is required",
 		},
 	}
+}
+
+func ociRepositoryExportTests() map[string]testCase {
+	tests := make(map[string]testCase)
+	maps.Copy(tests, ociRepositoryExportTestsBasic())
+	maps.Copy(tests, ociRepositoryExportTestsAdvanced())
+
+	return tests
 }
 
 func TestCreateOCIRepository_Export(t *testing.T) {

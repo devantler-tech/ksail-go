@@ -1,6 +1,7 @@
 package flux_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 	require.NotNil(t, dependsOnFlag)
 }
 
-func helmReleaseExportTests() map[string]testCase {
+func helmReleaseExportTestsBasic() map[string]testCase {
 	return map[string]testCase{
 		"export basic helmrelease": {
 			args: []string{"podinfo"},
@@ -104,6 +105,11 @@ func helmReleaseExportTests() map[string]testCase {
 				"export":   "true",
 			},
 		},
+	}
+}
+
+func helmReleaseExportTestsAdvanced() map[string]testCase {
+	return map[string]testCase{
 		"export with namespace flag": {
 			args: []string{"podinfo"},
 			flags: map[string]string{
@@ -148,6 +154,14 @@ func helmReleaseExportTests() map[string]testCase {
 			},
 		},
 	}
+}
+
+func helmReleaseExportTests() map[string]testCase {
+	tests := make(map[string]testCase)
+	maps.Copy(tests, helmReleaseExportTestsBasic())
+	maps.Copy(tests, helmReleaseExportTestsAdvanced())
+
+	return tests
 }
 
 func TestCreateHelmRelease_Export(t *testing.T) {
