@@ -1,0 +1,264 @@
+package cipher
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"github.com/getsops/sops/v3"
+	"github.com/getsops/sops/v3/aes"
+	"github.com/getsops/sops/v3/cmd/sops/codes"
+	"github.com/getsops/sops/v3/cmd/sops/common"
+	"github.com/getsops/sops/v3/keyservice"
+	"github.com/getsops/sops/v3/stores"
+	"github.com/getsops/sops/v3/stores/json"
+	"github.com/getsops/sops/v3/stores/yaml"
+	"github.com/getsops/sops/v3/version"
+	"github.com/mitchellh/go-wordwrap"
+	"github.com/spf13/cobra"
+)
+
+type encryptConfig struct {
+	UnencryptedSuffix       string
+	EncryptedSuffix         string
+	UnencryptedRegex        string
+	EncryptedRegex          string
+	UnencryptedCommentRegex string
+	EncryptedCommentRegex   string
+	MACOnlyEncrypted        bool
+	KeyGroups               []sops.KeyGroup
+	GroupThreshold          int
+}
+
+type encryptOpts struct {
+	encryptConfig
+
+	Cipher        sops.Cipher
+	InputStore    sops.Store
+	OutputStore   sops.Store
+	InputPath     string
+	ReadFromStdin bool
+	KeyServices   []keyservice.KeyServiceClient
+}
+
+type fileAlreadyEncryptedError struct{}
+
+func (err *fileAlreadyEncryptedError) Error() string {
+	return "File already encrypted"
+}
+
+const wrapWidth = 75
+
+func (err *fileAlreadyEncryptedError) UserError() string {
+	message := "The file you have provided contains a top-level entry called " +
+		"'" + stores.SopsMetadataKey + "', or for flat file formats top-level entries starting with " +
+		"'" + stores.SopsMetadataKey + "_'. This is generally due to the file already being encrypted. " +
+		"SOPS uses a top-level entry called '" + stores.SopsMetadataKey + "' to store the metadata " +
+		"required to decrypt the file. For this reason, SOPS can not " +
+		"encrypt files that already contain such an entry.\n\n" +
+		"If this is an unencrypted file, rename the '" + stores.SopsMetadataKey + "' entry.\n\n" +
+		"If this is an encrypted file and you want to edit it, use the " +
+		"editor mode, for example: `sops my_file.yaml`"
+
+	return wordwrap.WrapString(message, wrapWidth)
+}
+
+func ensureNoMetadata(opts encryptOpts, branch sops.TreeBranch) error {
+	if opts.OutputStore.HasSopsTopLevelKey(branch) {
+		return &fileAlreadyEncryptedError{}
+	}
+
+	return nil
+}
+
+func metadataFromEncryptionConfig(config encryptConfig) sops.Metadata {
+	return sops.Metadata{
+		KeyGroups:               config.KeyGroups,
+		UnencryptedSuffix:       config.UnencryptedSuffix,
+		EncryptedSuffix:         config.EncryptedSuffix,
+		UnencryptedRegex:        config.UnencryptedRegex,
+		EncryptedRegex:          config.EncryptedRegex,
+		UnencryptedCommentRegex: config.UnencryptedCommentRegex,
+		EncryptedCommentRegex:   config.EncryptedCommentRegex,
+		MACOnlyEncrypted:        config.MACOnlyEncrypted,
+		Version:                 version.Version,
+		ShamirThreshold:         config.GroupThreshold,
+	}
+}
+
+var errCouldNotGenerateDataKey = errors.New("could not generate data key")
+
+func encrypt(opts encryptOpts) ([]byte, error) {
+	fileBytes, err := loadFile(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	branches, err := opts.InputStore.LoadPlainFile(fileBytes)
+	if err != nil {
+		return nil, common.NewExitError(
+			fmt.Sprintf("Error unmarshalling file: %s", err),
+			codes.CouldNotReadInputFile,
+		)
+	}
+
+	if len(branches) < 1 {
+		return nil, common.NewExitError(
+			"File cannot be completely empty, it must contain at least one document",
+			codes.NeedAtLeastOneDocument,
+		)
+	}
+
+	err = ensureNoMetadata(opts, branches[0])
+	if err != nil {
+		return nil, common.NewExitError(err, codes.FileAlreadyEncrypted)
+	}
+
+	path, err := filepath.Abs(opts.InputPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	tree := sops.Tree{
+		Branches: branches,
+		Metadata: metadataFromEncryptionConfig(opts.encryptConfig),
+		FilePath: path,
+	}
+
+	dataKey, errs := tree.GenerateDataKeyWithKeyServices(opts.KeyServices)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("%w: %s", errCouldNotGenerateDataKey, errs)
+	}
+
+	err = common.EncryptTree(common.EncryptTreeOpts{
+		DataKey: dataKey,
+		Tree:    &tree,
+		Cipher:  opts.Cipher,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt tree: %w", err)
+	}
+
+	encryptedFile, err := opts.OutputStore.EmitEncryptedFile(tree)
+	if err != nil {
+		return nil, common.NewExitError(
+			fmt.Sprintf("Could not marshal tree: %s", err),
+			codes.ErrorDumpingTree,
+		)
+	}
+
+	return encryptedFile, nil
+}
+
+func loadFile(opts encryptOpts) ([]byte, error) {
+	var fileBytes []byte
+
+	var err error
+
+	if opts.ReadFromStdin {
+		fileBytes, err = io.ReadAll(os.Stdin)
+		if err != nil {
+			return nil, common.NewExitError(
+				fmt.Sprintf("Error reading from stdin: %s", err),
+				codes.CouldNotReadInputFile,
+			)
+		}
+	} else {
+		fileBytes, err = os.ReadFile(opts.InputPath)
+		if err != nil {
+			return nil, common.NewExitError(
+				fmt.Sprintf("Error reading file: %s", err),
+				codes.CouldNotReadInputFile,
+			)
+		}
+	}
+
+	return fileBytes, nil
+}
+
+// NewEncryptCmd creates and returns the encrypt command.
+func NewEncryptCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "encrypt <file>",
+		Short: "Encrypt a file with SOPS",
+		Long: `Encrypt a file using SOPS (Secrets OPerationS).
+
+SOPS supports multiple key management systems:
+  - age recipients
+  - PGP fingerprints
+  - AWS KMS
+  - GCP KMS
+  - Azure Key Vault
+  - HashiCorp Vault
+
+Example:
+  ksail cipher encrypt secrets.yaml`,
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
+		RunE:         handleEncryptRunE,
+	}
+
+	return cmd
+}
+
+const encryptedFilePermissions = 0o600
+
+var errUnsupportedFileFormat = errors.New("unsupported file format")
+
+func handleEncryptRunE(cmd *cobra.Command, args []string) error {
+	inputPath := args[0]
+
+	inputStore, outputStore, err := getStores(inputPath)
+	if err != nil {
+		return err
+	}
+
+	opts := encryptOpts{
+		encryptConfig: encryptConfig{
+			KeyGroups:      []sops.KeyGroup{},
+			GroupThreshold: 0,
+		},
+		Cipher:        aes.NewCipher(),
+		InputStore:    inputStore,
+		OutputStore:   outputStore,
+		InputPath:     inputPath,
+		ReadFromStdin: false,
+		KeyServices:   []keyservice.KeyServiceClient{keyservice.NewLocalClient()},
+	}
+
+	encryptedData, err := encrypt(opts)
+	if err != nil {
+		return fmt.Errorf("encryption failed: %w", err)
+	}
+
+	err = os.WriteFile(inputPath, encryptedData, encryptedFilePermissions)
+	if err != nil {
+		return fmt.Errorf("failed to write encrypted file: %w", err)
+	}
+
+	_, err = fmt.Fprintf(cmd.OutOrStdout(), "Successfully encrypted %s\n", inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
+
+	return nil
+}
+
+func getStores(inputPath string) (sops.Store, sops.Store, error) {
+	ext := filepath.Ext(inputPath)
+
+	switch ext {
+	case ".yaml", ".yml":
+		return &yaml.Store{}, &yaml.Store{}, nil
+	case ".json":
+		return &json.Store{}, &json.Store{}, nil
+	default:
+		return nil, nil, fmt.Errorf(
+			"%w: %s (supported: .yaml, .yml, .json)",
+			errUnsupportedFileFormat,
+			ext,
+		)
+	}
+}

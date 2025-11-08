@@ -36,6 +36,9 @@ linters:
           - ireturn
         path: pkg/svc/provisioner/cluster/factory.go
       - linters:
+          - ireturn
+        path: cmd/cipher/encrypt.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
   settings:
@@ -55,6 +58,8 @@ linters:
             - github.com/devantler-tech
             - github.com/derailed/k9s
             - github.com/fluxcd
+            - github.com/getsops/sops
+            - github.com/mitchellh
             - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color
