@@ -15,9 +15,18 @@ const sourceCommandName = "source"
 
 // setupTestClient creates a flux client with test IOStreams for testing purposes.
 func setupTestClient() *flux.Client {
+	return setupTestClientWithStreams(nil)
+}
+
+// setupTestClientWithStreams creates a flux client with custom or default test IOStreams.
+func setupTestClientWithStreams(outBuf *bytes.Buffer) *flux.Client {
+	if outBuf == nil {
+		outBuf = &bytes.Buffer{}
+	}
+
 	ioStreams := genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
+		Out:    outBuf,
 		ErrOut: &bytes.Buffer{},
 	}
 

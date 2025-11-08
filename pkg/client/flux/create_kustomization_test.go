@@ -4,7 +4,6 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,17 +12,7 @@ func TestNewCreateKustomizationCmd(t *testing.T) {
 
 	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
-
-	// Find kustomization command
-	var kustomizationCmd *cobra.Command
-
-	for _, subCmd := range createCmd.Commands() {
-		if subCmd.Use == "kustomization [name]" {
-			kustomizationCmd = subCmd
-
-			break
-		}
-	}
+	kustomizationCmd := findSubCommand(t, createCmd, "kustomization [name]")
 
 	require.NotNil(t, kustomizationCmd)
 	require.Equal(t, "Create or update a Kustomization resource", kustomizationCmd.Short)

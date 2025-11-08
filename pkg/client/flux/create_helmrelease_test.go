@@ -4,7 +4,6 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,17 +12,7 @@ func TestNewCreateHelmReleaseCmd(t *testing.T) {
 
 	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
-
-	// Find helmrelease command
-	var helmReleaseCmd *cobra.Command
-
-	for _, subCmd := range createCmd.Commands() {
-		if subCmd.Use == "helmrelease [name]" {
-			helmReleaseCmd = subCmd
-
-			break
-		}
-	}
+	helmReleaseCmd := findSubCommand(t, createCmd, "helmrelease [name]")
 
 	require.NotNil(t, helmReleaseCmd)
 	require.Equal(t, "Create or update a HelmRelease resource", helmReleaseCmd.Short)

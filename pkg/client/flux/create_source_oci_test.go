@@ -4,7 +4,6 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,17 +13,7 @@ func TestNewCreateSourceOCICmd(t *testing.T) {
 	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
 	sourceCmd := findSourceCommand(t, createCmd)
-
-	// Find oci command
-	var ociCmd *cobra.Command
-
-	for _, subCmd := range sourceCmd.Commands() {
-		if subCmd.Use == "oci [name]" {
-			ociCmd = subCmd
-
-			break
-		}
-	}
+	ociCmd := findSubCommand(t, sourceCmd, "oci [name]")
 
 	require.NotNil(t, ociCmd)
 	require.Equal(t, "Create or update an OCIRepository source", ociCmd.Short)

@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // testCase represents a test case for flux commands.
@@ -20,11 +18,7 @@ type testCase struct {
 
 // setupFluxCommand creates and configures a flux command for testing.
 func setupFluxCommand(outBuf *bytes.Buffer) *cobra.Command {
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
+	client := setupTestClientWithStreams(outBuf)
 
 	createCmd := client.CreateCreateCommand("")
 	createCmd.SetOut(outBuf)
