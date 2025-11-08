@@ -169,7 +169,7 @@ func loadFile(opts encryptOpts) ([]byte, error) {
 		fileBytes, err = os.ReadFile(opts.InputPath)
 		if err != nil {
 			return nil, common.NewExitError(
-				fmt.Sprintf("Error reading file: %s", err),
+				fmt.Sprintf("error reading file: %s", err),
 				codes.CouldNotReadInputFile,
 			)
 		}
