@@ -66,19 +66,7 @@ func TestCreateSourceGitCommand(t *testing.T) {
 	client := setupTestClient()
 	cmd := client.CreateCreateCommand("")
 	sourceCmd := findSourceCommand(t, cmd)
-
-	// Find git sub-command
-	var gitCmd *cobra.Command
-
-	for _, subCmd := range sourceCmd.Commands() {
-		if subCmd.Use == "git [name]" {
-			gitCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, gitCmd)
+	gitCmd := findSubCommand(t, sourceCmd, "git [name]")
 	require.Equal(t, "Create or update a GitRepository source", gitCmd.Short)
 
 	// Check that required flags are present

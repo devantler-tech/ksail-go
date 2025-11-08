@@ -18,6 +18,21 @@ type testCase struct {
 	errMsg  string
 }
 
+// setupFluxCommand creates and configures a flux command for testing.
+func setupFluxCommand(outBuf *bytes.Buffer) *cobra.Command {
+	client := flux.NewClient(genericiooptions.IOStreams{
+		In:     &bytes.Buffer{},
+		Out:    outBuf,
+		ErrOut: &bytes.Buffer{},
+	}, "")
+
+	createCmd := client.CreateCreateCommand("")
+	createCmd.SetOut(outBuf)
+	createCmd.SetErr(&bytes.Buffer{})
+
+	return createCmd
+}
+
 // findSourceCommand finds the source command from the create command.
 func findSourceCommand(t *testing.T, createCmd *cobra.Command) *cobra.Command {
 	t.Helper()
@@ -37,21 +52,32 @@ func findSourceCommand(t *testing.T, createCmd *cobra.Command) *cobra.Command {
 	return sourceCmd
 }
 
+// findSubCommand finds a specific subcommand by its Use string.
+func findSubCommand(t *testing.T, parentCmd *cobra.Command, use string) *cobra.Command {
+	t.Helper()
+
+	var cmd *cobra.Command
+
+	for _, subCmd := range parentCmd.Commands() {
+		if subCmd.Use == use {
+			cmd = subCmd
+
+			break
+		}
+	}
+
+	require.NotNil(t, cmd)
+
+	return cmd
+}
+
 // testMissingRequiredFlag tests that a command fails when a required flag is missing.
 func testMissingRequiredFlag(t *testing.T, cmdPath []string, args []string) {
 	t.Helper()
 
 	var outBuf bytes.Buffer
 
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
-	createCmd := client.CreateCreateCommand("")
-	createCmd.SetOut(&outBuf)
-	createCmd.SetErr(&bytes.Buffer{})
+	createCmd := setupFluxCommand(&outBuf)
 
 	fullArgs := make([]string, 0, len(cmdPath)+len(args))
 	fullArgs = append(fullArgs, cmdPath...)
@@ -63,21 +89,50 @@ func testMissingRequiredFlag(t *testing.T, cmdPath []string, args []string) {
 	require.Contains(t, err.Error(), "required flag(s)")
 }
 
+// testCommandError tests that a command fails with a specific error message.
+func testCommandError(t *testing.T, cmdPath []string, args []string, expectedErrMsg string) {
+	t.Helper()
+
+	var outBuf bytes.Buffer
+
+	createCmd := setupFluxCommand(&outBuf)
+
+	fullArgs := make([]string, 0, len(cmdPath)+len(args))
+	fullArgs = append(fullArgs, cmdPath...)
+	fullArgs = append(fullArgs, args...)
+	createCmd.SetArgs(fullArgs)
+
+	err := createCmd.Execute()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), expectedErrMsg)
+}
+
+// testCommandSuccess tests that a command executes successfully and produces YAML output.
+func testCommandSuccess(t *testing.T, args []string) {
+	t.Helper()
+
+	var outBuf bytes.Buffer
+
+	createCmd := setupFluxCommand(&outBuf)
+
+	createCmd.SetArgs(args)
+
+	err := createCmd.Execute()
+	require.NoError(t, err)
+
+	output := outBuf.String()
+	require.NotEmpty(t, output, "output should not be empty")
+	require.Contains(t, output, "metadata:")
+	require.Contains(t, output, "spec:")
+}
+
 // runFluxCommandTest executes a flux command test with the given parameters.
 func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 	t.Helper()
 
 	var outBuf bytes.Buffer
 
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
-	createCmd := client.CreateCreateCommand("")
-	createCmd.SetOut(&outBuf)
-	createCmd.SetErr(&bytes.Buffer{})
+	createCmd := setupFluxCommand(&outBuf)
 
 	// Build command line
 	cmdLine := make([]string, 0, len(cmdPath)+len(testCase.args)+len(testCase.flags)*2)

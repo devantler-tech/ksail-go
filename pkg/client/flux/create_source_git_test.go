@@ -3,7 +3,6 @@ package flux_test
 import (
 	"testing"
 
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,19 +12,7 @@ func TestNewCreateSourceGitCmd(t *testing.T) {
 	client := setupTestClient()
 	createCmd := client.CreateCreateCommand("")
 	sourceCmd := findSourceCommand(t, createCmd)
-
-	// Find git command
-	var gitCmd *cobra.Command
-
-	for _, subCmd := range sourceCmd.Commands() {
-		if subCmd.Use == "git [name]" {
-			gitCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, gitCmd)
+	gitCmd := findSubCommand(t, sourceCmd, "git [name]")
 	require.Equal(t, "Create or update a GitRepository source", gitCmd.Short)
 
 	// Verify required flags

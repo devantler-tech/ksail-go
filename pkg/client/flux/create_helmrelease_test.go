@@ -1,13 +1,10 @@
 package flux_test
 
 import (
-	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 func TestNewCreateHelmReleaseCmd(t *testing.T) {
@@ -182,23 +179,7 @@ func TestCreateHelmRelease_MissingRequiredFlags(t *testing.T) {
 	for testName, testCase := range tests {
 		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
-
-			var outBuf bytes.Buffer
-
-			client := flux.NewClient(genericiooptions.IOStreams{
-				In:     &bytes.Buffer{},
-				Out:    &outBuf,
-				ErrOut: &bytes.Buffer{},
-			}, "")
-
-			createCmd := client.CreateCreateCommand("")
-			createCmd.SetOut(&outBuf)
-			createCmd.SetErr(&bytes.Buffer{})
-			createCmd.SetArgs(append([]string{"helmrelease"}, testCase.args...))
-
-			err := createCmd.Execute()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), testCase.errMsg)
+			testCommandError(t, []string{"helmrelease"}, testCase.args, testCase.errMsg)
 		})
 	}
 }
@@ -206,34 +187,13 @@ func TestCreateHelmRelease_MissingRequiredFlags(t *testing.T) {
 func TestCreateHelmRelease_AliasWorks(t *testing.T) {
 	t.Parallel()
 
-	var outBuf bytes.Buffer
-
-	client := flux.NewClient(genericiooptions.IOStreams{
-		In:     &bytes.Buffer{},
-		Out:    &outBuf,
-		ErrOut: &bytes.Buffer{},
-	}, "")
-
-	createCmd := client.CreateCreateCommand("")
-	createCmd.SetOut(&outBuf)
-	createCmd.SetErr(&bytes.Buffer{})
-	createCmd.SetArgs(
-		[]string{
-			"hr",
-			"podinfo",
-			"--source",
-			"HelmRepository/podinfo",
-			"--chart",
-			"podinfo",
-			"--export",
-		},
-	)
-
-	err := createCmd.Execute()
-	require.NoError(t, err)
-
-	output := outBuf.String()
-	require.NotEmpty(t, output, "output should not be empty")
-	require.Contains(t, output, "metadata:")
-	require.Contains(t, output, "spec:")
+	testCommandSuccess(t, []string{
+		"hr",
+		"podinfo",
+		"--source",
+		"HelmRepository/podinfo",
+		"--chart",
+		"podinfo",
+		"--export",
+	})
 }
