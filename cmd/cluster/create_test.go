@@ -1031,8 +1031,6 @@ func TestHandleMetricsServer_Disabled_K3dNoAction(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
-
 func TestNewCreateCmd_IncludesMetricsServerFlag(t *testing.T) {
 	t.Parallel()
 
