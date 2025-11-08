@@ -144,7 +144,7 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 	encryptedFile, err := opts.OutputStore.EmitEncryptedFile(tree)
 	if err != nil {
 		return nil, common.NewExitError(
-			fmt.Sprintf("Could not marshal tree: %s", err),
+			fmt.Sprintf("could not marshal tree: %s", err),
 			codes.ErrorDumpingTree,
 		)
 	}
