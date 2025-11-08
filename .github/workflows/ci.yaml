@@ -106,48 +106,41 @@ jobs:
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
         run: |
-          # Create a simple deployment manifest using ghcr.io image
-          cat > /tmp/test-deployment.yaml <<'EOF'
-          apiVersion: apps/v1
-          kind: Deployment
-          metadata:
-            name: test-app
-            labels:
-              app: test-app
-          spec:
-            replicas: 1
-            selector:
-              matchLabels:
-                app: test-app
-            template:
-              metadata:
-                labels:
-                  app: test-app
-              spec:
-                containers:
-                - name: test-app
-                  image: ghcr.io/nginxinc/nginx-unprivileged:alpine
-                  ports:
-                  - containerPort: 8080
+          # Create temporary kustomization that excludes HPA from podinfo
+          mkdir -p /tmp/podinfo-overlay
+          cat > /tmp/podinfo-overlay/kustomization.yaml <<'EOF'
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - https://github.com/stefanprodan/podinfo//kustomize
+          patches:
+            - target:
+                kind: HorizontalPodAutoscaler
+              patch: |-
+                $patch: delete
+                apiVersion: autoscaling/v2
+                kind: HorizontalPodAutoscaler
+                metadata:
+                  name: podinfo
           EOF
-          # Apply deployment using ksail
-          ./ksail workload apply -f /tmp/test-deployment.yaml
+          # Apply podinfo without HPA using ksail
+          ./ksail workload apply -k /tmp/podinfo-overlay
           # Wait for deployment to become available, with debugging on failure
-          if ! ./ksail workload wait --for=condition=Available deployment/test-app --timeout=300s; then
+          if ! ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s; then
             echo "::group::Deployment status"
-            kubectl get deployment test-app -o yaml
+            kubectl get deployment podinfo -o yaml
             echo "::endgroup::"
             echo "::group::Pod status"
-            kubectl get pods -l app=test-app -o wide
+            kubectl get pods -l app=podinfo -o wide
             echo "::endgroup::"
             echo "::group::Pod events"
-            kubectl get events --field-selector involvedObject.name=$(kubectl get pods -l app=test-app -o jsonpath='{.items[0].metadata.name}') --sort-by='.lastTimestamp'
+            kubectl get events --field-selector involvedObject.name=$(kubectl get pods -l app=podinfo -o jsonpath='{.items[0].metadata.name}') --sort-by='.lastTimestamp'
             echo "::endgroup::"
             echo "::group::Pod logs"
-            kubectl logs -l app=test-app --all-containers=true --tail=100 || echo "No logs available"
+            kubectl logs -l app=podinfo --all-containers=true --tail=100 || echo "No logs available"
             echo "::endgroup::"
             echo "::group::Pod describe"
-            kubectl describe pods -l app=test-app
+            kubectl describe pods -l app=podinfo
             echo "::endgroup::"
             exit 1
           fi
