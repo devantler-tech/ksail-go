@@ -60,7 +60,7 @@ func findSubCommand(t *testing.T, parentCmd *cobra.Command, use string) *cobra.C
 		}
 	}
 
-	require.NotNil(t, cmd)
+	require.NotNil(t, cmd, "subcommand '%s' not found in parent command", use)
 
 	return cmd
 }
