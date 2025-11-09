@@ -1,4 +1,3 @@
-// Package kustomizationgenerator provides utilities for generating kustomization.yaml files.
 package kustomizationgenerator
 
 import (

@@ -1,4 +1,3 @@
-// Package gen provides the gen command namespace for generating Kubernetes resources.
 package gen
 
 import (

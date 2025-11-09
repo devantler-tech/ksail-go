@@ -1,4 +1,3 @@
-// Package testutils provides common test utilities for config manager testing.
 package testutils
 
 import (

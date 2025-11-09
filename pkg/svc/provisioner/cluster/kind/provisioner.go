@@ -1,5 +1,3 @@
-// Package kindprovisioner provides implementations of the Provisioner interface
-// for provisioning clusters in different providers.
 package kindprovisioner
 
 import (

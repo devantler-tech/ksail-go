@@ -1,4 +1,3 @@
-// Package kubectl provides a kubectl client implementation.
 package kubectl
 
 import (

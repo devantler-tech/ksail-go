@@ -1,4 +1,3 @@
-// Package di exposes shared dependency injection helpers for KSail commands.
 package di
 
 import (

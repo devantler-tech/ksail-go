@@ -1,6 +1,3 @@
-// Package registries contains helpers for managing shared mirror registry state across
-// different provisioners. Functions here are used by Kind and K3d implementations
-// to create, connect, and clean up registry containers consistently.
 package registries
 
 import (

@@ -1,4 +1,3 @@
-// Package validator provides interfaces for configuration file validation.
 package validator
 
 // Validator defines the interface for configuration file validators.

@@ -1,4 +1,3 @@
-// Package yamlmarshaller provides functionality for marshaling and unmarshaling YAML documents.
 package yamlmarshaller
 
 import (
