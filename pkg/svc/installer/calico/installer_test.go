@@ -10,15 +10,9 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/fake"
-	k8stesting "k8s.io/client-go/testing"
 )
 
 func TestNewCalicoInstaller(t *testing.T) {
@@ -427,19 +421,6 @@ func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 	expectCalicoAddRepository(t, client, nil)
 	expectCalicoInstallChart(t, client, installErr)
-}
-
-func pollForReadinessWithDefaultTimeout(
-	t *testing.T,
-	checker func(context.Context) (bool, error),
-) error {
-	t.Helper()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
-	defer cancel()
-
-	//nolint:wrapcheck // test utility function
-	return k8sutil.PollForReadiness(ctx, 200*time.Millisecond, checker)
 }
 
 func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err error) {
