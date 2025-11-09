@@ -1,3 +1,4 @@
+// Package main provides a CLI tool to generate JSON schema from KSail config types.
 package main
 
 import (
@@ -16,38 +17,40 @@ func main() {
 		AllowAdditionalProperties: false,
 		DoNotReference:            true,
 	}
-	
+
 	schema := reflector.Reflect(&v1alpha1.Cluster{})
-	
+
 	// Add schema metadata
 	schema.Title = "KSail Cluster Configuration"
 	schema.Description = "JSON schema for KSail cluster configuration (ksail.yaml)"
-	
+
 	// Marshal to JSON with pretty printing
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling schema: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	// Determine output path
 	outputPath := "schemas/ksail-config.schema.json"
 	if len(os.Args) > 1 {
 		outputPath = os.Args[1]
 	}
-	
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(outputPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating directory %s: %v\n", dir, err)
 		os.Exit(1)
 	}
-	
+
 	// Write schema to file
-	if err := os.WriteFile(outputPath, schemaJSON, 0644); err != nil {
+	if err := os.WriteFile(outputPath, schemaJSON, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing schema to %s: %v\n", outputPath, err)
 		os.Exit(1)
 	}
-	
-	fmt.Printf("Successfully generated JSON schema at %s\n", outputPath)
+
+	if _, err := fmt.Fprintf(os.Stdout, "Successfully generated JSON schema at %s\n", outputPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing success message: %v\n", err)
+	}
 }

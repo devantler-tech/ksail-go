@@ -1,0 +1,32 @@
+version: "2"
+run:
+  allow-parallel-runners: true
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+linters:
+  default: all
+  disable:
+    - exhaustruct  # Allow partial struct initialization
+    - forbidigo  # Allow Printf for CLI output
+    - gomoddirectives  # Allow local replace for development
+    - mnd  # Allow magic numbers for file permissions
+    - noinlineerr  # Allow inline error handling for simplicity
+  exclusions:
+    paths:
+      - ".*mocks.*\\.go$"
+  settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - "$all"
+          list-mode: strict
+          allow:
+            - $gostd
+            - github.com/devantler-tech
+            - github.com/invopop/jsonschema  # Schema generation library
