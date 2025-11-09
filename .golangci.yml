@@ -41,9 +41,6 @@ linters:
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
-      - linters:
-          - gomoddirectives
-        path: .github/scripts/generate-schema/go.mod
   settings:
     wsl_v5:
       allow-first-in-block: true
