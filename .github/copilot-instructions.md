@@ -4,6 +4,40 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
+## Core Software Engineering Principles
+
+When working on KSail-Go, always adhere to these fundamental software engineering principles:
+
+### KISS (Keep It Simple, Stupid)
+
+**Simplicity over complexity**. Prefer straightforward solutions that are easy to understand and maintain. Avoid over-engineering or adding unnecessary abstraction layers. If a simple approach solves the problem effectively, use it.
+
+### DRY (Don't Repeat Yourself)
+
+**Eliminate duplication**. Extract common logic into reusable functions, packages, or interfaces. Every piece of knowledge should have a single, unambiguous representation in the codebase. Use Go's interface-based design to share behavior without duplicating code.
+
+### YAGNI (You Aren't Gonna Need It)
+
+**Implement only what's needed now**. Don't add functionality based on speculative future requirements. Focus on current, well-defined requirements. Additional features can be added later when they're actually needed.
+
+### TDA (Tell, Don't Ask)
+
+**Objects should do, not expose**. Instead of querying an object for its state and making decisions externally, tell the object what to do and let it manage its own state. This encapsulates behavior and maintains proper abstraction boundaries.
+
+### SOLID Principles
+
+**S - Single Responsibility Principle**: Each package, interface, and function should have one reason to change. Separate concerns clearly.
+
+**O - Open/Closed Principle**: Code should be open for extension but closed for modification. Use interfaces to allow behavior extension without changing existing code.
+
+**L - Liskov Substitution Principle**: Implementations of an interface should be interchangeable without breaking functionality. Ensure all implementations honor their interface contracts.
+
+**I - Interface Segregation Principle**: Prefer small, focused interfaces over large, general-purpose ones. Clients shouldn't depend on methods they don't use.
+
+**D - Dependency Inversion Principle**: Depend on abstractions (interfaces), not concrete implementations. High-level modules shouldn't depend on low-level modules.
+
+These principles complement the constitutional requirements in `.specify/memory/constitution.md` and guide day-to-day coding decisions.
+
 ## Task Suitability for GitHub Copilot
 
 ### ✅ Tasks Well-Suited for Copilot
