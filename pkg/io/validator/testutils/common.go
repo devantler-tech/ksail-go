@@ -1,4 +1,3 @@
-// Package testutils provides common test utilities for validator tests to eliminate duplication.
 package testutils
 
 import (

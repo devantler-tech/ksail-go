@@ -1,4 +1,3 @@
-// Package asciiart provides ASCII art printing functionality for KSail.
 package asciiart
 
 import (

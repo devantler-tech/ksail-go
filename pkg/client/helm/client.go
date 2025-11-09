@@ -1,4 +1,3 @@
-// Package helm provides helpers for interacting with Helm in KSail.
 package helm
 
 import (

@@ -1,4 +1,3 @@
-// Package scaffolder provides utilities for scaffolding KSail project files and configuration.
 package scaffolder
 
 import (
