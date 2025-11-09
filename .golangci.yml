@@ -42,11 +42,6 @@ linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
       - linters:
-          - forbidigo
-          - mnd
-          - noinlineerr
-        path: .github/scripts/generate-schema/main.go
-      - linters:
           - gomoddirectives
         path: .github/scripts/generate-schema/go.mod
   settings:
