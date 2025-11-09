@@ -6,18 +6,14 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
 type CalicoInstaller struct {
-	kubeconfig string
-	context    string
-	timeout    time.Duration
-	client     helm.Interface
-	waitFn     func(context.Context) error
+	*installer.CNIInstallerBase
 }
 
 // NewCalicoInstaller creates a new Calico installer instance.
@@ -26,16 +22,16 @@ func NewCalicoInstaller(
 	kubeconfig, context string,
 	timeout time.Duration,
 ) *CalicoInstaller {
-	installer := &CalicoInstaller{
-		client:     client,
-		kubeconfig: kubeconfig,
-		context:    context,
-		timeout:    timeout,
-	}
+	calicoInstaller := &CalicoInstaller{}
+	calicoInstaller.CNIInstallerBase = installer.NewCNIInstallerBase(
+		client,
+		kubeconfig,
+		context,
+		timeout,
+		calicoInstaller.waitForReadiness,
+	)
 
-	installer.waitFn = installer.waitForReadiness
-
-	return installer
+	return calicoInstaller
 }
 
 // Install installs or upgrades Calico via its Helm chart.
@@ -48,29 +44,19 @@ func (c *CalicoInstaller) Install(ctx context.Context) error {
 	return nil
 }
 
-// WaitForReadiness waits for the Calico components to become ready.
-func (c *CalicoInstaller) WaitForReadiness(ctx context.Context) error {
-	if c.waitFn == nil {
-		return nil
-	}
-
-	return c.waitFn(ctx)
-}
-
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.
 func (c *CalicoInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context) error) {
-	if waitFunc == nil {
-		c.waitFn = c.waitForReadiness
-
-		return
-	}
-
-	c.waitFn = waitFunc
+	c.CNIInstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
 }
 
 // Uninstall removes the Helm release for Calico.
 func (c *CalicoInstaller) Uninstall(ctx context.Context) error {
-	err := c.client.UninstallRelease(ctx, "calico", "tigera-operator")
+	client, err := c.GetClient()
+	if err != nil {
+		return fmt.Errorf("get helm client: %w", err)
+	}
+
+	err = client.UninstallRelease(ctx, "calico", "tigera-operator")
 	if err != nil {
 		return fmt.Errorf("failed to uninstall calico release: %w", err)
 	}
@@ -81,71 +67,45 @@ func (c *CalicoInstaller) Uninstall(ctx context.Context) error {
 // --- internals ---
 
 func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error {
-	repoEntry := &helm.RepositoryEntry{
-		Name: "projectcalico",
-		URL:  "https://docs.tigera.io/calico/charts",
+	client, err := c.GetClient()
+	if err != nil {
+		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	addRepoErr := c.client.AddRepository(ctx, repoEntry)
-	if addRepoErr != nil {
-		return fmt.Errorf("failed to add calico repository: %w", addRepoErr)
+	repoConfig := installer.HelmRepoConfig{
+		Name:     "projectcalico",
+		URL:      "https://docs.tigera.io/calico/charts",
+		RepoName: "calico",
 	}
 
-	spec := &helm.ChartSpec{
+	chartConfig := installer.HelmChartConfig{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
 		RepoURL:         "https://docs.tigera.io/calico/charts",
 		CreateNamespace: true,
-		Atomic:          true,
-		Silent:          true,
-		UpgradeCRDs:     true,
-		Timeout:         c.timeout,
-		Wait:            true,
-		WaitForJobs:     true,
 	}
 
-	timeoutCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	_, err := c.client.InstallOrUpgradeChart(timeoutCtx, spec)
-	if err != nil {
-		return fmt.Errorf("failed to install calico chart: %w", err)
-	}
-
-	return nil
+	return installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 }
 
 func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
-	restConfig, err := k8sutil.BuildRESTConfig(c.kubeconfig, c.context)
-	if err != nil {
-		return fmt.Errorf("build kubernetes client config: %w", err)
-	}
-
-	clientset, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return fmt.Errorf("create kubernetes client: %w", err)
-	}
-
 	checks := []k8sutil.ReadinessCheck{
 		{Type: "deployment", Namespace: "tigera-operator", Name: "tigera-operator"},
 		{Type: "daemonset", Namespace: "calico-system", Name: "calico-node"},
 		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
 	}
 
-	err = k8sutil.WaitForMultipleResources(ctx, clientset, checks, c.timeout)
-	if err != nil {
-		return fmt.Errorf("wait for calico components: %w", err)
-	}
-
-	return nil
+	return installer.WaitForResourceReadiness(
+		ctx,
+		c.GetKubeconfig(),
+		c.GetContext(),
+		checks,
+		c.GetTimeout(),
+		"calico",
+	)
 }
 
 func (c *CalicoInstaller) buildRESTConfig() (*rest.Config, error) {
-	config, err := k8sutil.BuildRESTConfig(c.kubeconfig, c.context)
-	if err != nil {
-		return nil, fmt.Errorf("build REST config: %w", err)
-	}
-
-	return config, nil
+	return c.BuildRESTConfig()
 }

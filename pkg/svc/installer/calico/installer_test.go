@@ -167,19 +167,19 @@ func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		client := helm.NewMockInterface(t)
 		installer := NewCalicoInstaller(client, "kubeconfig", "", time.Second)
-		defaultFn := installer.waitFn
+		defaultFn := installer.GetWaitFn()
 		testutils.ExpectNotNil(t, defaultFn, "default wait function")
 		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
 		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
 
-		replacedPtr := reflect.ValueOf(installer.waitFn).Pointer()
+		replacedPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
 		if replacedPtr == defaultPtr {
 			t.Fatal("expected custom wait function to replace default")
 		}
 
 		installer.SetWaitForReadinessFunc(nil)
-		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
+		restoredPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
 		installertestutils.ExpectEqual(
 			t,
 			restoredPtr,
@@ -207,7 +207,7 @@ func TestCalicoInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
 	installer := NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
-	installer.waitFn = nil
+	installer.SetWaitFn(nil)
 
 	err := installer.WaitForReadiness(context.Background())
 	if err != nil {

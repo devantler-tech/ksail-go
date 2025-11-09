@@ -141,40 +141,19 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 func TestApplyDefaultValues(t *testing.T) {
 	t.Parallel()
 
-	testCases := []struct {
-		name          string
-		spec          *helm.ChartSpec
-		expectedValue string
-	}{
-		{
-			name:          "SetsDefaultWhenMissing",
-			spec:          &helm.ChartSpec{},
-			expectedValue: "1",
-		},
-		{
-			name: "PreservesExisting",
-			spec: &helm.ChartSpec{
-				SetJSONVals: map[string]string{"operator.replicas": "3"},
-			},
-			expectedValue: "3",
-		},
-	}
+	t.Run("ReturnsDefaultValues", func(t *testing.T) {
+		t.Parallel()
 
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+		vals := applyDefaultValues()
 
-			applyDefaultValues(testCase.spec)
-
-			testutils.ExpectNotNil(t, testCase.spec.SetJSONVals, "SetJSONVals map")
-			installertestutils.ExpectEqual(
-				t,
-				testCase.spec.SetJSONVals["operator.replicas"],
-				testCase.expectedValue,
-				"operator replicas",
-			)
-		})
-	}
+		testutils.ExpectNotNil(t, vals, "default values map")
+		installertestutils.ExpectEqual(
+			t,
+			vals["operator.replicas"],
+			"1",
+			"operator replicas",
+		)
+	})
 }
 
 func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
@@ -206,19 +185,19 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		client := helm.NewMockInterface(t)
 		installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
-		defaultFn := installer.waitFn
+		defaultFn := installer.GetWaitFn()
 		testutils.ExpectNotNil(t, defaultFn, "default wait function")
 		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
 		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
 
-		replacedPtr := reflect.ValueOf(installer.waitFn).Pointer()
+		replacedPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
 		if replacedPtr == defaultPtr {
 			t.Fatal("expected custom wait function to replace default")
 		}
 
 		installer.SetWaitForReadinessFunc(nil)
-		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
+		restoredPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
 		installertestutils.ExpectEqual(
 			t,
 			restoredPtr,
@@ -246,7 +225,7 @@ func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
 	installer := NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
-	installer.waitFn = nil
+	installer.SetWaitFn(nil)
 
 	err := installer.WaitForReadiness(context.Background())
 	if err != nil {
