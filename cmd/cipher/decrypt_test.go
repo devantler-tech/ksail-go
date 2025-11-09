@@ -2,7 +2,6 @@ package cipher_test
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -87,15 +86,7 @@ func TestDecryptCommandAcceptsStdin(t *testing.T) {
 func setupDecryptTest(t *testing.T, filename, content string) string {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, filename)
-
-	err := os.WriteFile(testFile, []byte(content), 0o600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
-
-	return testFile
+	return createTestFile(t, filename, content)
 }
 
 // executeDecryptCommand is a helper function to execute decrypt command with args.
