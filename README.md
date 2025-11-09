@@ -69,24 +69,18 @@ ksail cluster delete
 
 ## Documentation 📚
 
+### For Users 📖
+
+For detailed command reference, run `ksail --help` or `ksail <command> --help`.
+
 ### For Contributors 👥
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute to KSail
 - [.github/copilot-instructions.md](./.github/copilot-instructions.md) - GitHub Copilot configuration and best practices
 - [API Documentation](https://pkg.go.dev/github.com/devantler-tech/ksail-go) - Go package documentation
 
-### For Users 📖
-
-For detailed command reference, run `ksail --help` or `ksail <command> --help`.
-
 ## Related Projects 🔗
 
 ## Presentations 🎤
 
 ## Star History ⭐
-
----
-
-Contributions welcome. Open an issue or PR to propose features.
-
-For information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
