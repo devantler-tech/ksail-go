@@ -2,8 +2,6 @@ package cipher_test
 
 import (
 	"bytes"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
@@ -70,13 +68,7 @@ func TestEncryptCommandRequiresFile(t *testing.T) {
 func setupEncryptTest(t *testing.T, filename, content string) error {
 	t.Helper()
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, filename)
-
-	err := os.WriteFile(testFile, []byte(content), 0o600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
+	testFile := createTestFile(t, filename, content)
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
