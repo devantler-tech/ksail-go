@@ -41,6 +41,14 @@ linters:
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
+      - linters:
+          - forbidigo
+          - mnd
+          - noinlineerr
+        path: .github/scripts/generate-schema/main.go
+      - linters:
+          - gomoddirectives
+        path: .github/scripts/generate-schema/go.mod
   settings:
     wsl_v5:
       allow-first-in-block: true
@@ -59,6 +67,7 @@ linters:
             - github.com/derailed/k9s
             - github.com/fluxcd
             - github.com/getsops/sops
+            - github.com/invopop/jsonschema
             - github.com/mitchellh
             - github.com/samber/do/v2
             - github.com/docker
