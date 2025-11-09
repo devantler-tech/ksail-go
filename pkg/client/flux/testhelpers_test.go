@@ -149,7 +149,8 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 			// Namespace is a persistent flag that must be prepended before the subcommand
 			namespaceValue = flagValue
 			hasNamespace = true
-			flagElems += 2 // --namespace <value>
+			// Namespace flag always takes 2 elements: flag name (--namespace) + value
+			flagElems += 2
 
 			continue
 		}
