@@ -302,68 +302,72 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Parallel()
 
-	t.Run("ErrorWhenKubeconfigMissing", func(t *testing.T) {
-		t.Parallel()
+	t.Run("ErrorWhenKubeconfigMissing", testCiliumBuildRESTConfigErrorWhenKubeconfigMissing)
+	t.Run("UsesCurrentContext", testCiliumBuildRESTConfigUsesCurrentContext)
+	t.Run("OverridesContext", testCiliumBuildRESTConfigOverridesContext)
+	t.Run("MissingContext", testCiliumBuildRESTConfigMissingContext)
+}
 
-		installer := NewCiliumInstaller(helm.NewMockInterface(t), "", "", time.Second)
-		_, err := installer.buildRESTConfig()
+func testCiliumBuildRESTConfigErrorWhenKubeconfigMissing(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		testutils.ExpectErrorContains(
-			t,
-			err,
-			"kubeconfig path is empty",
-			"buildRESTConfig empty path",
-		)
-	})
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), "", "", time.Second)
+	_, err := installer.buildRESTConfig()
 
-	t.Run("UsesCurrentContext", func(t *testing.T) {
-		t.Parallel()
+	testutils.ExpectErrorContains(t, err, "kubeconfig path is empty", "buildRESTConfig empty path")
+}
 
-		path := installertestutils.WriteKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "", time.Second)
+func testCiliumBuildRESTConfigUsesCurrentContext(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		restConfig, err := installer.buildRESTConfig()
+	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "", time.Second)
 
-		testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-		installertestutils.ExpectEqual(
-			t,
-			restConfig.Host,
-			"https://cluster-one.example.com",
-			"rest config host",
-		)
-	})
+	restConfig, err := installer.buildRESTConfig()
 
-	t.Run("OverridesContext", func(t *testing.T) {
-		t.Parallel()
+	testutils.ExpectNoError(t, err, "buildRESTConfig current context")
+	installertestutils.ExpectEqual(
+		t,
+		restConfig.Host,
+		"https://cluster-one.example.com",
+		"rest config host",
+	)
+}
 
-		path := installertestutils.WriteKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
+func testCiliumBuildRESTConfigOverridesContext(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		restConfig, err := installer.buildRESTConfig()
+	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
 
-		testutils.ExpectNoError(t, err, "buildRESTConfig override context")
-		installertestutils.ExpectEqual(
-			t,
-			restConfig.Host,
-			"https://cluster-two.example.com",
-			"rest config host override",
-		)
-	})
+	restConfig, err := installer.buildRESTConfig()
 
-	t.Run("MissingContext", func(t *testing.T) {
-		t.Parallel()
+	testutils.ExpectNoError(t, err, "buildRESTConfig override context")
+	installertestutils.ExpectEqual(
+		t,
+		restConfig.Host,
+		"https://cluster-two.example.com",
+		"rest config host override",
+	)
+}
 
-		path := installertestutils.WriteKubeconfig(t, t.TempDir())
-		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
-		_, err := installer.buildRESTConfig()
+func testCiliumBuildRESTConfigMissingContext(t *testing.T) {
+	t.Helper()
+	t.Parallel()
 
-		testutils.ExpectErrorContains(
-			t,
-			err,
-			"context \"missing\" does not exist",
-			"buildRESTConfig missing context",
-		)
-	})
+	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
+	_, err := installer.buildRESTConfig()
+
+	testutils.ExpectErrorContains(
+		t,
+		err,
+		"context \"missing\" does not exist",
+		"buildRESTConfig missing context",
+	)
 }
 
 func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {

@@ -4,10 +4,16 @@ package testutils
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+)
+
+const (
+	// FilePermUserReadWrite is the permission for user read/write only (0o600).
+	FilePermUserReadWrite fs.FileMode = 0o600
 )
 
 // Common test errors used across installer tests.
@@ -129,7 +135,7 @@ func WriteServerBackedKubeconfig(t *testing.T, serverURL string) string {
 		"- name: default\n" +
 		"  user: {}\n"
 
-	err := os.WriteFile(path, []byte(content), 0o600)
+	err := os.WriteFile(path, []byte(content), FilePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("failed to write kubeconfig: %v", err)
 	}
@@ -171,7 +177,7 @@ users:
 
 	path := filepath.Join(dir, "config")
 
-	err := os.WriteFile(path, []byte(contents), 0o600)
+	err := os.WriteFile(path, []byte(contents), FilePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("write kubeconfig file: %v", err)
 	}
