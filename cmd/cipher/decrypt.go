@@ -26,7 +26,6 @@ type decryptOpts struct {
 	InputStore      sops.Store
 	OutputStore     sops.Store
 	InputPath       string
-	OutputPath      string
 	ReadFromStdin   bool
 	IgnoreMAC       bool
 	Extract         []any
@@ -101,7 +100,7 @@ func handleEmitError(err error, data []byte) ([]byte, error) {
 func extract(tree *sops.Tree, path []any, outputStore sops.Store) ([]byte, error) {
 	value, err := tree.Branches[0].Truncate(path)
 	if err != nil {
-		return nil, fmt.Errorf("error truncating tree: %w", err)
+		return nil, fmt.Errorf("failed to truncate tree: %w", err)
 	}
 
 	if newBranch, ok := value.(sops.TreeBranch); ok {
@@ -110,14 +109,16 @@ func extract(tree *sops.Tree, path []any, outputStore sops.Store) ([]byte, error
 		decrypted, err := outputStore.EmitPlainFile(tree.Branches)
 
 		return handleEmitError(err, decrypted)
-	} else if str, ok := value.(string); ok {
+	}
+
+	if str, ok := value.(string); ok {
 		return []byte(str), nil
 	}
 
 	bytes, err := outputStore.EmitValue(value)
 	if err != nil {
 		return nil, common.NewExitError(
-			fmt.Sprintf("Error dumping tree: %s", err),
+			fmt.Sprintf("error dumping tree: %s", err),
 			codes.ErrorDumpingTree,
 		)
 	}

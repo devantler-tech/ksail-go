@@ -8,7 +8,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/spf13/cobra"
 )
 
 func TestNewDecryptCmd(t *testing.T) {
@@ -82,13 +81,6 @@ func TestDecryptCommandAcceptsStdin(t *testing.T) {
 	}
 }
 
-// setupDecryptTest is a helper function to create a test file.
-func setupDecryptTest(t *testing.T, filename, content string) string {
-	t.Helper()
-
-	return createTestFile(t, filename, content)
-}
-
 // executeDecryptCommand is a helper function to execute decrypt command with args.
 func executeDecryptCommand(t *testing.T, args []string) error {
 	t.Helper()
@@ -108,7 +100,7 @@ func executeDecryptCommand(t *testing.T, args []string) error {
 func TestDecryptCommandUnsupportedFormat(t *testing.T) {
 	t.Parallel()
 
-	testFile := setupDecryptTest(t, "test.txt", "test content")
+	testFile := createTestFile(t, "test.txt", "test content")
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
@@ -143,7 +135,7 @@ func TestDecryptCommandNonExistentFile(t *testing.T) {
 func testDecryptWithFormat(t *testing.T, filename, content string) {
 	t.Helper()
 
-	testFile := setupDecryptTest(t, filename, content)
+	testFile := createTestFile(t, filename, content)
 
 	// We expect an error about the file not being encrypted or missing keys
 	// not about file format
@@ -186,7 +178,7 @@ func TestDecryptCommandJSONFormat(t *testing.T) {
 func TestDecryptCommandWithExtractFlag(t *testing.T) {
 	t.Parallel()
 
-	testFile := setupDecryptTest(t, "test.yaml", "key: value")
+	testFile := createTestFile(t, "test.yaml", "key: value")
 
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
 	err := executeDecryptCommand(t, []string{"decrypt", testFile, "--extract", `["key"]`})
@@ -198,7 +190,7 @@ func TestDecryptCommandWithExtractFlag(t *testing.T) {
 func TestDecryptCommandWithIgnoreMacFlag(t *testing.T) {
 	t.Parallel()
 
-	testFile := setupDecryptTest(t, "test.yaml", "key: value")
+	testFile := createTestFile(t, "test.yaml", "key: value")
 
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
 	err := executeDecryptCommand(t, []string{"decrypt", testFile, "--ignore-mac"})
@@ -211,20 +203,12 @@ func TestDecryptCommandWithOutputFlag(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	testFile := setupDecryptTest(t, "test.yaml", "key: value")
+	testFile := createTestFile(t, "test.yaml", "key: value")
 
 	outputFile := filepath.Join(tmpDir, "decrypted.yaml")
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt", testFile, "--output", outputFile})
-
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err := cipherCmd.Execute()
+	err := executeDecryptCommand(t, []string{"decrypt", testFile, "--output", outputFile})
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}
@@ -237,16 +221,7 @@ func TestCipherCommandHasDecryptSubcommand(t *testing.T) {
 	cmd := cipher.NewCipherCmd(rt)
 
 	// Verify decrypt subcommand exists
-	var decryptCmd *cobra.Command
-
-	for _, c := range cmd.Commands() {
-		if c.Name() == "decrypt" {
-			decryptCmd = c
-
-			break
-		}
-	}
-
+	decryptCmd := findSubcommand(cmd, "decrypt")
 	if decryptCmd == nil {
 		t.Error("expected decrypt subcommand to exist")
 	}
