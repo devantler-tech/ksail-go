@@ -15,8 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const notBinaryHint = "This is likely not an encrypted binary file? " +
-	"If not, use --output-type to select the correct output type."
+const notBinaryHint = "This is likely not an encrypted binary file."
 
 var errDumpingTree = errors.New("error dumping file")
 
@@ -279,7 +278,7 @@ func parseExtractPath(extract string) ([]any, error) {
 
 	// Parse the JSONPath format: ["key1"]["key2"]
 	var path []any
-	//nolint:modernize // Using Split is clearer than SplitSeq for this use case
+	//nolint:modernize // Using Split is clearer than SplitN for this use case
 	parts := strings.Split(extract, "][")
 
 	for _, part := range parts {
