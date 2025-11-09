@@ -75,23 +75,15 @@ func TestDecryptCommandHelp(t *testing.T) {
 func TestDecryptCommandAcceptsStdin(t *testing.T) {
 	t.Parallel()
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt"})
-
 	// Should not error on missing file arg (stdin is valid)
 	// We expect a decryption error, not an args error
-	err := cipherCmd.Execute()
+	err := executeDecryptCommand(t, []string{"decrypt"})
 	if err == nil {
 		t.Log("Command executed (expected to fail on decryption)")
 	}
 }
 
-// setupDecryptTest is a helper function to create an encrypted test file.
+// setupDecryptTest is a helper function to create a test file.
 func setupDecryptTest(t *testing.T, filename, content string) string {
 	t.Helper()
 
@@ -104,6 +96,22 @@ func setupDecryptTest(t *testing.T, filename, content string) string {
 	}
 
 	return testFile
+}
+
+// executeDecryptCommand is a helper function to execute decrypt command with args.
+func executeDecryptCommand(t *testing.T, args []string) error {
+	t.Helper()
+
+	rt := runtime.NewRuntime()
+	cipherCmd := cipher.NewCipherCmd(rt)
+
+	var out, errOut bytes.Buffer
+	cipherCmd.SetOut(&out)
+	cipherCmd.SetErr(&errOut)
+	cipherCmd.SetArgs(args)
+
+	//nolint:wrapcheck // Test helper intentionally returns unwrapped error for assertion
+	return cipherCmd.Execute()
 }
 
 func TestDecryptCommandUnsupportedFormat(t *testing.T) {
@@ -134,15 +142,7 @@ func TestDecryptCommandUnsupportedFormat(t *testing.T) {
 func TestDecryptCommandNonExistentFile(t *testing.T) {
 	t.Parallel()
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt", "/nonexistent/file.yaml"})
-
-	err := cipherCmd.Execute()
+	err := executeDecryptCommand(t, []string{"decrypt", "/nonexistent/file.yaml"})
 	if err == nil {
 		t.Error("expected error for non-existent file")
 	}
@@ -154,17 +154,9 @@ func testDecryptWithFormat(t *testing.T, filename, content string) {
 
 	testFile := setupDecryptTest(t, filename, content)
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt", testFile})
-
-	err := cipherCmd.Execute()
 	// We expect an error about the file not being encrypted or missing keys
 	// not about file format
+	err := executeDecryptCommand(t, []string{"decrypt", testFile})
 	if err != nil {
 		t.Logf("Expected SOPS error (not encrypted file): %v", err)
 	}
@@ -205,16 +197,8 @@ func TestDecryptCommandWithExtractFlag(t *testing.T) {
 
 	testFile := setupDecryptTest(t, "test.yaml", "key: value")
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt", testFile, "--extract", `["key"]`})
-
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err := cipherCmd.Execute()
+	err := executeDecryptCommand(t, []string{"decrypt", testFile, "--extract", `["key"]`})
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}
@@ -225,16 +209,8 @@ func TestDecryptCommandWithIgnoreMacFlag(t *testing.T) {
 
 	testFile := setupDecryptTest(t, "test.yaml", "key: value")
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"decrypt", testFile, "--ignore-mac"})
-
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err := cipherCmd.Execute()
+	err := executeDecryptCommand(t, []string{"decrypt", testFile, "--ignore-mac"})
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}

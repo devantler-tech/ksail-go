@@ -18,6 +18,8 @@ import (
 const notBinaryHint = "This is likely not an encrypted binary file? " +
 	"If not, use --output-type to select the correct output type."
 
+var errDumpingTree = errors.New("error dumping file")
+
 // decryptOpts contains all options needed for the decryption operation.
 type decryptOpts struct {
 	Cipher          sops.Cipher
@@ -75,18 +77,23 @@ func decrypt(opts decryptOpts) ([]byte, error) {
 
 	decryptedFile, err := opts.OutputStore.EmitPlainFile(tree.Branches)
 
+	return handleEmitError(err, decryptedFile)
+}
+
+// handleEmitError processes errors from EmitPlainFile operations.
+func handleEmitError(err error, data []byte) ([]byte, error) {
 	if errors.Is(err, json.BinaryStoreEmitPlainError) {
 		return nil, fmt.Errorf("%w: %s", err, notBinaryHint)
 	}
 
 	if err != nil {
 		return nil, common.NewExitError(
-			fmt.Sprintf("Error dumping file: %s", err),
+			fmt.Sprintf("%s: %s", errDumpingTree.Error(), err),
 			codes.ErrorDumpingTree,
 		)
 	}
 
-	return decryptedFile, nil
+	return data, nil
 }
 
 // extract retrieves a specific value or subtree from the decrypted tree.
@@ -102,18 +109,7 @@ func extract(tree *sops.Tree, path []any, outputStore sops.Store) ([]byte, error
 
 		decrypted, err := outputStore.EmitPlainFile(tree.Branches)
 
-		if errors.Is(err, json.BinaryStoreEmitPlainError) {
-			return nil, fmt.Errorf("%w: %s", err, notBinaryHint)
-		}
-
-		if err != nil {
-			return nil, common.NewExitError(
-				fmt.Sprintf("Error dumping file: %s", err),
-				codes.ErrorDumpingTree,
-			)
-		}
-
-		return decrypted, nil
+		return handleEmitError(err, decrypted)
 	} else if str, ok := value.(string); ok {
 		return []byte(str), nil
 	}
