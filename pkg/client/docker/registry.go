@@ -288,6 +288,7 @@ func (rm *RegistryManager) prepareRegistryResources(
 		if err != nil {
 			// Clean up the volume we just created since config file creation failed
 			_ = rm.client.VolumeRemove(ctx, volumeName, false)
+
 			return "", "", fmt.Errorf("failed to create registry config file: %w", err)
 		}
 	}
@@ -465,12 +466,13 @@ func (rm *RegistryManager) createRegistryConfigFile(
 	}
 
 	defer func() {
-		if err := tmpFile.Close(); err != nil {
+		closeErr := tmpFile.Close()
+		if closeErr != nil {
 			fmt.Fprintf(
 				os.Stderr,
 				"warning: failed to close temp config file %s: %v\n",
 				tmpFile.Name(),
-				err,
+				closeErr,
 			)
 		}
 	}()
@@ -515,9 +517,11 @@ func (rm *RegistryManager) buildHostConfig(
 		if err != nil {
 			// Log structured error - this is a critical configuration issue
 			// Registry will start but without proxy configuration, which defeats the purpose
+			errMsg := "error: failed to resolve absolute path for config file %s: %v\n" +
+				"warning: registry will start without proxy configuration\n"
 			fmt.Fprintf(
 				os.Stderr,
-				"error: failed to resolve absolute path for config file %s: %v\nwarning: registry will start without proxy configuration\n",
+				errMsg,
 				configFilePath,
 				err,
 			)

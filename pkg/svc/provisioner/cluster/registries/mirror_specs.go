@@ -225,7 +225,7 @@ func RenderK3dMirrorConfig(hostEndpoints map[string][]string) string {
 	builder.WriteString("mirrors:\n")
 
 	for _, host := range hosts {
-		endpoints := filterK3dEndpoints(host, hostEndpoints[host])
+		endpoints := filterK3dEndpoints(hostEndpoints[host])
 		if len(endpoints) == 0 {
 			endpoints = []string{GenerateUpstreamURL(host)}
 		}
@@ -245,7 +245,7 @@ func RenderK3dMirrorConfig(hostEndpoints map[string][]string) string {
 	return builder.String()
 }
 
-func filterK3dEndpoints(host string, endpoints []string) []string {
+func filterK3dEndpoints(endpoints []string) []string {
 	if len(endpoints) == 0 {
 		return endpoints
 	}
@@ -262,22 +262,6 @@ func filterK3dEndpoints(host string, endpoints []string) []string {
 	}
 
 	return filtered
-}
-
-func isGeneratedLocalEndpoint(endpoint string, sanitizedHost string) bool {
-	if sanitizedHost == "" {
-		return false
-	}
-
-	if !strings.HasPrefix(endpoint, "http://") {
-		return false
-	}
-
-	if !strings.EqualFold(ExtractNameFromEndpoint(endpoint), sanitizedHost) {
-		return false
-	}
-
-	return ExtractPortFromEndpoint(endpoint) > 0
 }
 
 // BuildUpstreamLookup returns a map of registry host to user-specified upstream URL.
