@@ -17,6 +17,6 @@ jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
     steps:
-      - name: 🔧 Install golangci-lint
+      - name: 🔧 Setup golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
