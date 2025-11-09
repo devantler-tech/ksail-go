@@ -54,30 +54,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - distribution: Kind
-            cni: Default
-            init-args: "--distribution Kind"
-          - distribution: Kind
-            cni: Cilium
-            init-args: "--distribution Kind --cni Cilium"
-          - distribution: Kind
-            cni: Default
-            init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
-            mirror-registry: true
-          - distribution: K3d
-            cni: Default
-            init-args: "--distribution K3d"
-          - distribution: K3d
-            cni: Cilium
-            init-args: "--distribution K3d --cni Cilium"
-          - distribution: K3d
-            cni: Default
-            init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
-            mirror-registry: true
-          - distribution: K3d
-            cni: Default
-            metrics-server: Disabled
-            init-args: "--distribution K3d --metrics-server Disabled"
+          - init-args: "--distribution Kind"
+          - init-args: "--distribution Kind --cni Cilium"
+          - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
+            test-workload: true
+          - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
+            test-workload: true
+          - init-args: "--distribution K3d"
+          - init-args: "--distribution K3d --cni Cilium"
+          - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
+            test-workload: true
+          - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
+            test-workload: true
+          - init-args: "--distribution K3d --metrics-server Disabled"
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -96,7 +85,7 @@ jobs:
       - name: 🏗️ Build application
         run: go build -o ksail .
 
-      - name: 🧪 ksail cluster init (${{ matrix.distribution }} + ${{ matrix.cni }})
+      - name: 🧪 ksail cluster init
         run: |
           ./ksail cluster init ${{ matrix.init-args }}
 
@@ -108,17 +97,45 @@ jobs:
         run: |
           ./ksail cluster list
 
-      - name: 🧪 ksail cluster start
+      - name: 🧪 ksail workload create
+        if: matrix.test-workload
         run: |
-          ./ksail cluster start
+          ./ksail workload create deployment whoami --image=traefik/whoami:latest
+          ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
+
+      - name: 🧪 ksail workload apply
+        if: matrix.test-workload
+        run: |
+          mkdir -p /tmp/podinfo-overlay
+          cat > /tmp/podinfo-overlay/kustomization.yaml <<'EOF'
+          apiVersion: kustomize.config.k8s.io/v1beta1
+          kind: Kustomization
+          resources:
+            - https://github.com/stefanprodan/podinfo//kustomize
+          patches:
+            - target:
+                kind: HorizontalPodAutoscaler
+              patch: |-
+                $patch: delete
+                apiVersion: autoscaling/v2
+                kind: HorizontalPodAutoscaler
+                metadata:
+                  name: podinfo
+          EOF
+          ./ksail workload apply -k /tmp/podinfo-overlay
+          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
+
+      - name: 🧪 ksail workload reconcile
+        run: |
+          ./ksail workload reconcile
 
       - name: 🧪 ksail cluster stop
         run: |
           ./ksail cluster stop
 
-      - name: 🧪 ksail workload reconcile
+      - name: 🧪 ksail cluster start
         run: |
-          ./ksail workload reconcile
+          ./ksail cluster start
 
       - name: 🧪 ksail cluster delete
         run: |
