@@ -41,7 +41,7 @@ func findSourceCommand(t *testing.T, createCmd *cobra.Command) *cobra.Command {
 		}
 	}
 
-	require.NotNil(t, sourceCmd)
+	require.NotNil(t, sourceCmd, "source command not found")
 
 	return sourceCmd
 }
