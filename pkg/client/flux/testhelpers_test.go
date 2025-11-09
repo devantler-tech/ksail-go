@@ -141,7 +141,9 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 	// Build command line with accurate capacity calculation
 	// Pre-calculate exact capacity by counting flag elements
 	flagElems := 0
+
 	var namespaceValue string
+
 	hasNamespace := false
 
 	for flagKey, flagValue := range testCase.flags {
