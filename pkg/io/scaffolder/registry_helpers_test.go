@@ -139,7 +139,11 @@ func k3dRegistryConfigCases() []k3dRegistryConfigCase {
 			name:    "single mirror registry",
 			mirrors: []string{"docker.io=https://registry-1.docker.io"},
 			expected: k3dRegistryExpectation{
-				contains: []string{"\"docker.io\":", "http://docker.io:5000", "https://registry-1.docker.io"},
+				contains: []string{
+					"\"docker.io\":",
+					"http://docker.io:5000",
+					"https://registry-1.docker.io",
+				},
 			},
 		},
 		{

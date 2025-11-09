@@ -466,7 +466,12 @@ func (rm *RegistryManager) createRegistryConfigFile(
 
 	defer func() {
 		if err := tmpFile.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: failed to close temp config file %s: %v\n", tmpFile.Name(), err)
+			fmt.Fprintf(
+				os.Stderr,
+				"warning: failed to close temp config file %s: %v\n",
+				tmpFile.Name(),
+				err,
+			)
 		}
 	}()
 
@@ -510,7 +515,12 @@ func (rm *RegistryManager) buildHostConfig(
 		if err != nil {
 			// Log structured error - this is a critical configuration issue
 			// Registry will start but without proxy configuration, which defeats the purpose
-			fmt.Fprintf(os.Stderr, "error: failed to resolve absolute path for config file %s: %v\nwarning: registry will start without proxy configuration\n", configFilePath, err)
+			fmt.Fprintf(
+				os.Stderr,
+				"error: failed to resolve absolute path for config file %s: %v\nwarning: registry will start without proxy configuration\n",
+				configFilePath,
+				err,
+			)
 		} else {
 			mounts = append(mounts, mount.Mount{
 				Type:     mount.TypeBind,
