@@ -9,6 +9,12 @@ repos:
       - id: golangci-lint-fmt
   - repo: local
     hooks:
+      - id: golangci-lint-fix
+        name: Run golangci-lint with --fix
+        entry: .github/scripts/run-golangci-lint.sh
+        language: script
+        files: '\.go$'
+        pass_filenames: false
       - id: mockery
         name: Generate mocks with mockery
         entry: .github/scripts/run-mockery.sh
