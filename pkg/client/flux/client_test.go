@@ -11,11 +11,22 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
+const sourceCommandName = "source"
+
 // setupTestClient creates a flux client with test IOStreams for testing purposes.
 func setupTestClient() *flux.Client {
+	return setupTestClientWithStreams(nil)
+}
+
+// setupTestClientWithStreams creates a flux client with custom or default test IOStreams.
+func setupTestClientWithStreams(outBuf *bytes.Buffer) *flux.Client {
+	if outBuf == nil {
+		outBuf = &bytes.Buffer{}
+	}
+
 	ioStreams := genericiooptions.IOStreams{
 		In:     &bytes.Buffer{},
-		Out:    &bytes.Buffer{},
+		Out:    outBuf,
 		ErrOut: &bytes.Buffer{},
 	}
 
@@ -47,7 +58,7 @@ func TestCreateCreateCommand(t *testing.T) {
 	var sourceCmd *cobra.Command
 
 	for _, subCmd := range subCommands {
-		if subCmd.Use == "source" {
+		if subCmd.Use == sourceCommandName {
 			sourceCmd = subCmd
 
 			break
@@ -63,32 +74,8 @@ func TestCreateSourceGitCommand(t *testing.T) {
 
 	client := setupTestClient()
 	cmd := client.CreateCreateCommand("")
-
-	// Find source command
-	var sourceCmd *cobra.Command
-
-	for _, subCmd := range cmd.Commands() {
-		if subCmd.Use == "source" {
-			sourceCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, sourceCmd)
-
-	// Find git sub-command
-	var gitCmd *cobra.Command
-
-	for _, subCmd := range sourceCmd.Commands() {
-		if subCmd.Use == "git [name]" {
-			gitCmd = subCmd
-
-			break
-		}
-	}
-
-	require.NotNil(t, gitCmd)
+	sourceCmd := findSourceCommand(t, cmd)
+	gitCmd := findSubCommand(t, sourceCmd, "git [name]")
 	require.Equal(t, "Create or update a GitRepository source", gitCmd.Short)
 
 	// Check that required flags are present
