@@ -2,18 +2,15 @@ package ciliuminstaller //nolint:testpackage
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,23 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-)
-
-func expectEqual[T comparable](t *testing.T, got, want T, description string) {
-	t.Helper()
-
-	if got != want {
-		t.Fatalf("unexpected %s: got %v want %v", description, got, want)
-	}
-}
-
-var (
-	errInstallFailed   = errors.New("install failed")
-	errAddRepoFailed   = errors.New("add repo failed")
-	errUninstallFailed = errors.New("uninstall failed")
-	errDaemonSetBoom   = errors.New("boom")
-	errDeploymentFail  = errors.New("fail")
-	errPollBoom        = errors.New("boom")
 )
 
 func TestNewCiliumInstaller(t *testing.T) {
@@ -73,7 +53,7 @@ func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
 
 			err := scenario.action(context.Background(), installer)
 
-			expectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
+			installertestutils.ExpectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
 		})
 	}
 }
@@ -103,7 +83,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				setupCiliumInstallExpectations(t, client, errInstallFailed)
+				setupCiliumInstallExpectations(t, client, installertestutils.ErrInstallFailed)
 			},
 			wantErr: "failed to install Cilium",
 		},
@@ -114,7 +94,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCiliumAddRepository(t, client, errAddRepoFailed)
+				expectCiliumAddRepository(t, client, installertestutils.ErrAddRepoFailed)
 			},
 			wantErr: "failed to add cilium repository",
 		},
@@ -148,7 +128,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCiliumUninstall(t, client, errUninstallFailed)
+				expectCiliumUninstall(t, client, installertestutils.ErrUninstallFailed)
 			},
 			wantErr: "failed to uninstall cilium release",
 		},
@@ -186,7 +166,7 @@ func TestApplyDefaultValues(t *testing.T) {
 			applyDefaultValues(testCase.spec)
 
 			testutils.ExpectNotNil(t, testCase.spec.SetJSONVals, "SetJSONVals map")
-			expectEqual(
+			installertestutils.ExpectEqual(
 				t,
 				testCase.spec.SetJSONVals["operator.replicas"],
 				testCase.expectedValue,
@@ -238,7 +218,7 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		installer.SetWaitForReadinessFunc(nil)
 		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
-		expectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
+		installertestutils.ExpectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
 	})
 }
 
@@ -274,7 +254,7 @@ func TestCiliumInstallerWaitForReadinessSuccess(t *testing.T) {
 	server := newCiliumAPIServer(t, true)
 	t.Cleanup(server.Close)
 
-	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+	kubeconfig := installertestutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCiliumInstaller(
 		helm.NewMockInterface(t),
@@ -295,7 +275,7 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 	server := newCiliumAPIServer(t, false)
 	t.Cleanup(server.Close)
 
-	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+	kubeconfig := installertestutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCiliumInstaller(
 		helm.NewMockInterface(t),
@@ -334,25 +314,25 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Run("UsesCurrentContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-		expectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
+		installertestutils.ExpectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
 	})
 
 	t.Run("OverridesContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig override context")
-		expectEqual(
+		installertestutils.ExpectEqual(
 			t,
 			restConfig.Host,
 			"https://cluster-two.example.com",
@@ -363,7 +343,7 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 	t.Run("MissingContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCiliumInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
 		_, err := installer.buildRESTConfig()
 
@@ -402,7 +382,7 @@ func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {
 				status["updatedNumberScheduled"] = 0
 			}
 
-			encodeJSON(t, writer, payload)
+			installertestutils.EncodeJSON(t, writer, payload)
 
 		case "/apis/apps/v1/namespaces/kube-system/deployments/cilium-operator":
 			payload := map[string]any{
@@ -425,56 +405,12 @@ func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {
 				status["availableReplicas"] = 0
 			}
 
-			encodeJSON(t, writer, payload)
+			installertestutils.EncodeJSON(t, writer, payload)
 
 		default:
 			http.NotFound(writer, req)
 		}
 	}))
-}
-
-func encodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
-	t.Helper()
-
-	writer.Header().Set("Content-Type", "application/json")
-
-	encoder := json.NewEncoder(writer)
-
-	err := encoder.Encode(payload)
-	if err != nil {
-		t.Fatalf("failed to encode response: %v", err)
-	}
-}
-
-func writeServerBackedKubeconfig(t *testing.T, serverURL string) string {
-	t.Helper()
-
-	path := filepath.Join(t.TempDir(), "kubeconfig.yaml")
-
-	content := "apiVersion: v1\n" +
-		"clusters:\n" +
-		"- cluster:\n" +
-		"    server: " + serverURL + "\n" +
-		"    insecure-skip-tls-verify: true\n" +
-		"  name: local\n" +
-		"contexts:\n" +
-		"- context:\n" +
-		"    cluster: local\n" +
-		"    user: default\n" +
-		"  name: default\n" +
-		"current-context: default\n" +
-		"kind: Config\n" +
-		"preferences: {}\n" +
-		"users:\n" +
-		"- name: default\n" +
-		"  user: {}\n"
-
-	err := os.WriteFile(path, []byte(content), 0o600)
-	if err != nil {
-		t.Fatalf("failed to write kubeconfig: %v", err)
-	}
-
-	return path
 }
 
 func TestWaitForDaemonSetReady(t *testing.T) {
@@ -525,7 +461,7 @@ func testWaitForDaemonSetReadyAPIError(t *testing.T) {
 		"get",
 		"daemonsets",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errDaemonSetBoom
+			return true, nil, installertestutils.ErrDaemonSetBoom
 		},
 	)
 
@@ -609,7 +545,7 @@ func testWaitForDeploymentReadyAPIError(t *testing.T) {
 		"get",
 		"deployments",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errDeploymentFail
+			return true, nil, installertestutils.ErrDeploymentFail
 		},
 	)
 
@@ -668,7 +604,7 @@ func TestPollForReadiness(t *testing.T) {
 		t.Parallel()
 
 		err := pollForReadinessWithDefaultTimeout(t, func(context.Context) (bool, error) {
-			return false, errPollBoom
+			return false, installertestutils.ErrPollBoom
 		})
 
 		testutils.ExpectErrorContains(
@@ -691,19 +627,6 @@ func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *helm.MockInterface) {
 	)
 
 	return installer, client
-}
-
-func expectInstallerResult(t *testing.T, err error, wantErr, operation string) {
-	t.Helper()
-
-	if wantErr == "" {
-		testutils.ExpectNoError(t, err, operation)
-
-		return
-	}
-
-	message := operation + " error"
-	testutils.ExpectErrorContains(t, err, wantErr, message)
 }
 
 func setupCiliumInstallExpectations(t *testing.T, client *helm.MockInterface, installErr error) {
@@ -732,8 +655,8 @@ func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err err
 			mock.Anything,
 			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
 				t.Helper()
-				expectEqual(t, entry.Name, "cilium", "repository name")
-				expectEqual(t, entry.URL, "https://helm.cilium.io", "repository URL")
+				installertestutils.ExpectEqual(t, entry.Name, "cilium", "repository name")
+				installertestutils.ExpectEqual(t, entry.URL, "https://helm.cilium.io", "repository URL")
 
 				return true
 			}),
@@ -748,13 +671,13 @@ func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installE
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				t.Helper()
-				expectEqual(t, spec.ReleaseName, "cilium", "release name")
-				expectEqual(t, spec.ChartName, "cilium/cilium", "chart name")
-				expectEqual(t, spec.Namespace, "kube-system", "namespace")
-				expectEqual(t, spec.RepoURL, "https://helm.cilium.io", "repository URL")
+				installertestutils.ExpectEqual(t, spec.ReleaseName, "cilium", "release name")
+				installertestutils.ExpectEqual(t, spec.ChartName, "cilium/cilium", "chart name")
+				installertestutils.ExpectEqual(t, spec.Namespace, "kube-system", "namespace")
+				installertestutils.ExpectEqual(t, spec.RepoURL, "https://helm.cilium.io", "repository URL")
 				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
 				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
-				expectEqual(t, spec.SetJSONVals["operator.replicas"], "1", "operator replicas")
+				installertestutils.ExpectEqual(t, spec.SetJSONVals["operator.replicas"], "1", "operator replicas")
 
 				return true
 			}),
@@ -767,45 +690,4 @@ func expectCiliumUninstall(t *testing.T, client *helm.MockInterface, err error) 
 	client.EXPECT().
 		UninstallRelease(mock.Anything, "cilium", "kube-system").
 		Return(err)
-}
-
-func writeKubeconfig(t *testing.T, dir string) string {
-	t.Helper()
-
-	contents := `apiVersion: v1
-kind: Config
-clusters:
-- name: cluster-one
-  cluster:
-    server: https://cluster-one.example.com
-- name: cluster-two
-  cluster:
-    server: https://cluster-two.example.com
-contexts:
-- name: primary
-  context:
-    cluster: cluster-one
-    user: user-one
-- name: alt
-  context:
-    cluster: cluster-two
-    user: user-two
-current-context: primary
-users:
-- name: user-one
-  user:
-    token: token-one
-- name: user-two
-  user:
-    token: token-two
-`
-
-	path := filepath.Join(dir, "config")
-
-	err := os.WriteFile(path, []byte(contents), 0o600)
-	if err != nil {
-		t.Fatalf("write kubeconfig file: %v", err)
-	}
-
-	return path
 }

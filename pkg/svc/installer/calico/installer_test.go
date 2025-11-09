@@ -2,18 +2,15 @@ package calicoinstaller //nolint:testpackage
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,23 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
-)
-
-func expectEqual[T comparable](t *testing.T, got, want T, description string) {
-	t.Helper()
-
-	if got != want {
-		t.Fatalf("unexpected %s: got %v want %v", description, got, want)
-	}
-}
-
-var (
-	errInstallFailed   = errors.New("install failed")
-	errAddRepoFailed   = errors.New("add repo failed")
-	errUninstallFailed = errors.New("uninstall failed")
-	errDaemonSetBoom   = errors.New("boom")
-	errDeploymentFail  = errors.New("fail")
-	errPollBoom        = errors.New("boom")
 )
 
 func TestNewCalicoInstaller(t *testing.T) {
@@ -73,7 +53,7 @@ func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
 
 			err := scenario.action(context.Background(), installer)
 
-			expectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
+			installertestutils.ExpectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
 		})
 	}
 }
@@ -103,7 +83,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				setupCalicoInstallExpectations(t, client, errInstallFailed)
+				setupCalicoInstallExpectations(t, client, installertestutils.ErrInstallFailed)
 			},
 			wantErr: "failed to install Calico",
 		},
@@ -114,7 +94,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCalicoAddRepository(t, client, errAddRepoFailed)
+				expectCalicoAddRepository(t, client, installertestutils.ErrAddRepoFailed)
 			},
 			wantErr: "failed to add calico repository",
 		},
@@ -148,7 +128,7 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 			setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCalicoUninstall(t, client, errUninstallFailed)
+				expectCalicoUninstall(t, client, installertestutils.ErrUninstallFailed)
 			},
 			wantErr: "failed to uninstall calico release",
 		},
@@ -199,7 +179,7 @@ func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		installer.SetWaitForReadinessFunc(nil)
 		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
-		expectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
+		installertestutils.ExpectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
 	})
 }
 
@@ -235,7 +215,7 @@ func TestCalicoInstallerWaitForReadinessSuccess(t *testing.T) {
 	server := newCalicoAPIServer(t, true)
 	t.Cleanup(server.Close)
 
-	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+	kubeconfig := installertestutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCalicoInstaller(
 		helm.NewMockInterface(t),
@@ -256,7 +236,7 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 	server := newCalicoAPIServer(t, false)
 	t.Cleanup(server.Close)
 
-	kubeconfig := writeServerBackedKubeconfig(t, server.URL)
+	kubeconfig := installertestutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCalicoInstaller(
 		helm.NewMockInterface(t),
@@ -295,25 +275,25 @@ func TestCalicoInstallerBuildRESTConfig(t *testing.T) {
 	t.Run("UsesCurrentContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-		expectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
+		installertestutils.ExpectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
 	})
 
 	t.Run("OverridesContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
 
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig override context")
-		expectEqual(
+		installertestutils.ExpectEqual(
 			t,
 			restConfig.Host,
 			"https://cluster-two.example.com",
@@ -324,7 +304,7 @@ func TestCalicoInstallerBuildRESTConfig(t *testing.T) {
 	t.Run("MissingContext", func(t *testing.T) {
 		t.Parallel()
 
-		path := writeKubeconfig(t, t.TempDir())
+		path := installertestutils.WriteKubeconfig(t, t.TempDir())
 		installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
 		_, err := installer.buildRESTConfig()
 
@@ -368,10 +348,10 @@ func serveTigeraOperatorDeployment(t *testing.T, writer http.ResponseWriter, rea
 	}
 
 	if !ready {
-		updateDeploymentStatusToUnready(t, payload)
+		installertestutils.UpdateDeploymentStatusToUnready(t, payload)
 	}
 
-	encodeJSON(t, writer, payload)
+	installertestutils.EncodeJSON(t, writer, payload)
 }
 
 func serveCalicoNodeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
@@ -388,10 +368,10 @@ func serveCalicoNodeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bo
 	}
 
 	if !ready {
-		updateDaemonSetStatusToUnready(t, payload)
+		installertestutils.UpdateDaemonSetStatusToUnready(t, payload)
 	}
 
-	encodeJSON(t, writer, payload)
+	installertestutils.EncodeJSON(t, writer, payload)
 }
 
 func serveCalicoKubeControllersDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
@@ -408,79 +388,13 @@ func serveCalicoKubeControllersDeployment(t *testing.T, writer http.ResponseWrit
 	}
 
 	if !ready {
-		updateDeploymentStatusToUnready(t, payload)
+		installertestutils.UpdateDeploymentStatusToUnready(t, payload)
 	}
 
-	encodeJSON(t, writer, payload)
+	installertestutils.EncodeJSON(t, writer, payload)
 }
 
-func updateDeploymentStatusToUnready(t *testing.T, payload map[string]any) {
-	t.Helper()
 
-	status, ok := payload["status"].(map[string]any)
-	if !ok {
-		t.Fatalf("unexpected payload status type %T", payload["status"])
-	}
-
-	status["updatedReplicas"] = 0
-	status["availableReplicas"] = 0
-}
-
-func updateDaemonSetStatusToUnready(t *testing.T, payload map[string]any) {
-	t.Helper()
-
-	status, ok := payload["status"].(map[string]any)
-	if !ok {
-		t.Fatalf("unexpected payload status type %T", payload["status"])
-	}
-
-	status["numberUnavailable"] = 1
-	status["updatedNumberScheduled"] = 0
-}
-
-func encodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
-	t.Helper()
-
-	writer.Header().Set("Content-Type", "application/json")
-
-	encoder := json.NewEncoder(writer)
-
-	err := encoder.Encode(payload)
-	if err != nil {
-		t.Fatalf("failed to encode response: %v", err)
-	}
-}
-
-func writeServerBackedKubeconfig(t *testing.T, serverURL string) string {
-	t.Helper()
-
-	path := filepath.Join(t.TempDir(), "kubeconfig.yaml")
-
-	content := "apiVersion: v1\n" +
-		"clusters:\n" +
-		"- cluster:\n" +
-		"    server: " + serverURL + "\n" +
-		"    insecure-skip-tls-verify: true\n" +
-		"  name: local\n" +
-		"contexts:\n" +
-		"- context:\n" +
-		"    cluster: local\n" +
-		"    user: default\n" +
-		"  name: default\n" +
-		"current-context: default\n" +
-		"kind: Config\n" +
-		"preferences: {}\n" +
-		"users:\n" +
-		"- name: default\n" +
-		"  user: {}\n"
-
-	err := os.WriteFile(path, []byte(content), 0o600)
-	if err != nil {
-		t.Fatalf("failed to write kubeconfig: %v", err)
-	}
-
-	return path
-}
 
 func TestWaitForDaemonSetReady(t *testing.T) {
 	t.Parallel()
@@ -530,7 +444,7 @@ func testWaitForDaemonSetReadyAPIError(t *testing.T) {
 		"get",
 		"daemonsets",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errDaemonSetBoom
+			return true, nil, installertestutils.ErrDaemonSetBoom
 		},
 	)
 
@@ -614,7 +528,7 @@ func testWaitForDeploymentReadyAPIError(t *testing.T) {
 		"get",
 		"deployments",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, errDeploymentFail
+			return true, nil, installertestutils.ErrDeploymentFail
 		},
 	)
 
@@ -673,7 +587,7 @@ func TestPollForReadiness(t *testing.T) {
 		t.Parallel()
 
 		err := pollForReadinessWithDefaultTimeout(t, func(context.Context) (bool, error) {
-			return false, errPollBoom
+			return false, installertestutils.ErrPollBoom
 		})
 
 		testutils.ExpectErrorContains(
@@ -698,18 +612,7 @@ func newDefaultInstaller(t *testing.T) (*CalicoInstaller, *helm.MockInterface) {
 	return installer, client
 }
 
-func expectInstallerResult(t *testing.T, err error, wantErr, operation string) {
-	t.Helper()
 
-	if wantErr == "" {
-		testutils.ExpectNoError(t, err, operation)
-
-		return
-	}
-
-	message := operation + " error"
-	testutils.ExpectErrorContains(t, err, wantErr, message)
-}
 
 func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
@@ -737,8 +640,8 @@ func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err err
 			mock.Anything,
 			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
 				t.Helper()
-				expectEqual(t, entry.Name, "projectcalico", "repository name")
-				expectEqual(t, entry.URL, "https://docs.tigera.io/calico/charts", "repository URL")
+				installertestutils.ExpectEqual(t, entry.Name, "projectcalico", "repository name")
+				installertestutils.ExpectEqual(t, entry.URL, "https://docs.tigera.io/calico/charts", "repository URL")
 
 				return true
 			}),
@@ -753,10 +656,10 @@ func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installE
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				t.Helper()
-				expectEqual(t, spec.ReleaseName, "calico", "release name")
-				expectEqual(t, spec.ChartName, "projectcalico/tigera-operator", "chart name")
-				expectEqual(t, spec.Namespace, "tigera-operator", "namespace")
-				expectEqual(
+				installertestutils.ExpectEqual(t, spec.ReleaseName, "calico", "release name")
+				installertestutils.ExpectEqual(t, spec.ChartName, "projectcalico/tigera-operator", "chart name")
+				installertestutils.ExpectEqual(t, spec.Namespace, "tigera-operator", "namespace")
+				installertestutils.ExpectEqual(
 					t,
 					spec.RepoURL,
 					"https://docs.tigera.io/calico/charts",
@@ -779,43 +682,4 @@ func expectCalicoUninstall(t *testing.T, client *helm.MockInterface, err error) 
 		Return(err)
 }
 
-func writeKubeconfig(t *testing.T, dir string) string {
-	t.Helper()
 
-	contents := `apiVersion: v1
-kind: Config
-clusters:
-- name: cluster-one
-  cluster:
-    server: https://cluster-one.example.com
-- name: cluster-two
-  cluster:
-    server: https://cluster-two.example.com
-contexts:
-- name: primary
-  context:
-    cluster: cluster-one
-    user: user-one
-- name: alt
-  context:
-    cluster: cluster-two
-    user: user-two
-current-context: primary
-users:
-- name: user-one
-  user:
-    token: token-one
-- name: user-two
-  user:
-    token: token-two
-`
-
-	path := filepath.Join(dir, "config")
-
-	err := os.WriteFile(path, []byte(contents), 0o600)
-	if err != nil {
-		t.Fatalf("write kubeconfig file: %v", err)
-	}
-
-	return path
-}

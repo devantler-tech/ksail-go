@@ -20,9 +20,7 @@
     "**/*.svg",
     "**/*.zip",
     "**/*.bin",
-    "**/*mocks*.go",
-    "**/pkg/svc/installer/calico/**",
-    "**/pkg/svc/installer/cilium/**"
+    "**/*mocks*.go"
   ],
   "reporters": ["html", "markdown"],
   "threshold": 0
