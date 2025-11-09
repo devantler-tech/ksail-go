@@ -1,4 +1,3 @@
-// Package marshaller provides functionality for marshaling and unmarshaling resources.
 package marshaller
 
 // Marshaller is an interface for a resource marshaller.

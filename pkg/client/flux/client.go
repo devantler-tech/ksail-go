@@ -1,4 +1,3 @@
-// Package flux provides a flux client implementation using Flux Kubernetes APIs.
 package flux
 
 import (

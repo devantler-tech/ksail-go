@@ -1,4 +1,3 @@
-// Package workload provides the workload command namespace.
 package workload
 
 import (

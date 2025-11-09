@@ -1,5 +1,3 @@
-// Package kind provides configuration management for Kind cluster configurations.
-// This file contains the core Manager implementation for loading Kind configs from files.
 package kind
 
 import (

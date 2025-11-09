@@ -1,4 +1,3 @@
-// Package kind provides Kind configuration validation functionality.
 package kind
 
 import (

@@ -1,12 +1,3 @@
-// Package k9s provides a k9s client implementation.
-//
-// Coverage Note: The DefaultK9sExecutor.Execute() method (line 20) and parts of the
-// HandleConnectRunE execution path cannot be fully tested in unit tests because they
-// require launching k9s which needs an actual terminal UI. These paths are validated
-// through:
-// - Integration testing with actual k9s installation
-// - Manual verification of the connect command
-// - Mock-based testing of all logic leading up to k9s execution
 package k9s
 
 import (

@@ -1,5 +1,3 @@
-// Package configmanager provides centralized configuration management using Viper.
-// This file contains the interfaces for configuration management.
 package configmanager
 
 import "github.com/devantler-tech/ksail-go/pkg/ui/timer"

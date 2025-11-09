@@ -1,4 +1,3 @@
-// Package metadata provides shared metadata validation utilities used across multiple validators.
 package metadata
 
 import "github.com/devantler-tech/ksail-go/pkg/io/validator"
