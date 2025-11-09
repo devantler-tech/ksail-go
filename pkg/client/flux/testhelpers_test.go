@@ -108,6 +108,28 @@ func testCommandSuccess(t *testing.T, args []string) {
 	require.Contains(t, output, "spec:")
 }
 
+// countFlagElements returns the number of elements a flag will add to the command line.
+// Boolean flags (value "true") add 1 element (just the flag name).
+// Non-boolean flags add 2 elements (flag name + value).
+func countFlagElements(flagValue string) int {
+	if flagValue == "true" {
+		return 1
+	}
+
+	return 2
+}
+
+// appendFlag appends a flag and its value to the command line slice.
+// Boolean flags (value "true") only append the flag name.
+// Non-boolean flags append both the flag name and value.
+func appendFlag(cmdLine []string, flagKey, flagValue string) []string {
+	if flagValue == "true" {
+		return append(cmdLine, "--"+flagKey)
+	}
+
+	return append(cmdLine, "--"+flagKey, flagValue)
+}
+
 // runFluxCommandTest executes a flux command test with the given parameters.
 func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 	t.Helper()
@@ -132,12 +154,7 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 			continue
 		}
 
-		// Boolean flags (value "true") only add the flag name
-		if flagValue == "true" {
-			flagElems++
-		} else {
-			flagElems += 2 // --flag <value>
-		}
+		flagElems += countFlagElements(flagValue)
 	}
 
 	cmdLine := make([]string, 0, len(cmdPath)+len(testCase.args)+flagElems)
@@ -156,12 +173,7 @@ func runFluxCommandTest(t *testing.T, cmdPath []string, testCase testCase) {
 			continue
 		}
 
-		// Boolean flags (value "true") only add the flag name
-		if flagValue == "true" {
-			cmdLine = append(cmdLine, "--"+flagKey)
-		} else {
-			cmdLine = append(cmdLine, "--"+flagKey, flagValue)
-		}
+		cmdLine = appendFlag(cmdLine, flagKey, flagValue)
 	}
 
 	createCmd.SetArgs(cmdLine)
