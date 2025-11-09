@@ -17,6 +17,7 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	flannelinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flannel"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
@@ -137,7 +138,7 @@ func handlePostCreationSetup(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
-	// For custom CNI (Cilium), install CNI first as metrics-server needs networking
+	// For custom CNI (Cilium, Flannel), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
@@ -147,6 +148,21 @@ func handlePostCreationSetup(
 		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+
+		// Install metrics-server after CNI is ready
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
+		}
+	} else if clusterCfg.Spec.CNI == v1alpha1.CNIFlannel {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		tmr.NewStage()
+
+		err := installFlannelCNI(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to install Flannel CNI: %w", err)
 		}
 
 		// Install metrics-server after CNI is ready
@@ -698,6 +714,87 @@ func runCiliumInstallation(
 	readinessErr := installer.WaitForReadiness(cmd.Context())
 	if readinessErr != nil {
 		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "CNI installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
+// installFlannelCNI installs Flannel CNI on the cluster.
+func installFlannelCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+		Name: "flannel",
+		URL:  "https://flannel-io.github.io/flannel",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add Flannel Helm repository: %w", err)
+	}
+
+	installer := newFlannelInstaller(helmClient, kubeconfig, clusterCfg)
+
+	return runFlannelInstallation(cmd, installer, tmr)
+}
+
+func newFlannelInstaller(
+	helmClient *helm.Client,
+	kubeconfig string,
+	clusterCfg *v1alpha1.Cluster,
+) *flannelinstaller.FlannelInstaller {
+	timeout := getInstallTimeout(clusterCfg)
+
+	return flannelinstaller.NewFlannelInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+}
+
+func runFlannelInstallation(
+	cmd *cobra.Command,
+	installer *flannelinstaller.FlannelInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing flannel",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("flannel installation failed: %w", installErr)
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "awaiting flannel to be ready",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	readinessErr := installer.WaitForReadiness(cmd.Context())
+	if readinessErr != nil {
+		return fmt.Errorf("flannel readiness check failed: %w", readinessErr)
 	}
 
 	total, stage := tmr.GetTiming()

@@ -220,6 +220,18 @@ func (v *Validator) validateCNIAlignment(
 		return
 	}
 
+	// Validate Flannel CNI alignment
+	if config.Spec.CNI == v1alpha1.CNIFlannel {
+		switch config.Spec.Distribution {
+		case v1alpha1.DistributionKind:
+			v.validateKindFlannelCNIAlignment(result)
+		case v1alpha1.DistributionK3d:
+			v.validateK3dFlannelCNIAlignment(result)
+		}
+
+		return
+	}
+
 	// Validate Default CNI alignment (empty string or explicit "Default")
 	if config.Spec.CNI == "" || config.Spec.CNI == v1alpha1.CNIDefault {
 		switch config.Spec.Distribution {
@@ -247,6 +259,23 @@ func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationR
 	}
 }
 
+// validateKindFlannelCNIAlignment validates Kind configuration for Flannel CNI.
+// Flannel will be installed via Helm, so we need Kind CNI disabled.
+func (v *Validator) validateKindFlannelCNIAlignment(result *validator.ValidationResult) {
+	if v.kindConfig == nil {
+		// No Kind config provided for validation, skip
+		return
+	}
+
+	if !v.kindConfig.Networking.DisableDefaultCNI {
+		result.AddError(validator.ValidationError{
+			Field:         "spec.cni",
+			Message:       "Flannel CNI requires disableDefaultCNI to be true in Kind configuration",
+			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
+		})
+	}
+}
+
 // validateKindDefaultCNIAlignment validates that Kind configuration does NOT have CNI disabled when Default is used.
 func (v *Validator) validateKindDefaultCNIAlignment(result *validator.ValidationResult) {
 	if v.kindConfig == nil {
@@ -261,7 +290,7 @@ func (v *Validator) validateKindDefaultCNIAlignment(result *validator.Validation
 			CurrentValue:  "disableDefaultCNI: true",
 			ExpectedValue: "disableDefaultCNI: false (or omit the field)",
 			FixSuggestion: "Remove 'networking.disableDefaultCNI: true' from your kind.yaml " +
-				"configuration file or set CNI to Cilium",
+				"configuration file or set CNI to Cilium or Flannel",
 		})
 	}
 }
@@ -317,6 +346,42 @@ func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationRe
 		FixSuggestion: fmt.Sprintf(
 			"Add %s to the K3s extra args in your k3d.yaml configuration file",
 			strings.Join(missingArgs, " and "),
+		),
+	})
+}
+
+// validateK3dFlannelCNIAlignment validates that K3d configuration does NOT have Flannel disabled when Flannel CNI is requested.
+// For K3d with explicit Flannel CNI, we want to keep K3s's built-in Flannel enabled.
+func (v *Validator) validateK3dFlannelCNIAlignment(result *validator.ValidationResult) {
+	if v.k3dConfig == nil {
+		// No K3d config provided for validation, skip
+		return
+	}
+
+	hasFlannelDisabled, hasNetworkPolicyDisabled := v.checkK3dFlannelAndNetworkPolicyStatus()
+
+	problematicArgs := make([]string, 0, requiredCiliumArgs)
+	if hasFlannelDisabled {
+		problematicArgs = append(problematicArgs, "'--flannel-backend=none'")
+	}
+
+	if hasNetworkPolicyDisabled {
+		problematicArgs = append(problematicArgs, "'--disable-network-policy'")
+	}
+
+	if len(problematicArgs) == 0 {
+		return
+	}
+
+	result.AddError(validator.ValidationError{
+		Field: "spec.cni",
+		Message: fmt.Sprintf(
+			"Flannel CNI requires Flannel to be enabled, but found %s in K3d configuration",
+			strings.Join(problematicArgs, " and "),
+		),
+		FixSuggestion: fmt.Sprintf(
+			"Remove %s from the K3s extra args in your k3d.yaml configuration file",
+			strings.Join(problematicArgs, " and "),
 		),
 	})
 }
