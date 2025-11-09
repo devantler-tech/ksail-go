@@ -33,6 +33,12 @@ func TestNewCipherCmd(t *testing.T) {
 	if encryptCmd == nil {
 		t.Error("expected encrypt subcommand to exist")
 	}
+
+	// Verify edit subcommand exists
+	editCmd := findSubcommand(cmd, "edit")
+	if editCmd == nil {
+		t.Error("expected edit subcommand to exist")
+	}
 }
 
 func TestCipherCommandHelp(t *testing.T) {
