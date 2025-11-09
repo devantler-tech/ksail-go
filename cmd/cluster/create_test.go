@@ -669,8 +669,8 @@ func TestPrepareK3dConfigWithMirrors_AddsOverrides(t *testing.T) {
 
 	assert.True(t, result)
 	assert.Contains(t, k3dConfig.Registries.Config, "\"docker.io\"")
+	assert.Contains(t, k3dConfig.Registries.Config, "http://docker.io:5000")
 	assert.Contains(t, k3dConfig.Registries.Config, "https://registry-1.docker.io")
-	assert.NotContains(t, k3dConfig.Registries.Config, "http://docker.io:5000")
 }
 
 func TestPrepareK3dConfigWithMirrors_PreservesExistingConfig(t *testing.T) {

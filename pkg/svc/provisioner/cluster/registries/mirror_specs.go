@@ -138,6 +138,11 @@ func BuildHostEndpointMap(
 		endpoints, existed := hostEndpoints[entry.Host]
 		previousLen := len(endpoints)
 
+		// Add the local mirror endpoint first (for K3d registries.yaml)
+		if entry.Endpoint != "" && !containsEndpoint(endpoints, entry.Endpoint) {
+			endpoints = append(endpoints, entry.Endpoint)
+		}
+
 		if entry.Remote != "" && !containsEndpoint(endpoints, entry.Remote) {
 			endpoints = append(endpoints, entry.Remote)
 		}
@@ -245,16 +250,11 @@ func filterK3dEndpoints(host string, endpoints []string) []string {
 		return endpoints
 	}
 
-	sanitized := SanitizeHostIdentifier(host)
 	filtered := make([]string, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		trimmed := strings.TrimSpace(endpoint)
 		if trimmed == "" {
-			continue
-		}
-
-		if isGeneratedLocalEndpoint(trimmed, sanitized) {
 			continue
 		}
 
