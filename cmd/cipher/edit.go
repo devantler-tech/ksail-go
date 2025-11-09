@@ -230,13 +230,6 @@ func writeTempFile(tmpdir string, opts editOpts, tree *sops.Tree, cleanup func()
 		)
 	}
 
-	err = tmpfile.Close()
-	if err != nil {
-		cleanup()
-
-		return "", fmt.Errorf("failed to close temporary file: %w", err)
-	}
-
 	return tmpfile.Name(), nil
 }
 
