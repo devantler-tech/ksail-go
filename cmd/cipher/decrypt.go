@@ -27,7 +27,7 @@ type decryptOpts struct {
 	OutputPath      string
 	ReadFromStdin   bool
 	IgnoreMAC       bool
-	Extract         []interface{}
+	Extract         []any
 	KeyServices     []keyservice.KeyServiceClient
 	DecryptionOrder []string
 }
@@ -44,7 +44,7 @@ func decryptTree(opts decryptOpts) (*sops.Tree, error) {
 		KeyServices:   opts.KeyServices,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load encrypted file: %w", err)
 	}
 
 	_, err = common.DecryptTree(common.DecryptTreeOpts{
@@ -55,7 +55,7 @@ func decryptTree(opts decryptOpts) (*sops.Tree, error) {
 		DecryptionOrder: opts.DecryptionOrder,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decrypt tree: %w", err)
 	}
 
 	return tree, nil
@@ -74,9 +74,11 @@ func decrypt(opts decryptOpts) ([]byte, error) {
 	}
 
 	decryptedFile, err := opts.OutputStore.EmitPlainFile(tree.Branches)
+
 	if errors.Is(err, json.BinaryStoreEmitPlainError) {
-		err = fmt.Errorf("%s\n\n%s", err.Error(), notBinaryHint)
+		return nil, fmt.Errorf("%w: %s", err, notBinaryHint)
 	}
+
 	if err != nil {
 		return nil, common.NewExitError(
 			fmt.Sprintf("Error dumping file: %s", err),
@@ -89,30 +91,34 @@ func decrypt(opts decryptOpts) ([]byte, error) {
 
 // extract retrieves a specific value or subtree from the decrypted tree.
 // It supports extracting nested keys using a path array.
-func extract(tree *sops.Tree, path []interface{}, outputStore sops.Store) ([]byte, error) {
-	v, err := tree.Branches[0].Truncate(path)
+func extract(tree *sops.Tree, path []any, outputStore sops.Store) ([]byte, error) {
+	value, err := tree.Branches[0].Truncate(path)
 	if err != nil {
 		return nil, fmt.Errorf("error truncating tree: %w", err)
 	}
 
-	if newBranch, ok := v.(sops.TreeBranch); ok {
+	if newBranch, ok := value.(sops.TreeBranch); ok {
 		tree.Branches[0] = newBranch
+
 		decrypted, err := outputStore.EmitPlainFile(tree.Branches)
+
 		if errors.Is(err, json.BinaryStoreEmitPlainError) {
-			err = fmt.Errorf("%s\n\n%s", err.Error(), notBinaryHint)
+			return nil, fmt.Errorf("%w: %s", err, notBinaryHint)
 		}
+
 		if err != nil {
 			return nil, common.NewExitError(
 				fmt.Sprintf("Error dumping file: %s", err),
 				codes.ErrorDumpingTree,
 			)
 		}
+
 		return decrypted, nil
-	} else if str, ok := v.(string); ok {
+	} else if str, ok := value.(string); ok {
 		return []byte(str), nil
 	}
 
-	bytes, err := outputStore.EmitValue(v)
+	bytes, err := outputStore.EmitValue(value)
 	if err != nil {
 		return nil, common.NewExitError(
 			fmt.Sprintf("Error dumping tree: %s", err),
@@ -156,8 +162,19 @@ Example:
 		},
 	}
 
-	cmd.Flags().StringVarP(&extract, "extract", "e", "", "extract a specific key from the decrypted file (JSONPath format)")
-	cmd.Flags().BoolVar(&ignoreMac, "ignore-mac", false, "ignore Message Authentication Code (MAC) check")
+	cmd.Flags().StringVarP(
+		&extract,
+		"extract",
+		"e",
+		"",
+		"extract a specific key from the decrypted file (JSONPath format)",
+	)
+	cmd.Flags().BoolVar(
+		&ignoreMac,
+		"ignore-mac",
+		false,
+		"ignore Message Authentication Code (MAC) check",
+	)
 	cmd.Flags().StringVarP(&output, "output", "o", "", "output file path (default: stdout)")
 
 	return cmd
@@ -169,8 +186,15 @@ const decryptedFilePermissions = 0o600
 // It orchestrates the decryption workflow: determining file stores,
 // setting up decryption options, decrypting the file, and writing
 // the decrypted content to stdout or a file.
-func handleDecryptRunE(cmd *cobra.Command, args []string, extract string, ignoreMac bool, output string) error {
+func handleDecryptRunE(
+	cmd *cobra.Command,
+	args []string,
+	extract string,
+	ignoreMac bool,
+	output string,
+) error {
 	var inputPath string
+
 	readFromStdin := len(args) == 0
 
 	if !readFromStdin {
@@ -182,7 +206,7 @@ func handleDecryptRunE(cmd *cobra.Command, args []string, extract string, ignore
 		return err
 	}
 
-	var extractPath []interface{}
+	var extractPath []any
 	if extract != "" {
 		extractPath, err = parseExtractPath(extract)
 		if err != nil {
@@ -207,21 +231,28 @@ func handleDecryptRunE(cmd *cobra.Command, args []string, extract string, ignore
 		return fmt.Errorf("decryption failed: %w", err)
 	}
 
-	// Write to output file if specified, otherwise write to stdout
-	if output != "" {
-		err = os.WriteFile(output, decryptedData, decryptedFilePermissions)
+	return writeDecryptedOutput(cmd, decryptedData, output)
+}
+
+// writeDecryptedOutput writes decrypted data to either a file or stdout.
+func writeDecryptedOutput(cmd *cobra.Command, data []byte, outputPath string) error {
+	if outputPath != "" {
+		err := os.WriteFile(outputPath, data, decryptedFilePermissions)
 		if err != nil {
 			return fmt.Errorf("failed to write decrypted file: %w", err)
 		}
-		_, err = fmt.Fprintf(cmd.OutOrStdout(), "Successfully decrypted to %s\n", output)
+
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "Successfully decrypted to %s\n", outputPath)
 		if err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
-	} else {
-		_, err = cmd.OutOrStdout().Write(decryptedData)
-		if err != nil {
-			return fmt.Errorf("failed to write output: %w", err)
-		}
+
+		return nil
+	}
+
+	_, err := cmd.OutOrStdout().Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
 	}
 
 	return nil
@@ -230,6 +261,8 @@ func handleDecryptRunE(cmd *cobra.Command, args []string, extract string, ignore
 // getDecryptStores returns the appropriate SOPS stores for decryption.
 // When reading from stdin, it defaults to YAML format.
 // For JSON format from stdin, users can pipe to a file first.
+//
+//nolint:ireturn // Returning sops.Store interface is the correct pattern here
 func getDecryptStores(inputPath string, readFromStdin bool) (sops.Store, sops.Store, error) {
 	if readFromStdin {
 		// Default to YAML for stdin - most common format
@@ -239,14 +272,17 @@ func getDecryptStores(inputPath string, readFromStdin bool) (sops.Store, sops.St
 	return getStores(inputPath)
 }
 
+var errInvalidExtractPath = errors.New("invalid extract path format")
+
 // parseExtractPath converts a JSONPath-like extract string into a path array.
-// Example: '["data"]["password"]' -> []interface{}{"data", "password"}
-func parseExtractPath(extract string) ([]interface{}, error) {
+// Example: '["data"]["password"]' -> []any{"data", "password"}.
+func parseExtractPath(extract string) ([]any, error) {
 	// Remove outer quotes if present
 	extract = strings.Trim(extract, "'\"")
 
 	// Parse the JSONPath format: ["key1"]["key2"]
-	var path []interface{}
+	var path []any
+	//nolint:modernize // Using Split is clearer than SplitSeq for this use case
 	parts := strings.Split(extract, "][")
 
 	for _, part := range parts {
@@ -261,7 +297,7 @@ func parseExtractPath(extract string) ([]interface{}, error) {
 	}
 
 	if len(path) == 0 {
-		return nil, errors.New("invalid extract path format")
+		return nil, errInvalidExtractPath
 	}
 
 	return path, nil

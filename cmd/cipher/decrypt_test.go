@@ -92,7 +92,7 @@ func TestDecryptCommandAcceptsStdin(t *testing.T) {
 }
 
 // setupDecryptTest is a helper function to create an encrypted test file.
-func setupDecryptTest(t *testing.T, filename, content string) (string, error) {
+func setupDecryptTest(t *testing.T, filename, content string) string {
 	t.Helper()
 
 	tmpDir := t.TempDir()
@@ -103,16 +103,13 @@ func setupDecryptTest(t *testing.T, filename, content string) (string, error) {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	return testFile, nil
+	return testFile
 }
 
 func TestDecryptCommandUnsupportedFormat(t *testing.T) {
 	t.Parallel()
 
-	testFile, err := setupDecryptTest(t, "test.txt", "test content")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testFile := setupDecryptTest(t, "test.txt", "test content")
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
@@ -122,9 +119,11 @@ func TestDecryptCommandUnsupportedFormat(t *testing.T) {
 	cipherCmd.SetErr(&errOut)
 	cipherCmd.SetArgs([]string{"decrypt", testFile})
 
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	if err == nil {
 		t.Error("expected error for unsupported file format")
+
+		return
 	}
 
 	if !strings.Contains(err.Error(), "unsupported file format") {
@@ -153,10 +152,7 @@ func TestDecryptCommandNonExistentFile(t *testing.T) {
 func testDecryptWithFormat(t *testing.T, filename, content string) {
 	t.Helper()
 
-	testFile, err := setupDecryptTest(t, filename, content)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testFile := setupDecryptTest(t, filename, content)
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
@@ -166,7 +162,7 @@ func testDecryptWithFormat(t *testing.T, filename, content string) {
 	cipherCmd.SetErr(&errOut)
 	cipherCmd.SetArgs([]string{"decrypt", testFile})
 
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	// We expect an error about the file not being encrypted or missing keys
 	// not about file format
 	if err != nil {
@@ -207,10 +203,7 @@ func TestDecryptCommandJSONFormat(t *testing.T) {
 func TestDecryptCommandWithExtractFlag(t *testing.T) {
 	t.Parallel()
 
-	testFile, err := setupDecryptTest(t, "test.yaml", "key: value")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testFile := setupDecryptTest(t, "test.yaml", "key: value")
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
@@ -221,7 +214,7 @@ func TestDecryptCommandWithExtractFlag(t *testing.T) {
 	cipherCmd.SetArgs([]string{"decrypt", testFile, "--extract", `["key"]`})
 
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}
@@ -230,10 +223,7 @@ func TestDecryptCommandWithExtractFlag(t *testing.T) {
 func TestDecryptCommandWithIgnoreMacFlag(t *testing.T) {
 	t.Parallel()
 
-	testFile, err := setupDecryptTest(t, "test.yaml", "key: value")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testFile := setupDecryptTest(t, "test.yaml", "key: value")
 
 	rt := runtime.NewRuntime()
 	cipherCmd := cipher.NewCipherCmd(rt)
@@ -244,7 +234,7 @@ func TestDecryptCommandWithIgnoreMacFlag(t *testing.T) {
 	cipherCmd.SetArgs([]string{"decrypt", testFile, "--ignore-mac"})
 
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}
@@ -254,10 +244,7 @@ func TestDecryptCommandWithOutputFlag(t *testing.T) {
 	t.Parallel()
 
 	tmpDir := t.TempDir()
-	testFile, err := setupDecryptTest(t, "test.yaml", "key: value")
-	if err != nil {
-		t.Fatal(err)
-	}
+	testFile := setupDecryptTest(t, "test.yaml", "key: value")
 
 	outputFile := filepath.Join(tmpDir, "decrypted.yaml")
 
@@ -270,7 +257,7 @@ func TestDecryptCommandWithOutputFlag(t *testing.T) {
 	cipherCmd.SetArgs([]string{"decrypt", testFile, "--output", outputFile})
 
 	// Execute - we expect it to fail on decryption (not encrypted), not on flag parsing
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	if err != nil {
 		t.Logf("Expected SOPS error: %v", err)
 	}
@@ -284,12 +271,15 @@ func TestCipherCommandHasDecryptSubcommand(t *testing.T) {
 
 	// Verify decrypt subcommand exists
 	var decryptCmd *cobra.Command
+
 	for _, c := range cmd.Commands() {
 		if c.Name() == "decrypt" {
 			decryptCmd = c
+
 			break
 		}
 	}
+
 	if decryptCmd == nil {
 		t.Error("expected decrypt subcommand to exist")
 	}
