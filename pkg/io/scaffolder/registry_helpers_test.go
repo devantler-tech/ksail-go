@@ -81,8 +81,8 @@ func containerdMultipleMirrorCase() containerdPatchCase {
 		},
 		expected: []containerdPatchExpectation{
 			{host: "docker.io", fallback: "http://docker.io:5000"},
-			{host: "ghcr.io", fallback: "http://ghcr.io:5001"},
-			{host: "quay.io", fallback: "http://quay.io:5002"},
+			{host: "ghcr.io", fallback: "http://ghcr.io:5000"},
+			{host: "quay.io", fallback: "http://quay.io:5000"},
 		},
 	}
 }
@@ -105,7 +105,7 @@ func containerdInvalidMirrorCase() containerdPatchCase {
 		},
 		expected: []containerdPatchExpectation{
 			{host: "docker.io", fallback: "http://docker.io:5000"},
-			{host: "ghcr.io", fallback: "http://ghcr.io:5001"},
+			{host: "ghcr.io", fallback: "http://ghcr.io:5000"},
 		},
 	}
 }
@@ -139,8 +139,11 @@ func k3dRegistryConfigCases() []k3dRegistryConfigCase {
 			name:    "single mirror registry",
 			mirrors: []string{"docker.io=https://registry-1.docker.io"},
 			expected: k3dRegistryExpectation{
-				contains:    []string{"\"docker.io\":", "https://registry-1.docker.io"},
-				notContains: []string{"http://docker.io:5000"},
+				contains: []string{
+					"\"docker.io\":",
+					"http://docker.io:5000",
+					"https://registry-1.docker.io",
+				},
 			},
 		},
 		{
@@ -167,10 +170,11 @@ func k3dRegistryConfigCases() []k3dRegistryConfigCase {
 				contains: []string{
 					"\"docker.io\":",
 					"\"ghcr.io\":",
+					"http://docker.io:5000",
+					"http://ghcr.io:5000",
 					"https://registry-1.docker.io",
 					"https://ghcr.io",
 				},
-				notContains: []string{"http://docker.io:5000", "http://ghcr.io:5001"},
 			},
 		},
 	}
