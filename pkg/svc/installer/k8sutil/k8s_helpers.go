@@ -129,3 +129,47 @@ func PollForReadiness(
 
 	return nil
 }
+
+var errUnknownResourceType = errors.New("unknown resource type")
+
+// ReadinessCheck defines a check to perform for a Kubernetes resource.
+type ReadinessCheck struct {
+	// Type is "deployment" or "daemonset"
+	Type string
+	// Namespace is the Kubernetes namespace
+	Namespace string
+	// Name is the resource name
+	Name string
+}
+
+// WaitForMultipleResources waits for multiple Kubernetes resources to be ready.
+func WaitForMultipleResources(
+	ctx context.Context,
+	clientset kubernetes.Interface,
+	checks []ReadinessCheck,
+	timeout time.Duration,
+) error {
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	for _, check := range checks {
+		var err error
+
+		switch check.Type {
+		case "deployment":
+			err = WaitForDeploymentReady(waitCtx, clientset, check.Namespace, check.Name, timeout)
+			if err != nil {
+				return fmt.Errorf("%s deployment not ready: %w", check.Name, err)
+			}
+		case "daemonset":
+			err = WaitForDaemonSetReady(waitCtx, clientset, check.Namespace, check.Name, timeout)
+			if err != nil {
+				return fmt.Errorf("%s daemonset not ready: %w", check.Name, err)
+			}
+		default:
+			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
+		}
+	}
+
+	return nil
+}

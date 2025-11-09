@@ -127,43 +127,15 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 		return fmt.Errorf("create kubernetes client: %w", err)
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	// Wait for tigera-operator deployment
-	deploymentErr := k8sutil.WaitForDeploymentReady(
-		waitCtx,
-		clientset,
-		"tigera-operator",
-		"tigera-operator",
-		c.timeout,
-	)
-	if deploymentErr != nil {
-		return fmt.Errorf("tigera-operator not ready: %w", deploymentErr)
+	checks := []k8sutil.ReadinessCheck{
+		{Type: "deployment", Namespace: "tigera-operator", Name: "tigera-operator"},
+		{Type: "daemonset", Namespace: "calico-system", Name: "calico-node"},
+		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
 	}
 
-	// Wait for calico-node daemonset in calico-system namespace
-	daemonSetErr := k8sutil.WaitForDaemonSetReady(
-		waitCtx,
-		clientset,
-		"calico-system",
-		"calico-node",
-		c.timeout,
-	)
-	if daemonSetErr != nil {
-		return fmt.Errorf("calico-node daemonset not ready: %w", daemonSetErr)
-	}
-
-	// Wait for calico-kube-controllers deployment
-	kubeControllersErr := k8sutil.WaitForDeploymentReady(
-		waitCtx,
-		clientset,
-		"calico-system",
-		"calico-kube-controllers",
-		c.timeout,
-	)
-	if kubeControllersErr != nil {
-		return fmt.Errorf("calico-kube-controllers not ready: %w", kubeControllersErr)
+	err = k8sutil.WaitForMultipleResources(ctx, clientset, checks, c.timeout)
+	if err != nil {
+		return fmt.Errorf("wait for calico components: %w", err)
 	}
 
 	return nil

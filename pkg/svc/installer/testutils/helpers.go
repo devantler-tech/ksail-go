@@ -2,6 +2,7 @@
 package testutils
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -9,6 +10,20 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+	k8stesting "k8s.io/client-go/testing"
+)
+
+// Suppress unused warnings for shared utilities that may not be used in all test files.
+var (
+	_ = context.Background
+	_ = time.Second
 )
 
 const (
@@ -186,4 +201,92 @@ users:
 	}
 
 	return path
+}
+
+// CreateReadyDaemonSetClient creates a fake clientset with a ready DaemonSet.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateReadyDaemonSetClient(namespace, name string) kubernetes.Interface {
+	return fake.NewSimpleClientset(&appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DaemonSetStatus{
+			DesiredNumberScheduled: 1,
+			NumberUnavailable:      0,
+			UpdatedNumberScheduled: 1,
+		},
+	})
+}
+
+// CreateDaemonSetClientWithAPIError creates a fake clientset that returns an error on DaemonSet get.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateDaemonSetClientWithAPIError(err error) kubernetes.Interface {
+	client := fake.NewSimpleClientset()
+	client.PrependReactor(
+		"get",
+		"daemonsets",
+		func(_ k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, err
+		},
+	)
+
+	return client
+}
+
+// CreateUnreadyDaemonSetClient creates a fake clientset with an unready DaemonSet.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateUnreadyDaemonSetClient(namespace, name string) kubernetes.Interface {
+	return fake.NewSimpleClientset(&appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DaemonSetStatus{
+			DesiredNumberScheduled: 1,
+			NumberUnavailable:      1,
+			UpdatedNumberScheduled: 0,
+		},
+	})
+}
+
+// CreateReadyDeploymentClient creates a fake clientset with a ready Deployment.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateReadyDeploymentClient(namespace, name string) kubernetes.Interface {
+	return fake.NewSimpleClientset(&appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DeploymentStatus{
+			Replicas:          1,
+			UpdatedReplicas:   1,
+			AvailableReplicas: 1,
+		},
+	})
+}
+
+// CreateDeploymentClientWithAPIError creates a fake clientset that returns an error on Deployment get.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateDeploymentClientWithAPIError(err error) kubernetes.Interface {
+	client := fake.NewSimpleClientset()
+	client.PrependReactor(
+		"get",
+		"deployments",
+		func(_ k8stesting.Action) (bool, runtime.Object, error) {
+			return true, nil, err
+		},
+	)
+
+	return client
+}
+
+// CreateUnreadyDeploymentClient creates a fake clientset with an unready Deployment.
+//
+//nolint:ireturn // Test helper returns interface by design
+func CreateUnreadyDeploymentClient(namespace, name string) kubernetes.Interface {
+	return fake.NewSimpleClientset(&appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Status: appsv1.DeploymentStatus{
+			Replicas:          1,
+			UpdatedReplicas:   0,
+			AvailableReplicas: 0,
+		},
+	})
 }

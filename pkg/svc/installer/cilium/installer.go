@@ -138,29 +138,14 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 		return fmt.Errorf("create kubernetes client: %w", err)
 	}
 
-	waitCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
-	daemonSetErr := k8sutil.WaitForDaemonSetReady(
-		waitCtx,
-		clientset,
-		"kube-system",
-		"cilium",
-		c.timeout,
-	)
-	if daemonSetErr != nil {
-		return fmt.Errorf("cilium daemonset not ready: %w", daemonSetErr)
+	checks := []k8sutil.ReadinessCheck{
+		{Type: "daemonset", Namespace: "kube-system", Name: "cilium"},
+		{Type: "deployment", Namespace: "kube-system", Name: "cilium-operator"},
 	}
 
-	deploymentErr := k8sutil.WaitForDeploymentReady(
-		waitCtx,
-		clientset,
-		"kube-system",
-		"cilium-operator",
-		c.timeout,
-	)
-	if deploymentErr != nil {
-		return fmt.Errorf("cilium operator not ready: %w", deploymentErr)
+	err = k8sutil.WaitForMultipleResources(ctx, clientset, checks, c.timeout)
+	if err != nil {
+		return fmt.Errorf("wait for cilium components: %w", err)
 	}
 
 	return nil
