@@ -75,11 +75,7 @@ func containsSubstring(s, substr string) bool {
 func UpdateDeploymentStatusToUnready(t *testing.T, payload map[string]any) {
 	t.Helper()
 
-	status, ok := payload["status"].(map[string]any)
-	if !ok {
-		t.Fatalf("unexpected payload status type %T", payload["status"])
-	}
-
+	status := getStatusMap(t, payload)
 	status["updatedReplicas"] = 0
 	status["availableReplicas"] = 0
 }
@@ -88,13 +84,20 @@ func UpdateDeploymentStatusToUnready(t *testing.T, payload map[string]any) {
 func UpdateDaemonSetStatusToUnready(t *testing.T, payload map[string]any) {
 	t.Helper()
 
+	status := getStatusMap(t, payload)
+	status["numberUnavailable"] = 1
+	status["updatedNumberScheduled"] = 0
+}
+
+func getStatusMap(t *testing.T, payload map[string]any) map[string]any {
+	t.Helper()
+
 	status, ok := payload["status"].(map[string]any)
 	if !ok {
 		t.Fatalf("unexpected payload status type %T", payload["status"])
 	}
 
-	status["numberUnavailable"] = 1
-	status["updatedNumberScheduled"] = 0
+	return status
 }
 
 // EncodeJSON encodes a payload as JSON and writes it to an HTTP response.

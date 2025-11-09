@@ -2,17 +2,13 @@ package ciliuminstaller
 
 import (
 	"context"
-	stderrors "errors"
 	"fmt"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
@@ -23,10 +19,6 @@ type CiliumInstaller struct {
 	client     helm.Interface
 	waitFn     func(context.Context) error
 }
-
-var errKubeconfigPathEmpty = stderrors.New("ciliuminstaller: kubeconfig path is empty")
-
-const readinessPollInterval = 3 * time.Second
 
 // NewCiliumInstaller creates a new Cilium installer instance.
 func NewCiliumInstaller(
@@ -136,7 +128,7 @@ func applyDefaultValues(spec *helm.ChartSpec) {
 }
 
 func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
-	restConfig, err := c.buildRESTConfig()
+	restConfig, err := k8sutil.BuildRESTConfig(c.kubeconfig, c.context)
 	if err != nil {
 		return fmt.Errorf("build kubernetes client config: %w", err)
 	}
@@ -149,12 +141,18 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 	waitCtx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	daemonSetErr := waitForDaemonSetReady(waitCtx, clientset, "kube-system", "cilium", c.timeout)
+	daemonSetErr := k8sutil.WaitForDaemonSetReady(
+		waitCtx,
+		clientset,
+		"kube-system",
+		"cilium",
+		c.timeout,
+	)
 	if daemonSetErr != nil {
 		return fmt.Errorf("cilium daemonset not ready: %w", daemonSetErr)
 	}
 
-	deploymentErr := waitForDeploymentReady(
+	deploymentErr := k8sutil.WaitForDeploymentReady(
 		waitCtx,
 		clientset,
 		"kube-system",
@@ -169,106 +167,10 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 }
 
 func (c *CiliumInstaller) buildRESTConfig() (*rest.Config, error) {
-	if c.kubeconfig == "" {
-		return nil, errKubeconfigPathEmpty
-	}
-
-	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: c.kubeconfig}
-
-	overrides := &clientcmd.ConfigOverrides{}
-	if c.context != "" {
-		overrides.CurrentContext = c.context
-	}
-
-	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
-
-	restConfig, err := clientConfig.ClientConfig()
+	config, err := k8sutil.BuildRESTConfig(c.kubeconfig, c.context)
 	if err != nil {
-		return nil, fmt.Errorf("load kubeconfig: %w", err)
+		return nil, fmt.Errorf("build REST config: %w", err)
 	}
 
-	return restConfig, nil
-}
-
-func waitForDaemonSetReady(
-	ctx context.Context,
-	clientset kubernetes.Interface,
-	namespace, name string,
-	deadline time.Duration,
-) error {
-	return pollForReadiness(ctx, deadline, func(ctx context.Context) (bool, error) {
-		daemonSet, err := clientset.AppsV1().
-			DaemonSets(namespace).
-			Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return false, nil
-			}
-
-			return false, fmt.Errorf("get daemonset %s/%s: %w", namespace, name, err)
-		}
-
-		if daemonSet.Status.DesiredNumberScheduled == 0 {
-			return false, nil
-		}
-
-		ready := daemonSet.Status.NumberUnavailable == 0 &&
-			daemonSet.Status.UpdatedNumberScheduled == daemonSet.Status.DesiredNumberScheduled
-
-		return ready, nil
-	})
-}
-
-//nolint:unparam // name remains for future flexibility and consistent signatures.
-func waitForDeploymentReady(
-	ctx context.Context,
-	clientset kubernetes.Interface,
-	namespace, name string,
-	deadline time.Duration,
-) error {
-	return pollForReadiness(ctx, deadline, func(ctx context.Context) (bool, error) {
-		deployment, err := clientset.AppsV1().
-			Deployments(namespace).
-			Get(ctx, name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				return false, nil
-			}
-
-			return false, fmt.Errorf("get deployment %s/%s: %w", namespace, name, err)
-		}
-
-		if deployment.Status.Replicas == 0 {
-			return false, nil
-		}
-
-		if deployment.Status.UpdatedReplicas < deployment.Status.Replicas {
-			return false, nil
-		}
-
-		if deployment.Status.AvailableReplicas < deployment.Status.Replicas {
-			return false, nil
-		}
-
-		return true, nil
-	})
-}
-
-func pollForReadiness(
-	ctx context.Context,
-	deadline time.Duration,
-	poll func(context.Context) (bool, error),
-) error {
-	pollErr := wait.PollUntilContextTimeout(
-		ctx,
-		readinessPollInterval,
-		deadline,
-		true,
-		poll,
-	)
-	if pollErr != nil {
-		return fmt.Errorf("poll for readiness: %w", pollErr)
-	}
-
-	return nil
+	return config, nil
 }

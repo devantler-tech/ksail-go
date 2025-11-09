@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
@@ -437,7 +438,7 @@ func testWaitForDaemonSetReadyReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	err := waitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
+	err := k8sutil.WaitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
 
 	testutils.ExpectNoError(t, err, "waitForDaemonSetReady ready state")
 }
@@ -463,7 +464,7 @@ func testWaitForDaemonSetReadyAPIError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	err := waitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
+	err := k8sutil.WaitForDaemonSetReady(ctx, client, namespace, name, 200*time.Millisecond)
 
 	testutils.ExpectErrorContains(
 		t,
@@ -487,7 +488,7 @@ func testWaitForDaemonSetReadyTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 	defer cancel()
 
-	err := waitForDaemonSetReady(ctx, client, namespace, name, 150*time.Millisecond)
+	err := k8sutil.WaitForDaemonSetReady(ctx, client, namespace, name, 150*time.Millisecond)
 
 	testutils.ExpectErrorContains(t, err, "poll for readiness", "waitForDaemonSetReady timeout")
 }
@@ -521,7 +522,7 @@ func testWaitForDeploymentReadyReady(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	err := waitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
+	err := k8sutil.WaitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
 
 	testutils.ExpectNoError(t, err, "waitForDeploymentReady ready state")
 }
@@ -547,7 +548,7 @@ func testWaitForDeploymentReadyAPIError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	err := waitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
+	err := k8sutil.WaitForDeploymentReady(ctx, client, namespace, name, 200*time.Millisecond)
 
 	testutils.ExpectErrorContains(
 		t,
@@ -577,7 +578,7 @@ func testWaitForDeploymentReadyTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
 	defer cancel()
 
-	err := waitForDeploymentReady(ctx, client, namespace, name, 150*time.Millisecond)
+	err := k8sutil.WaitForDeploymentReady(ctx, client, namespace, name, 150*time.Millisecond)
 
 	testutils.ExpectErrorContains(t, err, "poll for readiness", "waitForDeploymentReady timeout")
 }
@@ -640,7 +641,8 @@ func pollForReadinessWithDefaultTimeout(
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	return pollForReadiness(ctx, 200*time.Millisecond, checker)
+	//nolint:wrapcheck // test utility function
+	return k8sutil.PollForReadiness(ctx, 200*time.Millisecond, checker)
 }
 
 func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err error) {
