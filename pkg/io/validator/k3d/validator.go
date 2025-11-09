@@ -1,4 +1,3 @@
-// Package k3d provides K3d configuration validation functionality.
 package k3d
 
 import (

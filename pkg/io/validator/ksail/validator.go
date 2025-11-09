@@ -1,4 +1,3 @@
-// Package ksail provides validation for KSail cluster configurations.
 package ksail
 
 import (

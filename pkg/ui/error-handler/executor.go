@@ -1,4 +1,3 @@
-// Package errorhandler centralizes Cobra command execution with KSail's error formatting rules.
 package errorhandler
 
 import (

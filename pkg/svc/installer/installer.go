@@ -1,4 +1,3 @@
-// Package installer provides functionality for installing and uninstalling components.
 package installer
 
 import "context"

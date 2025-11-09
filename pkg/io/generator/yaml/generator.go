@@ -1,4 +1,3 @@
-// Package yamlgenerator provides YAML generation functionality for arbitrary models.
 package yamlgenerator
 
 import (

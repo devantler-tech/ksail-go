@@ -1,5 +1,3 @@
-// Package clustertestutils provides common test utilities for cluster provisioner testing,
-// including shared test cases and helper functions for standardizing test patterns.
 package clustertestutils
 
 import (

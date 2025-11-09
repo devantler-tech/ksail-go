@@ -1,4 +1,3 @@
-// Package cipher provides the cipher command for integrating with SOPS.
 package cipher
 
 import (

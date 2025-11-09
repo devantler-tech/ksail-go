@@ -1,4 +1,3 @@
-// Package k3dgenerator provides utilities for generating k3d cluster configurations.
 package k3dgenerator
 
 import (
