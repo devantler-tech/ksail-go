@@ -598,7 +598,12 @@ func expectFlannelInstallChart(t *testing.T, client *helm.MockInterface, install
 				expectEqual(t, spec.ReleaseName, "flannel", "release name")
 				expectEqual(t, spec.ChartName, "flannel/flannel", "chart name")
 				expectEqual(t, spec.Namespace, "kube-flannel", "namespace")
-				expectEqual(t, spec.RepoURL, "https://flannel-io.github.io/flannel", "repository URL")
+				expectEqual(
+					t,
+					spec.RepoURL,
+					"https://flannel-io.github.io/flannel",
+					"repository URL",
+				)
 				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
 				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
 				testutils.ExpectTrue(t, spec.CreateNamespace, "CreateNamespace flag")

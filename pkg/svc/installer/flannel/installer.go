@@ -100,17 +100,17 @@ func (f *FlannelInstaller) helmInstallOrUpgradeFlannel(ctx context.Context) erro
 	}
 
 	spec := &helm.ChartSpec{
-		ReleaseName:    "flannel",
-		ChartName:      "flannel/flannel",
-		Namespace:      "kube-flannel",
-		RepoURL:        "https://flannel-io.github.io/flannel",
+		ReleaseName:     "flannel",
+		ChartName:       "flannel/flannel",
+		Namespace:       "kube-flannel",
+		RepoURL:         "https://flannel-io.github.io/flannel",
 		CreateNamespace: true,
-		Atomic:         true,
-		Silent:         true,
-		UpgradeCRDs:    true,
-		Timeout:        f.timeout,
-		Wait:           true,
-		WaitForJobs:    true,
+		Atomic:          true,
+		Silent:          true,
+		UpgradeCRDs:     true,
+		Timeout:         f.timeout,
+		Wait:            true,
+		WaitForJobs:     true,
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, f.timeout)
@@ -138,7 +138,13 @@ func (f *FlannelInstaller) waitForReadiness(ctx context.Context) error {
 	waitCtx, cancel := context.WithTimeout(ctx, f.timeout)
 	defer cancel()
 
-	daemonSetErr := waitForDaemonSetReady(waitCtx, clientset, "kube-flannel", "kube-flannel-ds", f.timeout)
+	daemonSetErr := waitForDaemonSetReady(
+		waitCtx,
+		clientset,
+		"kube-flannel",
+		"kube-flannel-ds",
+		f.timeout,
+	)
 	if daemonSetErr != nil {
 		return fmt.Errorf("flannel daemonset not ready: %w", daemonSetErr)
 	}

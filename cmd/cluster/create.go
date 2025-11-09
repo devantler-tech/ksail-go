@@ -16,6 +16,7 @@ import (
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	flannelinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flannel"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
@@ -140,42 +141,40 @@ func handlePostCreationSetup(
 ) error {
 	// For custom CNI (Cilium, Flannel), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
-	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-
-		tmr.NewStage()
-
-		err := installCiliumCNI(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to install Cilium CNI: %w", err)
-		}
-
-		// Install metrics-server after CNI is ready
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
-	} else if clusterCfg.Spec.CNI == v1alpha1.CNIFlannel {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-
-		tmr.NewStage()
-
-		err := installFlannelCNI(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to install Flannel CNI: %w", err)
-		}
-
-		// Install metrics-server after CNI is ready
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
-	} else {
+	switch clusterCfg.Spec.CNI {
+	case v1alpha1.CNICilium:
+		return installCNIThenMetricsServer(cmd, clusterCfg, tmr, installCiliumCNI, "Cilium")
+	case v1alpha1.CNIFlannel:
+		return installCNIThenMetricsServer(cmd, clusterCfg, tmr, installFlannelCNI, "Flannel")
+	case v1alpha1.CNIDefault, "":
 		// For default CNI, install metrics-server first
-		err := handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
+		return handleMetricsServer(cmd, clusterCfg, tmr)
+	default:
+		// Unknown CNI, install metrics-server as fallback
+		return handleMetricsServer(cmd, clusterCfg, tmr)
+	}
+}
+
+// installCNIThenMetricsServer installs a CNI and then metrics-server.
+func installCNIThenMetricsServer(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+	installCNI func(*cobra.Command, *v1alpha1.Cluster, timer.Timer) error,
+	cniName string,
+) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+	tmr.NewStage()
+
+	err := installCNI(cmd, clusterCfg, tmr)
+	if err != nil {
+		return fmt.Errorf("failed to install %s CNI: %w", cniName, err)
+	}
+
+	err = handleMetricsServer(cmd, clusterCfg, tmr)
+	if err != nil {
+		return fmt.Errorf("failed to handle metrics server: %w", err)
 	}
 
 	return nil
@@ -694,38 +693,17 @@ func runCiliumInstallation(
 	installer *ciliuminstaller.CiliumInstaller,
 	tmr timer.Timer,
 ) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "installing cilium",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	installErr := installer.Install(cmd.Context())
-	if installErr != nil {
-		return fmt.Errorf("cilium installation failed: %w", installErr)
+	err := runCNIInstall(cmd, installer, "cilium")
+	if err != nil {
+		return err
 	}
 
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "awaiting cilium to be ready",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	readinessErr := installer.WaitForReadiness(cmd.Context())
-	if readinessErr != nil {
-		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
+	err = runCNIWaitForReadiness(cmd, installer.WaitForReadiness, "cilium")
+	if err != nil {
+		return err
 	}
 
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "CNI installed " + timingStr,
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	return nil
+	return reportCNISuccess(cmd, tmr)
 }
 
 // installFlannelCNI installs Flannel CNI on the cluster.
@@ -775,28 +753,57 @@ func runFlannelInstallation(
 	installer *flannelinstaller.FlannelInstaller,
 	tmr timer.Timer,
 ) error {
+	err := runCNIInstall(cmd, installer, "flannel")
+	if err != nil {
+		return err
+	}
+
+	err = runCNIWaitForReadiness(cmd, installer.WaitForReadiness, "flannel")
+	if err != nil {
+		return err
+	}
+
+	return reportCNISuccess(cmd, tmr)
+}
+
+// runCNIInstall performs the installation step for a CNI.
+func runCNIInstall(cmd *cobra.Command, inst installer.Installer, cniName string) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "installing flannel",
+		Content: "installing " + cniName,
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	installErr := installer.Install(cmd.Context())
-	if installErr != nil {
-		return fmt.Errorf("flannel installation failed: %w", installErr)
+	err := inst.Install(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("%s installation failed: %w", cniName, err)
 	}
 
+	return nil
+}
+
+// runCNIWaitForReadiness waits for a CNI to be ready.
+func runCNIWaitForReadiness(
+	cmd *cobra.Command,
+	waitFn func(context.Context) error,
+	cniName string,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "awaiting flannel to be ready",
+		Content: "awaiting " + cniName + " to be ready",
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	readinessErr := installer.WaitForReadiness(cmd.Context())
-	if readinessErr != nil {
-		return fmt.Errorf("flannel readiness check failed: %w", readinessErr)
+	err := waitFn(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("%s readiness check failed: %w", cniName, err)
 	}
 
+	return nil
+}
+
+// reportCNISuccess reports successful CNI installation with timing.
+func reportCNISuccess(cmd *cobra.Command, tmr timer.Timer) error {
 	total, stage := tmr.GetTiming()
 	timingStr := notify.FormatTiming(total, stage, true)
 

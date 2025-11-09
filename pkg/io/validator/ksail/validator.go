@@ -208,38 +208,65 @@ func (v *Validator) validateCNIAlignment(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Validate Cilium CNI alignment
-	if config.Spec.CNI == v1alpha1.CNICilium {
-		switch config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			v.validateKindCiliumCNIAlignment(result)
-		case v1alpha1.DistributionK3d:
-			v.validateK3dCiliumCNIAlignment(result)
-		}
-
-		return
+	validators := v.getCNIValidators(config.Spec.CNI, config.Spec.Distribution)
+	for _, validate := range validators {
+		validate(result)
 	}
+}
 
-	// Validate Flannel CNI alignment
-	if config.Spec.CNI == v1alpha1.CNIFlannel {
-		switch config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			v.validateKindFlannelCNIAlignment(result)
-		case v1alpha1.DistributionK3d:
-			v.validateK3dFlannelCNIAlignment(result)
-		}
-
-		return
+// getCNIValidators returns the appropriate validation functions for the CNI and distribution.
+func (v *Validator) getCNIValidators(
+	cni v1alpha1.CNI,
+	distribution v1alpha1.Distribution,
+) []func(*validator.ValidationResult) {
+	switch cni {
+	case v1alpha1.CNICilium:
+		return v.getCiliumValidators(distribution)
+	case v1alpha1.CNIFlannel:
+		return v.getFlannelValidators(distribution)
+	case v1alpha1.CNIDefault, "":
+		return v.getDefaultValidators(distribution)
+	default:
+		return nil
 	}
+}
 
-	// Validate Default CNI alignment (empty string or explicit "Default")
-	if config.Spec.CNI == "" || config.Spec.CNI == v1alpha1.CNIDefault {
-		switch config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			v.validateKindDefaultCNIAlignment(result)
-		case v1alpha1.DistributionK3d:
-			v.validateK3dDefaultCNIAlignment(result)
-		}
+func (v *Validator) getCiliumValidators(
+	distribution v1alpha1.Distribution,
+) []func(*validator.ValidationResult) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return []func(*validator.ValidationResult){v.validateKindCiliumCNIAlignment}
+	case v1alpha1.DistributionK3d:
+		return []func(*validator.ValidationResult){v.validateK3dCiliumCNIAlignment}
+	default:
+		return nil
+	}
+}
+
+func (v *Validator) getFlannelValidators(
+	distribution v1alpha1.Distribution,
+) []func(*validator.ValidationResult) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return []func(*validator.ValidationResult){v.validateKindFlannelCNIAlignment}
+	case v1alpha1.DistributionK3d:
+		return []func(*validator.ValidationResult){v.validateK3dFlannelCNIAlignment}
+	default:
+		return nil
+	}
+}
+
+func (v *Validator) getDefaultValidators(
+	distribution v1alpha1.Distribution,
+) []func(*validator.ValidationResult) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return []func(*validator.ValidationResult){v.validateKindDefaultCNIAlignment}
+	case v1alpha1.DistributionK3d:
+		return []func(*validator.ValidationResult){v.validateK3dDefaultCNIAlignment}
+	default:
+		return nil
 	}
 }
 
@@ -350,8 +377,9 @@ func (v *Validator) validateK3dCiliumCNIAlignment(result *validator.ValidationRe
 	})
 }
 
-// validateK3dFlannelCNIAlignment validates that K3d configuration does NOT have Flannel disabled when Flannel CNI is requested.
-// For K3d with explicit Flannel CNI, we want to keep K3s's built-in Flannel enabled.
+// validateK3dFlannelCNIAlignment validates that K3d configuration does NOT have Flannel
+// disabled when Flannel CNI is requested. For K3d with explicit Flannel CNI, we want to
+// keep K3s's built-in Flannel enabled.
 func (v *Validator) validateK3dFlannelCNIAlignment(result *validator.ValidationResult) {
 	if v.k3dConfig == nil {
 		// No K3d config provided for validation, skip
