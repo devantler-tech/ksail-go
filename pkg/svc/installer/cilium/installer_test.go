@@ -218,7 +218,12 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		installer.SetWaitForReadinessFunc(nil)
 		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
-		installertestutils.ExpectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
+		installertestutils.ExpectEqual(
+			t,
+			restoredPtr,
+			defaultPtr,
+			"wait function pointer after restore",
+		)
 	})
 }
 
@@ -320,7 +325,12 @@ func TestCiliumInstallerBuildRESTConfig(t *testing.T) {
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-		installertestutils.ExpectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
+		installertestutils.ExpectEqual(
+			t,
+			restConfig.Host,
+			"https://cluster-one.example.com",
+			"rest config host",
+		)
 	})
 
 	t.Run("OverridesContext", func(t *testing.T) {
@@ -656,7 +666,12 @@ func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err err
 			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
 				t.Helper()
 				installertestutils.ExpectEqual(t, entry.Name, "cilium", "repository name")
-				installertestutils.ExpectEqual(t, entry.URL, "https://helm.cilium.io", "repository URL")
+				installertestutils.ExpectEqual(
+					t,
+					entry.URL,
+					"https://helm.cilium.io",
+					"repository URL",
+				)
 
 				return true
 			}),
@@ -674,10 +689,20 @@ func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installE
 				installertestutils.ExpectEqual(t, spec.ReleaseName, "cilium", "release name")
 				installertestutils.ExpectEqual(t, spec.ChartName, "cilium/cilium", "chart name")
 				installertestutils.ExpectEqual(t, spec.Namespace, "kube-system", "namespace")
-				installertestutils.ExpectEqual(t, spec.RepoURL, "https://helm.cilium.io", "repository URL")
+				installertestutils.ExpectEqual(
+					t,
+					spec.RepoURL,
+					"https://helm.cilium.io",
+					"repository URL",
+				)
 				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
 				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
-				installertestutils.ExpectEqual(t, spec.SetJSONVals["operator.replicas"], "1", "operator replicas")
+				installertestutils.ExpectEqual(
+					t,
+					spec.SetJSONVals["operator.replicas"],
+					"1",
+					"operator replicas",
+				)
 
 				return true
 			}),

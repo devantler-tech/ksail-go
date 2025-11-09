@@ -179,7 +179,12 @@ func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 
 		installer.SetWaitForReadinessFunc(nil)
 		restoredPtr := reflect.ValueOf(installer.waitFn).Pointer()
-		installertestutils.ExpectEqual(t, restoredPtr, defaultPtr, "wait function pointer after restore")
+		installertestutils.ExpectEqual(
+			t,
+			restoredPtr,
+			defaultPtr,
+			"wait function pointer after restore",
+		)
 	})
 }
 
@@ -281,7 +286,12 @@ func TestCalicoInstallerBuildRESTConfig(t *testing.T) {
 		restConfig, err := installer.buildRESTConfig()
 
 		testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-		installertestutils.ExpectEqual(t, restConfig.Host, "https://cluster-one.example.com", "rest config host")
+		installertestutils.ExpectEqual(
+			t,
+			restConfig.Host,
+			"https://cluster-one.example.com",
+			"rest config host",
+		)
 	})
 
 	t.Run("OverridesContext", func(t *testing.T) {
@@ -393,8 +403,6 @@ func serveCalicoKubeControllersDeployment(t *testing.T, writer http.ResponseWrit
 
 	installertestutils.EncodeJSON(t, writer, payload)
 }
-
-
 
 func TestWaitForDaemonSetReady(t *testing.T) {
 	t.Parallel()
@@ -612,8 +620,6 @@ func newDefaultInstaller(t *testing.T) (*CalicoInstaller, *helm.MockInterface) {
 	return installer, client
 }
 
-
-
 func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 
@@ -641,7 +647,12 @@ func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err err
 			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
 				t.Helper()
 				installertestutils.ExpectEqual(t, entry.Name, "projectcalico", "repository name")
-				installertestutils.ExpectEqual(t, entry.URL, "https://docs.tigera.io/calico/charts", "repository URL")
+				installertestutils.ExpectEqual(
+					t,
+					entry.URL,
+					"https://docs.tigera.io/calico/charts",
+					"repository URL",
+				)
 
 				return true
 			}),
@@ -657,7 +668,12 @@ func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installE
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				t.Helper()
 				installertestutils.ExpectEqual(t, spec.ReleaseName, "calico", "release name")
-				installertestutils.ExpectEqual(t, spec.ChartName, "projectcalico/tigera-operator", "chart name")
+				installertestutils.ExpectEqual(
+					t,
+					spec.ChartName,
+					"projectcalico/tigera-operator",
+					"chart name",
+				)
 				installertestutils.ExpectEqual(t, spec.Namespace, "tigera-operator", "namespace")
 				installertestutils.ExpectEqual(
 					t,
@@ -681,5 +697,3 @@ func expectCalicoUninstall(t *testing.T, client *helm.MockInterface, err error) 
 		UninstallRelease(mock.Anything, "calico", "tigera-operator").
 		Return(err)
 }
-
-

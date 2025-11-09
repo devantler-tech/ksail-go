@@ -51,7 +51,8 @@ func ExpectInstallerResult(t *testing.T, err error, wantErr, operation string) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsSubstring(s, substr))
+	return len(s) >= len(substr) &&
+		(s == substr || len(s) > len(substr) && containsSubstring(s, substr))
 }
 
 func containsSubstring(s, substr string) bool {
