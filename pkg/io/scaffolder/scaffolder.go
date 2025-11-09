@@ -451,7 +451,8 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 	}
 
 	// Disable default CNI if a custom CNI is requested (Cilium or Flannel)
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium || s.KSailConfig.Spec.CNI == v1alpha1.CNIFlannel {
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium ||
+		s.KSailConfig.Spec.CNI == v1alpha1.CNIFlannel {
 		kindConfig.Networking.DisableDefaultCNI = true
 	}
 
