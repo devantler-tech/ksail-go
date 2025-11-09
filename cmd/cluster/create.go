@@ -140,45 +140,36 @@ func handlePostCreationSetup(
 ) error {
 	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
-	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	switch clusterCfg.Spec.CNI {
+	case v1alpha1.CNICilium:
+		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+	case v1alpha1.CNICalico:
+		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+	case v1alpha1.CNIDefault, "":
+		return handleMetricsServer(cmd, clusterCfg, tmr)
+	default:
+		return handleMetricsServer(cmd, clusterCfg, tmr)
+	}
+}
 
-		tmr.NewStage()
+// installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
+func installCustomCNIAndMetrics(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+	installFunc func(*cobra.Command, *v1alpha1.Cluster, timer.Timer) error,
+) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		err := installCiliumCNI(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to install Cilium CNI: %w", err)
-		}
+	tmr.NewStage()
 
-		// Install metrics-server after CNI is ready
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
-	} else if clusterCfg.Spec.CNI == v1alpha1.CNICalico {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
-
-		tmr.NewStage()
-
-		err := installCalicoCNI(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to install Calico CNI: %w", err)
-		}
-
-		// Install metrics-server after CNI is ready
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
-	} else {
-		// For default CNI, install metrics-server first
-		err := handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
+	err := installFunc(cmd, clusterCfg, tmr)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	// Install metrics-server after CNI is ready
+	return handleMetricsServer(cmd, clusterCfg, tmr)
 }
 
 func loadDistributionConfigs(
@@ -689,6 +680,7 @@ func newCiliumInstaller(
 	)
 }
 
+//nolint:dupl // Intentional duplication - Cilium and Calico installers follow same pattern but use different types.
 func runCiliumInstallation(
 	cmd *cobra.Command,
 	installer *ciliuminstaller.CiliumInstaller,
@@ -770,6 +762,7 @@ func newCalicoInstaller(
 	)
 }
 
+//nolint:dupl // Intentional duplication - Cilium and Calico installers follow same pattern but use different types.
 func runCalicoInstallation(
 	cmd *cobra.Command,
 	installer *calicoinstaller.CalicoInstaller,

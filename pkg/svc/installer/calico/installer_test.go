@@ -343,78 +343,99 @@ func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/apis/apps/v1/namespaces/tigera-operator/deployments/tigera-operator":
-			payload := map[string]any{
-				"apiVersion": "apps/v1",
-				"kind":       "Deployment",
-				"status": map[string]any{
-					"replicas":          1,
-					"updatedReplicas":   1,
-					"availableReplicas": 1,
-				},
-			}
-
-			status, ok := payload["status"].(map[string]any)
-			if !ok {
-				t.Fatalf("unexpected payload status type %T", payload["status"])
-			}
-
-			if !ready {
-				status["updatedReplicas"] = 0
-				status["availableReplicas"] = 0
-			}
-
-			encodeJSON(t, writer, payload)
-
+			serveTigeraOperatorDeployment(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/daemonsets/calico-node":
-			payload := map[string]any{
-				"apiVersion": "apps/v1",
-				"kind":       "DaemonSet",
-				"status": map[string]any{
-					"desiredNumberScheduled": 1,
-					"numberUnavailable":      0,
-					"updatedNumberScheduled": 1,
-				},
-			}
-
-			status, ok := payload["status"].(map[string]any)
-			if !ok {
-				t.Fatalf("unexpected payload status type %T", payload["status"])
-			}
-
-			if !ready {
-				status["numberUnavailable"] = 1
-				status["updatedNumberScheduled"] = 0
-			}
-
-			encodeJSON(t, writer, payload)
-
+			serveCalicoNodeDaemonSet(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/deployments/calico-kube-controllers":
-			payload := map[string]any{
-				"apiVersion": "apps/v1",
-				"kind":       "Deployment",
-				"status": map[string]any{
-					"replicas":          1,
-					"updatedReplicas":   1,
-					"availableReplicas": 1,
-				},
-			}
-
-			status, ok := payload["status"].(map[string]any)
-			if !ok {
-				t.Fatalf("unexpected payload status type %T", payload["status"])
-			}
-
-			if !ready {
-				status["updatedReplicas"] = 0
-				status["availableReplicas"] = 0
-			}
-
-			encodeJSON(t, writer, payload)
-
+			serveCalicoKubeControllersDeployment(t, writer, ready)
 		default:
 			http.NotFound(writer, req)
 		}
 	}))
+}
+
+func serveTigeraOperatorDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
+	t.Helper()
+
+	payload := map[string]any{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"status": map[string]any{
+			"replicas":          1,
+			"updatedReplicas":   1,
+			"availableReplicas": 1,
+		},
+	}
+
+	if !ready {
+		updateDeploymentStatusToUnready(t, payload)
+	}
+
+	encodeJSON(t, writer, payload)
+}
+
+func serveCalicoNodeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
+	t.Helper()
+
+	payload := map[string]any{
+		"apiVersion": "apps/v1",
+		"kind":       "DaemonSet",
+		"status": map[string]any{
+			"desiredNumberScheduled": 1,
+			"numberUnavailable":      0,
+			"updatedNumberScheduled": 1,
+		},
+	}
+
+	if !ready {
+		updateDaemonSetStatusToUnready(t, payload)
+	}
+
+	encodeJSON(t, writer, payload)
+}
+
+func serveCalicoKubeControllersDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
+	t.Helper()
+
+	payload := map[string]any{
+		"apiVersion": "apps/v1",
+		"kind":       "Deployment",
+		"status": map[string]any{
+			"replicas":          1,
+			"updatedReplicas":   1,
+			"availableReplicas": 1,
+		},
+	}
+
+	if !ready {
+		updateDeploymentStatusToUnready(t, payload)
+	}
+
+	encodeJSON(t, writer, payload)
+}
+
+func updateDeploymentStatusToUnready(t *testing.T, payload map[string]any) {
+	t.Helper()
+
+	status, ok := payload["status"].(map[string]any)
+	if !ok {
+		t.Fatalf("unexpected payload status type %T", payload["status"])
+	}
+
+	status["updatedReplicas"] = 0
+	status["availableReplicas"] = 0
+}
+
+func updateDaemonSetStatusToUnready(t *testing.T, payload map[string]any) {
+	t.Helper()
+
+	status, ok := payload["status"].(map[string]any)
+	if !ok {
+		t.Fatalf("unexpected payload status type %T", payload["status"])
+	}
+
+	status["numberUnavailable"] = 1
+	status["updatedNumberScheduled"] = 0
 }
 
 func encodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
@@ -735,7 +756,12 @@ func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installE
 				expectEqual(t, spec.ReleaseName, "calico", "release name")
 				expectEqual(t, spec.ChartName, "projectcalico/tigera-operator", "chart name")
 				expectEqual(t, spec.Namespace, "tigera-operator", "namespace")
-				expectEqual(t, spec.RepoURL, "https://docs.tigera.io/calico/charts", "repository URL")
+				expectEqual(
+					t,
+					spec.RepoURL,
+					"https://docs.tigera.io/calico/charts",
+					"repository URL",
+				)
 				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
 				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
 				testutils.ExpectTrue(t, spec.CreateNamespace, "CreateNamespace flag")

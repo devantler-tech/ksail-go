@@ -151,7 +151,13 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 	}
 
 	// Wait for calico-node daemonset in calico-system namespace
-	daemonSetErr := waitForDaemonSetReady(waitCtx, clientset, "calico-system", "calico-node", c.timeout)
+	daemonSetErr := waitForDaemonSetReady(
+		waitCtx,
+		clientset,
+		"calico-system",
+		"calico-node",
+		c.timeout,
+	)
 	if daemonSetErr != nil {
 		return fmt.Errorf("calico-node daemonset not ready: %w", daemonSetErr)
 	}
@@ -222,7 +228,6 @@ func waitForDaemonSetReady(
 	})
 }
 
-//nolint:unparam // name remains for future flexibility and consistent signatures.
 func waitForDeploymentReady(
 	ctx context.Context,
 	clientset kubernetes.Interface,
