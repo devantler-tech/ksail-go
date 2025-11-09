@@ -1,4 +1,3 @@
-// Package kindgenerator provides utilities for generating kind cluster configurations.
 package kindgenerator
 
 import (

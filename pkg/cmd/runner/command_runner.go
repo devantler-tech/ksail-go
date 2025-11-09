@@ -1,5 +1,3 @@
-// Package runner provides helpers for executing Cobra commands while
-// capturing their output and displaying it to the console.
 package runner
 
 import (
