@@ -16,6 +16,7 @@ import (
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
@@ -137,7 +138,7 @@ func handlePostCreationSetup(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
-	// For custom CNI (Cilium), install CNI first as metrics-server needs networking
+	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
 	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
@@ -147,6 +148,21 @@ func handlePostCreationSetup(
 		err := installCiliumCNI(cmd, clusterCfg, tmr)
 		if err != nil {
 			return fmt.Errorf("failed to install Cilium CNI: %w", err)
+		}
+
+		// Install metrics-server after CNI is ready
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to handle metrics server: %w", err)
+		}
+	} else if clusterCfg.Spec.CNI == v1alpha1.CNICalico {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		tmr.NewStage()
+
+		err := installCalicoCNI(cmd, clusterCfg, tmr)
+		if err != nil {
+			return fmt.Errorf("failed to install Calico CNI: %w", err)
 		}
 
 		// Install metrics-server after CNI is ready
@@ -712,6 +728,87 @@ func runCiliumInstallation(
 	return nil
 }
 
+// installCalicoCNI installs Calico CNI on the cluster.
+func installCalicoCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
+		Name: "projectcalico",
+		URL:  "https://docs.tigera.io/calico/charts",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to add Calico Helm repository: %w", err)
+	}
+
+	installer := newCalicoInstaller(helmClient, kubeconfig, clusterCfg)
+
+	return runCalicoInstallation(cmd, installer, tmr)
+}
+
+func newCalicoInstaller(
+	helmClient *helm.Client,
+	kubeconfig string,
+	clusterCfg *v1alpha1.Cluster,
+) *calicoinstaller.CalicoInstaller {
+	timeout := getInstallTimeout(clusterCfg)
+
+	return calicoinstaller.NewCalicoInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+}
+
+func runCalicoInstallation(
+	cmd *cobra.Command,
+	installer *calicoinstaller.CalicoInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing calico",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("calico installation failed: %w", installErr)
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "awaiting calico to be ready",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	readinessErr := installer.WaitForReadiness(cmd.Context())
+	if readinessErr != nil {
+		return fmt.Errorf("calico readiness check failed: %w", readinessErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "CNI installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
 // loadKubeconfig loads and returns the kubeconfig path.
 func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
@@ -728,7 +825,7 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	return kubeconfig, nil
 }
 
-// getInstallTimeout determines the timeout for component installation (Cilium, metrics-server, etc.).
+// getInstallTimeout determines the timeout for component installation (Cilium, Calico, metrics-server, etc.).
 // Uses cluster connection timeout if configured, otherwise defaults to 5 minutes.
 func getInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
