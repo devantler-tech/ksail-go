@@ -56,12 +56,14 @@ jobs:
         include:
           - init-args: "--distribution Kind"
           - init-args: "--distribution Kind --cni Cilium"
+          - init-args: "--distribution Kind --cni Calico"
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
             test-workload: true
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
             test-workload: true
           - init-args: "--distribution K3d"
           - init-args: "--distribution K3d --cni Cilium"
+          - init-args: "--distribution K3d --cni Calico"
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
             test-workload: true
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
