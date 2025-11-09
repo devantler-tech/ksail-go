@@ -80,15 +80,9 @@ func editExample(opts editExampleOpts) ([]byte, error) {
 		)
 	}
 
-	path, err := filepath.Abs(opts.InputPath)
+	tree, err := createSOPSTree(branches, opts.encryptConfig, opts.InputPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	tree := sops.Tree{
-		Branches: branches,
-		Metadata: metadataFromEncryptionConfig(opts.encryptConfig),
-		FilePath: path,
+		return nil, err
 	}
 
 	// Generate a data key
@@ -100,33 +94,26 @@ func editExample(opts editExampleOpts) ([]byte, error) {
 		)
 	}
 
-	return editTree(opts.editOpts, &tree, dataKey)
+	return editTree(opts.editOpts, tree, dataKey)
 }
 
 // edit loads, decrypts, and allows editing of an existing encrypted file.
 func edit(opts editOpts) ([]byte, error) {
-	// Load the file
-	tree, err := common.LoadEncryptedFileWithBugFixes(common.GenericDecryptOpts{
-		Cipher:      opts.Cipher,
-		InputStore:  opts.InputStore,
-		InputPath:   opts.InputPath,
-		IgnoreMAC:   opts.IgnoreMAC,
-		KeyServices: opts.KeyServices,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to load encrypted file: %w", err)
-	}
-
-	// Decrypt the file
-	dataKey, err := common.DecryptTree(common.DecryptTreeOpts{
+	// Convert editOpts to decryptOpts for decryption
+	decOpts := decryptOpts{
 		Cipher:          opts.Cipher,
-		IgnoreMac:       opts.IgnoreMAC,
-		Tree:            tree,
+		InputStore:      opts.InputStore,
+		OutputStore:     opts.OutputStore,
+		InputPath:       opts.InputPath,
+		ReadFromStdin:   false,
+		IgnoreMAC:       opts.IgnoreMAC,
 		KeyServices:     opts.KeyServices,
 		DecryptionOrder: opts.DecryptionOrder,
-	})
+	}
+
+	tree, dataKey, err := decryptTreeWithKey(decOpts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt tree: %w", err)
+		return nil, err
 	}
 
 	return editTree(opts, tree, dataKey)
@@ -277,24 +264,7 @@ func emitTreeContent(opts editOpts, tree *sops.Tree) ([]byte, error) {
 
 // encryptAndEmit encrypts the tree and emits the encrypted file.
 func encryptAndEmit(opts editOpts, tree *sops.Tree, dataKey []byte) ([]byte, error) {
-	err := common.EncryptTree(common.EncryptTreeOpts{
-		DataKey: dataKey,
-		Tree:    tree,
-		Cipher:  opts.Cipher,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt tree: %w", err)
-	}
-
-	encryptedFile, err := opts.OutputStore.EmitEncryptedFile(*tree)
-	if err != nil {
-		return nil, common.NewExitError(
-			fmt.Sprintf("Could not marshal tree: %s", err),
-			codes.ErrorDumpingTree,
-		)
-	}
-
-	return encryptedFile, nil
+	return encryptTreeAndEmit(tree, dataKey, opts.Cipher, opts.OutputStore)
 }
 
 // runEditorUntilOk runs the editor in a loop until the file is valid or user cancels.

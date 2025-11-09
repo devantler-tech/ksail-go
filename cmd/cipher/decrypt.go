@@ -35,6 +35,14 @@ type decryptOpts struct {
 // decryptTree loads and decrypts a SOPS tree from the input file.
 // It handles loading the encrypted file and decrypting its contents.
 func decryptTree(opts decryptOpts) (*sops.Tree, error) {
+	tree, _, err := decryptTreeWithKey(opts)
+
+	return tree, err
+}
+
+// decryptTreeWithKey loads and decrypts a SOPS tree, returning both tree and data key.
+// This is useful when the caller needs the data key for re-encryption.
+func decryptTreeWithKey(opts decryptOpts) (*sops.Tree, []byte, error) {
 	tree, err := common.LoadEncryptedFileWithBugFixes(common.GenericDecryptOpts{
 		Cipher:        opts.Cipher,
 		InputStore:    opts.InputStore,
@@ -44,10 +52,10 @@ func decryptTree(opts decryptOpts) (*sops.Tree, error) {
 		KeyServices:   opts.KeyServices,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to load encrypted file: %w", err)
+		return nil, nil, fmt.Errorf("failed to load encrypted file: %w", err)
 	}
 
-	_, err = common.DecryptTree(common.DecryptTreeOpts{
+	dataKey, err := common.DecryptTree(common.DecryptTreeOpts{
 		Cipher:          opts.Cipher,
 		IgnoreMac:       opts.IgnoreMAC,
 		Tree:            tree,
@@ -55,10 +63,10 @@ func decryptTree(opts decryptOpts) (*sops.Tree, error) {
 		DecryptionOrder: opts.DecryptionOrder,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt tree: %w", err)
+		return nil, nil, fmt.Errorf("failed to decrypt tree: %w", err)
 	}
 
-	return tree, nil
+	return tree, dataKey, nil
 }
 
 // decrypt performs the core decryption logic for a file.

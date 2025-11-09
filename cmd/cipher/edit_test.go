@@ -2,7 +2,6 @@ package cipher_test
 
 import (
 	"bytes"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -58,13 +57,7 @@ func TestEditCommandHelp(t *testing.T) {
 func TestEditCommandRequiresFile(t *testing.T) {
 	t.Parallel()
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"edit"})
+	cipherCmd := setupCipherCommandTest(t, []string{"edit"})
 
 	err := cipherCmd.Execute()
 	if err == nil {
@@ -75,24 +68,11 @@ func TestEditCommandRequiresFile(t *testing.T) {
 func TestEditCommandUnsupportedFormat(t *testing.T) {
 	t.Parallel()
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.txt")
+	testFile := createTestFile(t, "test.txt", "test content")
 
-	// Create a test file with unsupported format
-	err := os.WriteFile(testFile, []byte("test content"), 0o600)
-	if err != nil {
-		t.Fatalf("failed to create test file: %v", err)
-	}
+	cipherCmd := setupCipherCommandTest(t, []string{"edit", testFile})
 
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"edit", testFile})
-
-	err = cipherCmd.Execute()
+	err := cipherCmd.Execute()
 	if err == nil {
 		t.Error("expected error for unsupported file format")
 	}
@@ -116,54 +96,36 @@ func TestEditCommandFlags(t *testing.T) {
 	}
 }
 
+// testEditCommandWithFormat tests edit command with specific format.
+// This helper expects an error since no keys are configured, but validates
+// that the command processes files correctly.
+func testEditCommandWithFormat(t *testing.T, filename string) {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, filename)
+
+	cipherCmd := setupCipherCommandTest(t, []string{"edit", testFile})
+
+	// This will fail because we don't have an editor configured or keys,
+	// but it should recognize the file format
+	err := cipherCmd.Execute()
+	if err != nil {
+		// Expected to fail - we're just checking it processes the format
+		t.Logf("Expected error (no editor/keys configured): %v", err)
+	}
+}
+
 // TestEditCommandWithYAML tests edit command with YAML format.
-// This test expects an error since no keys are configured, but validates
-// that the command processes YAML files correctly.
 func TestEditCommandWithYAML(t *testing.T) {
 	t.Parallel()
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.yaml")
-
-	// Note: We can't fully test the edit command without setting up
-	// an editor and keys, but we can verify it handles YAML files
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"edit", testFile})
-
-	// This will fail because we don't have an editor configured or keys,
-	// but it should recognize the YAML format
-	err := cipherCmd.Execute()
-	if err != nil {
-		// Expected to fail - we're just checking it processes YAML
-		t.Logf("Expected error (no editor/keys configured): %v", err)
-	}
+	testEditCommandWithFormat(t, "test.yaml")
 }
 
 // TestEditCommandWithJSON tests edit command with JSON format.
 func TestEditCommandWithJSON(t *testing.T) {
 	t.Parallel()
 
-	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.json")
-
-	rt := runtime.NewRuntime()
-	cipherCmd := cipher.NewCipherCmd(rt)
-
-	var out, errOut bytes.Buffer
-	cipherCmd.SetOut(&out)
-	cipherCmd.SetErr(&errOut)
-	cipherCmd.SetArgs([]string{"edit", testFile})
-
-	// This will fail because we don't have an editor configured or keys,
-	// but it should recognize the JSON format
-	err := cipherCmd.Execute()
-	if err != nil {
-		// Expected to fail - we're just checking it processes JSON
-		t.Logf("Expected error (no editor/keys configured): %v", err)
-	}
+	testEditCommandWithFormat(t, "test.json")
 }

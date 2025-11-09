@@ -89,3 +89,18 @@ func createTestFile(t *testing.T, filename, content string) string {
 
 	return testFile
 }
+
+// setupCipherCommandTest is a shared helper to setup cipher command for testing.
+func setupCipherCommandTest(t *testing.T, args []string) *cobra.Command {
+	t.Helper()
+
+	rt := runtime.NewRuntime()
+	cipherCmd := cipher.NewCipherCmd(rt)
+
+	var out, errOut bytes.Buffer
+	cipherCmd.SetOut(&out)
+	cipherCmd.SetErr(&errOut)
+	cipherCmd.SetArgs(args)
+
+	return cipherCmd
+}
