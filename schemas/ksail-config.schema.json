@@ -1,12 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1/cluster",
   "properties": {
     "kind": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "Cluster"
+      ]
     },
     "apiVersion": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "ksail.dev/v1alpha1"
+      ]
     },
     "spec": {
       "properties": {
@@ -25,46 +30,63 @@
               "type": "string"
             },
             "timeout": {
-              "properties": {
-                "Duration": {
-                  "type": "integer"
-                }
-              },
-              "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "Duration"
-              ]
+              "type": "string",
+              "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$"
             }
           },
           "additionalProperties": false,
-          "type": "object",
-          "required": [
-            "kubeconfig",
-            "context",
-            "timeout"
-          ]
+          "type": "object"
         },
         "distribution": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Kind",
+            "K3d"
+          ]
         },
         "cni": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Default",
+            "Cilium"
+          ]
         },
         "csi": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Default",
+            "LocalPathStorage"
+          ]
         },
         "ingressController": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Default",
+            "Traefik",
+            "None"
+          ]
         },
         "gatewayController": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Default",
+            "Traefik",
+            "Cilium",
+            "None"
+          ]
         },
         "metricsServer": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "Enabled",
+            "Disabled"
+          ]
         },
         "gitOpsEngine": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "None"
+          ]
         },
         "options": {
           "properties": {
@@ -118,20 +140,7 @@
         }
       },
       "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "distributionConfig",
-        "sourceDirectory",
-        "connection",
-        "distribution",
-        "cni",
-        "csi",
-        "ingressController",
-        "gatewayController",
-        "metricsServer",
-        "gitOpsEngine",
-        "options"
-      ]
+      "type": "object"
     }
   },
   "additionalProperties": false,

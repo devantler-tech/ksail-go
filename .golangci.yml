@@ -61,6 +61,7 @@ linters:
             - github.com/getsops/sops
             - github.com/invopop/jsonschema
             - github.com/mitchellh
+            - github.com/wk8/go-ordered-map
             - github.com/samber/do/v2
             - github.com/docker
             - github.com/fatih/color

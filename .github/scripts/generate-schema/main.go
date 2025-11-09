@@ -6,9 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/invopop/jsonschema"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -25,16 +28,18 @@ func main() {
 
 func run(stdout, stderr io.Writer, args []string) error {
 	// Generate JSON schema from the Cluster type
+	// AllowAdditionalProperties: false - Enforce strict validation, reject unknown fields
+	// DoNotReference: true - Inline all type definitions for simpler schema structure
 	reflector := jsonschema.Reflector{
 		AllowAdditionalProperties: false,
 		DoNotReference:            true,
+		Mapper:                    customTypeMapper,
 	}
 
 	schema := reflector.Reflect(&v1alpha1.Cluster{})
 
-	// Add schema metadata
-	schema.Title = "KSail Cluster Configuration"
-	schema.Description = "JSON schema for KSail cluster configuration (ksail.yaml)"
+	// Customize schema metadata and properties
+	customizeSchema(schema)
 
 	// Marshal to JSON with pretty printing
 	schemaJSON, err := json.MarshalIndent(schema, "", "  ")
@@ -70,6 +75,123 @@ func run(stdout, stderr io.Writer, args []string) error {
 
 	_, _ = io.WriteString(stdout, "Successfully generated JSON schema at "+outputPath+"\n")
 
+	return nil
+}
+
+// customizeSchema customizes the generated schema with metadata and property constraints.
+func customizeSchema(schema *jsonschema.Schema) {
+	// Add schema metadata
+	schema.ID = ""
+	schema.Title = "KSail Cluster Configuration"
+	schema.Description = "JSON schema for KSail cluster configuration (ksail.yaml)"
+
+	// Make only spec required at the root level based on omitzero tags
+	schema.Required = []string{"spec"}
+
+	if schema.Properties == nil {
+		return
+	}
+
+	customizeRootProperties(schema.Properties)
+	customizeSpecProperties(schema.Properties)
+}
+
+// customizeRootProperties adds enum constraints to root-level properties.
+func customizeRootProperties(properties *orderedmap.OrderedMap[string, *jsonschema.Schema]) {
+	// Add enum constraint for kind
+	if kindProp, ok := properties.Get("kind"); ok && kindProp != nil {
+		kindProp.Enum = []any{"Cluster"}
+	}
+
+	// Add enum constraint for apiVersion
+	if apiVersionProp, ok := properties.Get("apiVersion"); ok && apiVersionProp != nil {
+		apiVersionProp.Enum = []any{"ksail.dev/v1alpha1"}
+	}
+}
+
+// customizeSpecProperties fixes required fields for spec and nested properties.
+func customizeSpecProperties(properties *orderedmap.OrderedMap[string, *jsonschema.Schema]) {
+	specProp, ok := properties.Get("spec")
+	if !ok || specProp == nil || specProp.Properties == nil {
+		return
+	}
+
+	// Fix required fields for spec - all fields have omitzero so they're optional
+	specProp.Required = nil
+
+	// Also fix required fields for connection
+	if connProp, ok := specProp.Properties.Get("connection"); ok && connProp != nil {
+		connProp.Required = nil
+	}
+}
+
+// customTypeMapper provides custom schema mappings for specific types.
+func customTypeMapper(reflectType reflect.Type) *jsonschema.Schema {
+	// Handle metav1.Duration - it marshals as a string like "5m", "1h"
+	if reflectType == reflect.TypeFor[metav1.Duration]() {
+		return &jsonschema.Schema{
+			Type:    "string",
+			Pattern: "^[0-9]+(ns|us|µs|ms|s|m|h)$",
+		}
+	}
+
+	// Handle Distribution enum
+	if reflectType == reflect.TypeFor[v1alpha1.Distribution]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Kind", "K3d"},
+		}
+	}
+
+	// Handle CNI enum
+	if reflectType == reflect.TypeFor[v1alpha1.CNI]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Default", "Cilium"},
+		}
+	}
+
+	// Handle CSI enum
+	if reflectType == reflect.TypeFor[v1alpha1.CSI]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Default", "LocalPathStorage"},
+		}
+	}
+
+	// Handle IngressController enum
+	if reflectType == reflect.TypeFor[v1alpha1.IngressController]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Default", "Traefik", "None"},
+		}
+	}
+
+	// Handle GatewayController enum
+	if reflectType == reflect.TypeFor[v1alpha1.GatewayController]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Default", "Traefik", "Cilium", "None"},
+		}
+	}
+
+	// Handle MetricsServer enum
+	if reflectType == reflect.TypeFor[v1alpha1.MetricsServer]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"Enabled", "Disabled"},
+		}
+	}
+
+	// Handle GitOpsEngine enum
+	if reflectType == reflect.TypeFor[v1alpha1.GitOpsEngine]() {
+		return &jsonschema.Schema{
+			Type: "string",
+			Enum: []any{"None"},
+		}
+	}
+
+	// Return nil to use default mapping for other types
 	return nil
 }
 
