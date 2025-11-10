@@ -183,95 +183,24 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 	}
 }
 
-func TestCalicoInstallerBuildRESTConfig(t *testing.T) {
-	t.Parallel()
-
-	t.Run("ErrorWhenKubeconfigMissing", testBuildRESTConfigErrorWhenKubeconfigMissing)
-	t.Run("UsesCurrentContext", testBuildRESTConfigUsesCurrentContext)
-	t.Run("OverridesContext", testBuildRESTConfigOverridesContext)
-	t.Run("MissingContext", testBuildRESTConfigMissingContext)
-}
-
-func testBuildRESTConfigErrorWhenKubeconfigMissing(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	installer := NewCalicoInstaller(helm.NewMockInterface(t), "", "", time.Second)
-	_, err := installer.buildRESTConfig()
-
-	testutils.ExpectErrorContains(t, err, "kubeconfig path is empty", "buildRESTConfig empty path")
-}
-
-func testBuildRESTConfigUsesCurrentContext(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
-	installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "", time.Second)
-
-	restConfig, err := installer.buildRESTConfig()
-
-	testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-	installertestutils.ExpectEqual(
-		t,
-		restConfig.Host,
-		"https://cluster-one.example.com",
-		"rest config host",
-	)
-}
-
-func testBuildRESTConfigOverridesContext(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
-	installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "alt", time.Second)
-
-	restConfig, err := installer.buildRESTConfig()
-
-	testutils.ExpectNoError(t, err, "buildRESTConfig override context")
-	installertestutils.ExpectEqual(
-		t,
-		restConfig.Host,
-		"https://cluster-two.example.com",
-		"rest config host override",
-	)
-}
-
-func testBuildRESTConfigMissingContext(t *testing.T) {
-	t.Helper()
-	t.Parallel()
-
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
-	installer := NewCalicoInstaller(helm.NewMockInterface(t), path, "missing", time.Second)
-	_, err := installer.buildRESTConfig()
-
-	testutils.ExpectErrorContains(
-		t,
-		err,
-		"context \"missing\" does not exist",
-		"buildRESTConfig missing context",
-	)
-}
-
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
 	t.Helper()
 
 	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/apis/apps/v1/namespaces/tigera-operator/deployments/tigera-operator":
-			serveTigeraOperatorDeployment(t, writer, ready)
+			serveDeployment(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/daemonsets/calico-node":
-			serveCalicoNodeDaemonSet(t, writer, ready)
+			serveDaemonSet(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/deployments/calico-kube-controllers":
-			serveCalicoKubeControllersDeployment(t, writer, ready)
+			serveDeployment(t, writer, ready)
 		default:
 			http.NotFound(writer, req)
 		}
 	}))
 }
 
-func serveTigeraOperatorDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
+func serveDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
 	t.Helper()
 
 	payload := map[string]any{
@@ -291,7 +220,7 @@ func serveTigeraOperatorDeployment(t *testing.T, writer http.ResponseWriter, rea
 	installertestutils.EncodeJSON(t, writer, payload)
 }
 
-func serveCalicoNodeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
+func serveDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
 	t.Helper()
 
 	payload := map[string]any{
@@ -306,26 +235,6 @@ func serveCalicoNodeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bo
 
 	if !ready {
 		installertestutils.UpdateDaemonSetStatusToUnready(t, payload)
-	}
-
-	installertestutils.EncodeJSON(t, writer, payload)
-}
-
-func serveCalicoKubeControllersDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
-	t.Helper()
-
-	payload := map[string]any{
-		"apiVersion": "apps/v1",
-		"kind":       "Deployment",
-		"status": map[string]any{
-			"replicas":          1,
-			"updatedReplicas":   1,
-			"availableReplicas": 1,
-		},
-	}
-
-	if !ready {
-		installertestutils.UpdateDeploymentStatusToUnready(t, payload)
 	}
 
 	installertestutils.EncodeJSON(t, writer, payload)

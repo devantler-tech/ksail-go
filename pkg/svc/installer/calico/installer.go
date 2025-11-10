@@ -8,7 +8,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
-	"k8s.io/client-go/rest"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
@@ -106,6 +105,4 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 	)
 }
 
-func (c *CalicoInstaller) buildRESTConfig() (*rest.Config, error) {
-	return c.BuildRESTConfig()
-}
+

@@ -8,7 +8,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
-	"k8s.io/client-go/rest"
 )
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
@@ -112,6 +111,4 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 	)
 }
 
-func (c *CiliumInstaller) buildRESTConfig() (*rest.Config, error) {
-	return c.BuildRESTConfig()
-}
+
