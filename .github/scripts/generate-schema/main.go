@@ -123,6 +123,11 @@ func customizeSpecProperties(properties *orderedmap.OrderedMap[string, *jsonsche
 	if connProp, ok := specProp.Properties.Get("connection"); ok && connProp != nil {
 		connProp.Required = nil
 	}
+
+	// Also fix required fields for options (all fields have omitzero so they're optional)
+	if optionsProp, ok := specProp.Properties.Get("options"); ok && optionsProp != nil {
+		optionsProp.Required = nil
+	}
 }
 
 // customTypeMapper provides custom schema mappings for specific types.
