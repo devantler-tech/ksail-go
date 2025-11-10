@@ -128,15 +128,6 @@
           },
           "additionalProperties": false,
           "type": "object",
-          "required": [
-            "kind",
-            "k3d",
-            "cilium",
-            "flux",
-            "argocd",
-            "helm",
-            "kustomize"
-          ]
         }
       },
       "additionalProperties": false,
