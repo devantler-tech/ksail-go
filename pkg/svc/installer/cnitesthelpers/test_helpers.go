@@ -200,3 +200,32 @@ func ExpectUninstall(
 		UninstallRelease(mock.Anything, releaseName, namespace).
 		Return(err)
 }
+
+// TestWaitForReadinessDetectsUnready tests detection of unready components.
+// serverURL should be the URL of a test server that returns unready status.
+// waitForReadiness is the function to test (typically a method that checks component readiness).
+func TestWaitForReadinessDetectsUnready(
+	t *testing.T,
+	serverURL string,
+	waitForReadiness func(context.Context) error,
+) {
+	t.Helper()
+
+	err := waitForReadiness(context.Background())
+	if err == nil {
+		t.Fatal("expected readiness failure when components are unready")
+	}
+
+	if !containsSubstring(err.Error(), "not ready") {
+		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func containsSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if len(s[i:]) >= len(substr) && s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

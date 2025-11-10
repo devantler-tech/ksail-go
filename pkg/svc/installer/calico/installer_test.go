@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -173,14 +172,7 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	err := installer.waitForReadiness(context.Background())
-	if err == nil {
-		t.Fatal("expected readiness failure when components are unready")
-	}
-
-	if !strings.Contains(err.Error(), "not ready") {
-		t.Fatalf("unexpected error message: %v", err)
-	}
+	cnitesthelpers.TestWaitForReadinessDetectsUnready(t, server.URL, installer.waitForReadiness)
 }
 
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
