@@ -152,20 +152,6 @@ func specFieldTestCases() []testCase {
 			description:  []string{"CSI driver"},
 			expectedDesc: "CSI driver",
 		},
-		{
-			name:         "Spec.IngressController field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-			defaultValue: v1alpha1.IngressControllerTraefik,
-			description:  []string{"Ingress controller"},
-			expectedDesc: "Ingress controller",
-		},
-		{
-			name:         "Spec.GatewayController field",
-			selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-			defaultValue: v1alpha1.GatewayControllerTraefik,
-			description:  []string{"Gateway controller"},
-			expectedDesc: "Gateway controller",
-		},
 	}
 }
 
@@ -366,16 +352,6 @@ func TestAddFlagFromFieldEnumTypes(t *testing.T) {
 			expectedType: "v1alpha1.CSI",
 		},
 		{
-			name:         "IngressController enum",
-			defaultValue: v1alpha1.IngressControllerTraefik,
-			expectedType: "v1alpha1.IngressController",
-		},
-		{
-			name:         "GatewayController enum",
-			defaultValue: v1alpha1.GatewayControllerTraefik,
-			expectedType: "v1alpha1.GatewayController",
-		},
-		{
 			name:         "MetricsServer enum",
 			defaultValue: v1alpha1.MetricsServerEnabled,
 			expectedType: "v1alpha1.MetricsServer",
@@ -509,14 +485,6 @@ func TestFieldSelectorNetworkingFields(t *testing.T) {
 		{
 			name:     "Spec.CSI",
 			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.CSI },
-		},
-		{
-			name:     "Spec.IngressController",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-		},
-		{
-			name:     "Spec.GatewayController",
-			selector: func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
 		},
 		{
 			name:     "Spec.MetricsServer",
