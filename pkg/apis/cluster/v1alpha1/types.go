@@ -23,12 +23,6 @@ var ErrInvalidCNI = errors.New("invalid CNI")
 // ErrInvalidCSI is returned when an invalid CSI is specified.
 var ErrInvalidCSI = errors.New("invalid CSI")
 
-// ErrInvalidIngressController is returned when an invalid ingress controller is specified.
-var ErrInvalidIngressController = errors.New("invalid ingress controller")
-
-// ErrInvalidGatewayController is returned when an invalid gateway controller is specified.
-var ErrInvalidGatewayController = errors.New("invalid gateway controller")
-
 // ErrInvalidMetricsServer is returned when an invalid metrics server is specified.
 var ErrInvalidMetricsServer = errors.New("invalid metrics server")
 
@@ -53,17 +47,15 @@ type Cluster struct {
 
 // Spec defines the desired state of a KSail cluster.
 type Spec struct {
-	DistributionConfig string            `json:"distributionConfig,omitzero"`
-	SourceDirectory    string            `json:"sourceDirectory,omitzero"`
-	Connection         Connection        `json:"connection,omitzero"`
-	Distribution       Distribution      `json:"distribution,omitzero"`
-	CNI                CNI               `json:"cni,omitzero"`
-	CSI                CSI               `json:"csi,omitzero"`
-	IngressController  IngressController `json:"ingressController,omitzero"`
-	GatewayController  GatewayController `json:"gatewayController,omitzero"`
-	MetricsServer      MetricsServer     `json:"metricsServer,omitzero"`
-	GitOpsEngine       GitOpsEngine      `json:"gitOpsEngine,omitzero"`
-	Options            Options           `json:"options,omitzero"`
+	DistributionConfig string        `json:"distributionConfig,omitzero"`
+	SourceDirectory    string        `json:"sourceDirectory,omitzero"`
+	Connection         Connection    `json:"connection,omitzero"`
+	Distribution       Distribution  `json:"distribution,omitzero"`
+	CNI                CNI           `json:"cni,omitzero"`
+	CSI                CSI           `json:"csi,omitzero"`
+	MetricsServer      MetricsServer `json:"metricsServer,omitzero"`
+	GitOpsEngine       GitOpsEngine  `json:"gitOpsEngine,omitzero"`
+	Options            Options       `json:"options,omitzero"`
 }
 
 // Connection defines connection options for a KSail cluster.
@@ -98,25 +90,6 @@ func validCSIs() []CSI {
 	return []CSI{CSIDefault, CSILocalPathStorage}
 }
 
-// validIngressControllers returns supported ingress controller values.
-func validIngressControllers() []IngressController {
-	return []IngressController{
-		IngressControllerDefault,
-		IngressControllerTraefik,
-		IngressControllerNone,
-	}
-}
-
-// validGatewayControllers returns supported gateway controller values.
-func validGatewayControllers() []GatewayController {
-	return []GatewayController{
-		GatewayControllerDefault,
-		GatewayControllerTraefik,
-		GatewayControllerCilium,
-		GatewayControllerNone,
-	}
-}
-
 // validMetricsServers returns supported metrics server values.
 func validMetricsServers() []MetricsServer {
 	return []MetricsServer{
@@ -143,32 +116,6 @@ const (
 	CSIDefault CSI = "Default"
 	// CSILocalPathStorage is the LocalPathStorage CSI.
 	CSILocalPathStorage CSI = "LocalPathStorage"
-)
-
-// IngressController defines the Ingress Controller options for a KSail cluster.
-type IngressController string
-
-const (
-	// IngressControllerDefault is the default Ingress Controller.
-	IngressControllerDefault IngressController = "Default"
-	// IngressControllerTraefik is the Traefik Ingress Controller.
-	IngressControllerTraefik IngressController = "Traefik"
-	// IngressControllerNone is no Ingress Controller.
-	IngressControllerNone IngressController = "None"
-)
-
-// GatewayController defines the Gateway Controller options for a KSail cluster.
-type GatewayController string
-
-const (
-	// GatewayControllerDefault is the default Gateway Controller.
-	GatewayControllerDefault GatewayController = "Default"
-	// GatewayControllerTraefik is the Traefik Gateway Controller.
-	GatewayControllerTraefik GatewayController = "Traefik"
-	// GatewayControllerCilium is the Cilium Gateway Controller.
-	GatewayControllerCilium GatewayController = "Cilium"
-	// GatewayControllerNone is no Gateway Controller.
-	GatewayControllerNone GatewayController = "None"
 )
 
 // MetricsServer defines the Metrics Server options for a KSail cluster.
@@ -309,49 +256,6 @@ func (c *CSI) Set(value string) error {
 		ErrInvalidCSI, value, CSIDefault, CSILocalPathStorage)
 }
 
-// Set for IngressController.
-func (i *IngressController) Set(value string) error {
-	// Check against constant values with case-insensitive comparison
-	for _, ic := range validIngressControllers() {
-		if strings.EqualFold(value, string(ic)) {
-			*i = ic
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidIngressController,
-		value,
-		IngressControllerDefault,
-		IngressControllerTraefik,
-		IngressControllerNone,
-	)
-}
-
-// Set for GatewayController.
-func (g *GatewayController) Set(value string) error {
-	// Check against constant values with case-insensitive comparison
-	for _, gc := range validGatewayControllers() {
-		if strings.EqualFold(value, string(gc)) {
-			*g = gc
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf(
-		"%w: %s (valid options: %s, %s, %s, %s)",
-		ErrInvalidGatewayController,
-		value,
-		GatewayControllerDefault,
-		GatewayControllerTraefik,
-		GatewayControllerCilium,
-		GatewayControllerNone,
-	)
-}
-
 // Set for MetricsServer.
 func (m *MetricsServer) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
@@ -415,26 +319,6 @@ func (c *CSI) String() string {
 // Type returns the type of the CSI.
 func (c *CSI) Type() string {
 	return "CSI"
-}
-
-// String returns the string representation of the IngressController.
-func (i *IngressController) String() string {
-	return string(*i)
-}
-
-// Type returns the type of the IngressController.
-func (i *IngressController) Type() string {
-	return "IngressController"
-}
-
-// String returns the string representation of the GatewayController.
-func (g *GatewayController) String() string {
-	return string(*g)
-}
-
-// Type returns the type of the GatewayController.
-func (g *GatewayController) Type() string {
-	return "GatewayController"
 }
 
 // String returns the string representation of the MetricsServer.

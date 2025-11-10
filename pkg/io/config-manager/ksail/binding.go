@@ -141,8 +141,6 @@ func (m *ConfigManager) getFieldMappings() map[any]string {
 		&m.Config.Spec.GitOpsEngine:          "gitops-engine",
 		&m.Config.Spec.CNI:                   "cni",
 		&m.Config.Spec.CSI:                   "csi",
-		&m.Config.Spec.IngressController:     "ingress-controller",
-		&m.Config.Spec.GatewayController:     "gateway-controller",
 		&m.Config.Spec.MetricsServer:         "metrics-server",
 	}
 }
@@ -217,10 +215,6 @@ func (m *ConfigManager) setPflagValueDefault(pflagValue interface {
 	case v1alpha1.CNI:
 		_ = pflagValue.Set(string(val))
 	case v1alpha1.CSI:
-		_ = pflagValue.Set(string(val))
-	case v1alpha1.IngressController:
-		_ = pflagValue.Set(string(val))
-	case v1alpha1.GatewayController:
 		_ = pflagValue.Set(string(val))
 	case v1alpha1.MetricsServer:
 		_ = pflagValue.Set(string(val))

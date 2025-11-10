@@ -25,8 +25,6 @@ func NewClusterSpec() Spec {
 		Distribution:       "",
 		CNI:                "",
 		CSI:                "",
-		IngressController:  "",
-		GatewayController:  "",
 		GitOpsEngine:       GitOpsEngineNone,
 		Options:            NewClusterOptions(),
 	}

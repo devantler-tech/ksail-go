@@ -157,8 +157,6 @@ func getConnectionFieldTests() []struct {
 }
 
 // getNetworkingFieldTests returns test cases for networking field testing.
-//
-//nolint:funlen // Test data structure is inherently long
 func getNetworkingFieldTests() []struct {
 	name          string
 	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
@@ -190,26 +188,6 @@ func getNetworkingFieldTests() []struct {
 			),
 			expectedFlag: "csi",
 			expectedType: "CSI",
-		},
-		{
-			name: "IngressController field",
-			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.IngressController },
-				v1alpha1.IngressControllerTraefik,
-				"Ingress controller",
-			),
-			expectedFlag: "ingress-controller",
-			expectedType: "IngressController",
-		},
-		{
-			name: "GatewayController field",
-			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.GatewayController },
-				v1alpha1.GatewayControllerTraefik,
-				"Gateway controller",
-			),
-			expectedFlag: "gateway-controller",
-			expectedType: "GatewayController",
 		},
 		{
 			name: "MetricsServer field",
@@ -319,16 +297,6 @@ func TestGenerateFlagName(t *testing.T) {
 		{"Timeout field", &manager.Config.Spec.Connection.Timeout, "timeout"},
 		{"CNI field", &manager.Config.Spec.CNI, "cni"},
 		{"CSI field", &manager.Config.Spec.CSI, "csi"},
-		{
-			"IngressController field",
-			&manager.Config.Spec.IngressController,
-			"ingress-controller",
-		},
-		{
-			"GatewayController field",
-			&manager.Config.Spec.GatewayController,
-			"gateway-controller",
-		},
 		{
 			"MetricsServer field",
 			&manager.Config.Spec.MetricsServer,
