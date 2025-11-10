@@ -4,15 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cnitesthelpers"
 	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewCalicoInstaller(t *testing.T) {
@@ -28,31 +27,6 @@ func TestNewCalicoInstaller(t *testing.T) {
 	testutils.ExpectNotNil(t, installer, "installer instance")
 }
 
-type installerScenario struct {
-	name       string
-	setup      func(*testing.T, *helm.MockInterface)
-	actionName string
-	action     func(context.Context, *CalicoInstaller) error
-	wantErr    string
-}
-
-func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
-	t.Helper()
-
-	for _, scenario := range scenarios {
-		t.Run(scenario.name, func(t *testing.T) {
-			t.Parallel()
-
-			installer, client := newDefaultInstaller(t)
-			scenario.setup(t, client)
-
-			err := scenario.action(context.Background(), installer)
-
-			installertestutils.ExpectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
-		})
-	}
-}
-
 func TestCalicoInstallerInstall(t *testing.T) {
 	t.Parallel()
 
@@ -60,42 +34,42 @@ func TestCalicoInstallerInstall(t *testing.T) {
 		return installer.Install(ctx)
 	}
 
-	scenarios := []installerScenario{
+	scenarios := []cnitesthelpers.InstallerScenario[*CalicoInstaller]{
 		{
-			name:       "Success",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "Success",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCalicoInstallExpectations(t, client, nil)
 			},
 		},
 		{
-			name:       "InstallFailure",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "InstallFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCalicoInstallExpectations(t, client, installertestutils.ErrInstallFailed)
 			},
-			wantErr: "failed to install Calico",
+			WantErr: "failed to install Calico",
 		},
 		{
-			name:       "AddRepositoryFailure",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "AddRepositoryFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCalicoAddRepository(t, client, installertestutils.ErrAddRepoFailed)
 			},
-			wantErr: "failed to add calico repository",
+			WantErr: "failed to add calico repository",
 		},
 	}
 
-	runInstallerScenarios(t, scenarios)
+	cnitesthelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerUninstall(t *testing.T) {
@@ -105,81 +79,39 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 		return installer.Uninstall(ctx)
 	}
 
-	scenarios := []installerScenario{
+	scenarios := []cnitesthelpers.InstallerScenario[*CalicoInstaller]{
 		{
-			name:       "Success",
-			actionName: "Uninstall",
-			action:     uninstallAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "Success",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCalicoUninstall(t, client, nil)
 			},
 		},
 		{
-			name:       "UninstallFailure",
-			actionName: "Uninstall",
-			action:     uninstallAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "UninstallFailure",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCalicoUninstall(t, client, installertestutils.ErrUninstallFailed)
 			},
-			wantErr: "failed to uninstall calico release",
+			WantErr: "failed to uninstall calico release",
 		},
 	}
 
-	runInstallerScenarios(t, scenarios)
+	cnitesthelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("InvokesCustomFunction", func(t *testing.T) {
-		t.Parallel()
-
+	cnitesthelpers.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
 		client := helm.NewMockInterface(t)
-		installer := NewCalicoInstaller(client, "kubeconfig", "", time.Second)
-		called := false
-
-		installer.SetWaitForReadinessFunc(func(context.Context) error {
-			called = true
-
-			return nil
-		})
-
-		testutils.ExpectNoError(
-			t,
-			installer.WaitForReadiness(context.Background()),
-			"WaitForReadiness with custom func",
-		)
-		testutils.ExpectTrue(t, called, "custom wait function invocation")
-	})
-
-	t.Run("RestoresDefaultWhenNil", func(t *testing.T) {
-		t.Parallel()
-
-		client := helm.NewMockInterface(t)
-		installer := NewCalicoInstaller(client, "kubeconfig", "", time.Second)
-		defaultFn := installer.GetWaitFn()
-		testutils.ExpectNotNil(t, defaultFn, "default wait function")
-		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
-
-		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
-
-		replacedPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
-		if replacedPtr == defaultPtr {
-			t.Fatal("expected custom wait function to replace default")
-		}
-
-		installer.SetWaitForReadinessFunc(nil)
-		restoredPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
-		installertestutils.ExpectEqual(
-			t,
-			restoredPtr,
-			defaultPtr,
-			"wait function pointer after restore",
-		)
+		return NewCalicoInstaller(client, "kubeconfig", "", time.Second)
 	})
 }
 
@@ -200,13 +132,9 @@ func TestCalicoInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCalicoInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	installer := NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
-	installer.SetWaitFn(nil)
-
-	err := installer.WaitForReadiness(context.Background())
-	if err != nil {
-		t.Fatalf("expected nil error when waitFn unset, got %v", err)
-	}
+	cnitesthelpers.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
+		return NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
+	})
 }
 
 func TestCalicoInstallerWaitForReadinessSuccess(t *testing.T) {
@@ -425,59 +353,24 @@ func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	client.EXPECT().
-		AddRepository(
-			mock.Anything,
-			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-				t.Helper()
-				installertestutils.ExpectEqual(t, entry.Name, "projectcalico", "repository name")
-				installertestutils.ExpectEqual(
-					t,
-					entry.URL,
-					"https://docs.tigera.io/calico/charts",
-					"repository URL",
-				)
-
-				return true
-			}),
-		).
-		Return(err)
+	cnitesthelpers.ExpectAddRepository(t, client, cnitesthelpers.HelmRepoExpectation{
+		RepoName: "projectcalico",
+		RepoURL:  "https://docs.tigera.io/calico/charts",
+	}, err)
 }
 
 func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
-	client.EXPECT().
-		InstallOrUpgradeChart(
-			mock.Anything,
-			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				t.Helper()
-				installertestutils.ExpectEqual(t, spec.ReleaseName, "calico", "release name")
-				installertestutils.ExpectEqual(
-					t,
-					spec.ChartName,
-					"projectcalico/tigera-operator",
-					"chart name",
-				)
-				installertestutils.ExpectEqual(t, spec.Namespace, "tigera-operator", "namespace")
-				installertestutils.ExpectEqual(
-					t,
-					spec.RepoURL,
-					"https://docs.tigera.io/calico/charts",
-					"repository URL",
-				)
-				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
-				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
-				testutils.ExpectTrue(t, spec.CreateNamespace, "CreateNamespace flag")
-
-				return true
-			}),
-		).
-		Return(nil, installErr)
+	cnitesthelpers.ExpectInstallChart(t, client, cnitesthelpers.HelmChartExpectation{
+		ReleaseName:     "calico",
+		ChartName:       "projectcalico/tigera-operator",
+		Namespace:       "tigera-operator",
+		RepoURL:         "https://docs.tigera.io/calico/charts",
+		CreateNamespace: true,
+	}, installErr)
 }
 
 func expectCalicoUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	client.EXPECT().
-		UninstallRelease(mock.Anything, "calico", "tigera-operator").
-		Return(err)
+	cnitesthelpers.ExpectUninstall(t, client, "calico", "tigera-operator", err)
 }

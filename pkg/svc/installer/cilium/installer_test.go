@@ -4,15 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cnitesthelpers"
 	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewCiliumInstaller(t *testing.T) {
@@ -28,31 +27,6 @@ func TestNewCiliumInstaller(t *testing.T) {
 	testutils.ExpectNotNil(t, installer, "installer instance")
 }
 
-type installerScenario struct {
-	name       string
-	setup      func(*testing.T, *helm.MockInterface)
-	actionName string
-	action     func(context.Context, *CiliumInstaller) error
-	wantErr    string
-}
-
-func runInstallerScenarios(t *testing.T, scenarios []installerScenario) {
-	t.Helper()
-
-	for _, scenario := range scenarios {
-		t.Run(scenario.name, func(t *testing.T) {
-			t.Parallel()
-
-			installer, client := newDefaultInstaller(t)
-			scenario.setup(t, client)
-
-			err := scenario.action(context.Background(), installer)
-
-			installertestutils.ExpectInstallerResult(t, err, scenario.wantErr, scenario.actionName)
-		})
-	}
-}
-
 func TestCiliumInstallerInstall(t *testing.T) {
 	t.Parallel()
 
@@ -60,42 +34,42 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		return installer.Install(ctx)
 	}
 
-	scenarios := []installerScenario{
+	scenarios := []cnitesthelpers.InstallerScenario[*CiliumInstaller]{
 		{
-			name:       "Success",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "Success",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCiliumInstallExpectations(t, client, nil)
 			},
 		},
 		{
-			name:       "InstallFailure",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "InstallFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				setupCiliumInstallExpectations(t, client, installertestutils.ErrInstallFailed)
 			},
-			wantErr: "failed to install Cilium",
+			WantErr: "failed to install Cilium",
 		},
 		{
-			name:       "AddRepositoryFailure",
-			actionName: "Install",
-			action:     installAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "AddRepositoryFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumAddRepository(t, client, installertestutils.ErrAddRepoFailed)
 			},
-			wantErr: "failed to add cilium repository",
+			WantErr: "failed to add cilium repository",
 		},
 	}
 
-	runInstallerScenarios(t, scenarios)
+	cnitesthelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCiliumInstallerUninstall(t *testing.T) {
@@ -105,31 +79,31 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 		return installer.Uninstall(ctx)
 	}
 
-	scenarios := []installerScenario{
+	scenarios := []cnitesthelpers.InstallerScenario[*CiliumInstaller]{
 		{
-			name:       "Success",
-			actionName: "Uninstall",
-			action:     uninstallAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "Success",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumUninstall(t, client, nil)
 			},
 		},
 		{
-			name:       "UninstallFailure",
-			actionName: "Uninstall",
-			action:     uninstallAction,
-			setup: func(t *testing.T, client *helm.MockInterface) {
+			Name:       "UninstallFailure",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
 				expectCiliumUninstall(t, client, installertestutils.ErrUninstallFailed)
 			},
-			wantErr: "failed to uninstall cilium release",
+			WantErr: "failed to uninstall cilium release",
 		},
 	}
 
-	runInstallerScenarios(t, scenarios)
+	cnitesthelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestApplyDefaultValues(t *testing.T) {
@@ -153,51 +127,9 @@ func TestApplyDefaultValues(t *testing.T) {
 func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
-	t.Run("InvokesCustomFunction", func(t *testing.T) {
-		t.Parallel()
-
+	cnitesthelpers.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CiliumInstaller {
 		client := helm.NewMockInterface(t)
-		installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
-		called := false
-
-		installer.SetWaitForReadinessFunc(func(context.Context) error {
-			called = true
-
-			return nil
-		})
-
-		testutils.ExpectNoError(
-			t,
-			installer.WaitForReadiness(context.Background()),
-			"WaitForReadiness with custom func",
-		)
-		testutils.ExpectTrue(t, called, "custom wait function invocation")
-	})
-
-	t.Run("RestoresDefaultWhenNil", func(t *testing.T) {
-		t.Parallel()
-
-		client := helm.NewMockInterface(t)
-		installer := NewCiliumInstaller(client, "kubeconfig", "", time.Second)
-		defaultFn := installer.GetWaitFn()
-		testutils.ExpectNotNil(t, defaultFn, "default wait function")
-		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
-
-		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
-
-		replacedPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
-		if replacedPtr == defaultPtr {
-			t.Fatal("expected custom wait function to replace default")
-		}
-
-		installer.SetWaitForReadinessFunc(nil)
-		restoredPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
-		installertestutils.ExpectEqual(
-			t,
-			restoredPtr,
-			defaultPtr,
-			"wait function pointer after restore",
-		)
+		return NewCiliumInstaller(client, "kubeconfig", "", time.Second)
 	})
 }
 
@@ -218,13 +150,9 @@ func TestCiliumInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	installer := NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
-	installer.SetWaitFn(nil)
-
-	err := installer.WaitForReadiness(context.Background())
-	if err != nil {
-		t.Fatalf("expected nil error when waitFn unset, got %v", err)
-	}
+	cnitesthelpers.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CiliumInstaller {
+		return NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
+	})
 }
 
 func TestCiliumInstallerWaitForReadinessSuccess(t *testing.T) {
@@ -423,59 +351,25 @@ func setupCiliumInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	client.EXPECT().
-		AddRepository(
-			mock.Anything,
-			mock.MatchedBy(func(entry *helm.RepositoryEntry) bool {
-				t.Helper()
-				installertestutils.ExpectEqual(t, entry.Name, "cilium", "repository name")
-				installertestutils.ExpectEqual(
-					t,
-					entry.URL,
-					"https://helm.cilium.io",
-					"repository URL",
-				)
-
-				return true
-			}),
-		).
-		Return(err)
+	cnitesthelpers.ExpectAddRepository(t, client, cnitesthelpers.HelmRepoExpectation{
+		RepoName: "cilium",
+		RepoURL:  "https://helm.cilium.io",
+	}, err)
 }
 
 func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
-	client.EXPECT().
-		InstallOrUpgradeChart(
-			mock.Anything,
-			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
-				t.Helper()
-				installertestutils.ExpectEqual(t, spec.ReleaseName, "cilium", "release name")
-				installertestutils.ExpectEqual(t, spec.ChartName, "cilium/cilium", "chart name")
-				installertestutils.ExpectEqual(t, spec.Namespace, "kube-system", "namespace")
-				installertestutils.ExpectEqual(
-					t,
-					spec.RepoURL,
-					"https://helm.cilium.io",
-					"repository URL",
-				)
-				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
-				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
-				installertestutils.ExpectEqual(
-					t,
-					spec.SetJSONVals["operator.replicas"],
-					"1",
-					"operator replicas",
-				)
-
-				return true
-			}),
-		).
-		Return(nil, installErr)
+	cnitesthelpers.ExpectInstallChart(t, client, cnitesthelpers.HelmChartExpectation{
+		ReleaseName:     "cilium",
+		ChartName:       "cilium/cilium",
+		Namespace:       "kube-system",
+		RepoURL:         "https://helm.cilium.io",
+		CreateNamespace: false,
+		SetJSONVals:     map[string]string{"operator.replicas": "1"},
+	}, installErr)
 }
 
 func expectCiliumUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	client.EXPECT().
-		UninstallRelease(mock.Anything, "cilium", "kube-system").
-		Return(err)
+	cnitesthelpers.ExpectUninstall(t, client, "cilium", "kube-system", err)
 }
