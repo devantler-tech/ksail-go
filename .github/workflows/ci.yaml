@@ -31,8 +31,12 @@ jobs:
       - name: 🔧 Install mockery
         run: go install github.com/vektra/mockery/v3@latest
 
+      - name: 🏃 Validate pre-commit hooks
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1     
+
       - name: 🏃 Run pre-commit hooks
-        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+        uses: pre-commit-ci/lite-action@v1.1.0
+        if: always()
 
   ci:
     needs: [pre-commit]
@@ -49,7 +53,7 @@ jobs:
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
-    needs: [pre-commit, ci]
+    needs: [ci]
     if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:

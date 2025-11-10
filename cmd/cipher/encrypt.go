@@ -101,7 +101,55 @@ func metadataFromEncryptionConfig(config encryptConfig) sops.Metadata {
 	}
 }
 
+// createSOPSTree creates a SOPS tree with the given branches, metadata config, and input path.
+func createSOPSTree(
+	branches sops.TreeBranches,
+	config encryptConfig,
+	inputPath string,
+) (*sops.Tree, error) {
+	path, err := filepath.Abs(inputPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	tree := &sops.Tree{
+		Branches: branches,
+		Metadata: metadataFromEncryptionConfig(config),
+		FilePath: path,
+	}
+
+	return tree, nil
+}
+
 var errCouldNotGenerateDataKey = errors.New("could not generate data key")
+
+// encryptTreeAndEmit encrypts a tree and emits the encrypted file content.
+// This is a common helper shared by encrypt and edit operations.
+func encryptTreeAndEmit(
+	tree *sops.Tree,
+	dataKey []byte,
+	cipher sops.Cipher,
+	outputStore sops.Store,
+) ([]byte, error) {
+	err := common.EncryptTree(common.EncryptTreeOpts{
+		DataKey: dataKey,
+		Tree:    tree,
+		Cipher:  cipher,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to encrypt tree: %w", err)
+	}
+
+	encryptedFile, err := outputStore.EmitEncryptedFile(*tree)
+	if err != nil {
+		return nil, common.NewExitError(
+			fmt.Sprintf("could not marshal tree: %s", err),
+			codes.ErrorDumpingTree,
+		)
+	}
+
+	return encryptedFile, nil
+}
 
 // encrypt performs the core encryption logic for a file.
 // It loads the file, validates that it's not already encrypted, generates
@@ -133,15 +181,9 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 		return nil, common.NewExitError(err, codes.FileAlreadyEncrypted)
 	}
 
-	path, err := filepath.Abs(opts.InputPath)
+	tree, err := createSOPSTree(branches, opts.encryptConfig, opts.InputPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
-	}
-
-	tree := sops.Tree{
-		Branches: branches,
-		Metadata: metadataFromEncryptionConfig(opts.encryptConfig),
-		FilePath: path,
+		return nil, err
 	}
 
 	dataKey, errs := tree.GenerateDataKeyWithKeyServices(opts.KeyServices)
@@ -149,24 +191,7 @@ func encrypt(opts encryptOpts) ([]byte, error) {
 		return nil, fmt.Errorf("%w: %s", errCouldNotGenerateDataKey, errs)
 	}
 
-	err = common.EncryptTree(common.EncryptTreeOpts{
-		DataKey: dataKey,
-		Tree:    &tree,
-		Cipher:  opts.Cipher,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt tree: %w", err)
-	}
-
-	encryptedFile, err := opts.OutputStore.EmitEncryptedFile(tree)
-	if err != nil {
-		return nil, common.NewExitError(
-			fmt.Sprintf("could not marshal tree: %s", err),
-			codes.ErrorDumpingTree,
-		)
-	}
-
-	return encryptedFile, nil
+	return encryptTreeAndEmit(tree, dataKey, opts.Cipher, opts.OutputStore)
 }
 
 // loadFile reads file content either from stdin or from a file path.
