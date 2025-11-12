@@ -6,8 +6,8 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
-	installertestutils "github.com/devantler-tech/ksail-go/pkg/svc/installer/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/testutils/cnihelpers"
 )
 
 func TestCNIInstallerBaseBuildRESTConfig(t *testing.T) {
@@ -33,13 +33,13 @@ func testBuildRESTConfigUsesCurrentContext(t *testing.T) {
 	t.Helper()
 	t.Parallel()
 
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	path := cnihelpers.WriteKubeconfig(t, t.TempDir())
 	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), path, "", time.Second, nil)
 
 	restConfig, err := base.BuildRESTConfig()
 
 	testutils.ExpectNoError(t, err, "buildRESTConfig current context")
-	installertestutils.ExpectEqual(
+	cnihelpers.ExpectEqual(
 		t,
 		restConfig.Host,
 		"https://cluster-one.example.com",
@@ -51,13 +51,13 @@ func testBuildRESTConfigOverridesContext(t *testing.T) {
 	t.Helper()
 	t.Parallel()
 
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	path := cnihelpers.WriteKubeconfig(t, t.TempDir())
 	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), path, "alt", time.Second, nil)
 
 	restConfig, err := base.BuildRESTConfig()
 
 	testutils.ExpectNoError(t, err, "buildRESTConfig override context")
-	installertestutils.ExpectEqual(
+	cnihelpers.ExpectEqual(
 		t,
 		restConfig.Host,
 		"https://cluster-two.example.com",
@@ -69,7 +69,7 @@ func testBuildRESTConfigMissingContext(t *testing.T) {
 	t.Helper()
 	t.Parallel()
 
-	path := installertestutils.WriteKubeconfig(t, t.TempDir())
+	path := cnihelpers.WriteKubeconfig(t, t.TempDir())
 	base := installer.NewCNIInstallerBase(
 		helm.NewMockInterface(t),
 		path,

@@ -1,4 +1,4 @@
-package testutils
+package cnihelpers
 
 import (
 	"net/http"
