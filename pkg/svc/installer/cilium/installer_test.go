@@ -196,58 +196,16 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {
 	t.Helper()
 
-	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+	return cnitesthelpers.NewTestAPIServer(t, func(writer http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/apis/apps/v1/namespaces/kube-system/daemonsets/cilium":
-			payload := map[string]any{
-				"apiVersion": "apps/v1",
-				"kind":       "DaemonSet",
-				"status": map[string]any{
-					"desiredNumberScheduled": 1,
-					"numberUnavailable":      0,
-					"updatedNumberScheduled": 1,
-				},
-			}
-
-			status, ok := payload["status"].(map[string]any)
-			if !ok {
-				t.Fatalf("unexpected payload status type %T", payload["status"])
-			}
-
-			if !ready {
-				status["numberUnavailable"] = 1
-				status["updatedNumberScheduled"] = 0
-			}
-
-			installertestutils.EncodeJSON(t, writer, payload)
-
+			cnitesthelpers.ServeDaemonSet(t, writer, ready)
 		case "/apis/apps/v1/namespaces/kube-system/deployments/cilium-operator":
-			payload := map[string]any{
-				"apiVersion": "apps/v1",
-				"kind":       "Deployment",
-				"status": map[string]any{
-					"replicas":          1,
-					"updatedReplicas":   1,
-					"availableReplicas": 1,
-				},
-			}
-
-			status, ok := payload["status"].(map[string]any)
-			if !ok {
-				t.Fatalf("unexpected payload status type %T", payload["status"])
-			}
-
-			if !ready {
-				status["updatedReplicas"] = 0
-				status["availableReplicas"] = 0
-			}
-
-			installertestutils.EncodeJSON(t, writer, payload)
-
+			cnitesthelpers.ServeDeployment(t, writer, ready)
 		default:
 			http.NotFound(writer, req)
 		}
-	}))
+	})
 }
 
 func newDefaultInstaller(t *testing.T) (*CiliumInstaller, *helm.MockInterface) {

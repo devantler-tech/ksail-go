@@ -178,58 +178,18 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
 	t.Helper()
 
-	return httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
+	return cnitesthelpers.NewTestAPIServer(t, func(writer http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/apis/apps/v1/namespaces/tigera-operator/deployments/tigera-operator":
-			serveDeployment(t, writer, ready)
+			cnitesthelpers.ServeDeployment(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/daemonsets/calico-node":
-			serveDaemonSet(t, writer, ready)
+			cnitesthelpers.ServeDaemonSet(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/deployments/calico-kube-controllers":
-			serveDeployment(t, writer, ready)
+			cnitesthelpers.ServeDeployment(t, writer, ready)
 		default:
 			http.NotFound(writer, req)
 		}
-	}))
-}
-
-func serveDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
-	t.Helper()
-
-	payload := map[string]any{
-		"apiVersion": "apps/v1",
-		"kind":       "Deployment",
-		"status": map[string]any{
-			"replicas":          1,
-			"updatedReplicas":   1,
-			"availableReplicas": 1,
-		},
-	}
-
-	if !ready {
-		installertestutils.UpdateDeploymentStatusToUnready(t, payload)
-	}
-
-	installertestutils.EncodeJSON(t, writer, payload)
-}
-
-func serveDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
-	t.Helper()
-
-	payload := map[string]any{
-		"apiVersion": "apps/v1",
-		"kind":       "DaemonSet",
-		"status": map[string]any{
-			"desiredNumberScheduled": 1,
-			"numberUnavailable":      0,
-			"updatedNumberScheduled": 1,
-		},
-	}
-
-	if !ready {
-		installertestutils.UpdateDaemonSetStatusToUnready(t, payload)
-	}
-
-	installertestutils.EncodeJSON(t, writer, payload)
+	})
 }
 
 func newDefaultInstaller(t *testing.T) (*CalicoInstaller, *helm.MockInterface) {
