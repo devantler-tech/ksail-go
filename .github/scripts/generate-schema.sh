@@ -14,6 +14,9 @@ cd "$REPO_ROOT"
 echo "Generating JSON schema from KSail config types..."
 
 # Run the schema generator from the main module
-go run .github/scripts/generate-schema/main.go "$REPO_ROOT/schemas/ksail-config.schema.json"
+if ! go run .github/scripts/generate-schema/main.go "$REPO_ROOT/schemas/ksail-config.schema.json"; then
+	echo "Error: Failed to generate JSON schema. Check the output above for details." >&2
+	exit 1
+fi
 
 echo "JSON schema generation completed successfully"

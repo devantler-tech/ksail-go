@@ -58,23 +58,6 @@
             "LocalPathStorage"
           ]
         },
-        "ingressController": {
-          "type": "string",
-          "enum": [
-            "Default",
-            "Traefik",
-            "None"
-          ]
-        },
-        "gatewayController": {
-          "type": "string",
-          "enum": [
-            "Default",
-            "Traefik",
-            "Cilium",
-            "None"
-          ]
-        },
         "metricsServer": {
           "type": "string",
           "enum": [

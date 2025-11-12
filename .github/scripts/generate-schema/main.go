@@ -130,6 +130,19 @@ func customizeSpecProperties(properties *orderedmap.OrderedMap[string, *jsonsche
 	}
 }
 
+// enumSchema creates a JSON schema for enum types with the given values.
+func enumSchema(enumValues ...string) *jsonschema.Schema {
+	enums := make([]any, len(enumValues))
+	for i, v := range enumValues {
+		enums[i] = v
+	}
+
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: enums,
+	}
+}
+
 // customTypeMapper provides custom schema mappings for specific types.
 func customTypeMapper(reflectType reflect.Type) *jsonschema.Schema {
 	// Handle metav1.Duration - it marshals as a string like "5m", "1h"
@@ -140,60 +153,18 @@ func customTypeMapper(reflectType reflect.Type) *jsonschema.Schema {
 		}
 	}
 
-	// Handle Distribution enum
-	if reflectType == reflect.TypeFor[v1alpha1.Distribution]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Kind", "K3d"},
-		}
-	}
-
-	// Handle CNI enum
-	if reflectType == reflect.TypeFor[v1alpha1.CNI]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Default", "Cilium"},
-		}
-	}
-
-	// Handle CSI enum
-	if reflectType == reflect.TypeFor[v1alpha1.CSI]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Default", "LocalPathStorage"},
-		}
-	}
-
-	// Handle IngressController enum
-	if reflectType == reflect.TypeFor[v1alpha1.IngressController]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Default", "Traefik", "None"},
-		}
-	}
-
-	// Handle GatewayController enum
-	if reflectType == reflect.TypeFor[v1alpha1.GatewayController]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Default", "Traefik", "Cilium", "None"},
-		}
-	}
-
-	// Handle MetricsServer enum
-	if reflectType == reflect.TypeFor[v1alpha1.MetricsServer]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"Enabled", "Disabled"},
-		}
-	}
-
-	// Handle GitOpsEngine enum
-	if reflectType == reflect.TypeFor[v1alpha1.GitOpsEngine]() {
-		return &jsonschema.Schema{
-			Type: "string",
-			Enum: []any{"None"},
-		}
+	// Handle enum types
+	switch reflectType {
+	case reflect.TypeFor[v1alpha1.Distribution]():
+		return enumSchema("Kind", "K3d")
+	case reflect.TypeFor[v1alpha1.CNI]():
+		return enumSchema("Default", "Cilium")
+	case reflect.TypeFor[v1alpha1.CSI]():
+		return enumSchema("Default", "LocalPathStorage")
+	case reflect.TypeFor[v1alpha1.MetricsServer]():
+		return enumSchema("Enabled", "Disabled")
+	case reflect.TypeFor[v1alpha1.GitOpsEngine]():
+		return enumSchema("None")
 	}
 
 	// Return nil to use default mapping for other types
