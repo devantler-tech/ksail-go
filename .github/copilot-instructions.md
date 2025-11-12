@@ -302,6 +302,7 @@ Pre-commit hooks automatically run:
 
 - `golangci-lint-fix`: Runs `golangci-lint run --fix` to automatically fix linting issues via `.github/scripts/run-golangci-lint.sh`
 - `mockery`: Mock generation via `.github/scripts/run-mockery.sh`
+- `generate-schema`: Generates or updates schema files via `.github/scripts/run-generate-schema.sh`
 
 Install pre-commit hooks: `pre-commit install`
 
