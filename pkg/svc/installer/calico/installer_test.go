@@ -109,7 +109,9 @@ func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
 	cnitesthelpers.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
+		t.Helper()
 		client := helm.NewMockInterface(t)
+
 		return NewCalicoInstaller(client, "kubeconfig", "", time.Second)
 	})
 }
@@ -132,6 +134,8 @@ func TestCalicoInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
 	cnitesthelpers.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
+		t.Helper()
+
 		return NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
 	})
 }
@@ -172,7 +176,7 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	cnitesthelpers.TestWaitForReadinessDetectsUnready(t, server.URL, installer.waitForReadiness)
+	cnitesthelpers.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
 }
 
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {

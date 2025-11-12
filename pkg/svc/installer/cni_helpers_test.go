@@ -70,7 +70,13 @@ func testBuildRESTConfigMissingContext(t *testing.T) {
 	t.Parallel()
 
 	path := installertestutils.WriteKubeconfig(t, t.TempDir())
-	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), path, "missing", time.Second, nil)
+	base := installer.NewCNIInstallerBase(
+		helm.NewMockInterface(t),
+		path,
+		"missing",
+		time.Second,
+		nil,
+	)
 	_, err := base.BuildRESTConfig()
 
 	testutils.ExpectErrorContains(

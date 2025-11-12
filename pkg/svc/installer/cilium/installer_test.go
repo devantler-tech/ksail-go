@@ -127,7 +127,9 @@ func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
 	cnitesthelpers.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CiliumInstaller {
+		t.Helper()
 		client := helm.NewMockInterface(t)
+
 		return NewCiliumInstaller(client, "kubeconfig", "", time.Second)
 	})
 }
@@ -150,6 +152,8 @@ func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
 	cnitesthelpers.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CiliumInstaller {
+		t.Helper()
+
 		return NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
 	})
 }
@@ -190,7 +194,7 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	cnitesthelpers.TestWaitForReadinessDetectsUnready(t, server.URL, installer.waitForReadiness)
+	cnitesthelpers.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
 }
 
 func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {

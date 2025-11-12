@@ -1,8 +1,8 @@
-// Package installer provides common utilities for CNI installer implementations.
 package installer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -70,10 +70,14 @@ func (b *CNIInstallerBase) BuildRESTConfig() (*rest.Config, error) {
 	return config, nil
 }
 
+var errHelmClientNil = errors.New("helm client is nil")
+
 // GetClient returns the Helm client.
+//
+//nolint:ireturn // Method returns interface by design for flexibility.
 func (b *CNIInstallerBase) GetClient() (helm.Interface, error) {
 	if b.client == nil {
-		return nil, fmt.Errorf("helm client is nil")
+		return nil, errHelmClientNil
 	}
 
 	return b.client, nil

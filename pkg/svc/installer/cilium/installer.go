@@ -86,7 +86,12 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		SetJSONVals:     applyDefaultValues(),
 	}
 
-	return installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	if err != nil {
+		return fmt.Errorf("install or upgrade cilium: %w", err)
+	}
+
+	return nil
 }
 
 func applyDefaultValues() map[string]string {
@@ -101,7 +106,7 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 		{Type: "deployment", Namespace: "kube-system", Name: "cilium-operator"},
 	}
 
-	return installer.WaitForResourceReadiness(
+	err := installer.WaitForResourceReadiness(
 		ctx,
 		c.GetKubeconfig(),
 		c.GetContext(),
@@ -109,6 +114,9 @@ func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
 		c.GetTimeout(),
 		"cilium",
 	)
+	if err != nil {
+		return fmt.Errorf("wait for cilium readiness: %w", err)
+	}
+
+	return nil
 }
-
-

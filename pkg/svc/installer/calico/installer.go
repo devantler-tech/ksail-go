@@ -85,7 +85,12 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		CreateNamespace: true,
 	}
 
-	return installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	if err != nil {
+		return fmt.Errorf("install or upgrade calico: %w", err)
+	}
+
+	return nil
 }
 
 func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
@@ -95,7 +100,7 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
 	}
 
-	return installer.WaitForResourceReadiness(
+	err := installer.WaitForResourceReadiness(
 		ctx,
 		c.GetKubeconfig(),
 		c.GetContext(),
@@ -103,6 +108,9 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 		c.GetTimeout(),
 		"calico",
 	)
+	if err != nil {
+		return fmt.Errorf("wait for calico readiness: %w", err)
+	}
+
+	return nil
 }
-
-

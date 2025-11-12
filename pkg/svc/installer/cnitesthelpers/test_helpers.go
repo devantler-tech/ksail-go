@@ -16,12 +16,12 @@ import (
 
 // CNIInstaller defines the minimal interface needed for testing CNI installers.
 type CNIInstaller interface {
-	Install(context.Context) error
-	Uninstall(context.Context) error
-	WaitForReadiness(context.Context) error
-	SetWaitForReadinessFunc(func(context.Context) error)
-	GetWaitFn() func(context.Context) error
-	SetWaitFn(func(context.Context) error)
+	Install(ctx context.Context) error
+	Uninstall(ctx context.Context) error
+	WaitForReadiness(ctx context.Context) error
+	SetWaitForReadinessFunc(waitFunc func(ctx context.Context) error)
+	GetWaitFn() func(ctx context.Context) error
+	SetWaitFn(fn func(ctx context.Context) error)
 }
 
 // InstallerScenario defines a test scenario for installer operations.
@@ -56,6 +56,8 @@ func RunInstallerScenarios[T CNIInstaller](
 }
 
 // TestSetWaitForReadinessFunc tests the SetWaitForReadinessFunc method for any CNI installer.
+//
+//nolint:tparallel // Helper is called from parallel tests; subtests run in parallel.
 func TestSetWaitForReadinessFunc[T CNIInstaller](
 	t *testing.T,
 	newInstaller func(*testing.T) T,
@@ -131,7 +133,12 @@ type HelmRepoExpectation struct {
 }
 
 // ExpectAddRepository sets up mock expectations for adding a Helm repository.
-func ExpectAddRepository(t *testing.T, client *helm.MockInterface, expect HelmRepoExpectation, err error) {
+func ExpectAddRepository(
+	t *testing.T,
+	client *helm.MockInterface,
+	expect HelmRepoExpectation,
+	err error,
+) {
 	t.Helper()
 	client.EXPECT().
 		AddRepository(
@@ -158,14 +165,24 @@ type HelmChartExpectation struct {
 }
 
 // ExpectInstallChart sets up mock expectations for installing a Helm chart.
-func ExpectInstallChart(t *testing.T, client *helm.MockInterface, expect HelmChartExpectation, err error) {
+func ExpectInstallChart(
+	t *testing.T,
+	client *helm.MockInterface,
+	expect HelmChartExpectation,
+	err error,
+) {
 	t.Helper()
 	client.EXPECT().
 		InstallOrUpgradeChart(
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				t.Helper()
-				installertestutils.ExpectEqual(t, spec.ReleaseName, expect.ReleaseName, "release name")
+				installertestutils.ExpectEqual(
+					t,
+					spec.ReleaseName,
+					expect.ReleaseName,
+					"release name",
+				)
 				installertestutils.ExpectEqual(t, spec.ChartName, expect.ChartName, "chart name")
 				installertestutils.ExpectEqual(t, spec.Namespace, expect.Namespace, "namespace")
 				installertestutils.ExpectEqual(t, spec.RepoURL, expect.RepoURL, "repository URL")
@@ -181,6 +198,7 @@ func ExpectInstallChart(t *testing.T, client *helm.MockInterface, expect HelmCha
 					if !ok {
 						t.Fatalf("expected SetJSONVals[%s] to exist", key)
 					}
+
 					installertestutils.ExpectEqual(t, actualVal, expectedVal, key)
 				}
 
@@ -204,11 +222,9 @@ func ExpectUninstall(
 }
 
 // TestWaitForReadinessDetectsUnready tests detection of unready components.
-// serverURL should be the URL of a test server that returns unready status.
 // waitForReadiness is the function to test (typically a method that checks component readiness).
 func TestWaitForReadinessDetectsUnready(
 	t *testing.T,
-	serverURL string,
 	waitForReadiness func(context.Context) error,
 ) {
 	t.Helper()
@@ -229,6 +245,7 @@ func containsSubstring(s, substr string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
