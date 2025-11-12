@@ -300,8 +300,9 @@ The CI pipeline (`.github/workflows/ci.yaml`) runs:
 
 Pre-commit hooks automatically run:
 
-- `golangci-lint-fmt`: Go code formatting
-- `mockery`: Mock generation via `scripts/run-mockery.sh`
+- `golangci-lint-fix`: Runs `golangci-lint run --fix` to automatically fix linting issues via `.github/scripts/run-golangci-lint.sh`
+- `mockery`: Mock generation via `.github/scripts/run-mockery.sh`
+- `generate-schema`: Generates or updates schema files via `.github/scripts/generate-schema.sh`
 
 Install pre-commit hooks: `pre-commit install`
 

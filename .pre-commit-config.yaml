@@ -3,12 +3,14 @@
 # See https://pre-commit.com/hooks.html for more hooks
 
 repos:
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v2.6.1
-    hooks:
-      - id: golangci-lint-fmt
   - repo: local
     hooks:
+      - id: golangci-lint-fix
+        name: Run golangci-lint with --fix
+        entry: .github/scripts/run-golangci-lint.sh
+        language: script
+        files: '\.go$'
+        pass_filenames: false
       - id: mockery
         name: Generate mocks with mockery
         entry: .github/scripts/run-mockery.sh
