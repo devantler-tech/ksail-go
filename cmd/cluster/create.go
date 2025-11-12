@@ -734,14 +734,6 @@ func installCalicoCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr time
 		return err
 	}
 
-	err = helmClient.AddRepository(cmd.Context(), &helm.RepositoryEntry{
-		Name: "projectcalico",
-		URL:  "https://docs.tigera.io/calico/charts",
-	})
-	if err != nil {
-		return fmt.Errorf("failed to add Calico Helm repository: %w", err)
-	}
-
 	installer := newCalicoInstaller(helmClient, kubeconfig, clusterCfg)
 
 	return runCalicoInstallation(cmd, installer, tmr)

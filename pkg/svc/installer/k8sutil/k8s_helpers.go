@@ -22,6 +22,9 @@ const (
 // ErrKubeconfigPathEmpty is returned when kubeconfig path is empty.
 var ErrKubeconfigPathEmpty = errors.New("kubeconfig path is empty")
 
+// ErrTimeoutExceeded is returned when a timeout is exceeded.
+var ErrTimeoutExceeded = errors.New("timeout exceeded")
+
 // BuildRESTConfig builds a Kubernetes REST config from kubeconfig path and optional context.
 func BuildRESTConfig(kubeconfig, context string) (*rest.Config, error) {
 	if kubeconfig == "" {
@@ -149,27 +152,54 @@ func WaitForMultipleResources(
 	checks []ReadinessCheck,
 	timeout time.Duration,
 ) error {
-	waitCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	start := time.Now()
 
 	for _, check := range checks {
+		elapsed := time.Since(start)
+
+		remainingTimeout := timeout - elapsed
+		if remainingTimeout <= 0 {
+			return errTimeoutExceeded(check.Type, check.Namespace, check.Name)
+		}
+
+		resourceCtx, cancel := context.WithTimeout(ctx, remainingTimeout)
+
 		var err error
 
 		switch check.Type {
 		case "deployment":
-			err = WaitForDeploymentReady(waitCtx, clientset, check.Namespace, check.Name, timeout)
+			err = WaitForDeploymentReady(
+				resourceCtx, clientset, check.Namespace, check.Name, remainingTimeout,
+			)
+
+			cancel()
+
 			if err != nil {
 				return fmt.Errorf("%s deployment not ready: %w", check.Name, err)
 			}
 		case "daemonset":
-			err = WaitForDaemonSetReady(waitCtx, clientset, check.Namespace, check.Name, timeout)
+			err = WaitForDaemonSetReady(
+				resourceCtx, clientset, check.Namespace, check.Name, remainingTimeout,
+			)
+
+			cancel()
+
 			if err != nil {
 				return fmt.Errorf("%s daemonset not ready: %w", check.Name, err)
 			}
 		default:
+			cancel()
+
 			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
 		}
 	}
 
 	return nil
+}
+
+func errTimeoutExceeded(resourceType, namespace, name string) error {
+	return fmt.Errorf(
+		"%w before checking %s %s/%s",
+		ErrTimeoutExceeded, resourceType, namespace, name,
+	)
 }

@@ -71,8 +71,7 @@ func ExpectInstallerResult(t *testing.T, err error, wantErr, operation string) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) &&
-		(s == substr || len(s) > len(substr) && containsSubstring(s, substr))
+	return containsSubstring(s, substr)
 }
 
 func containsSubstring(s, substr string) bool {
@@ -204,7 +203,7 @@ users:
 
 // CreateReadyDaemonSetClient creates a fake clientset with a ready DaemonSet.
 //
-//nolint:ireturn // Test helper returns interface by design
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 func CreateReadyDaemonSetClient(namespace, name string) kubernetes.Interface {
 	return fake.NewSimpleClientset(&appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
@@ -216,9 +215,9 @@ func CreateReadyDaemonSetClient(namespace, name string) kubernetes.Interface {
 	})
 }
 
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 // CreateDaemonSetClientWithAPIError creates a fake clientset that returns an error on DaemonSet get.
 //
-//nolint:ireturn // Test helper returns interface by design
 func CreateDaemonSetClientWithAPIError(err error) kubernetes.Interface {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor(
@@ -232,9 +231,9 @@ func CreateDaemonSetClientWithAPIError(err error) kubernetes.Interface {
 	return client
 }
 
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 // CreateUnreadyDaemonSetClient creates a fake clientset with an unready DaemonSet.
 //
-//nolint:ireturn // Test helper returns interface by design
 func CreateUnreadyDaemonSetClient(namespace, name string) kubernetes.Interface {
 	return fake.NewSimpleClientset(&appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
@@ -246,9 +245,9 @@ func CreateUnreadyDaemonSetClient(namespace, name string) kubernetes.Interface {
 	})
 }
 
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 // CreateReadyDeploymentClient creates a fake clientset with a ready Deployment.
 //
-//nolint:ireturn // Test helper returns interface by design
 func CreateReadyDeploymentClient(namespace, name string) kubernetes.Interface {
 	return fake.NewSimpleClientset(&appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
@@ -260,9 +259,9 @@ func CreateReadyDeploymentClient(namespace, name string) kubernetes.Interface {
 	})
 }
 
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 // CreateDeploymentClientWithAPIError creates a fake clientset that returns an error on Deployment get.
 //
-//nolint:ireturn // Test helper returns interface by design
 func CreateDeploymentClientWithAPIError(err error) kubernetes.Interface {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor(
@@ -276,9 +275,9 @@ func CreateDeploymentClientWithAPIError(err error) kubernetes.Interface {
 	return client
 }
 
+//nolint:ireturn // Test helper that creates fake Kubernetes client.
 // CreateUnreadyDeploymentClient creates a fake clientset with an unready Deployment.
 //
-//nolint:ireturn // Test helper returns interface by design
 func CreateUnreadyDeploymentClient(namespace, name string) kubernetes.Interface {
 	return fake.NewSimpleClientset(&appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},

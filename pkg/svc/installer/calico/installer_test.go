@@ -31,7 +31,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 		return installer.Install(ctx)
 	}
 
-	scenarios := []testutils.InstallerScenario[*CalicoInstaller]{
+	scenarios := []helm.InstallerScenario[*CalicoInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Install",
@@ -66,7 +66,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 		},
 	}
 
-	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerUninstall(t *testing.T) {
@@ -76,7 +76,7 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 		return installer.Uninstall(ctx)
 	}
 
-	scenarios := []testutils.InstallerScenario[*CalicoInstaller]{
+	scenarios := []helm.InstallerScenario[*CalicoInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Uninstall",
@@ -100,13 +100,13 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 		},
 	}
 
-	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
+	helm.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
 		t.Helper()
 		client := helm.NewMockInterface(t)
 
@@ -131,7 +131,7 @@ func TestCalicoInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCalicoInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
+	helm.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
 		t.Helper()
 
 		return NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
@@ -174,7 +174,7 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	testutils.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
+	helm.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
 }
 
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
@@ -216,7 +216,7 @@ func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	testutils.ExpectAddRepository(t, client, testutils.HelmRepoExpectation{
+	helm.ExpectAddRepository(t, client, helm.RepoExpectation{
 		RepoName: "projectcalico",
 		RepoURL:  "https://docs.tigera.io/calico/charts",
 	}, err)
@@ -224,7 +224,7 @@ func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err err
 
 func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
-	testutils.ExpectInstallChart(t, client, testutils.HelmChartExpectation{
+	helm.ExpectInstallChart(t, client, helm.ChartExpectation{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
@@ -235,5 +235,5 @@ func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installE
 
 func expectCalicoUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	testutils.ExpectUninstall(t, client, "calico", "tigera-operator", err)
+	helm.ExpectUninstall(t, client, "calico", "tigera-operator", err)
 }

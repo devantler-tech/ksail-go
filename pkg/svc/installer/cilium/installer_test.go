@@ -31,7 +31,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		return installer.Install(ctx)
 	}
 
-	scenarios := []testutils.InstallerScenario[*CiliumInstaller]{
+	scenarios := []helm.InstallerScenario[*CiliumInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Install",
@@ -66,7 +66,7 @@ func TestCiliumInstallerInstall(t *testing.T) {
 		},
 	}
 
-	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCiliumInstallerUninstall(t *testing.T) {
@@ -76,7 +76,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 		return installer.Uninstall(ctx)
 	}
 
-	scenarios := []testutils.InstallerScenario[*CiliumInstaller]{
+	scenarios := []helm.InstallerScenario[*CiliumInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Uninstall",
@@ -100,7 +100,7 @@ func TestCiliumInstallerUninstall(t *testing.T) {
 		},
 	}
 
-	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestApplyDefaultValues(t *testing.T) {
@@ -124,7 +124,7 @@ func TestApplyDefaultValues(t *testing.T) {
 func TestCiliumInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CiliumInstaller {
+	helm.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CiliumInstaller {
 		t.Helper()
 		client := helm.NewMockInterface(t)
 
@@ -149,7 +149,7 @@ func TestCiliumInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCiliumInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	testutils.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CiliumInstaller {
+	helm.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CiliumInstaller {
 		t.Helper()
 
 		return NewCiliumInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
@@ -192,7 +192,7 @@ func TestCiliumInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	testutils.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
+	helm.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
 }
 
 func newCiliumAPIServer(t *testing.T, ready bool) *httptest.Server {
@@ -232,7 +232,7 @@ func setupCiliumInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	testutils.ExpectAddRepository(t, client, testutils.HelmRepoExpectation{
+	helm.ExpectAddRepository(t, client, helm.RepoExpectation{
 		RepoName: "cilium",
 		RepoURL:  "https://helm.cilium.io",
 	}, err)
@@ -240,7 +240,7 @@ func expectCiliumAddRepository(t *testing.T, client *helm.MockInterface, err err
 
 func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
-	testutils.ExpectInstallChart(t, client, testutils.HelmChartExpectation{
+	helm.ExpectInstallChart(t, client, helm.ChartExpectation{
 		ReleaseName:     "cilium",
 		ChartName:       "cilium/cilium",
 		Namespace:       "kube-system",
@@ -252,5 +252,5 @@ func expectCiliumInstallChart(t *testing.T, client *helm.MockInterface, installE
 
 func expectCiliumUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	testutils.ExpectUninstall(t, client, "cilium", "kube-system", err)
+	helm.ExpectUninstall(t, client, "cilium", "kube-system", err)
 }

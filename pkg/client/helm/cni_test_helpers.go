@@ -1,11 +1,12 @@
-package testutils
+package helm
 
 import (
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 // CNIInstaller defines the minimal interface needed for testing CNI installers.
@@ -21,7 +22,7 @@ type CNIInstaller interface {
 // InstallerScenario defines a test scenario for installer operations.
 type InstallerScenario[T CNIInstaller] struct {
 	Name       string
-	Setup      func(*testing.T, *helm.MockInterface)
+	Setup      func(*testing.T, *MockInterface)
 	ActionName string
 	Action     func(context.Context, T) error
 	WantErr    string
@@ -31,7 +32,7 @@ type InstallerScenario[T CNIInstaller] struct {
 func RunInstallerScenarios[T CNIInstaller](
 	t *testing.T,
 	scenarios []InstallerScenario[T],
-	newInstaller func(*testing.T) (T, *helm.MockInterface),
+	newInstaller func(*testing.T) (T, *MockInterface),
 ) {
 	t.Helper()
 
@@ -44,7 +45,7 @@ func RunInstallerScenarios[T CNIInstaller](
 
 			err := scenario.Action(context.Background(), installer)
 
-			ExpectInstallerResult(t, err, scenario.WantErr, scenario.ActionName)
+			testutils.ExpectInstallerResult(t, err, scenario.WantErr, scenario.ActionName)
 		})
 	}
 }
@@ -70,12 +71,12 @@ func TestSetWaitForReadinessFunc[T CNIInstaller](
 			return nil
 		})
 
-		ExpectNoError(
+		testutils.ExpectNoError(
 			t,
 			installer.WaitForReadiness(context.Background()),
 			"WaitForReadiness with custom func",
 		)
-		ExpectTrue(t, called, "custom wait function invocation")
+		testutils.ExpectTrue(t, called, "custom wait function invocation")
 	})
 
 	t.Run("RestoresDefaultWhenNil", func(t *testing.T) {
@@ -83,7 +84,7 @@ func TestSetWaitForReadinessFunc[T CNIInstaller](
 
 		installer := newInstaller(t)
 		defaultFn := installer.GetWaitFn()
-		ExpectNotNil(t, defaultFn, "default wait function")
+		testutils.ExpectNotNil(t, defaultFn, "default wait function")
 		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
 		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })
@@ -95,7 +96,7 @@ func TestSetWaitForReadinessFunc[T CNIInstaller](
 
 		installer.SetWaitForReadinessFunc(nil)
 		restoredPtr := reflect.ValueOf(installer.GetWaitFn()).Pointer()
-		ExpectEqual(
+		testutils.ExpectEqual(
 			t,
 			restoredPtr,
 			defaultPtr,
@@ -133,7 +134,7 @@ func TestWaitForReadinessDetectsUnready(
 		t.Fatal("expected readiness failure when components are unready")
 	}
 
-	if !containsSubstring(err.Error(), "not ready") {
+	if !strings.Contains(err.Error(), "not ready") {
 		t.Fatalf("unexpected error message: %v", err)
 	}
 }
