@@ -43,7 +43,12 @@ func (b *CNIInstallerBase) WaitForReadiness(ctx context.Context) error {
 		return nil
 	}
 
-	return b.waitFn(ctx)
+	err := b.waitFn(ctx)
+	if err != nil {
+		return fmt.Errorf("wait for readiness: %w", err)
+	}
+
+	return nil
 }
 
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.

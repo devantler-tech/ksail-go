@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,9 @@ const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
 )
+
+// ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
+var ErrUnsupportedCNI = errors.New("unsupported CNI type")
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
@@ -145,10 +149,10 @@ func handlePostCreationSetup(
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
-	case v1alpha1.CNIDefault:
+	case v1alpha1.CNIDefault, "":
 		return handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
-		return handleMetricsServer(cmd, clusterCfg, tmr)
+		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
 	}
 }
 
