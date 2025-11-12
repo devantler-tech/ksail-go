@@ -5,12 +5,24 @@
 
 set -e
 
-# Function to check if golangci-lint is available
+# Function to check if golangci-lint is available and working
 check_golangci_lint() {
 	if command -v golangci-lint >/dev/null 2>&1; then
-		return 0
+		# Test if golangci-lint can run with current config
+		if golangci-lint --version >/dev/null 2>&1; then
+			return 0
+		else
+			return 2 # golangci-lint exists but config is incompatible
+		fi
+	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
+		# Test if golangci-lint can run with current config
+		if "$HOME/go/bin/golangci-lint" --version >/dev/null 2>&1; then
+			return 0
+		else
+			return 2 # golangci-lint exists but config is incompatible
+		fi
 	else
-		return 1
+		return 1 # golangci-lint not found
 	fi
 }
 
@@ -18,11 +30,22 @@ check_golangci_lint() {
 install_golangci_lint() {
 	echo "golangci-lint not found. Attempting to install..."
 	echo ""
-	echo "Installing golangci-lint via go install..."
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	echo "Note: Using official binary installation method (recommended by golangci-lint)."
+	echo "See: https://golangci-lint.run/welcome/install/"
 	echo ""
-	echo "If installation failed, please see the manual installation instructions:"
-	echo "https://golangci-lint.run/usage/install/"
+	
+	# Use official binary installation script
+	echo "Installing golangci-lint via official binary install script..."
+	if curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$HOME/go/bin" latest; then
+		echo "Installation successful."
+	else
+		echo "Automatic installation failed."
+		echo ""
+		echo "Please install golangci-lint manually from:"
+		echo "https://golangci-lint.run/usage/install/"
+		echo ""
+		return 1
+	fi
 	echo ""
 }
 
@@ -45,19 +68,33 @@ run_golangci_lint() {
 # Main execution
 main() {
 	if ! check_golangci_lint; then
-		install_golangci_lint
-		echo "Attempting to run golangci-lint after installation..."
-		if ! run_golangci_lint; then
+		check_result=$?
+		case $check_result in
+		1) # golangci-lint not found
+			install_golangci_lint
+			echo "Attempting to run golangci-lint after installation..."
+			if ! run_golangci_lint; then
+				echo ""
+				echo "Installation completed but golangci-lint failed to run properly."
+				echo "Please install golangci-lint manually from:"
+				echo "https://golangci-lint.run/usage/install/"
+				echo ""
+				echo "Then run: golangci-lint run --fix"
+				exit 1
+			fi
+			;;
+		2) # golangci-lint exists but incompatible
+			echo "golangci-lint is installed but appears to be incompatible with the project configuration."
 			echo ""
-			echo "Installation completed but golangci-lint failed to run properly."
-			echo "Please install golangci-lint manually from:"
+			echo "Please reinstall golangci-lint from:"
 			echo "https://golangci-lint.run/usage/install/"
 			echo ""
 			echo "Then run: golangci-lint run --fix"
 			exit 1
-		fi
+			;;
+		esac
 	else
-		# golangci-lint is available
+		# golangci-lint is available and compatible
 		run_golangci_lint
 	fi
 }

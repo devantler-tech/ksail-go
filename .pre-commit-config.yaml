@@ -3,10 +3,6 @@
 # See https://pre-commit.com/hooks.html for more hooks
 
 repos:
-  - repo: https://github.com/golangci/golangci-lint
-    rev: v2.6.0
-    hooks:
-      - id: golangci-lint-fmt
   - repo: local
     hooks:
       - id: golangci-lint-fix
