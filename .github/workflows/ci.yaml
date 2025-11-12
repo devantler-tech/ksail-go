@@ -32,10 +32,8 @@ jobs:
         run: go install github.com/vektra/mockery/v3@latest
 
       - name: 🏃 Validate pre-commit hooks
-        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1     
-
-      - name: 🏃 Run pre-commit hooks
-        uses: pre-commit-ci/lite-action@v1.1.0
+        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
+      - uses: pre-commit-ci/lite-action@v1.1.0
         if: always()
 
   ci:
