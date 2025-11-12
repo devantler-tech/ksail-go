@@ -48,30 +48,14 @@ func WriteValidKsailConfig(t *testing.T, dir string) {
 
 // RunTestMainWithSnapshotCleanup runs the standard TestMain pattern with snapshot cleanup.
 // Shared across packages that only need snapshot cleanup (non command-specific logic).
-//
-// Snapshot cleanup behavior is controlled by the UPDATE_SNAPS environment variable:
-//   - "always": Always clean obsolete snapshots (including in CI)
-//   - "clean": Clean obsolete snapshots locally (not in CI)
-//   - unset/empty: Always clean obsolete snapshots
-//
-// This ensures obsolete snapshots are removed when UPDATE_SNAPS is set appropriately.
 func RunTestMainWithSnapshotCleanup(m *testing.M) {
 	exitCode := m.Run()
 
-	updateSnaps := os.Getenv("UPDATE_SNAPS")
+	_, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
+	if err != nil {
+		_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
 
-	// Only clean when UPDATE_SNAPS suggests cleanup should occur
-	// This includes: "always", "clean", or when UPDATE_SNAPS is unset/empty
-	// Skip cleanup when UPDATE_SNAPS is "true" (update only, no cleanup)
-	shouldClean := updateSnaps == "" || updateSnaps == "always" || updateSnaps == "clean"
-
-	if shouldClean {
-		_, err := snaps.Clean(m, snaps.CleanOpts{Sort: true})
-		if err != nil {
-			_, _ = os.Stderr.WriteString("failed to clean snapshots: " + err.Error() + "\n")
-
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 
 	os.Exit(exitCode)
