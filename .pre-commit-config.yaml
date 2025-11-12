@@ -4,7 +4,7 @@
 
 repos:
   - repo: https://github.com/golangci/golangci-lint
-    rev: v2.6.0
+    rev: v2.6.1
     hooks:
       - id: golangci-lint-fmt
   - repo: local
@@ -14,4 +14,10 @@ repos:
         entry: .github/scripts/run-mockery.sh
         language: script
         files: '\.go$'
+        pass_filenames: false
+      - id: generate-schema
+        name: Generate JSON schema for KSail config
+        entry: .github/scripts/generate-schema.sh
+        language: script
+        files: 'pkg/apis/cluster/v1alpha1/.*\.go$'
         pass_filenames: false
