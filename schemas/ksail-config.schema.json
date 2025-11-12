@@ -88,6 +88,11 @@
               "additionalProperties": false,
               "type": "object"
             },
+            "calico": {
+              "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
             "flux": {
               "properties": {},
               "additionalProperties": false,
