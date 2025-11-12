@@ -71,7 +71,9 @@ main() {
 		check_result=$?
 		case $check_result in
 		1) # golangci-lint not found
-			install_golangci_lint
+			if ! install_golangci_lint; then
+				exit 1
+			fi
 			echo "Attempting to run golangci-lint after installation..."
 			if ! run_golangci_lint; then
 				echo ""
