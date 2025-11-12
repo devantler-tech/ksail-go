@@ -5,18 +5,18 @@
 
 set -e
 
-# Function to check if golangci-lint is available and working
+# Function to check if golangci-lint is available and config is compatible
 check_golangci_lint() {
 	if command -v golangci-lint >/dev/null 2>&1; then
-		# Test if golangci-lint can run with current config
-		if golangci-lint --version >/dev/null 2>&1; then
+		# Test if golangci-lint config is compatible with current project
+		if golangci-lint config path >/dev/null 2>&1; then
 			return 0
 		else
 			return 2 # golangci-lint exists but config is incompatible
 		fi
 	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
-		# Test if golangci-lint can run with current config
-		if "$HOME/go/bin/golangci-lint" --version >/dev/null 2>&1; then
+		# Test if golangci-lint config is compatible with current project
+		if "$HOME/go/bin/golangci-lint" config path >/dev/null 2>&1; then
 			return 0
 		else
 			return 2 # golangci-lint exists but config is incompatible
