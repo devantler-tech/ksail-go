@@ -1,4 +1,4 @@
-package cnihelpers
+package testutils
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 // CNIInstaller defines the minimal interface needed for testing CNI installers.
@@ -71,12 +70,12 @@ func TestSetWaitForReadinessFunc[T CNIInstaller](
 			return nil
 		})
 
-		testutils.ExpectNoError(
+		ExpectNoError(
 			t,
 			installer.WaitForReadiness(context.Background()),
 			"WaitForReadiness with custom func",
 		)
-		testutils.ExpectTrue(t, called, "custom wait function invocation")
+		ExpectTrue(t, called, "custom wait function invocation")
 	})
 
 	t.Run("RestoresDefaultWhenNil", func(t *testing.T) {
@@ -84,7 +83,7 @@ func TestSetWaitForReadinessFunc[T CNIInstaller](
 
 		installer := newInstaller(t)
 		defaultFn := installer.GetWaitFn()
-		testutils.ExpectNotNil(t, defaultFn, "default wait function")
+		ExpectNotNil(t, defaultFn, "default wait function")
 		defaultPtr := reflect.ValueOf(defaultFn).Pointer()
 
 		installer.SetWaitForReadinessFunc(func(context.Context) error { return nil })

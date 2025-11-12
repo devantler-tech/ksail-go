@@ -1,10 +1,9 @@
-package cnihelpers
+package testutils
 
 import (
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -68,11 +67,11 @@ func ExpectInstallChart(
 				ExpectEqual(t, spec.ChartName, expect.ChartName, "chart name")
 				ExpectEqual(t, spec.Namespace, expect.Namespace, "namespace")
 				ExpectEqual(t, spec.RepoURL, expect.RepoURL, "repository URL")
-				testutils.ExpectTrue(t, spec.Wait, "Wait flag")
-				testutils.ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
+				ExpectTrue(t, spec.Wait, "Wait flag")
+				ExpectTrue(t, spec.WaitForJobs, "WaitForJobs flag")
 
 				if expect.CreateNamespace {
-					testutils.ExpectTrue(t, spec.CreateNamespace, "CreateNamespace flag")
+					ExpectTrue(t, spec.CreateNamespace, "CreateNamespace flag")
 				}
 
 				for key, expectedVal := range expect.SetJSONVals {

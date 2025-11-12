@@ -9,7 +9,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/testutils/cnihelpers"
 )
 
 func TestNewCalicoInstaller(t *testing.T) {
@@ -32,7 +31,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 		return installer.Install(ctx)
 	}
 
-	scenarios := []cnihelpers.InstallerScenario[*CalicoInstaller]{
+	scenarios := []testutils.InstallerScenario[*CalicoInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Install",
@@ -50,7 +49,7 @@ func TestCalicoInstallerInstall(t *testing.T) {
 			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				setupCalicoInstallExpectations(t, client, cnihelpers.ErrInstallFailed)
+				setupCalicoInstallExpectations(t, client, testutils.ErrInstallFailed)
 			},
 			WantErr: "failed to install Calico",
 		},
@@ -61,13 +60,13 @@ func TestCalicoInstallerInstall(t *testing.T) {
 			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCalicoAddRepository(t, client, cnihelpers.ErrAddRepoFailed)
+				expectCalicoAddRepository(t, client, testutils.ErrAddRepoFailed)
 			},
 			WantErr: "failed to add calico repository",
 		},
 	}
 
-	cnihelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerUninstall(t *testing.T) {
@@ -77,7 +76,7 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 		return installer.Uninstall(ctx)
 	}
 
-	scenarios := []cnihelpers.InstallerScenario[*CalicoInstaller]{
+	scenarios := []testutils.InstallerScenario[*CalicoInstaller]{
 		{
 			Name:       "Success",
 			ActionName: "Uninstall",
@@ -95,19 +94,19 @@ func TestCalicoInstallerUninstall(t *testing.T) {
 			Setup: func(t *testing.T, client *helm.MockInterface) {
 				t.Helper()
 
-				expectCalicoUninstall(t, client, cnihelpers.ErrUninstallFailed)
+				expectCalicoUninstall(t, client, testutils.ErrUninstallFailed)
 			},
 			WantErr: "failed to uninstall calico release",
 		},
 	}
 
-	cnihelpers.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+	testutils.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
 }
 
 func TestCalicoInstallerSetWaitForReadinessFunc(t *testing.T) {
 	t.Parallel()
 
-	cnihelpers.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
+	testutils.TestSetWaitForReadinessFunc(t, func(t *testing.T) *CalicoInstaller {
 		t.Helper()
 		client := helm.NewMockInterface(t)
 
@@ -132,7 +131,7 @@ func TestCalicoInstallerWaitForReadinessBuildConfigError(t *testing.T) {
 func TestCalicoInstallerWaitForReadinessNoOpWhenUnset(t *testing.T) {
 	t.Parallel()
 
-	cnihelpers.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
+	testutils.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *CalicoInstaller {
 		t.Helper()
 
 		return NewCalicoInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
@@ -145,7 +144,7 @@ func TestCalicoInstallerWaitForReadinessSuccess(t *testing.T) {
 	server := newCalicoAPIServer(t, true)
 	t.Cleanup(server.Close)
 
-	kubeconfig := cnihelpers.WriteServerBackedKubeconfig(t, server.URL)
+	kubeconfig := testutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCalicoInstaller(
 		helm.NewMockInterface(t),
@@ -166,7 +165,7 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 	server := newCalicoAPIServer(t, false)
 	t.Cleanup(server.Close)
 
-	kubeconfig := cnihelpers.WriteServerBackedKubeconfig(t, server.URL)
+	kubeconfig := testutils.WriteServerBackedKubeconfig(t, server.URL)
 
 	installer := NewCalicoInstaller(
 		helm.NewMockInterface(t),
@@ -175,20 +174,20 @@ func TestCalicoInstallerWaitForReadinessDetectsUnreadyComponents(t *testing.T) {
 		75*time.Millisecond,
 	)
 
-	cnihelpers.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
+	testutils.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
 }
 
 func newCalicoAPIServer(t *testing.T, ready bool) *httptest.Server {
 	t.Helper()
 
-	return cnihelpers.NewTestAPIServer(t, func(writer http.ResponseWriter, req *http.Request) {
+	return testutils.NewTestAPIServer(t, func(writer http.ResponseWriter, req *http.Request) {
 		switch req.URL.Path {
 		case "/apis/apps/v1/namespaces/tigera-operator/deployments/tigera-operator":
-			cnihelpers.ServeDeployment(t, writer, ready)
+			testutils.ServeDeployment(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/daemonsets/calico-node":
-			cnihelpers.ServeDaemonSet(t, writer, ready)
+			testutils.ServeDaemonSet(t, writer, ready)
 		case "/apis/apps/v1/namespaces/calico-system/deployments/calico-kube-controllers":
-			cnihelpers.ServeDeployment(t, writer, ready)
+			testutils.ServeDeployment(t, writer, ready)
 		default:
 			http.NotFound(writer, req)
 		}
@@ -217,7 +216,7 @@ func setupCalicoInstallExpectations(t *testing.T, client *helm.MockInterface, in
 
 func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	cnihelpers.ExpectAddRepository(t, client, cnihelpers.HelmRepoExpectation{
+	testutils.ExpectAddRepository(t, client, testutils.HelmRepoExpectation{
 		RepoName: "projectcalico",
 		RepoURL:  "https://docs.tigera.io/calico/charts",
 	}, err)
@@ -225,7 +224,7 @@ func expectCalicoAddRepository(t *testing.T, client *helm.MockInterface, err err
 
 func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
-	cnihelpers.ExpectInstallChart(t, client, cnihelpers.HelmChartExpectation{
+	testutils.ExpectInstallChart(t, client, testutils.HelmChartExpectation{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
@@ -236,5 +235,5 @@ func expectCalicoInstallChart(t *testing.T, client *helm.MockInterface, installE
 
 func expectCalicoUninstall(t *testing.T, client *helm.MockInterface, err error) {
 	t.Helper()
-	cnihelpers.ExpectUninstall(t, client, "calico", "tigera-operator", err)
+	testutils.ExpectUninstall(t, client, "calico", "tigera-operator", err)
 }

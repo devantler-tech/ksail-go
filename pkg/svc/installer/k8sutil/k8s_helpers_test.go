@@ -7,7 +7,6 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/devantler-tech/ksail-go/pkg/testutils/cnihelpers"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -63,7 +62,7 @@ func testWaitForDaemonSetReadyAPIError(t *testing.T) {
 		"get",
 		"daemonsets",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, cnihelpers.ErrDaemonSetBoom
+			return true, nil, testutils.ErrDaemonSetBoom
 		},
 	)
 
@@ -147,7 +146,7 @@ func testWaitForDeploymentReadyAPIError(t *testing.T) {
 		"get",
 		"deployments",
 		func(_ k8stesting.Action) (bool, runtime.Object, error) {
-			return true, nil, cnihelpers.ErrDeploymentFail
+			return true, nil, testutils.ErrDeploymentFail
 		},
 	)
 
@@ -206,7 +205,7 @@ func TestPollForReadiness(t *testing.T) {
 		t.Parallel()
 
 		err := pollForReadinessWithDefaultTimeout(t, func(context.Context) (bool, error) {
-			return false, cnihelpers.ErrPollBoom
+			return false, testutils.ErrPollBoom
 		})
 
 		testutils.ExpectErrorContains(

@@ -5,13 +5,13 @@
 //
 // # CNI Installer Test Utilities
 //
-// For CNI-specific test utilities, see the cnihelpers subpackage:
+// CNI-specific test utilities are available directly in this package:
 //
-//	import "github.com/devantler-tech/ksail-go/pkg/testutils/cnihelpers"
+//	import "github.com/devantler-tech/ksail-go/pkg/testutils"
 //
-// The cnihelpers package provides:
-//   - Generic installer test framework using Go generics
-//   - Helm mock expectation helpers
-//   - HTTP test server and response helpers
-//   - Common test errors and assertions
+// The package provides:
+//   - Generic installer test framework using Go generics (cni_installer_helpers.go)
+//   - Helm mock expectation helpers (cni_helm_helpers.go)
+//   - HTTP test server and response helpers (cni_http_helpers.go)
+//   - Common test errors and assertions (cni_helpers.go)
 package testutils
