@@ -680,44 +680,18 @@ func newCiliumInstaller(
 	)
 }
 
-//nolint:dupl // Intentional duplication - Cilium and Calico installers follow same pattern but use different types.
+// cniInstaller defines the interface for CNI installers.
+type cniInstaller interface {
+	Install(ctx context.Context) error
+	WaitForReadiness(ctx context.Context) error
+}
+
 func runCiliumInstallation(
 	cmd *cobra.Command,
 	installer *ciliuminstaller.CiliumInstaller,
 	tmr timer.Timer,
 ) error {
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "installing cilium",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	installErr := installer.Install(cmd.Context())
-	if installErr != nil {
-		return fmt.Errorf("cilium installation failed: %w", installErr)
-	}
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.ActivityType,
-		Content: "awaiting cilium to be ready",
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	readinessErr := installer.WaitForReadiness(cmd.Context())
-	if readinessErr != nil {
-		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
-	}
-
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
-
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "CNI installed " + timingStr,
-		Writer:  cmd.OutOrStdout(),
-	})
-
-	return nil
+	return runCNIInstallation(cmd, installer, "cilium", tmr)
 }
 
 // installCalicoCNI installs Calico CNI on the cluster.
@@ -754,32 +728,41 @@ func newCalicoInstaller(
 	)
 }
 
-//nolint:dupl // Intentional duplication - Cilium and Calico installers follow same pattern but use different types.
 func runCalicoInstallation(
 	cmd *cobra.Command,
 	installer *calicoinstaller.CalicoInstaller,
 	tmr timer.Timer,
 ) error {
+	return runCNIInstallation(cmd, installer, "calico", tmr)
+}
+
+// runCNIInstallation is the generic implementation for running CNI installation.
+func runCNIInstallation(
+	cmd *cobra.Command,
+	installer cniInstaller,
+	cniName string,
+	tmr timer.Timer,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "installing calico",
+		Content: "installing " + cniName,
 		Writer:  cmd.OutOrStdout(),
 	})
 
 	installErr := installer.Install(cmd.Context())
 	if installErr != nil {
-		return fmt.Errorf("calico installation failed: %w", installErr)
+		return fmt.Errorf("%s installation failed: %w", cniName, installErr)
 	}
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "awaiting calico to be ready",
+		Content: "awaiting " + cniName + " to be ready",
 		Writer:  cmd.OutOrStdout(),
 	})
 
 	readinessErr := installer.WaitForReadiness(cmd.Context())
 	if readinessErr != nil {
-		return fmt.Errorf("calico readiness check failed: %w", readinessErr)
+		return fmt.Errorf("%s readiness check failed: %w", cniName, readinessErr)
 	}
 
 	total, stage := tmr.GetTiming()

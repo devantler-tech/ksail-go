@@ -109,7 +109,7 @@ func TestApplyDefaultValues(t *testing.T) {
 	t.Run("ReturnsDefaultValues", func(t *testing.T) {
 		t.Parallel()
 
-		vals := applyDefaultValues()
+		vals := defaultCiliumValues()
 
 		testutils.ExpectNotNil(t, vals, "default values map")
 		testutils.ExpectEqual(

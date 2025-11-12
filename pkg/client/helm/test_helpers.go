@@ -9,8 +9,10 @@ import (
 
 // RepoExpectation configures expectations for Helm repository operations.
 type RepoExpectation struct {
+	// RepoName is the expected repository name.
 	RepoName string
-	RepoURL  string
+	// RepoURL is the expected repository URL.
+	RepoURL string
 }
 
 // ExpectAddRepository sets up mock expectations for adding a Helm repository.
@@ -37,12 +39,18 @@ func ExpectAddRepository(
 
 // ChartExpectation configures expectations for Helm chart operations.
 type ChartExpectation struct {
-	ReleaseName     string
-	ChartName       string
-	Namespace       string
-	RepoURL         string
+	// ReleaseName is the expected Helm release name.
+	ReleaseName string
+	// ChartName is the expected chart identifier.
+	ChartName string
+	// Namespace is the expected Kubernetes namespace.
+	Namespace string
+	// RepoURL is the expected Helm repository URL.
+	RepoURL string
+	// CreateNamespace indicates if namespace creation is expected.
 	CreateNamespace bool
-	SetJSONVals     map[string]string
+	// SetJSONVals contains expected JSON values for chart configuration.
+	SetJSONVals map[string]string
 }
 
 // ExpectInstallChart sets up mock expectations for installing a Helm chart.

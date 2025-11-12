@@ -125,7 +125,7 @@ func TestHandleCreateRunE_InstallsCiliumWhenConfigured(t *testing.T) {
 	err := handleCreateRunE(cmd, cfgManager, deps)
 
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to install Cilium CNI")
+	require.ErrorContains(t, err, "failed to access kubeconfig file")
 	assert.Equal(t, 1, provisioner.CreateCalls)
 }
 

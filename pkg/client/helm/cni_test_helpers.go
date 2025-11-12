@@ -20,12 +20,18 @@ type CNIInstaller interface {
 }
 
 // InstallerScenario defines a test scenario for installer operations.
+// T is the installer type under test, which must implement CNIInstaller.
 type InstallerScenario[T CNIInstaller] struct {
-	Name       string
-	Setup      func(*testing.T, *MockInterface)
+	// Name is the test scenario name.
+	Name string
+	// Setup configures test expectations on the mock client.
+	Setup func(*testing.T, *MockInterface)
+	// ActionName is the human-readable operation name (e.g., "Install").
 	ActionName string
-	Action     func(context.Context, T) error
-	WantErr    string
+	// Action is the installer operation to execute.
+	Action func(context.Context, T) error
+	// WantErr is the expected error substring; empty for success.
+	WantErr string
 }
 
 // RunInstallerScenarios runs a set of installer test scenarios.

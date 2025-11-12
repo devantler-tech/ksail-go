@@ -83,7 +83,7 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		Namespace:       "kube-system",
 		RepoURL:         "https://helm.cilium.io",
 		CreateNamespace: false,
-		SetJSONVals:     applyDefaultValues(),
+		SetJSONVals:     defaultCiliumValues(),
 	}
 
 	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
@@ -94,7 +94,7 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 	return nil
 }
 
-func applyDefaultValues() map[string]string {
+func defaultCiliumValues() map[string]string {
 	return map[string]string{
 		"operator.replicas": "1",
 	}
