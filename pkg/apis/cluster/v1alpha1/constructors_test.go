@@ -28,11 +28,9 @@ func TestClusterDirectCreation(t *testing.T) {
 				Context:    "test-ctx",
 				Timeout:    metav1.Duration{Duration: time.Duration(10) * time.Minute},
 			},
-			CNI:               v1alpha1.CNICilium,
-			CSI:               v1alpha1.CSILocalPathStorage,
-			IngressController: v1alpha1.IngressControllerTraefik,
-			GatewayController: v1alpha1.GatewayControllerCilium,
-			GitOpsEngine:      v1alpha1.GitOpsEngineNone,
+			CNI:          v1alpha1.CNICilium,
+			CSI:          v1alpha1.CSILocalPathStorage,
+			GitOpsEngine: v1alpha1.GitOpsEngineNone,
 		},
 	}
 
@@ -176,63 +174,6 @@ func TestCSISet(t *testing.T) {
 	)
 }
 
-func TestIngressControllerSet(t *testing.T) {
-	t.Parallel()
-
-	validCases := []struct{ input, expected string }{
-		{"Default", "Default"},
-		{"traefik", "Traefik"},
-		{"NONE", "None"},
-	}
-	for _, validCase := range validCases {
-		var ic v1alpha1.IngressController
-
-		require.NoError(t, ic.Set(validCase.input))
-	}
-
-	err := func() error {
-		var ic v1alpha1.IngressController
-
-		return ic.Set("invalid")
-	}()
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		v1alpha1.ErrInvalidIngressController,
-		"invalid",
-		"Set(invalid)",
-	)
-}
-
-func TestGatewayControllerSet(t *testing.T) {
-	t.Parallel()
-
-	validCases := []struct{ input, expected string }{
-		{"Default", "Default"},
-		{"traefik", "Traefik"},
-		{"cilium", "Cilium"},
-		{"NONE", "None"},
-	}
-	for _, validCase := range validCases {
-		var gc v1alpha1.GatewayController
-
-		require.NoError(t, gc.Set(validCase.input))
-	}
-
-	err := func() error {
-		var gc v1alpha1.GatewayController
-
-		return gc.Set("invalid")
-	}()
-	testutils.AssertErrWrappedContains(
-		t,
-		err,
-		v1alpha1.ErrInvalidGatewayController,
-		"invalid",
-		"Set(invalid)",
-	)
-}
-
 func TestMetricsServerSet(t *testing.T) {
 	t.Parallel()
 
@@ -299,14 +240,6 @@ func TestStringAndTypeMethods(t *testing.T) {
 	assert.Equal(t, "Default", csi.String())
 	assert.Equal(t, "CSI", csi.Type())
 
-	ic := v1alpha1.IngressControllerDefault
-	assert.Equal(t, "Default", ic.String())
-	assert.Equal(t, "IngressController", ic.Type())
-
-	gc := v1alpha1.GatewayControllerDefault
-	assert.Equal(t, "Default", gc.String())
-	assert.Equal(t, "GatewayController", gc.Type())
-
 	ms := v1alpha1.MetricsServerEnabled
 	assert.Equal(t, "Enabled", ms.String())
 	assert.Equal(t, "MetricsServer", ms.Type())
@@ -340,8 +273,6 @@ func TestNewClusterSpec(t *testing.T) {
 	assert.Equal(t, v1alpha1.Distribution(""), spec.Distribution)
 	assert.Equal(t, v1alpha1.CNI(""), spec.CNI)
 	assert.Equal(t, v1alpha1.CSI(""), spec.CSI)
-	assert.Equal(t, v1alpha1.IngressController(""), spec.IngressController)
-	assert.Equal(t, v1alpha1.GatewayController(""), spec.GatewayController)
 	assert.Equal(t, v1alpha1.GitOpsEngineNone, spec.GitOpsEngine)
 	assert.NotNil(t, spec.Options)
 }
