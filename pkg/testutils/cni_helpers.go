@@ -1,4 +1,3 @@
-// Package testutils provides shared testing utilities for CNI installer tests.
 package testutils
 
 import (
