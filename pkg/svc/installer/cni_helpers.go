@@ -99,11 +99,13 @@ func (b *CNIInstallerBase) GetContext() string {
 }
 
 // GetWaitFn returns the wait function for testing purposes.
+// This method is primarily used in tests to verify wait function behavior.
 func (b *CNIInstallerBase) GetWaitFn() func(context.Context) error {
 	return b.waitFn
 }
 
 // SetWaitFn sets the wait function directly for testing purposes.
+// This is a low-level method used primarily in tests. Prefer using SetWaitForReadinessFunc for production code.
 func (b *CNIInstallerBase) SetWaitFn(fn func(context.Context) error) {
 	b.waitFn = fn
 }

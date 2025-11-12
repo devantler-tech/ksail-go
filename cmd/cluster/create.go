@@ -145,7 +145,7 @@ func handlePostCreationSetup(
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
-	case v1alpha1.CNIDefault, "":
+	case v1alpha1.CNIDefault:
 		return handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
 		return handleMetricsServer(cmd, clusterCfg, tmr)
