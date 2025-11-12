@@ -17,3 +17,9 @@ repos:
         language: script
         files: '\.go$'
         pass_filenames: false
+      - id: generate-schema
+        name: Generate JSON schema for KSail config
+        entry: .github/scripts/generate-schema.sh
+        language: script
+        files: 'pkg/apis/cluster/v1alpha1/.*\.go$'
+        pass_filenames: false
