@@ -38,6 +38,158 @@ When working on KSail-Go, always adhere to these fundamental software engineerin
 
 These principles complement the constitutional requirements in `.specify/memory/constitution.md` and guide day-to-day coding decisions.
 
+## Code Smells to Avoid
+
+Code smells are patterns in code that indicate potential problems and suggest a need for refactoring. While not bugs themselves, they make code harder to understand, maintain, and extend. This section is inspired by [refactoring.guru](https://refactoring.guru/refactoring/smells) and adapted for Go and KSail-Go.
+
+When reviewing or writing code, actively watch for these smells and refactor them when discovered:
+
+### Bloaters
+
+Code that has grown too large and unwieldy:
+
+**Long Method/Function**: Functions that do too much, making them hard to understand and test.
+- ❌ Avoid: Functions exceeding 50-100 lines or doing multiple unrelated tasks
+- ✅ Prefer: Extract smaller, focused functions with clear single purposes
+- Example: Split a 200-line cluster creation function into smaller steps like `validateConfig()`, `provisionNodes()`, `installComponents()`
+
+**Large Struct**: Structs with too many fields or methods, indicating they have too many responsibilities.
+- ❌ Avoid: Structs managing unrelated concerns (e.g., a Config struct handling both parsing and validation and persistence)
+- ✅ Prefer: Split into focused types (e.g., `ConfigParser`, `ConfigValidator`, `ConfigStorage`)
+- Example: Break apart a monolithic `ClusterManager` into `ClusterProvisioner`, `ClusterLifecycle`, `ClusterStatus`
+
+**Primitive Obsession**: Overusing basic types instead of creating meaningful domain types.
+- ❌ Avoid: Using `string` for everything (cluster names, distributions, statuses)
+- ✅ Prefer: Create type aliases or structs: `type ClusterName string`, `type Distribution string`
+- Example: Instead of `func Create(name string, dist string)`, use `func Create(name ClusterName, dist Distribution)`
+
+**Long Parameter List**: Functions taking too many parameters, making them hard to call and understand.
+- ❌ Avoid: Functions with 4+ parameters
+- ✅ Prefer: Introduce parameter objects or options pattern
+- Example: Instead of `Create(name, dist, version, nodes, memory, cpu, registry)`, use `Create(config ClusterConfig)`
+
+**Data Clumps**: Groups of variables that always appear together but aren't encapsulated.
+- ❌ Avoid: Repeatedly passing `kubeconfig, context, namespace` to every function
+- ✅ Prefer: Create a `ClusterConnection` struct encapsulating these related fields
+- Example: Group `registry, username, password, insecure` into a `RegistryConfig` struct
+
+### Object-Orientation Abusers
+
+Incorrect application of object-oriented principles (relevant to Go's composition model):
+
+**Switch/Type Assertions on Types**: Using type switches instead of interfaces.
+- ❌ Avoid: `switch v := provisioner.(type) { case *KindProvisioner: ..., case *K3dProvisioner: ... }`
+- ✅ Prefer: Define common interface methods that each type implements
+- Example: All provisioners implement `Provisioner` interface with `Create()`, `Delete()`, etc.
+
+**Temporary Field**: Struct fields that are only used in certain circumstances.
+- ❌ Avoid: Fields like `tempResult` that are only set during specific operations
+- ✅ Prefer: Use local variables or return values instead
+- Example: Pass intermediate results as return values rather than storing in struct fields
+
+**Refused Bequest**: Embedding types but not using their methods.
+- ❌ Avoid: Embedding a type just to satisfy an interface without using the embedded behavior
+- ✅ Prefer: Only embed types when you actually want their behavior; otherwise implement explicitly
+- Example: Don't embed `BaseProvisioner` if you override all its methods anyway
+
+**Alternative Structs with Different Interfaces**: Types doing similar things with inconsistent method names.
+- ❌ Avoid: `KindProvisioner.CreateCluster()` vs `K3dProvisioner.Create()` vs `EKSProvisioner.Provision()`
+- ✅ Prefer: Consistent interface across all implementations
+- Example: All provisioners implement same `Provisioner` interface with uniform method names
+
+### Change Preventers
+
+Code that makes changes difficult:
+
+**Divergent Change**: One type is frequently modified for different reasons.
+- ❌ Avoid: A single `ConfigManager` handling parsing, validation, persistence, and migration
+- ✅ Prefer: Split responsibilities so each type has one reason to change
+- Example: Separate `ConfigReader`, `ConfigValidator`, `ConfigWriter`, `ConfigMigrator`
+
+**Shotgun Surgery**: A single change requires modifications across many files/packages.
+- ❌ Avoid: Changing how clusters are named requiring updates in 10 different places
+- ✅ Prefer: Centralize related logic; use interfaces to isolate changes
+- Example: Define cluster naming logic in one place (`pkg/naming`) and import it everywhere
+
+**Parallel Inheritance Hierarchies**: When adding a new type requires adding corresponding types elsewhere.
+- ❌ Avoid: Adding `NewDistribution` requires adding `NewDistributionProvisioner`, `NewDistributionConfig`, `NewDistributionValidator`
+- ✅ Prefer: Use composition and interfaces to reduce the need for parallel hierarchies
+- Example: Use common `DistributionConfig` interface that all distributions implement
+
+### Dispensables
+
+Code that adds no value:
+
+**Comments Explaining What Code Does**: Comments that restate what the code already says clearly.
+- ❌ Avoid: `// Create cluster` above `func CreateCluster()` or `// Loop through nodes` above `for _, node := range nodes`
+- ✅ Prefer: Self-documenting code; comments explain *why*, not *what*
+- Example: Comment intent or non-obvious decisions: `// Skip validation in dry-run mode to show what would happen`
+
+**Duplicate Code**: Identical or very similar code in multiple places.
+- ❌ Avoid: Copy-pasting the same validation logic into multiple command handlers
+- ✅ Prefer: Extract shared logic into reusable functions or packages
+- Example: Create `pkg/validator` package with common validation functions used across commands
+
+**Lazy Package**: Packages that do too little and don't justify their existence.
+- ❌ Avoid: A package with only one small function
+- ✅ Prefer: Merge into a related package or ensure sufficient functionality to warrant separation
+- Example: Don't create `pkg/stringutil` for one `TrimSpace` wrapper; put it in a more substantial utility package
+
+**Data Struct**: Types with only exported fields and no behavior.
+- ❌ Avoid: Structs that are just data containers with no validation or behavior
+- ✅ Prefer: Add validation methods, constructors, or move behavior closer to data
+- Example: Add `Validate()` method to config structs rather than external validation functions
+
+**Dead Code**: Code that is never executed.
+- ❌ Avoid: Unused functions, parameters, or packages
+- ✅ Prefer: Remove it; version control preserves history if needed
+- Example: Use `golangci-lint` with `unused` linter to catch dead code
+
+**Speculative Generality**: Code designed for hypothetical future needs that never materialize.
+- ❌ Avoid: Complex abstraction layers "in case we need to support X someday"
+- ✅ Prefer: Follow YAGNI; add abstractions when actually needed
+- Example: Don't create plugin system if there are no plugins; add it when the second provider arrives
+
+### Couplers
+
+Problems with how code depends on other code:
+
+**Feature Envy**: A method accessing another type's data more than its own.
+- ❌ Avoid: Methods that reach deep into other types: `cluster.provisioner.config.nodes[0].name`
+- ✅ Prefer: Move method closer to the data it uses, or ask the other type to do the work
+- Example: Instead of `ValidateCluster(cluster)` accessing all cluster internals, add `cluster.Validate()`
+
+**Inappropriate Intimacy**: Types knowing too much about each other's internal details.
+- ❌ Avoid: One package directly accessing unexported fields of another package's types
+- ✅ Prefer: Use interfaces and public methods; hide implementation details
+- Example: Use getter methods rather than exposing internal fields directly
+
+**Message Chains**: Long chains of calls across objects.
+- ❌ Avoid: `app.config.cluster.provisioner.client.connection.endpoint`
+- ✅ Prefer: Add delegating methods or pass needed data directly
+- Example: Add `GetEndpoint()` method at appropriate level to avoid the chain
+
+**Middle Man**: A type that just delegates all work to another type.
+- ❌ Avoid: Wrapper types that add no value: `func (w *Wrapper) Create() { w.real.Create() }`
+- ✅ Prefer: Remove the middle man and use the actual type directly
+- Example: Don't wrap provisioners unless the wrapper adds validation, logging, or other value
+
+**Incomplete Library**: External dependencies missing needed functionality, forcing workarounds.
+- ❌ Avoid: Scattered workarounds for library limitations throughout codebase
+- ✅ Prefer: Create a focused adapter/wrapper to centralize workarounds
+- Example: If an external k8s client lacks retry logic, create `pkg/k8s/client` wrapper with retry
+
+### When to Refactor vs. Accept the Smell
+
+Not all code smells require immediate action:
+
+- **Refactor immediately**: Code smells in critical paths, frequently changed code, or when adding new features nearby
+- **Accept temporarily**: Code that rarely changes, is well-tested, and refactoring provides little benefit
+- **Document if accepting**: Add a comment explaining why the smell is acceptable for now
+- **Track for later**: File an issue to address technical debt when time permits
+
+Remember: The goal is maintainable, understandable code. Use these smells as guidelines, not absolute rules. Context matters.
+
 ## Task Suitability for GitHub Copilot
 
 ### ✅ Tasks Well-Suited for Copilot
