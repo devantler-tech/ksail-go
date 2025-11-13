@@ -71,13 +71,13 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	repoConfig := installer.HelmRepoConfig{
+	repoConfig := helm.RepoConfig{
 		Name:     "projectcalico",
 		URL:      "https://docs.tigera.io/calico/charts",
 		RepoName: "calico",
 	}
 
-	chartConfig := installer.HelmChartConfig{
+	chartConfig := helm.ChartConfig{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
@@ -85,7 +85,7 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		CreateNamespace: true,
 	}
 
-	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 	if err != nil {
 		return fmt.Errorf("install or upgrade calico: %w", err)
 	}

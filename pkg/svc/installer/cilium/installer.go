@@ -71,13 +71,13 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	repoConfig := installer.HelmRepoConfig{
+	repoConfig := helm.RepoConfig{
 		Name:     "cilium",
 		URL:      "https://helm.cilium.io",
 		RepoName: "cilium",
 	}
 
-	chartConfig := installer.HelmChartConfig{
+	chartConfig := helm.ChartConfig{
 		ReleaseName:     "cilium",
 		ChartName:       "cilium/cilium",
 		Namespace:       "kube-system",
@@ -86,7 +86,7 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		SetJSONVals:     defaultCiliumValues(),
 	}
 
-	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 	if err != nil {
 		return fmt.Errorf("install or upgrade cilium: %w", err)
 	}
