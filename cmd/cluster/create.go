@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +17,7 @@ import (
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
@@ -35,6 +37,9 @@ const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
 )
+
+// ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
+var ErrUnsupportedCNI = errors.New("unsupported CNI type")
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
@@ -137,32 +142,38 @@ func handlePostCreationSetup(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
-	// For custom CNI (Cilium), install CNI first as metrics-server needs networking
+	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
-	if clusterCfg.Spec.CNI == v1alpha1.CNICilium {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	switch clusterCfg.Spec.CNI {
+	case v1alpha1.CNICilium:
+		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+	case v1alpha1.CNICalico:
+		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+	case v1alpha1.CNIDefault, "":
+		return handleMetricsServer(cmd, clusterCfg, tmr)
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
+	}
+}
 
-		tmr.NewStage()
+// installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
+func installCustomCNIAndMetrics(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+	installFunc func(*cobra.Command, *v1alpha1.Cluster, timer.Timer) error,
+) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 
-		err := installCiliumCNI(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to install Cilium CNI: %w", err)
-		}
+	tmr.NewStage()
 
-		// Install metrics-server after CNI is ready
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
-	} else {
-		// For default CNI, install metrics-server first
-		err := handleMetricsServer(cmd, clusterCfg, tmr)
-		if err != nil {
-			return fmt.Errorf("failed to handle metrics server: %w", err)
-		}
+	err := installFunc(cmd, clusterCfg, tmr)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	// Install metrics-server after CNI is ready
+	return handleMetricsServer(cmd, clusterCfg, tmr)
 }
 
 func loadDistributionConfigs(
@@ -673,31 +684,89 @@ func newCiliumInstaller(
 	)
 }
 
+// cniInstaller defines the interface for CNI installers.
+type cniInstaller interface {
+	Install(ctx context.Context) error
+	WaitForReadiness(ctx context.Context) error
+}
+
 func runCiliumInstallation(
 	cmd *cobra.Command,
 	installer *ciliuminstaller.CiliumInstaller,
 	tmr timer.Timer,
 ) error {
+	return runCNIInstallation(cmd, installer, "cilium", tmr)
+}
+
+// installCalicoCNI installs Calico CNI on the cluster.
+func installCalicoCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	installer := newCalicoInstaller(helmClient, kubeconfig, clusterCfg)
+
+	return runCalicoInstallation(cmd, installer, tmr)
+}
+
+func newCalicoInstaller(
+	helmClient *helm.Client,
+	kubeconfig string,
+	clusterCfg *v1alpha1.Cluster,
+) *calicoinstaller.CalicoInstaller {
+	timeout := getInstallTimeout(clusterCfg)
+
+	return calicoinstaller.NewCalicoInstaller(
+		helmClient,
+		kubeconfig,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+}
+
+func runCalicoInstallation(
+	cmd *cobra.Command,
+	installer *calicoinstaller.CalicoInstaller,
+	tmr timer.Timer,
+) error {
+	return runCNIInstallation(cmd, installer, "calico", tmr)
+}
+
+// runCNIInstallation is the generic implementation for running CNI installation.
+func runCNIInstallation(
+	cmd *cobra.Command,
+	installer cniInstaller,
+	cniName string,
+	tmr timer.Timer,
+) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "installing cilium",
+		Content: "installing " + cniName,
 		Writer:  cmd.OutOrStdout(),
 	})
 
 	installErr := installer.Install(cmd.Context())
 	if installErr != nil {
-		return fmt.Errorf("cilium installation failed: %w", installErr)
+		return fmt.Errorf("%s installation failed: %w", cniName, installErr)
 	}
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "awaiting cilium to be ready",
+		Content: "awaiting " + cniName + " to be ready",
 		Writer:  cmd.OutOrStdout(),
 	})
 
 	readinessErr := installer.WaitForReadiness(cmd.Context())
 	if readinessErr != nil {
-		return fmt.Errorf("cilium readiness check failed: %w", readinessErr)
+		return fmt.Errorf("%s readiness check failed: %w", cniName, readinessErr)
 	}
 
 	total, stage := tmr.GetTiming()
@@ -728,7 +797,7 @@ func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
 	return kubeconfig, nil
 }
 
-// getInstallTimeout determines the timeout for component installation (Cilium, metrics-server, etc.).
+// getInstallTimeout determines the timeout for component installation (Cilium, Calico, metrics-server, etc.).
 // Uses cluster connection timeout if configured, otherwise defaults to 5 minutes.
 func getInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
 	const defaultTimeout = 5
