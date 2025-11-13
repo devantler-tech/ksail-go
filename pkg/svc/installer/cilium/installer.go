@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
@@ -101,7 +101,7 @@ func defaultCiliumValues() map[string]string {
 }
 
 func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
-	checks := []k8sutil.ReadinessCheck{
+	checks := []k8s.ReadinessCheck{
 		{Type: "daemonset", Namespace: "kube-system", Name: "cilium"},
 		{Type: "deployment", Namespace: "kube-system", Name: "cilium-operator"},
 	}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -13,11 +13,11 @@ import (
 func WaitForResourceReadiness(
 	ctx context.Context,
 	kubeconfig, context string,
-	checks []k8sutil.ReadinessCheck,
+	checks []k8s.ReadinessCheck,
 	timeout time.Duration,
 	componentName string,
 ) error {
-	restConfig, err := k8sutil.BuildRESTConfig(kubeconfig, context)
+	restConfig, err := k8s.BuildRESTConfig(kubeconfig, context)
 	if err != nil {
 		return fmt.Errorf("build kubernetes client config: %w", err)
 	}
@@ -27,7 +27,7 @@ func WaitForResourceReadiness(
 		return fmt.Errorf("create kubernetes client: %w", err)
 	}
 
-	err = k8sutil.WaitForMultipleResources(ctx, clientset, checks, timeout)
+	err = k8s.WaitForMultipleResources(ctx, clientset, checks, timeout)
 	if err != nil {
 		return fmt.Errorf("wait for %s components: %w", componentName, err)
 	}

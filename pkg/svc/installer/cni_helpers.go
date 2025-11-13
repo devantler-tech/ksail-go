@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"k8s.io/client-go/rest"
 )
 
@@ -66,7 +66,7 @@ func (b *CNIInstallerBase) SetWaitForReadinessFunc(
 
 // BuildRESTConfig builds a Kubernetes REST configuration.
 func (b *CNIInstallerBase) BuildRESTConfig() (*rest.Config, error) {
-	config, err := k8sutil.BuildRESTConfig(b.kubeconfig, b.context)
+	config, err := k8s.BuildRESTConfig(b.kubeconfig, b.context)
 	if err != nil {
 		return nil, fmt.Errorf("build REST config: %w", err)
 	}

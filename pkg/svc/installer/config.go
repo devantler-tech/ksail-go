@@ -1,27 +1,13 @@
 package installer
 
+import "github.com/devantler-tech/ksail-go/pkg/client/helm"
+
 // HelmRepoConfig holds repository configuration for a Helm chart.
-type HelmRepoConfig struct {
-	// Name is the repository identifier used in Helm commands.
-	Name string
-	// URL is the Helm repository URL.
-	URL string
-	// RepoName is the human-readable name used in error messages.
-	RepoName string
-}
+//
+// Deprecated: Use helm.RepoConfig instead. This type is maintained for backward compatibility.
+type HelmRepoConfig = helm.RepoConfig
 
 // HelmChartConfig holds chart installation configuration.
-type HelmChartConfig struct {
-	// ReleaseName is the Helm release name.
-	ReleaseName string
-	// ChartName is the chart identifier (e.g., "repo/chart").
-	ChartName string
-	// Namespace is the Kubernetes namespace for installation.
-	Namespace string
-	// RepoURL is the Helm repository URL.
-	RepoURL string
-	// CreateNamespace determines if the namespace should be created.
-	CreateNamespace bool
-	// SetJSONVals contains JSON values to set during installation.
-	SetJSONVals map[string]string
-}
+//
+// Deprecated: Use helm.ChartConfig instead. This type is maintained for backward compatibility.
+type HelmChartConfig = helm.ChartConfig

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
@@ -94,7 +94,7 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 }
 
 func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
-	checks := []k8sutil.ReadinessCheck{
+	checks := []k8s.ReadinessCheck{
 		{Type: "deployment", Namespace: "tigera-operator", Name: "tigera-operator"},
 		{Type: "daemonset", Namespace: "calico-system", Name: "calico-node"},
 		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
