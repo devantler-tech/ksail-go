@@ -213,6 +213,183 @@ Not all code smells require immediate action:
 
 Remember: The goal is maintainable, understandable code. Use these smells as guidelines, not absolute rules. Context matters.
 
+## Design Patterns
+
+Design patterns are proven solutions to common software design problems. This section is inspired by [refactoring.guru](https://refactoring.guru/design-patterns/catalog) and adapted for Go and KSail-Go. Apply patterns judiciously—only when they solve a real problem, not for the sake of using patterns.
+
+### Creational Patterns
+
+Patterns for object creation mechanisms:
+
+**Factory Method**: Define an interface for creating objects, but let subclasses decide which type to instantiate.
+
+- Use when: Different provisioner types (Kind, K3d, EKS) need to be created based on configuration
+- Example: `NewProvisioner(distribution string) (Provisioner, error)` returns the appropriate provisioner implementation
+- Go idiom: Use constructor functions returning interfaces
+
+**Builder**: Construct complex objects step by step, allowing different representations.
+
+- Use when: Creating complex configurations with many optional parameters
+- Example: `ClusterConfig` with fluent builder methods: `NewClusterConfig().WithNodes(3).WithRegistry(reg).Build()`
+- Go idiom: Use functional options pattern: `NewCluster(name string, opts ...Option)`
+
+**Singleton**: Ensure a class has only one instance and provide global access to it.
+
+- Use when: Managing shared resources like configuration managers or client connections
+- Example: Kubernetes client instance shared across operations
+- Go idiom: Use `sync.Once` for thread-safe initialization: `var (instance *Client; once sync.Once)`
+
+**Prototype**: Clone existing objects without making code dependent on their classes.
+
+- Use when: Creating variations of cluster configurations
+- Example: Copying base cluster config and modifying specific fields
+- Go idiom: Implement `Clone() *Config` methods or use struct copying with modifications
+
+**Abstract Factory**: Produce families of related objects without specifying concrete classes.
+
+- Use when: Creating sets of related components (provisioner + validator + installer) per distribution
+- Example: `DistributionFactory` that creates all components for a specific distribution
+- Go idiom: Return multiple interfaces from factory methods
+
+### Structural Patterns
+
+Patterns for assembling objects and classes into larger structures:
+
+**Adapter**: Convert interface of a class into another interface clients expect.
+
+- Use when: Wrapping external libraries (Kind, K3d, eksctl) with unified interfaces
+- Example: Adapting different cluster API clients to a common `ClusterClient` interface
+- Go idiom: Define target interface and implement it with adapter structs
+
+**Decorator**: Attach additional responsibilities to objects dynamically.
+
+- Use when: Adding functionality like logging, metrics, or retries to provisioners
+- Example: `LoggingProvisioner` wrapping actual provisioner to add operation logging
+- Go idiom: Wrap interfaces with structs implementing the same interface
+
+**Facade**: Provide simplified interface to complex subsystem.
+
+- Use when: Simplifying complex workflows like cluster creation with multiple steps
+- Example: `ClusterManager` facade hiding provisioner, validator, and installer complexity
+- Go idiom: Create high-level packages that orchestrate lower-level ones
+
+**Proxy**: Provide surrogate or placeholder to control access to an object.
+
+- Use when: Adding access control, lazy initialization, or caching to clients
+- Example: Caching proxy for expensive Kubernetes API calls
+- Go idiom: Implement same interface as target, delegate with additional logic
+
+**Composite**: Compose objects into tree structures to represent hierarchies.
+
+- Use when: Managing hierarchical workload structures or nested configurations
+- Example: Workload groups containing individual workloads, all implementing `Workload` interface
+- Go idiom: Define common interface, implement for both leaf and composite types
+
+**Bridge**: Separate abstraction from implementation so they can vary independently.
+
+- Use when: Supporting multiple dimensions of variation (e.g., distributions × environments)
+- Example: Abstract cluster operations from specific provisioner implementations
+- Go idiom: Use interfaces for both abstraction and implementation sides
+
+**Flyweight**: Share common state among many objects to reduce memory usage.
+
+- Use when: Managing many similar objects with shared immutable data
+- Example: Sharing read-only configuration templates across cluster instances
+- Go idiom: Use shared structs with pointers for unique state
+
+### Behavioral Patterns
+
+Patterns for algorithms and responsibility assignment:
+
+**Strategy**: Define family of algorithms, encapsulate each, and make them interchangeable.
+
+- Use when: Different validation strategies for different distributions
+- Example: `ValidationStrategy` interface with `KindValidator`, `K3dValidator` implementations
+- Go idiom: Accept strategy interfaces as function/method parameters
+
+**Command**: Encapsulate request as an object, enabling parameterization and queuing.
+
+- Use when: Implementing undo/redo, queuing operations, or CLI command pattern
+- Example: CLI commands as structs implementing `Execute()` method
+- Go idiom: Use Cobra's Command pattern, or define `type Command interface { Execute() error }`
+
+**Observer**: Define one-to-many dependency so when one object changes state, dependents are notified.
+
+- Use when: Notifying UI or logging systems about provisioning progress
+- Example: Progress observers receiving updates during cluster creation
+- Go idiom: Use channels for event streams: `progressChan chan ProgressEvent`
+
+**Template Method**: Define skeleton of algorithm, letting subclasses override specific steps.
+
+- Use when: Common workflow with distribution-specific steps
+- Example: Base cluster creation flow with override points for distribution differences
+- Go idiom: Use embedding and method overriding, or function parameters for variations
+
+**State**: Allow object to alter behavior when internal state changes.
+
+- Use when: Managing cluster lifecycle states (Creating, Running, Stopped, Deleted)
+- Example: `ClusterState` interface with different behavior per state
+- Go idiom: Use state structs implementing common interface, switch on current state
+
+**Chain of Responsibility**: Pass request along chain of handlers until one handles it.
+
+- Use when: Processing validation rules where each validator handles specific checks
+- Example: Chain of validators, each checking different aspects of configuration
+- Go idiom: Use slice of validators or linked handler structs
+
+**Iterator**: Access elements of collection sequentially without exposing representation.
+
+- Use when: Iterating over workloads, nodes, or configuration items
+- Example: `WorkloadIterator` for traversing workload collections
+- Go idiom: Use Go's native range over slices/maps, or implement `Next()` pattern for complex cases
+
+**Mediator**: Define object that encapsulates how set of objects interact.
+
+- Use when: Coordinating complex interactions between provisioner, validator, and installer
+- Example: `ClusterOrchestrator` mediating between components
+- Go idiom: Create coordinator struct that owns and coordinates components
+
+**Memento**: Capture and externalize object's internal state for later restoration.
+
+- Use when: Implementing backup/restore or rollback functionality for configurations
+- Example: Saving cluster state before modifications for potential rollback
+- Go idiom: Export state to structs, use JSON serialization for persistence
+
+**Visitor**: Represent operation to be performed on elements of an object structure.
+
+- Use when: Performing operations on heterogeneous collections (e.g., different workload types)
+- Example: Visiting each workload in a collection to apply transformations
+- Go idiom: Define `Accept(Visitor)` method on elements, visitor implements operation for each type
+
+### Applying Patterns in Go
+
+**Go-Specific Considerations**:
+
+- **Favor composition over inheritance**: Go doesn't have inheritance; use embedding and interfaces
+- **Interfaces are implicit**: Types satisfy interfaces automatically without declaration
+- **Keep interfaces small**: Go prefers many small interfaces over large ones
+- **Use functional options**: For flexible constructors instead of Builder pattern overuse
+- **Leverage goroutines and channels**: For Observer, Pipeline, and concurrent patterns
+- **Avoid over-abstraction**: Apply YAGNI—implement patterns only when complexity justifies them
+
+**When to Use Patterns**:
+
+- **Use**: When pattern solves a current, concrete problem you face
+- **Use**: When pattern improves code clarity and maintainability
+- **Avoid**: Using patterns "just because" or for speculative future needs
+- **Avoid**: Forcing patterns where simple solutions work better
+
+**KSail-Go Pattern Usage**:
+
+- **Command**: CLI command structure (Cobra framework)
+- **Strategy**: Multiple provisioner implementations for different distributions
+- **Factory Method**: Creating provisioners based on distribution type
+- **Adapter**: Wrapping external tools (Kind, K3d, eksctl) with unified interfaces
+- **Decorator**: Adding logging, metrics, and retry logic to core operations
+- **Facade**: Simplified high-level operations hiding complex multi-step workflows
+
+Remember: Patterns are tools, not goals. Focus on solving problems clearly and maintainably first, then recognize where patterns emerge naturally.
+
 ## Task Suitability for GitHub Copilot
 
 ### ✅ Tasks Well-Suited for Copilot
