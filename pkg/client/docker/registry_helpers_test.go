@@ -7,14 +7,12 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	dockertypes "github.com/docker/docker/api/types/container"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	errInspectFailed      = errors.New("inspect failed")
-	errNetworkDisconnect  = errors.New("network disconnect failed")
-	errContainerListCheck = errors.New("list error")
+	errInspectFailed     = errors.New("inspect failed")
+	errNetworkDisconnect = errors.New("network disconnect failed")
 )
 
 // setupRegistryWithContainer creates a common test setup with a running registry container.
@@ -166,10 +164,7 @@ func TestGetRegistryPort_ListError(t *testing.T) {
 
 	mockClient, manager, ctx := setupTestRegistryManager(t)
 
-	mockClient.EXPECT().
-		ContainerList(ctx, mock.Anything).
-		Return(nil, errContainerListCheck).
-		Once()
+	mockContainerListError(ctx, mockClient)
 
 	_, err := manager.GetRegistryPort(ctx, "docker.io")
 
