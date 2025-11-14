@@ -61,8 +61,8 @@ Go project structure:
 
 - [ ] T010 [US1] Update package name in `pkg/svc/installer/cni/base.go` from `installer` to `cni`
 - [ ] T011 [US1] Update package name in `pkg/svc/installer/cni/base_test.go` from `installer` to `cni`
-- [ ] T012 [US1] Update package name in `pkg/svc/installer/cni/cilium/installer.go` from `ciliuminstaller` to `ciliuminstaller` (verify imports)
-- [ ] T013 [US1] Update package name in `pkg/svc/installer/cni/calico/installer.go` from `calicoinstaller` to `calicoinstaller` (verify imports)
+- [ ] T012 [US1] Verify package name in `pkg/svc/installer/cni/cilium/installer.go` is correct; update if needed, and verify imports
+- [ ] T013 [US1] Verify package name and imports in `pkg/svc/installer/cni/calico/installer.go` (should be `calicoinstaller`)
 
 ### Import Path Updates for User Story 1
 
