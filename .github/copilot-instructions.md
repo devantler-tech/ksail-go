@@ -233,7 +233,7 @@ Patterns for object creation mechanisms:
 - Example: `ClusterConfig` with fluent builder methods: `NewClusterConfig().WithNodes(3).WithRegistry(reg).Build()`
 - Go idiom: Use functional options pattern: `NewCluster(name string, opts ...Option)`
 
-**Singleton**: Ensure a class has only one instance and provide global access to it.
+**Singleton**: Ensure a type has only one instance and provide global access to it.
 
 - Use when: Managing shared resources like configuration managers or client connections
 - Example: Kubernetes client instance shared across operations
