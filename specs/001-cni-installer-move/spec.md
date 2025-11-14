@@ -47,7 +47,7 @@ Contributors adding a new CNI should be able to place installers and shared help
 
 **UX Consistency Notes**: Developer-facing docs (e.g., contribution guide) must reflect the new layout so authors follow consistent notify/timer usage.
 
-**Performance Budget**: Build/test cycles (go build/test) must remain under existing norms (< 2 minutes for affected packages) since only file moves occur.
+**Performance Budget**: Build/test cycles (go build/test) must remain under existing norms (CNI package tests completing within 90 seconds) since only file moves occur.
 
 **Acceptance Scenarios**:
 

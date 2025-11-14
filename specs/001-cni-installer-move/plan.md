@@ -198,7 +198,7 @@ pkg/svc/installer/cni/
     └── installer_test.go
 ```
 
-**Structure Decision**: Single project (Go CLI) with package consolidation. All CNI-related code grouped under `pkg/svc/installer/cni/` parent package for logical cohesion. Shared helpers live at package root (`cni/base.go`, `cni/helpers.go`), while CNI-specific implementations remain in subdirectories (`cni/cilium/`, `cni/calico/`).
+**Structure Decision**: Single project (Go CLI) with package consolidation. All CNI-related code grouped under `pkg/svc/installer/cni/` parent package for logical cohesion. Shared helpers live at package root (`cni/base.go`), while CNI-specific implementations remain in subdirectories (`cni/cilium/`, `cni/calico/`).
 
 **Files to Move**:
 
