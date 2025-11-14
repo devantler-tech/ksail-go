@@ -221,7 +221,7 @@ Design patterns are proven solutions to common software design problems. This se
 
 Patterns for object creation mechanisms:
 
-**Factory Method**: Define an interface for creating objects, but let subclasses decide which type to instantiate.
+**Factory Method**: Define an interface for creating objects, but let implementations decide which type to instantiate.
 
 - Use when: Different provisioner types (Kind, K3d, EKS) need to be created based on configuration
 - Example: `NewProvisioner(distribution string) (Provisioner, error)` returns the appropriate provisioner implementation
