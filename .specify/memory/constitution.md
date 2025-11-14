@@ -1,50 +1,76 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version: 0.0.0 → 1.0.0
+Modified Principles:
+- (new) I. Code Quality Discipline
+- (new) II. Testing Rigor
+- (new) III. User Experience Consistency
+- (new) IV. Performance & Reliability Contracts
+Added Sections:
+- Engineering Guardrails
+- Workflow & Review Gates
+Templates Requiring Updates:
+- .specify/templates/plan-template.md ✅ updated
+- .specify/templates/spec-template.md ✅ updated
+- .specify/templates/tasks-template.md ✅ updated
+Deferred TODOs: none
+-->
+
+# KSail Go Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality Discipline
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- All Go source files MUST be formatted with `gofmt`/`goimports` and free of `golangci-lint` warnings before review.
+- Designs MUST favor composition and small, testable units (functions ideally ≤ 50 lines) with clear boundaries between packages.
+- Public CLI changes MUST include updated documentation or help text to prevent drift.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Enforcing consistent style, structure, and documentation keeps the CLI maintainable as contributions scale.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Testing Rigor
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- Every behavioral change MUST ship with unit tests; integration/system tests are REQUIRED when touching provisioning, cluster lifecycle, or external clients.
+- Tests MUST be deterministic, table-driven when asserting multiple cases, and isolate IO via Cobra streams—no direct `os.Stdout` writes.
+- `go test ./...` MUST pass locally and in CI before merge.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Repeatable tests catch regressions early and preserve trust in automation-heavy workflows.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. User Experience Consistency
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- CLI commands MUST use the shared `notify` and `timer` utilities for messaging, success, and error flows; no ad-hoc `fmt.Println` output.
+- Commands MUST respect Cobra-provided IO streams so piping and scripting behave consistently.
+- User-facing changes MUST include usage examples or quickstart updates, ensuring parity between docs and behavior.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: Consistent messaging and documentation make the CLI predictable for both humans and automation.
+
+### IV. Performance & Reliability Contracts
+
+- Long-running operations MUST provide progress feedback and adhere to documented timeouts; new workflows MUST state expected runtime budgets.
+- Resource-intensive features MUST include benchmarks or measurements when they risk exceeding baseline cluster start times.
+- Any change that affects concurrency, retries, or backoff MUST document failure handling to avoid silent degradations.
+
+**Rationale**: Explicit performance expectations protect developer productivity and cluster stability.
+
+## Engineering Guardrails
+
+- Language/runtime: Go 1.25.x with module consistency enforced via `go mod tidy` in CI.
+- Tooling: `golangci-lint` (project config), `mockery` for interface mocks, Markdown linting, and lychee link checks.
+- Secrets or credentials MUST flow through existing SOPS/AGE pipelines—no plain-text artifacts.
+- External dependencies require pinned versions and release notes linked in PRs before adoption.
+
+## Workflow & Review Gates
+
+- Every `/speckit.plan` MUST pass the Constitution Check by confirming adherence to all four core principles.
+- Specs MUST enumerate acceptance tests (Principle II) and note UX impact (Principle III) plus performance budgets (Principle IV).
+- Task breakdowns MUST isolate work per user story, include explicit testing tasks, and flag any code-quality refactors.
+- Pull requests MUST attach evidence (command output or CI links) for `go test ./...`, lint, and—when applicable—benchmarks.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- **Authority**: This constitution supersedes prior undocumented conventions; conflicts defer to the most specific principle.
+- **Amendments**: Proposals require an ADR or PR describing the change, its impact on templates, and migration steps.
+- **Compliance**: Reviewers MUST block merges that violate any principle or guardrail until remediated.
+- **Versioning**: Semantic increments—MAJOR for added/removed principles, MINOR for new guidance, PATCH for clarifications.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-11-14 | **Last Amended**: 2025-11-14
