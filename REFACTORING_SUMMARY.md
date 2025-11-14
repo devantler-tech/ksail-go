@@ -28,7 +28,7 @@ The configuration structure was updated to support better validation, more flexi
 
 This is the new configuration format:
 
-```
+```yaml
 cluster:
   name: dev-cluster
   distribution: kind
@@ -40,7 +40,7 @@ cluster:
 
 The cluster management code was refactored to improve maintainability:
 
-```
+```go
 func CreateCluster(config ClusterConfig) error {
     // Implementation
 }
@@ -60,7 +60,7 @@ Added comprehensive unit tests for:
 
 Example test case that validates cluster creation:
 
-```
+```go
 // Test cluster creation
 cluster := NewCluster()
 err := cluster.Create()
@@ -112,7 +112,7 @@ Key optimizations include:
 
 The old implementation had several issues:
 
-```
+```go
 func oldFunction() {
     // Legacy code
 }
@@ -133,7 +133,7 @@ func newFunction() error {
 
 All tests pass successfully:
 
-```
+```bash
 go test ./...
 ```
 
@@ -185,7 +185,7 @@ The refactoring improves code quality and maintainability while maintaining back
 
 Example of new pattern implementation:
 
-```
+```go
 // Pattern implementation
 func pattern() {
     // Code
@@ -194,7 +194,7 @@ func pattern() {
 
 ### Usage Examples
 
-```
+```bash
 ksail cluster init --distribution kind
 ksail up
 ```
