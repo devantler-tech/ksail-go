@@ -319,7 +319,7 @@ Patterns for algorithms and responsibility assignment:
 - Example: Progress observers receiving updates during cluster creation
 - Go idiom: Use channels for event streams: `progressChan chan ProgressEvent`
 
-**Template Method**: Define skeleton of algorithm, letting subclasses override specific steps.
+**Template Method**: Define skeleton of algorithm, letting concrete types or embedded structs override specific steps.
 
 - Use when: Common workflow with distribution-specific steps
 - Example: Base cluster creation flow with override points for distribution differences
