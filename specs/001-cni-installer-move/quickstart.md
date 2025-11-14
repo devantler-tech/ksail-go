@@ -9,7 +9,7 @@ This guide shows how to add a new Container Network Interface (CNI) installer to
 
 ## Prerequisites
 
-- Go 1.25.x installed
+- Go 1.23.9+ installed
 - Familiarity with Helm chart installation
 - Understanding of Kubernetes readiness checks
 - Access to CNI's Helm chart repository
@@ -19,6 +19,8 @@ This guide shows how to add a new Container Network Interface (CNI) installer to
 ```text
 pkg/svc/installer/cni/
 ├── base.go                 # CNIInstallerBase and shared utilities (embed this in your installer)
+├── base_test.go            # Tests for base functionality
+├── doc.go                  # Package documentation
 ├── calico/                 # Example: Calico implementation
 │   ├── installer.go
 │   └── installer_test.go
@@ -115,17 +117,21 @@ func (y *YourCNIInstaller) helmInstallOrUpgradeYourCNI(ctx context.Context) erro
         return fmt.Errorf("get helm client: %w", err)
     }
 
+    // Configure Helm repository
+    // Note: Name and RepoName typically match, but can differ if needed for aliasing
     repoConfig := cni.HelmRepoConfig{
-        Name:     "yourcni",
+        Name:     "yourcni",                   // Helm repo alias used in chart references
         URL:      "https://helm.yourcni.io",  // Update with actual repo URL
-        RepoName: "yourcni",
+        RepoName: "yourcni",                   // Repository name (usually same as Name)
     }
 
+    // Configure Helm chart installation
+    // Note: RepoURL must match the URL field in repoConfig
     chartConfig := cni.HelmChartConfig{
         ReleaseName:     "yourcni",
-        ChartName:       "yourcni/yourcni",  // Update with actual chart name
+        ChartName:       "yourcni/yourcni",               // Format: repo-name/chart-name
         Namespace:       "kube-system",
-        RepoURL:         "https://helm.yourcni.io",  // Update with actual repo URL
+        RepoURL:         "https://helm.yourcni.io",      // Must match repoConfig.URL
         CreateNamespace: false,
         SetJSONVals:     defaultYourCNIValues(),
     }

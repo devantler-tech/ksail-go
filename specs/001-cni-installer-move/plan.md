@@ -9,7 +9,7 @@ Relocate CNI installer shared helpers (`CNIInstallerBase`, readiness utilities, 
 
 ## Technical Context
 
-**Language/Version**: Go 1.25.x
+**Language/Version**: Go 1.23.9+ (validated up to Go 1.25.1)
 
 **Primary Dependencies**:
 
@@ -187,9 +187,8 @@ pkg/svc/installer/
 
 ```text
 pkg/svc/installer/cni/
-├── base.go                 # CNIInstallerBase (renamed from cni_helpers.go)
+├── base.go                 # CNIInstallerBase and shared utilities (renamed from cni_helpers.go)
 ├── base_test.go            # Tests (renamed from cni_helpers_test.go)
-├── helpers.go              # Shared utility functions
 ├── doc.go                  # Package documentation
 ├── calico/                 # Calico CNI installer
 │   ├── installer.go
@@ -199,7 +198,7 @@ pkg/svc/installer/cni/
     └── installer_test.go
 ```
 
-**Structure Decision**: Single project (Go CLI) with package consolidation. All CNI-related code grouped under `pkg/svc/installer/cni/` parent package for logical cohesion. Shared helpers live at package root (`cni/base.go`, `cni/helpers.go`), while CNI-specific implementations remain in subdirectories (`cni/cilium/`, `cni/calico/`).
+**Structure Decision**: Single project (Go CLI) with package consolidation. All CNI-related code grouped under `pkg/svc/installer/cni/` parent package for logical cohesion. Shared helpers live at package root (`cni/base.go`), while CNI-specific implementations remain in subdirectories (`cni/cilium/`, `cni/calico/`).
 
 **Files to Move**:
 
@@ -290,8 +289,7 @@ Create `pkg/svc/installer/cni/doc.go`:
 // and shared utilities for Kubernetes cluster networking setup.
 //
 // Structure:
-//   - base.go: CNIInstallerBase shared across all CNI implementations
-//   - helpers.go: Utility functions for Helm chart installation and readiness checks
+//   - base.go: CNIInstallerBase and utility functions for Helm chart installation and readiness checks
 //   - calico/: Calico CNI installer implementation
 //   - cilium/: Cilium CNI installer implementation
 //
