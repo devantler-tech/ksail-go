@@ -30,24 +30,31 @@ Refactor `pkg/svc/installer` and its subpackages to ensure all files follow the 
 ```
 installer/
 ├── installer.go           (12 lines)  - Interface definition
-├── config.go              (27 lines)  - Configuration structures
-├── helm_operations.go     (53 lines)  - Helm install/upgrade operations
 ├── readiness.go           (36 lines)  - Resource readiness orchestration
 ├── cni_helpers.go        (115 lines)  - CNI installer base (focused)
 ├── README.md             (181 lines)  - Comprehensive documentation
 └── [component subdirectories...]
 ```
 
-#### k8sutil Package (`pkg/svc/installer/k8sutil/`)
+#### Helm Client Package (`pkg/client/helm/`)
 
 ```
-k8sutil/
-├── k8s_helpers.go        (9 lines)   - Package documentation
-├── rest_config.go        (35 lines)  - REST config building
-├── polling.go            (33 lines)  - Generic polling mechanism
-├── daemonset.go          (41 lines)  - DaemonSet readiness
-├── deployment.go         (46 lines)  - Deployment readiness
-└── multi_resource.go     (78 lines)  - Multi-resource coordination
+helm/
+├── config.go              (27 lines)  - Configuration structures
+├── operations.go          (53 lines)  - Helm install/upgrade operations
+└── client.go              (existing)  - Helm client implementation
+```
+
+#### Kubernetes Utilities Package (`pkg/k8s/`)
+
+```
+k8s/
+├── doc.go                 (9 lines)   - Package documentation
+├── rest_config.go         (35 lines)  - REST config building
+├── polling.go             (33 lines)  - Generic polling mechanism
+├── daemonset.go           (41 lines)  - DaemonSet readiness
+├── deployment.go          (46 lines)  - Deployment readiness
+└── multi_resource.go      (78 lines)  - Multi-resource coordination
 ```
 
 ### Improvements
@@ -56,14 +63,14 @@ k8sutil/
 
 Each file now has **one reason to change**:
 
-1. **`config.go`** - Changes only when configuration structure needs updating
-2. **`helm_operations.go`** - Changes only when Helm operation logic changes
-3. **`readiness.go`** - Changes only when high-level orchestration changes
-4. **`rest_config.go`** - Changes only when REST config building changes
-5. **`polling.go`** - Changes only when polling mechanism changes
-6. **`daemonset.go`** - Changes only when DaemonSet logic changes
-7. **`deployment.go`** - Changes only when Deployment logic changes
-8. **`multi_resource.go`** - Changes only when multi-resource coordination changes
+1. **`helm/config.go`** - Changes only when Helm configuration structure needs updating
+2. **`helm/operations.go`** - Changes only when Helm operation logic changes
+3. **`installer/readiness.go`** - Changes only when high-level orchestration changes
+4. **`k8s/rest_config.go`** - Changes only when REST config building changes
+5. **`k8s/polling.go`** - Changes only when polling mechanism changes
+6. **`k8s/daemonset.go`** - Changes only when DaemonSet logic changes
+7. **`k8s/deployment.go`** - Changes only when Deployment logic changes
+8. **`k8s/multi_resource.go`** - Changes only when multi-resource coordination changes
 
 #### Separation of Concerns ✅
 
@@ -72,27 +79,28 @@ Clear layering and boundaries:
 ```
 ┌─────────────────────────────────────────┐
 │         Interface Layer                  │
-│         (installer.go)                   │
+│    (installer/installer.go)              │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
 │      Configuration Layer                 │
-│         (config.go)                      │
+│      (helm/config.go)                    │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
 │       Operations Layer                   │
-│  (helm_operations.go, readiness.go)     │
+│  (helm/operations.go,                    │
+│   installer/readiness.go)                │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
 │      Implementation Layer                │
-│   (calico/, cilium/, argocd/, etc.)     │
+│   (installer/calico/, cilium/, etc.)     │
 └─────────────────────────────────────────┘
                   ↓
 ┌─────────────────────────────────────────┐
 │         Utility Layer                    │
-│          (k8sutil/)                      │
+│            (k8s/)                        │
 └─────────────────────────────────────────┘
 ```
 

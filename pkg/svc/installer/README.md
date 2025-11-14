@@ -9,10 +9,14 @@ This package follows the **Single Responsibility Principle (SRP)** and **Separat
 ### Core Files
 
 - **`installer.go`** - Defines the `Installer` interface that all component installers implement
-- **`config.go`** - Configuration structures for Helm repositories and charts
-- **`helm_operations.go`** - Helm installation and upgrade operations
 - **`readiness.go`** - High-level resource readiness checking orchestration
 - **`cni_helpers.go`** - Base infrastructure for CNI installers
+
+### Related Packages
+
+- **`pkg/client/helm/config.go`** - Configuration structures for Helm repositories and charts
+- **`pkg/client/helm/operations.go`** - Helm installation and upgrade operations
+- **`pkg/k8s/`** - Kubernetes utilities (REST config, polling, resource readiness)
 
 ### Component Installers
 
@@ -27,16 +31,16 @@ Each component has its own subdirectory with focused responsibilities:
 - **`metrics-server/`** - Kubernetes metrics server installer
 - **`applyset/`** - ApplySet resource installer
 
-### Kubernetes Utilities (k8sutil)
+### Kubernetes Utilities (pkg/k8s)
 
-The `k8sutil` package provides low-level Kubernetes operations, split into focused modules:
+The `pkg/k8s` package provides low-level Kubernetes operations, split into focused modules:
 
 - **`rest_config.go`** - Kubernetes REST client configuration
 - **`polling.go`** - Generic polling mechanism for readiness checks
 - **`daemonset.go`** - DaemonSet-specific readiness checking
 - **`deployment.go`** - Deployment-specific readiness checking
 - **`multi_resource.go`** - Coordination of multiple resource readiness checks
-- **`k8s_helpers.go`** - Package documentation and overview
+- **`doc.go`** - Package documentation and overview
 
 ## Design Principles
 
@@ -105,17 +109,17 @@ import (
     "context"
     "time"
     
-    "github.com/devantler-tech/ksail-go/pkg/svc/installer"
+    "github.com/devantler-tech/ksail-go/pkg/client/helm"
 )
 
 func installCustomChart(client helm.Interface) error {
-    repoConfig := installer.HelmRepoConfig{
+    repoConfig := helm.RepoConfig{
         Name:     "myrepo",
         URL:      "https://charts.example.com",
         RepoName: "Example Charts",
     }
     
-    chartConfig := installer.HelmChartConfig{
+    chartConfig := helm.ChartConfig{
         ReleaseName:     "myapp",
         ChartName:       "myrepo/myapp",
         Namespace:       "myapp",
@@ -123,7 +127,7 @@ func installCustomChart(client helm.Interface) error {
         CreateNamespace: true,
     }
     
-    return installer.InstallOrUpgradeHelmChart(
+    return helm.InstallOrUpgradeChart(
         context.Background(),
         client,
         repoConfig,
@@ -140,12 +144,12 @@ import (
     "context"
     "time"
     
+    "github.com/devantler-tech/ksail-go/pkg/k8s"
     "github.com/devantler-tech/ksail-go/pkg/svc/installer"
-    "github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 func waitForComponents(kubeconfig, context string) error {
-    checks := []k8sutil.ReadinessCheck{
+    checks := []k8s.ReadinessCheck{
         {Type: "deployment", Namespace: "kube-system", Name: "coredns"},
         {Type: "daemonset", Namespace: "kube-system", Name: "kube-proxy"},
     }
