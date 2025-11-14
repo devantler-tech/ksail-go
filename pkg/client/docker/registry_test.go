@@ -191,7 +191,7 @@ func setupDeleteRegistryTest(
 		Once()
 
 	if strings.EqualFold(state, "running") {
-		mockContainerStopRemove(ctx, mockClient, "registry-id")
+		mockContainerStopRemove(ctx, mockClient)
 	} else {
 		mockContainerRemoveOnly(ctx, mockClient, "registry-id")
 	}
@@ -306,12 +306,12 @@ func newInspectResponse(networks ...string) container.InspectResponse {
 	}
 }
 
-// mockContainerStopRemove sets up the container stop and remove mock sequence.
+// mockContainerStopRemove sets up the container stop and remove mock sequence for "registry-id".
 func mockContainerStopRemove(
 	ctx context.Context,
 	mockClient *docker.MockAPIClient,
-	containerID string,
 ) {
+	const containerID = "registry-id"
 	mockClient.EXPECT().
 		ContainerStop(ctx, containerID, mock.MatchedBy(func(_ container.StopOptions) bool { return true })).
 		Return(nil).

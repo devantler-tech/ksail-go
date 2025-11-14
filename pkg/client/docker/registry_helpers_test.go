@@ -15,6 +15,26 @@ var (
 	errNetworkDisconnect = errors.New("network disconnect failed")
 )
 
+// makeRegistrySummary creates a container.Summary for a registry with the given properties.
+func makeRegistrySummary(containerID, name, labelValue string) container.Summary {
+	labels := map[string]string{}
+	if labelValue != "" {
+		labels[docker.RegistryLabelKey] = labelValue
+	}
+
+	names := []string{}
+	if name != "" {
+		names = append(names, name)
+	}
+
+	return container.Summary{
+		ID:     containerID,
+		Names:  names,
+		Labels: labels,
+		Image:  docker.RegistryImageName,
+	}
+}
+
 // setupRegistryWithContainer creates a common test setup with a running registry container.
 func setupRegistryWithContainer(
 	t *testing.T,
@@ -46,14 +66,8 @@ func TestRegistryManager_CreateRegistry_ContainerListError(t *testing.T) {
 func TestListRegistries_WithEmptyLabel(t *testing.T) {
 	t.Parallel()
 	mockClient, manager, ctx := setupTestRegistryManager(t)
-	mockContainerListOnce(ctx, mockClient, []container.Summary{
-		{
-			ID:     "registry1",
-			Names:  []string{"/docker.io"},
-			Labels: map[string]string{},
-			Image:  docker.RegistryImageName,
-		},
-	})
+	summaries := []container.Summary{makeRegistrySummary("registry1", "/docker.io", "")}
+	mockContainerListOnce(ctx, mockClient, summaries)
 	registries, err := manager.ListRegistries(ctx)
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
@@ -64,20 +78,11 @@ func TestListRegistries_WithEmptyLabel(t *testing.T) {
 func TestListRegistries_WithDuplicateNames(t *testing.T) {
 	t.Parallel()
 	mockClient, manager, ctx := setupTestRegistryManager(t)
-	mockContainerListOnce(ctx, mockClient, []container.Summary{
-		{
-			ID:     "registry1",
-			Names:  []string{"/docker.io"},
-			Labels: map[string]string{docker.RegistryLabelKey: "docker.io"},
-			Image:  docker.RegistryImageName,
-		},
-		{
-			ID:     "registry2",
-			Names:  []string{"/docker.io"},
-			Labels: map[string]string{docker.RegistryLabelKey: "docker.io"},
-			Image:  docker.RegistryImageName,
-		},
-	})
+	summaries := []container.Summary{
+		makeRegistrySummary("registry1", "/docker.io", "docker.io"),
+		makeRegistrySummary("registry2", "/docker.io", "docker.io"),
+	}
+	mockContainerListOnce(ctx, mockClient, summaries)
 	registries, err := manager.ListRegistries(ctx)
 	require.NoError(t, err)
 	require.Len(t, registries, 1, "should deduplicate registry names")
@@ -88,20 +93,11 @@ func TestListRegistries_WithDuplicateNames(t *testing.T) {
 func TestListRegistries_SkipsEmptyNames(t *testing.T) {
 	t.Parallel()
 	mockClient, manager, ctx := setupTestRegistryManager(t)
-	mockContainerListOnce(ctx, mockClient, []container.Summary{
-		{
-			ID:     "registry1",
-			Names:  []string{},
-			Labels: map[string]string{},
-			Image:  docker.RegistryImageName,
-		},
-		{
-			ID:     "registry2",
-			Names:  []string{"/valid-registry"},
-			Labels: map[string]string{docker.RegistryLabelKey: "valid-registry"},
-			Image:  docker.RegistryImageName,
-		},
-	})
+	summaries := []container.Summary{
+		makeRegistrySummary("registry1", "", ""),
+		makeRegistrySummary("registry2", "/valid-registry", "valid-registry"),
+	}
+	mockContainerListOnce(ctx, mockClient, summaries)
 	registries, err := manager.ListRegistries(ctx)
 	require.NoError(t, err)
 	require.Len(t, registries, 1)
@@ -146,7 +142,7 @@ func TestDeleteRegistry_EmptyNetworkName(t *testing.T) {
 		ContainerInspect(ctx, "registry-id").
 		Return(newInspectResponse(), nil).
 		Once()
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	mockContainerStopRemove(ctx, mockClient)
 	err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "")
 	require.NoError(t, err)
 }
@@ -163,7 +159,7 @@ func TestRegistryAttachedToOtherClusters_EmptyNetworks(t *testing.T) {
 		ContainerInspect(ctx, "registry-id").
 		Return(inspectResp, nil).
 		Once()
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	mockContainerStopRemove(ctx, mockClient)
 	err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "")
 	require.NoError(t, err)
 }
@@ -184,7 +180,7 @@ func TestRegistryAttachedToOtherClusters_IgnoredNetworkMatching(t *testing.T) {
 		ContainerInspect(ctx, "registry-id").
 		Return(newInspectResponse(), nil).
 		Once()
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	mockContainerStopRemove(ctx, mockClient)
 	err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "k3d-test")
 	require.NoError(t, err)
 }
@@ -197,7 +193,7 @@ func TestRegistryAttachedToOtherClusters_NonClusterNetworks(t *testing.T) {
 		ContainerInspect(ctx, "registry-id").
 		Return(newInspectResponse("bridge", "host"), nil).
 		Once()
-	mockContainerStopRemove(ctx, mockClient, "registry-id")
+	mockContainerStopRemove(ctx, mockClient)
 	err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "")
 	require.NoError(t, err)
 }
