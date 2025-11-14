@@ -1,19 +1,12 @@
 <!--
 Sync Impact Report
-Version: 0.0.0 → 1.0.0
-Modified Principles:
-- (new) I. Code Quality Discipline
-- (new) II. Testing Rigor
-- (new) III. User Experience Consistency
-- (new) IV. Performance & Reliability Contracts
-Added Sections:
-- Engineering Guardrails
-- Workflow & Review Gates
-Templates Requiring Updates:
-- .specify/templates/plan-template.md ✅ updated
-- .specify/templates/spec-template.md ✅ updated
-- .specify/templates/tasks-template.md ✅ updated
-Deferred TODOs: none
+Version: 1.0.0 → 2.0.0
+Change Summary:
+- Removed Principle: IV. Performance & Reliability Contracts (no longer relevant to project scope)
+Impacted References Updated:
+- Adjusted workflow gate language (four → three principles)
+- Removed performance budget requirement from specs
+Deferred Template Updates: None (spec & plan templates may be pruned in a future pass if they reference performance budgets)
 -->
 
 # KSail Go Constitution
@@ -44,14 +37,6 @@ Deferred TODOs: none
 
 **Rationale**: Consistent messaging and documentation make the CLI predictable for both humans and automation.
 
-### IV. Performance & Reliability Contracts
-
-- Long-running operations MUST provide progress feedback and adhere to documented timeouts; new workflows MUST state expected runtime budgets.
-- Resource-intensive features MUST include benchmarks or measurements when they risk exceeding baseline cluster start times.
-- Any change that affects concurrency, retries, or backoff MUST document failure handling to avoid silent degradations.
-
-**Rationale**: Explicit performance expectations protect developer productivity and cluster stability.
-
 ## Engineering Guardrails
 
 - Language/runtime: Go 1.25.x with module consistency enforced via `go mod tidy` in CI.
@@ -61,8 +46,8 @@ Deferred TODOs: none
 
 ## Workflow & Review Gates
 
-- Every `/speckit.plan` MUST pass the Constitution Check by confirming adherence to all four core principles.
-- Specs MUST enumerate acceptance tests (Principle II) and note UX impact (Principle III) plus performance budgets (Principle IV).
+- Every `/speckit.plan` MUST pass the Constitution Check by confirming adherence to all three core principles.
+- Specs MUST enumerate acceptance tests (Principle II) and note UX impact (Principle III).
 - Task breakdowns MUST isolate work per user story, include explicit testing tasks, and flag any code-quality refactors.
 - Pull requests MUST attach evidence (command output or CI links) for `go test ./...`, lint, and—when applicable—benchmarks.
 
@@ -73,4 +58,4 @@ Deferred TODOs: none
 - **Compliance**: Reviewers MUST block merges that violate any principle or guardrail until remediated.
 - **Versioning**: Semantic increments—MAJOR for added/removed principles, MINOR for new guidance, PATCH for clarifications.
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-14 | **Last Amended**: 2025-11-14
+**Version**: 2.0.0 | **Ratified**: 2025-11-14 | **Last Amended**: 2025-11-14
