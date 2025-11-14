@@ -7,6 +7,7 @@ EXCLUDED_DIRECTORIES:
   - .specify
   - megalinter-reports
   - report
+  - .github/agents
   - .github/prompts
   - .jscpd
 
@@ -17,4 +18,4 @@ DISABLE_LINTERS:
   - REPOSITORY_SECRETLINT
   - SPELL_CSPELL
 
-MARKDOWN_MARKDOWNLINT_FILTER_REGEX_EXCLUDE: .github/prompts
+MARKDOWN_MARKDOWNLINT_FILTER_REGEX_EXCLUDE: .github/(agents|prompts)
