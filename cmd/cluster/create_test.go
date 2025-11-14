@@ -19,7 +19,7 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/docker/docker/client"
