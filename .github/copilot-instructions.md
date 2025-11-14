@@ -239,13 +239,13 @@ Patterns for object creation mechanisms:
 - Example: Kubernetes client instance shared across operations
 - Go idiom: Use `sync.Once` for thread-safe initialization: `var (instance *Client; once sync.Once)`
 
-**Prototype**: Clone existing objects without making code dependent on their classes.
+**Prototype**: Clone existing objects without making code dependent on their concrete types.
 
 - Use when: Creating variations of cluster configurations
 - Example: Copying base cluster config and modifying specific fields
 - Go idiom: Implement `Clone() *Config` methods or use struct copying with modifications
 
-**Abstract Factory**: Produce families of related objects without specifying concrete classes.
+**Abstract Factory**: Produce families of related objects without specifying concrete types.
 
 - Use when: Creating sets of related components (provisioner + validator + installer) per distribution
 - Example: `DistributionFactory` that creates all components for a specific distribution
