@@ -19,6 +19,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
@@ -40,6 +41,9 @@ const (
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
 var ErrUnsupportedCNI = errors.New("unsupported CNI type")
+
+// ErrUnsupportedGitOpsEngine is returned when an unsupported GitOps engine is encountered.
+var ErrUnsupportedGitOpsEngine = errors.New("unsupported GitOps engine")
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
@@ -135,8 +139,8 @@ func handleCreateRunE(
 	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
-// handlePostCreationSetup installs CNI and metrics-server after cluster creation.
-// Order depends on CNI configuration to resolve dependencies.
+// handlePostCreationSetup installs CNI, metrics-server, and GitOps engine after cluster creation.
+// Order: CNI (if custom) -> Metrics Server -> GitOps Engine.
 func handlePostCreationSetup(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -144,16 +148,25 @@ func handlePostCreationSetup(
 ) error {
 	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
+	var err error
+
 	switch clusterCfg.Spec.CNI {
 	case v1alpha1.CNICilium:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
 	case v1alpha1.CNIDefault, "":
-		return handleMetricsServer(cmd, clusterCfg, tmr)
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
 		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	// Install GitOps engine after networking and metrics-server are ready
+	return handleGitOpsEngine(cmd, clusterCfg, tmr)
 }
 
 // installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
@@ -1063,6 +1076,84 @@ func runMetricsServerInstallation(
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "Metrics Server installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
+// handleGitOpsEngine manages GitOps engine installation based on cluster configuration.
+func handleGitOpsEngine(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
+	// Check if GitOps engine is configured
+	if clusterCfg.Spec.GitOpsEngine == v1alpha1.GitOpsEngineNone ||
+		clusterCfg.Spec.GitOpsEngine == "" {
+		// No GitOps engine configured, nothing to do
+		return nil
+	}
+
+	// Install the configured GitOps engine
+	switch clusterCfg.Spec.GitOpsEngine {
+	case v1alpha1.GitOpsEngineFlux:
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+
+		tmr.NewStage()
+
+		return installFlux(cmd, clusterCfg, tmr)
+	case v1alpha1.GitOpsEngineNone:
+		// No GitOps engine - already handled above
+		return nil
+	default:
+		return fmt.Errorf("%w: %s", ErrUnsupportedGitOpsEngine, clusterCfg.Spec.GitOpsEngine)
+	}
+}
+
+// installFlux installs Flux on the cluster.
+func installFlux(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install Flux...",
+		Emoji:   "🔄",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	helmClient, _, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	timeout := getInstallTimeout(clusterCfg)
+	installer := fluxinstaller.NewFluxInstaller(helmClient, timeout)
+
+	return runFluxInstallation(cmd, installer, tmr)
+}
+
+// runFluxInstallation performs the Flux installation.
+func runFluxInstallation(
+	cmd *cobra.Command,
+	installer *fluxinstaller.FluxInstaller,
+	tmr timer.Timer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "installing flux",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	installErr := installer.Install(cmd.Context())
+	if installErr != nil {
+		return fmt.Errorf("flux installation failed: %w", installErr)
+	}
+
+	total, stage := tmr.GetTiming()
+	timingStr := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: "Flux installed " + timingStr,
 		Writer:  cmd.OutOrStdout(),
 	})
 
