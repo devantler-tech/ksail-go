@@ -12,8 +12,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// CNIInstallerBase provides common fields and methods for CNI installers.
-type CNIInstallerBase struct {
+// InstallerBase provides common fields and methods for CNI installers.
+type InstallerBase struct {
 	kubeconfig string
 	context    string
 	timeout    time.Duration
@@ -21,14 +21,14 @@ type CNIInstallerBase struct {
 	waitFn     func(context.Context) error
 }
 
-// NewCNIInstallerBase creates a new base installer instance.
-func NewCNIInstallerBase(
+// NewInstallerBase creates a new base installer instance.
+func NewInstallerBase(
 	client helm.Interface,
 	kubeconfig, context string,
 	timeout time.Duration,
 	waitFn func(context.Context) error,
-) *CNIInstallerBase {
-	return &CNIInstallerBase{
+) *InstallerBase {
+	return &InstallerBase{
 		client:     client,
 		kubeconfig: kubeconfig,
 		context:    context,
@@ -38,7 +38,7 @@ func NewCNIInstallerBase(
 }
 
 // WaitForReadiness waits for the CNI components to become ready.
-func (b *CNIInstallerBase) WaitForReadiness(ctx context.Context) error {
+func (b *InstallerBase) WaitForReadiness(ctx context.Context) error {
 	if b.waitFn == nil {
 		return nil
 	}
@@ -52,7 +52,7 @@ func (b *CNIInstallerBase) WaitForReadiness(ctx context.Context) error {
 }
 
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.
-func (b *CNIInstallerBase) SetWaitForReadinessFunc(
+func (b *InstallerBase) SetWaitForReadinessFunc(
 	waitFunc func(context.Context) error,
 	defaultWaitFn func(context.Context) error,
 ) {
@@ -66,7 +66,7 @@ func (b *CNIInstallerBase) SetWaitForReadinessFunc(
 }
 
 // BuildRESTConfig builds a Kubernetes REST configuration.
-func (b *CNIInstallerBase) BuildRESTConfig() (*rest.Config, error) {
+func (b *InstallerBase) BuildRESTConfig() (*rest.Config, error) {
 	config, err := k8sutil.BuildRESTConfig(b.kubeconfig, b.context)
 	if err != nil {
 		return nil, fmt.Errorf("build REST config: %w", err)
@@ -80,7 +80,7 @@ var errHelmClientNil = errors.New("helm client is nil")
 // GetClient returns the Helm client.
 //
 //nolint:ireturn // Method returns interface by design for flexibility.
-func (b *CNIInstallerBase) GetClient() (helm.Interface, error) {
+func (b *InstallerBase) GetClient() (helm.Interface, error) {
 	if b.client == nil {
 		return nil, errHelmClientNil
 	}
@@ -89,29 +89,29 @@ func (b *CNIInstallerBase) GetClient() (helm.Interface, error) {
 }
 
 // GetTimeout returns the timeout duration.
-func (b *CNIInstallerBase) GetTimeout() time.Duration {
+func (b *InstallerBase) GetTimeout() time.Duration {
 	return b.timeout
 }
 
 // GetKubeconfig returns the kubeconfig path.
-func (b *CNIInstallerBase) GetKubeconfig() string {
+func (b *InstallerBase) GetKubeconfig() string {
 	return b.kubeconfig
 }
 
 // GetContext returns the kubeconfig context.
-func (b *CNIInstallerBase) GetContext() string {
+func (b *InstallerBase) GetContext() string {
 	return b.context
 }
 
 // GetWaitFn returns the wait function for testing purposes.
 // This method is primarily used in tests to verify wait function behavior.
-func (b *CNIInstallerBase) GetWaitFn() func(context.Context) error {
+func (b *InstallerBase) GetWaitFn() func(context.Context) error {
 	return b.waitFn
 }
 
 // SetWaitFn sets the wait function directly for testing purposes.
 // This is a low-level method used primarily in tests. Prefer using SetWaitForReadinessFunc for production code.
-func (b *CNIInstallerBase) SetWaitFn(fn func(context.Context) error) {
+func (b *InstallerBase) SetWaitFn(fn func(context.Context) error) {
 	b.waitFn = fn
 }
 
