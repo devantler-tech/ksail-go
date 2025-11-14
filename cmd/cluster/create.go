@@ -18,7 +18,7 @@ import (
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/calico"
-	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cilium"
+	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
