@@ -18,8 +18,7 @@ This guide shows how to add a new Container Network Interface (CNI) installer to
 
 ```text
 pkg/svc/installer/cni/
-├── base.go                 # CNIInstallerBase (embed this in your installer)
-├── helpers.go              # Shared utilities (use these in your installer)
+├── base.go                 # CNIInstallerBase and shared utilities (embed this in your installer)
 ├── calico/                 # Example: Calico implementation
 │   ├── installer.go
 │   └── installer_test.go
