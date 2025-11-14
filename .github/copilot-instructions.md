@@ -255,7 +255,7 @@ Patterns for object creation mechanisms:
 
 Patterns for assembling objects and types into larger structures:
 
-**Adapter**: Convert interface of a class into another interface clients expect.
+**Adapter**: Convert the interface of a type into another interface clients expect.
 
 - Use when: Wrapping external libraries (Kind, K3d, eksctl) with unified interfaces
 - Example: Adapting different cluster API clients to a common `ClusterClient` interface
