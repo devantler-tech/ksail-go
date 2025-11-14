@@ -17,14 +17,14 @@
   the iteration process.
 -->
 
-**Language/Version**: Go 1.25.x (update here if the feature targets a different version)  
-**Primary Dependencies**: Cobra CLI, Kubernetes client-go, Flux/CD related tooling (note any new dependencies explicitly)  
-**Storage**: N/A (CLI tool) — document if the feature introduces persistent artefacts  
-**Testing**: `go test ./...`, mockery-generated doubles, optional integration/system tests via CI workflows  
-**Target Platform**: Linux/macOS developer workstations invoking Kind/K3d/EKS  
-**Project Type**: Single CLI project (cmd/, pkg/, internal/)  
-**Performance Goals**: Reference Principle IV — define acceptable runtime/latency for the proposed workflow  
-**Constraints**: Document timeouts, concurrency expectations, and resource bounds relevant to the change  
+**Language/Version**: Go 1.25.x (update here if the feature targets a different version)
+**Primary Dependencies**: Cobra CLI, Kubernetes client-go, Flux/CD related tooling (note any new dependencies explicitly)
+**Storage**: N/A (CLI tool) — document if the feature introduces persistent artefacts
+**Testing**: `go test ./...`, mockery-generated doubles, optional integration/system tests via CI workflows
+**Target Platform**: Linux/macOS developer workstations invoking Kind/K3d/EKS
+**Project Type**: Single CLI project (cmd/, pkg/, internal/)
+**Performance Goals**: Reference Principle IV — define acceptable runtime/latency for the proposed workflow
+**Constraints**: Document timeouts, concurrency expectations, and resource bounds relevant to the change
 **Scale/Scope**: Describe the expected usage footprint (e.g., local dev clusters/day, number of generated manifests)
 
 ## Constitution Check
