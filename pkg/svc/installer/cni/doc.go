@@ -1,10 +1,11 @@
-// Package cni provides unified CNI installer implementations and shared utilities for managing CNI providers on Kubernetes clusters.
+// Package cni provides unified CNI installer implementations and shared utilities for managing CNI providers on
+// Kubernetes clusters.
 //
-// Overview
+// # Overview
 //
-// The cni package centralizes the logic for installing, configuring, and managing Container Network Interface (CNI) providers
-// such as Calico, Cilium, and others. It exposes a common interface for CNI installation, enabling consistent workflows
-// across different cluster distributions and simplifying the process of adding new CNIs.
+// The cni package centralizes the logic for installing, configuring, and managing Container Network Interface
+// (CNI) providers such as Calico, Cilium, and others. It exposes a common interface for CNI installation, enabling
+// consistent workflows across different cluster distributions and simplifying the process of adding new CNIs.
 //
 // Package Structure
 //
@@ -14,27 +15,31 @@
 //	calico/      - Implementation of the Calico CNI installer.
 //	cilium/      - Implementation of the Cilium CNI installer.
 //
-// Adding a New CNI
+// # Adding a New CNI
 //
 // To add a new CNI installer:
 //
 //  1. Create a new subdirectory under pkg/svc/installer/cni/ (e.g., pkg/svc/installer/cni/mycni/)
+//
 //  2. Implement the installer.Installer interface in your new package
+//
 //  3. Embed CNIInstallerBase in your installer struct to reuse shared Helm and readiness logic:
 //
 //     type MyCNIInstaller struct {
-//         *cni.CNIInstallerBase
+//     *cni.CNIInstallerBase
 //     }
 //
 //  4. Use the shared helper functions for Helm operations:
 //     - InstallOrUpgradeHelmChart() for chart installation
 //     - WaitForResourceReadiness() for readiness checks
+//
 //  5. Add comprehensive unit tests following the patterns in existing CNI implementations
+//
 //  6. Update CONTRIBUTING.md to document the new CNI option
 //
 // For detailed guidance and code examples, see specs/001-cni-installer-move/quickstart.md.
 //
-// Example Usage
+// # Example Usage
 //
 // Creating and using a CNI installer:
 //
@@ -58,7 +63,7 @@
 //	    log.Fatalf("CNI installation failed: %v", err)
 //	}
 //
-// Shared Utilities
+// # Shared Utilities
 //
 // All CNI installers benefit from shared utilities in CNIInstallerBase:
 //
