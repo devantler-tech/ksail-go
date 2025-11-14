@@ -1,6 +1,6 @@
 module github.com/devantler-tech/ksail-go
 
-go 1.25.0
+go 1.25.4
 
 require (
 	github.com/derailed/k9s v0.50.16
@@ -25,7 +25,6 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	helm.sh/helm/v3 v3.19.0
-	helm.sh/helm/v4 v4.0.0
 	k8s.io/api v0.34.2
 	k8s.io/apiextensions-apiserver v0.34.2
 	k8s.io/apimachinery v0.34.2
