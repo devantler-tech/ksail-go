@@ -13,6 +13,20 @@ import (
 )
 
 // CNIInstallerBase provides common fields and methods for CNI installers.
+// It encapsulates shared functionality like Helm client management, kubeconfig handling,
+// timeout management, and readiness checks. CNI implementations should embed this type
+// to inherit these capabilities.
+//
+// Example usage:
+//
+//	type MyCNIInstaller struct {
+//	    *cni.CNIInstallerBase
+//	}
+//
+//	installer := &MyCNIInstaller{}
+//	installer.CNIInstallerBase = cni.NewCNIInstallerBase(
+//	    helmClient, kubeconfig, context, timeout, installer.waitForReadiness,
+//	)
 type CNIInstallerBase struct {
 	kubeconfig string
 	context    string
@@ -21,7 +35,9 @@ type CNIInstallerBase struct {
 	waitFn     func(context.Context) error
 }
 
-// NewCNIInstallerBase creates a new base installer instance.
+// NewCNIInstallerBase creates a new base installer instance with the provided configuration.
+// The waitFn parameter allows CNI implementations to provide custom readiness checking logic.
+// If waitFn is nil, readiness checks are skipped.
 func NewCNIInstallerBase(
 	client helm.Interface,
 	kubeconfig, context string,
@@ -141,7 +157,10 @@ type HelmChartConfig struct {
 	SetJSONVals map[string]string
 }
 
-// InstallOrUpgradeHelmChart performs a Helm install or upgrade operation.
+// InstallOrUpgradeHelmChart performs a Helm install or upgrade operation for a CNI chart.
+// It automatically adds the repository if needed and installs/upgrades the chart atomically
+// with CRD upgrades enabled. The operation waits for all resources and jobs to become ready
+// before completing.
 func InstallOrUpgradeHelmChart(
 	ctx context.Context,
 	client helm.Interface,
@@ -186,6 +205,8 @@ func InstallOrUpgradeHelmChart(
 }
 
 // WaitForResourceReadiness waits for multiple Kubernetes resources to become ready.
+// It supports checking deployments, daemonsets, and other resource types specified in checks.
+// The function blocks until all resources are ready or the timeout is reached.
 func WaitForResourceReadiness(
 	ctx context.Context,
 	kubeconfig, context string,

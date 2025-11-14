@@ -69,6 +69,36 @@ The repository is organized into three main directories:
 
 For detailed package and API documentation, refer to [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
 
+## Adding New CNI Installers
+
+CNI (Container Network Interface) installers are located under `pkg/svc/installer/cni/`. To add support for a new CNI:
+
+1. **Create a new subdirectory** under `pkg/svc/installer/cni/` (e.g., `pkg/svc/installer/cni/mycni/`)
+
+2. **Implement the installer.Installer interface** in your new package:
+   ```go
+   package mycniinstaller
+   
+   import (
+       "context"
+       "time"
+       "github.com/devantler-tech/ksail-go/pkg/client/helm"
+       "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
+   )
+   
+   type MyCNIInstaller struct {
+       *cni.CNIInstallerBase
+   }
+   ```
+
+3. **Reuse shared utilities** from `cni.CNIInstallerBase` for Helm chart installation and readiness checks
+
+4. **Add comprehensive unit tests** following patterns in existing CNI implementations (see `pkg/svc/installer/cni/cilium/` or `pkg/svc/installer/cni/calico/`)
+
+5. **Update documentation** to reflect the new CNI option
+
+For detailed guidance and code examples, see `specs/001-cni-installer-move/quickstart.md`.
+
 ## CI
 
 ### Pre-commit Hooks
