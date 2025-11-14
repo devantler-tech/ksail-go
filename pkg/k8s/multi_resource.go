@@ -43,7 +43,6 @@ func WaitForMultipleResources(
 		}
 
 		resourceCtx, cancel := context.WithTimeout(ctx, remainingTimeout)
-		defer cancel()
 
 		var err error
 
@@ -52,18 +51,19 @@ func WaitForMultipleResources(
 			err = WaitForDeploymentReady(
 				resourceCtx, clientset, check.Namespace, check.Name, remainingTimeout,
 			)
-			if err != nil {
-				return fmt.Errorf("%s deployment not ready: %w", check.Name, err)
-			}
 		case "daemonset":
 			err = WaitForDaemonSetReady(
 				resourceCtx, clientset, check.Namespace, check.Name, remainingTimeout,
 			)
-			if err != nil {
-				return fmt.Errorf("%s daemonset not ready: %w", check.Name, err)
-			}
 		default:
+			cancel()
 			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
+		}
+
+		cancel()
+
+		if err != nil {
+			return fmt.Errorf("%s %s not ready: %w", check.Name, check.Type, err)
 		}
 	}
 
