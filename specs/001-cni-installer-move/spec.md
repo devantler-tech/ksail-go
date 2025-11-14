@@ -83,7 +83,7 @@ Internal packages that referenced `pkg/svc/installer/calico` or `.../cilium` mus
 
 ### Functional Requirements
 
-- **FR-001**: System MUST relocate `CNIInstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/` (root of cni package) while preserving exported APIs.
+- **FR-001**: System MUST relocate `CNIInstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/base.go` (single file at root of cni package) while preserving exported APIs.
 - **FR-002**: System MUST move Cilium and Calico installer packages to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively, updating their module names accordingly.
 - **FR-003**: System MUST update all imports, mocks, and tests to reference the new paths (`pkg/svc/installer/cni/` for shared helpers, `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` for installers), then immediately delete old package directories (`pkg/svc/installer/calico/`, `pkg/svc/installer/cilium/`, `pkg/svc/installer/cni_helpers.go`) with no transition period or deprecated aliases maintained.
 - **FR-004**: System MUST ensure `go test ./pkg/svc/installer/cni/...` and `go test ./pkg/svc/installer/...` pass locally and in CI.
@@ -98,7 +98,7 @@ Internal packages that referenced `pkg/svc/installer/calico` or `.../cilium` mus
 
 - **QC-001**: Unit tests MUST cover base installer helpers plus Calico/Cilium flows; add or relocate tests to maintain coverage after the move.
 - **QC-002**: CLI output and observability MUST remain unchanged; preserve existing notify/timer output exactly with no new logging, metrics, or debug instrumentation introduced during relocation.
-- **QC-003**: Build/test cycles MUST remain within existing limits (CNI package tests completing within 2 minutes); capture timing evidence when running validation steps.
+- **QC-003**: Build/test cycles MUST remain within existing limits (CNI package tests completing within 90 seconds); capture timing evidence when running validation steps.
 - **QC-004**: Security mechanisms MUST remain unchanged; existing Helm installation behavior and RBAC requirements preserved exactly with validation that no security regressions are introduced during relocation.
 
 ## Assumptions & Dependencies
