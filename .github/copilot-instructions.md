@@ -253,7 +253,7 @@ Patterns for object creation mechanisms:
 
 ### Structural Patterns
 
-Patterns for assembling objects and classes into larger structures:
+Patterns for assembling objects and types into larger structures:
 
 **Adapter**: Convert interface of a class into another interface clients expect.
 
