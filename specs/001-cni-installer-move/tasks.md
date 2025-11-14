@@ -68,8 +68,18 @@ Go project structure:
 
 - [ ] T014 [US1] Update imports in `pkg/svc/installer/cni/cilium/installer.go`: Change `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
 - [ ] T015 [US1] Update imports in `pkg/svc/installer/cni/calico/installer.go`: Change `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
-- [ ] T016 [US1] Search and update all imports in `cmd/` directory: `grep -rl "pkg/svc/installer/cilium\|pkg/svc/installer/calico" cmd/ | xargs sed -i '' 's|pkg/svc/installer/cilium|pkg/svc/installer/cni/cilium|g; s|pkg/svc/installer/calico|pkg/svc/installer/cni/calico|g'`
-- [ ] T017 [US1] Search and update all imports in `pkg/` directory (excluding installer itself): `find pkg/ -name "*.go" -not -path "pkg/svc/installer/*" -exec grep -l "pkg/svc/installer/cilium\|pkg/svc/installer/calico" {} \; | xargs sed -i '' 's|pkg/svc/installer/cilium|pkg/svc/installer/cni/cilium|g; s|pkg/svc/installer/calico|pkg/svc/installer/cni/calico|g'`
+- [ ] T016 [US1] Search and update all imports in `cmd/` directory (cross-platform):  
+      ```sh
+      grep -rl "pkg/svc/installer/cilium\|pkg/svc/installer/calico" cmd/ | xargs sed -i.bak 's|pkg/svc/installer/cilium|pkg/svc/installer/cni/cilium|g; s|pkg/svc/installer/calico|pkg/svc/installer/cni/calico|g'
+      rm cmd/*.bak
+      ```
+- [ ] T017 [US1] Search and update all imports in `pkg/` directory (excluding installer itself, cross-platform):  
+      ```sh
+      find pkg/ -name "*.go" -not -path "pkg/svc/installer/*" -exec grep -l "pkg/svc/installer/cilium\|pkg/svc/installer/calico" {} \; | xargs sed -i.bak 's|pkg/svc/installer/cilium|pkg/svc/installer/cni/cilium|g; s|pkg/svc/installer/calico|pkg/svc/installer/cni/calico|g'
+      find pkg/ -name "*.bak" -delete
+      ```
+      > [!NOTE]
+      > The `sed -i.bak` syntax works on both macOS and Linux. The backup files (`*.bak`) are removed after the update.
 
 ### Mock Regeneration for User Story 1
 
@@ -86,22 +96,30 @@ Go project structure:
 - [ ] T025 [US1] Compare test timing: Verify CNI tests complete within 90 seconds (compare `/tmp/post-move-cni-tests.txt` timing)
 - [ ] T026 [US1] Verify readiness callback wiring: `grep -r "waitForReadiness" pkg/svc/installer/cni/` (ensure callbacks still passed to base constructor)
 - [ ] T027 [US1] Early dependency tidy: `go mod tidy` (catches dangling imports before integration tests)
-- [ ] T028 [US1] Count test files pre vs post move (requires saved count from T001) and log equality: `echo PRE:$PRE_CNI_TEST_CT POST:$(find pkg/svc/installer/cni -name '*_test.go' | wc -l)`
+- [ ] T028 [US1] Count test files pre vs post move (requires saved count from T001).  
+      To set `$PRE_CNI_TEST_CT`, run:  
+      ```bash
+      PRE_CNI_TEST_CT=$(find pkg/svc/installer -path "*/cni*" -name '*_test.go' 2>/dev/null | wc -l)
+      ```
+      Then verify equality:  
+      ```bash
+      echo PRE:$PRE_CNI_TEST_CT POST:$(find pkg/svc/installer/cni -name '*_test.go' | wc -l)
+      ```
 - [ ] T029 [US1] Verify k8sutil unaffected: `grep -r "pkg/svc/installer/cni" pkg/svc/installer/k8sutil || echo 'OK: no unintended dependency'`
 - [ ] T030 [US1] Grep for accidental new direct stdout logging: `grep -r "fmt.Println\|os.Stdout" pkg/svc/installer/cni/` (should be empty)
 
 ### Integration Smoke Test for User Story 1
 
-- [ ] T026 [US1] Test Kind cluster with Cilium: `cd /tmp && mkdir -p ksail-test && cd ksail-test && ksail cluster init --distribution Kind && ksail up` (Cilium must install successfully)
-- [ ] T027 [US1] Verify CLI output unchanged: Compare `ksail up` output with baseline (excluding timestamps)—notify/timer patterns must be identical
-- [ ] T028 [US1] Clean up test cluster: `ksail down && cd .. && rm -rf ksail-test`
+- [ ] T034 [US1] Test Kind cluster with Cilium: `cd /tmp && mkdir -p ksail-test && cd ksail-test && ksail cluster init --distribution Kind && ksail up` (Cilium must install successfully)
+- [ ] T035 [US1] Verify CLI output unchanged: Compare `ksail up` output with baseline (excluding timestamps)—notify/timer patterns must be identical
+- [ ] T036 [US1] Clean up test cluster: `ksail down && cd .. && rm -rf ksail-test`
 
 ### Remediation Additions (US1 Observability & Calico)
 
-- [ ] T031 [US1] Calico smoke test (if supported): repeat Kind cluster up using Calico configuration; verify identical notify/timer patterns
-- [ ] T032 [US1] Capture Helm values before/after move for Cilium & Calico (serialize to /tmp/helm-values-{cilium,calico}.json) and diff to confirm unchanged
-- [ ] T033 [US1] Security regression check: confirm no new privileged flags by grepping for `securityContext` changes in moved files
-- [ ] T034 [US1] Lint diff against baseline: `golangci-lint run > /tmp/post-move-lint.txt && diff -u /tmp/pre-move-lint.txt /tmp/post-move-lint.txt || echo 'No new lint issues'`
+- [ ] T037 [US1] Calico smoke test (if supported): repeat Kind cluster up using Calico configuration; verify identical notify/timer patterns
+- [ ] T038 [US1] Capture Helm values before/after move for Cilium & Calico (serialize to /tmp/helm-values-{cilium,calico}.json) and diff to confirm unchanged
+- [ ] T039 [US1] Security regression check: confirm no new privileged flags by grepping for `securityContext` changes in moved files
+- [ ] T040 [US1] Lint diff against baseline: `golangci-lint run > /tmp/post-move-lint.txt && diff -u /tmp/pre-move-lint.txt /tmp/post-move-lint.txt || echo 'No new lint issues'`
 
 **Checkpoint US1**: At this point, all CNI installer code relocated, builds succeed, tests pass, and cluster creation works identically to before the move
 
@@ -115,20 +133,20 @@ Go project structure:
 
 ### Documentation for User Story 2
 
-- [ ] T029 [P] [US2] Create package documentation: Create `pkg/svc/installer/cni/doc.go` with package overview, structure explanation, and "Adding a new CNI" guidance
-- [ ] T030 [P] [US2] Update CONTRIBUTING.md: Add section referencing `pkg/svc/installer/cni/` as canonical location for CNI installers with link to `quickstart.md`
-- [ ] T031 [P] [US2] Add inline godoc comments to `pkg/svc/installer/cni/base.go`: Document CNIInstallerBase struct and all exported functions with usage examples
+- [ ] T041 [P] [US2] Create package documentation: Create `pkg/svc/installer/cni/doc.go` with package overview, structure explanation, and "Adding a new CNI" guidance
+- [ ] T042 [P] [US2] Update CONTRIBUTING.md: Add section referencing `pkg/svc/installer/cni/` as canonical location for CNI installers with link to `quickstart.md`
+- [ ] T043 [P] [US2] Add inline godoc comments to `pkg/svc/installer/cni/base.go`: Document CNIInstallerBase struct and all exported functions with usage examples
 
 ### Validation for User Story 2
 
-- [ ] T032 [US2] Verify package docs render correctly: `go doc github.com/devantler-tech/ksail-go/pkg/svc/installer/cni` (must show package overview and exported types)
-- [ ] T033 [US2] Test contributor workflow: Create stub CNI following `quickstart.md` in `/tmp/test-cni-scaffold/` and verify it compiles with `go build ./...`
-- [ ] T034 [US2] Verify documentation links: Check that CONTRIBUTING.md correctly links to `quickstart.md` and package paths
+- [ ] T044 [US2] Verify package docs render correctly: `go doc github.com/devantler-tech/ksail-go/pkg/svc/installer/cni` (must show package overview and exported types)
+- [ ] T045 [US2] Test contributor workflow: Create stub CNI following `quickstart.md` in `/tmp/test-cni-scaffold/` and verify it compiles with `go build ./...`
+- [ ] T046 [US2] Verify documentation links: Check that CONTRIBUTING.md correctly links to `quickstart.md` and package paths
 
 ### Remediation Additions (US2 Documentation)
 
-- [ ] T035 [US2] Inline comment audit: search for old paths in code comments `grep -r "pkg/svc/installer/calico\|pkg/svc/installer/cilium" . --include="*.go" | grep -v "/cni/"`
-- [ ] T036 [US2] Ensure release notes (T046) include explicit link to `specs/001-cni-installer-move/quickstart.md`
+- [ ] T047 [US2] Inline comment audit: search for old paths in code comments `grep -r "pkg/svc/installer/calico\|pkg/svc/installer/cilium" . --include="*.go" | grep -v "/cni/"`
+- [ ] T048 [US2] Ensure release notes (T057) include explicit link to `specs/001-cni-installer-move/quickstart.md`
 
 **Checkpoint US2**: At this point, contributors have clear guidance on adding new CNIs, and package documentation is complete
 
@@ -142,25 +160,25 @@ Go project structure:
 
 ### Cleanup for User Story 3
 
-- [ ] T035 [US3] Verify old directories removed: Check that `pkg/svc/installer/cilium/` and `pkg/svc/installer/calico/` no longer exist (should have been deleted by `git mv`)
-- [ ] T036 [US3] Search for stale references in test files: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*_test.go" | grep -v "/cni/"` (must return zero results)
-- [ ] T037 [US3] Search for stale references in documentation: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*.md" | grep -v "/cni/"` (must return zero results or update docs)
-- [ ] T038 [US3] Search for stale references in YAML/config files: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*.yaml" --include="*.yml"` (must return zero results)
+- [ ] T049 [US3] Verify old directories removed: Check that `pkg/svc/installer/cilium/` and `pkg/svc/installer/calico/` no longer exist (should have been deleted by `git mv`)
+- [ ] T050 [US3] Search for stale references in test files: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*_test.go" | grep -v "/cni/"` (must return zero results)
+- [ ] T051 [US3] Search for stale references in documentation: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*.md" | grep -v "/cni/"` (must return zero results or update docs)
+- [ ] T052 [US3] Search for stale references in YAML/config files: `grep -r "pkg/svc/installer/cilium\|pkg/svc/installer/calico" . --include="*.yaml" --include="*.yml"` (must return zero results)
 
 ### Final Validation for User Story 3
 
-- [ ] T039 [US3] Run static analysis: `golangci-lint run` (must pass with zero errors/warnings, no "undefined: installer" or missing package errors)
-- [ ] T040 [US3] Verify import consistency: `go mod tidy` (must complete without changes)
-- [ ] T041 [US3] Run full build pipeline: `go build ./...` (must succeed in ≤5 minutes per performance budget)
-- [ ] T042 [US3] Compare with baseline: Verify no new lint warnings introduced (compare `/tmp/post-move-lint.txt` with `/tmp/pre-move-lint.txt`)
+- [ ] T053 [US3] Run static analysis: `golangci-lint run` (must pass with zero errors/warnings, no "undefined: installer" or missing package errors)
+- [ ] T054 [US3] Verify import consistency: `go mod tidy` (must complete without changes)
+- [ ] T055 [US3] Run full build pipeline: `go build ./...` (must succeed in ≤5 minutes per performance budget)
+- [ ] T056 [US3] Compare with baseline: Verify no new lint warnings introduced (compare `/tmp/post-move-lint.txt` with `/tmp/pre-move-lint.txt`)
 
 ### Remediation Additions (US3 Cleanup)
 
-- [ ] T043 [US3] Stale mock path check: `grep -r "pkg/svc/installer/calico\|pkg/svc/installer/cilium" . --include="mock*.go" | grep -v "/cni/"`
-- [ ] T044 [US3] JSON/YAML doc path search: extend T038 with `--include="*.json"` for completeness
-- [ ] T045 [US3] Helm version check: `helm version --short | grep -E 'v3\.[8-9]|v3\.1[0-9]'`
-- [ ] T046 [US3] Aggregate timing summary: write combined report `/tmp/cni-move-timings.txt` (include test & build durations)
-- [ ] T047 [US3] Optional rollback simulation: introduce temporary bad import, confirm failure, revert commit (document in report)
+- [ ] T057 [US3] Stale mock path check: `grep -r "pkg/svc/installer/calico\|pkg/svc/installer/cilium" . --include="mock*.go" | grep -v "/cni/"`
+- [ ] T058 [US3] JSON/YAML doc path search: extend T052 with `--include="*.json"` for completeness
+- [ ] T059 [US3] Helm version check: `helm version --short | grep -E 'v3\.[8-9]|v3\.1[0-9]'`
+- [ ] T060 [US3] Aggregate timing summary: write combined report `/tmp/cni-move-timings.txt` (include test & build durations)
+- [ ] T061 [US3] Optional rollback simulation: introduce temporary bad import, confirm failure, revert commit (document in report)
 
 **Checkpoint US3**: All old import paths removed, static analysis passes, build pipeline succeeds within time budget
 
@@ -170,19 +188,19 @@ Go project structure:
 
 **Purpose**: Final validation and evidence collection for success criteria
 
-- [ ] T043 [P] Run CI validation: Push to feature branch `001-cni-installer-move` and verify GitHub Actions CI passes all checks
-- [ ] T044 [P] Capture timing evidence: Document CNI test timing from CI output (must be ≤90s per SC-001)
-- [ ] T045 [P] Capture build timing evidence: Document full repository build time from CI output (must be ≤5min per established baseline)
-- [ ] T046 Update release notes: Add entry describing internal package restructuring for maintainers
-- [ ] T047 Create comparison report: Summarize before/after package structure and confirm all success criteria met (SC-001 through SC-004)
+- [ ] T062 [P] Run CI validation: Push to feature branch `001-cni-installer-move` and verify GitHub Actions CI passes all checks
+- [ ] T063 [P] Capture timing evidence: Document CNI test timing from CI output (must be ≤90s per SC-001)
+- [ ] T064 [P] Capture build timing evidence: Document full repository build time from CI output (must be ≤5min per established baseline)
+- [ ] T065 Update release notes: Add entry describing internal package restructuring for maintainers
+- [ ] T066 Create comparison report: Summarize before/after package structure and confirm all success criteria met (SC-001 through SC-004)
 
 ### Remediation Additions (Polish)
 
-- [ ] T048 [P] Add section to comparison report with Helm values diff & security regression evidence
-- [ ] T049 [P] Append timing summary `/tmp/cni-move-timings.txt` into final comparison report
-- [ ] T050 [P] Verify no direct stdout prints introduced (repeat T030 after all changes)
-- [ ] T051 [P] Final grep that old paths absent across repo including mocks/docs/json: combined command
-- [ ] T052 [P] Tag commit for rollback reference: `git tag cni-move-baseline`
+- [ ] T067 [P] Add section to comparison report with Helm values diff & security regression evidence
+- [ ] T068 [P] Append timing summary `/tmp/cni-move-timings.txt` into final comparison report
+- [ ] T069 [P] Verify no direct stdout prints introduced (repeat T030 after all changes)
+- [ ] T070 [P] Final grep that old paths absent across repo including mocks/docs/json: combined command
+- [ ] T071 [P] Tag commit for rollback reference: `git tag cni-move-baseline`
 
 ---
 
@@ -322,10 +340,10 @@ git reset --hard HEAD~1
 
 Tasks mapped to specification success criteria:
 
-- **SC-001** (Tests pass in ≤90s): T021, T025, T044
-- **SC-002** (Build succeeds, no import errors): T020, T023, T039, T041, T043, T051
-- **SC-003** (Docs reference new location): T030, T034, T036, T048
-- **SC-004** (CI passes within baselines): T043, T045, T046, T049
+- **SC-001** (Tests pass in ≤90s): T021, T025, T063
+- **SC-002** (Build succeeds, no import errors): T020, T023, T053, T055, T062, T070
+- **SC-003** (Docs reference new location): T042, T046, T048, T065
+- **SC-004** (CI passes within baselines): T062, T063, T064, T068
 
 ---
 
@@ -338,4 +356,4 @@ Tasks mapped to specification success criteria:
 - User Story 2 and 3 can run in parallel after US1
 - Atomic commit strategy critical for this refactor—don't commit partial state
 - Constitution Principle II satisfied: All existing tests preserved and relocated with source
-- Constitution Principle IV satisfied: Timing evidence captured (T025, T044, T045)
+- Constitution Principle IV satisfied: Timing evidence captured (T025, T063, T064)
