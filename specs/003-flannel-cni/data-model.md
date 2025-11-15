@@ -104,6 +104,7 @@ stateDiagram-v2
 ```go
 type Interface interface {
     Apply(ctx context.Context, manifestURL string) error
+    Delete(ctx context.Context, namespace string, resourceType string, name string) error
 }
 
 type Client struct {
@@ -117,6 +118,7 @@ type Client struct {
 
 - `New(kubeconfig, context string) (Interface, error)` - Factory function
 - `Apply(ctx context.Context, manifestURL string) error` - Fetch and apply manifest
+- `Delete(ctx context.Context, namespace, resourceType, name string) error` - Delete specified resource
 
 **Validation Rules**:
 

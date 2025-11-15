@@ -35,12 +35,12 @@ const (
 
 The following values are valid for the CNI type:
 
-| Value | Description | Support Status |
-|-------|-------------|----------------|
-| `Default` | Distribution's default CNI | Existing |
-| `Cilium` | Cilium eBPF-based CNI | Existing |
-| `Calico` | Calico policy-based CNI | Existing |
-| `Flannel` | Flannel overlay network CNI | **NEW** |
+| Value     | Description                 | Support Status | Distribution Behavior                                                                        |
+| --------- | --------------------------- | -------------- | -------------------------------------------------------------------------------------------- |
+| `Default` | Distribution's default CNI  | Existing       | Kind: kindnet, K3d: Flannel                                                                  |
+| `Cilium`  | Cilium eBPF-based CNI       | Existing       | Disables default, installs Cilium                                                            |
+| `Calico`  | Calico policy-based CNI     | Existing       | Disables default, installs Calico                                                            |
+| `Flannel` | Flannel overlay network CNI | **NEW**        | **Kind**: Disables default, installs Flannel; **K3d**: Uses native Flannel (no installation) |
 
 ### String Representation
 

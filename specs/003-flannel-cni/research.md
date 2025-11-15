@@ -71,14 +71,15 @@
 
 **Question**: How to handle Kind vs K3d differences for Flannel?
 
-**Decision**: Both require disableDefaultCNI, no other distribution-specific changes needed
+**Decision**: K3d uses native Flannel when CNI=Flannel; Kind requires disableDefaultCNI + manifest installation
 
 **Rationale**:
 
-- Kind: Needs `disableDefaultCNI: true` in kind-config.yaml (same as Cilium)
-- K3d: Needs `--flannel-backend=none` flag to disable built-in Flannel (existing behavior)
-- No additional Flannel-specific configuration required
-- Scaffolder already handles CNI disabling logic
+- **K3d**: Flannel is the default CNI - when user selects `cni: Flannel`, use native Flannel (no custom installation)
+- **K3d with other CNIs**: Use `--flannel-backend=none` flag to disable built-in Flannel before installing Cilium/Calico
+- **Kind**: Needs `disableDefaultCNI: true` + custom Flannel manifest installation (kindnet is default)
+- Avoids redundant uninstall/reinstall of K3d's native Flannel
+- Flannel installer should ONLY be invoked for Kind distribution
 
 **Alternatives Considered**:
 

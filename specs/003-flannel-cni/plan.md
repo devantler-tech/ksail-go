@@ -5,7 +5,7 @@
 
 ## Summary
 
-Add Flannel as a Container Network Interface (CNI) option in KSail-Go to provide reliable cluster networking compatible with standard Kubernetes setups. This follows the existing CNI architecture pattern (used by Cilium and Calico) and adds Flannel as the fourth supported CNI option using VXLAN backend exclusively for initial release. The implementation includes configuration support via `--cni Flannel` flag, installation during cluster creation, validation, graceful error handling with rollback, and comprehensive testing.
+Add Flannel as a Container Network Interface (CNI) option in KSail-Go to provide reliable cluster networking compatible with standard Kubernetes setups. This follows the existing CNI architecture pattern (used by Cilium and Calico) and adds Flannel as the fourth supported CNI option using VXLAN backend exclusively for initial release. The implementation includes configuration support via `--cni Flannel` flag, conditional installation during cluster creation (**Kind only** - K3d uses native Flannel), validation, graceful error handling with rollback, and comprehensive testing.
 
 ## Technical Context
 
@@ -45,9 +45,10 @@ Add Flannel as a Container Network Interface (CNI) option in KSail-Go to provide
 **Scale/Scope**:
 
 - Add 1 new CNI option (Flannel) to existing 3 (Default, Cilium, Calico)
-- Support 2 distributions: Kind and K3d
+- Support 2 distributions: Kind (custom install) and K3d (native Flannel)
 - ~500-800 lines of new code (based on Cilium installer pattern)
 - 3 new files, ~10 existing files modified
+- **K3d optimization**: No installer invocation when CNI=Flannel (uses native)
 
 ## Constitution Check
 

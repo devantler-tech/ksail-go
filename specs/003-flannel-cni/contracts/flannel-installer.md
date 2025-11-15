@@ -31,8 +31,9 @@ func (f *FlannelInstaller) Install(ctx context.Context) error
 
 - Context must not be cancelled
 - Kubernetes cluster must be accessible
+- **Distribution must be Kind** (K3d uses native Flannel, installer should not be invoked)
 - Internet connectivity available to download manifest
-- Default CNI must be disabled in cluster configuration
+- Default CNI must be disabled in cluster configuration (Kind: `disableDefaultCNI: true`)
 - Installer must have valid kubeconfig and context
 
 **Postconditions (Success)**:
@@ -101,9 +102,9 @@ func (f *FlannelInstaller) Uninstall(ctx context.Context) error
 
 **Postconditions (Success)**:
 
-- Flannel DaemonSet deleted
-- `kube-flannel` namespace resources removed
-- Namespace may remain (deletion is best-effort)
+- Flannel DaemonSet deleted from `kube-flannel` namespace
+- Flannel ConfigMap and RBAC resources removed
+- `kube-flannel` namespace deleted
 - Function returns `nil`
 
 **Postconditions (Failure)**:
@@ -269,12 +270,14 @@ installer := flannel.NewFlannelInstaller(
 ```go
 type Interface interface {
     Apply(ctx context.Context, manifestURL string) error
+    Delete(ctx context.Context, namespace string, resourceType string, name string) error
 }
 ```
 
 **Contract**:
 
 - `Apply` must fetch manifest from URL and apply to cluster
+- `Delete` must remove specified Kubernetes resource (supports DaemonSet, ConfigMap, Namespace, RBAC resources)
 - Must handle HTTP/HTTPS URLs
 - Must validate YAML before applying
 - Must return descriptive errors on failure

@@ -66,11 +66,10 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 
 ### Edge Cases
 
-- What happens when Flannel is specified but the distribution's native CNI is not disabled (e.g., K3d with default CNI enabled)?
+- **K3d Native Flannel Handling**: K3d includes Flannel as its default CNI. When `cni: Flannel` is specified for K3d, the system MUST use the native Flannel (no installation needed). Custom Flannel installation is ONLY performed for Kind distribution. For K3d with other CNIs (Cilium, Calico), the system disables native Flannel using `--flannel-backend=none`.
 - When Flannel installation fails (network unavailable, insufficient permissions, incompatible Kubernetes version), system performs graceful rollback to pre-installation state and displays diagnostic error message with specific failure reason
-- What happens when users try to change from another CNI to Flannel on an existing cluster?
-- How does the system behave if Flannel manifests are unavailable or corrupted during installation?
-- What happens when users specify Flannel with distributions that have specific CNI requirements or defaults (K3d includes Flannel by default)?
+- How does the system behave if Flannel manifests are unavailable or corrupted during installation? Installation fails with clear error message and cluster is rolled back to pre-installation state
+- **Out of Scope**: CNI migration on existing clusters is not supported (consistent with existing CNI behavior - cluster must be recreated to change CNI)
 
 ## Requirements *(mandatory)*
 
@@ -79,13 +78,13 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 - **FR-001**: System MUST recognize "Flannel" as a valid CNI option in cluster configurations
 - **FR-002**: System MUST support `--cni Flannel` flag in the `cluster init` command to generate configurations with Flannel CNI
 - **FR-003**: System MUST validate "Flannel" as an accepted CNI value in ksail.yaml configuration files
-- **FR-004**: System MUST install Flannel CNI components during cluster creation when `cni: Flannel` is specified in ksail.yaml
-- **FR-005**: System MUST ensure distribution configurations disable default CNI when Flannel is selected
-- **FR-006**: System MUST verify Flannel installation succeeds by checking that Flannel pods are running in kube-system namespace
+- **FR-004**: System MUST install Flannel CNI components during cluster creation when `cni: Flannel` is specified in ksail.yaml **for Kind distribution only** (K3d uses its native Flannel)
+- **FR-005**: System MUST ensure distribution configurations disable default CNI when Flannel is selected **for Kind distribution** (Kind requires `disableDefaultCNI: true`)
+- **FR-006**: System MUST verify Flannel installation succeeds by checking that Flannel pods are running in kube-flannel namespace
 - **FR-007**: System MUST verify nodes reach Ready state after Flannel installation
 - **FR-008**: System MUST obtain and apply Flannel installation resources from official Flannel sources
-- **FR-009**: System MUST support Flannel with Kind distribution clusters
-- **FR-010**: System MUST support Flannel with K3d distribution clusters
+- **FR-009**: System MUST support Flannel with Kind distribution clusters **by installing custom Flannel via manifest**
+- **FR-010**: System MUST support Flannel with K3d distribution clusters **by using K3d's native Flannel (no custom installation)**
 - **FR-011**: System MUST provide clear error messages when Flannel installation fails, including diagnostic information
 - **FR-011a**: System MUST rollback cluster to pre-installation state when Flannel installation fails, ensuring no partial or broken configuration remains
 - **FR-012**: Documentation MUST describe how to configure and use Flannel CNI, including limitations and compatibility notes
