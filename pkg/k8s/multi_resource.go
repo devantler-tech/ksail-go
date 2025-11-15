@@ -57,6 +57,7 @@ func WaitForMultipleResources(
 			)
 		default:
 			cancel()
+
 			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
 		}
 
