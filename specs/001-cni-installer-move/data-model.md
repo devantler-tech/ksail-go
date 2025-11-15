@@ -93,7 +93,7 @@ type HelmChartConfig struct {
 
 ```go
 type CiliumInstaller struct {
-    *installer.CNIInstallerBase  // Will become: *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 ```
 
@@ -114,7 +114,7 @@ type CiliumInstaller struct {
 
 ```go
 type CalicoInstaller struct {
-    *installer.CNIInstallerBase  // Will become: *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 ```
 

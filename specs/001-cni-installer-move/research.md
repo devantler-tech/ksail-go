@@ -11,7 +11,7 @@
 
 ```text
 pkg/svc/installer/
-├── cni_helpers.go          # CNIInstallerBase + shared utilities (target: cni/base.go)
+├── cni_helpers.go          # InstallerBase + shared utilities (target: cni/base.go)
 ├── cni_helpers_test.go     # Tests for shared helpers (target: cni/base_test.go)
 ├── calico/                 # Calico CNI installer (target: cni/calico/)
 │   ├── installer.go
@@ -65,7 +65,7 @@ pkg/svc/installer/
 
 **Applied**: Create `pkg/svc/installer/cni/` parent package with:
 
-- Shared code at root (`cni/base.go` containing CNIInstallerBase and utilities)
+- Shared code at root (`cni/base.go` containing InstallerBase and utilities)
 - Implementations in subdirectories (`cni/cilium/`, `cni/calico/`)
 
 ### Import Path Migration
