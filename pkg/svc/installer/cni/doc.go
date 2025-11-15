@@ -1,11 +1,12 @@
-// Package cni provides unified CNI installer implementations and shared utilities for managing CNI providers on
-// Kubernetes clusters.
+// Package cni provides unified CNI installer implementations and shared utilities
+// for managing CNI providers on Kubernetes clusters.
 //
 // # Overview
 //
-// The cni package centralizes the logic for installing, configuring, and managing Container Network Interface
-// (CNI) providers such as Calico, Cilium, and others. It exposes a common interface for CNI installation, enabling
-// consistent workflows across different cluster distributions and simplifying the process of adding new CNIs.
+// The cni package centralizes the logic for installing, configuring, and managing
+// Container Network Interface (CNI) providers such as Calico, Cilium, and others.
+// It exposes a common interface for CNI installation, enabling consistent workflows
+// across different cluster distributions and simplifying the process of adding new CNIs.
 //
 // Package Structure
 //
@@ -26,7 +27,7 @@
 //  3. Embed CNIInstallerBase in your installer struct to reuse shared Helm and readiness logic:
 //
 //     type MyCNIInstaller struct {
-//         *cni.CNIInstallerBase
+//     *cni.CNIInstallerBase
 //     }
 //
 //  4. Use the shared helper functions for Helm operations:

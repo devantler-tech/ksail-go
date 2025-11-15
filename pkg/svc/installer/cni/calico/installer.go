@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
 type CalicoInstaller struct {
-	*installer.CNIInstallerBase
+	*cni.CNIInstallerBase
 }
 
 // NewCalicoInstaller creates a new Calico installer instance.
@@ -22,7 +22,7 @@ func NewCalicoInstaller(
 	timeout time.Duration,
 ) *CalicoInstaller {
 	calicoInstaller := &CalicoInstaller{}
-	calicoInstaller.CNIInstallerBase = installer.NewCNIInstallerBase(
+	calicoInstaller.CNIInstallerBase = cni.NewCNIInstallerBase(
 		client,
 		kubeconfig,
 		context,
@@ -71,13 +71,13 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	repoConfig := installer.HelmRepoConfig{
+	repoConfig := cni.HelmRepoConfig{
 		Name:     "projectcalico",
 		URL:      "https://docs.tigera.io/calico/charts",
 		RepoName: "calico",
 	}
 
-	chartConfig := installer.HelmChartConfig{
+	chartConfig := cni.HelmChartConfig{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
@@ -85,7 +85,7 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		CreateNamespace: true,
 	}
 
-	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = cni.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 	if err != nil {
 		return fmt.Errorf("install or upgrade calico: %w", err)
 	}
@@ -100,7 +100,7 @@ func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
 		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
 	}
 
-	err := installer.WaitForResourceReadiness(
+	err := cni.WaitForResourceReadiness(
 		ctx,
 		c.GetKubeconfig(),
 		c.GetContext(),
