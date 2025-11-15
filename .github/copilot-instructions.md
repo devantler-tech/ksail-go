@@ -838,8 +838,7 @@ go test ./pkg/ui/notify/... -run FormatTiming -v
 ```
 
 ## Active Technologies
-- Go 1.25.4+ (as specified in go.mod: go 1.24) (003-flannel-cni)
-- N/A (stateless CLI tool; cluster state managed by Kubernetes) (003-flannel-cni)
+- Go 1.25.4+ (003-flannel-cni)
 
 ## Recent Changes
-- 003-flannel-cni: Added Go 1.25.4+ (as specified in go.mod: go 1.24)
+- 003-flannel-cni: Added Go 1.25.4+
