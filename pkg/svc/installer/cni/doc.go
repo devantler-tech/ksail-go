@@ -32,7 +32,7 @@
 //
 //  4. Use the shared helper functions for Helm operations:
 //     - helm.InstallOrUpgradeChart() (from pkg/client/helm) for chart installation
-//     - installer.WaitForResourceReadiness() (from pkg/svc/installer) for readiness checks
+//     - cni.WaitForResourceReadiness() (from pkg/svc/installer/cni) for readiness checks
 //
 //  5. Add comprehensive unit tests following the patterns in existing CNI implementations
 //
