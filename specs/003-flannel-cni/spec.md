@@ -116,7 +116,7 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 - **SC-001**: Users can initialize a new KSail project with Flannel CNI in under 30 seconds using the init command
 - **SC-002**: Cluster creation with Flannel CNI completes successfully within 3 minutes on standard hardware (4 CPU, 8GB RAM) using distribution default node configurations
 - **SC-003**: All cluster nodes reach Ready state within 60 seconds after Flannel pods are running
-- **SC-004**: Pod-to-pod communication across nodes succeeds with <10ms latency for same-datacenter nodes
+- **SC-004**: Pod-to-pod communication across nodes succeeds with <10ms latency for same data center nodes
 - **SC-005**: DNS resolution for services and external names succeeds within 100ms
 - **SC-006**: E2E tests for Flannel CNI pass with 100% success rate in CI/CD pipeline
 - **SC-007**: Flannel installation succeeds on both Kind and K3d distributions with 100% reliability in automated tests
