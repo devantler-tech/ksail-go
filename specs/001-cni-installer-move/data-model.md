@@ -40,46 +40,46 @@ type InstallerBase struct {
 
 - Embedded by: `CiliumInstaller`, `CalicoInstaller`
 - Depends on: `helm.Interface` (from `pkg/client/helm`)
-- Uses: `k8sutil.ReadinessCheck` (from `pkg/svc/installer/k8sutil`)
+- Uses: `k8s.ReadinessCheck` (from `pkg/k8s`)
 
-### HelmRepoConfig
+### helm.RepoConfig
 
-**Location**: Currently `pkg/svc/installer/cni_helpers.go` → Moving to `pkg/svc/installer/cni/base.go`
+**Location**: `pkg/client/helm/config.go`
 
 **Purpose**: Configuration for Helm repository.
 
-**Fields** (unchanged):
+**Fields**:
 
 ```go
-type HelmRepoConfig struct {
-    Name     string
-    URL      string
-    RepoName string
+type RepoConfig struct {
+    Name     string  // Repository identifier used in Helm commands
+    URL      string  // Helm repository URL
+    RepoName string  // Human-readable name used in error messages
 }
 ```
 
-**Usage**: Passed to `InstallOrUpgradeHelmChart()` helper function.
+**Usage**: Passed to `helm.InstallOrUpgradeChart()` helper function.
 
-### HelmChartConfig
+### helm.ChartConfig
 
-**Location**: Currently `pkg/svc/installer/cni_helpers.go` → Moving to `pkg/svc/installer/cni/base.go`
+**Location**: `pkg/client/helm/config.go`
 
 **Purpose**: Configuration for Helm chart installation.
 
-**Fields** (unchanged):
+**Fields**:
 
 ```go
-type HelmChartConfig struct {
-    ReleaseName     string
-    ChartName       string
-    Namespace       string
-    RepoURL         string
-    CreateNamespace bool
-    SetJSONVals     map[string]string
+type ChartConfig struct {
+    ReleaseName     string            // Helm release name
+    ChartName       string            // Chart identifier (e.g., "repo/chart")
+    Namespace       string            // Kubernetes namespace for installation
+    RepoURL         string            // Helm repository URL
+    CreateNamespace bool              // Whether to create the namespace
+    SetJSONVals     map[string]string // JSON values to set during installation
 }
 ```
 
-**Usage**: Passed to `InstallOrUpgradeHelmChart()` helper function.
+**Usage**: Passed to `helm.InstallOrUpgradeChart()` helper function.
 
 ## CNI Installer Implementations
 
@@ -127,42 +127,42 @@ type CalicoInstaller struct {
 
 ## Helper Functions
 
-### InstallOrUpgradeHelmChart
+### helm.InstallOrUpgradeChart
 
-**Location**: Currently `pkg/svc/installer/cni_helpers.go` → Moving to `pkg/svc/installer/cni/base.go`
+**Location**: `pkg/client/helm/operations.go`
 
-**Signature** (unchanged):
+**Signature**:
 
 ```go
-func InstallOrUpgradeHelmChart(
+func InstallOrUpgradeChart(
     ctx context.Context,
     client helm.Interface,
-    repoConfig HelmRepoConfig,
-    chartConfig HelmChartConfig,
+    repoConfig helm.RepoConfig,
+    chartConfig helm.ChartConfig,
     timeout time.Duration,
 ) error
 ```
 
 **Purpose**: Adds Helm repo and installs/upgrades chart.
 
-### WaitForResourceReadiness
+### installer.WaitForResourceReadiness
 
-**Location**: Currently `pkg/svc/installer/cni_helpers.go` → Moving to `pkg/svc/installer/cni/base.go`
+**Location**: `pkg/svc/installer/readiness.go`
 
-**Signature** (unchanged):
+**Signature**:
 
 ```go
 func WaitForResourceReadiness(
     ctx context.Context,
     kubeconfig string,
     kubeContext string,
-    checks []k8sutil.ReadinessCheck,
+    checks []k8s.ReadinessCheck,
     timeout time.Duration,
     componentName string,
 ) error
 ```
 
-**Purpose**: Waits for Kubernetes resources to become ready.
+**Purpose**: Convenience wrapper around `k8s.WaitForMultipleResources()` that builds the Kubernetes client and provides installer-specific error context. The lower-level utilities (`WaitForMultipleResources`, `WaitForDaemonSetReady`, `WaitForDeploymentReady`) are in `pkg/k8s/multi_resource.go`.
 
 ## Package Dependencies
 
