@@ -114,7 +114,7 @@ type CiliumInstaller struct {
 
 ```go
 type CalicoInstaller struct {
-    *installer.CNIInstallerBase  // Will become: *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 ```
 
