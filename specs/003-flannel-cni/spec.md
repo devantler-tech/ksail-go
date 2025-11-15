@@ -96,7 +96,7 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 - **Dependency**: Flannel installation requires internet connectivity to download Flannel manifests from official sources
 - **Dependency**: Kubernetes cluster must be at a version compatible with Flannel (assumes Kubernetes 1.20+)
 - **Assumption**: Distribution configurations (Kind, K3d) support disabling default CNI to allow custom CNI installation
-- **Assumption**: Flannel will use VXLAN backend exclusively for overlay networking (rationale: most compatible across all network topologies, works universally without special network configuration, sufficient for initial release)
+- **Assumption**: Flannel will use VXLAN backend exclusively for overlay networking (rationale: most compatible across the network topologies, works universally without special network configuration, sufficient for initial release)
 - **Assumption**: Users have appropriate cluster permissions to install DaemonSets and modify cluster networking
 - **Assumption**: Cluster sizing follows distribution defaults (Kind/K3d default configurations); no specific node count requirements beyond what distributions provide
 - **Assumption**: Standard Flannel configuration is sufficient; custom network configurations are out of scope
