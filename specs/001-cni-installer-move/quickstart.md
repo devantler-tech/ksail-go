@@ -126,7 +126,6 @@ func (y *YourCNIInstaller) helmInstallOrUpgradeYourCNI(ctx context.Context) erro
     }
 
     // Configure Helm chart installation
-    // Note: RepoURL must match the URL field in repoConfig
     chartConfig := cni.HelmChartConfig{
         ReleaseName:     "yourcni",
         ChartName:       "yourcni/yourcni",               // Format: repo-name/chart-name
