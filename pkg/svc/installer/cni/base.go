@@ -14,12 +14,12 @@ import (
 // InstallerBase provides common fields and methods for CNI installers.
 // It encapsulates shared functionality like Helm client management, kubeconfig handling,
 // timeout management, and readiness checks. CNI implementations should embed this type
-// to inherit these capabilities.
+// as a pointer (*cni.InstallerBase) to inherit these capabilities.
 //
 // Example usage:
 //
 //	type MyCNIInstaller struct {
-//	    *cni.InstallerBase
+//	    *cni.InstallerBase  // Must be embedded as a pointer
 //	}
 //
 //	installer := &MyCNIInstaller{}

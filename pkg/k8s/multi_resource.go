@@ -61,6 +61,7 @@ func WaitForMultipleResources(
 			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
 		}
 
+		// Call cancel immediately to release resources, not deferred
 		cancel()
 
 		if err != nil {
