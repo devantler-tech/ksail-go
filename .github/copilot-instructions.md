@@ -461,7 +461,7 @@ When reviewing Copilot's pull requests:
 
 Install these exact tools before starting development:
 
-- Go (v1.23.9+) - `go version` should show go1.23.9 or higher
+- Go (v1.25.4+) - `go version` should show go1.25.4 or higher
 - mockery (v3.x) - for generating test mocks
 - golangci-lint - for code linting
 - mega-linter-runner - for comprehensive validation
@@ -662,8 +662,8 @@ Install pre-commit hooks: `pre-commit install`
 
 ### Go Version
 
-- **Required**: Go 1.24.0+ (specified in go.mod)
-- **Validated**: Works with Go 1.25.1
+- **Required**: Go 1.25.4+ (specified in go.mod)
+- **Validated**: Works with Go 1.25.4+
 
 ### External Tools
 
@@ -838,8 +838,7 @@ go test ./pkg/ui/notify/... -run FormatTiming -v
 ```
 
 ## Active Technologies
-- Go 1.25.4+ (as specified in go.mod: go 1.24) (003-flannel-cni)
-- N/A (stateless CLI tool; cluster state managed by Kubernetes) (003-flannel-cni)
+- Go 1.25.4+ (003-flannel-cni)
 
 ## Recent Changes
-- 003-flannel-cni: Added Go 1.25.4+ (as specified in go.mod: go 1.24)
+- 003-flannel-cni: Added Go 1.25.4+

@@ -1,4 +1,4 @@
-- Language: Go 1.24+ (currently targeting 1.25.x).
+- Language: Go 1.25.4+ (as specified in go.mod).
 - Style: gofmt formatting enforced; prefer interface-driven design and timer/notify patterns for CLI UX.
 - Lint rules: golangci-lint with wrapcheck, nonamedreturns, noinlineerr, dupword, etc.; mockery-generated interfaces for testing.
 - Testing approach: table-driven tests, parallelizable where possible, use testify (`require`, `assert`).

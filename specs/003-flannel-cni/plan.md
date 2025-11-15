@@ -9,7 +9,7 @@ Add Flannel as a Container Network Interface (CNI) option in KSail-Go to provide
 
 ## Technical Context
 
-**Language/Version**: Go 1.25.4+ (as specified in go.mod: go 1.24)
+**Language/Version**: Go 1.25.4+
 
 **Primary Dependencies**:
 
