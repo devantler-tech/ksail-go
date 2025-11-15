@@ -118,15 +118,15 @@ func (y *YourCNIInstaller) helmInstallOrUpgradeYourCNI(ctx context.Context) erro
     }
 
     // Configure Helm repository
-    // Note: Name and RepoName serve different purposes - see pkg/svc/installer/cni/base.go for details
-    repoConfig := cni.HelmRepoConfig{
+    // Note: Name and RepoName serve different purposes - see pkg/client/helm/config.go for details
+    repoConfig := helm.RepoConfig{
         Name:     "yourcni",                   // Helm repo alias used in chart references (used as the prefix in chart names, e.g. 'yourcni/yourcni'). Set this to the alias you want to use in Helm commands.
         URL:      "https://helm.yourcni.io",  // Update with actual repo URL
-        RepoName: "yourcni",                   // Actual repository name as registered in Helm. Usually matches Name, but can differ if you want to alias the repo (see pkg/svc/installer/cni/base.go for details).
+        RepoName: "yourcni",                   // Actual repository name as registered in Helm. Usually matches Name, but can differ if you want to alias the repo (see pkg/client/helm/config.go for details).
     }
 
     // Configure Helm chart installation
-    chartConfig := cni.HelmChartConfig{
+    chartConfig := helm.ChartConfig{
         ReleaseName:     "yourcni",
         ChartName:       "yourcni/yourcni",               // Format: repo-name/chart-name
         Namespace:       "kube-system",
@@ -135,7 +135,7 @@ func (y *YourCNIInstaller) helmInstallOrUpgradeYourCNI(ctx context.Context) erro
         SetJSONVals:     defaultYourCNIValues(),
     }
 
-    err = cni.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, y.GetTimeout())
+    err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, y.GetTimeout())
     if err != nil {
         return fmt.Errorf("install or upgrade yourcni: %w", err)
     }
@@ -150,12 +150,12 @@ func defaultYourCNIValues() map[string]string {
 }
 
 func (y *YourCNIInstaller) waitForReadiness(ctx context.Context) error {
-    checks := []k8sutil.ReadinessCheck{
+    checks := []k8s.ReadinessCheck{
         {Type: "daemonset", Namespace: "kube-system", Name: "yourcni"},
         // Add more checks as needed (deployments, statefulsets, etc.)
     }
 
-    err := cni.WaitForResourceReadiness(
+    err := installer.WaitForResourceReadiness(
         ctx,
         y.GetKubeconfig(),
         y.GetContext(),
@@ -303,7 +303,7 @@ type YourCNIInstaller struct {
 
 ```go
 // ✅ Good: Use shared helper
-err := cni.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, timeout)
+err := helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, timeout)
 
 // ❌ Bad: Duplicate Helm installation logic
 err := client.AddRepo(...)
@@ -314,7 +314,7 @@ err = client.InstallChart(...)
 
 ```go
 // ✅ Good: Check actual resources
-checks := []k8sutil.ReadinessCheck{
+checks := []k8s.ReadinessCheck{
     {Type: "daemonset", Namespace: "kube-system", Name: "yourcni"},
 }
 

@@ -16,6 +16,11 @@ import (
 // timeout management, and readiness checks. CNI implementations should embed this type
 // as a pointer (*cni.InstallerBase) to inherit these capabilities.
 //
+// Note: Helm chart installation utilities have been moved to pkg/client/helm package
+// (helm.InstallOrUpgradeChart, helm.RepoConfig, helm.ChartConfig). Readiness checking
+// utilities are available via installer.WaitForResourceReadiness (pkg/svc/installer/readiness.go)
+// which wraps the lower-level k8s.WaitForMultipleResources from pkg/k8s package.
+//
 // Example usage:
 //
 //	type MyCNIInstaller struct {
