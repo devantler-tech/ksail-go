@@ -125,7 +125,7 @@ Go project structure:
 
 - [ ] T101 [P] [US2] Create package documentation: Create `pkg/svc/installer/cni/doc.go` with package overview, structure explanation, and "Adding a new CNI" guidance
 - [ ] T102 [P] [US2] Update CONTRIBUTING.md: Add section referencing `pkg/svc/installer/cni/` as canonical location for CNI installers with link to `quickstart.md`
-- [ ] T103 [P] [US2] Add inline godoc comments to `pkg/svc/installer/cni/base.go`: Document CNIInstallerBase struct and all exported functions with usage examples
+- [ ] T103 [P] [US2] Add inline godoc comments to `pkg/svc/installer/cni/base.go`: Document InstallerBase struct and all exported functions with usage examples
 
 ### Validation for User Story 2
 

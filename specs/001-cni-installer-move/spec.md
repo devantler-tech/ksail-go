@@ -14,7 +14,7 @@
 - Q: Should the relocation introduce any new logging or metrics to track CNI installer usage patterns, or strictly preserve existing observability? → A: Preserve existing notify/timer output exactly; no new logging or metrics
 - Q: Should the old package paths (pkg/svc/installer/calico, pkg/svc/installer/cilium) be immediately deleted after relocation, or maintained as deprecated aliases for a transition period? → A: Delete immediately after updating all imports; no transition period needed
 - Q: Should CNI installer security posture be validated after relocation (e.g., Helm chart signature verification, RBAC requirements)? → A: Preserve existing security mechanisms unchanged; validate no regressions introduced
-- Q: Should CNI installers be consolidated directly under pkg/svc/installer/cni or maintain subdirectories? → A: Maintain subdirectories (pkg/svc/installer/cni/cilium/, pkg/svc/installer/cni/calico/); only shared helpers (CNIInstallerBase, utilities) move to pkg/svc/installer/cni/ root
+- Q: Should CNI installers be consolidated directly under pkg/svc/installer/cni or maintain subdirectories? → A: Maintain subdirectories (pkg/svc/installer/cni/cilium/, pkg/svc/installer/cni/calico/); only shared helpers (InstallerBase, utilities) move to pkg/svc/installer/cni/ root
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -83,7 +83,7 @@ Internal packages that referenced `pkg/svc/installer/calico` or `.../cilium` mus
 
 ### Functional Requirements
 
-- **FR-001 [COMPLETED]**: System has relocated `CNIInstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/base.go` (single file at root of cni package) while preserving exported APIs.
+- **FR-001 [COMPLETED]**: System has relocated `InstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/base.go` (single file at root of cni package) while preserving exported APIs.
 - **FR-002 [COMPLETED]**: System has moved Cilium and Calico installer packages to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively, updating their module names accordingly.
 - **FR-003 [COMPLETED]**: System has updated all imports, mocks, and tests to reference the new paths (`pkg/svc/installer/cni/` for shared helpers, `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` for installers), and immediately deleted old package directories (`pkg/svc/installer/calico/`, `pkg/svc/installer/cilium/`, `pkg/svc/installer/cni_helpers.go`) with no transition period or deprecated aliases maintained.
 - **FR-004**: System MUST ensure `go test ./pkg/svc/installer/cni/...` and `go test ./pkg/svc/installer/...` pass locally and in CI.

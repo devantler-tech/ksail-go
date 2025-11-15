@@ -87,11 +87,11 @@ CNI (Container Network Interface) installers are located under `pkg/svc/installe
    )
    
    type MyCNIInstaller struct {
-       *cni.CNIInstallerBase
+       *cni.InstallerBase
    }
    ```
 
-3. **Reuse shared utilities** from `cni.CNIInstallerBase` for Helm chart installation and readiness checks
+3. **Reuse shared utilities** from `cni.InstallerBase` for Helm chart installation and readiness checks
 
 4. **Add comprehensive unit tests** following patterns in existing CNI implementations (see `pkg/svc/installer/cni/cilium/` or `pkg/svc/installer/cni/calico/`)
 

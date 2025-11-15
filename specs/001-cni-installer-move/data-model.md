@@ -9,7 +9,7 @@ This refactor involves **zero data model changes**. All existing types, structs,
 
 ## Existing Entities
 
-### CNIInstallerBase
+### InstallerBase
 
 **Location**: Currently `pkg/svc/installer/cni_helpers.go` → Moving to `pkg/svc/installer/cni/base.go`
 
@@ -18,7 +18,7 @@ This refactor involves **zero data model changes**. All existing types, structs,
 **Fields** (unchanged):
 
 ```go
-type CNIInstallerBase struct {
+type InstallerBase struct {
     helmClient    helm.Interface
     kubeconfig    string
     context       string
@@ -29,7 +29,7 @@ type CNIInstallerBase struct {
 
 **Methods** (unchanged):
 
-- `NewCNIInstallerBase()` - Constructor
+- `NewInstallerBase()` - Constructor
 - `GetClient()` - Returns Helm client
 - `GetKubeconfig()` - Returns kubeconfig path
 - `GetContext()` - Returns k8s context name

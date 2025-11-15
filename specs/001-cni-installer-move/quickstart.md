@@ -18,7 +18,7 @@ This guide shows how to add a new Container Network Interface (CNI) installer to
 
 ```text
 pkg/svc/installer/cni/
-├── base.go                 # CNIInstallerBase and shared utilities (embed this in your installer)
+├── base.go                 # InstallerBase and shared utilities (embed this in your installer)
 ├── base_test.go            # Tests for base functionality
 ├── doc.go                  # Package documentation
 ├── calico/                 # Example: Calico implementation
@@ -61,7 +61,7 @@ import (
 
 // YourCNIInstaller implements the installer.Installer interface.
 type YourCNIInstaller struct {
-    *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 
 // NewYourCNIInstaller creates a new installer instance.
@@ -71,7 +71,7 @@ func NewYourCNIInstaller(
     timeout time.Duration,
 ) *YourCNIInstaller {
     installer := &YourCNIInstaller{}
-    installer.CNIInstallerBase = cni.NewInstallerBase(
+    installer.InstallerBase = cni.NewInstallerBase(
         client,
         kubeconfig,
         context,
@@ -92,7 +92,7 @@ func (y *YourCNIInstaller) Install(ctx context.Context) error {
 
 // SetWaitForReadinessFunc overrides the readiness wait function (for testing).
 func (y *YourCNIInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context) error) {
-    y.CNIInstallerBase.SetWaitForReadinessFunc(waitFunc, y.waitForReadiness)
+    y.InstallerBase.SetWaitForReadinessFunc(waitFunc, y.waitForReadiness)
 }
 
 // Uninstall removes the Helm release.
@@ -291,11 +291,11 @@ ksail cluster down
 
 ## Key Patterns to Follow
 
-### 1. Always Embed CNIInstallerBase
+### 1. Always Embed InstallerBase
 
 ```go
 type YourCNIInstaller struct {
-    *cni.CNIInstallerBase  // ✅ Always embed this
+    *cni.InstallerBase  // ✅ Always embed this
 }
 ```
 
@@ -392,7 +392,7 @@ Before submitting your CNI implementation:
 
 - [ ] Package created under `pkg/svc/installer/cni/yourcni/`
 - [ ] `installer.go` implements `Install()` and `Uninstall()` methods
-- [ ] Embeds `CNIInstallerBase` for shared functionality
+- [ ] Embeds `InstallerBase` for shared functionality
 - [ ] Uses `cni.InstallOrUpgradeHelmChart()` helper
 - [ ] Implements `waitForReadiness()` with appropriate checks
 - [ ] `installer_test.go` covers Install/Uninstall scenarios

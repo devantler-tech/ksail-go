@@ -96,7 +96,7 @@ pkg/svc/installer/
 
 ### Readiness Check Integration
 
-**Pattern**: Callback function passed to `CNIInstallerBase`.
+**Pattern**: Callback function passed to `InstallerBase`.
 
 **Current**: Each CNI implements `waitForReadiness()` method passed to base constructor.
 
