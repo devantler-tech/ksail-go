@@ -393,7 +393,7 @@ Before submitting your CNI implementation:
 - [ ] Package created under `pkg/svc/installer/cni/yourcni/`
 - [ ] `installer.go` implements `Install()` and `Uninstall()` methods
 - [ ] Embeds `InstallerBase` for shared functionality
-- [ ] Uses `cni.InstallOrUpgradeHelmChart()` helper
+- [ ] Uses `helm.InstallOrUpgradeChart()` helper
 - [ ] Implements `waitForReadiness()` with appropriate checks
 - [ ] `installer_test.go` covers Install/Uninstall scenarios
 - [ ] Tests pass: `go test ./pkg/svc/installer/cni/yourcni/...`
