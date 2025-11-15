@@ -5,7 +5,7 @@
 
 ## Summary
 
-Relocate and rename CNI installer shared helpers (`CNIInstallerBase` → `InstallerBase`, readiness utilities, Helm configuration types) from `pkg/svc/installer/` root to `pkg/svc/installer/cni/` package, while moving Cilium and Calico installer implementations to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively. This pure structural refactor consolidates CNI-related code under a single parent package, simplifying future CNI additions while preserving all existing functionality, CLI output, and test coverage.
+Relocate CNI installer shared helpers (`InstallerBase`, readiness utilities, Helm configuration types) from `pkg/svc/installer/` root to `pkg/svc/installer/cni/` package, while moving Cilium and Calico installer implementations to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively. This pure structural refactor consolidates CNI-related code under a single parent package, simplifying future CNI additions while preserving all existing functionality, CLI output, and test coverage.
 
 ## Technical Context
 
@@ -173,7 +173,7 @@ specs/[###-feature]/
 
 ```text
 pkg/svc/installer/
-├── cni_helpers.go          # CNIInstallerBase + shared utilities
+├── cni_helpers.go          # InstallerBase + shared utilities
 ├── cni_helpers_test.go     # Tests for shared helpers
 ├── calico/                 # Calico CNI installer
 │   ├── installer.go
@@ -187,7 +187,7 @@ pkg/svc/installer/
 
 ```text
 pkg/svc/installer/cni/
-├── base.go                 # CNIInstallerBase and shared utilities (renamed from cni_helpers.go)
+├── base.go                 # InstallerBase and shared utilities (renamed from cni_helpers.go)
 ├── base_test.go            # Tests (renamed from cni_helpers_test.go)
 ├── doc.go                  # Package documentation
 ├── calico/                 # Calico CNI installer
@@ -276,7 +276,7 @@ No complexity justification required.
 
 **Entities** (unchanged—no data model changes in this refactor):
 
-- `CNIInstallerBase`: Shared base struct for CNI installers
+- `InstallerBase`: Shared base struct for CNI installers
 - `HelmRepoConfig`: Helm repository configuration
 - `HelmChartConfig`: Helm chart installation parameters
 
@@ -289,14 +289,14 @@ Create `pkg/svc/installer/cni/doc.go`:
 // and shared utilities for Kubernetes cluster networking setup.
 //
 // Structure:
-//   - base.go: CNIInstallerBase and utility functions for Helm chart installation and readiness checks
+//   - base.go: InstallerBase and utility functions for Helm chart installation and readiness checks
 //   - calico/: Calico CNI installer implementation
 //   - cilium/: Cilium CNI installer implementation
 //
 // Adding a new CNI:
 // 1. Create a subdirectory under pkg/svc/installer/cni/
 // 2. Implement the installer.Installer interface
-// 3. Embed CNIInstallerBase for shared Helm client and readiness logic
+// 3. Embed InstallerBase for shared Helm client and readiness logic
 // 4. Add unit tests following existing patterns
 package cni
 ```
@@ -307,7 +307,7 @@ package cni
 
 **Preserved Contracts**:
 
-- `CNIInstallerBase` methods unchanged
+- `InstallerBase` methods unchanged
 - `InstallOrUpgradeHelmChart()` signature identical
 - `WaitForResourceReadiness()` signature identical
 - Cilium/Calico installer constructors unchanged
@@ -333,7 +333,7 @@ import (
 )
 
 type MyCNIInstaller struct {
-    *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 
 func NewMyCNIInstaller(
@@ -342,7 +342,7 @@ func NewMyCNIInstaller(
     timeout time.Duration,
 ) *MyCNIInstaller {
     installer := &MyCNIInstaller{}
-    installer.CNIInstallerBase = cni.NewCNIInstallerBase(
+    installer.InstallerBase = cni.NewInstallerBase(
         client,
         kubeconfig,
         context,
