@@ -71,7 +71,7 @@ func NewYourCNIInstaller(
     timeout time.Duration,
 ) *YourCNIInstaller {
     installer := &YourCNIInstaller{}
-    installer.CNIInstallerBase = cni.NewCNIInstallerBase(
+    installer.CNIInstallerBase = cni.NewInstallerBase(
         client,
         kubeconfig,
         context,
