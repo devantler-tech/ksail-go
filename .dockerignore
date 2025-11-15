@@ -1,0 +1,62 @@
+# ==============================================================================
+# Docker Ignore File for KSail-Go
+# ==============================================================================
+
+# Git and version control
+.git/
+.gitignore
+.gitattributes
+
+# Development and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+ksail
+ksail-go
+dist/
+bin/
+*.test
+*.out
+
+# Test and coverage reports
+coverage*
+megalinter-reports/
+report/
+*.zip
+
+# Temporary files
+tmp/
+*.log
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+specs/
+
+# CI/CD
+.github/
+
+# Go specific
+vendor/
+
+# Environment files
+.env
+.env.*
+
+# Project configs (not needed in container)
+k3d.yaml
+kind.yaml
+eks.yaml
+ksail.yaml
+k8s/
+!pkg/k8s/
+
+# MacOS
+.DS_Store
+
+# Test fixtures
+testdata/

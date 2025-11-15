@@ -48,7 +48,9 @@
           "type": "string",
           "enum": [
             "Default",
-            "Cilium"
+            "Cilium",
+            "Calico",
+            "Flannel"
           ]
         },
         "csi": {

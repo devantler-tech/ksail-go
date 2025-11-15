@@ -82,7 +82,12 @@ func validDistributions() []Distribution {
 
 // validCNIs returns supported CNI values.
 func validCNIs() []CNI {
-	return []CNI{CNIDefault, CNICilium, CNICalico}
+	return []CNI{CNIDefault, CNICilium, CNICalico, CNIFlannel}
+}
+
+// ValidCNIs returns supported CNI values (exported for testing).
+func ValidCNIs() []CNI {
+	return validCNIs()
 }
 
 // validCSIs returns supported CSI values.
@@ -108,6 +113,8 @@ const (
 	CNICilium CNI = "Cilium"
 	// CNICalico is the Calico CNI.
 	CNICalico CNI = "Calico"
+	// CNIFlannel is the Flannel CNI.
+	CNIFlannel CNI = "Flannel"
 )
 
 // CSI defines the CSI options for a KSail cluster.
@@ -245,8 +252,8 @@ func (c *CNI) Set(value string) error {
 		}
 	}
 
-	return fmt.Errorf("%w: %s (valid options: %s, %s, %s)",
-		ErrInvalidCNI, value, CNIDefault, CNICilium, CNICalico)
+	return fmt.Errorf("%w: %s (valid options: %s, %s, %s, %s)",
+		ErrInvalidCNI, value, CNIDefault, CNICilium, CNICalico, CNIFlannel)
 }
 
 // Set for CSI.

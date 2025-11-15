@@ -308,6 +308,115 @@ func runKindCiliumAlignmentTest(
 	assert.True(t, found, "expected to find Cilium alignment validation error")
 }
 
+func TestKSailValidator_FlannelCNIPassesWithKindConfig(t *testing.T) {
+	t.Parallel()
+
+	kindConfig := &kindv1alpha4.Cluster{
+		Name: "ksail",
+		Networking: kindv1alpha4.Networking{
+			DisableDefaultCNI: true,
+		},
+	}
+
+	validator := ksailvalidator.NewValidatorForKind(kindConfig)
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNIFlannel
+	config.Spec.Connection.Context = "kind-ksail"
+
+	result := validator.Validate(config)
+	assert.True(t, result.Valid, "Flannel configuration with disableDefaultCNI should be valid")
+	assert.Empty(t, result.Errors, "Valid Flannel configuration should not produce errors")
+}
+
+func TestKSailValidator_InvalidCNIListsFlannelOption(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNI("InvalidCNI")
+
+	result := validator.Validate(config)
+	assert.False(t, result.Valid, "Invalid CNI value should fail validation")
+	require.NotEmpty(t, result.Errors, "Invalid CNI should produce validation errors")
+
+	found := false
+
+	for _, err := range result.Errors {
+		if err.Field != specCNIField {
+			continue
+		}
+
+		found = true
+
+		assert.Contains(
+			t,
+			err.Message,
+			"Flannel",
+			"Error message should list Flannel as a valid option",
+		)
+		assert.Contains(
+			t,
+			err.FixSuggestion,
+			"Flannel",
+			"Fix suggestion should list Flannel as a valid option",
+		)
+
+		break
+	}
+
+	assert.True(t, found, "Expected CNI validation error not found")
+}
+
+func TestKSailValidator_KindFlannelRequiresDisableDefaultCNI(t *testing.T) {
+	t.Parallel()
+
+	kindConfig := &kindv1alpha4.Cluster{
+		Name: "ksail",
+		Networking: kindv1alpha4.Networking{
+			DisableDefaultCNI: false,
+		},
+	}
+
+	validator := ksailvalidator.NewValidatorForKind(kindConfig)
+
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.CNI = v1alpha1.CNIFlannel
+	config.Spec.Connection.Context = "kind-ksail"
+
+	result := validator.Validate(config)
+	assert.False(t, result.Valid, "Flannel without disableDefaultCNI should fail validation")
+	require.NotEmpty(t, result.Errors, "Expected at least one validation error")
+
+	found := false
+
+	for _, err := range result.Errors {
+		if err.Field != specCNIField {
+			continue
+		}
+
+		found = true
+
+		assert.Contains(
+			t,
+			err.Message,
+			"disableDefaultCNI",
+			"Error should mention disableDefaultCNI requirement",
+		)
+		assert.Contains(
+			t,
+			err.FixSuggestion,
+			"disableDefaultCNI",
+			"Fix suggestion should mention setting disableDefaultCNI",
+		)
+
+		break
+	}
+
+	assert.True(t, found, "Expected disableDefaultCNI validation error not found")
+}
+
 // TestKSailValidatorContextNameValidation tests context name validation patterns.
 func TestKSailValidatorContextNameValidation(t *testing.T) {
 	t.Parallel()

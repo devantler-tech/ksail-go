@@ -266,7 +266,7 @@ func writeDecryptedOutput(cmd *cobra.Command, data []byte, outputPath string) er
 // When reading from stdin, it defaults to YAML format.
 // For JSON format from stdin, users can pipe to a file first.
 //
-//nolint:ireturn // Returning sops.Store interface is the correct pattern here
+//nolint:ireturn // SOPS store implementations are only available via the sops.Store interface.
 func getDecryptStores(inputPath string, readFromStdin bool) (sops.Store, sops.Store, error) {
 	if readFromStdin {
 		// Default to YAML for stdin - most common format

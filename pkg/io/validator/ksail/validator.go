@@ -208,26 +208,77 @@ func (v *Validator) validateCNIAlignment(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	// Validate Cilium CNI alignment
-	if config.Spec.CNI == v1alpha1.CNICilium {
-		switch config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			v.validateKindCiliumCNIAlignment(result)
-		case v1alpha1.DistributionK3d:
-			v.validateK3dCiliumCNIAlignment(result)
-		}
+	if !isValidCNI(config.Spec.CNI) {
+		result.AddError(validator.ValidationError{
+			Field: "spec.cni",
+			Message: fmt.Sprintf(
+				"invalid CNI value %q; supported values: Default, Cilium, Calico, Flannel",
+				config.Spec.CNI,
+			),
+			ExpectedValue: "Default, Cilium, Calico, Flannel",
+			FixSuggestion: "Set spec.cni to one of: Default, Cilium, Calico, Flannel",
+		})
 
 		return
 	}
 
-	// Validate Default CNI alignment (empty string or explicit "Default")
-	if config.Spec.CNI == "" || config.Spec.CNI == v1alpha1.CNIDefault {
-		switch config.Spec.Distribution {
-		case v1alpha1.DistributionKind:
-			v.validateKindDefaultCNIAlignment(result)
-		case v1alpha1.DistributionK3d:
-			v.validateK3dDefaultCNIAlignment(result)
-		}
+	switch config.Spec.CNI {
+	case v1alpha1.CNIFlannel:
+		v.validateFlannelAlignment(config.Spec.Distribution, result)
+	case v1alpha1.CNICalico:
+		v.validateCalicoAlignment(config.Spec.Distribution, result)
+	case v1alpha1.CNICilium:
+		v.validateCiliumAlignment(config.Spec.Distribution, result)
+	case "", v1alpha1.CNIDefault:
+		v.validateDefaultAlignment(config.Spec.Distribution, result)
+	}
+}
+
+func (v *Validator) validateCalicoAlignment(
+	distribution v1alpha1.Distribution,
+	result *validator.ValidationResult,
+) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindCiliumCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dCiliumCNIAlignment(result)
+	}
+}
+
+func (v *Validator) validateFlannelAlignment(
+	distribution v1alpha1.Distribution,
+	result *validator.ValidationResult,
+) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindFlannelCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dDefaultCNIAlignment(result)
+	}
+}
+
+func (v *Validator) validateCiliumAlignment(
+	distribution v1alpha1.Distribution,
+	result *validator.ValidationResult,
+) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindCiliumCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dCiliumCNIAlignment(result)
+	}
+}
+
+func (v *Validator) validateDefaultAlignment(
+	distribution v1alpha1.Distribution,
+	result *validator.ValidationResult,
+) {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		v.validateKindDefaultCNIAlignment(result)
+	case v1alpha1.DistributionK3d:
+		v.validateK3dDefaultCNIAlignment(result)
 	}
 }
 
@@ -242,6 +293,22 @@ func (v *Validator) validateKindCiliumCNIAlignment(result *validator.ValidationR
 		result.AddError(validator.ValidationError{
 			Field:         "spec.cni",
 			Message:       "Cilium CNI requires disableDefaultCNI to be true in Kind configuration",
+			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
+		})
+	}
+}
+
+// validateKindFlannelCNIAlignment validates disableDefaultCNI is enabled when Flannel is requested.
+func (v *Validator) validateKindFlannelCNIAlignment(result *validator.ValidationResult) {
+	if v.kindConfig == nil {
+		// No Kind config provided for validation, skip
+		return
+	}
+
+	if !v.kindConfig.Networking.DisableDefaultCNI {
+		result.AddError(validator.ValidationError{
+			Field:         "spec.cni",
+			Message:       "Flannel CNI requires disableDefaultCNI to be true in Kind configuration",
 			FixSuggestion: "Add 'networking.disableDefaultCNI: true' to your kind.yaml configuration file",
 		})
 	}
@@ -354,4 +421,18 @@ func (v *Validator) validateK3dDefaultCNIAlignment(result *validator.ValidationR
 			strings.Join(problematicArgs, " and "),
 		),
 	})
+}
+
+// isValidCNI reports whether the provided CNI value is supported.
+func isValidCNI(cni v1alpha1.CNI) bool {
+	if cni == "" {
+		return true
+	}
+
+	switch cni {
+	case v1alpha1.CNIDefault, v1alpha1.CNICilium, v1alpha1.CNICalico, v1alpha1.CNIFlannel:
+		return true
+	default:
+		return false
+	}
 }

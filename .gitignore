@@ -11,7 +11,6 @@
 
 # KSail binaries and configs
 /ksail
-ksail-go
 k3d.yaml
 kind.yaml
 eks.yaml
@@ -50,6 +49,7 @@ coverage*
 
 # Go test binaries
 *.test
+*.exe
 
 # megalinter output
 megalinter_output.log
@@ -63,3 +63,21 @@ coverage_summary.txt
 
 # act (GitHub Actions local testing)
 bin/
+
+# ==============================================================================
+# Go Dependencies and Environment
+# ==============================================================================
+
+# Go vendor directory
+vendor/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo

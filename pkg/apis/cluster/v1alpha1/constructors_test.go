@@ -125,11 +125,18 @@ func TestCNISet(t *testing.T) {
 		{"Default", "Default"},
 		{"cilium", "Cilium"},
 		{"CILIUM", "Cilium"},
+		{"Flannel", "Flannel"}, // T013: Valid "Flannel" should succeed
+		{
+			"flannel",
+			"Flannel",
+		}, // T014: Case-insensitive "flannel" should also succeed (following existing pattern)
+		{"FLANNEL", "Flannel"}, // Additional test: uppercase variant
 	}
 	for _, validCase := range validCases {
 		var cni v1alpha1.CNI
 
 		require.NoError(t, cni.Set(validCase.input))
+		assert.Equal(t, validCase.expected, string(cni))
 	}
 
 	err := func() error {
@@ -144,6 +151,27 @@ func TestCNISet(t *testing.T) {
 		"invalid",
 		"Set(invalid)",
 	)
+}
+
+// TestCNI_ValidCNIs tests that validCNIs() includes all expected CNI values including Flannel.
+// This test corresponds to T015 in the implementation tasks.
+func TestCNI_ValidCNIs(t *testing.T) {
+	t.Parallel()
+
+	validCNIs := v1alpha1.ValidCNIs()
+
+	// Verify all expected CNI values are present
+	expectedCNIs := []v1alpha1.CNI{
+		v1alpha1.CNIDefault,
+		v1alpha1.CNICilium,
+		v1alpha1.CNICalico,
+		v1alpha1.CNIFlannel, // T015: Verify CNIFlannel is included
+	}
+
+	for _, expected := range expectedCNIs {
+		assert.Contains(t, validCNIs, expected,
+			"validCNIs should include %s", expected)
+	}
 }
 
 func TestCSISet(t *testing.T) {

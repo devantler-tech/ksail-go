@@ -22,6 +22,7 @@ import (
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
+	uitimer "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
@@ -38,6 +39,11 @@ const (
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
 var errClusterProvisionerFailed = errors.New("provisioner failed")
+
+var (
+	errFlannelBoom  = errors.New("flannel boom")
+	errDeleteFailed = errors.New("delete failed")
+)
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -1208,7 +1214,9 @@ func TestHandlePostCreationSetup_MetricsServerFirst(t *testing.T) {
 	tmr := &testutils.RecordingTimer{}
 	tmr.Start()
 
-	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	deps := cmdhelpers.LifecycleDeps{Timer: tmr}
+
+	err := handlePostCreationSetup(cmd, clusterCfg, deps)
 	assert.NoError(t, err, "Should not error when metrics-server is disabled on Kind")
 }
 
@@ -1230,7 +1238,9 @@ func TestHandlePostCreationSetup_K3dDisabled(t *testing.T) {
 	tmr := &testutils.RecordingTimer{}
 	tmr.Start()
 
-	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	deps := cmdhelpers.LifecycleDeps{Timer: tmr}
+
+	err := handlePostCreationSetup(cmd, clusterCfg, deps)
 	assert.NoError(t, err, "Should not error when metrics-server is disabled on K3d")
 }
 
@@ -1252,10 +1262,87 @@ func TestHandlePostCreationSetup_K3dEnabled(t *testing.T) {
 	tmr := &testutils.RecordingTimer{}
 	tmr.Start()
 
-	err := handlePostCreationSetup(cmd, clusterCfg, tmr)
+	deps := cmdhelpers.LifecycleDeps{Timer: tmr}
+
+	err := handlePostCreationSetup(cmd, clusterCfg, deps)
 	assert.NoError(
 		t,
 		err,
 		"Should not error when metrics-server is enabled on K3d (already present)",
 	)
+}
+
+func TestHandlePostCreationSetup_FlannelFailureTriggersRollback(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	originalHook := flannelInstallHook
+
+	t.Cleanup(func() { flannelInstallHook = originalHook })
+
+	flannelInstallHook = func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
+		return errFlannelBoom
+	}
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution:       v1alpha1.DistributionKind,
+			CNI:                v1alpha1.CNIFlannel,
+			DistributionConfig: "",
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+	provisioner := &testutils.StubProvisioner{}
+	factory := &testutils.StubFactory{
+		Provisioner:        provisioner,
+		DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+	}
+
+	deps := cmdhelpers.LifecycleDeps{Timer: tmr, Factory: factory}
+
+	err := handlePostCreationSetup(cmd, clusterCfg, deps)
+	require.Error(t, err)
+	require.ErrorContains(t, err, errFlannelBoom.Error())
+	assert.Equal(t, 1, provisioner.DeleteCalls, "rollback should delete cluster once")
+	assert.Contains(t, provisioner.ReceivedNames, "kind")
+}
+
+func TestHandlePostCreationSetup_FlannelRollbackFailurePropagates(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(io.Discard)
+
+	originalHook := flannelInstallHook
+
+	t.Cleanup(func() { flannelInstallHook = originalHook })
+
+	flannelInstallHook = func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
+		return errFlannelBoom
+	}
+
+	clusterCfg := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Distribution: v1alpha1.DistributionKind,
+			CNI:          v1alpha1.CNIFlannel,
+		},
+	}
+
+	tmr := &testutils.RecordingTimer{}
+	provisioner := &testutils.StubProvisioner{DeleteErr: errDeleteFailed}
+	factory := &testutils.StubFactory{
+		Provisioner:        provisioner,
+		DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+	}
+
+	deps := cmdhelpers.LifecycleDeps{Timer: tmr, Factory: factory}
+
+	err := handlePostCreationSetup(cmd, clusterCfg, deps)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "rollback failed")
+	require.ErrorContains(t, err, errDeleteFailed.Error())
+	assert.Equal(t, 1, provisioner.DeleteCalls, "rollback should attempt delete")
 }

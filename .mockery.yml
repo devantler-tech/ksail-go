@@ -28,6 +28,14 @@ packages:
       pkgname: helm
     interfaces:
       Interface:
+  github.com/devantler-tech/ksail-go/pkg/client/kubectl:
+    config:
+      recursive: false
+      dir: pkg/client/kubectl
+      filename: mocks.go
+      pkgname: kubectl
+    interfaces:
+      Interface:
   github.com/devantler-tech/ksail-go/pkg/client/k9s:
     config:
       recursive: false

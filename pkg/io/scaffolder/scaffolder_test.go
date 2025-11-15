@@ -474,6 +474,11 @@ func TestGenerateKindConfigHandlesCNI(t *testing.T) {
 	}{
 		{name: "DefaultCNI", cni: v1alpha1.CNIDefault, expectDisable: false},
 		{name: "CiliumCNI", cni: v1alpha1.CNICilium, expectDisable: true},
+		{
+			name:          "FlannelCNI",
+			cni:           v1alpha1.CNIFlannel,
+			expectDisable: true,
+		}, // T016: Flannel Kind scaffolder test
 	}
 
 	for _, testCase := range cases {
@@ -504,6 +509,18 @@ func TestGenerateK3dConfigHandlesCNI(t *testing.T) {
 			cni:         v1alpha1.CNICilium,
 			expectArgs:  2,
 			expectValue: "--flannel-backend=none",
+		},
+		{
+			name:        "CalicoCNI",
+			cni:         v1alpha1.CNICalico,
+			expectArgs:  2,
+			expectValue: "--flannel-backend=none",
+		},
+		{
+			name:        "FlannelCNI", // K3d uses native Flannel - no args needed
+			cni:         v1alpha1.CNIFlannel,
+			expectArgs:  0,
+			expectValue: "",
 		},
 	}
 

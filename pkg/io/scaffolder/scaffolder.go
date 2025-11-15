@@ -174,8 +174,10 @@ func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 	// Initialize ExtraArgs slice
 	var extraArgs []k3dv1alpha5.K3sArgWithNodeFilters
 
-	// Disable default CNI (Flannel) if Cilium is requested
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+	// Disable default CNI (Flannel) if Cilium or Calico is requested
+	// Note: K3d's native Flannel is used when CNI=Flannel or CNI=Default
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium ||
+		s.KSailConfig.Spec.CNI == v1alpha1.CNICalico {
 		extraArgs = append(extraArgs,
 			k3dv1alpha5.K3sArgWithNodeFilters{
 				Arg:         "--flannel-backend=none",
@@ -448,8 +450,9 @@ func (s *Scaffolder) generateKindConfig(output string, force bool) error {
 		Name: "kind",
 	}
 
-	// Disable default CNI if Cilium is requested
-	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium {
+	// Disable default CNI if custom CNI is requested
+	if s.KSailConfig.Spec.CNI == v1alpha1.CNICilium ||
+		s.KSailConfig.Spec.CNI == v1alpha1.CNIFlannel {
 		kindConfig.Networking.DisableDefaultCNI = true
 	}
 

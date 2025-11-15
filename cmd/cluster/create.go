@@ -12,13 +12,17 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
+	flannelinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/flannel"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
@@ -29,6 +33,19 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
+	meta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	ys "k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/discovery"
+	memory "k8s.io/client-go/discovery/cached"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	"sigs.k8s.io/yaml"
 )
@@ -40,6 +57,11 @@ const (
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
 var ErrUnsupportedCNI = errors.New("unsupported CNI type")
+
+// flannelInstallHook allows tests to override the Flannel installation flow.
+//
+//nolint:gochecknoglobals // Intentional test hook for failure simulation.
+var flannelInstallHook = installFlannelCNI
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
@@ -132,7 +154,7 @@ func handleCreateRunE(
 		})
 	}
 
-	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+	return handlePostCreationSetup(cmd, clusterCfg, deps)
 }
 
 // handlePostCreationSetup installs CNI and metrics-server after cluster creation.
@@ -140,15 +162,45 @@ func handleCreateRunE(
 func handlePostCreationSetup(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
-	tmr timer.Timer,
+	deps cmdhelpers.LifecycleDeps,
 ) error {
-	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
+	tmr := deps.Timer
+	// For custom CNI (Cilium, Calico, Flannel), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
 	switch clusterCfg.Spec.CNI {
 	case v1alpha1.CNICilium:
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
 		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+	case v1alpha1.CNIFlannel:
+		// K3d has native Flannel support, only install for Kind
+		if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d {
+			return handleMetricsServer(cmd, clusterCfg, tmr)
+		}
+
+		err := installCustomCNIAndMetrics(cmd, clusterCfg, tmr, flannelInstallHook)
+		if err != nil {
+			rollbackErr := rollbackCluster(cmd, clusterCfg, deps)
+			if rollbackErr != nil {
+				notify.WriteMessage(notify.Message{
+					Type:    notify.ErrorType,
+					Content: fmt.Sprintf("rollback failed: %v", rollbackErr),
+					Writer:  cmd.OutOrStdout(),
+				})
+
+				return fmt.Errorf("%w (rollback failed: %w)", err, rollbackErr)
+			}
+
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: "cluster deleted after Flannel installation failure",
+				Writer:  cmd.OutOrStdout(),
+			})
+
+			return err
+		}
+
+		return nil
 	case v1alpha1.CNIDefault, "":
 		return handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
@@ -174,6 +226,41 @@ func installCustomCNIAndMetrics(
 
 	// Install metrics-server after CNI is ready
 	return handleMetricsServer(cmd, clusterCfg, tmr)
+}
+
+func rollbackCluster(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.WarningType,
+		Content: "attempting cluster rollback after Flannel installation failure",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	provisioner, distributionConfig, err := deps.Factory.Create(cmd.Context(), clusterCfg)
+	if err != nil {
+		return fmt.Errorf("resolve provisioner for rollback: %w", err)
+	}
+
+	clusterName, err := configmanager.GetClusterName(distributionConfig)
+	if err != nil {
+		return fmt.Errorf("determine cluster name for rollback: %w", err)
+	}
+
+	deleteErr := provisioner.Delete(cmd.Context(), clusterName)
+	if deleteErr != nil {
+		return fmt.Errorf("delete cluster %s during rollback: %w", clusterName, deleteErr)
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.WarningType,
+		Content: fmt.Sprintf("rollback complete: cluster %s removed", clusterName),
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
 }
 
 func loadDistributionConfigs(
@@ -699,6 +786,269 @@ func runCiliumInstallation(
 }
 
 // installCalicoCNI installs Calico CNI on the cluster.
+func installFlannelCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: "Install CNI...",
+		Emoji:   "🌐",
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	kubeconfigPath, err := loadKubeconfig(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	kubectlClient, err := kubectl.NewManifestClient(
+		kubeconfigPath,
+		clusterCfg.Spec.Connection.Context,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create kubectl client: %w", err)
+	}
+
+	// For Kind + Flannel we must ensure base CNI plugins (bridge, etc.) exist before Flannel.
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionKind {
+		installErr := ensureKindBaseCNIPlugins(
+			cmd.Context(),
+			kubeconfigPath,
+			clusterCfg.Spec.Connection.Context,
+			getInstallTimeout(clusterCfg),
+			cmd.OutOrStdout(),
+		)
+		if installErr != nil {
+			return fmt.Errorf("failed to bootstrap base CNI plugins: %w", installErr)
+		}
+	}
+
+	installer := newFlannelInstaller(kubectlClient, kubeconfigPath, clusterCfg)
+
+	return runFlannelInstallation(cmd, installer, tmr)
+}
+
+// ensureKindBaseCNIPlugins applies the bootstrap DaemonSet and waits for readiness (all pods running).
+func ensureKindBaseCNIPlugins(
+	ctx context.Context,
+	kubeconfigPath, contextName string,
+	timeout time.Duration,
+	writer io.Writer,
+) error {
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "bootstrapping base CNI plugins",
+		Writer:  writer,
+	})
+
+	config, mapper, dynClient, err := prepareBootstrapClients(kubeconfigPath, contextName)
+	if err != nil {
+		return err
+	}
+
+	err = applyBaseCNIManifest(ctx, mapper, dynClient)
+	if err != nil {
+		return err
+	}
+
+	err = waitForBootstrapReadiness(ctx, config, timeout)
+	if err != nil {
+		return err
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: "base CNI plugins ready",
+		Writer:  writer,
+	})
+
+	return nil
+}
+
+func prepareBootstrapClients(
+	kubeconfigPath, contextName string,
+) (*rest.Config, *restmapper.DeferredDiscoveryRESTMapper, *dynamic.DynamicClient, error) {
+	config, err := buildRESTConfigWithContext(kubeconfigPath, contextName)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("load kubeconfig: %w", err)
+	}
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("create discovery client: %w", err)
+	}
+
+	cached := memory.NewMemCacheClient(discoveryClient)
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(cached)
+
+	dynClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("create dynamic client: %w", err)
+	}
+
+	return config, mapper, dynClient, nil
+}
+
+func applyBaseCNIManifest(
+	ctx context.Context,
+	mapper meta.RESTMapper,
+	dynClient dynamic.Interface,
+) error {
+	decoder := ys.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	manifestDocs := strings.Split(flannelinstaller.KindBaseCNIPluginsManifest, "\n---\n")
+
+	for docIndex, rawDoc := range manifestDocs {
+		err := applyBootstrapDocument(ctx, decoder, mapper, dynClient, rawDoc, docIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func waitForBootstrapReadiness(
+	ctx context.Context,
+	config *rest.Config,
+	timeout time.Duration,
+) error {
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return fmt.Errorf("create kube client: %w", err)
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	waitErr := k8s.WaitForDaemonSetReady(
+		waitCtx,
+		kubeClient,
+		"kube-system",
+		"cni-bootstrap",
+		timeout,
+	)
+	if waitErr != nil {
+		return fmt.Errorf("cni-bootstrap daemonset not ready: %w", waitErr)
+	}
+
+	return nil
+}
+
+func buildRESTConfigWithContext(kubeconfigPath, contextName string) (*rest.Config, error) {
+	loadingRules := &clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath}
+
+	overrides := &clientcmd.ConfigOverrides{}
+	if contextName != "" {
+		overrides.CurrentContext = contextName
+	}
+
+	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, overrides)
+
+	config, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("build REST config for context %q: %w", contextName, err)
+	}
+
+	return config, nil
+}
+
+func applyBootstrapDocument(
+	ctx context.Context,
+	decoder apiruntime.Decoder,
+	mapper meta.RESTMapper,
+	dynClient dynamic.Interface,
+	rawDoc string,
+	docIndex int,
+) error {
+	document := strings.TrimSpace(rawDoc)
+	if document == "" {
+		return nil
+	}
+
+	obj := &unstructured.Unstructured{}
+
+	_, gvk, decodeErr := decoder.Decode([]byte(document), nil, obj)
+	if decodeErr != nil {
+		return fmt.Errorf("decode bootstrap manifest doc %d: %w", docIndex, decodeErr)
+	}
+
+	if obj.GetKind() == "" {
+		return nil
+	}
+
+	mapping, mapErr := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if mapErr != nil {
+		return fmt.Errorf("REST mapping error for %s: %w", gvk.String(), mapErr)
+	}
+
+	namespaceable := dynClient.Resource(mapping.Resource)
+
+	resourceClient := func() dynamic.ResourceInterface {
+		if mapping.Scope.Name() != meta.RESTScopeNameNamespace {
+			return namespaceable
+		}
+
+		namespace := obj.GetNamespace()
+		if namespace == "" {
+			namespace = "default"
+		}
+
+		return namespaceable.Namespace(namespace)
+	}()
+
+	return patchBootstrapResource(ctx, resourceClient, obj)
+}
+
+func patchBootstrapResource(
+	ctx context.Context,
+	resourceClient dynamic.ResourceInterface,
+	obj *unstructured.Unstructured,
+) error {
+	data, marshalErr := obj.MarshalJSON()
+	if marshalErr != nil {
+		return fmt.Errorf("marshal bootstrap object: %w", marshalErr)
+	}
+
+	_, patchErr := resourceClient.Patch(
+		ctx,
+		obj.GetName(),
+		types.ApplyPatchType,
+		data,
+		metav1.PatchOptions{FieldManager: "ksail-cni-bootstrap"},
+	)
+	if patchErr != nil {
+		return fmt.Errorf(
+			"apply bootstrap resource %s/%s: %w",
+			obj.GetKind(),
+			obj.GetName(),
+			patchErr,
+		)
+	}
+
+	return nil
+}
+
+func newFlannelInstaller(
+	kubectlClient kubectl.Interface,
+	kubeconfigPath string,
+	clusterCfg *v1alpha1.Cluster,
+) *flannelinstaller.Installer {
+	timeout := getInstallTimeout(clusterCfg)
+
+	return flannelinstaller.NewFlannelInstaller(
+		kubectlClient,
+		kubeconfigPath,
+		clusterCfg.Spec.Connection.Context,
+		timeout,
+	)
+}
+
+func runFlannelInstallation(
+	cmd *cobra.Command,
+	installer *flannelinstaller.Installer,
+	tmr timer.Timer,
+) error {
+	return runCNIInstallation(cmd, installer, "Flannel", tmr)
+}
+
 func installCalicoCNI(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,

@@ -158,7 +158,7 @@ func customTypeMapper(reflectType reflect.Type) *jsonschema.Schema {
 	case reflect.TypeFor[v1alpha1.Distribution]():
 		return enumSchema("Kind", "K3d")
 	case reflect.TypeFor[v1alpha1.CNI]():
-		return enumSchema("Default", "Cilium")
+		return enumSchema("Default", "Cilium", "Calico", "Flannel")
 	case reflect.TypeFor[v1alpha1.CSI]():
 		return enumSchema("Default", "LocalPathStorage")
 	case reflect.TypeFor[v1alpha1.MetricsServer]():
