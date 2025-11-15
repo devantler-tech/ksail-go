@@ -93,7 +93,7 @@ type HelmChartConfig struct {
 
 ```go
 type CiliumInstaller struct {
-    *installer.CNIInstallerBase  // Will become: *cni.CNIInstallerBase
+    *cni.InstallerBase
 }
 ```
 
