@@ -1,325 +1,236 @@
-package flannel_test
+package flannel //nolint:testpackage
 
 import (
 	"context"
-	"errors"
-	"net/url"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/flannel"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
-
-const manifestURL = "https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
-
-var (
-	errNetworkUnavailable = errors.New("network unavailable")
-	errInvalidManifest    = errors.New(
-		"failed to decode manifest document 0: yaml: line 1: did not find expected key",
-	)
-	errForbidden        = errors.New("forbidden")
-	errNetworkDelete    = errors.New("network error")
-	errDeletePermission = errors.New("forbidden: insufficient permissions")
-)
-
-type installTestCase struct {
-	name          string
-	mockSetup     func(*kubectl.MockInterface)
-	waitFactory   func() func(context.Context) error
-	expectError   bool
-	errorContains string
-}
-
-func TestInstallerInstall(t *testing.T) {
-	t.Parallel()
-
-	for _, testCase := range flannelInstallerInstallTestCases() {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			runInstallTestCase(t, testCase)
-		})
-	}
-}
-
-type uninstallTestCase struct {
-	name          string
-	mockSetup     func(*kubectl.MockInterface)
-	expectError   bool
-	errorContains string
-}
-
-func TestInstallerUninstall(t *testing.T) {
-	t.Parallel()
-
-	for _, testCase := range flannelInstallerUninstallTestCases() {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			runUninstallTestCase(t, testCase)
-		})
-	}
-}
-
-func TestInstallerSetWaitForReadinessFunc(t *testing.T) {
-	t.Parallel()
-
-	clientMock := kubectl.NewMockInterface(t)
-	clientMock.On("Apply", mock.Anything, mock.Anything).Return(nil)
-
-	installer := flannel.NewFlannelInstaller(
-		clientMock,
-		"/tmp/kubeconfig",
-		"test-context",
-		5*time.Minute,
-	)
-
-	called := false
-	customWait := func(context.Context) error {
-		called = true
-
-		return nil
-	}
-
-	installer.SetWaitForReadinessFunc(customWait)
-
-	require.NoError(t, installer.Install(context.Background()))
-	assert.True(t, called, "custom wait function should have been called")
-	clientMock.AssertExpectations(t)
-}
 
 func TestNewFlannelInstaller(t *testing.T) {
 	t.Parallel()
 
-	clientMock := kubectl.NewMockInterface(t)
-	kubeconfig := "/tmp/kubeconfig"
-	clusterContext := "test-context"
+	kubeconfig := "~/.kube/config"
+	kubeContext := "test-context"
 	timeout := 5 * time.Minute
 
-	installer := flannel.NewFlannelInstaller(clientMock, kubeconfig, clusterContext, timeout)
+	client := helm.NewMockInterface(t)
+	installer := NewFlannelInstaller(client, kubeconfig, kubeContext, timeout)
 
-	assert.NotNil(t, installer)
-	assert.IsType(t, &flannel.Installer{}, installer)
+	testutils.ExpectNotNil(t, installer, "installer instance")
 }
 
-func TestNewFlannelInstaller_NilClient(t *testing.T) {
+func TestFlannelInstallerInstall(t *testing.T) {
 	t.Parallel()
 
-	assert.Panics(t, func() {
-		flannel.NewFlannelInstaller(nil, "/tmp/kubeconfig", "test-context", 5*time.Minute)
+	installAction := func(ctx context.Context, installer *Installer) error {
+		return installer.Install(ctx)
+	}
+
+	scenarios := []helm.InstallerScenario[*Installer]{
+		{
+			Name:       "Success",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
+				t.Helper()
+
+				setupFlannelInstallExpectations(t, client, nil)
+			},
+		},
+		{
+			Name:       "InstallFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
+				t.Helper()
+
+				setupFlannelInstallExpectations(t, client, testutils.ErrInstallFailed)
+			},
+			WantErr: "failed to install Flannel",
+		},
+		{
+			Name:       "AddRepositoryFailure",
+			ActionName: "Install",
+			Action:     installAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
+				t.Helper()
+
+				expectFlannelAddRepository(t, client, testutils.ErrAddRepoFailed)
+			},
+			WantErr: "failed to add flannel repository",
+		},
+	}
+
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+}
+
+func TestFlannelInstallerUninstall(t *testing.T) {
+	t.Parallel()
+
+	uninstallAction := func(ctx context.Context, installer *Installer) error {
+		return installer.Uninstall(ctx)
+	}
+
+	scenarios := []helm.InstallerScenario[*Installer]{
+		{
+			Name:       "Success",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
+				t.Helper()
+
+				expectFlannelUninstall(t, client, nil)
+			},
+		},
+		{
+			Name:       "UninstallFailure",
+			ActionName: "Uninstall",
+			Action:     uninstallAction,
+			Setup: func(t *testing.T, client *helm.MockInterface) {
+				t.Helper()
+
+				expectFlannelUninstall(t, client, testutils.ErrUninstallFailed)
+			},
+			WantErr: "failed to uninstall flannel release",
+		},
+	}
+
+	helm.RunInstallerScenarios(t, scenarios, newDefaultInstaller)
+}
+
+func TestFlannelInstallerSetWaitForReadinessFunc(t *testing.T) {
+	t.Parallel()
+
+	helm.TestSetWaitForReadinessFunc(t, func(t *testing.T) *Installer {
+		t.Helper()
+		client := helm.NewMockInterface(t)
+
+		return NewFlannelInstaller(client, "kubeconfig", "", time.Second)
 	})
 }
 
-func runInstallTestCase(t *testing.T, testCase installTestCase) {
-	t.Helper()
+func TestFlannelInstallerWaitForReadinessBuildConfigError(t *testing.T) {
+	t.Parallel()
 
-	clientMock := kubectl.NewMockInterface(t)
-	if testCase.mockSetup != nil {
-		testCase.mockSetup(clientMock)
-	}
+	installer := NewFlannelInstaller(helm.NewMockInterface(t), "", "", time.Second)
+	err := installer.WaitForReadiness(context.Background())
 
-	installer := flannel.NewFlannelInstaller(
-		clientMock,
-		"/tmp/kubeconfig",
-		"test-context",
-		5*time.Minute,
+	testutils.ExpectErrorContains(
+		t,
+		err,
+		"build kubernetes client config",
+		"WaitForReadiness error path",
 	)
-
-	waitFactory := testCase.waitFactory
-	if waitFactory == nil {
-		waitFactory = func() func(context.Context) error { return nil }
-	}
-
-	if waitFn := waitFactory(); waitFn != nil {
-		installer.SetWaitForReadinessFunc(waitFn)
-	}
-
-	err := installer.Install(context.Background())
-
-	assertOutcome(t, err, testCase.expectError, testCase.errorContains)
-
-	clientMock.AssertExpectations(t)
 }
 
-func runUninstallTestCase(t *testing.T, testCase uninstallTestCase) {
-	t.Helper()
+func TestFlannelInstallerWaitForReadyNoOpWhenUnset(t *testing.T) {
+	t.Parallel()
 
-	clientMock := kubectl.NewMockInterface(t)
-	if testCase.mockSetup != nil {
-		testCase.mockSetup(clientMock)
-	}
+	helm.TestWaitForReadinessNoOpWhenUnset(t, func(t *testing.T) *Installer {
+		t.Helper()
 
-	installer := flannel.NewFlannelInstaller(
-		clientMock,
-		"/tmp/kubeconfig",
-		"test-context",
-		5*time.Minute,
-	)
-
-	err := installer.Uninstall(context.Background())
-
-	assertOutcome(t, err, testCase.expectError, testCase.errorContains)
-
-	clientMock.AssertExpectations(t)
+		return NewFlannelInstaller(helm.NewMockInterface(t), "kubeconfig", "", time.Second)
+	})
 }
 
-func assertOutcome(t *testing.T, err error, expectError bool, errorContains string) {
+func TestFlannelInstallerWaitForReadinessSuccess(t *testing.T) {
+	t.Parallel()
+
+	server := newFlannelAPIServer(t, true)
+	t.Cleanup(server.Close)
+
+	kubeconfig := testutils.WriteServerBackedKubeconfig(t, server.URL)
+
+	installer := NewFlannelInstaller(
+		helm.NewMockInterface(t),
+		kubeconfig,
+		"default",
+		100*time.Millisecond,
+	)
+
+	err := installer.waitForReadiness(context.Background())
+	if err != nil {
+		t.Fatalf("expected readiness checks to succeed, got %v", err)
+	}
+}
+
+func TestFlannelInstallerWaitForReadinessDetectsUnready(t *testing.T) {
+	t.Parallel()
+
+	server := newFlannelAPIServer(t, false)
+	t.Cleanup(server.Close)
+
+	kubeconfig := testutils.WriteServerBackedKubeconfig(t, server.URL)
+
+	installer := NewFlannelInstaller(
+		helm.NewMockInterface(t),
+		kubeconfig,
+		"default",
+		75*time.Millisecond,
+	)
+
+	helm.TestWaitForReadinessDetectsUnready(t, installer.waitForReadiness)
+}
+
+func newDefaultInstaller(t *testing.T) (*Installer, *helm.MockInterface) {
+	t.Helper()
+	client := helm.NewMockInterface(t)
+
+	installer := NewFlannelInstaller(
+		client,
+		"~/.kube/config",
+		"test-context",
+		5*time.Second,
+	)
+
+	return installer, client
+}
+
+func setupFlannelInstallExpectations(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 
-	if expectError {
-		require.Error(t, err)
+	expectFlannelAddRepository(t, client, nil)
+	expectFlannelInstallChart(t, client, installErr)
+}
 
-		if errorContains != "" {
-			assert.Contains(t, err.Error(), errorContains)
+func expectFlannelAddRepository(t *testing.T, client *helm.MockInterface, err error) {
+	t.Helper()
+	helm.ExpectAddRepository(t, client, helm.RepoExpectation{
+		RepoName: flannelRepoName,
+		RepoURL:  flannelRepoURL,
+	}, err)
+}
+
+func expectFlannelInstallChart(t *testing.T, client *helm.MockInterface, installErr error) {
+	t.Helper()
+	helm.ExpectInstallChart(t, client, helm.ChartExpectation{
+		ReleaseName:     flannelReleaseName,
+		ChartName:       flannelChartName,
+		Namespace:       flannelNamespace,
+		RepoURL:         flannelRepoURL,
+		CreateNamespace: true,
+	}, installErr)
+}
+
+func expectFlannelUninstall(t *testing.T, client *helm.MockInterface, err error) {
+	t.Helper()
+	helm.ExpectUninstall(t, client, flannelReleaseName, flannelNamespace, err)
+}
+
+func newFlannelAPIServer(t *testing.T, ready bool) *httptest.Server {
+	t.Helper()
+
+	return testutils.NewTestAPIServer(t, func(writer http.ResponseWriter, req *http.Request) {
+		switch req.URL.Path {
+		case "/apis/apps/v1/namespaces/kube-flannel/daemonsets/kube-flannel-ds":
+			testutils.ServeDaemonSet(t, writer, ready)
+		default:
+			http.NotFound(writer, req)
 		}
-	} else {
-		require.NoError(t, err)
-	}
-}
-
-func flannelInstallerInstallTestCases() []installTestCase {
-	return []installTestCase{
-		newSuccessfulInstallCase(),
-		newNetworkErrorInstallCase(),
-		newTimeoutInstallCase(),
-		newInvalidManifestInstallCase(),
-		newPermissionDeniedInstallCase(),
-	}
-}
-
-func newSuccessfulInstallCase() installTestCase {
-	return installTestCase{
-		name: "successful installation",
-		mockSetup: func(clientMock *kubectl.MockInterface) {
-			clientMock.On(
-				"Apply",
-				mock.Anything,
-				mock.MatchedBy(func(appliedURL string) bool {
-					return appliedURL == manifestURL
-				}),
-			).Return(nil)
-		},
-		waitFactory: func() func(context.Context) error {
-			return func(context.Context) error {
-				return nil
-			}
-		},
-	}
-}
-
-func newNetworkErrorInstallCase() installTestCase {
-	return installTestCase{
-		name: "network error during apply",
-		mockSetup: func(clientMock *kubectl.MockInterface) {
-			clientMock.On(
-				"Apply",
-				mock.Anything,
-				mock.Anything,
-			).Return(&url.Error{Op: "Get", URL: manifestURL, Err: errNetworkUnavailable})
-		},
-		expectError:   true,
-		errorContains: "verify network access",
-	}
-}
-
-func newTimeoutInstallCase() installTestCase {
-	return installTestCase{
-		name: "timeout during readiness",
-		mockSetup: func(clientMock *kubectl.MockInterface) {
-			clientMock.On("Apply", mock.Anything, mock.Anything).Return(nil)
-		},
-		waitFactory: func() func(context.Context) error {
-			return func(context.Context) error {
-				return context.DeadlineExceeded
-			}
-		},
-		expectError:   true,
-		errorContains: "timed out",
-	}
-}
-
-func newInvalidManifestInstallCase() installTestCase {
-	return installTestCase{
-		name: "invalid manifest content",
-		mockSetup: func(clientMock *kubectl.MockInterface) {
-			clientMock.On("Apply", mock.Anything, mock.Anything).Return(errInvalidManifest)
-		},
-		expectError:   true,
-		errorContains: "could not be decoded",
-	}
-}
-
-func newPermissionDeniedInstallCase() installTestCase {
-	return installTestCase{
-		name: "permission denied error",
-		mockSetup: func(clientMock *kubectl.MockInterface) {
-			statusErr := apierrors.NewForbidden(
-				schema.GroupResource{Group: "apps", Resource: "daemonsets"},
-				"kube-flannel-ds",
-				errForbidden,
-			)
-
-			clientMock.On("Apply", mock.Anything, mock.Anything).Return(statusErr)
-		},
-		expectError:   true,
-		errorContains: "insufficient RBAC permissions",
-	}
-}
-
-func flannelInstallerUninstallTestCases() []uninstallTestCase {
-	return []uninstallTestCase{
-		{
-			name: "successful uninstall",
-			mockSetup: func(clientMock *kubectl.MockInterface) {
-				clientMock.On(
-					"Delete",
-					mock.Anything,
-					"kube-flannel",
-					"daemonset",
-					"kube-flannel-ds",
-				).Return(nil)
-				clientMock.On(
-					"Delete",
-					mock.Anything,
-					"",
-					"namespace",
-					"kube-flannel",
-				).Return(nil)
-			},
-		},
-		{
-			name: "network error during delete",
-			mockSetup: func(clientMock *kubectl.MockInterface) {
-				clientMock.On(
-					"Delete",
-					mock.Anything,
-					"kube-flannel",
-					"daemonset",
-					"kube-flannel-ds",
-				).Return(errNetworkDelete)
-			},
-			expectError:   true,
-			errorContains: errNetworkDelete.Error(),
-		},
-		{
-			name: "permission denied",
-			mockSetup: func(clientMock *kubectl.MockInterface) {
-				clientMock.On(
-					"Delete",
-					mock.Anything,
-					"kube-flannel",
-					"daemonset",
-					"kube-flannel-ds",
-				).Return(errDeletePermission)
-			},
-			expectError:   true,
-			errorContains: "forbidden",
-		},
-	}
+	})
 }

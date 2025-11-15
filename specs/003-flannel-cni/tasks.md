@@ -164,6 +164,8 @@ The Flannel manifest from `https://github.com/flannel-io/flannel/releases/latest
 
 - [X] T057a [US2] Implement Kind base CNI plugin bootstrap DaemonSet in `cmd/cluster/create.go` (`ensureKindBaseCNIPlugins`) to install containernetworking plugins (bridge, host-local, loopback, portmap, ptp, etc.) prior to Flannel installation.
 - [X] T057b [US2] Manual test Kind: Create Flannel Kind cluster, verify `/opt/cni/bin/bridge` present, Flannel DaemonSet Ready, CoreDNS & local-path-storage pods Running, deploy two BusyBox pods and confirm cross-node ping succeeds - ✅ PASS
+- [X] T057c [US2] Remove Kind base CNI bootstrap flow now that Flannel installs via Helm chart
+- [X] T057d [US2] Delete bootstrap manifest assets and references to Kind base CNI helpers
 
 - [ ] T059a [US2] Manual test K3d: Create test project with `ksail cluster init --distribution K3d --cni Flannel` in /tmp/flannel-k3d-test
 - [ ] T059b [US2] Manual test K3d: Run `ksail up` and verify NO Flannel installer is invoked (uses native Flannel)
@@ -242,8 +244,8 @@ The Flannel manifest from `https://github.com/flannel-io/flannel/releases/latest
 - [ ] T085 [P] Document Flannel-specific requirements: internet connectivity, VXLAN backend only
 - [ ] T086 [P] Document Flannel compatibility: Kind and K3d distributions, Kubernetes 1.20+
 - [ ] T087 Run `golangci-lint run` and fix any linting issues
-- [ ] T088 Run `go test ./...` and ensure all tests pass
-- [ ] T089 Run `go build ./...` and ensure clean build
+- [X] T088 Run `go test ./...` and ensure all tests pass
+- [X] T089 Run `go build ./...` and ensure clean build
 - [ ] T090 Run full manual validation per quickstart.md checklist
 - [ ] T091 Review code for constitutional compliance: KISS, DRY, YAGNI, Interface-Based, Test-First
 - [ ] T092 Verify no functions exceed 50 lines
