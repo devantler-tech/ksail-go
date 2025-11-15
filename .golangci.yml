@@ -39,6 +39,9 @@ linters:
           - ireturn
         path: cmd/cipher/encrypt.go
       - linters:
+          - ireturn
+        path: pkg/svc/installer/cni/base.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
   settings:
