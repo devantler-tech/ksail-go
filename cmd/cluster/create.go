@@ -53,6 +53,7 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
+	applyFieldManager           = "ksail-cni-bootstrap"
 )
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
@@ -1012,7 +1013,7 @@ func patchBootstrapResource(
 		obj.GetName(),
 		types.ApplyPatchType,
 		data,
-		metav1.PatchOptions{FieldManager: "ksail-cni-bootstrap"},
+		metav1.PatchOptions{FieldManager: applyFieldManager},
 	)
 	if patchErr != nil {
 		return fmt.Errorf(
