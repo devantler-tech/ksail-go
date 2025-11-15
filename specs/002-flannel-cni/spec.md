@@ -54,7 +54,7 @@ Additional stories (lower priority) may include: Optional backend mode selection
 
 ### Edge Cases
 
-- User selects Flannel on a distribution outside supported set (Kind, K3d) → graceful error with guidance to use a supported distribution or alternative CNI.
+- User selects Flannel on a distribution outside supported set (Kind, K3d; EKS excluded due to managed networking) → graceful error with guidance to use a supported distribution or alternative CNI.
 - Attempt to enable network policies expecting enforcement (Flannel does not provide native policy) → warning explaining limitation and suggesting a policy-capable CNI (e.g., Cilium) if needed.
 - User re-runs init with different CNI after cluster exists → instructed that full cluster recreation is required; in-place migration not supported.
 - Missing node readiness within timeout → surface diagnostic suggesting checking Flannel pod logs and verifying node network interfaces.
@@ -114,6 +114,6 @@ Additional stories (lower priority) may include: Optional backend mode selection
 
 ## Resolved Clarifications
 
-1. Supported distributions: Kind, K3d only.
+1. Supported distributions: Kind, K3d only (EKS excluded due to managed networking requirements).
 2. Backend mode: Fixed `vxlan` (no user selection).
 3. Migration approach: Full cluster recreation required to switch from another CNI.

@@ -81,15 +81,94 @@ CNI (Container Network Interface) installers are located under `pkg/svc/installe
    
    import (
        "context"
+       "fmt"
        "time"
        "github.com/devantler-tech/ksail-go/pkg/client/helm"
+       "github.com/devantler-tech/ksail-go/pkg/k8s"
+       "github.com/devantler-tech/ksail-go/pkg/svc/installer"
        "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
    )
    
+   // MyCNIInstaller implements installer.Installer by embedding InstallerBase.
    type MyCNIInstaller struct {
        *cni.InstallerBase
    }
+   
+   // NewMyCNIInstaller creates a new MyCNI installer instance.
+   func NewMyCNIInstaller(
+       client helm.Interface,
+       kubeconfig, context string,
+       timeout time.Duration,
+   ) *MyCNIInstaller {
+       mycniInstaller := &MyCNIInstaller{}
+       mycniInstaller.InstallerBase = cni.NewInstallerBase(
+           client,
+           kubeconfig,
+           context,
+           timeout,
+           mycniInstaller.waitForReadiness,
+       )
+       return mycniInstaller
+   }
+   
+   // Install installs the CNI using Helm and waits for readiness.
+   func (i *MyCNIInstaller) Install(ctx context.Context) error {
+       client, err := i.GetClient()
+       if err != nil {
+           return fmt.Errorf("get helm client: %w", err)
+       }
+   
+       // Configure Helm repository
+       repoConfig := helm.RepoConfig{
+           Name:     "mycni",
+           URL:      "https://helm.mycni.io",
+           RepoName: "mycni",
+       }
+   
+       // Configure Helm chart installation
+       chartConfig := helm.ChartConfig{
+           ReleaseName:     "mycni",
+           ChartName:       "mycni/mycni",
+           Namespace:       "kube-system",
+           RepoURL:         "https://helm.mycni.io",
+           CreateNamespace: false,
+           SetJSONVals:     map[string]string{"replicas": "1"},
+       }
+   
+       // Install or upgrade the chart
+       err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, i.GetTimeout())
+       if err != nil {
+           return fmt.Errorf("install or upgrade mycni: %w", err)
+       }
+   
+       return nil
+   }
+   
+   // waitForReadiness waits for MyCNI pods to be ready.
+   func (i *MyCNIInstaller) waitForReadiness(ctx context.Context) error {
+       checks := []k8s.ReadinessCheck{
+           {Type: "daemonset", Namespace: "kube-system", Name: "mycni"},
+       }
+   
+       err := installer.WaitForResourceReadiness(
+           ctx,
+           i.GetKubeconfig(),
+           i.GetContext(),
+           checks,
+           i.GetTimeout(),
+           "mycni",
+       )
+       if err != nil {
+           return fmt.Errorf("wait for mycni readiness: %w", err)
+       }
+   
+       return nil
+   }
    ```
+   
+   For a complete implementation pattern, see:
+   - `pkg/svc/installer/cni/cilium/installer.go`
+   - `pkg/svc/installer/cni/calico/installer.go`
 
 3. **Reuse shared utilities** from `cni.InstallerBase` for Helm chart installation and readiness checks
 
