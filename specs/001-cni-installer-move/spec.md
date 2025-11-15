@@ -91,7 +91,7 @@ Internal packages that referenced `pkg/svc/installer/calico` or `.../cilium` mus
 
 ### Key Entities *(include if feature involves data)*
 
-- **CNIInstallerBase**: Shared struct encapsulating Helm client, kubeconfig, and readiness waits used across CNIs.
+- **InstallerBase**: Shared struct encapsulating Helm client, kubeconfig, and readiness waits used across CNIs.
 - **HelmRepoConfig / HelmChartConfig**: Value objects controlling CNI Helm install parameters; remain unchanged but relocate under the CNI module.
 
 ### Quality & Performance Constraints *(align with Constitution)*
