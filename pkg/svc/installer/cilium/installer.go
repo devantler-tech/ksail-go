@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
@@ -71,13 +71,13 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	repoConfig := installer.HelmRepoConfig{
+	repoConfig := helm.RepoConfig{
 		Name:     "cilium",
 		URL:      "https://helm.cilium.io",
 		RepoName: "cilium",
 	}
 
-	chartConfig := installer.HelmChartConfig{
+	chartConfig := helm.ChartConfig{
 		ReleaseName:     "cilium",
 		ChartName:       "cilium/cilium",
 		Namespace:       "kube-system",
@@ -86,7 +86,7 @@ func (c *CiliumInstaller) helmInstallOrUpgradeCilium(ctx context.Context) error 
 		SetJSONVals:     defaultCiliumValues(),
 	}
 
-	err = installer.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 	if err != nil {
 		return fmt.Errorf("install or upgrade cilium: %w", err)
 	}
@@ -101,7 +101,7 @@ func defaultCiliumValues() map[string]string {
 }
 
 func (c *CiliumInstaller) waitForReadiness(ctx context.Context) error {
-	checks := []k8sutil.ReadinessCheck{
+	checks := []k8s.ReadinessCheck{
 		{Type: "daemonset", Namespace: "kube-system", Name: "cilium"},
 		{Type: "deployment", Namespace: "kube-system", Name: "cilium-operator"},
 	}
