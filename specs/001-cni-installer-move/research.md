@@ -11,7 +11,7 @@
 
 ```text
 pkg/svc/installer/
-├── cni_helpers.go          # CNIInstallerBase + shared utilities (target: cni/base.go)
+├── cni_helpers.go          # InstallerBase + shared utilities (target: cni/base.go)
 ├── cni_helpers_test.go     # Tests for shared helpers (target: cni/base_test.go)
 ├── calico/                 # Calico CNI installer (target: cni/calico/)
 │   ├── installer.go
