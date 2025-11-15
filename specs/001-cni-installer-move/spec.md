@@ -83,9 +83,9 @@ Internal packages that referenced `pkg/svc/installer/calico` or `.../cilium` mus
 
 ### Functional Requirements
 
-- **FR-001**: System MUST relocate `CNIInstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/base.go` (single file at root of cni package) while preserving exported APIs.
-- **FR-002**: System MUST move Cilium and Calico installer packages to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively, updating their module names accordingly.
-- **FR-003**: System MUST update all imports, mocks, and tests to reference the new paths (`pkg/svc/installer/cni/` for shared helpers, `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` for installers), then immediately delete old package directories (`pkg/svc/installer/calico/`, `pkg/svc/installer/cilium/`, `pkg/svc/installer/cni_helpers.go`) with no transition period or deprecated aliases maintained.
+- **FR-001 [COMPLETED]**: System has relocated `CNIInstallerBase`, helper functions, and readiness utilities into `pkg/svc/installer/cni/base.go` (single file at root of cni package) while preserving exported APIs.
+- **FR-002 [COMPLETED]**: System has moved Cilium and Calico installer packages to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively, updating their module names accordingly.
+- **FR-003 [COMPLETED]**: System has updated all imports, mocks, and tests to reference the new paths (`pkg/svc/installer/cni/` for shared helpers, `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` for installers), and immediately deleted old package directories (`pkg/svc/installer/calico/`, `pkg/svc/installer/cilium/`, `pkg/svc/installer/cni_helpers.go`) with no transition period or deprecated aliases maintained.
 - **FR-004**: System MUST ensure `go test ./pkg/svc/installer/cni/...` and `go test ./pkg/svc/installer/...` pass locally and in CI.
 - **FR-005**: System MUST refresh contributor documentation or inline comments describing where new CNIs should live.
 
