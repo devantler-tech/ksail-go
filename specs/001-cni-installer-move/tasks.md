@@ -52,22 +52,22 @@ Go project structure:
 
 ### File Relocation for User Story 1
 
-- [ ] T006 [P] [US1] Move shared helpers: `git mv pkg/svc/installer/cni_helpers.go pkg/svc/installer/cni/base.go`
-- [ ] T007 [P] [US1] Move shared helpers tests: `git mv pkg/svc/installer/cni_helpers_test.go pkg/svc/installer/cni/base_test.go`
-- [ ] T008 [P] [US1] Move Cilium package: `git mv pkg/svc/installer/cilium pkg/svc/installer/cni/cilium`
-- [ ] T009 [P] [US1] Move Calico package: `git mv pkg/svc/installer/calico pkg/svc/installer/cni/calico`
+- [x] T006 [P] [US1] Move shared helpers: `git mv pkg/svc/installer/cni_helpers.go pkg/svc/installer/cni/base.go`
+- [x] T007 [P] [US1] Move shared helpers tests: `git mv pkg/svc/installer/cni_helpers_test.go pkg/svc/installer/cni/base_test.go`
+- [x] T008 [P] [US1] Move Cilium package: `git mv pkg/svc/installer/cilium pkg/svc/installer/cni/cilium`
+- [x] T009 [P] [US1] Move Calico package: `git mv pkg/svc/installer/calico pkg/svc/installer/cni/calico`
 
 ### Package Declaration Updates for User Story 1
 
-- [ ] T010 [US1] Update package name in `pkg/svc/installer/cni/base.go` from `installer` to `cni`
-- [ ] T011 [US1] Update package name in `pkg/svc/installer/cni/base_test.go` from `installer` to `cni`
-- [ ] T012 [US1] Verify package name in `pkg/svc/installer/cni/cilium/installer.go` is correct; update if needed, and verify imports
-- [ ] T013 [US1] Verify package name and imports in `pkg/svc/installer/cni/calico/installer.go` (should be `calicoinstaller`)
+- [x] T010 [US1] Update package name in `pkg/svc/installer/cni/base.go` from `installer` to `cni`
+- [x] T011 [US1] Update package name in `pkg/svc/installer/cni/base_test.go` from `installer` to `cni`
+- [x] T012 [US1] Verify package name in `pkg/svc/installer/cni/cilium/installer.go` is correct; update if needed, and verify imports
+- [x] T013 [US1] Verify package name and imports in `pkg/svc/installer/cni/calico/installer.go` (should be `calicoinstaller`)
 
 ### Import Path Updates for User Story 1
 
-- [ ] T014 [US1] Update imports in `pkg/svc/installer/cni/cilium/installer.go`: Change `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
-- [ ] T015 [US1] Update imports in `pkg/svc/installer/cni/calico/installer.go`: Change `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
+- [x] T014 [US1] Update imports in `pkg/svc/installer/cni/cilium/installer.go`: Changed `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
+- [x] T015 [US1] Update imports in `pkg/svc/installer/cni/calico/installer.go`: Changed `"github.com/devantler-tech/ksail-go/pkg/svc/installer"` to `"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"`
 - [ ] T016 [US1] Search and update all imports in `cmd/` directory (cross-platform):  
       ```sh
       grep -rl "pkg/svc/installer/cilium\|pkg/svc/installer/calico" cmd/ | xargs sed -i.bak 's|pkg/svc/installer/cilium|pkg/svc/installer/cni/cilium|g; s|pkg/svc/installer/calico|pkg/svc/installer/cni/calico|g'
