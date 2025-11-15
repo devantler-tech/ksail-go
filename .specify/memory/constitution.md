@@ -1,50 +1,234 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version: NEW → 1.0.0
+- New constitution created from template
+- Core principles established:
+  1. KISS (Keep It Simple, Stupid)
+  2. DRY (Don't Repeat Yourself)
+  3. YAGNI (You Aren't Gonna Need It)
+  4. Interface-Based Design
+  5. Test-First Development
+  6. Package-First Architecture
+  7. Code Quality Standards
+- Additional sections:
+  - Design Patterns & Refactoring
+  - Development Workflow & Validation
+- Templates requiring updates:
+  ✅ Constitution created (initial version)
+  ⚠ Plan template - should reference constitution principles
+  ⚠ Spec template - should enforce interface-based and test-first requirements
+  ⚠ Tasks template - should categorize tasks by constitutional compliance
+  ⚠ Command templates - should verify constitutional alignment
+-->
+
+# KSail-Go Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. KISS (Keep It Simple, Stupid)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+**Simplicity over complexity.** Prefer straightforward solutions that are easy to understand and maintain. Avoid over-engineering or adding unnecessary abstraction layers. If a simple approach solves the problem effectively, use it.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Complex code is harder to understand, maintain, test, and debug. Simple solutions reduce cognitive load and make the codebase accessible to all contributors.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. DRY (Don't Repeat Yourself)
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+**Eliminate duplication.** Extract common logic into reusable functions, packages, or interfaces. Every piece of knowledge MUST have a single, unambiguous representation in the codebase. Use Go's interface-based design to share behavior without duplicating code.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Duplication leads to inconsistent behavior, maintenance burden, and bugs when one instance is updated but others are forgotten.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. YAGNI (You Aren't Gonna Need It)
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+**Implement only what's needed now.** Do NOT add functionality based on speculative future requirements. Focus on current, well-defined requirements. Additional features can be added later when they're actually needed.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: Speculative features add complexity, increase maintenance burden, and often go unused. Build what's needed, when it's needed.
+
+### IV. Interface-Based Design (NON-NEGOTIABLE)
+
+**Depend on abstractions, not concrete implementations.** All major components MUST be defined as interfaces first. Use Go's implicit interface satisfaction. Keep interfaces small and focused (Interface Segregation Principle).
+
+**Requirements**:
+
+- Define interface contracts before implementations
+- Use mockery to generate test mocks from interfaces
+- Each interface should have a clear, single purpose
+- Implementations must honor interface contracts (Liskov Substitution Principle)
+
+**Rationale**: Interfaces enable testability, flexibility, and clear contracts between components. They allow implementations to be swapped without breaking consumers.
+
+### V. Test-First Development (NON-NEGOTIABLE)
+
+**Tests MUST be written before implementation.** Follow the Red-Green-Refactor cycle: Write failing tests → Implement minimal code to pass → Refactor while keeping tests green.
+
+**Requirements**:
+
+- Unit tests for all packages in `pkg/`
+- Integration tests via `go test ./...` execution
+- System tests in CI for end-to-end validation
+- Snapshot testing for CLI output consistency
+- Pre-commit hooks MUST pass: `mockery`, `go test ./...`, `golangci-lint run`
+
+**Rationale**: Test-first ensures testable code, prevents regressions, provides living documentation, and enables confident refactoring.
+
+### VI. Package-First Architecture
+
+**Every feature starts as a well-defined package.** Packages MUST be self-contained, independently testable, and documented. Organize by domain concern, not technical layer.
+
+**Requirements**:
+
+- Core business logic in `pkg/` packages
+- CLI commands in `cmd/` (thin wrappers around `pkg/` logic)
+- Internal utilities in `internal/` (not exposed externally)
+- Clear package purposes with godoc comments
+- No circular dependencies
+
+**Rationale**: Package-first design promotes modularity, reusability, and clear separation of concerns. It makes code easier to test and understand.
+
+### VII. Code Quality Standards (NON-NEGOTIABLE)
+
+**All code MUST pass quality gates.** Use automated tooling to enforce standards consistently across the codebase.
+
+**Requirements**:
+
+- `golangci-lint run` MUST pass (timeout: 120+ seconds)
+- `go test ./...` MUST pass (timeout: 90+ seconds)
+- `mockery` MUST generate all mocks successfully
+- Pre-commit hooks enabled and passing
+- Code coverage tracked via codecov.io
+- NEVER CANCEL long-running builds or tests
+
+**Rationale**: Automated quality gates catch issues early, ensure consistency, and maintain high code quality without manual oversight.
+
+## Design Patterns & Refactoring
+
+### Design Pattern Application
+
+Apply design patterns judiciously—only when they solve a real problem, not for the sake of using patterns.
+
+**Approved Patterns for KSail-Go**:
+
+- **Factory Method**: Creating provisioners based on distribution type (Kind, K3d, EKS)
+- **Strategy**: Different validation/provisioning strategies per distribution
+- **Adapter**: Wrapping external tools (Kind, K3d, eksctl) with unified interfaces
+- **Decorator**: Adding logging, metrics, retry logic to core operations
+- **Facade**: Simplified high-level operations hiding complex workflows
+- **Command**: CLI command structure (via Cobra framework)
+
+**Pattern Usage Rules**:
+
+- Use when pattern solves a current, concrete problem
+- Use when pattern improves code clarity and maintainability
+- Avoid using patterns "just because" or for speculative needs
+- Avoid forcing patterns where simple solutions work better
+
+### Code Smells & Refactoring
+
+**Refactor immediately when encountering**:
+
+- Long functions (>50-100 lines) → Extract smaller, focused functions
+- Large structs with too many responsibilities → Split into focused types
+- Duplicate code → Extract shared logic into reusable packages
+- Primitive obsession → Create domain types (`type ClusterName string`)
+- Switch/type assertions on types → Use interface-based polymorphism
+
+**Code Smell Categories** (see `.github/copilot-instructions.md` for full catalog):
+
+- **Bloaters**: Long methods, large structs, primitive obsession, long parameter lists, data clumps
+- **Object-Orientation Abusers**: Type switches, temporary fields, refused bequest, inconsistent interfaces
+- **Change Preventers**: Divergent change, shotgun surgery, parallel hierarchies
+- **Dispensables**: Redundant comments, duplicate code, lazy packages, dead code, speculative generality
+- **Couplers**: Feature envy, inappropriate intimacy, message chains, middle men
+
+**When to Accept Code Smells**:
+
+- Code that rarely changes and is well-tested
+- Refactoring provides little benefit
+- Document reason with comment explaining acceptance
+
+## Development Workflow & Validation
+
+### Build & Validation Requirements
+
+**Pre-Commit Checklist** (MUST pass before any commit):
+
+```bash
+mockery                    # Generate fresh mocks (~1.2s)
+go test ./...             # Run all tests (~37s, timeout: 90+s)
+golangci-lint run         # Lint code (~1m16s, timeout: 120+s)
+go build -o ksail .       # Ensure clean build (~1.4s)
+```
+
+**CI Pipeline Requirements**:
+
+- Standard Go CI: build, test, lint via reusable workflows
+- System tests: matrix testing across Kind, K3d, EKS distributions
+- Full lifecycle validation: init → create → info → list → start → stop → delete
+- All tests MUST pass before merge
+
+**Manual Testing Requirements** (post-implementation):
+
+- Basic CLI validation (`./ksail --help`, `./ksail --version`)
+- Complete cluster lifecycle test in `/tmp/ksail-test`
+- Alternative distribution testing as applicable
+
+### Timing Expectations (NEVER CANCEL)
+
+**Critical**: Long-running operations need time to complete. Premature cancellation causes incomplete builds and false failures.
+
+**Standard Timings**:
+
+- `go mod download`: ~0.045s (cached)
+- `go build ./...`: ~2.1s
+- `go build -o ksail .`: ~1.4s
+- `mockery`: ~1.2s
+- `go test ./...`: ~37s (timeout: 90+s)
+- `golangci-lint run`: ~1m16s (timeout: 120+s)
+- `mega-linter-runner -f go`: ~5+ minutes (timeout: 600+s)
+
+**Timeout Rules**:
+
+- Build commands: 60+ seconds minimum
+- Test commands: 90+ seconds minimum
+- Linter commands: 120+ seconds minimum
+- Mega-linter: 600+ seconds minimum
+
+### Serena Semantic Tools (CRITICAL)
+
+**For ALL analysis, investigation, and code understanding tasks, use Serena semantic tools first.**
+
+**Standard Serena Workflow**:
+
+1. List and read relevant Serena memories for context
+2. Use semantic analysis to find symbols/functions/patterns
+3. Get symbol-level insights and show referencing symbols
+4. Create new memories about findings for future reference
+
+**Rationale**: Serena provides token-efficient, symbol-level code navigation. Avoid reading entire files when targeted semantic search suffices.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other development practices. All pull requests and code reviews MUST verify compliance with these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Amendment Process**:
+
+- Amendments require documentation of rationale and impact
+- Version bump follows semantic versioning:
+  - **MAJOR**: Backward-incompatible principle changes
+  - **MINOR**: New principles or materially expanded guidance
+  - **PATCH**: Clarifications, wording, typo fixes
+- Update `.github/copilot-instructions.md` to reflect changes
+- Update all templates in `.specify/templates/` for consistency
+
+**Compliance Review**:
+
+- Constitution violations must be addressed in code review
+- Complexity must be justified with clear rationale
+- Refer to `.github/copilot-instructions.md` for detailed runtime guidance
+- Use `.specify/templates/` for structured development workflows
+
+**Task Suitability for GitHub Copilot**:
+
+- ✅ Well-suited: Bug fixes, test improvements, documentation, refactoring, dependency updates, CLI enhancements, technical debt
+- ❌ Human-required: Architecture decisions, complex integrations, security-critical changes, production incidents, business logic
+
+**Version**: 1.0.0 | **Ratified**: 2025-11-15 | **Last Amended**: 2025-11-15
