@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: User description: "Implement Flannel as a Container Network Interface (CNI) option in ksail-go to provide reliable cluster networking compatible with standard Kubernetes setups"
 
+## Clarifications
+
+### Session 2025-11-15
+
+- Q: When Flannel installation fails (e.g., network unavailable, insufficient permissions, incompatible Kubernetes version), what should the system do? → A: Fail gracefully, rollback cluster to pre-installation state, display diagnostic error message
+- Q: Why was VXLAN chosen as the default Flannel backend, and should other backends (host-gw, WireGuard) be supported? → A: VXLAN only - most compatible, works across all network types, sufficient for initial release
+- Q: What is the expected maximum cluster size (number of nodes) that should be tested with Flannel, and should multi-node communication testing be required? → A: Use default distribution settings
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Configure Flannel During Cluster Initialization (Priority: P1)
@@ -59,7 +67,7 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 ### Edge Cases
 
 - What happens when Flannel is specified but the distribution's native CNI is not disabled (e.g., K3d with default CNI enabled)?
-- How does the system handle Flannel installation failures (network unavailable, insufficient permissions, incompatible Kubernetes version)?
+- When Flannel installation fails (network unavailable, insufficient permissions, incompatible Kubernetes version), system performs graceful rollback to pre-installation state and displays diagnostic error message with specific failure reason
 - What happens when users try to change from another CNI to Flannel on an existing cluster?
 - How does the system behave if Flannel manifests are unavailable or corrupted during installation?
 - What happens when users specify Flannel with distributions that have specific CNI requirements or defaults (K3d includes Flannel by default)?
@@ -79,6 +87,7 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 - **FR-009**: System MUST support Flannel with Kind distribution clusters
 - **FR-010**: System MUST support Flannel with K3d distribution clusters
 - **FR-011**: System MUST provide clear error messages when Flannel installation fails, including diagnostic information
+- **FR-011a**: System MUST rollback cluster to pre-installation state when Flannel installation fails, ensuring no partial or broken configuration remains
 - **FR-012**: Documentation MUST describe how to configure and use Flannel CNI, including limitations and compatibility notes
 - **FR-013**: System MUST include automated tests validating Flannel installation and basic networking functionality (pod-to-pod communication, DNS resolution)
 
@@ -87,9 +96,11 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 - **Dependency**: Flannel installation requires internet connectivity to download Flannel manifests from official sources
 - **Dependency**: Kubernetes cluster must be at a version compatible with Flannel (assumes Kubernetes 1.20+)
 - **Assumption**: Distribution configurations (Kind, K3d) support disabling default CNI to allow custom CNI installation
-- **Assumption**: Flannel will use the default VXLAN backend for overlay networking
+- **Assumption**: Flannel will use VXLAN backend exclusively for overlay networking (rationale: most compatible across all network topologies, works universally without special network configuration, sufficient for initial release)
 - **Assumption**: Users have appropriate cluster permissions to install DaemonSets and modify cluster networking
+- **Assumption**: Cluster sizing follows distribution defaults (Kind/K3d default configurations); no specific node count requirements beyond what distributions provide
 - **Assumption**: Standard Flannel configuration is sufficient; custom network configurations are out of scope
+- **Out of Scope**: Alternative Flannel backends (host-gw, WireGuard, UDP) are not supported in this initial implementation
 
 ### Key Entities
 
@@ -103,7 +114,7 @@ A Kubernetes administrator wants to validate their ksail.yaml configuration usin
 ### Measurable Outcomes
 
 - **SC-001**: Users can initialize a new KSail project with Flannel CNI in under 30 seconds using the init command
-- **SC-002**: Cluster creation with Flannel CNI completes successfully within 3 minutes on standard hardware (4 CPU, 8GB RAM)
+- **SC-002**: Cluster creation with Flannel CNI completes successfully within 3 minutes on standard hardware (4 CPU, 8GB RAM) using distribution default node configurations
 - **SC-003**: All cluster nodes reach Ready state within 60 seconds after Flannel pods are running
 - **SC-004**: Pod-to-pod communication across nodes succeeds with <10ms latency for same-datacenter nodes
 - **SC-005**: DNS resolution for services and external names succeeds within 100ms
