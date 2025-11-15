@@ -120,9 +120,9 @@ func (y *YourCNIInstaller) helmInstallOrUpgradeYourCNI(ctx context.Context) erro
     // Configure Helm repository
     // Note: Name and RepoName serve different purposes - see pkg/client/helm/config.go for details
     repoConfig := helm.RepoConfig{
-        Name:     "yourcni",                   // Helm repo alias used in chart references (used as the prefix in chart names, e.g. 'yourcni/yourcni'). Set this to the alias you want to use in Helm commands.
+        Name:     "yourcni",                   // Repository identifier used in Helm commands (e.g., 'helm repo add <name> <url>'). This is the name used to reference the repo in chart names (e.g., 'yourcni/yourcni').
         URL:      "https://helm.yourcni.io",  // Update with actual repo URL
-        RepoName: "yourcni",                   // Actual repository name as registered in Helm. Usually matches Name, but can differ if you want to alias the repo (see pkg/client/helm/config.go for details).
+        RepoName: "yourcni",                   // Human-readable name used in error messages (see pkg/client/helm/config.go). Not used for Helm repository registration.
     }
 
     // Configure Helm chart installation
