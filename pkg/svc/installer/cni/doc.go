@@ -10,7 +10,7 @@
 //
 // Package Structure
 //
-//	base.go      - Defines CNIInstallerBase and shared utilities for Helm chart installation and readiness checks.
+//	base.go      - Defines InstallerBase and shared utilities for Helm chart installation and readiness checks.
 //	base_test.go - Tests for base functionality.
 //	doc.go       - This package documentation.
 //	calico/      - Implementation of the Calico CNI installer.
@@ -24,10 +24,10 @@
 //
 //  2. Implement the installer.Installer interface in your new package
 //
-//  3. Embed CNIInstallerBase in your installer struct to reuse shared Helm and readiness logic:
+//  3. Embed InstallerBase in your installer struct to reuse shared Helm and readiness logic:
 //
 //     type MyCNIInstaller struct {
-//     *cni.CNIInstallerBase
+//     *cni.InstallerBase
 //     }
 //
 //  4. Use the shared helper functions for Helm operations:
@@ -66,7 +66,7 @@
 //
 // # Shared Utilities
 //
-// All CNI installers benefit from shared utilities in CNIInstallerBase:
+// All CNI installers benefit from shared utilities in InstallerBase:
 //
 //   - Helm client management for chart operations
 //   - Kubeconfig and context handling for cluster access

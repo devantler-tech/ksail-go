@@ -12,7 +12,7 @@ import (
 
 // CiliumInstaller implements the installer.Installer interface for Cilium.
 type CiliumInstaller struct {
-	*cni.CNIInstallerBase
+	*cni.InstallerBase
 }
 
 // NewCiliumInstaller creates a new Cilium installer instance.
@@ -22,7 +22,7 @@ func NewCiliumInstaller(
 	timeout time.Duration,
 ) *CiliumInstaller {
 	ciliumInstaller := &CiliumInstaller{}
-	ciliumInstaller.CNIInstallerBase = cni.NewCNIInstallerBase(
+	ciliumInstaller.InstallerBase = cni.NewInstallerBase(
 		client,
 		kubeconfig,
 		context,
@@ -45,7 +45,7 @@ func (c *CiliumInstaller) Install(ctx context.Context) error {
 
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.
 func (c *CiliumInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context) error) {
-	c.CNIInstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
+	c.InstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
 }
 
 // Uninstall removes the Helm release for Cilium.

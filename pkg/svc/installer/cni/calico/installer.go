@@ -12,7 +12,7 @@ import (
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
 type CalicoInstaller struct {
-	*cni.CNIInstallerBase
+	*cni.InstallerBase
 }
 
 // NewCalicoInstaller creates a new Calico installer instance.
@@ -22,7 +22,7 @@ func NewCalicoInstaller(
 	timeout time.Duration,
 ) *CalicoInstaller {
 	calicoInstaller := &CalicoInstaller{}
-	calicoInstaller.CNIInstallerBase = cni.NewCNIInstallerBase(
+	calicoInstaller.InstallerBase = cni.NewInstallerBase(
 		client,
 		kubeconfig,
 		context,
@@ -45,7 +45,7 @@ func (c *CalicoInstaller) Install(ctx context.Context) error {
 
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.
 func (c *CalicoInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context) error) {
-	c.CNIInstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
+	c.InstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
 }
 
 // Uninstall removes the Helm release for Calico.
