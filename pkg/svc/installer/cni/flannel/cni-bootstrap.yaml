@@ -20,7 +20,8 @@ spec:
       - name: install-cni-plugins
         image: alpine:3.20
         securityContext:
-          privileged: true
+          allowPrivilegeEscalation: false
+          privileged: false
         command: ["/bin/sh","-c"]
         args:
         - |
