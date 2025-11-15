@@ -26,7 +26,7 @@
 //  3. Embed CNIInstallerBase in your installer struct to reuse shared Helm and readiness logic:
 //
 //     type MyCNIInstaller struct {
-//     *cni.CNIInstallerBase
+//         *cni.CNIInstallerBase
 //     }
 //
 //  4. Use the shared helper functions for Helm operations:
