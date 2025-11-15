@@ -1,8 +1,8 @@
 # Feature Specification: [FEATURE NAME]
 
-**Feature Branch**: `[###-feature-name]`
-**Created**: [DATE]
-**Status**: Draft
+**Feature Branch**: `[###-feature-name]`  
+**Created**: [DATE]  
+**Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -11,7 +11,7 @@
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
   Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
   you should still have a viable MVP (Minimum Viable Product) that delivers value.
-
+  
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
   - Developed independently
@@ -28,10 +28,6 @@
 
 **Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
 
-**UX Consistency Notes**: [List CLI help/output changes, notify/timer usage, doc updates]
-
-**Performance Budget**: [State runtime/latency expectations and progress feedback]
-
 **Acceptance Scenarios**:
 
 1. **Given** [initial state], **When** [action], **Then** [expected outcome]
@@ -47,10 +43,6 @@
 
 **Independent Test**: [Describe how this can be tested independently]
 
-**UX Consistency Notes**: [List CLI help/output changes, notify/timer usage, doc updates]
-
-**Performance Budget**: [State runtime/latency expectations and progress feedback]
-
 **Acceptance Scenarios**:
 
 1. **Given** [initial state], **When** [action], **Then** [expected outcome]
@@ -64,10 +56,6 @@
 **Why this priority**: [Explain the value and why it has this priority level]
 
 **Independent Test**: [Describe how this can be tested independently]
-
-**UX Consistency Notes**: [List CLI help/output changes, notify/timer usage, doc updates]
-
-**Performance Budget**: [State runtime/latency expectations and progress feedback]
 
 **Acceptance Scenarios**:
 
@@ -97,7 +85,7 @@
 ### Functional Requirements
 
 - **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]
+- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
 - **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
@@ -111,12 +99,6 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
-
-### Quality & Performance Constraints *(align with Constitution)*
-
-- **QC-001**: Tests MUST cover [critical behaviors]; outline unit vs. integration expectations.
-- **QC-002**: CLI outputs MUST follow notify/timer patterns; enumerate help text/doc updates.
-- **QC-003**: Feature MUST meet performance budget of [e.g., "complete within 60s", "≤ 3 retries"] and state monitoring/demo plan.
 
 ## Success Criteria *(mandatory)*
 

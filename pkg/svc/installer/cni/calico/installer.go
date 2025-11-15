@@ -8,11 +8,12 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
 type CalicoInstaller struct {
-	*installer.CNIInstallerBase
+	*cni.InstallerBase
 }
 
 // NewCalicoInstaller creates a new Calico installer instance.
@@ -22,7 +23,7 @@ func NewCalicoInstaller(
 	timeout time.Duration,
 ) *CalicoInstaller {
 	calicoInstaller := &CalicoInstaller{}
-	calicoInstaller.CNIInstallerBase = installer.NewCNIInstallerBase(
+	calicoInstaller.InstallerBase = cni.NewInstallerBase(
 		client,
 		kubeconfig,
 		context,
@@ -45,7 +46,7 @@ func (c *CalicoInstaller) Install(ctx context.Context) error {
 
 // SetWaitForReadinessFunc overrides the readiness wait function. Primarily used for testing.
 func (c *CalicoInstaller) SetWaitForReadinessFunc(waitFunc func(context.Context) error) {
-	c.CNIInstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
+	c.InstallerBase.SetWaitForReadinessFunc(waitFunc, c.waitForReadiness)
 }
 
 // Uninstall removes the Helm release for Calico.

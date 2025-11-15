@@ -1,15 +1,15 @@
-package installer_test
+package cni_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
-func TestCNIInstallerBaseBuildRESTConfig(t *testing.T) {
+func TestInstallerBaseBuildRESTConfig(t *testing.T) {
 	t.Parallel()
 
 	t.Run("ErrorWhenKubeconfigMissing", testBuildRESTConfigErrorWhenKubeconfigMissing)
@@ -22,7 +22,7 @@ func testBuildRESTConfigErrorWhenKubeconfigMissing(t *testing.T) {
 	t.Helper()
 	t.Parallel()
 
-	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), "", "", time.Second, nil)
+	base := cni.NewInstallerBase(helm.NewMockInterface(t), "", "", time.Second, nil)
 	_, err := base.BuildRESTConfig()
 
 	testutils.ExpectErrorContains(t, err, "kubeconfig path is empty", "buildRESTConfig empty path")
@@ -33,7 +33,7 @@ func testBuildRESTConfigUsesCurrentContext(t *testing.T) {
 	t.Parallel()
 
 	path := testutils.WriteKubeconfig(t, t.TempDir())
-	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), path, "", time.Second, nil)
+	base := cni.NewInstallerBase(helm.NewMockInterface(t), path, "", time.Second, nil)
 
 	restConfig, err := base.BuildRESTConfig()
 
@@ -51,7 +51,7 @@ func testBuildRESTConfigOverridesContext(t *testing.T) {
 	t.Parallel()
 
 	path := testutils.WriteKubeconfig(t, t.TempDir())
-	base := installer.NewCNIInstallerBase(helm.NewMockInterface(t), path, "alt", time.Second, nil)
+	base := cni.NewInstallerBase(helm.NewMockInterface(t), path, "alt", time.Second, nil)
 
 	restConfig, err := base.BuildRESTConfig()
 
@@ -69,7 +69,7 @@ func testBuildRESTConfigMissingContext(t *testing.T) {
 	t.Parallel()
 
 	path := testutils.WriteKubeconfig(t, t.TempDir())
-	base := installer.NewCNIInstallerBase(
+	base := cni.NewInstallerBase(
 		helm.NewMockInterface(t),
 		path,
 		"missing",

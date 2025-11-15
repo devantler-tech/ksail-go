@@ -61,11 +61,12 @@ go test ./...
 
 ## Project Structure
 
-The repository is organized into three main directories:
+The repository is organized into two main directories:
 
 - **cmd/** - CLI command implementations
 - **pkg/** - Public packages (importable by external projects)
-- **internal/** - Internal packages (not importable externally)
+
+This project strives to be fully open-source friendly, and as such, all core functionality is implemented in the `pkg/` directory, and the `internal/` directory is not used. This allows external projects to import and use any part of the codebase.
 
 For detailed package and API documentation, refer to [pkg.go.dev/github.com/devantler-tech/ksail-go](https://pkg.go.dev/github.com/devantler-tech/ksail-go).
 

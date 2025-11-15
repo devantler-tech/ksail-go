@@ -17,24 +17,29 @@
   the iteration process.
 -->
 
-**Language/Version**: Go 1.25.x (update here if the feature targets a different version)
-**Primary Dependencies**: Cobra CLI, Kubernetes client-go, Flux/CD related tooling (note any new dependencies explicitly)
-**Storage**: N/A (CLI tool) — document if the feature introduces persistent artefacts
-**Testing**: `go test ./...`, mockery-generated doubles, optional integration/system tests via CI workflows
-**Target Platform**: Linux/macOS developer workstations invoking Kind/K3d/EKS
-**Project Type**: Single CLI project (cmd/, pkg/, internal/)
-**Performance Goals**: Reference Principle IV — define acceptable runtime/latency for the proposed workflow
-**Constraints**: Document timeouts, concurrency expectations, and resource bounds relevant to the change
-**Scale/Scope**: Describe the expected usage footprint (e.g., local dev clusters/day, number of generated manifests)
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Code Quality Discipline** (Principle I): Identify affected packages/files and confirm plan includes formatting + lint compliance steps.
-- **Testing Rigor** (Principle II): Outline the required unit/integration tests and how failures will be reproduced.
-- **User Experience Consistency** (Principle III): Describe CLI surface changes, including notify/timer usage and documentation updates.
-- **Performance & Reliability Contracts** (Principle IV): State expected runtime budgets, progress feedback, and failure handling strategy.
+Principle-aligned gates (must all be addressed; violations documented in Complexity Tracking):
+
+- Simplicity (I): No speculative abstractions; justify any >50 line function or extra layer.
+- Test-First (II): Failing unit/contract tests listed for every new public API before implementation.
+- Interface Discipline (III): New interfaces ≤5 methods; no planned type switches.
+- Observability (IV): CLI commands impacted list logging + timing approach; error pathways defined.
+- Versioning (V): Feature categorized (PATCH/MINOR/MAJOR) with migration impact, if any.
+
+Any gate failure must include rationale and rejected simpler alternative.
 
 ## Project Structure
 
