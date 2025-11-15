@@ -836,3 +836,10 @@ go test ./pkg/ui/notify/... -run FormatTiming -v
 ./ksail cluster init --distribution Kind
 # Expected output: "✔ initialized project [1.2s]"
 ```
+
+## Active Technologies
+- Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs (001-move-all-source)
+- File system (configuration files, cluster state) (001-move-all-source)
+
+## Recent Changes
+- 001-move-all-source: Added Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs
