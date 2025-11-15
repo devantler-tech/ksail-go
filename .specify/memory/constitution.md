@@ -1,50 +1,118 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: (none) → 1.0.0
+Modified principles: (initial population)
+Added sections: Engineering Standards & Constraints; Development Workflow & Review Gates; Governance (populated)
+Removed sections: None
+Templates requiring updates:
+	- .specify/templates/plan-template.md ✅ updated (added Constitution Gate list)
+	- .specify/templates/tasks-template.md ✅ updated (tests marked mandatory per Principle 2)
+	- .specify/templates/spec-template.md ✅ aligned (already enforces independently testable stories)
+	- .specify/templates/agent-file-template.md ✅ no change needed (descriptive aggregation only)
+	- .specify/templates/checklist-template.md ✅ no change needed
+Deferred TODOs:
+	- RATIFICATION_DATE original adoption unknown → TODO(RATIFICATION_DATE) left for project maintainer to supply.
+-->
+
+# KSail-Go Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Simplicity & Minimalism
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Code MUST implement the simplest solution that fully satisfies current, approved
+requirements. Avoid speculative abstractions (YAGNI). Functions SHOULD NOT
+exceed ~50 logical lines; when they do, they MUST be refactored unless a clear
+cohesive reason is documented in a plan Complexity Tracking table. Duplication
+MUST be eliminated when it represents shared intent (DRY) but MAY be retained
+when it improves clarity and reduces premature abstraction. Complexity
+introductions (extra layers, patterns) REQUIRE justification in plan.md under
+"Complexity Tracking" referencing the concrete problem solved.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Test-First Quality Gates (NON-NEGOTIABLE)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+All production logic MUST follow Red → Green → Refactor. For each new public
+type, interface, or behavior: write failing unit/contract tests first, verify
+failure, then implement code to pass. Mock generation via `mockery` MUST occur
+before implementing dependent logic. A PR introducing public API without tests
+is rejected. Minimum coverage threshold per package SHOULD be ≥80%; critical
+packages (provisioner, installer, validator) MUST include contract tests for
+external tool interactions. System/e2e tests run in CI matrices; local absence
+is acceptable but MUST not break CI. Refactors MUST preserve existing tests or
+update them transparently with rationale.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Interface & Abstraction Discipline
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+High-level code MUST depend on small, focused interfaces (≤5 methods when
+practical). Prefer composition over inheritance; avoid type switches that
+bypass polymorphism. Implement SOLID: single responsibility per package and
+struct; open for extension via new implementations, closed for modification of
+stable contracts. Dependency inversion: constructors accept interfaces, not
+concrete implementations. New providers (e.g., distribution, CNI installer)
+MUST satisfy existing interfaces without requiring interface changes; if
+changes are unavoidable they trigger a semantic version review.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Observability & Deterministic CLI Output
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Every CLI command MUST produce structured, human-readable success output and
+write errors exclusively to stderr. Timing instrumentation via the timer
+package MUST appear in success messages (<1ms overhead). Logging MUST be
+structured (key=value or JSON for machine output modes) and avoid sensitive
+data. Commands offering machine-consumable output MUST provide a flag (e.g.
+`--output json`) with deterministic field names. Silent failures are forbidden.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Semantic Versioning & Backward Compatibility
+
+Releases follow semantic versioning: MAJOR for breaking public API or CLI
+behavior; MINOR for additive non-breaking features; PATCH for internal fixes,
+docs, or non-functional improvements. Commit prefixes: `feat:` → MINOR, `fix:`
+→ PATCH, `BREAKING CHANGE:` in body → MAJOR. Any removal or incompatible change
+MUST include migration notes (added to release notes) and justification in the
+PR description referencing affected interfaces. Avoid unnecessary breaking
+changes by deprecating first when feasible.
+
+## Engineering Standards & Constraints
+
+- Language: Go ≥1.24.x (align with `go.mod`).
+- Formatting: `go fmt` & `golangci-lint` MUST pass before merge; auto-fixes applied via pre-commit.
+- Performance: Common CLI help commands SHOULD complete <200ms cold invocation. Timer overhead MUST remain <1ms cumulative per command.
+- Resource Constraints: Avoid global mutable state; configuration passed via explicit structs.
+- Security: No secrets in logs; error messages MUST avoid leaking credentials.
+- Documentation: Public packages MUST have package comments; exported types MUST have doc comments meaningful to pkg.go.dev consumers.
+- Code Smells: Long methods, large structs, primitive obsession, data clumps MUST trigger refactor tasks unless justified under Complexity Tracking.
+
+## Development Workflow & Review Gates
+
+- Feature proposal → `spec.md` with independently testable user stories.
+- Planning → `plan.md` enumerates Constitution Check gates and Complexity Tracking justifications.
+- Tasks → `tasks.md` groups work by user story; test tasks precede impl tasks.
+- Implementation → Tests written & failing → code → refactor.
+- Review Gate Checklist per PR:
+  - Simplicity: Added abstractions justified? (Principle I)
+  - Tests: New public APIs covered? (Principle II)
+  - Interfaces: No oversized interfaces or type switches? (Principle III)
+  - Observability: Timing & structured logging present? (Principle IV)
+  - Versioning: Commit prefix aligns with change impact? (Principle V)
+- Documentation updates required when CLI surface or public APIs change.
+- Lint/test pipelines MUST be green; failing system tests block merge.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This Constitution supersedes conflicting informal practices. Amendments follow:
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+1. Open a PR titled `governance: <summary>` including proposed diffs & impact analysis.
+2. Classify version bump (MAJOR/MINOR/PATCH) with rationale referencing Principles or Workflow changes.
+3. Provide migration guidance for any breaking change.
+4. Obtain approval from at least one maintainer with governance mandate.
+5. Merge auto-publishes new version (via semantic release) and updates `Last Amended` date.
+
+Compliance Reviews: Quarterly (Jan/Apr/Jul/Oct) a maintainer audits packages
+against Principles I–V and files issues for violations. Urgent violations may
+trigger PATCH releases if fixes are non-breaking.
+
+Enforcement: Reviewers MUST block merges that violate non-negotiable aspects:
+Test-first (Principle II), structured error handling (Principle IV), semantic
+version discipline (Principle V). Exceptions require explicit, time-bound
+justification documented in the PR.
+
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE): Original adoption date unknown | **Last Amended**: 2025-11-15
