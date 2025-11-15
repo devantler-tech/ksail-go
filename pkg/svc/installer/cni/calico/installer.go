@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	"github.com/devantler-tech/ksail-go/pkg/svc/installer/cni"
-	"github.com/devantler-tech/ksail-go/pkg/svc/installer/k8sutil"
 )
 
 // CalicoInstaller implements the installer.Installer interface for Calico.
@@ -71,13 +72,13 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		return fmt.Errorf("get helm client: %w", err)
 	}
 
-	repoConfig := cni.HelmRepoConfig{
+	repoConfig := helm.RepoConfig{
 		Name:     "projectcalico",
 		URL:      "https://docs.tigera.io/calico/charts",
 		RepoName: "calico",
 	}
 
-	chartConfig := cni.HelmChartConfig{
+	chartConfig := helm.ChartConfig{
 		ReleaseName:     "calico",
 		ChartName:       "projectcalico/tigera-operator",
 		Namespace:       "tigera-operator",
@@ -85,7 +86,7 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 		CreateNamespace: true,
 	}
 
-	err = cni.InstallOrUpgradeHelmChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
+	err = helm.InstallOrUpgradeChart(ctx, client, repoConfig, chartConfig, c.GetTimeout())
 	if err != nil {
 		return fmt.Errorf("install or upgrade calico: %w", err)
 	}
@@ -94,13 +95,13 @@ func (c *CalicoInstaller) helmInstallOrUpgradeCalico(ctx context.Context) error 
 }
 
 func (c *CalicoInstaller) waitForReadiness(ctx context.Context) error {
-	checks := []k8sutil.ReadinessCheck{
+	checks := []k8s.ReadinessCheck{
 		{Type: "deployment", Namespace: "tigera-operator", Name: "tigera-operator"},
 		{Type: "daemonset", Namespace: "calico-system", Name: "calico-node"},
 		{Type: "deployment", Namespace: "calico-system", Name: "calico-kube-controllers"},
 	}
 
-	err := cni.WaitForResourceReadiness(
+	err := installer.WaitForResourceReadiness(
 		ctx,
 		c.GetKubeconfig(),
 		c.GetContext(),

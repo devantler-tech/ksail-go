@@ -17,6 +17,7 @@ kind.yaml
 eks.yaml
 ksail.yaml
 k8s/
+!pkg/k8s/
 
 # ==============================================================================
 # Build and Release Artifacts
