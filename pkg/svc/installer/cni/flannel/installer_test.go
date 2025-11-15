@@ -142,15 +142,7 @@ func runInstallTestCase(t *testing.T, testCase installTestCase) {
 
 	err := installer.Install(context.Background())
 
-	if testCase.expectError {
-		require.Error(t, err)
-
-		if testCase.errorContains != "" {
-			assert.Contains(t, err.Error(), testCase.errorContains)
-		}
-	} else {
-		require.NoError(t, err)
-	}
+	assertOutcome(t, err, testCase.expectError, testCase.errorContains)
 
 	clientMock.AssertExpectations(t)
 }
@@ -172,17 +164,23 @@ func runUninstallTestCase(t *testing.T, testCase uninstallTestCase) {
 
 	err := installer.Uninstall(context.Background())
 
-	if testCase.expectError {
+	assertOutcome(t, err, testCase.expectError, testCase.errorContains)
+
+	clientMock.AssertExpectations(t)
+}
+
+func assertOutcome(t *testing.T, err error, expectError bool, errorContains string) {
+	t.Helper()
+
+	if expectError {
 		require.Error(t, err)
 
-		if testCase.errorContains != "" {
-			assert.Contains(t, err.Error(), testCase.errorContains)
+		if errorContains != "" {
+			assert.Contains(t, err.Error(), errorContains)
 		}
 	} else {
 		require.NoError(t, err)
 	}
-
-	clientMock.AssertExpectations(t)
 }
 
 func flannelInstallerInstallTestCases() []installTestCase {
