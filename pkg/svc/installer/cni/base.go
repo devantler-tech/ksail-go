@@ -98,8 +98,6 @@ func (b *InstallerBase) BuildRESTConfig() (*rest.Config, error) {
 var errHelmClientNil = errors.New("helm client is nil")
 
 // GetClient returns the Helm client.
-//
-//nolint:ireturn // Method returns interface by design for flexibility.
 func (b *InstallerBase) GetClient() (helm.Interface, error) {
 	if b.client == nil {
 		return nil, errHelmClientNil
