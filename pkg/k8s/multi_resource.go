@@ -61,7 +61,7 @@ func WaitForMultipleResources(
 			return fmt.Errorf("%w: %s", errUnknownResourceType, check.Type)
 		}
 
-		// Cancel context after check completes to release resources
+		// Cancel context to release resources (regardless of check result)
 		cancel()
 
 		if err != nil {
