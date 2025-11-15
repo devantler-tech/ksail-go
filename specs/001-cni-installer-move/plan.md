@@ -9,7 +9,7 @@ Relocate CNI installer shared helpers (`InstallerBase`, readiness utilities, Hel
 
 ## Technical Context
 
-**Language/Version**: Go 1.23.9+ (validated up to Go 1.25.1)
+**Language/Version**: Go 1.25.4+
 
 **Primary Dependencies**:
 

@@ -9,7 +9,7 @@ This guide shows how to add a new Container Network Interface (CNI) installer to
 
 ## Prerequisites
 
-- Go 1.23.9+ installed
+- Go 1.25.4+ installed
 - Familiarity with Helm chart installation
 - Understanding of Kubernetes readiness checks
 - Access to CNI's Helm chart repository
