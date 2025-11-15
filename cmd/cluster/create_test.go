@@ -1272,19 +1272,37 @@ func TestHandlePostCreationSetup_K3dEnabled(t *testing.T) {
 	)
 }
 
+func setFlannelInstallHookForTest(
+	t *testing.T,
+	hook func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error,
+) {
+	t.Helper()
+
+	flannelHookMu.Lock()
+
+	previous := flannelInstallHook
+	flannelInstallHook = hook
+
+	flannelHookMu.Unlock()
+
+	t.Cleanup(func() {
+		flannelHookMu.Lock()
+
+		flannelInstallHook = previous
+
+		flannelHookMu.Unlock()
+	})
+}
+
 func TestHandlePostCreationSetup_FlannelFailureTriggersRollback(t *testing.T) {
 	t.Parallel()
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	originalHook := flannelInstallHook
-
-	t.Cleanup(func() { flannelInstallHook = originalHook })
-
-	flannelInstallHook = func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
+	setFlannelInstallHookForTest(t, func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
 		return errFlannelBoom
-	}
+	})
 
 	clusterCfg := &v1alpha1.Cluster{
 		Spec: v1alpha1.Spec{
@@ -1316,13 +1334,9 @@ func TestHandlePostCreationSetup_FlannelRollbackFailurePropagates(t *testing.T) 
 	cmd := &cobra.Command{}
 	cmd.SetOut(io.Discard)
 
-	originalHook := flannelInstallHook
-
-	t.Cleanup(func() { flannelInstallHook = originalHook })
-
-	flannelInstallHook = func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
+	setFlannelInstallHookForTest(t, func(*cobra.Command, *v1alpha1.Cluster, uitimer.Timer) error {
 		return errFlannelBoom
-	}
+	})
 
 	clusterCfg := &v1alpha1.Cluster{
 		Spec: v1alpha1.Spec{

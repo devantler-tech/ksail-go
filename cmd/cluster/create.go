@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -62,7 +63,10 @@ var ErrUnsupportedCNI = errors.New("unsupported CNI type")
 // flannelInstallHook allows tests to override the Flannel installation flow.
 //
 //nolint:gochecknoglobals // Intentional test hook for failure simulation.
-var flannelInstallHook = installFlannelCNI
+var (
+	flannelInstallHook = installFlannelCNI
+	flannelHookMu      sync.RWMutex
+)
 
 // newCreateLifecycleConfig creates the lifecycle configuration for cluster creation.
 func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
@@ -179,7 +183,13 @@ func handlePostCreationSetup(
 			return handleMetricsServer(cmd, clusterCfg, tmr)
 		}
 
-		err := installCustomCNIAndMetrics(cmd, clusterCfg, tmr, flannelInstallHook)
+		flannelHookMu.RLock()
+
+		hook := flannelInstallHook
+
+		flannelHookMu.RUnlock()
+
+		err := installCustomCNIAndMetrics(cmd, clusterCfg, tmr, hook)
 		if err != nil {
 			rollbackErr := rollbackCluster(cmd, clusterCfg, deps)
 			if rollbackErr != nil {

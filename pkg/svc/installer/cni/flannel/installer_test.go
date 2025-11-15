@@ -43,40 +43,7 @@ func TestInstallerInstall(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			clientMock := kubectl.NewMockInterface(t)
-			if testCase.mockSetup != nil {
-				testCase.mockSetup(clientMock)
-			}
-
-			installer := flannel.NewFlannelInstaller(
-				clientMock,
-				"/tmp/kubeconfig",
-				"test-context",
-				5*time.Minute,
-			)
-
-			waitFactory := testCase.waitFactory
-			if waitFactory == nil {
-				waitFactory = func() func(context.Context) error { return nil }
-			}
-
-			if waitFn := waitFactory(); waitFn != nil {
-				installer.SetWaitForReadinessFunc(waitFn)
-			}
-
-			err := installer.Install(context.Background())
-
-			if testCase.expectError {
-				require.Error(t, err)
-
-				if testCase.errorContains != "" {
-					assert.Contains(t, err.Error(), testCase.errorContains)
-				}
-			} else {
-				require.NoError(t, err)
-			}
-
-			clientMock.AssertExpectations(t)
+			runInstallTestCase(t, testCase)
 		})
 	}
 }
@@ -95,31 +62,7 @@ func TestInstallerUninstall(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			clientMock := kubectl.NewMockInterface(t)
-			if testCase.mockSetup != nil {
-				testCase.mockSetup(clientMock)
-			}
-
-			installer := flannel.NewFlannelInstaller(
-				clientMock,
-				"/tmp/kubeconfig",
-				"test-context",
-				5*time.Minute,
-			)
-
-			err := installer.Uninstall(context.Background())
-
-			if testCase.expectError {
-				require.Error(t, err)
-
-				if testCase.errorContains != "" {
-					assert.Contains(t, err.Error(), testCase.errorContains)
-				}
-			} else {
-				require.NoError(t, err)
-			}
-
-			clientMock.AssertExpectations(t)
+			runUninstallTestCase(t, testCase)
 		})
 	}
 }
@@ -171,6 +114,75 @@ func TestNewFlannelInstaller_NilClient(t *testing.T) {
 	assert.Panics(t, func() {
 		flannel.NewFlannelInstaller(nil, "/tmp/kubeconfig", "test-context", 5*time.Minute)
 	})
+}
+
+func runInstallTestCase(t *testing.T, testCase installTestCase) {
+	t.Helper()
+
+	clientMock := kubectl.NewMockInterface(t)
+	if testCase.mockSetup != nil {
+		testCase.mockSetup(clientMock)
+	}
+
+	installer := flannel.NewFlannelInstaller(
+		clientMock,
+		"/tmp/kubeconfig",
+		"test-context",
+		5*time.Minute,
+	)
+
+	waitFactory := testCase.waitFactory
+	if waitFactory == nil {
+		waitFactory = func() func(context.Context) error { return nil }
+	}
+
+	if waitFn := waitFactory(); waitFn != nil {
+		installer.SetWaitForReadinessFunc(waitFn)
+	}
+
+	err := installer.Install(context.Background())
+
+	if testCase.expectError {
+		require.Error(t, err)
+
+		if testCase.errorContains != "" {
+			assert.Contains(t, err.Error(), testCase.errorContains)
+		}
+	} else {
+		require.NoError(t, err)
+	}
+
+	clientMock.AssertExpectations(t)
+}
+
+func runUninstallTestCase(t *testing.T, testCase uninstallTestCase) {
+	t.Helper()
+
+	clientMock := kubectl.NewMockInterface(t)
+	if testCase.mockSetup != nil {
+		testCase.mockSetup(clientMock)
+	}
+
+	installer := flannel.NewFlannelInstaller(
+		clientMock,
+		"/tmp/kubeconfig",
+		"test-context",
+		5*time.Minute,
+	)
+
+	err := installer.Uninstall(context.Background())
+
+	if testCase.expectError {
+		require.Error(t, err)
+
+		if testCase.errorContains != "" {
+			assert.Contains(t, err.Error(), testCase.errorContains)
+		}
+	} else {
+		require.NoError(t, err)
+	}
+
+	clientMock.AssertExpectations(t)
 }
 
 func flannelInstallerInstallTestCases() []installTestCase {
