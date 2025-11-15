@@ -1,6 +1,6 @@
 module github.com/devantler-tech/ksail-go
 
-go 1.25.0
+go 1.25.4
 
 require (
 	github.com/derailed/k9s v0.50.16
