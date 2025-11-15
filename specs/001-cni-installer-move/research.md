@@ -65,7 +65,7 @@ pkg/svc/installer/
 
 **Applied**: Create `pkg/svc/installer/cni/` parent package with:
 
-- Shared code at root (`cni/base.go` containing CNIInstallerBase and utilities)
+- Shared code at root (`cni/base.go` containing InstallerBase and utilities)
 - Implementations in subdirectories (`cni/cilium/`, `cni/calico/`)
 
 ### Import Path Migration
