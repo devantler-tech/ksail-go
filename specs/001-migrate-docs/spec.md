@@ -24,15 +24,15 @@ KSail-Go operators can open the repository documentation and immediately find co
 
 ### User Story 2 - Preview Documentation Locally (Priority: P2)
 
-Project contributors can run the existing documentation build or preview process locally and see the migrated content render without errors.
+Project contributors can preview the Markdown-based documentation locally (e.g., via editor preview or lint checks) and see the migrated content render without errors.
 
-**Why this priority**: Maintainers need to validate edits before publishing and ensure the doc site remains maintainable without immediate hosting changes.
+**Why this priority**: Maintainers need to validate edits before publishing and ensure the doc set remains maintainable without requiring a site generator setup.
 
-**Independent Test**: Run the documented local build command on a clean checkout and confirm it completes successfully while serving the updated docs.
+**Independent Test**: Use the documented Markdown preview or linting workflow on a clean checkout and confirm it completes successfully while presenting the updated docs.
 
 **Acceptance Scenarios**:
 
-1. **Given** a contributor with the repository checked out, **When** they execute the documented local build, **Then** the process succeeds without missing-asset or unresolved-link warnings and presents the migrated sections.
+1. **Given** a contributor with the repository checked out, **When** they run the documented Markdown preview or lint step, **Then** the process succeeds without missing-asset or unresolved-link warnings and presents the migrated sections.
 
 ---
 
@@ -66,7 +66,7 @@ Product stakeholders can review a concise migration summary that identifies whic
 - **FR-003**: Update migrated documents so commands, file paths, and references align with the KSail-Go CLI behavior and repository layout.
 - **FR-004**: Refresh navigation metadata (tables of contents, in-page navigation, and cross-links) so users can traverse the new documentation set without encountering legacy routes.
 - **FR-005**: Ensure all images, diagrams, and downloadable assets referenced by the migrated pages exist in the repository and resolve during a local build.
-- **FR-006**: Validate that the documented local build or preview process completes successfully against the migrated content, addressing any warnings or errors.
+- **FR-006**: Validate that the migrated Markdown renders correctly using GitHub-native preview or equivalent Markdown linting, confirming no generator-specific artifacts remain.
 - **FR-007**: Produce a concise migration summary outlining which KSail documents were imported, which were deferred, and rationale for any exclusions.
 - **FR-008**: Capture explicit follow-up tasks required for enabling future publishing (e.g., hosting or automation) without executing those tasks as part of this effort.
 
@@ -79,14 +79,20 @@ Product stakeholders can review a concise migration summary that identifies whic
 ### Assumptions
 
 - Contributors have read access to the KSail repository to retrieve source documentation and assets.
-- The existing ksail-go documentation build script or tooling remains available and is the mechanism used to validate rendering.
-- No external publishing or hosting changes are required during this migration beyond ensuring local builds succeed.
+- Documentation will rely on GitHub-native Markdown rendering; no static site generator or Jekyll stack needs to be migrated.
+- No external publishing or hosting changes are required during this migration beyond ensuring Markdown renders correctly in the repository.
+
+## Clarifications
+
+### Session 2025-11-16
+
+- Q: Which documentation tooling baseline should the migration target? → A: Use raw Markdown rendering only.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
 - **SC-001**: All prioritized KSail documentation sections identified in the migration inventory exist in the ksail-go repository and reference KSail-Go commands exclusively.
-- **SC-002**: A local documentation build or preview completes with zero blocking errors and no missing asset warnings when run on a clean checkout.
+- **SC-002**: Repository Markdown passes linting or preview checks with zero blocking errors and no missing asset warnings when viewed locally or on GitHub.
 - **SC-003**: Automated or manual link validation of the migrated docs reports no broken internal links and no references to the legacy KSail repository.
 - **SC-004**: A sample KSail-Go operator can follow the migrated quick start or configuration guides end-to-end without consulting external sources, confirmed through a documented usability review.
