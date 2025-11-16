@@ -39,6 +39,14 @@
   - **Serializing matrix execution**: Rejected; would erase gains from single build.
   - **Manual artifact deletion steps**: Rejected; GitHub auto-expires artifacts and manual deletion adds noise.
 
+### 5. Caching the ksail Binary Across Workflow Runs
+
+- **Decision**: Add `actions/cache` restore/save steps around the compiled binary in the `build-artifact` job, keyed by OS, Go toolchain, and the hash of `src/go.mod`, `src/go.sum`, and all Go source files. When the cache hits, skip recompilation, reuse the cached binary, and continue running smoke tests before uploading the per-run artifact.
+- **Rationale**: Many workflow reruns build identical binaries (e.g., flaky system-test retries). Sharing the executable across runs trims the build job runtime by ~40 seconds while still uploading a fresh artifact and verifying the binary each time. Hashing source inputs prevents stale binaries from leaking into unrelated commits, and cache size (~216 MB) fits comfortably within the repository-wide 10 GB cache limit.
+- **Alternatives Considered**:
+  - **Extending artifact retention**: Rejected; artifacts are scoped per run and cannot be downloaded by future runs without extra APIs or tokens.
+  - **Caching the entire Go workspace**: Rejected as redundant—the existing `actions/setup-go` cache already handles module and build caches efficiently.
+
 ## Summary of Decisions
 
 | Topic | Decision | Impact |
@@ -47,6 +55,7 @@
 | Module caching | Rely on `setup-go` cache with unified key | Cuts 30–40 seconds per job in dependency setup |
 | Observability | Rely on standard job logs; custom metrics removed | Keeps workflow YAML lean while still exposing artifact lineage |
 | Concurrency & limits | Parallel matrix guarded by build success and unique artifact names | Preserves throughput without collisions |
+| Cross-run artifact cache | Cache binary keyed by toolchain + source hash | Skips redundant builds on reruns without risking stale binaries |
 
 ## Baseline Metrics (T001)
 

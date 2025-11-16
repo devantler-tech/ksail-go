@@ -35,6 +35,7 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 
    - Checks out code with `actions/checkout@v5`
    - Set up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
+   - Restores a cached `ksail` binary with `actions/cache@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
    - Run `go build -C src -o ksail`
    - Execute `./ksail --version` (smoke test)
    - Compute SHA256 (`shasum -a 256 ksail`)
@@ -99,7 +100,7 @@ This guarantees artifact reuse, checksum validation, and smoke testing without d
 1. Commit changes (`git add .github` and supporting files).
 2. Push to `001-optimize-ci-system-test`.
 3. Monitor the workflow:
-   - Ensure `build-artifact` runs once and reports the checksum recorded by downstream jobs
+   - Ensure `build-artifact` runs once, logs whether the binary came from cache, and reports the checksum recorded by downstream jobs
    - Confirm system-test jobs stay within the targets listed in **Monitor Current Benchmarks**
    - Use the GitHub Actions job pages to confirm cache hits and duration deltas where available
 

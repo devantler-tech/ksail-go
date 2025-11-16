@@ -106,6 +106,15 @@
 
 ---
 
+## Phase 7: Continuous Improvement - Cross-Run Artifact Cache
+
+**Purpose**: Reuse the compiled `ksail` binary across workflow runs when source inputs are unchanged to shave the build job runtime.
+
+- [X] T031 Add cache restore/save steps to the `build-artifact` job in `.github/workflows/ci.yaml` so cache hits skip recompilation while preserving smoke tests and artifact uploads
+- [X] T032 Update documentation (`specs/001-optimize-ci-system-test/research.md`, `quickstart.md`) to record the cache strategy and invalidation key components
+
+---
+
 ## Dependencies & Execution Order
 
 - **Phase Order**: Setup → Foundational → User Story 1 → User Story 2 → User Story 3 → Polish.
