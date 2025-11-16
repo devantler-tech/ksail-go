@@ -7,23 +7,37 @@ set -e
 
 # Function to check if mockery is available and working
 check_mockery() {
+	# Save current directory
+	local original_dir
+	original_dir="$(pwd)"
+
+	# Change to src directory where go.mod is located for config check
+	if [ -d "src" ]; then
+		cd src || return 1
+	fi
+
+	local result=0
 	if command -v mockery >/dev/null 2>&1; then
 		# Test if mockery can run with current config
-		if mockery --dry-run >/dev/null 2>&1; then
-			return 0
+		if mockery --config ../.mockery.yml --dry-run >/dev/null 2>&1; then
+			result=0
 		else
-			return 2 # mockery exists but config is incompatible
+			result=2 # mockery exists but config is incompatible
 		fi
 	elif [ -x "$HOME/go/bin/mockery" ]; then
 		# Test if mockery can run with current config
-		if "$HOME/go/bin/mockery" --dry-run >/dev/null 2>&1; then
-			return 0
+		if "$HOME/go/bin/mockery" --config ../.mockery.yml --dry-run >/dev/null 2>&1; then
+			result=0
 		else
-			return 2 # mockery exists but config is incompatible
+			result=2 # mockery exists but config is incompatible
 		fi
 	else
-		return 1 # mockery not found
+		result=1 # mockery not found
 	fi
+
+	# Return to original directory
+	cd "$original_dir"
+	return $result
 }
 
 # Function to attempt mockery installation
