@@ -85,8 +85,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
   with:
     path: ./.cache/ksail
     key: ${{ steps.ksail-cache-key.outputs.value }}
-  conditions:
-    - needs.build-artifact.result == 'success'
+  if: needs.build-artifact.result == 'success'
 
 - name: "Prepare ksail binary"
   env:
