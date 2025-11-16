@@ -2,13 +2,13 @@
 
 **Input**: Design documents from `/specs/001-migrate-docs/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md, contracts/
-**Tests**: Markdownlint (`npx markdownlint-cli2 "docs/**/*.md"`), Lychee (`lychee --config .lycheeignore docs`), GitHub Markdown preview spot-checks
+**Tests**: Markdownlint (`npx markdownlint-cli2 "docs/**/*.md"`), Lychee (`lychee docs`), GitHub Markdown preview spot-checks
 
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Establish tracking artifacts required across all stories
 
-- [ ] T001 Create migration checklist skeleton in `specs/001-migrate-docs/migration-checklist.md` listing source paths, target paths, owners, and status columns
+- [x] T001 Create migration checklist skeleton in `specs/001-migrate-docs/migration-checklist.md` listing source paths, target paths, owners, and status columns
 
 ---
 
@@ -16,10 +16,10 @@
 
 **Purpose**: Capture shared mappings and validation steps before migrating content
 
-- [ ] T002 Build command translation table in `specs/001-migrate-docs/command-map.md` covering legacy KSail syntax to KSail-Go equivalents
-- [ ] T003 Document validation workflow in `specs/001-migrate-docs/validation-plan.md` describing markdownlint, lychee, and preview steps
-- [ ] T003a Execute `npx markdownlint-cli2 "docs/**/*.md"` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
-- [ ] T003b Execute `lychee --config .lycheeignore docs` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
+- [x] T002 Build command translation table in `specs/001-migrate-docs/command-map.md` covering legacy KSail syntax to KSail-Go equivalents
+- [x] T003 Document validation workflow in `specs/001-migrate-docs/validation-plan.md` describing markdownlint, lychee, and preview steps
+- [x] T003a Execute `npx markdownlint-cli2 "docs/**/*.md"` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
+- [x] T003b Execute `lychee --config .lycheeignore docs` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
 
 ---
 
@@ -31,12 +31,12 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] Migrate overview landing pages from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/overview/)) into `docs/overview/index.md`, `docs/overview/project-structure.md`, and `docs/overview/support-matrix.md` with KSail-Go terminology
-- [ ] T005 [P] [US1] Migrate core concepts set from the legacy KSail documentation (see [KSail repository](https://github.com/devantler-tech/ksail/tree/main/docs/overview/core-concepts/)) into `docs/overview/core-concepts/` while removing Jekyll front matter and updating command references
-- [ ] T006 [P] [US1] Migrate configuration guides (`cli-options.md`, `declarative-config.md`, `index.md`) into `docs/configuration/` and align file paths with KSail-Go configs
-- [ ] T007 [P] [US1] Migrate use-case guides (`local-development.md`, `learning-kubernetes.md`, `e2e-testing-in-cicd.md`, `index.md`) into `docs/use-cases/` with updated workflows
-- [ ] T008 [P] [US1] Copy required assets from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/images/)) into `docs/images/` and fix image references across migrated pages
-- [ ] T009 [US1] Update intra-doc navigation and cross-links across `docs/overview/`, `docs/configuration/`, and `docs/use-cases/` to ensure relative links resolve within ksail-go
+- [x] T004 [P] [US1] Migrate overview landing pages from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/overview/)) into `docs/overview/index.md`, `docs/overview/project-structure.md`, and `docs/overview/support-matrix.md` with KSail-Go terminology
+- [x] T005 [P] [US1] Migrate core concepts set from the legacy KSail documentation (see [KSail repository](https://github.com/devantler-tech/ksail/tree/main/docs/overview/core-concepts/)) into `docs/overview/core-concepts/` while removing Jekyll front matter and updating command references
+- [x] T006 [P] [US1] Migrate configuration guides (`cli-options.md`, `declarative-config.md`, `index.md`) into `docs/configuration/` and align file paths with KSail-Go configs
+- [x] T007 [P] [US1] Migrate use-case guides (`local-development.md`, `learning-kubernetes.md`, `e2e-testing-in-cicd.md`, `index.md`) into `docs/use-cases/` with updated workflows
+- [x] T008 [P] [US1] Copy required assets from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/images/)) into `docs/images/` and fix image references across migrated pages
+- [x] T009 [US1] Update intra-doc navigation and cross-links across `docs/overview/`, `docs/configuration/`, and `docs/use-cases/` to ensure relative links resolve within ksail-go
 
 ---
 
@@ -48,9 +48,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T010 [P] [US2] Create `docs/README.md` describing documentation layout and local preview commands (markdownlint, lychee, editor preview)
-- [ ] T011 [P] [US2] Update `README.md` documentation section to reference the migrated `docs/` content and outline the preview workflow
-- [ ] T012 [US2] Extend `CONTRIBUTING.md` with contributor instructions for running markdownlint and lychee before submitting doc changes
+- [x] T010 [P] [US2] Create `docs/README.md` describing documentation layout and local preview commands (markdownlint, lychee, editor preview)
+- [x] T011 [P] [US2] Update `README.md` documentation section to reference the migrated `docs/` content and outline the preview workflow
+- [x] T012 [US2] Extend `CONTRIBUTING.md` with contributor instructions for running markdownlint and lychee before submitting doc changes
 
 ---
 
@@ -62,9 +62,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T013 [P] [US3] Update `specs/001-migrate-docs/migration-checklist.md` with final status, command updates, and notes for each section
-- [ ] T014 [US3] Add a migration summary section to `specs/001-migrate-docs/spec.md` detailing migrated vs deferred content and rationale
-- [ ] T015 [US3] Capture publishing follow-ups and outstanding documentation tasks in `specs/001-migrate-docs/follow-ups.md`
+- [x] T013 [P] [US3] Update `specs/001-migrate-docs/migration-checklist.md` with final status, command updates, and notes for each section
+- [x] T014 [US3] Add a migration summary section to `specs/001-migrate-docs/spec.md` detailing migrated vs deferred content and rationale
+- [x] T015 [US3] Capture publishing follow-ups and outstanding documentation tasks in `specs/001-migrate-docs/follow-ups.md`
 
 ---
 
@@ -72,9 +72,9 @@
 
 **Purpose**: Consolidate validation evidence and align supporting guides with the migrated docs
 
-- [ ] T016 Record results of markdownlint and lychee runs in `specs/001-migrate-docs/validation-log.md`, including timestamps and outcomes
-- [ ] T017 Refresh `specs/001-migrate-docs/quickstart.md` to reference the migrated docs and finalized validation workflow
-- [ ] T018 Conduct usability walkthrough: have a KSail-Go operator follow migrated quick start/configuration docs end-to-end and log reviewer, date, and outcome in `specs/001-migrate-docs/validation-log.md`
+- [x] T016 Record results of markdownlint and lychee runs in `specs/001-migrate-docs/validation-log.md`, including timestamps and outcomes
+- [x] T017 Refresh `specs/001-migrate-docs/quickstart.md` to reference the migrated docs and finalized validation workflow
+- [x] T018 Conduct usability walkthrough: have a KSail-Go operator follow migrated quick start/configuration docs end-to-end and log reviewer, date, and outcome in `specs/001-migrate-docs/validation-log.md`
 
 ---
 

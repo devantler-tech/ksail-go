@@ -12,6 +12,7 @@
 1. **Create workspace snapshot**
    - Checkout branch `001-migrate-docs` in this repository.
    - Optionally open the [legacy KSail documentation](https://github.com/devantler-tech/ksail/tree/main/docs) in a split view for reference.
+   - Skim [`docs/README.md`](../../docs/README.md) to understand the target layout and validation workflow.
 2. **Inventory current docs**
    - Record relevant files from the legacy KSail documentation (`docs/` folder in the KSail repository) such as overview, configuration, use-cases, and images.
    - Capture legacy commands that require translation to the Go CLI.
@@ -25,11 +26,12 @@
    - Refresh screenshots or diagrams if CLI output has changed; otherwise ensure asset references resolve to `docs/images/`.
 5. **Validate documentation**
    - Run `npx markdownlint-cli2 "docs/**/*.md"` from the repository root.
-   - Run `lychee --config .lycheeignore docs` to validate links.
+   - Run `lychee docs` to validate links (the `.lycheeignore` file is picked up automatically).
    - Spot-check key pages in a Markdown preview (VS Code or GitHub web preview).
 6. **Document findings**
    - Update `specs/001-migrate-docs/spec.md` migration summary with sections migrated/deferred.
-   - Note follow-up tasks for publishing or remaining docs in `specs/001-migrate-docs/tasks.md` (Phase 5).
+   - Keep `specs/001-migrate-docs/migration-checklist.md` in sync with completed sections and asset status.
+   - Capture deferred work in `specs/001-migrate-docs/follow-ups.md` instead of the task list once migration decisions are final.
 7. **Open PR checklist**
    - Ensure lint checks pass and `git status` shows updated docs only.
    - Provide before/after notes for major command or structural changes in the PR description.
@@ -38,5 +40,5 @@
 
 ```bash
 npx markdownlint-cli2 "docs/**/*.md"
-lychee --config .lycheeignore docs
+lychee docs
 ```

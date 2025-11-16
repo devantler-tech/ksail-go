@@ -1,0 +1,24 @@
+# Exclude repository metadata and tooling configs
+.git
+.github
+.specify
+.serena
+.vscode
+
+# Exclude build outputs and binaries
+bin/
+dist/
+*.test
+*.out
+
+# Exclude coverage and lint artifacts
+coverage*
+megalinter-reports/
+report/
+
+# Exclude environment and log files
+.env*
+*.log*
+
+# Exclude documentation specs from Docker context
+specs/

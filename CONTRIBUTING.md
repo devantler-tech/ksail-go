@@ -36,6 +36,18 @@ mega-linter-runner -f go
 
 The same configuration is used in CI, so you can expect the same linting behavior in your local environment as in the CI pipeline.
 
+### Documentation changes
+
+Documentation lives under [`docs/`](./docs/). Before sending a pull request that updates Markdown files, run the documentation validators locally:
+
+```sh
+# working-directory: ./
+npx markdownlint-cli2 "docs/**/*.md"
+lychee docs
+```
+
+The Markdown structure and workflow are described in [`docs/README.md`](./docs/README.md). Keep links relative, store shared assets in `docs/images/`, and update `.lycheeignore` only when an external endpoint cannot be made to pass the checker.
+
 ### Build
 
 ```sh

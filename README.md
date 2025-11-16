@@ -72,13 +72,14 @@ ksail cluster delete
 
 ### For Users 📖
 
-For detailed command reference, run `ksail --help` or `ksail <command> --help`.
+- Browse the Markdown documentation under [`docs/`](./docs/). Start with [`docs/README.md`](./docs/README.md) for the directory layout and validation commands.
+- Run `ksail --help` or `ksail <command> --help` for the latest CLI flags.
 
 ### For Contributors 👥
 
-- [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute to KSail
-- [.github/copilot-instructions.md](./.github/copilot-instructions.md) - GitHub Copilot configuration and best practices
-- [API Documentation](https://pkg.go.dev/github.com/devantler-tech/ksail-go) - Go package documentation
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — Contribution guide, development prerequisites, and workflows
+- [.github/copilot-instructions.md](./.github/copilot-instructions.md) — GitHub Copilot configuration and best practices
+- [API Documentation](https://pkg.go.dev/github.com/devantler-tech/ksail-go) — Go package documentation
 
 ## Related Projects 🔗
 

@@ -82,6 +82,26 @@ Product stakeholders can review a concise migration summary that identifies whic
 - Documentation will rely on GitHub-native Markdown rendering; no static site generator or Jekyll stack needs to be migrated.
 - No external publishing or hosting changes are required during this migration beyond ensuring Markdown renders correctly in the repository.
 
+## Migration Summary
+
+### Migrated Sections
+
+- Overview landing pages (`docs/overview/index.md`, `project-structure.md`, `support-matrix.md`) rewritten for KSail-Go terminology and cross-linked to configuration and use-case guides.
+- Core concepts set under `docs/overview/core-concepts/` migrated with updated command references and navigation.
+- Configuration guides (`docs/configuration/index.md`, `cli-options.md`, `declarative-config.md`) aligned with the Go CLI flag structure and YAML schema.
+- Use-case playbooks (`docs/use-cases/index.md`, `learning-kubernetes.md`, `local-development.md`, `e2e-testing-in-cicd.md`) refreshed with KSail-Go workflows and validation steps.
+- Shared assets copied from legacy KSail (`docs/images/*.png`), including diagrams and CLI screenshots referenced by the migrated pages.
+
+### Deferred Sections
+
+- `docs/faq.md` and `docs/roadmap.md` remain deferred because they reference .NET-specific artifacts and require broader product updates.
+- `docs/404.md` excluded as it is tied to the legacy Jekyll site and not needed for GitHub-rendered Markdown.
+
+### Outstanding Items
+
+- Monitor CLI screenshot drift (`ksail-cli-dark.png`, `ksail-cli-light.png`) once the Go-based interface stabilizes; consider regenerating assets post-MVP.
+- Plan future publishing automation (static site or GitHub Pages) once the documentation hierarchy is finalized.
+
 ## Clarifications
 
 ### Session 2025-11-16
