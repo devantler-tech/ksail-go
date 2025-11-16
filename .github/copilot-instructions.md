@@ -434,8 +434,13 @@ When reviewing Copilot's pull requests:
 - **Approve when ready**: Merge the PR once all feedback is addressed
 
 ## Active Technologies
+
 - Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs (001-move-all-source)
 - File system (configuration files, cluster state) (001-move-all-source)
+- Markdown within standalone Go project (docs-only change) + Markdownlint config (`.markdownlint.json`), Lychee link checker (`.lycheeignore`), GitHub Markdown renderer (001-migrate-docs)
+- Git repository (`docs/` hierarchy) (001-migrate-docs)
 
 ## Recent Changes
+
 - 001-move-all-source: Added Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs
+- 001-migrate-docs: Added Markdown within standalone Go project (docs-only change) + Markdownlint config, Lychee link checker, GitHub Markdown renderer
