@@ -62,7 +62,7 @@
       },
       "problemMatcher": ["$go"],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/src"
       },
       "detail": "golangci-lint fmt"
     },
@@ -81,7 +81,7 @@
       },
       "problemMatcher": ["$go"],
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/src"
       },
       "detail": "golangci-lint run"
     },
