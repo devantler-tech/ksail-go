@@ -48,10 +48,16 @@ install_mockery() {
 run_mockery() {
 	echo "Running mockery to generate mocks..."
 
+	# Change to src directory where go.mod is located
+	cd src || {
+		echo "Error: src directory not found"
+		exit 1
+	}
+
 	if command -v mockery >/dev/null 2>&1; then
-		mockery
+		mockery --config ../.mockery.yml
 	elif [ -x "$HOME/go/bin/mockery" ]; then
-		"$HOME/go/bin/mockery"
+		"$HOME/go/bin/mockery" --config ../.mockery.yml
 	else
 		echo "Error: mockery not found after installation"
 		exit 1

@@ -7,23 +7,37 @@ set -e
 
 # Function to check if golangci-lint is available and config is compatible
 check_golangci_lint() {
+	# Save current directory
+	local original_dir
+	original_dir="$(pwd)"
+
+	# Change to src directory where go.mod is located for config check (if it exists)
+	if [ -d "src" ]; then
+		cd src
+	fi
+
+	local result=0
 	if command -v golangci-lint >/dev/null 2>&1; then
 		# Test if golangci-lint config is compatible with current project
 		if golangci-lint config path >/dev/null 2>&1; then
-			return 0
+			result=0
 		else
-			return 2 # golangci-lint exists but config is incompatible
+			result=2 # golangci-lint exists but config is incompatible
 		fi
 	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
 		# Test if golangci-lint config is compatible with current project
 		if "$HOME/go/bin/golangci-lint" config path >/dev/null 2>&1; then
-			return 0
+			result=0
 		else
-			return 2 # golangci-lint exists but config is incompatible
+			result=2 # golangci-lint exists but config is incompatible
 		fi
 	else
-		return 1 # golangci-lint not found
+		result=1 # golangci-lint not found
 	fi
+
+	# Return to original directory
+	cd "$original_dir"
+	return $result
 }
 
 # Function to attempt golangci-lint installation
@@ -33,7 +47,7 @@ install_golangci_lint() {
 	echo "Note: Using official binary installation method (recommended by golangci-lint)."
 	echo "See: https://golangci-lint.run/welcome/install/"
 	echo ""
-	
+
 	# Use official binary installation script
 	echo "Installing golangci-lint via official binary install script..."
 	if curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$HOME/go/bin" latest; then
@@ -53,13 +67,29 @@ install_golangci_lint() {
 run_golangci_lint() {
 	echo "Running golangci-lint run --fix..."
 
+	# Save current directory and change to src directory where go.mod is located (if it exists)
+	local original_dir
+	original_dir="$(pwd)"
+	if [ -d "src" ]; then
+		cd src
+	fi
+
+	local exit_code=0
 	if command -v golangci-lint >/dev/null 2>&1; then
-		golangci-lint run --fix
+		golangci-lint run --fix || exit_code=$?
 	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
-		"$HOME/go/bin/golangci-lint" run --fix
+		"$HOME/go/bin/golangci-lint" run --fix || exit_code=$?
 	else
 		echo "Error: golangci-lint not found after installation"
+		cd "$original_dir"
 		exit 1
+	fi
+
+	# Return to original directory
+	cd "$original_dir"
+
+	if [ $exit_code -ne 0 ]; then
+		exit $exit_code
 	fi
 
 	echo "golangci-lint completed successfully"
