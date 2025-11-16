@@ -1,4 +1,3 @@
-directories captured above]
 
 # Implementation Plan: Migrate KSail Documentation to KSail-Go
 
