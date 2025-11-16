@@ -15,7 +15,7 @@ KSail-Go is built for platform engineers, site reliability engineers, and develo
 - **Reconcile workloads** – `ksail workload reconcile` integrates with Flux-aligned GitOps layouts so you can sync applications without leaving the terminal.
 - **Generate manifests on demand** – The `ksail workload gen` namespace mirrors `kubectl create --dry-run` for common resources and Helm releases.
 - **Manage encrypted assets** – `ksail cipher` wraps SOPS-based encryption, decryption, and editing flows for secrets stored in Git.
-- **Validate as you iterate** – Markdownlint and Lychee checks ensure documentation remains healthy; workload commands provide the same guardrails for cluster assets.
+- **Validate as you iterate** – Workload commands provide guardrails for cluster assets, ensuring your configuration is valid before deployment.
 
 ## Navigating the Documentation
 

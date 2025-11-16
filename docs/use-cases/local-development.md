@@ -58,4 +58,4 @@ KSail-Go lets you reproduce production-grade manifests on your laptop without ha
 - Switch the `distribution` field between `Kind` and `K3d` to mirror the container runtime used in staging.
 - Use `ksail cluster connect -- --namespace your-team` to open k9s against the active cluster without remembering kubeconfig paths.
 
-Treat the repository as the contract: every change to manifests or KSail configuration should go through pull requests so CI and teammates inherit the same setup automatically.
+Treat the repository as the contract: commit changes to manifests or KSail configuration to version control so your team inherits the same setup automatically.

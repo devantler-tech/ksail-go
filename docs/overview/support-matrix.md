@@ -1,6 +1,6 @@
 # Support Matrix
 
-KSail-Go focuses on fast local feedback while keeping GitOps compatibility. The matrix below captures the officially verified combinations for the Go CLI. Items marked ✅ are exercised by automated tests on every pull request.
+KSail-Go focuses on fast local feedback while keeping GitOps compatibility. The matrix below captures the officially supported combinations for the Go CLI. Items marked ✅ are fully tested and verified.
 
 | Category | Supported Options | Notes |
 | --- | --- | --- |

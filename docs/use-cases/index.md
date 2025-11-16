@@ -10,4 +10,4 @@ Each scenario builds on the same configuration primitives documented under the [
 - [Local development](local-development.md) – Reproduce production manifests locally, validate changes with `ksail workload reconcile`, and keep the team unblocked.
 - [E2E testing in CI/CD](e2e-testing-in-cicd.md) – Spin up ephemeral clusters inside pull-request pipelines to catch regressions before merging.
 
-Have another workflow in mind? Open an issue or submit a doc update so the community can benefit from it.
+Have another workflow in mind? Open an issue to share your use case with the community.
