@@ -45,6 +45,7 @@ ksail --help
 
 ```bash
 git clone https://github.com/devantler-tech/ksail-go.git
+cd ksail-go/src
 go build -o ksail
 ./ksail --help
 ```
