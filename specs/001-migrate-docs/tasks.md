@@ -19,7 +19,7 @@
 - [x] T002 Build command translation table in `specs/001-migrate-docs/command-map.md` covering legacy KSail syntax to KSail-Go equivalents
 - [x] T003 Document validation workflow in `specs/001-migrate-docs/validation-plan.md` describing markdownlint, lychee, and preview steps
 - [x] T003a Execute `npx markdownlint-cli2 "docs/**/*.md"` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
-- [x] T003b Execute `lychee --config .lycheeignore docs` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
+- [x] T003b Execute `lychee docs` and note pass/fail in `specs/001-migrate-docs/validation-log.md`
 
 ---
 

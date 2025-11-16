@@ -23,7 +23,7 @@
 
 ## Decision: Validate docs with Markdownlint + Lychee plus spot GitHub preview
 
-- **Rationale**: The repository already configures `.markdownlint.json` and `.lycheeignore`. Running `npx markdownlint-cli2 "docs/**/*.md"` (or the MegaLinter workflow) and `lychee --config .lycheeignore docs` before publishing ensures formatting and links remain healthy, fulfilling FR-006 and SC-002/SC-003 without introducing new dependencies.
+- **Rationale**: The repository already configures `.markdownlint.json` and `.lycheeignore`. Running `npx markdownlint-cli2 "docs/**/*.md"` (or the MegaLinter workflow) and `lychee docs` before publishing ensures formatting and links remain healthy, fulfilling FR-006 and SC-002/SC-003 without introducing new dependencies. `.lycheeignore` is automatically honored by Lychee.
 - **Alternatives considered**:
   - *Rely solely on GitHub preview*: Rejected as it lacks automated failure signals and violates Test-First expectations.
   - *Introduce a new docs-specific CI pipeline*: Deemed unnecessary for this migration; existing lint/link tooling is sufficient.
