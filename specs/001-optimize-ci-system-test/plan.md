@@ -33,7 +33,7 @@ Build and share the `ksail` binary once per workflow run, reuse warmed Go module
 
 Principle-aligned gates (must all be addressed; violations documented in Complexity Tracking):
 
-- **Simplicity (I)**: Introducing one `build-artifact` job and reusing existing Actions keeps the workflow readable; no custom actions or additional abstraction layers planned.
+- **Simplicity (I)**: Introducing one `build-artifact` job and reusing existing Actions plus a single composite helper (`.github/actions/use-ksail-artifact`) keeps the workflow readable without adding unnecessary abstraction layers.
 - **Test-First (II)**: Add a smoke step (`./ksail version`) in every consuming job before using the shared binary so failure cases surface immediately; write this guard before removing legacy build steps.
 - **Interface Discipline (III)**: No Go interfaces added. Reusable workflow input count stays ≤5 even after adding `artifact-name`, avoiding bloated contracts and type switches.
 - **Observability (IV)**: Append duration, cache hit/miss, and artifact checksum to `$GITHUB_STEP_SUMMARY` per job; guard downstream jobs with `if: needs.build-artifact.result == 'success'` to log failures and halt quickly.
