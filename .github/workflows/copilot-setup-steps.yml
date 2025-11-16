@@ -17,7 +17,15 @@ jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
     steps:
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version: "1.25.4"
+
       - name: 🔧 Setup golangci-lint
         uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47 # v9.0.0
         with:
           install-only: true
+
+      - name: 🔧 Install mockery
+        run: go install github.com/vektra/mockery/v3@latest
