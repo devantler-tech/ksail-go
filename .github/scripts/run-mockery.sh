@@ -36,7 +36,7 @@ check_mockery() {
 	fi
 
 	# Return to original directory
-	cd "$original_dir"
+	cd "$original_dir" || return 1
 	return $result
 }
 
