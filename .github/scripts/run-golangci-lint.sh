@@ -10,7 +10,7 @@ check_golangci_lint() {
 	# Save current directory
 	local original_dir
 	original_dir="$(pwd)"
-	
+
 	# Change to src directory where go.mod is located for config check (if it exists)
 	if [ -d "src" ]; then
 		cd src
@@ -47,7 +47,7 @@ install_golangci_lint() {
 	echo "Note: Using official binary installation method (recommended by golangci-lint)."
 	echo "See: https://golangci-lint.run/welcome/install/"
 	echo ""
-	
+
 	# Use official binary installation script
 	echo "Installing golangci-lint via official binary install script..."
 	if curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$HOME/go/bin" latest; then
@@ -87,7 +87,7 @@ run_golangci_lint() {
 
 	# Return to original directory
 	cd "$original_dir"
-	
+
 	if [ $exit_code -ne 0 ]; then
 		exit $exit_code
 	fi
