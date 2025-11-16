@@ -14,7 +14,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 ```yaml
 - name: "Compile ksail binary"
-  run: "go build -C src -o ../ksail"
+  run: "go build -C src -o ksail"
   outputs:
     artifact-name: "ksail-${{ github.run_id }}"
     checksum: "${{ steps.hash.outputs.sha256 }}"

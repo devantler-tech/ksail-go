@@ -127,7 +127,7 @@ CIJob 1--1 MetricsRecord
 
 1. **Single Source Build**: Only the `build-artifact` job may create the shared binary; all other jobs must treat the artifact as read-only consumption.
 2. **Cache Consistency**: Cache keys must incorporate the Go version and `go.sum` hash to prevent stale dependency reuse.
-3. **Smoke Test Guard**: Jobs consuming the artifact must execute `./ksail version` (or similar) before cluster operations.
+3. **Smoke Test Guard**: Jobs consuming the artifact must execute `./ksail --version` (or similar) before cluster operations.
 4. **Metrics Requirement**: Every job must emit a `MetricsRecord` entry; missing summaries trigger follow-up investigation.
 5. **Parallel Safety**: Artifact names include `github.run_id` to prevent cross-run contamination when multiple workflows execute concurrently.
 6. **Failure Propagation**: If the build job fails, downstream jobs must skip execution and record the failure reason in their metrics output.

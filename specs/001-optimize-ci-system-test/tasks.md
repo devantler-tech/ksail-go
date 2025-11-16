@@ -3,7 +3,7 @@
 **Input**: Design documents from `/specs/001-optimize-ci-system-test/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: Define failing verification steps (workflow dry-runs for the metrics script and composite action) before implementation; smoke checks remain embedded in consuming jobs.
+**Tests**: Define failing verification steps (workflow dry-runs for the metrics script and composite action) before implementation; smoke tests remain embedded in consuming jobs.
 
 **Organization**: Tasks are grouped by user story so each increment is independently implementable and testable.
 
@@ -54,7 +54,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] Add failing shell test `tests/scripts/collect-metrics_test.sh` that asserts metrics output includes duration, cache status, and artifact checksum before the script exists
+- [ ] T011 [P] [US2] Add failing shell test `tests/scripts/collect-metrics_test.sh` that asserts metrics output includes duration, cache status, and artifact checksum before implementing the script
 - [ ] T012 [US2] Create job metrics helper script at `.github/scripts/collect-metrics.sh` to emit duration, cache status, and artifact checksum to `$GITHUB_STEP_SUMMARY`
 - [ ] T013 [US2] Add guard steps to `pre-commit`, `ci`, and `system-test` jobs in `.github/workflows/ci.yaml` that fail immediately when `needs.build-artifact.result != 'success'`
 - [ ] T014 [US2] Invoke `.github/scripts/collect-metrics.sh` within the `build-artifact` and `pre-commit` jobs in `.github/workflows/ci.yaml` to publish metrics and cache results
