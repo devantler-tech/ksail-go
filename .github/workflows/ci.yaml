@@ -286,6 +286,11 @@ jobs:
           echo "Build artifact unavailable. Failing status aggregation." >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
+      - name: 📄 Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
       - name: Summarize matrix result
         shell: bash
         run: |
