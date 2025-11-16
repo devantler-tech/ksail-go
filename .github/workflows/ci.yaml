@@ -26,7 +26,7 @@ jobs:
           cache: true
 
       - name: 📦 Download dependencies
-        working-directory: src
+        working-directory: ./src/
         run: go mod download
 
       - name: 🔧 Install mockery
@@ -42,7 +42,7 @@ jobs:
     if: github.event_name == 'push'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@921200d092487fa7a49606612e5f988ae51c0408 # v1.16.2
     with:
-      working-directory: src
+      working-directory: ./src/
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
@@ -83,15 +83,15 @@ jobs:
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
-          go-version-file: src/go.mod
+          go-version-file: ./src/go.mod
           cache: true
 
       - name: 📦 Download dependencies
-        working-directory: src
+        working-directory: ./src/
         run: go mod download
 
       - name: 🏗️ Build application
-        working-directory: src
+        working-directory: ./src/
         run: go build -o ../ksail .
 
       - name: 🧪 ksail cluster init
