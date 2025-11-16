@@ -50,7 +50,7 @@ specs/001-migrate-docs/
 ### Repository Documentation Layout
 
 ```text
-
+docs/
 ├── configuration/
 ├── overview/
 │   └── core-concepts/
