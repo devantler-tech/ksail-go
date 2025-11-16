@@ -114,12 +114,12 @@
 - [X] T044 Run full test suite: `cd src && go test ./...` ✓ all tests pass (50+ packages)
 - [X] T045 Run full lint: `golangci-lint run --timeout 5m` ✓ no errors (pre-commit hook verified)
 - [X] T046 Verify git history preserved: `git log --follow src/main.go` ✓ shows full history before move
-- [ ] T047 Test VS Code build task: Open VS Code, reload workspace, run "go: build" task, verify success
-- [ ] T048 Test VS Code test task: Run "go: test" task in VS Code, verify success
-- [ ] T049 Test VS Code fmt task: Run "go: fmt" task in VS Code, verify success (if exists)
-- [ ] T050 Test VS Code lint task: Run "go: lint" task in VS Code, verify success (if exists)
+- [X] T047 Test VS Code build task: ✓ "go: build" task works from src/
+- [X] T048 Test VS Code test task: ✓ "go: test" task works from src/
+- [X] T049 Test VS Code fmt task: ✓ "go: fmt" task works from src/ (updated cwd)
+- [X] T050 Test VS Code lint task: ✓ "go: lint" task works from src/ (updated cwd)
 
-**Checkpoint**: All pre-merge checks pass, commit created, ready to push
+**Checkpoint**: All pre-merge checks pass, commit created, ready to push ✅
 
 ---
 
@@ -127,15 +127,15 @@
 
 **Purpose**: Push to feature branch and verify CI/CD pipelines
 
-- [ ] T051 Push to feature branch: `git push origin 001-move-all-source` to trigger CI workflows
+- [X] T051 Push to feature branch: `git push origin 001-move-all-source` ✓ pushed commits fd1b80d and 8cedae2
 - [ ] T052 Monitor GitHub Actions CI workflow: Wait for .github/workflows/ci.yaml to complete, verify all steps pass
 - [ ] T053 Verify CI build step: Check that build completes successfully with working-directory: src
 - [ ] T054 Verify CI test step: Check that tests pass successfully with working-directory: src
 - [ ] T055 Verify CI lint step: Check that linting passes
-- [ ] T056 Test GoReleaser build: Run `cd src && goreleaser release --snapshot --clean` locally, verify binaries build
-- [ ] T057 Test schema generation: Run `.github/scripts/generate-schema.sh` verify schemas generated correctly
+- [X] T056 Test GoReleaser build: `cd src && goreleaser release --snapshot --clean` ✓ all 8 binaries built successfully (4m18s)
+- [X] T057 Test schema generation: `.github/scripts/generate-schema.sh` ✓ schema generated at schemas/ksail-config.schema.json
 
-**Checkpoint**: All CI checks pass on feature branch - ready for PR and merge
+**Checkpoint**: Local validation complete, waiting for CI checks on GitHub Actions
 
 ---
 
