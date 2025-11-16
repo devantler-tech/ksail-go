@@ -7,7 +7,7 @@
 
 ## Summary
 
-Build and share the `ksail` binary once per workflow run, reuse warmed Go module caches in every job, and add lightweight observability so maintainers can confirm the performance gains. A dedicated build job uploads a versioned artifact; pre-commit, reusable CI jobs, and the 11-entry system-test matrix all download the binary and rely on the unified cache. A metrics step records per-job runtimes, cache hit status, and artifact metadata for post-run analysis.
+Build and share the `ksail` binary once per workflow run and reuse warmed Go module caches in every job. A dedicated build job uploads a versioned artifact; pre-commit, reusable CI jobs, and the 11-entry system-test matrix all download the binary and rely on the unified cache. Custom metrics instrumentation has been removed per maintainer feedback, so diagnostics lean on standard job logs and artifact lineage.
 
 ## Technical Context
 
@@ -30,7 +30,7 @@ Principle-aligned gates (must all be addressed; violations documented in Complex
 - **Simplicity (I)**: Introducing one `build-artifact` job and reusing existing Actions plus a single composite helper (`.github/actions/use-ksail-artifact`) keeps the workflow readable without adding unnecessary abstraction layers.
 - **Test-First (II)**: Add a smoke step (`./ksail version`) in every consuming job before using the shared binary so failure cases surface immediately; write this guard before removing legacy build steps.
 - **Interface Discipline (III)**: No Go interfaces added. Reusable workflow input count stays ≤5 even after adding `artifact-name`, avoiding bloated contracts and type switches.
-- **Observability (IV)**: Append duration, cache hit/miss, and artifact checksum to `$GITHUB_STEP_SUMMARY` per job; guard downstream jobs with `if: needs.build-artifact.result == 'success'` to log failures and halt quickly.
+- **Observability (IV)**: Rely on default job logs and artifact checksum tracing; guard downstream jobs with `if: needs.build-artifact.result == 'success'` to log failures and halt quickly. No custom metrics summary is maintained.
 - **Versioning (V)**: Categorized as a PATCH change—CI-only optimization with no end-user or API impact.
 
 Any gate failure must include rationale and rejected simpler alternative.
@@ -53,16 +53,13 @@ specs/[###-feature]/
 
 ```text
 .github/workflows/
-└── ci.yaml              # Update: build job, artifact reuse, cache tuning, metrics summary
-
-.github/scripts/
-└── collect-metrics.sh   # (Optional) helper if metrics logic outgrows inline bash
+└── ci.yaml              # Update: build job, artifact reuse, cache tuning
 
 .github/workflows/includes/ (unchanged)
 .github/workflows/templates/ (unchanged)
 ```
 
-**Structure Decision**: Scope limited to `.github/workflows/ci.yaml` and supporting automation under `.github/scripts/`. Application source (`src/`) and other workflows remain untouched.
+**Structure Decision**: Scope limited to `.github/workflows/ci.yaml` and supporting automation. Application source (`src/`) and other workflows remain untouched.
 
 ## Complexity Tracking
 

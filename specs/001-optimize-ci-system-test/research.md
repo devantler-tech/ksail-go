@@ -25,8 +25,8 @@
 
 ### 3. Capturing Job Duration and Cache Diagnostics
 
-- **Decision**: Add a `metrics-summary` step that appends per-job duration, cache hit/miss status, and artifact version identifiers to the GitHub job summary using the `$GITHUB_STEP_SUMMARY` file, and expose totals via workflow outputs.
-- **Rationale**: Job summaries provide a persistent, human-readable log without external tooling. Duration data can be captured by recording `$(date +%s)` before/after critical steps. Listing cache-key status and artifact SHA1 aids post-run triage when failures occur.
+- **Decision**: Initially added a `metrics-summary` step to append per-job duration, cache hit/miss status, and artifact version identifiers to `$GITHUB_STEP_SUMMARY`; subsequently removed the instrumentation at maintainer request to keep the workflow lean. Current approach relies on native job logs for diagnostics.
+- **Rationale**: The bespoke metrics output improved observability but added noise for reviewers who preferred the default GitHub UI. Removing it keeps YAML simpler while still offering artifact lineage via log output.
 - **Alternatives Considered**:
   - **External metrics service**: Rejected; adds infrastructure overhead disproportionate to need.
   - **GitHub Insights API polling**: Rejected as it lacks real-time data during PR review.
@@ -45,7 +45,7 @@
 |-------|----------|--------|
 | Artifact distribution | Build once, share via upload/download artifact | Eliminates duplicate builds across jobs |
 | Module caching | Rely on `setup-go` cache with unified key | Cuts 30–40 seconds per job in dependency setup |
-| Observability | Emit metrics via job summary | Provides immediate visibility into performance improvements |
+| Observability | Rely on standard job logs; custom metrics removed | Keeps workflow YAML lean while still exposing artifact lineage |
 | Concurrency & limits | Parallel matrix guarded by build success and unique artifact names | Preserves throughput without collisions |
 
 ## Baseline Metrics (T001)
@@ -97,10 +97,9 @@ Additional observations:
 ## Metrics Wiring (T013–T015)
 
 - Added guards to the `system-test` matrix and `system-test-status` aggregation jobs so they fail fast when `build-artifact` does not succeed, matching the updated artifact consumption scope.
-- Integrated `.github/scripts/collect-metrics.sh` with `build-artifact`, `pre-commit`, `system-test`, and `system-test-status` to emit duration, cache status, and artifact checksum entries into `$GITHUB_STEP_SUMMARY` for each job.
-- Kept pre-commit free from artifact dependencies (checksum recorded as `n/a`) while ensuring system-test jobs capture the published checksum for lineage tracking.
-- Reusable workflow lint/test jobs now compute their module prefix for cache keys, publish cache-hit outputs to callers, and invoke the shared metrics script with a fallback summary when the helper is unavailable.
-- Added a `metrics-summary` workflow job that runs regardless of upstream results, parses the per-job JSON metrics outputs, and appends a consolidated "CI Performance Snapshot" section to the run summary covering build, pre-commit, and system-test status telemetry alongside cache-hit notes for lint/test consumers.
+- Previously integrated `.github/scripts/collect-metrics.sh` across jobs to emit duration, cache status, and artifact checksum entries; this script has now been replaced with a no-op placeholder and the workflow no longer consumes its outputs.
+- Reusable workflow lint/test jobs still compute their module prefix for cache keys and expose cache-hit outputs, but no longer call the metrics helper.
+- The `metrics-summary` aggregation job was removed entirely, and maintainers now review performance using native GitHub Actions timing data.
 
 ## Artifact Helper Adoption (T018–T022)
 

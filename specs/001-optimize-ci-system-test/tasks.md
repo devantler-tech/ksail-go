@@ -96,6 +96,16 @@
 
 ---
 
+## Phase 6: Metrics Rollback (Maintenance)
+
+**Purpose**: Remove optional observability wiring introduced in US2 after maintainer feedback while preserving artifact reuse improvements.
+
+- [X] T028 Retire metrics script outputs from `.github/workflows/ci.yaml`, removing summary jobs and references to `needs.*.outputs.metrics`
+- [X] T029 Replace `.github/scripts/collect-metrics.sh` with a no-op placeholder and update `tests/scripts/collect-metrics_test.sh` to assert the deprecation message
+- [X] T030 Refresh `specs/001-optimize-ci-system-test/{plan,quickstart,research,data-model}.md` to reflect the absence of metrics instrumentation
+
+---
+
 ## Dependencies & Execution Order
 
 - **Phase Order**: Setup → Foundational → User Story 1 → User Story 2 → User Story 3 → Polish.

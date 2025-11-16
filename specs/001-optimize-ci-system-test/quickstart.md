@@ -16,18 +16,18 @@
 - Total workflow runtime fell from **38m 12s** to **14m 47s** on run [19411774307](https://github.com/devantler-tech/ksail-go/actions/runs/19411774307).
 - `pre-commit` now finishes in **32s** (down 88%); the reusable workflow’s longest job (`ci / 🧪 Test`) completes in **7m 29s** (down 33%).
 - System-test matrix entries average **1m 56s** with the shared artifact; the slowest case (Kind + Calico) still improved 20% versus baseline.
-- `metrics-summary` surfaces cache status and artifact checksums for every job, and first-six post-merge runs on `main` completed successfully.
+- Even without custom metrics instrumentation, first-six post-merge runs on `main` completed successfully and surfaced the shared artifact checksum through standard job logs.
 
 ## Implementation Steps
 
 ### 1. Monitor Current Benchmarks
 
-Track the metrics emitted by the `metrics-summary` job using the following targets:
+Record baseline numbers directly from the GitHub Actions run details page. Focus on:
 
-- Workflow duration: ~15 minutes
+- Workflow duration: ~15 minutes target after optimizations
 - System-test entries: ≤105 seconds for lightweight combinations, ≤165 seconds for workload-heavy scenarios
-- Cache hit indicators: `LINT_CACHE_HIT=true`, `TEST_CACHE_HIT=true`
-- Artifact checksum consistency between build and consumer jobs
+- Cache hit indicators reported by `actions/setup-go`
+- Artifact checksum consistency between build and consumer jobs (visible in job logs)
 
 ### 2. Add Dedicated Build Job
 
@@ -68,30 +68,8 @@ If a future consumer genuinely needs the shared artifact, prefer adding helper s
 1. Replace local build steps with artifact download + smoke test.
 2. Ensure each matrix entry sets up Go with caching but skips `go mod download`.
 3. Prepend each test command block (`cluster init`, `create`, etc.) with `./bin/ksail` path.
-4. Capture job metrics:
 
-   ```yaml
-   - name: Record metrics
-     run: |
-       end=$SECONDS
-       duration=$((end - env.START_TIME))
-       echo "- Duration: ${duration}s" >> $GITHUB_STEP_SUMMARY
-       echo "- Cache: ${{ steps.go.outputs.cache-hit }}" >> $GITHUB_STEP_SUMMARY
-       echo "- Artifact SHA: ${{ needs.build-artifact.outputs.checksum }}" >> $GITHUB_STEP_SUMMARY
-     env:
-       START_TIME: ${{ steps.start.outputs.seconds }}
-   ```
-
-### 6. Add Workflow-Wide Summary
-
-1. After `system-test-status`, append a `metrics-summary` job that:
-   - Runs `if: always()`
-   - Aggregates duration data from job outputs (use `fromJSON(needs.*.outputs.metrics)`)
-   - Writes consolidated totals to `$GITHUB_STEP_SUMMARY`
-
-2. The `ci` job continues to call the reusable workflow with only the `working-directory` input—artifact handling is intentionally scoped to this repository.
-
-### 6.5 Use the Helper for New Jobs
+### 6. Use the Helper for New Jobs
 
 When adding a new matrix entry or standalone job that requires the compiled binary, include a step similar to:
 
@@ -123,7 +101,7 @@ This guarantees artifact reuse, checksum validation, and smoke testing without d
 3. Monitor the workflow:
    - Ensure `build-artifact` runs once and reports the checksum recorded by downstream jobs
    - Confirm system-test jobs stay within the targets listed in **Monitor Current Benchmarks**
-   - Review `metrics-summary` for cache hits and duration deltas
+   - Use the GitHub Actions job pages to confirm cache hits and duration deltas where available
 
 ### 9. Document Performance Delta
 
@@ -148,7 +126,5 @@ This guarantees artifact reuse, checksum validation, and smoke testing without d
 ✅ System-test matrix jobs finish in ≤105 seconds with >80% cache hit rate
 
 ✅ Total workflow duration ≤25 minutes
-
-✅ Job summaries include duration, cache status, and artifact checksum
 
 ✅ No downstream job regresses by more than 10%
