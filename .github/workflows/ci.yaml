@@ -8,10 +8,16 @@ on:
 permissions: {}
 
 jobs:
-  pre-commit:
+  build-artifact:
+    name: 🏗️ Build ksail artifact
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+    env:
+      ARTIFACT_NAME: ksail-${{ github.run_id }}
+    outputs:
+      artifact-name: ${{ steps.publish.outputs.artifact-name }}
+      checksum: ${{ steps.publish.outputs.checksum }}
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -24,11 +30,71 @@ jobs:
         with:
           go-version-file: src/go.mod
           cache: true
+          cache-dependency-path: src/go.sum
 
       - name: 📦 Download dependencies
         working-directory: ./src/
         run: go mod download
 
+      - name: 🏗️ Build ksail binary
+        run: go build -C src -o ../ksail .
+
+      - name: 🧪 Smoke test
+        run: ./ksail --version
+
+      - name: 🔐 Capture checksum
+        id: checksum
+        run: |
+          sha=$(shasum -a 256 ksail | awk '{print $1}')
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: 📤 Upload artifact
+        id: upload
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.4.0
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ksail
+          if-no-files-found: error
+
+      - name: 📦 Publish outputs
+        id: publish
+        env:
+          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
+          SHA256: ${{ steps.checksum.outputs.sha256 }}
+        run: |
+          echo "artifact-name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
+          echo "checksum=${SHA256}" >> "$GITHUB_OUTPUT"
+
+  pre-commit:
+    needs: [build-artifact]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: 📥 Download ksail artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-artifact.outputs.artifact-name }}
+          path: ./bin
+
+      - name: 🔓 Make artifact executable
+        run: chmod +x ./bin/ksail
+
+      - name: 🧪 Smoke test artifact
+        run: ./bin/ksail --version
+
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: src/go.mod
+          cache: true
+          cache-dependency-path: src/go.sum
       - name: 🔧 Install mockery
         run: go install github.com/vektra/mockery/v3@latest
 
@@ -38,10 +104,12 @@ jobs:
         if: always()
 
   ci:
-    needs: [pre-commit]
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@2a9d7c0bd1e3274450998e233f7b27c3058b86a1 # v1.16.3
+    needs: [pre-commit, build-artifact]
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@15c6976081f64fe8cda55db05ae48e9662768e1e # feat: add artifact inputs
     with:
       working-directory: ./src/
+      artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
+      artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     permissions:
@@ -53,7 +121,7 @@ jobs:
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
-    needs: [ci]
+    needs: [ci, build-artifact]
     if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
     strategy:
       matrix:
@@ -84,32 +152,37 @@ jobs:
         with:
           go-version-file: ./src/go.mod
           cache: true
+          cache-dependency-path: ./src/go.sum
 
-      - name: 📦 Download dependencies
-        working-directory: ./src/
-        run: go mod download
+      - name: 📥 Download ksail artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ${{ needs.build-artifact.outputs.artifact-name }}
+          path: ./bin
 
-      - name: 🏗️ Build application
-        working-directory: ./src/
-        run: go build -o ../ksail .
+      - name: 🔓 Make artifact executable
+        run: chmod +x ./bin/ksail
+
+      - name: 🧪 Smoke test artifact
+        run: ./bin/ksail --version
 
       - name: 🧪 ksail cluster init
         run: |
-          ./ksail cluster init ${{ matrix.init-args }}
+          ./bin/ksail cluster init ${{ matrix.init-args }}
 
       - name: 🧪 ksail cluster create
         run: |
-          ./ksail cluster create
+          ./bin/ksail cluster create
 
       - name: 🧪 ksail cluster list
         run: |
-          ./ksail cluster list
+          ./bin/ksail cluster list
 
       - name: 🧪 ksail workload create
         if: matrix.test-workload
         run: |
-          ./ksail workload create deployment whoami --image=traefik/whoami:latest
-          ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
+          ./bin/ksail workload create deployment whoami --image=traefik/whoami:latest
+          ./bin/ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
 
       - name: 🧪 ksail workload apply
         if: matrix.test-workload
@@ -130,24 +203,24 @@ jobs:
                 metadata:
                   name: podinfo
           EOF
-          ./ksail workload apply -k /tmp/podinfo-overlay
-          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
+          ./bin/ksail workload apply -k /tmp/podinfo-overlay
+          ./bin/ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
       - name: 🧪 ksail workload reconcile
         run: |
-          ./ksail workload reconcile
+          ./bin/ksail workload reconcile
 
       - name: 🧪 ksail cluster stop
         run: |
-          ./ksail cluster stop
+          ./bin/ksail cluster stop
 
       - name: 🧪 ksail cluster start
         run: |
-          ./ksail cluster start
+          ./bin/ksail cluster start
 
       - name: 🧪 ksail cluster delete
         run: |
-          ./ksail cluster delete
+          ./bin/ksail cluster delete
 
       - name: 🧹 Cleanup
         run: |
@@ -158,9 +231,15 @@ jobs:
 
   system-test-status:
     runs-on: ubuntu-latest
-    needs: [system-test]
+    needs: [system-test, build-artifact]
     if: always()
     steps:
+      - name: Verify artifact availability
+        if: needs.build-artifact.result != 'success'
+        run: |
+          echo "Build artifact unavailable. Skipping system-test status." >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
       - name: Summarize matrix result
         shell: bash
         run: |

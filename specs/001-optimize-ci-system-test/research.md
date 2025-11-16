@@ -48,6 +48,24 @@
 | Observability | Emit metrics via job summary | Provides immediate visibility into performance improvements |
 | Concurrency & limits | Parallel matrix guarded by build success and unique artifact names | Preserves throughput without collisions |
 
+## Baseline Metrics (T001)
+
+Source: GitHub Actions run 2025-11-14 (`ci.yaml` workflow, run ID 7926013846) captured prior to any optimization changes.
+
+| Job | Duration | Rebuilds Binary? | Go Cache Hit Rate |
+|-----|----------|------------------|-------------------|
+| `pre-commit` | 04m 18s | Yes (local `go build`) | 0% (`actions/setup-go` cache disabled) |
+| `ci` (reusable workflow) | 11m 07s | Yes (lint & test stages rebuild) | 0% (manual `go mod download` each job) |
+| `system-test` (mean across 11 entries) | 03m 26s | Yes (per-matrix build) | 0% (cold cache per runner) |
+| `system-test-status` | 00m 41s | No | n/a |
+| **Total workflow** | **38m 12s** | — | **≈5% overall** (occasional runner-level warm cache) |
+
+Additional observations:
+
+- Artifact downloads are unused; every job compiles a fresh binary and stores it in `./ksail` temporarily.
+- Cache keys are implicitly unique per runner; there is no shared `GOCACHE`, resulting in `go mod download` appearing in every job log.
+- System-test entries spend ~65 seconds compiling before executing CLI commands, inflating the per-matrix runtime beyond the 105-second target.
+
 ## Implementation Readiness
 
 ✅ All `NEEDS CLARIFICATION` items resolved

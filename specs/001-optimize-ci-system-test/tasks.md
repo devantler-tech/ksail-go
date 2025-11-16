@@ -11,7 +11,7 @@
 
 **Purpose**: Capture the current CI performance baseline for comparison after optimization.
 
-- [ ] T001 Document pre-change CI durations and cache hit rates in `specs/001-optimize-ci-system-test/research.md`
+- [X] T001 Document pre-change CI durations and cache hit rates in `specs/001-optimize-ci-system-test/research.md`
 
 ---
 
@@ -19,8 +19,8 @@
 
 **Purpose**: Extend the reusable Go CI workflow so all downstream tasks can consume the shared artifact and metadata.
 
-- [ ] T002 Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs and expose them to lint/test jobs
-- [ ] T003 Update `github/devantler-tech/github-actions/reusable-workflows/README.md` with usage instructions for the new artifact inputs
+- [X] T002 Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs and expose them to lint/test jobs
+- [X] T003 Update `github/devantler-tech/github-actions/reusable-workflows/README.md` with usage instructions for the new artifact inputs
 
 **Checkpoint**: Reusable workflow consumers can request the shared artifact via inputs.
 
@@ -34,12 +34,12 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Introduce `build-artifact` job in `.github/workflows/ci.yaml` that runs cached `go build`, records checksum, smoke-tests `./ksail --version`, and uploads `ksail-${{ github.run_id }}` outputs
-- [ ] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to depend on `build-artifact`, download `./bin/ksail`, run the smoke step, and remove redundant build commands
-- [ ] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to pass artifact outputs, rely on action caching, and drop local compilation steps
-- [ ] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to download the shared artifact per matrix entry, run the smoke step, and remove local `go build`
-- [ ] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
-- [ ] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
+- [X] T004 [US1] Introduce `build-artifact` job in `.github/workflows/ci.yaml` that runs cached `go build`, records checksum, smoke-tests `./ksail --version`, and uploads `ksail-${{ github.run_id }}` outputs
+- [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to depend on `build-artifact`, download `./bin/ksail`, run the smoke step, and remove redundant build commands
+- [X] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to pass artifact outputs, rely on action caching, and drop local compilation steps
+- [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to download the shared artifact per matrix entry, run the smoke step, and remove local `go build`
+- [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
+- [X] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
 - [ ] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
 
 **Checkpoint**: Workflow builds once, consumers reuse the shared artifact, and Go cache warming is enabled everywhere.

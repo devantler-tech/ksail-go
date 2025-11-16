@@ -1,0 +1,17 @@
+# Build context exclusions for ksail-go
+.git
+.gitmodules
+.gitignore
+.github/
+.specify/
+.serena/
+.vscode/
+LICENSE
+README.md
+Dockerfile*
+bin/
+dist/
+coverage*
+tmp/
+*.log
+**/.DS_Store
