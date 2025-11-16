@@ -46,7 +46,6 @@ mkdir src
 # Move Go source directories
 git mv cmd src/
 git mv pkg src/
-git mv internal src/
 
 # Move main files
 git mv main.go src/
