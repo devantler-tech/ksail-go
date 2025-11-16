@@ -10,33 +10,31 @@ This feature coordinates CI workflow assets rather than runtime application data
 
 ## Entities
 
-### BuildArtifact
+### BinaryCacheEntry
 
-Represents the compiled `ksail` binary produced once per workflow run.
+Represents the compiled `ksail` binary stored in the GitHub Actions cache.
 
 **Attributes**:
 
-- `name`: string – Artifact identifier (e.g., `ksail-${{ github.run_id }}`)
-- `version`: string – Source revision (commit SHA) embedded in the artifact metadata
-- `sizeBytes`: integer – Artifact file size (expected ~216 MB)
-- `checksum`: string – SHA256 digest stored alongside the artifact
-- `createdAt`: datetime – Timestamp when the build job finished
-- `retentionDays`: integer – Artifact retention (default 90 days)
+- `key`: string – Cache identifier (e.g., `ubuntu-ksail-bin-1.25.4-a1b2c3`)
+- `paths`: array[string] – Cached filesystem locations (`.cache/ksail`)
+- `sizeBytes`: integer – Size of the cached binary (~216 MB)
+- `createdAt`: datetime – Timestamp when the cache entry was saved
+- `originJob`: string – Job that produced the cached entry (typically `build-artifact`)
 
 **Validation Rules**:
 
-- `sizeBytes` must be < 2 GB (GitHub Actions per-file limit)
-- `checksum` must match the downloaded file before consumers execute it
-- Artifact must exist before any downstream job runs smoke tests
+- `key` must encode runner OS, Go toolchain, and hashes of `src/go.mod`, `src/go.sum`, and all Go source files.
+- Cache entry must exist (or be rebuilt) before downstream jobs execute smoke tests.
+- `sizeBytes` must remain comfortably under the repository cache quota (10 GB aggregate).
 
 **State Transitions**:
 
-1. `Pending` → `Built` (binary compiled)
-2. `Built` → `Uploaded` (artifact uploaded successfully)
-3. `Uploaded` → `Consumed` (downstream job verifies smoke test)
-4. `Consumed` → `Expired` (auto-deletion after retention window)
+1. `Missing` → `Seeded` (binary compiled and saved to cache)
+2. `Seeded` → `Restored` (downstream job retrieves cached binary)
+3. `Restored` → `Updated` (job rebuilds binary after cache miss and re-saves entry when source hash changes)
 
-### GoCache
+### GoModuleCache
 
 Represents the shared Go module and build cache.
 
@@ -87,19 +85,19 @@ Represents a GitHub Actions job participating in the workflow.
 ## Relationships
 
 ```text
-BuildArtifact 1--* CIJob
-  (a single artifact is consumed by multiple jobs)
+BinaryCacheEntry 1--* CIJob
+  (a single cached binary is consumed by multiple jobs)
 
-GoCache 1--* CIJob
+GoModuleCache 1--* CIJob
   (each job reports whether it hit the shared cache)
 ```
 
 ## Domain Rules
 
-1. **Single Source Build**: Only the `build-artifact` job may create the shared binary; all other jobs must treat the artifact as read-only consumption.
+1. **Single Source Build**: Only the `build-artifact` job should seed the shared cache under normal conditions; downstream jobs may rebuild only when the cache misses and must re-save the entry afterward.
 2. **Cache Consistency**: Cache keys must incorporate the Go version and `go.sum` hash to prevent stale dependency reuse.
 3. **Smoke Test Guard**: Jobs consuming the artifact must execute `./ksail --version` (or similar) before cluster operations.
-4. **Parallel Safety**: Artifact names include `github.run_id` to prevent cross-run contamination when multiple workflows execute concurrently.
+4. **Parallel Safety**: Cache keys include runner OS and source hashes to prevent collisions when multiple workflows execute concurrently.
 5. **Failure Propagation**: If the build job fails, downstream jobs must skip execution and record the failure reason in their job logs.
 
 ## Notes

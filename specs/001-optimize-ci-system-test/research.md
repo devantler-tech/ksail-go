@@ -6,13 +6,13 @@
 
 ## Research Questions
 
-### 1. Sharing Build Artifacts Across All CI Jobs (Including Reusable Workflows)
+### 1. Sharing the ksail Binary Across All CI Jobs
 
-- **Decision**: Use a dedicated `build-artifact` job that uploads a versioned `ksail` binary via `actions/upload-artifact@v4`, and update every downstream job—including those invoked through the reusable workflow—to download the artifact via `actions/download-artifact@v4` before execution.
-- **Rationale**: GitHub Actions artifacts are accessible to any job within the same workflow run regardless of whether the job definition lives locally or inside a called workflow. Passing the artifact name as an input allows the reusable workflow to participate without duplicating build steps. The compiled binary is ~216 MB, well within the 5 GB artifact limit (2 GB per file) and transfers in under 10 seconds on GitHub-hosted runners.
+- **Decision**: Use a dedicated `build-artifact` job that compiles the `ksail` binary once, seeds a cache entry keyed by OS, Go toolchain, and source hash, and let downstream jobs restore the cached executable (falling back to `go build` only when the cache misses).
+- **Rationale**: GitHub Actions cache entries are available to every job in the workflow and persist across runs on the same branch. Restoring the binary eliminates duplicate compilation work without the overhead of managing per-run artifacts. Cache uploads complete quickly (≈2–3 seconds for a 216 MB binary) and remain within the repository-wide 10 GB limit.
 - **Alternatives Considered**:
   - **Inline build per job**: Rejected because it perpetuates the current 11× build penalty.
-  - **Caching the `go build` output directory**: Rejected; Go build cache is not safely shareable across machines and can corrupt between Go versions.
+  - **Upload/download artifacts per run**: Rejected; cache distribution already satisfies the use case and removes an extra upload/download stage.
   - **Container image distribution**: Rejected as overkill—introduces registry dependencies and slower pulls.
 
 ### 2. Go Module Caching Strategy For Parallel Jobs
@@ -39,10 +39,10 @@
   - **Serializing matrix execution**: Rejected; would erase gains from single build.
   - **Manual artifact deletion steps**: Rejected; GitHub auto-expires artifacts and manual deletion adds noise.
 
-### 5. Caching the ksail Binary Across Workflow Runs
+### 5. Binary Cache Mechanics and Fallback Strategy
 
-- **Decision**: Add `actions/cache` restore/save steps around the compiled binary in the `build-artifact` job, keyed by OS, Go toolchain, and the hash of `src/go.mod`, `src/go.sum`, and all Go source files. When the cache hits, skip recompilation, reuse the cached binary, and continue running smoke tests before uploading the per-run artifact.
-- **Rationale**: Many workflow reruns build identical binaries (e.g., flaky system-test retries). Sharing the executable across runs trims the build job runtime by ~40 seconds while still uploading a fresh artifact and verifying the binary each time. Hashing source inputs prevents stale binaries from leaking into unrelated commits, and cache size (~216 MB) fits comfortably within the repository-wide 10 GB cache limit.
+- **Decision**: Consolidate binary distribution around `actions/cache`, allowing downstream jobs to restore the executable directly and build their own copy only when the cache misses. Cache keys include the OS, Go toolchain, and hashes of `src/go.mod`, `src/go.sum`, and all Go source files.
+- **Rationale**: Many workflow reruns build identical binaries (e.g., flaky system-test retries). Sharing the executable through the cache trims the build job runtime by ~40 seconds and removes the need for per-run artifacts while still validating the binary with smoke tests. On cache misses the system-test job builds locally, ensuring first-run success and reseeding the cache for future runs.
 - **Alternatives Considered**:
   - **Extending artifact retention**: Rejected; artifacts are scoped per run and cannot be downloaded by future runs without extra APIs or tokens.
   - **Caching the entire Go workspace**: Rejected as redundant—the existing `actions/setup-go` cache already handles module and build caches efficiently.
@@ -51,11 +51,11 @@
 
 | Topic | Decision | Impact |
 |-------|----------|--------|
-| Artifact distribution | Build once, share via upload/download artifact | Eliminates duplicate builds across jobs |
+| Binary distribution | Build once, share via cache restore/save | Eliminates duplicate builds across jobs without artifact management |
 | Module caching | Rely on `setup-go` cache with unified key | Cuts 30–40 seconds per job in dependency setup |
-| Observability | Rely on standard job logs; custom metrics removed | Keeps workflow YAML lean while still exposing artifact lineage |
-| Concurrency & limits | Parallel matrix guarded by build success and unique artifact names | Preserves throughput without collisions |
-| Cross-run artifact cache | Cache binary keyed by toolchain + source hash | Skips redundant builds on reruns without risking stale binaries |
+| Observability | Rely on standard job logs; custom metrics removed | Keeps workflow YAML lean while still exposing cache lineage |
+| Concurrency & limits | Parallel matrix guarded by build success and deterministic cache keys | Preserves throughput without collisions |
+| Cross-run binary cache | Cache binary keyed by toolchain + source hash | Skips redundant builds on reruns without risking stale binaries |
 
 ## Baseline Metrics (T001)
 
@@ -110,25 +110,10 @@ Additional observations:
 - Reusable workflow lint/test jobs still compute their module prefix for cache keys and expose cache-hit outputs, but no longer call the metrics helper.
 - The `metrics-summary` aggregation job was removed entirely, and maintainers now review performance using native GitHub Actions timing data.
 
-## Artifact Helper Adoption (T018–T022)
+## Cache Helper Evolution (T018–T022)
 
-- Introduced `tests/actions/use-ksail-artifact.yml` as a GitHub Actions workflow test to validate the new composite helper once executed via `act` or GitHub runners.
-- Implemented `.github/actions/use-ksail-artifact`, encapsulating artifact download, checksum verification, and smoke testing with configurable inputs for path, binary name, and custom commands.
-- Refactored the repository workflow (`system-test` matrix) to invoke the helper, eliminating bespoke download/chmod steps while preserving checksum reporting.
-- Documented usage patterns in `quickstart.md`, guiding contributors to reuse the helper whenever new jobs or matrix entries require the binary.
-
-### Reusable Workflow Scope Adjustment
-
-- Initially propagated the artifact helper into `devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml`, but the downstream jobs never exercised the binary.
-- Reverted the reusable workflow to its `main` implementation (no artifact inputs or metrics dependency) so consumers avoid unnecessary downloads.
-- Updated this repository to keep artifact reuse local to `.github/workflows/ci.yaml` while still leveraging the shared helper for system tests.
-
-### Local Validation (Polish)
-
-- Installed `act` locally via Homebrew (`brew install act`) to enable offline exercise of workflow tests.
-- Executed `act workflow_dispatch -W tests/actions/use-ksail-artifact.yml --container-architecture linux/amd64 --artifact-server-path ./.act-artifacts` to simulate the composite-action workflow end-to-end.
-- Both `build-artifact` and `validate-artifact` jobs succeeded under `act`, confirming the helper downloads, verifies, and smokes the artifact without GitHub-hosted runners.
-- Added `actions/checkout@v4` to the validation job in the workflow test so local runs can resolve the composite action path, and ignored the `.act-artifacts/` directory in `.gitignore` after cleaning the local artifact cache.
+- Originally introduced `.github/actions/use-ksail-artifact` to wrap artifact download, checksum verification, and smoke testing; this composite action has since been deprecated in favor of direct cache restores that avoid per-run artifacts.
+- System-test jobs now restore the cached binary, build locally only on cache misses, and re-save the cache to keep future runs warm. This simplified the workflow and removed the need for helper-specific documentation or local `act` validation runs.
 
 ## Post-Change Metrics (T024)
 

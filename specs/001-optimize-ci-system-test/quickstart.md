@@ -15,8 +15,8 @@
 
 - Total workflow runtime fell from **38m 12s** to **14m 47s** on run [19411774307](https://github.com/devantler-tech/ksail-go/actions/runs/19411774307).
 - `pre-commit` now finishes in **32s** (down 88%); the reusable workflow’s longest job (`ci / 🧪 Test`) completes in **7m 29s** (down 33%).
-- System-test matrix entries average **1m 56s** with the shared artifact; the slowest case (Kind + Calico) still improved 20% versus baseline.
-- Even without custom metrics instrumentation, first-six post-merge runs on `main` completed successfully and surfaced the shared artifact checksum through standard job logs.
+- System-test matrix entries average **1m 56s** when the cache seeds the shared binary; the slowest case (Kind + Calico) still improved 20% versus baseline.
+- Even without custom metrics instrumentation, the first six post-merge runs on `main` completed successfully and noted cache hit status alongside the binary checksum in standard job logs.
 
 ## Implementation Steps
 
@@ -27,7 +27,7 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 - Workflow duration: ~15 minutes target after optimizations
 - System-test entries: ≤105 seconds for lightweight combinations, ≤165 seconds for workload-heavy scenarios
 - Cache hit indicators reported by `actions/setup-go`
-- Artifact checksum consistency between build and consumer jobs (visible in job logs)
+- Binary smoke test output remains consistent between build and consumer jobs (visible in job logs)
 
 ### 2. Add Dedicated Build Job
 
@@ -35,59 +35,35 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 
    - Checks out code with `actions/checkout@v5`
    - Set up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
-   - Restores a cached `ksail` binary with `actions/cache@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
-   - Run `go build -C src -o ksail`
-   - Execute `./ksail --version` (smoke test)
-   - Compute SHA256 (`shasum -a 256 ksail`)
-   - Upload the binary with `actions/upload-artifact@v4` (name: `ksail-${{ github.run_id }}`)
-   - Expose `artifact-name` and `checksum` via job outputs
-2. Set `needs: [build-artifact]` on every downstream job.
+   - Restores the cached `ksail` binary with `actions/cache@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
+   - Runs `go build -C src -o ksail` when the cache misses, seeds `.cache/ksail`, and saves the cache for future runs
+   - Executes `./ksail --version` (smoke test)
+2. Keep downstream jobs dependent on `build-artifact` so they only start after the cache is populated (or the fallback build completes).
 
 ### 3. Update Pre-Commit Job
 
-1. Remove redundant `go mod download` step (cache provides modules).
-2. Insert artifact download and smoke test before any hook invocation:
-
-   ```yaml
-   - uses: actions/download-artifact@v4
-     with:
-       name: ${{ needs.build-artifact.outputs.artifact-name }}
-       path: ./bin
-   - run: ./bin/ksail --version
-   ```
-
-3. Ensure `pre-commit` continues to call `pre-commit/action@v3.0.1` as last step.
+1. Remove redundant `go mod download` step (the Go cache provides modules).
+2. Keep `pre-commit` focused on linting/formatting; it does not need the compiled binary once cache sharing is in place.
+3. Ensure `pre-commit` continues to call `pre-commit/action@v3.0.1` as the final step.
 
 ### 4. Keep Reusable Workflow Lean
 
-The shared workflow `devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` remains unchanged—lint and test jobs build from source and rely solely on warmed module caches. No artifact inputs are required; all binary reuse happens inside this repository’s workflow via the composite helper.
-
-If a future consumer genuinely needs the shared artifact, prefer adding helper steps directly in that repository instead of expanding the reusable workflow contract.
+The shared workflow `devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` remains unchanged—lint and test jobs build from source and rely solely on warmed module caches. No additional inputs are required; binary reuse is handled locally via cache restores.
 
 ### 5. Optimize System-Test Job
 
-1. Replace local build steps with artifact download + smoke test.
-2. Ensure each matrix entry sets up Go with caching but skips `go mod download`.
-3. Prepend each test command block (`cluster init`, `create`, etc.) with `./bin/ksail` path.
+1. Restore the cached `ksail` binary using the same cache key as the build job.
+2. If the cache misses, run `go build -C src -o ../bin/ksail .` to produce the binary locally, copy it into `.cache/ksail`, and save the cache for subsequent runs.
+3. Execute `./bin/ksail --version` before the matrix commands to maintain the smoke guard, then run the usual suite (`cluster init`, `create`, etc.).
 
-### 6. Use the Helper for New Jobs
+### 6. Reuse the Cached Binary in New Jobs
 
-When adding a new matrix entry or standalone job that requires the compiled binary, include a step similar to:
-
-```yaml
-- name: Prepare ksail binary
-  uses: ./.github/actions/use-ksail-artifact
-  with:
-    artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
-    artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
-```
-
-This guarantees artifact reuse, checksum validation, and smoke testing without duplicating YAML.
+When adding a new job or matrix entry that needs the compiled binary, restore the cache with the same key formula used in the build and system-test jobs. Ensure the step builds locally on cache miss, saves the cache, and runs a quick smoke command before using the binary.
 
 ### 7. Validate Locally (Optional)
 
 
-1. Use [`act`](https://github.com/nektos/act) to dry-run a reduced matrix (e.g., Kind default) verifying artifact download and smoke test succeed:
+1. Use [`act`](https://github.com/nektos/act) to dry-run a reduced matrix (e.g., Kind default) verifying the cache restore (or fallback build) and smoke test succeed:
 
    ```bash
    act pull_request --job system-test --matrix init-args='--distribution Kind'
@@ -100,7 +76,7 @@ This guarantees artifact reuse, checksum validation, and smoke testing without d
 1. Commit changes (`git add .github` and supporting files).
 2. Push to `001-optimize-ci-system-test`.
 3. Monitor the workflow:
-   - Ensure `build-artifact` runs once, logs whether the binary came from cache, and reports the checksum recorded by downstream jobs
+   - Ensure `build-artifact` runs once, logs whether the binary came from cache, and reseeds the cache when rebuilding
    - Confirm system-test jobs stay within the targets listed in **Monitor Current Benchmarks**
    - Use the GitHub Actions job pages to confirm cache hits and duration deltas where available
 
@@ -113,16 +89,16 @@ This guarantees artifact reuse, checksum validation, and smoke testing without d
 
 1. Review the latest ten push runs on `main` via `gh run list --workflow "CI - Go (Repo)" --branch main --event push --limit 10`.
 2. Confirm system-test pass rate remains at or above the baseline (currently 6/6 successes after the optimization landed).
-3. If another repository needs artifact reuse, open a task to add the helper locally in that codebase rather than extending the shared workflow.
+3. If another repository needs to reuse the compiled binary, replicate this cache-restore pattern within that codebase instead of reintroducing shared artifacts.
 
 ## Rollback Plan
 
-- If artifact download fails across multiple jobs, revert to previous workflow commit and re-open issue with investigation notes.
+- If cache restores fail across multiple jobs (forcing repeated fallback builds), revert to the previous workflow commit and re-open the issue with investigation notes.
 - Keep the old YAML snippet in branch history to simplify rollback via `git revert`.
 
 ## Success Indicators
 
-✅ `build-artifact` job runs once per workflow and publishes outputs
+✅ `build-artifact` job runs once per workflow and seeds the binary cache
 
 ✅ System-test matrix jobs finish in ≤105 seconds with >80% cache hit rate
 

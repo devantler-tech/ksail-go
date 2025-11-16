@@ -115,6 +115,15 @@
 
 ---
 
+## Phase 8: Cache-Only Distribution (Maintenance)
+
+**Purpose**: Retire per-run artifacts and rely exclusively on the cache-backed binary.
+
+- [X] T033 Remove artifact upload/download steps from `.github/workflows/ci.yaml` and ensure system-test jobs restore or rebuild the binary from cache
+- [X] T034 Update supporting documentation (plan, research, quickstart) to describe cache-only distribution and the deprecation of `.github/actions/use-ksail-artifact`
+
+---
+
 ## Dependencies & Execution Order
 
 - **Phase Order**: Setup → Foundational → User Story 1 → User Story 2 → User Story 3 → Polish.

@@ -12,12 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      # Use a run-scoped artifact name to prevent collisions between parallel CI runs.
-      ARTIFACT_NAME: ksail-${{ github.run_id }}
-    outputs:
-      artifact-name: ${{ steps.publish.outputs.artifact-name }}
-      checksum: ${{ steps.publish.outputs.checksum }}
     steps:
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -74,29 +68,6 @@ jobs:
 
       - name: 🧪 Smoke test
         run: ./ksail --version
-
-      - name: 🔐 Capture checksum
-        id: checksum
-        run: |
-          sha=$(shasum -a 256 ksail | awk '{print $1}')
-          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: 📤 Upload artifact
-        id: upload
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
-        with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ksail
-          if-no-files-found: error
-
-      - name: 📦 Publish outputs
-        id: publish
-        env:
-          ARTIFACT_NAME: ${{ env.ARTIFACT_NAME }}
-          SHA256: ${{ steps.checksum.outputs.sha256 }}
-        run: |
-          echo "artifact-name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
-          echo "checksum=${SHA256}" >> "$GITHUB_OUTPUT"
 
   pre-commit:
     runs-on: ubuntu-latest
@@ -163,7 +134,7 @@ jobs:
         if: ${{ needs.build-artifact.result != 'success' }}
           # Guard matrix execution when the build job fails, preserving runner minutes.
         run: |
-          echo "Build artifact unavailable. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
+          echo "build-artifact failed to seed the ksail binary cache. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: 📄 Checkout
@@ -179,13 +150,41 @@ jobs:
           cache: true
           cache-dependency-path: ./src/go.sum
 
-      - name: 📥 Prepare ksail artifact
-        uses: ./.github/actions/use-ksail-artifact
+      - name: 🔑 Compute ksail cache key
+        id: ksail-cache-key
+        env:
+          KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
+        run: |
+          printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+      - name: ♻️ Restore ksail binary
+        id: ksail-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
-          artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
-          download-path: ./bin
-          binary-name: ksail
+          path: ./.cache/ksail
+          key: ${{ steps.ksail-cache-key.outputs.value }}
+
+      - name: 📦 Prepare ksail binary
+        env:
+          CACHE_HIT: ${{ steps.ksail-cache.outputs.cache-hit }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ./bin
+          if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
+            cp ./.cache/ksail ./bin/ksail
+          else
+            go build -C src -o ../bin/ksail .
+            mkdir -p ./.cache
+            cp ./bin/ksail ./.cache/ksail
+          fi
+          chmod +x ./bin/ksail
+
+      - name: ♻️ Save ksail binary cache
+        if: steps.ksail-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ./.cache/ksail
+          key: ${{ steps.ksail-cache-key.outputs.value }}
 
       - name: 🧪 ksail cluster init
         run: |
@@ -253,10 +252,10 @@ jobs:
     needs: [system-test, build-artifact]
     if: always()
     steps:
-      - name: Verify artifact availability
+      - name: Verify cache availability
         if: needs.build-artifact.result != 'success'
         run: |
-          echo "Build artifact unavailable. Failing status aggregation." >> "$GITHUB_STEP_SUMMARY"
+          echo "build-artifact failed to seed the ksail binary cache. Failing status aggregation." >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       - name: Summarize matrix result
