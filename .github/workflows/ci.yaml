@@ -39,7 +39,7 @@ jobs:
 
   ci:
     needs: [pre-commit]
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@1235788684c6576098528fd79c1c1e5a01ff3030 # v1.17.1
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@4adba09801c76b58d07cad37dee412d7c633d88d # v1.17.2
     with:
       working-directory: ./src/
     secrets:
