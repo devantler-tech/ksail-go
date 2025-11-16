@@ -441,3 +441,4 @@ When reviewing Copilot's pull requests:
 
 ## Recent Changes
 - 001-move-all-source: Added Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs
+- 001-migrate-docs: Added Markdown within Go monorepo (docs-only change) + Markdownlint config, Lychee link checker, GitHub Markdown renderer
