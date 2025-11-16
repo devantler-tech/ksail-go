@@ -39,7 +39,10 @@ jobs:
 
       - name: 🔑 Compute ksail cache key
         id: ksail-cache-key
-        run: echo "value=${{ runner.os }}-ksail-bin-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}" >> "$GITHUB_OUTPUT"
+        env:
+          KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
+        run: |
+          printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
 
       - name: ♻️ Restore cached ksail binary
         id: ksail-cache
