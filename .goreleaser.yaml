@@ -2,8 +2,10 @@ version: 2
 
 before:
   hooks:
-    - sh -c "cd src || exit 1 && go mod tidy"
-    - sh -c "cd src || exit 1 && go generate ./..."
+    - cmd: go mod tidy
+      dir: src
+    - cmd: go generate ./...
+      dir: src
 
 builds:
   - env:
