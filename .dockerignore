@@ -1,17 +1,24 @@
-# Build context exclusions for ksail-go
+# Exclude repository metadata and tooling configs
 .git
-.gitmodules
-.gitignore
-.github/
-.specify/
-.serena/
-.vscode/
-LICENSE
-README.md
-Dockerfile*
+.github
+.specify
+.serena
+.vscode
+
+# Exclude build outputs and binaries
 bin/
 dist/
+*.test
+*.out
+
+# Exclude coverage and lint artifacts
 coverage*
-tmp/
-*.log
-**/.DS_Store
+megalinter-reports/
+report/
+
+# Exclude environment and log files
+.env*
+*.log*
+
+# Exclude documentation specs from Docker context
+specs/

@@ -55,7 +55,7 @@ This document defines the validation contracts that must be satisfied at each ch
 **Checkpoint**: After files are moved but before commit
 **Purpose**: Verify reorganized structure works correctly
 
-### Required Checks
+### Post-Move Required Checks
 
 ```yaml
 - name: "Post-Move Build"
@@ -110,7 +110,7 @@ This document defines the validation contracts that must be satisfied at each ch
 **Checkpoint**: After all changes committed, before merging to main
 **Purpose**: Comprehensive validation including CI/CD simulation
 
-### Required Checks
+### Pre-Merge Required Checks
 
 ```yaml
 - name: "Full Build"
@@ -161,7 +161,7 @@ This document defines the validation contracts that must be satisfied at each ch
 **Checkpoint**: After merging to main branch
 **Purpose**: Verify production state and CI/CD pipeline
 
-### Required Checks
+### Post-Merge Required Checks
 
 ```yaml
 - name: "CI Build Status"
