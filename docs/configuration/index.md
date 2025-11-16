@@ -1,6 +1,6 @@
 # Configuration
 
-KSail-Go keeps cluster behavior reproducible by funnelling every option through a small set of well-defined configuration surfaces. Run `ksail cluster init` once, commit the generated files, and every contributor can rely on the same defaults whether they prefer CLI flags or declarative YAML.
+KSail-Go keeps cluster behavior reproducible by funnelling every option through a small set of well-defined configuration surfaces. Run `ksail cluster init` once, commit the generated files, and every team member can rely on the same defaults whether they prefer CLI flags or declarative YAML.
 
 ## Configuration surfaces
 

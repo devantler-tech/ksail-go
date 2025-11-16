@@ -1,6 +1,6 @@
 # Overview
 
-KSail-Go is the next generation of the KSail developer experience—rewritten in Go and designed to give operators and contributors a single CLI for cluster and workload lifecycle management. The tool wraps trusted Kubernetes utilities behind consistent commands so local development, CI validation, and GitOps workflows share the same interface.
+KSail-Go is the next generation of the KSail developer experience—rewritten in Go and designed to give operators and developers a single CLI for cluster and workload lifecycle management. The tool wraps trusted Kubernetes utilities behind consistent commands so local development, CI validation, and GitOps workflows share the same interface.
 
 ![KSail Architecture](../images/architecture.drawio.png)
 

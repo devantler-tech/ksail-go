@@ -25,13 +25,6 @@ Markdownlint enforces formatting rules (headings, tables, code fences), while Ly
 
 For a rendered preview, open the Markdown files directly in VS Code or use `Markdown: Open Preview` to check anchor links and admonitions. GitHub renders the same Markdown dialect, so local preview is typically sufficient.
 
-## Writing guidelines
-
-- Prefer relative links (for example `../configuration/index.md`) so the docs work both on GitHub and in local editors.
-- Keep command snippets runnable; avoid shell prompts (`$`) and use fenced blocks with language hints.
-- Update cross-links when moving or renaming files so navigation remains intact.
-- If you add new assets, store them under `docs/images/` and update Lychee ignores only when absolutely necessary.
-
 ## Need help?
 
-Open an issue or start a discussion in the repository if you spot gaps or want to propose additional guides. Contributions are welcome—see the root `README.md` and `CONTRIBUTING.md` for details.
+If you encounter issues, have questions, or want to suggest improvements to the documentation, please open an issue or start a discussion in the repository.
