@@ -19,14 +19,14 @@ check_golangci_lint() {
 	local result=0
 	if command -v golangci-lint >/dev/null 2>&1; then
 		# Test if golangci-lint config is compatible with current project
-		if golangci-lint config path >/dev/null 2>&1; then
+		if golangci-lint --config ../.golangci.yml config path >/dev/null 2>&1; then
 			result=0
 		else
 			result=2 # golangci-lint exists but config is incompatible
 		fi
 	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
 		# Test if golangci-lint config is compatible with current project
-		if "$HOME/go/bin/golangci-lint" config path >/dev/null 2>&1; then
+		if "$HOME/go/bin/golangci-lint" --config ../.golangci.yml config path >/dev/null 2>&1; then
 			result=0
 		else
 			result=2 # golangci-lint exists but config is incompatible
@@ -78,9 +78,9 @@ run_golangci_lint() {
 	# or to ensure it's always defined before use
 	local exit_code=0
 	if command -v golangci-lint >/dev/null 2>&1; then
-		golangci-lint run --fix || exit_code=$?
+		golangci-lint run --config ../.golangci.yml --fix || exit_code=$?
 	elif [ -x "$HOME/go/bin/golangci-lint" ]; then
-		"$HOME/go/bin/golangci-lint" run --fix || exit_code=$?
+		"$HOME/go/bin/golangci-lint" run --config ../.golangci.yml --fix || exit_code=$?
 	else
 		echo "Error: golangci-lint not found after installation"
 		cd "$original_dir"
