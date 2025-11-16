@@ -2,7 +2,7 @@
 
 ## Decision: Focus migration on core KSail documentation sets (overview, configuration, use-cases, supporting assets)
 
-- **Rationale**: The source repository (`projects/ksail/docs/`) contains well-structured content under `overview/`, `configuration/`, `use-cases/`, and shared `images/`. These map directly to the existing but empty directories in `ksail-go/docs/`, creating a clear one-to-one migration path that preserves navigation intent. Keeping the scope to these folders satisfies FR-001/FR-002 while avoiding obsolete material (e.g., legacy FAQ/roadmap that references .NET internals).
+- **Rationale**: The source documentation is located in the [KSail project repository](https://github.com/devantler-tech/ksail/tree/main/docs/) under `overview/`, `configuration/`, `use-cases/`, and shared `images/`. These map directly to the existing but empty directories in `docs/` in this repository, creating a clear one-to-one migration path that preserves navigation intent. Keeping the scope to these folders satisfies FR-001/FR-002 while avoiding obsolete material (e.g., legacy FAQ/roadmap that references .NET internals).
 - **Alternatives considered**:
   - *Migrate every markdown file wholesale*: Rejected because legacy FAQ/roadmap contain .NET-specific details that would need heavy rewriting and could blur the KSail-Go focus.
   - *Author entirely new docs*: Discarded as it would ignore valuable vetted material and extend delivery time.
