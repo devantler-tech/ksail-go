@@ -55,7 +55,7 @@ A contributor adds a new matrix entry or adjusts CI job arguments. The workflow 
 **Acceptance Scenarios**:
 
 1. **Given** a new matrix entry or CI job is added, **When** the workflow runs, **Then** the new job downloads the existing artifact instead of compiling the binary again.
-2. **Given** the workflow definition changes, **When** the workflow executes, **Then** caching behaviour automatically applies with no additional keys or manual overrides required.
+2. **Given** the workflow definition changes, **When** the workflow executes, **Then** caching behavior automatically applies with no additional keys or manual overrides required.
 
 ---
 

@@ -11,19 +11,13 @@ Build and share the `ksail` binary once per workflow run, reuse warmed Go module
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
 **Language/Version**: GitHub Actions workflow YAML orchestrating Go 1.25.4 toolchain
 **Primary Dependencies**: `actions/checkout@v5`, `actions/setup-go@v6` (with cache), `actions/upload-artifact@v4`, `actions/download-artifact@v4`, `actions/cache@v4`, `pre-commit/action@v3.0.1`, `devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml`
 **Storage**: GitHub Actions artifact storage (5 GB per artifact, 2 GB per file) and cache backend (10 GB per repository)
 **Testing**: `pre-commit` hooks, `go test ./...`, system-test matrix invoking `ksail` commands end-to-end
 **Target Platform**: GitHub-hosted `ubuntu-latest` runners provisioning Kind/K3d clusters for system tests
 **Project Type**: Monorepo CLI project with GitOps system tests (single backend repo)
-**Performance Goals**: System-test matrix entries ≤105 seconds, total CI workflow ≤25 minutes, ≥80 % Go cache hit rate, ≤10 % runtime drift in unaffected jobs
+**Performance Goals**: System-test matrix entries ≤105 seconds, total CI workflow ≤25 minutes, ≥80% Go cache hit rate, ≤10% runtime drift in unaffected jobs
 **Constraints**: Shared binary must be available to reusable workflow jobs, build failure must short-circuit dependents, artifact size (~216 MB) stays within limits, parallel matrix execution preserved
 **Scale/Scope**: 4 top-level jobs (pre-commit, reusable CI, system-test matrix with 11 combinations, status aggregator) plus downstream reusable workflow jobs (lint, mega-lint, test)
 
@@ -56,12 +50,6 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
 .github/workflows/

@@ -114,7 +114,7 @@
 ### 9. Document Performance Delta
 
 1. Update issue #522 with before/after numbers (average system-test duration, total workflow time, cache hit rate).
-2. Note any jobs exceeding the 10 % regression threshold.
+2. Note any jobs exceeding the 10% regression threshold.
 
 ### 10. Post-Merge Follow-Up
 
@@ -131,10 +131,10 @@
 
 ✅ `build-artifact` job runs once per workflow and publishes outputs
 
-✅ System-test matrix jobs finish in ≤105 seconds with >80 % cache hit rate
+✅ System-test matrix jobs finish in ≤105 seconds with >80% cache hit rate
 
 ✅ Total workflow duration ≤25 minutes
 
 ✅ Job summaries include duration, cache status, and artifact checksum
 
-✅ No downstream job regresses by more than 10 %
+✅ No downstream job regresses by more than 10%
