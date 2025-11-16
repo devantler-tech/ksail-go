@@ -6,63 +6,115 @@
 
 ## Overview
 
-These contracts define the mandatory behaviors for each CI job after the optimization. They ensure the single build artifact, shared caches, and observability hooks function consistently across the workflow.
+These contracts define the mandatory behaviors for each CI job after the optimization. They ensure the cached binary, shared Go module caches, and guard mechanisms function consistently across the workflow.
 
-## Build Artifact Contract
+## Build Binary Cache Contract
 
 **Producer**: `build-artifact` job
 
 ```yaml
-- name: "Compile ksail binary"
-  run: "go build -C src -o ksail"
-  outputs:
-    artifact-name: "ksail-${{ github.run_id }}"
-    checksum: "${{ steps.hash.outputs.sha256 }}"
+- name: "Compute ksail cache key"
+  id: ksail-cache-key
+  env:
+    KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
+  run: |
+    printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+- name: "Restore cached ksail binary"
+  id: ksail-cache
+  uses: actions/cache/restore@v4
+  with:
+    path: ./.cache/ksail
+    key: ${{ steps.ksail-cache-key.outputs.value }}
+
+- name: "Use cached binary"
+  if: steps.ksail-cache.outputs.cache-hit == 'true'
+  run: cp ./.cache/ksail ./ksail
+
+- name: "Build ksail binary"
+  if: steps.ksail-cache.outputs.cache-hit != 'true'
+  run: go build -C src -o ../ksail .
   assertions:
     - file_exists: "ksail"
-    - file_size_lt: "2147483648"   # 2 GB per-file limit
     - exit_code: 0
 
-- name: "Smoke test binary"
+- name: "Store binary for cache"
+  if: steps.ksail-cache.outputs.cache-hit != 'true'
+  run: |
+    mkdir -p ./.cache
+    cp ./ksail ./.cache/ksail
+
+- name: "Save ksail binary cache"
+  if: steps.ksail-cache.outputs.cache-hit != 'true'
+  uses: actions/cache/save@v4
+  with:
+    path: ./.cache/ksail
+    key: ${{ steps.ksail-cache-key.outputs.value }}
+
+- name: "Smoke test"
   run: "./ksail --version"
   assertions:
     - exit_code: 0
-
-- name: "Upload artifact"
-  uses: actions/upload-artifact@v4
-  with:
-    name: "ksail-${{ github.run_id }}"
-    path: "ksail"
-  assertions:
-    - upload_result: "success"
 ```
 
-**Success Criteria**: Artifact uploaded with checksum published and accessible to downstream jobs.
+**Success Criteria**: Binary cached with deterministic key and accessible to downstream jobs via cache restore.
 
-## Artifact Consumption Contract
+## Binary Cache Consumption Contract
 
-**Consumers**: `pre-commit`, `ci` (lint, mega-lint, test via reusable workflow), `system-test`, `system-test-status`
+**Consumers**: `system-test`
+
+> **Note:** As of Phase 8 (T033-T034), artifact distribution is deprecated. The `system-test` job consumes the built `ksail` binary via cache restore. The `pre-commit` job and reusable CI workflow jobs (`ci`) build from source and do not consume the cached binary.
 
 ```yaml
-- name: "Download ksail binary"
-  uses: actions/download-artifact@v4
+- name: "Verify build artifact"
+  if: needs.build-artifact.result != 'success'
+  run: |
+    echo "build-artifact failed to seed the ksail binary cache. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
+    exit 1
+
+- name: "Compute ksail cache key"
+  id: ksail-cache-key
+  env:
+    KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
+  run: |
+    printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
+
+- name: "Restore ksail binary"
+  id: ksail-cache
+  uses: actions/cache/restore@v4
   with:
-    name: "ksail-${{ needs.build-artifact.outputs.artifact-name }}"
-    path: ./bin
+    path: ./.cache/ksail
+    key: ${{ steps.ksail-cache-key.outputs.value }}
   conditions:
     - needs.build-artifact.result == 'success'
+
+- name: "Prepare ksail binary"
+  env:
+    CACHE_HIT: ${{ steps.ksail-cache.outputs.cache-hit }}
+  run: |
+    set -Eeuo pipefail
+    mkdir -p ./bin
+    if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
+      cp ./.cache/ksail ./bin/ksail
+    else
+      go build -C src -o ../bin/ksail .
+      mkdir -p ./.cache
+      cp ./bin/ksail ./.cache/ksail
+    fi
+    chmod +x ./bin/ksail
   assertions:
     - directory_exists: "./bin"
     - file_exists: "./bin/ksail"
 
-- name: "Validate artifact"
-  run: "./bin/ksail --version"
-  assertions:
-    - exit_code: 0
-    - stdout_contains: ${{ github.sha }}
+- name: "Save ksail binary cache"
+  if: steps.ksail-cache.outputs.cache-hit != 'true'
+  uses: actions/cache/save@v4
+  with:
+    path: ./.cache/ksail
+    key: ${{ steps.ksail-cache-key.outputs.value }}
 ```
 
-**Failure Behavior**: If download or smoke test fails, job must exit with non-zero status, log message, and skip subsequent steps.
+**Failure Behavior**: If cache restore fails and rebuild fails, job must exit with non-zero status and log message.
 
 ## Go Module Cache Contract
 
@@ -87,26 +139,9 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 **Success Criteria**: Every job reports cache hit/miss and completes without redundant `go mod download` steps (except build job).
 
-## Metrics Contract
+## Metrics Contract (Deprecated)
 
-```yaml
-- name: "Capture job metrics"
-  run: |
-    start=$SECONDS
-    # ... job steps ...
-    duration=$((SECONDS - start))
-    {
-      echo "### Job Metrics"
-      echo "- Duration: ${duration}s"
-      echo "- Cache: $CACHE_STATUS"
-      echo "- Artifact SHA256: $ARTIFACT_SHA"
-    } >> "$GITHUB_STEP_SUMMARY"
-  env:
-    CACHE_STATUS: ${{ steps.go-cache.outputs.cache-hit && 'hit' || 'miss' }}
-    ARTIFACT_SHA: ${{ needs.build-artifact.outputs.checksum || 'n/a' }}
-```
-
-**Success Criteria**: Summary includes duration, cache status, and artifact checksum for every job; absence is treated as regression.
+> **Note:** As of Phase 6 (T028-T030), custom metrics instrumentation was removed at maintainer request. The workflow now relies on native GitHub Actions job logs for performance diagnostics instead of custom metrics collection via `$GITHUB_STEP_SUMMARY`. See research.md (lines 27-29, 106-111) for details.
 
 ## Guard Contract
 
@@ -120,21 +155,11 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 **Purpose**: Prevents downstream jobs from running when the build fails; fulfills FR-006.
 
-## Post-Run Aggregation Contract
+## Post-Run Aggregation Contract (Deprecated)
 
-```yaml
-- name: "Publish workflow summary"
-  if: always()
-  run: |
-    echo "### CI Performance Snapshot" >> $GITHUB_STEP_SUMMARY
-    echo "- Total duration: ${{ steps.aggregate.outputs.total-seconds }}s" >> $GITHUB_STEP_SUMMARY
-    echo "- System-test avg: ${{ steps.aggregate.outputs.system-test-avg }}s" >> $GITHUB_STEP_SUMMARY
-    echo "- Cache hit rate: ${{ steps.aggregate.outputs.cache-hit-rate }}" >> $GITHUB_STEP_SUMMARY
-```
-
-**Success Criteria**: Maintainers receive a consolidated snapshot aligning with SC-001–SC-005.
+> **Note:** As of Phase 6 (T028), the `metrics-summary` aggregation job was removed entirely. Maintainers now review performance using native GitHub Actions timing data. See research.md (line 111) for details.
 
 ## Notes
 
 - Contracts apply equally to jobs defined locally and those invoked via reusable workflows; new inputs/outputs may be required in the reusable workflow to honor them.
-- Any deviation (missing artifact, cache misconfiguration, absent metrics) must fail the job and surface in the summary for fast remediation.
+- Any deviation (cache misconfiguration, build failures) must fail the job and surface in the summary for fast remediation.
