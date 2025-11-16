@@ -6,7 +6,7 @@ The Container Network Interface determines how pods receive IP addresses and com
 
 ### `Default`
 
-Uses the distribution's built-in networking (`kindnetd` for Kind, `flannel` for K3d`). Choose this for quick local iterations and CI environments where defaults are already pre-tested.
+Uses the distribution's built-in networking (`kindnetd` for Kind, `flannel` for K3d). Choose this for quick local iterations and CI environments where defaults are already pre-tested.
 
 ### `Cilium`
 

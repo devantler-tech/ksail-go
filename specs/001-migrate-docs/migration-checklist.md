@@ -11,7 +11,7 @@
 | `projects/ksail/docs/overview/core-concepts/csis.md` | `docs/overview/core-concepts/csis.md` | Core Concepts | Docs | Migrated | Yes | Storage examples validated |
 | `projects/ksail/docs/overview/core-concepts/deployment-tools.md` | `docs/overview/core-concepts/deployment-tools.md` | Core Concepts | Docs | Migrated | Yes | Flux/kubectl coverage updated |
 | `projects/ksail/docs/overview/core-concepts/distributions.md` | `docs/overview/core-concepts/distributions.md` | Core Concepts | Docs | Migrated | Yes | Supported distributions table refreshed |
-| `projects/ksail/docs/overview/core-concepts/editor.md.md` | `docs/overview/core-concepts/editor.md` | Core Concepts | Docs | Migrated | No | Duplicate extension removed during migration |
+| `projects/ksail/docs/overview/core-concepts/editor.md` | `docs/overview/core-concepts/editor.md` | Core Concepts | Docs | Migrated | No | Migrated with proper extension |
 | `projects/ksail/docs/overview/core-concepts/gateway-controllers.md` | `docs/overview/core-concepts/gateway-controllers.md` | Core Concepts | Docs | Migrated | Yes | Feature availability updated |
 | `projects/ksail/docs/overview/core-concepts/index.md` | `docs/overview/core-concepts/index.md` | Core Concepts | Docs | Migrated | Yes | Table of contents consolidated |
 | `projects/ksail/docs/overview/core-concepts/ingress-controllers.md` | `docs/overview/core-concepts/ingress-controllers.md` | Core Concepts | Docs | Migrated | Yes | Terminology aligned with Go CLI |
