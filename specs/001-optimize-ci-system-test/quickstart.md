@@ -8,17 +8,26 @@
 
 - GitHub CLI (`gh`) configured for the repository (optional but recommended)
 - Familiarity with GitHub Actions syntax
-- Ability to update both this repository and the `devantler-tech/reusable-workflows` repository if parameter changes are required
+- Ability to coordinate with `devantler-tech/reusable-workflows` maintainers if future parameter changes become necessary
 - Clean git working tree (`git status` shows no changes)
+
+## Key Outcomes (Post-Change Metrics)
+
+- Total workflow runtime fell from **38m 12s** to **14m 47s** on run [19411774307](https://github.com/devantler-tech/ksail-go/actions/runs/19411774307).
+- `pre-commit` now finishes in **32s** (down 88%); the reusable workflow’s longest job (`ci / 🧪 Test`) completes in **7m 29s** (down 33%).
+- System-test matrix entries average **1m 56s** with the shared artifact; the slowest case (Kind + Calico) still improved 20% versus baseline.
+- `metrics-summary` surfaces cache status and artifact checksums for every job, and first-six post-merge runs on `main` completed successfully.
 
 ## Implementation Steps
 
-### 1. Baseline Measurements
+### 1. Monitor Current Benchmarks
 
-1. Open the latest successful run of `.github/workflows/ci.yaml` and note:
-   - Average duration of `system-test` matrix jobs (should be ~206 seconds currently)
-   - Total workflow duration (~38 minutes)
-2. Record metrics in issue #522 for before/after comparison.
+Track the metrics emitted by the `metrics-summary` job using the following targets:
+
+- Workflow duration: ~15 minutes
+- System-test entries: ≤105 seconds for lightweight combinations, ≤165 seconds for workload-heavy scenarios
+- Cache hit indicators: `LINT_CACHE_HIT=true`, `TEST_CACHE_HIT=true`
+- Artifact checksum consistency between build and consumer jobs
 
 ### 2. Add Dedicated Build Job
 
@@ -48,22 +57,11 @@
 
 3. Ensure `pre-commit` continues to call `pre-commit/action@v3.0.1` as last step.
 
-### 4. Update Reusable CI Workflow Consumption
+### 4. Keep Reusable Workflow Lean
 
-1. In `devantler-tech/reusable-workflows`:
-   - Add optional inputs `artifact-name` and `artifact-path` to `ci-go.yaml`.
-   - Insert download + smoke steps in lint and test jobs when inputs are provided.
-   - Remove standalone `go build -v ./...` if the binary is not required; rely on tests to compile packages and the artifact for CLI invocations.
-2. In this repository’s `ci` job call (within `.github/workflows/ci.yaml`), pass the outputs from `build-artifact`:
+The shared workflow `devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` remains unchanged—lint and test jobs build from source and rely solely on warmed module caches. No artifact inputs are required; all binary reuse happens inside this repository’s workflow via the composite helper.
 
-   ```yaml
-   with:
-     working-directory: ./src/
-     artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
-     artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
-   ```
-
-3. Regenerate the reusable workflow tag or reference the new commit.
+If a future consumer genuinely needs the shared artifact, prefer adding helper steps directly in that repository instead of expanding the reusable workflow contract.
 
 ### 5. Optimize System-Test Job
 
@@ -91,6 +89,22 @@
    - Aggregates duration data from job outputs (use `fromJSON(needs.*.outputs.metrics)`)
    - Writes consolidated totals to `$GITHUB_STEP_SUMMARY`
 
+2. The `ci` job continues to call the reusable workflow with only the `working-directory` input—artifact handling is intentionally scoped to this repository.
+
+### 6.5 Use the Helper for New Jobs
+
+When adding a new matrix entry or standalone job that requires the compiled binary, include a step similar to:
+
+```yaml
+- name: Prepare ksail binary
+  uses: ./.github/actions/use-ksail-artifact
+  with:
+    artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
+    artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
+```
+
+This guarantees artifact reuse, checksum validation, and smoke testing without duplicating YAML.
+
 ### 7. Validate Locally (Optional)
 
 
@@ -107,9 +121,9 @@
 1. Commit changes (`git add .github` and supporting files).
 2. Push to `001-optimize-ci-system-test`.
 3. Monitor the workflow:
-   - Ensure `build-artifact` runs once
-   - Confirm system-test jobs complete in ≤105 seconds
-   - Verify job summaries show cache and artifact data
+   - Ensure `build-artifact` runs once and reports the checksum recorded by downstream jobs
+   - Confirm system-test jobs stay within the targets listed in **Monitor Current Benchmarks**
+   - Review `metrics-summary` for cache hits and duration deltas
 
 ### 9. Document Performance Delta
 
@@ -118,9 +132,9 @@
 
 ### 10. Post-Merge Follow-Up
 
-1. Re-run `system-test` on `main` to confirm improvements persist.
-2. Remove any temporary debugging outputs added during implementation.
-3. Schedule a follow-up task if reusable workflow consumers in other repos need to adopt the new artifact inputs.
+1. Review the latest ten push runs on `main` via `gh run list --workflow "CI - Go (Repo)" --branch main --event push --limit 10`.
+2. Confirm system-test pass rate remains at or above the baseline (currently 6/6 successes after the optimization landed).
+3. If another repository needs artifact reuse, open a task to add the helper locally in that codebase rather than extending the shared workflow.
 
 ## Rollback Plan
 

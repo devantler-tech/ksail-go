@@ -1,0 +1,57 @@
+name: test-use-ksail-artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-artifact:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.expose.outputs.artifact-name }}
+      checksum: ${{ steps.expose.outputs.checksum }}
+    steps:
+      - name: Create fake ksail binary
+        run: |
+          cat <<'EOF' > ksail
+          #!/usr/bin/env bash
+          echo "ksail test binary"
+          EOF
+          chmod +x ksail
+
+      - name: Capture checksum
+        id: checksum
+        run: |
+          sha=$(shasum -a 256 ksail | awk '{print $1}')
+          echo "sha256=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: ksail-test
+          path: ksail
+          if-no-files-found: error
+
+      - name: Publish outputs
+        id: expose
+        run: |
+          echo "artifact-name=ksail-test" >> "$GITHUB_OUTPUT"
+          echo "checksum=${{ steps.checksum.outputs.sha256 }}" >> "$GITHUB_OUTPUT"
+
+  validate-artifact:
+    needs: build-artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use ksail artifact helper
+        uses: ./.github/actions/use-ksail-artifact
+        with:
+          artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
+          artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
+          download-path: ./bin
+          binary-name: ksail
+          smoke-command: ./bin/ksail
+
+      - name: Execute downloaded binary
+        run: ./bin/ksail

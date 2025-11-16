@@ -13,11 +13,17 @@ jobs:
     permissions:
       contents: read
     env:
+      # Use a run-scoped artifact name to prevent collisions between parallel CI runs.
       ARTIFACT_NAME: ksail-${{ github.run_id }}
     outputs:
       artifact-name: ${{ steps.publish.outputs.artifact-name }}
       checksum: ${{ steps.publish.outputs.checksum }}
+      metrics: ${{ steps.publish-metrics.outputs.metrics }}
     steps:
+      - name: ⏱️ Record metrics start
+        id: metrics-start
+        run: echo "unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -25,9 +31,11 @@ jobs:
           fetch-depth: 0
 
       - name: ⚙️ Setup Go
+        id: setup-go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: src/go.mod
+            # Consistent cache path keeps module and build caches warm across all jobs.
           cache: true
           cache-dependency-path: src/go.sum
 
@@ -64,11 +72,27 @@ jobs:
           echo "artifact-name=${ARTIFACT_NAME}" >> "$GITHUB_OUTPUT"
           echo "checksum=${SHA256}" >> "$GITHUB_OUTPUT"
 
+      - name: 📝 Publish metrics
+        id: publish-metrics
+        if: always()
+        run: METRICS_OUTPUT="$GITHUB_OUTPUT" ./.github/scripts/collect-metrics.sh
+        env:
+          METRICS_START_TIME: ${{ steps.metrics-start.outputs.unix }}
+          METRICS_CACHE_HIT: ${{ steps.setup-go.outputs.cache-hit }}
+          METRICS_ARTIFACT_CHECKSUM: ${{ steps.publish.outputs.checksum }}
+          METRICS_JOB_NAME: build-artifact
+
   pre-commit:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      metrics: ${{ steps.publish-metrics.outputs.metrics }}
     steps:
+      - name: ⏱️ Record metrics start
+        id: metrics-start
+        run: echo "unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -76,9 +100,11 @@ jobs:
           fetch-depth: 0
 
       - name: ⚙️ Setup Go
+        id: setup-go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: src/go.mod
+          # Mirrors the build job cache key so downstream jobs reuse warmed modules.
           cache: true
           cache-dependency-path: src/go.sum
 
@@ -90,9 +116,19 @@ jobs:
       - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
         if: always()
 
+      - name: 📝 Publish metrics
+        id: publish-metrics
+        if: always()
+        run: METRICS_OUTPUT="$GITHUB_OUTPUT" ./.github/scripts/collect-metrics.sh
+        env:
+          METRICS_START_TIME: ${{ steps.metrics-start.outputs.unix }}
+          METRICS_CACHE_HIT: ${{ steps.setup-go.outputs.cache-hit }}
+          METRICS_ARTIFACT_CHECKSUM: n/a
+          METRICS_JOB_NAME: pre-commit
+
   ci:
-    needs: [pre-commit]
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@15c6976081f64fe8cda55db05ae48e9662768e1e # feat: add artifact inputs
+    needs: [pre-commit, build-artifact]
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@main
     with:
       working-directory: ./src/
     secrets:
@@ -127,29 +163,37 @@ jobs:
             test-workload: true
           - init-args: "--distribution K3d --metrics-server Disabled"
     steps:
+      - name: ⏱️ Record metrics start
+        id: metrics-start
+        run: echo "unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: 🔒 Verify build artifact
+        if: ${{ needs.build-artifact.result != 'success' }}
+          # Guard matrix execution when the build job fails, preserving runner minutes.
+        run: |
+          echo "Build artifact unavailable. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
       - name: 📄 Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           persist-credentials: false
 
       - name: ⚙️ Setup Go
+        id: setup-go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: ./src/go.mod
           cache: true
           cache-dependency-path: ./src/go.sum
 
-      - name: 📥 Download ksail artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - name: 📥 Prepare ksail artifact
+        uses: ./.github/actions/use-ksail-artifact
         with:
-          name: ${{ needs.build-artifact.outputs.artifact-name }}
-          path: ./bin
-
-      - name: 🔓 Make artifact executable
-        run: chmod +x ./bin/ksail
-
-      - name: 🧪 Smoke test artifact
-        run: ./bin/ksail --version
+          artifact-name: ${{ needs.build-artifact.outputs.artifact-name }}
+          artifact-checksum: ${{ needs.build-artifact.outputs.checksum }}
+          download-path: ./bin
+          binary-name: ksail
 
       - name: 🧪 ksail cluster init
         run: |
@@ -214,16 +258,33 @@ jobs:
           if [ -f "k3d.yaml" ]; then rm "k3d.yaml"; fi
           if [ -f "ksail.yaml" ]; then rm "ksail.yaml"; fi
 
+      - name: 📝 Publish metrics
+        id: publish-metrics
+        if: always()
+        run: METRICS_OUTPUT="$GITHUB_OUTPUT" ./.github/scripts/collect-metrics.sh
+        env:
+          METRICS_START_TIME: ${{ steps.metrics-start.outputs.unix }}
+          METRICS_CACHE_HIT: ${{ steps.setup-go.outputs.cache-hit }}
+          METRICS_ARTIFACT_CHECKSUM: ${{ needs.build-artifact.outputs.checksum }}
+          METRICS_JOB_NAME: system-test-${{ matrix.init-args }}
+
   system-test-status:
     runs-on: ubuntu-latest
     needs: [system-test, build-artifact]
     if: always()
+    outputs:
+      metrics: ${{ steps.publish-metrics.outputs.metrics }}
     steps:
+      - name: ⏱️ Record metrics start
+        id: metrics-start
+        run: echo "unix=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Verify artifact availability
         if: needs.build-artifact.result != 'success'
+          # Short-circuit the status job so upstream artifact failures surface quickly.
         run: |
-          echo "Build artifact unavailable. Skipping system-test status." >> "$GITHUB_STEP_SUMMARY"
-          exit 0
+          echo "Build artifact unavailable. Failing status aggregation." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
       - name: Summarize matrix result
         shell: bash
@@ -242,3 +303,77 @@ jobs:
           esac
         env:
           MATRIX_RESULT: ${{ needs.system-test.result }}
+
+      - name: 📝 Publish metrics
+        id: publish-metrics
+        if: always()
+        run: METRICS_OUTPUT="$GITHUB_OUTPUT" ./.github/scripts/collect-metrics.sh
+        env:
+          METRICS_START_TIME: ${{ steps.metrics-start.outputs.unix }}
+          METRICS_CACHE_HIT: n/a
+          METRICS_ARTIFACT_CHECKSUM: ${{ needs.build-artifact.outputs.checksum }}
+          METRICS_JOB_NAME: system-test-status
+
+  metrics-summary:
+    runs-on: ubuntu-latest
+    needs:
+      - build-artifact
+      - pre-commit
+      - ci
+      - system-test
+      - system-test-status
+    if: always()
+    steps:
+      - name: Aggregate CI metrics
+        run: |
+          export BUILD_METRICS='${{ needs.build-artifact.outputs.metrics }}'
+          export PRECOMMIT_METRICS='${{ needs.pre-commit.outputs.metrics }}'
+          export SYSTEM_STATUS_METRICS='${{ needs.system-test-status.outputs.metrics }}'
+          export SYSTEM_RESULT='${{ needs.system-test.result }}'
+
+          python3 <<'PY'
+          import json
+          import os
+
+          summary_lines = ["### CI Performance Snapshot"]
+
+          def parse_json(value):
+            if not value or value == '':
+              return None
+            try:
+              return json.loads(value)
+            except json.JSONDecodeError:
+              return None
+
+          def add_metric(title, data):
+            if not data:
+              summary_lines.append(f"- {title}: unavailable")
+              return
+            summary_lines.append(
+              f"- {title}: {data.get('durationSeconds', 'n/a')}s (cache={data.get('cacheStatus', 'n/a')}, sha={data.get('artifactChecksum', 'n/a')})"
+            )
+
+          build = parse_json(os.environ.get('BUILD_METRICS'))
+          precommit = parse_json(os.environ.get('PRECOMMIT_METRICS'))
+          status = parse_json(os.environ.get('SYSTEM_STATUS_METRICS'))
+
+          add_metric("build-artifact", build)
+          add_metric("pre-commit", precommit)
+
+          if status:
+            summary_lines.append(
+              f"- system-test status: {status.get('durationSeconds', 'n/a')}s (cache={status.get('cacheStatus', 'n/a')}, sha={status.get('artifactChecksum', 'n/a')})"
+            )
+          else:
+            summary_lines.append(
+              f"- system-test status: unavailable (result={os.environ.get('SYSTEM_RESULT', 'unknown')})"
+            )
+
+          lint_cache = (os.environ.get('LINT_CACHE_HIT') or 'unknown') or 'unknown'
+          test_cache = (os.environ.get('TEST_CACHE_HIT') or 'unknown') or 'unknown'
+          summary_lines.append(f"- lint cache hit: {lint_cache}")
+          summary_lines.append(f"- test cache hit: {test_cache}")
+
+          with open(os.environ.get('GITHUB_STEP_SUMMARY'), 'a', encoding='utf-8') as fh:
+            fh.write("\n".join(summary_lines) + "\n")
+          PY

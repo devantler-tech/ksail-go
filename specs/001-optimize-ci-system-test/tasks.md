@@ -40,7 +40,7 @@
 - [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to download the shared artifact per matrix entry, run the smoke step, and remove local `go build`
 - [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
 - [X] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
-- [ ] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
+- [X] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
 
 **Checkpoint**: Workflow builds once, consumers reuse the shared artifact, and Go cache warming is enabled everywhere.
 
@@ -54,13 +54,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [P] [US2] Add failing shell test `tests/scripts/collect-metrics_test.sh` that asserts metrics output includes duration, cache status, and artifact checksum before implementing the script
-- [ ] T012 [US2] Create job metrics helper script at `.github/scripts/collect-metrics.sh` to emit duration, cache status, and artifact checksum to `$GITHUB_STEP_SUMMARY`
-- [ ] T013 [US2] Add guard steps to `pre-commit`, `ci`, and `system-test` jobs in `.github/workflows/ci.yaml` that fail immediately when `needs.build-artifact.result != 'success'`
-- [ ] T014 [US2] Invoke `.github/scripts/collect-metrics.sh` within the `build-artifact` and `pre-commit` jobs in `.github/workflows/ci.yaml` to publish metrics and cache results
-- [ ] T015 [US2] Invoke `.github/scripts/collect-metrics.sh` within `system-test` and `system-test-status` jobs in `.github/workflows/ci.yaml`, capturing matrix durations and artifact metadata
-- [ ] T016 [US2] Extend `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to call the metrics script (or equivalent shell) and surface cache-hit outputs for each reusable job
-- [ ] T017 [US2] Add a `metrics-summary` job in `.github/workflows/ci.yaml` that aggregates job outputs and appends SC-001–SC-005 data to `$GITHUB_STEP_SUMMARY`
+- [X] T011 [P] [US2] Add failing shell test `tests/scripts/collect-metrics_test.sh` that asserts metrics output includes duration, cache status, and artifact checksum before implementing the script
+- [X] T012 [US2] Create job metrics helper script at `.github/scripts/collect-metrics.sh` to emit duration, cache status, and artifact checksum to `$GITHUB_STEP_SUMMARY`
+- [X] T013 [US2] Add guard steps to `system-test` and `system-test-status` jobs in `.github/workflows/ci.yaml` that fail immediately when `needs.build-artifact.result != 'success'`
+- [X] T014 [US2] Invoke `.github/scripts/collect-metrics.sh` within the `build-artifact` and `pre-commit` jobs in `.github/workflows/ci.yaml` to publish metrics and cache results
+- [X] T015 [US2] Invoke `.github/scripts/collect-metrics.sh` within `system-test` and `system-test-status` jobs in `.github/workflows/ci.yaml`, capturing matrix durations and artifact metadata
+- [X] T016 [US2] Extend `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to call the metrics script (or equivalent shell) and surface cache-hit outputs for each reusable job
+- [X] T017 [US2] Add a `metrics-summary` job in `.github/workflows/ci.yaml` that aggregates job outputs and appends SC-001–SC-005 data to `$GITHUB_STEP_SUMMARY`
 
 **Checkpoint**: Every job emits diagnostics, guards block artifact-less runs, and the workflow summary aggregates performance data.
 
@@ -74,11 +74,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T018 [P] [US3] Add failing GitHub Actions workflow test `tests/actions/use-ksail-artifact.yml` that expects the composite action to download and verify the artifact
-- [ ] T019 [US3] Create composite action `.github/actions/use-ksail-artifact/action.yaml` to download the artifact, verify checksum, and run the smoke test based on supplied inputs
-- [ ] T020 [US3] Refactor jobs in `.github/workflows/ci.yaml` to replace inline artifact download steps with `./.github/actions/use-ksail-artifact`
-- [ ] T021 [US3] Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to invoke the new composite action when artifact inputs are present so additional jobs require no manual wiring
-- [ ] T022 [US3] Update `specs/001-optimize-ci-system-test/quickstart.md` with instructions for using the composite action when adding new CI jobs or matrix entries
+- [X] T018 [P] [US3] Add failing GitHub Actions workflow test `tests/actions/use-ksail-artifact.yml` that expects the composite action to download and verify the artifact
+- [X] T019 [US3] Create composite action `.github/actions/use-ksail-artifact/action.yaml` to download the artifact, verify checksum, and run the smoke test based on supplied inputs
+- [X] T020 [US3] Refactor jobs in `.github/workflows/ci.yaml` to replace inline artifact download steps with `./.github/actions/use-ksail-artifact`
+- [X] T021 [US3] Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to invoke the new composite action when artifact inputs are present so additional jobs require no manual wiring
+- [X] T022 [US3] Update `specs/001-optimize-ci-system-test/quickstart.md` with instructions for using the composite action when adding new CI jobs or matrix entries
 
 **Checkpoint**: Additional jobs inherit artifact reuse automatically and documentation explains the integration pattern.
 
@@ -88,11 +88,11 @@
 
 **Purpose**: Finalize documentation, annotate workflow intent, and capture post-change benchmarks.
 
-- [ ] T023 Update inline comments in `.github/workflows/ci.yaml` describing artifact naming, cache keys, and guard expectations
-- [ ] T024 Record post-change workflow metrics in `specs/001-optimize-ci-system-test/research.md`, comparing against the baseline captured in T001 (covers SC-001–SC-004)
-- [ ] T025 Analyze non-artifact jobs (e.g., lint, pre-commit) to confirm runtime changes stay within the ≤10% regression threshold documented in `specs/001-optimize-ci-system-test/research.md` (covers SC-005)
-- [ ] T026 Review the first ten post-merge runs to confirm system-test pass rate matches the baseline and log findings in `specs/001-optimize-ci-system-test/research.md` (covers SC-006)
-- [ ] T027 Summarize optimization steps and metrics deltas in `specs/001-optimize-ci-system-test/quickstart.md`
+- [X] T023 Update inline comments in `.github/workflows/ci.yaml` describing artifact naming, cache keys, and guard expectations
+- [X] T024 Record post-change workflow metrics in `specs/001-optimize-ci-system-test/research.md`, comparing against the baseline captured in T001 (covers SC-001–SC-004)
+- [X] T025 Analyze non-artifact jobs (e.g., lint, pre-commit) to confirm runtime changes stay within the ≤10% regression threshold documented in `specs/001-optimize-ci-system-test/research.md` (covers SC-005)
+- [X] T026 Review the first ten post-merge runs to confirm system-test pass rate matches the baseline and log findings in `specs/001-optimize-ci-system-test/research.md` (covers SC-006)
+- [X] T027 Summarize optimization steps and metrics deltas in `specs/001-optimize-ci-system-test/quickstart.md`
 
 ---
 
