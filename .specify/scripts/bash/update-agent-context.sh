@@ -61,9 +61,7 @@ AGENT_TYPE="${1:-}"
 # Agent-specific file paths
 CLAUDE_FILE="$REPO_ROOT/CLAUDE.md"
 GEMINI_FILE="$REPO_ROOT/GEMINI.md"
-# Copilot instructions file path migrated from .github/agents/copilot-instructions.md to .github/copilot-instructions.md
-# Migration reason: GitHub Copilot's native path convention. Previous location was non-standard.
-# All code references should use this path; legacy path is deprecated.
+# Copilot instructions file location per GitHub Copilot's native path convention (.github/copilot-instructions.md)
 COPILOT_FILE="$REPO_ROOT/.github/copilot-instructions.md"
 CURSOR_FILE="$REPO_ROOT/.cursor/rules/specify-rules.mdc"
 QWEN_FILE="$REPO_ROOT/QWEN.md"
