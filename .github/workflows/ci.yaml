@@ -40,7 +40,7 @@ jobs:
   ci:
     needs: [pre-commit]
     if: github.event_name == 'push'
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@7454ec638a5330cfba2f532fc291c029692d1943 # main
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@7454ec638a5330cfba2f532fc291c029692d1943 # v1.16.0
     with:
       working-directory: src
     secrets:
