@@ -74,6 +74,8 @@ run_golangci_lint() {
 		cd src
 	fi
 
+	# Initialize exit_code to handle the case where golangci-lint succeeds (returns 0)
+	# or to ensure it's always defined before use
 	local exit_code=0
 	if command -v golangci-lint >/dev/null 2>&1; then
 		golangci-lint run --fix || exit_code=$?
