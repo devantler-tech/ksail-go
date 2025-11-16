@@ -31,11 +31,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] Migrate overview landing pages from `projects/ksail/docs/overview/` into `docs/overview/index.md`, `docs/overview/project-structure.md`, and `docs/overview/support-matrix.md` with KSail-Go terminology
-- [ ] T005 [P] [US1] Migrate core concepts set from `projects/ksail/docs/overview/core-concepts/` into `docs/overview/core-concepts/` while removing Jekyll front matter and updating command references
+- [ ] T004 [P] [US1] Migrate overview landing pages from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/overview/)) into `docs/overview/index.md`, `docs/overview/project-structure.md`, and `docs/overview/support-matrix.md` with KSail-Go terminology
+- [ ] T005 [P] [US1] Migrate core concepts set from the legacy KSail documentation (see [KSail repository](https://github.com/devantler-tech/ksail/tree/main/docs/overview/core-concepts/)) into `docs/overview/core-concepts/` while removing Jekyll front matter and updating command references
 - [ ] T006 [P] [US1] Migrate configuration guides (`cli-options.md`, `declarative-config.md`, `index.md`) into `docs/configuration/` and align file paths with KSail-Go configs
 - [ ] T007 [P] [US1] Migrate use-case guides (`local-development.md`, `learning-kubernetes.md`, `e2e-testing-in-cicd.md`, `index.md`) into `docs/use-cases/` with updated workflows
-- [ ] T008 [P] [US1] Copy required assets from `projects/ksail/docs/images/` into `docs/images/` and fix image references across migrated pages
+- [ ] T008 [P] [US1] Copy required assets from the legacy KSail repository ([source](https://github.com/devantler-tech/ksail/tree/main/docs/images/)) into `docs/images/` and fix image references across migrated pages
 - [ ] T009 [US1] Update intra-doc navigation and cross-links across `docs/overview/`, `docs/configuration/`, and `docs/use-cases/` to ensure relative links resolve within ksail-go
 
 ---

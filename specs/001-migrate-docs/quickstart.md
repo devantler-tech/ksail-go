@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Access to both repositories within the monorepo (`projects/ksail` and `projects/ksail-go`).
+- Access to the [legacy KSail documentation](https://github.com/devantler-tech/ksail/tree/main/docs) for source content reference.
 - Node.js or another runtime capable of running `npx markdownlint-cli2`.
 - Lychee CLI (`cargo install lychee` or Homebrew `brew install lychee`).
 - Familiarity with KSail-Go CLI structure (`ksail cluster`, `ksail workload`).
@@ -10,13 +10,13 @@
 ## Workflow
 
 1. **Create workspace snapshot**
-   - Checkout branch `001-migrate-docs` in `projects/ksail-go`.
-   - Optionally open `projects/ksail/docs/` in a split view for reference.
+   - Checkout branch `001-migrate-docs` in this repository.
+   - Optionally open the [legacy KSail documentation](https://github.com/devantler-tech/ksail/tree/main/docs) in a split view for reference.
 2. **Inventory current docs**
-   - Record relevant files from `projects/ksail/docs/` (overview, configuration, use-cases, images).
+   - Record relevant files from the legacy KSail documentation (`docs/` folder in the KSail repository) such as overview, configuration, use-cases, and images.
    - Capture legacy commands that require translation to the Go CLI.
 3. **Copy and normalize content**
-   - Copy Markdown files into the corresponding `ksail-go/docs/` directory.
+   - Copy Markdown files into the corresponding `docs/` directory.
    - Remove Jekyll front matter (`---` blocks) and adjust headings to standard Markdown.
    - Update table-of-contents or navigation references to relative links that work in GitHub Markdown.
 4. **Rewrite for KSail-Go semantics**
@@ -29,7 +29,7 @@
    - Spot-check key pages in a Markdown preview (VS Code or GitHub web preview).
 6. **Document findings**
    - Update `specs/001-migrate-docs/spec.md` migration summary with sections migrated/deferred.
-   - Note follow-up tasks for publishing or remaining docs in `specs/001-migrate-docs/tasks.md` (Phase 2).
+   - Note follow-up tasks for publishing or remaining docs in `specs/001-migrate-docs/tasks.md` (Phase 5).
 7. **Open PR checklist**
    - Ensure lint checks pass and `git status` shows updated docs only.
    - Provide before/after notes for major command or structural changes in the PR description.

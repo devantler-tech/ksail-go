@@ -10,7 +10,7 @@ Migrate the relevant KSail documentation (configuration, core concepts, use case
 
 ## Technical Context
 
-**Language/Version**: Markdown within Go monorepo (docs-only change)
+**Language/Version**: Markdown within standalone Go project (docs-only change)
 **Primary Dependencies**: Markdownlint config (`.markdownlint.json`), Lychee link checker (`.lycheeignore`), GitHub Markdown renderer
 **Storage**: Git repository (`docs/` hierarchy)
 **Testing**: Markdownlint, Lychee link validation, GitHub preview spot checks
@@ -63,5 +63,5 @@ docs/
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|---------------------------------------|
-| _None_    | –          | –                                     |
+|-----------|------------|--------------------------------------|
+| _None_    | –          | –                                    |

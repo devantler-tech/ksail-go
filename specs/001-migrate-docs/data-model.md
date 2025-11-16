@@ -4,10 +4,10 @@
 
 ### DocumentationSection
 
-- **Purpose**: Represents a Markdown topic or collection to migrate into `ksail-go/docs/`.
+- **Purpose**: Represents a Markdown topic or collection to migrate into `docs/`.
 - **Key Attributes**:
-  - `sourcePath` (string): Relative path under `projects/ksail/docs/`.
-  - `targetPath` (string): Destination under `ksail-go/docs/`.
+  - `sourcePath` (string): Relative path under `docs/` in the legacy KSail repository.
+  - `targetPath` (string): Destination under `docs/` in this repository.
   - `category` (enum): `overview`, `configuration`, `use-case`, `asset-index`.
   - `status` (enum): `pending`, `migrated`, `rewritten`, `deferred`.
   - `requiresCommandUpdate` (bool): Indicates legacy command syntax that must be rewritten.
@@ -21,8 +21,8 @@
 - **Purpose**: Tracks images/diagrams stored in `docs/images/` to ensure correct references after migration.
 - **Key Attributes**:
   - `fileName` (string): Asset filename.
-  - `sourcePath` (string): Original KSail path.
-  - `targetPath` (string): Destination within `ksail-go/docs/images/`.
+  - `sourcePath` (string): Original path in the legacy KSail repository.
+  - `targetPath` (string): Destination within `docs/images/` in this repository.
   - `usedBy` (list of DocumentationSection): Sections referencing the asset.
   - `altText` (string): Short description to keep accessibility intact.
 - **Relationships**:
@@ -53,10 +53,10 @@
 
 ## Derived Views
 
-| View | Description |
-|------|-------------|
-| `MigrationChecklist` | Tabular summary of each `DocumentationSection` with `status`, assigned owner, command updates applied, outstanding issues. |
-| `AssetUsageMatrix` | Map of `DocumentationAsset` vs `DocumentationSection` to confirm no orphaned assets remain. |
+| View                  | Description                                                                                                                      |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `MigrationChecklist`  | Tabular summary of each `DocumentationSection` with `status`, assigned owner, command updates applied, outstanding issues.       |
+| `AssetUsageMatrix`    | Map of `DocumentationAsset` vs `DocumentationSection` to confirm no orphaned assets remain.                                      |
 
 ## State Transitions
 
