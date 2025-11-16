@@ -68,16 +68,13 @@ Represents a GitHub Actions job participating in the workflow.
 
 - `id`: string – Job identifier (`pre-commit`, `build-artifact`, `system-test`)
 - `needs`: array[string] – Upstream job dependencies
-- `durationSeconds`: integer – Total run time captured via metrics step
 - `artifactRequired`: boolean – Whether job downloads the shared binary
 - `cacheHit`: boolean – Whether Go cache restored successfully
 - `status`: enum(`pending`, `running`, `success`, `failure`, `skipped`)
-- `summaryPath`: string – Path to job summary file appended during run
 
 **Validation Rules**:
 
 - If `artifactRequired` is true, `build-artifact` must finish with `status = success`
-- Jobs must log duration and cache status before completion
 - `needs` list must ensure no job starts before prerequisites succeed, except `if: always()` guard for reporting job
 
 **State Transitions**:
@@ -87,29 +84,6 @@ Represents a GitHub Actions job participating in the workflow.
 3. `Running` → `Failure` (smoke test or main command fails)
 4. `Running` → `Skipped` (upstream failure and guard prevents execution)
 
-### MetricsRecord
-
-Represents the aggregated telemetry appended to `$GITHUB_STEP_SUMMARY`.
-
-**Attributes**:
-
-- `jobId`: string – ID of the emitting job
-- `artifactVersion`: string – Artifact checksum or commit SHA
-- `durationSeconds`: integer – Derived `(end - start)`
-- `cacheStatus`: enum(`hit`, `miss`, `n/a`)
-- `notes`: string – Additional diagnostics (e.g., "go mod download skipped")
-
-**Validation Rules**:
-
-- `jobId` must align with an existing `CIJob`
-- `durationSeconds` must be > 0
-- `cacheStatus` must reflect the actual cache result (from `restore` or `save` step outputs)
-
-**State Transitions**:
-
-1. `Collected` (data available in job) → `Published` (written to summary)
-2. `Published` → `Reviewed` (maintainer inspects summary)
-
 ## Relationships
 
 ```text
@@ -118,9 +92,6 @@ BuildArtifact 1--* CIJob
 
 GoCache 1--* CIJob
   (each job reports whether it hit the shared cache)
-
-CIJob 1--1 MetricsRecord
-  (each job must emit exactly one metrics summary)
 ```
 
 ## Domain Rules
@@ -128,9 +99,8 @@ CIJob 1--1 MetricsRecord
 1. **Single Source Build**: Only the `build-artifact` job may create the shared binary; all other jobs must treat the artifact as read-only consumption.
 2. **Cache Consistency**: Cache keys must incorporate the Go version and `go.sum` hash to prevent stale dependency reuse.
 3. **Smoke Test Guard**: Jobs consuming the artifact must execute `./ksail --version` (or similar) before cluster operations.
-4. **Metrics Requirement**: Every job must emit a `MetricsRecord` entry; missing summaries trigger follow-up investigation.
-5. **Parallel Safety**: Artifact names include `github.run_id` to prevent cross-run contamination when multiple workflows execute concurrently.
-6. **Failure Propagation**: If the build job fails, downstream jobs must skip execution and record the failure reason in their metrics output.
+4. **Parallel Safety**: Artifact names include `github.run_id` to prevent cross-run contamination when multiple workflows execute concurrently.
+5. **Failure Propagation**: If the build job fails, downstream jobs must skip execution and record the failure reason in their job logs.
 
 ## Notes
 
