@@ -61,6 +61,8 @@ AGENT_TYPE="${1:-}"
 # Agent-specific file paths
 CLAUDE_FILE="$REPO_ROOT/CLAUDE.md"
 GEMINI_FILE="$REPO_ROOT/GEMINI.md"
+# Copilot instructions file path updated from .github/agents/copilot-instructions.md to .github/copilot-instructions.md
+# See PR/commit history for details. Ensure all references use this new path.
 COPILOT_FILE="$REPO_ROOT/.github/copilot-instructions.md"
 CURSOR_FILE="$REPO_ROOT/.cursor/rules/specify-rules.mdc"
 QWEN_FILE="$REPO_ROOT/QWEN.md"

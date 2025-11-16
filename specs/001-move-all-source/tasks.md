@@ -11,7 +11,7 @@
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - Tasks without [P] must complete before subsequent tasks begin
-- All file paths are relative to repository root `/Users/ndam/git-personal/monorepo/projects/ksail-go`
+- All file paths are relative to repository root `<repository-root>`
 
 ---
 
