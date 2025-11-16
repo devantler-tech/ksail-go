@@ -103,7 +103,7 @@ The file reorganization will be executed as a single atomic change in one pull r
 - **FR-001**: All source code files MUST be moved from the repository root to a `src/` directory while maintaining the existing package structure
 - **FR-002**: The main application entry point and its tests MUST be moved to src/ directory
 - **FR-003**: All module references and import paths MUST remain unchanged to maintain backward compatibility
-- **FR-004**: Package manager configuration files (go.mod and go.sum) MUST be moved to the src/ directory along with all source code. Rationale: Go's module system requires go.mod to reside at the module root. Since we are establishing src/ as the new source root to clearly separate source code from repository metadata and documentation, go.mod and go.sum must move with the code to maintain Go's expected module structure and ensure `go build`, `go test`, and other Go tools continue to function correctly without requiring complex workarounds or build script modifications.
+- **FR-004**: Package manager configuration files (go.mod and go.sum) MUST be moved to the src/ directory along with all source code (see Design Rationale section for details)
 - **FR-005**: All build and test commands MUST be updated to work from the src/ directory or repository root as appropriate
 - **FR-006**: All existing test files MUST continue to execute successfully after the reorganization
 - **FR-006a**: Comprehensive validation MUST occur at two checkpoints: before merging (pre-merge validation) and after merging to the main branch (post-merge validation)
@@ -115,6 +115,10 @@ The file reorganization will be executed as a single atomic change in one pull r
 - **FR-012**: Version control history MUST be preserved to maintain file lineage and change tracking information
 - **FR-013**: The binary output directory MUST remain at the repository root or be explicitly configured
 - **FR-014**: All automation scripts that reference source files MUST be updated to use the new paths
+
+### Design Rationale
+
+**FR-004 - Moving go.mod and go.sum to src/**: Go's module system requires go.mod to reside at the module root. Since we are establishing src/ as the new source root to clearly separate source code from repository metadata and documentation, go.mod and go.sum must move with the code to maintain Go's expected module structure and ensure `go build`, `go test`, and other Go tools continue to function correctly without requiring complex workarounds or build script modifications.
 
 ## Clarifications
 
