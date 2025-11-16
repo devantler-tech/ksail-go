@@ -9,7 +9,7 @@ require (
 	k8s.io/apimachinery v0.34.2
 )
 
-replace github.com/devantler-tech/ksail-go => ../../..
+replace github.com/devantler-tech/ksail-go => ../../../src
 
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
