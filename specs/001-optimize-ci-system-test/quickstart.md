@@ -25,12 +25,12 @@
 1. In `.github/workflows/ci.yaml`, add a new `build-artifact` job before `pre-commit` that:
 
    - Checks out code with `actions/checkout@v5`
-   - Sets up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
-   - Runs `go build -C src -o ksail`
-   - Executes `./ksail --version` (smoke test)
-   - Computes SHA256 (`shasum -a 256 ksail`)
-   - Uploads the binary with `actions/upload-artifact@v4` (name: `ksail-${{ github.run_id }}`)
-   - Exposes `artifact-name` and `checksum` via job outputs
+   - Set up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
+   - Run `go build -C src -o ksail`
+   - Execute `./ksail --version` (smoke test)
+   - Compute SHA256 (`shasum -a 256 ksail`)
+   - Upload the binary with `actions/upload-artifact@v4` (name: `ksail-${{ github.run_id }}`)
+   - Expose `artifact-name` and `checksum` via job outputs
 2. Set `needs: [build-artifact]` on every downstream job.
 
 ### 3. Update Pre-Commit Job
