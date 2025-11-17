@@ -13,18 +13,18 @@ This action extracts the duplicated cache-based binary preparation pattern into 
 3. **Builds binary** if cache miss occurs
 4. **Saves binary to cache** for future runs
 5. **Ensures binary is executable** with `chmod +x`
-6. **Optionally runs smoke test** (`./ksail --version`)
+6. **Optionally runs smoke test** (runs `--version` on the prepared binary)
 
 ## Path Differences
 
 The action supports different output paths to accommodate job-specific requirements:
 
-- **`build-artifact` job**: Uses `./ksail` (root directory) for direct execution
-- **`system-test` job**: Uses `./bin/ksail` (bin directory) to avoid conflicts with test artifacts
+- **`build-artifact` job**: Uses `ksail` (root directory) for direct execution
+- **`system-test` job**: Uses `bin/ksail` (bin directory) to avoid conflicts with test artifacts
 
 This path flexibility is intentional and necessary because:
 - The build-artifact job produces a standalone binary for verification
-- The system-test job needs the binary in `./bin/` to align with the test execution context and avoid conflicts with generated test files (e.g., `k8s/`, `kind.yaml`, `k3d.yaml`)
+- The system-test job needs the binary in `bin/` to align with the test execution context and avoid conflicts with generated test files (e.g., `k8s/`, `kind.yaml`, `k3d.yaml`)
 
 ## Usage
 
@@ -34,7 +34,7 @@ This path flexibility is intentional and necessary because:
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
     source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
-    output-path: ./ksail  # or ./bin/ksail
+    output-path: ksail  # or bin/ksail
     run-smoke-test: 'true'  # optional, defaults to 'true'
 ```
 
@@ -44,8 +44,8 @@ This path flexibility is intentional and necessary because:
 |-------|----------|---------|-------------|
 | `go-version` | Yes | - | Go version from `setup-go` output, used for cache key computation |
 | `source-hash` | Yes | - | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`) |
-| `output-path` | No | `./ksail` | Target path for the binary relative to repository root (e.g., `./ksail` or `./bin/ksail`). Must be relative to repository root and not contain path traversal sequences (`/../`). |
-| `run-smoke-test` | No | `'true'` | Whether to run `./ksail --version` after preparation |
+| `output-path` | No | `ksail` | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and not contain path traversal sequences (`/../`). |
+| `run-smoke-test` | No | `'true'` | Whether to run `--version` smoke test on the prepared binary |
 
 ## Outputs
 
@@ -64,7 +64,7 @@ This path flexibility is intentional and necessary because:
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
     source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
-    output-path: ./ksail
+    output-path: ksail
     run-smoke-test: 'true'
 ```
 
@@ -76,7 +76,7 @@ This path flexibility is intentional and necessary because:
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
     source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
-    output-path: ./bin/ksail
+    output-path: bin/ksail
     run-smoke-test: 'false'  # tests handle validation
 ```
 

@@ -10,9 +10,9 @@ inputs:
     description: Hash of source files (from hashFiles() in workflow).
     required: true
   output-path:
-    description: Target path for the binary relative to repository root (e.g., './ksail' or './bin/ksail'). Must not be an absolute path.
+    description: Target path for the binary relative to repository root (e.g., 'ksail' or 'bin/ksail'). Must not be an absolute path.
     required: false
-    default: ./ksail
+    default: ksail
   run-smoke-test:
     description: Whether to run the smoke test after preparation.
     required: false
