@@ -15,9 +15,10 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 ```yaml
 - name: "Compute ksail cache key"
   id: ksail-cache-key
-  env:
-    KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
   run: |
+    GO_VERSION="$(go version | awk '{print $3}')"
+    SOURCE_HASH="$(sha256sum src/go.mod src/go.sum src/**/*.go | sha256sum | awk '{print $1}')"
+    KSAIL_CACHE_KEY="${RUNNER_OS}-ksail-bin-${GO_VERSION}-${SOURCE_HASH}"
     printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
 
 - name: "Restore cached ksail binary"
@@ -63,6 +64,10 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 **Consumers**: `system-test`
 
 > **Note:** The workflow uses cache-only distribution; artifact upload/download is not used. The `system-test` job consumes the built `ksail` binary via cache restore. The `pre-commit` job and reusable CI workflow jobs (`ci`) build from source and do not consume the cached binary.
+>
+> **Implementation:** The actual workflow implementation uses the `.github/actions/prepare-ksail-binary` composite action, which encapsulates the logic shown below. The contract below represents the logical behavior that the composite action must implement.
+
+**Composite Action Usage:**
 
 ```yaml
 - name: "Verify build artifact"
@@ -71,6 +76,18 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
     echo "build-artifact job failed to seed the ksail binary cache (cache-only distribution; no artifact upload/download). Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
     exit 1
 
+- name: 📦 Prepare ksail binary
+  uses: ./.github/actions/prepare-ksail-binary
+  with:
+    go-version: ${{ steps.setup-go.outputs.go-version }}
+    source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
+    output-path: bin/ksail
+    run-smoke-test: 'false'
+```
+
+**Logical Contract (Implemented by Composite Action):**
+
+```yaml
 - name: "Compute ksail cache key"
   id: ksail-cache-key
   env:
