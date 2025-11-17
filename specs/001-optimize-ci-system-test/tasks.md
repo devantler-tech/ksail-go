@@ -19,11 +19,10 @@
 
 **Purpose**: Extend the reusable Go CI workflow so all downstream tasks can consume the shared artifact and metadata.
 
-> **Note:** The shared artifact consumption approach described above was later superseded by Phase 8, which uses cache-only distribution. This note clarifies the historical context and the evolution of the CI optimization strategy.
-- [X] T002 Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs and expose them to lint/test jobs
-- [X] T003 Update `github/devantler-tech/github-actions/reusable-workflows/README.md` with usage instructions for the new artifact inputs
+- [X] T002 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned update to `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs was not implemented; cache standardization replaced artifact-based distribution.
+- [X] T003 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned documentation update for artifact inputs in `github/devantler-tech/github-actions/reusable-workflows/README.md` was not implemented; see Phase 8 for cache usage instructions.
 
-**Checkpoint**: Reusable workflow consumers can request the shared artifact via inputs.
+**Checkpoint**: Reusable workflow consumers can request the shared artifact via inputs. *(Deprecated: see Phase 8 for cache-based distribution.)*
 
 ---
 
@@ -31,19 +30,19 @@
 
 **Goal**: Build the KSail binary once per workflow, reuse warmed Go caches, and cut system-test matrix runtimes below the 105-second target.
 
-**Independent Test**: Trigger the workflow on a pull request with no code changes; verify `build-artifact` runs once, every dependent job downloads the shared binary without rebuilding, and system-test matrix entries finish ≤105 seconds.
+**Independent Test**: Trigger the workflow on a pull request with no code changes; verify `build-artifact` runs once, system-test jobs restore the cached binary (or rebuild on cache miss), and system-test matrix entries finish ≤105 seconds.
 
 ### Implementation for User Story 1
 
 - [X] T004 [US1] Introduce `build-artifact` job in `.github/workflows/ci.yaml` that runs cached `go build`, records checksum, smoke-tests `./ksail --version`, and uploads `ksail-${{ github.run_id }}` outputs
-- [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to depend on `build-artifact`, download `./bin/ksail`, run the smoke step, and remove redundant build commands
-- [X] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to pass artifact outputs, rely on action caching, and drop local compilation steps
-- [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to download the shared artifact per matrix entry, run the smoke step, and remove local `go build`
-- [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
+- [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to standardize Go cache usage and remove redundant `go mod download` commands, without consuming the cached binary
+- [X] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to rely on standardized action caching for Go modules without artifact passing, keeping lint and test jobs building from source
+- [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to restore the cached binary per matrix entry, run the smoke step, and fall back to local `go build` on cache miss
+- [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to guard execution with `if: needs.build-artifact.result != 'success'` and short-circuit when the build job fails
 - [X] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
 - [X] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
 
-**Checkpoint**: Workflow builds once, consumers reuse the shared artifact, and Go cache warming is enabled everywhere.
+**Checkpoint**: Workflow builds once, system-test jobs reuse the cached binary, and Go module cache warming is enabled for all jobs.
 
 ---
 
@@ -119,6 +118,8 @@
 ## Phase 8: Cache-Only Distribution (Maintenance)
 
 **Purpose**: Retire per-run artifacts and rely exclusively on the cache-backed binary.
+
+> **Note:** This phase supersedes the shared artifact consumption approach originally introduced in Phase 2. The change from artifact-based distribution to cache-only distribution clarifies the historical context and evolution of the CI optimization strategy.
 
 - [X] T033 Remove artifact upload/download steps from `.github/workflows/ci.yaml` and ensure system-test jobs restore or rebuild the binary from cache
 - [X] T034 Update supporting documentation (plan, research, quickstart) to describe cache-only distribution and the deprecation of `.github/actions/use-ksail-artifact`

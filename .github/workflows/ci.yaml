@@ -249,7 +249,7 @@ jobs:
     needs: [system-test, build-artifact]
     if: always()
     steps:
-      - name: Verify cache availability
+      - name: 🔒 Verify build artifact
         if: needs.build-artifact.result != 'success'
         run: |
           echo "build-artifact failed to seed the ksail binary cache. Failing status aggregation." >> "$GITHUB_STEP_SUMMARY"

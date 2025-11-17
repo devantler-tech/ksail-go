@@ -35,8 +35,8 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 
    - Check out code with `actions/checkout@v5`
    - Set up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
-   - Restore the cached `ksail` binary with `actions/cache@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
-   - Run `go build -C src -o ../ksail .` when the cache misses, seed `.cache/ksail`, and save the cache for future runs
+   - Restore the cached `ksail` binary with `actions/cache/restore@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
+   - Run `go build -C src -o ../ksail .` when the cache misses, seed `.cache/ksail`, and save the cache with `actions/cache/save@v4` for future runs
    - Execute `./ksail --version` (smoke test)
 2. Keep downstream jobs dependent on `build-artifact` so they only start after the cache is populated (or the fallback build completes).
 
@@ -62,14 +62,21 @@ When adding a new job or matrix entry that needs the compiled binary, restore th
 
 ### 7. Validate Locally (Optional)
 
+> **Note**: `act` does not support GitHub Actions cache restoration by default. The validation below is limited to smoke tests only and will not verify cache behavior. For comprehensive cache validation, rely on the CI workflow runs described in step 8.
 
-1. Use [`act`](https://github.com/nektos/act) to dry-run a reduced matrix (e.g., Kind default) verifying the cache restore (or fallback build) and smoke test succeed:
+1. Use [`act`](https://github.com/nektos/act) to dry-run a reduced matrix (e.g., Kind default) verifying the fallback build and smoke test succeed:
 
    ```bash
    act pull_request --job system-test --matrix init-args='--distribution Kind'
    ```
 
-2. Confirm the binary step executes and `./bin/ksail --version` passes.
+2. Confirm the binary step executes (via fallback build) and `./bin/ksail --version` passes.
+
+**Alternative**: To validate cache behavior, push to a feature branch and review the GitHub Actions run logs for:
+
+- Cache hit/miss indicators in the `build-artifact` job output
+- Binary reuse confirmation in system-test job logs
+- Overall timing improvements compared to baseline runs
 
 ### 8. Push Branch and Observe CI
 
