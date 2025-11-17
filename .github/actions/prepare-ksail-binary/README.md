@@ -84,4 +84,3 @@ This path flexibility is intentional and necessary because:
 ## Related
 
 - Original issue: [#527 - Optimize CI system-test build time](https://github.com/devantler-tech/ksail-go/pull/527)
-- Task reference: T019 in `specs/001-optimize-ci-system-test/tasks.md`
