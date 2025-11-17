@@ -73,7 +73,7 @@ changelog:
       - "Merge branch"
   groups:
     - title: "Breaking Changes"
-      regexp: '^.*!:'
+      regexp: "^.*!:"
       order: 0
     - title: "Features"
       regexp: '^.*?feat(\(.+\))?!?:'

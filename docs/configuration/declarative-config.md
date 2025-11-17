@@ -23,18 +23,18 @@ spec:
 
 ### Key fields inside `spec`
 
-| Field | Type | Allowed values | Purpose |
-| --- | --- | --- | --- |
-| `distribution` | enum | `Kind`, `K3d` | Chooses the container-based Kubernetes runtime. |
-| `distributionConfig` | string | File path | Points to the distribution-specific YAML (`kind.yaml` or `k3d.yaml`). |
-| `sourceDirectory` | string | Directory path | Location of the GitOps manifests reconciled by Flux and the workload commands. |
-| `connection.kubeconfig` | string | File path | Path to the kubeconfig used for cluster lifecycle commands. |
-| `connection.context` | string | kubeconfig context | Context name written by the scaffolder (for example `kind-<project>`). |
-| `connection.timeout` | duration | Go duration (e.g. `30s`, `5m`) | Optional; apply when you want lifecycle commands to wait longer for operations. |
-| `cni` | enum | `Default`, `Cilium`, `Calico` | Determines which CNI installer runs after the cluster provisions. |
-| `metricsServer` | enum | `Enabled`, `Disabled` | Installs or removes metrics-server as part of post-provision steps. |
-| `gitOpsEngine` | enum | `None` | Reserved for future GitOps integrations. |
-| `options.*` | object | Provider-specific fields | Advanced knobs for Kind, K3d, Flux, or Helm. The scaffolder leaves them empty so you can opt-in later. |
+| Field                   | Type     | Allowed values                 | Purpose                                                                                                |
+|-------------------------|----------|--------------------------------|--------------------------------------------------------------------------------------------------------|
+| `distribution`          | enum     | `Kind`, `K3d`                  | Chooses the container-based Kubernetes runtime.                                                        |
+| `distributionConfig`    | string   | File path                      | Points to the distribution-specific YAML (`kind.yaml` or `k3d.yaml`).                                  |
+| `sourceDirectory`       | string   | Directory path                 | Location of the GitOps manifests reconciled by Flux and the workload commands.                         |
+| `connection.kubeconfig` | string   | File path                      | Path to the kubeconfig used for cluster lifecycle commands.                                            |
+| `connection.context`    | string   | kubeconfig context             | Context name written by the scaffolder (for example `kind-<project>`).                                 |
+| `connection.timeout`    | duration | Go duration (e.g. `30s`, `5m`) | Optional; apply when you want lifecycle commands to wait longer for operations.                        |
+| `cni`                   | enum     | `Default`, `Cilium`, `Calico`  | Determines which CNI installer runs after the cluster provisions.                                      |
+| `metricsServer`         | enum     | `Enabled`, `Disabled`          | Installs or removes metrics-server as part of post-provision steps.                                    |
+| `gitOpsEngine`          | enum     | `None`                         | Reserved for future GitOps integrations.                                                               |
+| `options.*`             | object   | Provider-specific fields       | Advanced knobs for Kind, K3d, Flux, or Helm. The scaffolder leaves them empty so you can opt-in later. |
 
 > The CLI applies defaults for any field you omit. For example, if `cni` is not present, KSail-Go uses `Default`, which defers to the distribution's built-in networking (`kindnetd` for Kind, `flannel` for K3d).
 

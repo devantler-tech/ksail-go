@@ -112,13 +112,13 @@ pkg/svc/installer/
 
 ## Decisions Summary
 
-| Decision | Rationale | Alternative Considered |
-|----------|-----------|----------------------|
-| Rename `cni_helpers.go` → `base.go` | Clearer semantic meaning within `cni/` package context | Keep original name (rejected: redundant "cni" prefix inside `cni/` package) |
-| Keep `k8sutil/` separate | Provides general k8s utilities beyond CNI scope | Move under `cni/` (rejected: utility applies to all installers, not CNI-specific) |
-| Atomic import updates | Prevents partial broken states | Gradual migration with aliases (rejected: adds complexity without benefit for internal refactor) |
-| Immediate deletion of old paths | Clean break prevents confusion | Deprecation period (rejected: internal refactor doesn't need transition period per clarifications) |
-| Subdirectories for implementations | Logical separation of CNI-specific code | Flat structure under `cni/` (rejected: would mix shared helpers with implementations) |
+| Decision                            | Rationale                                              | Alternative Considered                                                                             |
+|-------------------------------------|--------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Rename `cni_helpers.go` → `base.go` | Clearer semantic meaning within `cni/` package context | Keep original name (rejected: redundant "cni" prefix inside `cni/` package)                        |
+| Keep `k8sutil/` separate            | Provides general k8s utilities beyond CNI scope        | Move under `cni/` (rejected: utility applies to all installers, not CNI-specific)                  |
+| Atomic import updates               | Prevents partial broken states                         | Gradual migration with aliases (rejected: adds complexity without benefit for internal refactor)   |
+| Immediate deletion of old paths     | Clean break prevents confusion                         | Deprecation period (rejected: internal refactor doesn't need transition period per clarifications) |
+| Subdirectories for implementations  | Logical separation of CNI-specific code                | Flat structure under `cni/` (rejected: would mix shared helpers with implementations)              |
 
 ## Alternatives Considered
 
@@ -148,12 +148,12 @@ pkg/svc/installer/
 
 ### Identified Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| Missed import references | Low | High | Comprehensive grep search for old import paths; CI will catch missed updates |
-| Mock regeneration failures | Low | Medium | Test mockery locally before committing; validate mocks compile after regeneration |
-| Test file relocation errors | Low | Medium | Run `go test ./...` after move; baseline comparison catches discrepancies |
-| Documentation staleness | Medium | Low | Search for package path references in all `.md` files; update CONTRIBUTING.md explicitly |
+| Risk                        | Likelihood | Impact | Mitigation                                                                               |
+|-----------------------------|------------|--------|------------------------------------------------------------------------------------------|
+| Missed import references    | Low        | High   | Comprehensive grep search for old import paths; CI will catch missed updates             |
+| Mock regeneration failures  | Low        | Medium | Test mockery locally before committing; validate mocks compile after regeneration        |
+| Test file relocation errors | Low        | Medium | Run `go test ./...` after move; baseline comparison catches discrepancies                |
+| Documentation staleness     | Medium     | Low    | Search for package path references in all `.md` files; update CONTRIBUTING.md explicitly |
 
 ## Phase 0 Completion Checklist
 
@@ -166,4 +166,3 @@ pkg/svc/installer/
 - ✅ Risk mitigation strategies defined
 
 **GATE STATUS**: ✅ Proceed to Phase 1 (Design & Contracts)
-

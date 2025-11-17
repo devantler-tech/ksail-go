@@ -132,16 +132,16 @@
 
 ## Summary of Decisions
 
-| Topic | Decision | Rationale |
-|-------|----------|-----------|
-| Module location | go.mod in src/ | Go fully supports subdirectory modules |
-| Import paths | No changes needed | Module path declaration is what matters |
-| Build commands | `cd src && go <cmd>` or `go -C src <cmd>` | Standard Go practices for subdirectory modules |
-| IDE support | Workspace reload required | All major IDEs support with reload |
-| Git history | Use `git mv` | Preserves history and blame information |
-| CI/CD updates | Add working-directory: src | Clean and explicit configuration |
-| Binary output | Keep bin/ at root | Separate artifacts from source |
-| Config files | Stay at root (except go source) | Repository-level configuration visibility |
+| Topic           | Decision                                  | Rationale                                      |
+|-----------------|-------------------------------------------|------------------------------------------------|
+| Module location | go.mod in src/                            | Go fully supports subdirectory modules         |
+| Import paths    | No changes needed                         | Module path declaration is what matters        |
+| Build commands  | `cd src && go <cmd>` or `go -C src <cmd>` | Standard Go practices for subdirectory modules |
+| IDE support     | Workspace reload required                 | All major IDEs support with reload             |
+| Git history     | Use `git mv`                              | Preserves history and blame information        |
+| CI/CD updates   | Add working-directory: src                | Clean and explicit configuration               |
+| Binary output   | Keep bin/ at root                         | Separate artifacts from source                 |
+| Config files    | Stay at root (except go source)           | Repository-level configuration visibility      |
 
 ## Implementation Readiness
 
