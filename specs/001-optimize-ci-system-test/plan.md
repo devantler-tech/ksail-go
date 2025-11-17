@@ -18,7 +18,7 @@ Build and share the `ksail` binary via the GitHub Actions cache while reusing wa
 **Target Platform**: GitHub-hosted `ubuntu-latest` runners provisioning Kind/K3d clusters for system tests
 **Project Type**: Monorepo CLI project with GitOps system tests (single backend repo)
 **Performance Goals**: System-test matrix entries ≤105 seconds, total CI workflow ≤25 minutes, ≥80% Go cache hit rate, ≤10% runtime drift in unaffected jobs
-**Constraints**: Shared binary must be available to reusable workflow jobs, build failure must short-circuit dependents, cache keys must remain deterministic across jobs, parallel matrix execution preserved
+**Constraints**: Shared binary must be available to system-test jobs; reusable workflow jobs build from source and rely on warmed module caches only. Build failure must short-circuit dependents, cache keys must remain deterministic across jobs, parallel matrix execution preserved
 **Scale/Scope**: 4 top-level jobs (pre-commit, reusable CI, system-test matrix with 11 combinations, status aggregator) plus downstream reusable workflow jobs (lint, mega-lint, test)
 
 ## Constitution Check
