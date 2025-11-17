@@ -1,4 +1,4 @@
-# Implementation Plan: Optimize CI System-Test Build Time
+# Implementation Plan: Optimize CI System Test Build Time
 
 **Branch**: `001-optimize-ci-system-test` | **Date**: 2025-11-16 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-optimize-ci-system-test/spec.md`

@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Optimize CI System-Test Build Time
+# Specification Quality Checklist: Optimize CI System Test Build Time
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2025-11-16
