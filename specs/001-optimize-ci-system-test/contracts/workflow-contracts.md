@@ -1,6 +1,6 @@
 # Workflow Contracts
 
-**Feature**: Optimize CI System-Test Build Time
+**Feature**: Optimize CI System Test Build Time
 **Phase**: 1 - Design
 **Date**: 2025-11-16
 

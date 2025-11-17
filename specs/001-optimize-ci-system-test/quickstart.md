@@ -1,6 +1,6 @@
-# Quickstart Guide: Optimize CI System-Test Build Time
+# Quickstart Guide: Optimize CI System Test Build Time
 
-**Feature**: Optimize CI System-Test Build Time
+**Feature**: Optimize CI System Test Build Time
 **Date**: 2025-11-16
 **Audience**: Maintainers updating `.github/workflows/ci.yaml`
 
@@ -50,7 +50,7 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 
 The shared workflow `devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` remains unchanged—lint and test jobs build from source and rely solely on warmed module caches. No additional inputs are required; binary reuse is handled locally via cache restores.
 
-### 5. Optimize System-Test Job
+### 5. Optimize System Test Job
 
 1. Restore the cached `ksail` binary using the same cache key as the build job.
 2. If the cache misses, run `go build -C src -o ../bin/ksail .` to produce the binary locally, copy it into `.cache/ksail`, and save the cache for subsequent runs.

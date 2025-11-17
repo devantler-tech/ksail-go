@@ -1,6 +1,6 @@
-# Research: Optimize CI System-Test Build Time
+# Research: Optimize CI System Test Build Time
 
-**Feature**: Optimize CI System-Test Build Time
+**Feature**: Optimize CI System Test Build Time
 **Phase**: 0 - Research & Discovery
 **Date**: 2025-11-16
 

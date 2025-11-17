@@ -1,4 +1,4 @@
-# Tasks: Optimize CI System-Test Build Time
+# Tasks: Optimize CI System Test Build Time
 
 **Input**: Design documents from `/specs/001-optimize-ci-system-test/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/

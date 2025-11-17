@@ -1,4 +1,4 @@
-# Feature Specification: Optimize CI System-Test Build Time
+# Feature Specification: Optimize CI System Test Build Time
 
 **Feature Branch**: `001-optimize-ci-system-test`  
 **Created**: 2025-11-16  
@@ -93,7 +93,7 @@ A contributor adds a new matrix entry or adjusts CI job arguments. The workflow 
 ### Key Entities
 
 - **CI Workflow Run**: Represents a full automation execution for a commit or pull request, including the build stage, system-test matrix jobs, cache keys, artifact identifiers, and duration metrics.
-- **System-Test Artifact**: The compiled KSail binary packaged during the build stage, identified by the source commit and consumed by every matrix job within the same workflow run.
+- **System Test Artifact**: The compiled KSail binary packaged during the build stage, identified by the source commit and consumed by every matrix job within the same workflow run.
 
 ## Success Criteria *(mandatory)*
 
