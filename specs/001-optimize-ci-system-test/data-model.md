@@ -96,7 +96,7 @@ GoModuleCache 1--* CIJob
 
 1. **Single Source Build**: Only the `build-artifact` job should seed the shared cache under normal conditions; downstream jobs may rebuild only when the cache misses and must re-save the entry afterward.
 2. **Cache Consistency**: Cache keys must incorporate the Go version and `go.sum` hash to prevent stale dependency reuse.
-3. **Smoke Test Guard**: Jobs consuming the artifact must execute `./ksail --version` (or similar) before cluster operations.
+3. **Smoke Test Guard**: Jobs consuming the cached binary must execute `./ksail --version` (or similar) before cluster operations.
 4. **Parallel Safety**: Cache keys include runner OS and source hashes to prevent collisions when multiple workflows execute concurrently.
 5. **Failure Propagation**: If the build job fails, downstream jobs must skip execution and record the failure reason in their job logs.
 
