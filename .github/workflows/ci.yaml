@@ -73,6 +73,7 @@ jobs:
       working-directory: ./src/
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
     permissions:
       contents: write
       issues: write
