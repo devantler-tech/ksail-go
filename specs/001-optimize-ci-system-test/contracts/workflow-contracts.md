@@ -41,7 +41,6 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 - name: "Store binary for cache"
   if: steps.ksail-cache.outputs.cache-hit != 'true'
   run: |
-    mkdir -p ./.cache
     cp ./ksail ./.cache/ksail
 
 - name: "Save ksail binary cache"
