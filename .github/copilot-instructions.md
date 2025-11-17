@@ -438,7 +438,7 @@ When reviewing Copilot's pull requests:
 - Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs (001-move-all-source)
 - File system (configuration files, cluster state) (001-move-all-source)
 - GitHub Actions workflow YAML orchestrating Go 1.25.4 toolchain + `actions/checkout@v5`, `actions/setup-go@v6` (with cache), `actions/upload-artifact@v4`, `actions/download-artifact@v4`, `actions/cache@v4`, `pre-commit/action@v3.0.1`, `devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml` (001-optimize-ci-system-test)
-- GitHub Actions artifact storage (5 GB per artifact, 2 GB per file) and cache backend (10 GB per repository) (001-optimize-ci-system-test)
+- GitHub Actions cache backend (10 GB per repository) (001-optimize-ci-system-test)
 - Markdown within standalone Go project (docs-only change) + Markdownlint config (`.markdownlint.json`), Lychee link checker (`.lycheeignore`), GitHub Markdown renderer (001-migrate-docs)
 - Git repository (`docs/` hierarchy) (001-migrate-docs)
 
