@@ -6,6 +6,9 @@ inputs:
   go-version:
     description: Go version from setup-go output, used to compute cache key.
     required: true
+  source-hash:
+    description: Hash of source files (from hashFiles() in workflow).
+    required: true
   output-path:
     description: Target path for the binary (e.g., './ksail' or './bin/ksail').
     required: false
@@ -31,10 +34,9 @@ runs:
       shell: bash
       env:
         GO_VERSION: ${{ inputs.go-version }}
+        SOURCE_HASH: ${{ inputs.source-hash }}
       run: |
-        KSAIL_CACHE_KEY="${RUNNER_OS}-ksail-bin-${GO_VERSION}-$(
-          sha256sum src/go.mod src/go.sum $(find src -name '*.go' -type f) | sha256sum | awk '{print $1}'
-        )"
+        KSAIL_CACHE_KEY="${RUNNER_OS}-ksail-bin-${GO_VERSION}-${SOURCE_HASH}"
         printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
 
     - name: ♻️ Restore cached ksail binary
