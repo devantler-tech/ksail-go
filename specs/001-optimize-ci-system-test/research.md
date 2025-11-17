@@ -96,7 +96,7 @@ Additional observations:
 - System-test matrix entries finished between **1m16s** and **2m45s** (down from the 3m26s baseline) while reusing the shared binary; Kind + mirror combinations stayed within the 105-second KPI.
 - Reusable workflow jobs (`ci / 🧹 Lint - mega-linter`, `ci / 🧪 Test`, `ci / 🧹 Lint - golangci-lint`) continued to compile from source, confirming compatibility when the artifact is omitted.
 - `actions/setup-go@v6` caches populated successfully in the build and test jobs; `golangci-lint` emitted one cache warning because the reusable workflow still resolves `go.sum` from repository root. Follow-up: confirm the reusable workflow uses the `working-directory` input when setting `cache-dependency-path`.
-- No regressions observed in pre-commit or lint runtimes despite the additional artifact job.
+- No regressions observed in pre-commit or lint runtimes despite the additional build job.
 
 ### Next Steps
 
