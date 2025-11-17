@@ -65,7 +65,7 @@ A contributor adds a new matrix entry or adjusts CI job arguments. The workflow 
 - What happens when the cache is cold because of dependency or Go version changes? Jobs must fall back to downloading fresh modules and still complete successfully, even if slower.
 - How are concurrent workflow runs handled when multiple pull requests execute simultaneously? Artifact names and cache keys must remain unique per run to avoid cross-run contamination across every job.
 - What occurs if an individual matrix job requires platform-specific binaries in the future? Document how to fork the workflow while preserving reuse for compatible jobs.
-- How do jobs that do not require the shared binary behave? They must skip irrelevant artifact steps while still benefiting from caching improvements.
+- How do jobs that do not require the shared binary behave? They must skip cache restoration steps for the shared binary and only restore caches relevant to their own execution, while still benefiting from other caching improvements.
 
 ## Requirements *(mandatory)*
 
