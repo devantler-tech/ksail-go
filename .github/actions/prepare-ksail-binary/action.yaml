@@ -60,8 +60,8 @@ runs:
           echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
           exit 1
         fi
-        if [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]]; then
-          echo "Error: output-path must not contain '/../' (path traversal), got: $OUTPUT_PATH" >&2
+        if [[ "$OUTPUT_PATH" == */../* ]]; then
+          echo "Error: output-path must not contain '/../', got: $OUTPUT_PATH" >&2
           exit 1
         fi
         
@@ -74,20 +74,20 @@ runs:
         
         if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
           # Use cached binary
-          cp ./.cache/ksail "$OUTPUT_PATH"
+          cp ./.cache/ksail "$output_relative"
         else
           # Build binary
           go build -C src -o "../${output_relative}" .
           # Store for cache
           mkdir -p ./.cache
-          cp "$OUTPUT_PATH" ./.cache/ksail
+          cp "$output_relative" ./.cache/ksail
         fi
         
         # Ensure binary is executable
-        chmod +x "$OUTPUT_PATH"
+        chmod +x "$output_relative"
         
         # Output absolute path
-        echo "binary-path=$(realpath "$OUTPUT_PATH")" >> "$GITHUB_OUTPUT"
+        echo "binary-path=$(realpath "$output_relative")" >> "$GITHUB_OUTPUT"
 
     - name: ♻️ Save ksail binary cache
       if: steps.ksail-cache.outputs.cache-hit != 'true'
@@ -103,4 +103,6 @@ runs:
         OUTPUT_PATH: ${{ inputs.output-path }}
       run: |
         set -Eeuo pipefail
-        "$OUTPUT_PATH" --version
+        # Strip leading './' for consistency with prepare step
+        output_relative="${OUTPUT_PATH#./}"
+        "$output_relative" --version
