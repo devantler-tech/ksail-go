@@ -132,7 +132,7 @@ jobs:
     steps:
       - name: 🔒 Verify build artifact
         if: ${{ needs.build-artifact.result != 'success' }}
-          # Guard matrix execution when the build job fails, preserving runner minutes.
+        # Guard matrix execution when the build job fails, preserving runner minutes.
         run: |
           echo "build-artifact failed to seed the ksail binary cache. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
           exit 1
