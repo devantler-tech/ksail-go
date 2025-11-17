@@ -61,7 +61,7 @@ runs:
           exit 1
         fi
         if [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]]; then
-          echo "Error: output-path must not start with '../' or contain '/../', got: $OUTPUT_PATH" >&2
+          echo "Error: output-path must not contain '/../' (path traversal), got: $OUTPUT_PATH" >&2
           exit 1
         fi
         
