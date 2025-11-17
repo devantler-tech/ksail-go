@@ -63,7 +63,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 **Consumers**: `system-test`
 
-> **Note:** As of Phase 8 (T033-T034), artifact distribution is deprecated. The `system-test` job consumes the built `ksail` binary via cache restore. The `pre-commit` job and reusable CI workflow jobs (`ci`) build from source and do not consume the cached binary.
+> **Note:** Artifact distribution is deprecated. The `system-test` job now consumes the built `ksail` binary via cache restore. The `pre-commit` job and reusable CI workflow jobs (`ci`) build from source and do not consume the cached binary.
 
 ```yaml
 - name: "Verify build artifact"
