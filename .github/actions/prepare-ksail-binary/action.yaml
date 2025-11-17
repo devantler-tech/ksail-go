@@ -55,9 +55,13 @@ runs:
       run: |
         set -Eeuo pipefail
         
-        # Validate output path is relative
+        # Validate output path is relative and does not escape repository
         if [[ "$OUTPUT_PATH" = /* ]]; then
           echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
+          exit 1
+        fi
+        if [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]]; then
+          echo "Error: output-path must not start with '../' or contain '/../', got: $OUTPUT_PATH" >&2
           exit 1
         fi
         
