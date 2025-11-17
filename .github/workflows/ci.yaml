@@ -28,9 +28,6 @@ jobs:
           cache: true
           cache-dependency-path: src/go.sum
 
-      - name: 📁 Prepare cache directory
-        run: mkdir -p ./.cache
-
       - name: 🔑 Compute ksail cache key
         id: ksail-cache-key
         env:
@@ -56,6 +53,7 @@ jobs:
       - name: ♻️ Store binary for cache
         if: steps.ksail-cache.outputs.cache-hit != 'true'
         run: |
+          mkdir -p ./.cache
           cp ./ksail ./.cache/ksail
 
       - name: ♻️ Save ksail binary cache
