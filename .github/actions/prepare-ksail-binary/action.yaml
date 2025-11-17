@@ -10,7 +10,7 @@ inputs:
     description: Hash of source files (from hashFiles() in workflow).
     required: true
   output-path:
-    description: Target path for the binary (e.g., './ksail' or './bin/ksail').
+    description: Target path for the binary relative to repository root (e.g., './ksail' or './bin/ksail'). Must not be an absolute path.
     required: false
     default: ./ksail
   run-smoke-test:
@@ -55,6 +55,15 @@ runs:
       run: |
         set -Eeuo pipefail
         
+        # Validate output path is relative
+        if [[ "$OUTPUT_PATH" = /* ]]; then
+          echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
+          exit 1
+        fi
+        
+        # Strip leading './' from OUTPUT_PATH for clearer path construction
+        output_relative="${OUTPUT_PATH#./}"
+        
         # Create output directory if needed
         output_dir=$(dirname "$OUTPUT_PATH")
         mkdir -p "$output_dir"
@@ -64,7 +73,7 @@ runs:
           cp ./.cache/ksail "$OUTPUT_PATH"
         else
           # Build binary
-          go build -C src -o "../${OUTPUT_PATH}" .
+          go build -C src -o "../${output_relative}" .
           # Store for cache
           mkdir -p ./.cache
           cp "$OUTPUT_PATH" ./.cache/ksail
