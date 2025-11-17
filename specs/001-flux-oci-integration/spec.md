@@ -143,8 +143,8 @@ A cluster administrator uses the `ksail workload reconcile` command to manually 
 - **FR-007**: System MUST support pushing OCI artifacts to repositories in the local registry with semantic versioning
 - **FR-008**: System MUST generate Flux OCIRepository custom resources that reference repositories in the local registry
 - **FR-009**: System MUST generate Flux Kustomization custom resources that source manifests from OCIRepository resources
-- **FR-010**: System MUST configure Flux resources with [NEEDS CLARIFICATION: Should authentication be required for the local registry, or should it run without authentication for local development simplicity?]
-- **FR-011**: System MUST configure Flux to reconcile OCIRepository sources at a [NEEDS CLARIFICATION: What should be the default reconciliation interval - 1 minute, 5 minutes, or configurable by the administrator?]
+- **FR-010**: System MUST configure Flux resources without authentication requirements for the local registry to optimize local development simplicity
+- **FR-011**: System MUST configure Flux to reconcile OCIRepository sources at a configurable interval with a default of 1 minute for rapid feedback during development
 - **FR-012**: System MUST provide a command to trigger immediate Flux reconciliation without waiting for the polling interval
 - **FR-013**: System MUST display Flux reconciliation status and any errors encountered during synchronization
 - **FR-014**: System MUST persist registry data across cluster stop/start cycles to preserve pushed artifacts
