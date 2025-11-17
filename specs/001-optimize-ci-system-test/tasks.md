@@ -42,7 +42,7 @@
 - [X] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
 - [X] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
 
-**Checkpoint**: Workflow builds once, consumers reuse the shared artifact, and Go cache warming is enabled everywhere.
+**Checkpoint**: Workflow builds once, system-test jobs reuse the cached binary, and Go module cache warming is enabled for all jobs.
 
 ---
 
