@@ -155,5 +155,5 @@ Queried the latest ten `push` events on `main` for `.github/workflows/ci.yaml`:
 | 3581 | 2025-11-15 12:08 | failure |
 | 3577 | 2025-11-15 11:58 | failure |
 
-- Success rate across the ten-run window is **60%**. The four failures correspond to pre-optimization runs (before 2025-11-16) that previously exhausted the CI time budget.
+- Success rate across the ten-run window is **60%**. The four failures correspond to pre-optimization runs (before 2025-11-16) that previously exceeded the CI time budget.
 - All six post-optimization runs on 2025-11-16 completed successfully with system-test matrices passing, meeting SC-006. Continue monitoring subsequent merges to ensure the pass rate remains ≥ baseline.
