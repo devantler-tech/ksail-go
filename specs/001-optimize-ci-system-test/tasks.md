@@ -35,7 +35,7 @@
 ### Implementation for User Story 1
 
 - [X] T004 [US1] Introduce `build-artifact` job in `.github/workflows/ci.yaml` that runs cached `go build`, records checksum, smoke-tests `./ksail --version`, and uploads `ksail-${{ github.run_id }}` outputs
-- [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to depend on `build-artifact`, download `./bin/ksail`, run the smoke step, and remove redundant build commands
+- [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to standardize Go cache usage and remove redundant `go mod download` commands, without consuming the cached binary
 - [X] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to pass artifact outputs, rely on action caching, and drop local compilation steps
 - [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to restore the cached binary per matrix entry, run the smoke step, and fall back to local `go build` on cache miss
 - [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
