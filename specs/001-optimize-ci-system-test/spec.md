@@ -5,6 +5,7 @@
 **Status**: Draft  
 **Input**: User description: "[chore]: Optimize CI system-test build time (currently 3m 26s)"
 
+> **Note:** The specification below uses "artifact" terminology throughout (e.g., FR-002, FR-003, FR-006, FR-009, SC-003). However, the final implementation (see Phase 8 of `tasks.md`) evolved to use cache-only distribution without formal CI artifacts. For consistency, references to "artifact" should be interpreted as "cached binary" in the context of the actual implementation.
 ## Clarifications
 
 ### Session 2025-11-16
