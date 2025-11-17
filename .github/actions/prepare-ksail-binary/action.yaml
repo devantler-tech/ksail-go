@@ -69,7 +69,7 @@ runs:
         output_relative="${OUTPUT_PATH#./}"
         
         # Create output directory if needed
-        output_dir=$(dirname "$OUTPUT_PATH")
+        output_dir=$(dirname "$output_relative")
         mkdir -p "$output_dir"
         
         if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
