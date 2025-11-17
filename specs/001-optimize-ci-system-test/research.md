@@ -112,8 +112,8 @@ Additional observations:
 
 ## Cache Helper Evolution (T018–T022)
 
-- Originally introduced `.github/actions/use-ksail-artifact` to wrap artifact download, checksum verification, and smoke testing; this composite action has since been deprecated in favor of direct cache restores that avoid per-run artifacts.
-- System-test jobs now restore the cached binary, build locally only on cache misses, and re-save the cache to keep future runs warm. This simplified the workflow and removed the need for helper-specific documentation or local `act` validation runs.
+- Originally introduced `.github/actions/use-ksail-artifact` to wrap artifact download, checksum verification, and smoke testing; this composite action has since been deprecated, with its functionality extracted into the new composite action `.github/actions/prepare-ksail-binary`, which encapsulates cache restore, build, and save logic.
+- System-test jobs now use the `.github/actions/prepare-ksail-binary` composite action to restore the cached binary, build locally only on cache misses, and re-save the cache to keep future runs warm. This simplified the workflow and removed the need for helper-specific documentation or local `act` validation runs.
 
 ## Post-Change Metrics (T024)
 
