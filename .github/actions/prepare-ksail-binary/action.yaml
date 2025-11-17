@@ -105,4 +105,9 @@ runs:
         set -Eeuo pipefail
         # Strip leading './' for consistency with prepare step
         output_relative="${OUTPUT_PATH#./}"
-        "$output_relative" --version
+        # Add ./ prefix for execution if path doesn't contain a directory separator
+        if [[ "$output_relative" != */* ]]; then
+          "./$output_relative" --version
+        else
+          "$output_relative" --version
+        fi
