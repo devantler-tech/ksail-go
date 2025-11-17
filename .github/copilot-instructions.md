@@ -445,5 +445,5 @@ When reviewing Copilot's pull requests:
 ## Recent Changes
 
 - 001-move-all-source: Added Go 1.25.4 + Cobra (CLI framework), Kind/K3d/eksctl (cluster provisioners), Kubernetes client-go, Flux CD APIs
-- 001-optimize-ci-system-test: Added GitHub Actions workflow YAML orchestrating Go 1.25.4 toolchain + artifact/cache actions
+- 001-optimize-ci-system-test: Added GitHub Actions workflow YAML orchestrating Go 1.25.4 toolchain + cache actions
 - 001-migrate-docs: Added Markdown within standalone Go project (docs-only change) + Markdownlint config, Lychee link checker, GitHub Markdown renderer
