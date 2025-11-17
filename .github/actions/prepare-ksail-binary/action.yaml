@@ -68,9 +68,9 @@ runs:
         # Strip leading './' from OUTPUT_PATH for clearer path construction
         output_relative="${OUTPUT_PATH#./}"
         
-        # Create output directory if needed
+        # Create output directory
         output_dir=$(dirname "$output_relative")
-        if [[ "$output_relative" == */* ]]; then mkdir -p "$output_dir"; fi
+        mkdir -p "$output_dir"
         
         if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
           # Use cached binary
