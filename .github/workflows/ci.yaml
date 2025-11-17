@@ -28,43 +28,12 @@ jobs:
           cache: true
           cache-dependency-path: src/go.sum
 
-      - name: 🔑 Compute ksail cache key
-        id: ksail-cache-key
-        env:
-          KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
-        run: |
-          printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
-
-      - name: ♻️ Restore cached ksail binary
-        id: ksail-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      - name: 📦 Prepare ksail binary
+        uses: ./.github/actions/prepare-ksail-binary
         with:
-          path: ./.cache/ksail
-          key: ${{ steps.ksail-cache-key.outputs.value }}
-
-      - name: ♻️ Use cached binary
-        if: steps.ksail-cache.outputs.cache-hit == 'true'
-        run: cp ./.cache/ksail ./ksail
-
-      - name: 🏗️ Build ksail binary
-        if: steps.ksail-cache.outputs.cache-hit != 'true'
-        run: go build -C src -o ../ksail .
-
-      - name: ♻️ Store binary for cache
-        if: steps.ksail-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ./.cache
-          cp ./ksail ./.cache/ksail
-
-      - name: ♻️ Save ksail binary cache
-        if: steps.ksail-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ./.cache/ksail
-          key: ${{ steps.ksail-cache-key.outputs.value }}
-
-      - name: 🧪 Smoke test
-        run: ./ksail --version
+          go-version: ${{ steps.setup-go.outputs.go-version }}
+          output-path: ./ksail
+          run-smoke-test: 'true'
 
   pre-commit:
     runs-on: ubuntu-latest
@@ -147,41 +116,12 @@ jobs:
           cache: true
           cache-dependency-path: ./src/go.sum
 
-      - name: 🔑 Compute ksail cache key
-        id: ksail-cache-key
-        env:
-          KSAIL_CACHE_KEY: ${{ format('{0}-ksail-bin-{1}-{2}', runner.os, steps.setup-go.outputs.go-version, hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')) }}
-        run: |
-          printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
-
-      - name: ♻️ Restore ksail binary
-        id: ksail-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ./.cache/ksail
-          key: ${{ steps.ksail-cache-key.outputs.value }}
-
       - name: 📦 Prepare ksail binary
-        env:
-          CACHE_HIT: ${{ steps.ksail-cache.outputs.cache-hit }}
-        run: |
-          set -Eeuo pipefail
-          mkdir -p ./bin
-          if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
-            cp ./.cache/ksail ./bin/ksail
-          else
-            go build -C src -o ../bin/ksail .
-            mkdir -p ./.cache
-            cp ./bin/ksail ./.cache/ksail
-          fi
-          chmod +x ./bin/ksail
-
-      - name: ♻️ Save ksail binary cache
-        if: steps.ksail-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: ./.github/actions/prepare-ksail-binary
         with:
-          path: ./.cache/ksail
-          key: ${{ steps.ksail-cache-key.outputs.value }}
+          go-version: ${{ steps.setup-go.outputs.go-version }}
+          output-path: ./bin/ksail
+          run-smoke-test: 'false'
 
       - name: 🧪 ksail cluster init
         run: |
