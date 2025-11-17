@@ -24,7 +24,7 @@ The action supports different output paths to accommodate job-specific requireme
 
 This path flexibility is intentional and necessary because:
 - The build-artifact job produces a standalone binary for verification
-- The system-test job needs the binary in `bin/` to align with the test execution context and avoid conflicts with generated test files (e.g., `k8s/`, `kind.yaml`, `k3d.yaml`)
+- The system-test job needs the binary in `bin/` to align with the test execution context and avoid conflicts with KSail-generated cluster configuration files (e.g., `k8s/`, `kind.yaml`, `k3d.yaml`)
 
 ## Usage
 
