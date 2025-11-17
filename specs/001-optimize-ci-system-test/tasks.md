@@ -19,6 +19,7 @@
 
 **Purpose**: Extend the reusable Go CI workflow so all downstream tasks can consume the shared artifact and metadata.
 
+> **Note:** The shared artifact consumption approach described above was later superseded by Phase 8, which uses cache-only distribution. This note clarifies the historical context and the evolution of the CI optimization strategy.
 - [X] T002 Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs and expose them to lint/test jobs
 - [X] T003 Update `github/devantler-tech/github-actions/reusable-workflows/README.md` with usage instructions for the new artifact inputs
 
