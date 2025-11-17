@@ -25,7 +25,7 @@ Represents the compiled `ksail` binary stored in the GitHub Actions cache.
 **Validation Rules**:
 
 - `key` must encode runner OS, Go toolchain, and hashes of `src/go.mod`, `src/go.sum`, and all Go source files.
-- Cache entry must exist (or be rebuilt) before downstream jobs execute smoke tests.
+- Cache entry must exist (or be rebuilt locally) before downstream jobs execute smoke tests.
 - `sizeBytes` must remain comfortably under the repository cache quota (10 GB aggregate).
 
 **State Transitions**:
