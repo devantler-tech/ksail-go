@@ -29,7 +29,7 @@ Principle-aligned gates (must all be addressed; violations documented in Complex
 
 - **Simplicity (I)**: Introducing one `build-artifact` job and reusing existing Actions alongside a shared cache keeps the workflow readable without adding unnecessary abstraction layers.
 - **Test-First (II)**: Add a smoke step (`./ksail version`) in every consuming job before using the shared binary so failure cases surface immediately; write this guard before removing legacy build steps.
-- **Interface Discipline (III)**: No Go interfaces added. Reusable workflow input count stays ≤5 even after adding `artifact-name`, avoiding bloated contracts and type switches.
+- **Interface Discipline (III)**: No Go interfaces added. Reusable workflow input count stays ≤5, as artifact-related inputs were not added in the final implementation, avoiding bloated contracts and type switches.
 - **Observability (IV)**: Rely on default job logs and cache hit reporting; guard downstream jobs with `if: needs.build-artifact.result == 'success'` to log failures and halt quickly. No custom metrics summary is maintained.
 - **Versioning (V)**: Categorized as a PATCH change—CI-only optimization with no end-user or API impact.
 
