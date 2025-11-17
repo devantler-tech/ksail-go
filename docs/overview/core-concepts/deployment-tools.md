@@ -4,7 +4,7 @@ Deployment tools control how manifests move from your workstation into the clust
 
 ## Kubectl
 
-[Kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) is the default for KSail-Go. The CLI renders your `k8s/kustomization.yaml` and uses `kubectl apply -k` with pruning. When you run `ksail workload reconcile`, KSail-Go re-applies the manifests and watches status through `kubectl rollout status -k`. Use Kubectl when you want minimal moving parts or run ad-hoc experiments.
+[Kubectl](https://kubernetes.io/docs/reference/kubectl/) is the default for KSail-Go. The CLI renders your `k8s/kustomization.yaml` and uses `kubectl apply -k` with pruning. When you run `ksail workload reconcile`, KSail-Go re-applies the manifests and watches status through `kubectl rollout status -k`. Use Kubectl when you want minimal moving parts or run ad-hoc experiments.
 
 ## Flux
 
