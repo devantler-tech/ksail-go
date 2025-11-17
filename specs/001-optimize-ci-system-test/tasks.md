@@ -111,7 +111,7 @@
 
 **Purpose**: Reuse the compiled `ksail` binary across workflow runs when source inputs are unchanged to shave the build job runtime.
 
-- [X] T031 Add cache restore/save steps to the `build-artifact` job in `.github/workflows/ci.yaml` so cache hits skip recompilation while preserving smoke tests and artifact uploads
+- [X] T031 Add cache restore/save steps to the `build-artifact` job in `.github/workflows/ci.yaml` so cache hits skip recompilation while preserving smoke tests only (artifact uploads are removed in later steps)
 - [X] T032 Update documentation (`specs/001-optimize-ci-system-test/research.md`, `quickstart.md`) to record the cache strategy and invalidation key components
 
 ---
