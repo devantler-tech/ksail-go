@@ -19,10 +19,10 @@
 
 **Purpose**: Extend the reusable Go CI workflow so all downstream tasks can consume the shared artifact and metadata.
 
-- [X] T002 Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs and expose them to lint/test jobs
-- [X] T003 Update `github/devantler-tech/github-actions/reusable-workflows/README.md` with usage instructions for the new artifact inputs
+- [X] T002 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned update to `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to accept `artifact-name` and `artifact-checksum` inputs was not implemented; cache standardization replaced artifact-based distribution.
+- [X] T003 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned documentation update for artifact inputs in `github/devantler-tech/github-actions/reusable-workflows/README.md` was not implemented; see Phase 8 for cache usage instructions.
 
-**Checkpoint**: Reusable workflow consumers can request the shared artifact via inputs.
+**Checkpoint**: Reusable workflow consumers can request the shared artifact via inputs. *(Deprecated: see Phase 8 for cache-based distribution.)*
 
 ---
 
