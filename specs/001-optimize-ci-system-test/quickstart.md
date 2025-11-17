@@ -35,7 +35,7 @@ Record baseline numbers directly from the GitHub Actions run details page. Focus
 
    - Check out code with `actions/checkout@v5`
    - Set up Go via `actions/setup-go@v6` using `cache: true` and `cache-dependency-path: src/go.sum`
-   - Restore the cached `ksail` binary with `actions/cache/restore@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache hits, skip recompilation but still run the smoke test
+   - Restore the cached `ksail` binary with `actions/cache/restore@v4`, keyed by OS, Go version, and a hash of `src/go.mod`, `src/go.sum`, and all Go source files; when the cache is hit, skip recompilation but still run the smoke test
    - Run `go build -C src -o ../ksail .` when there's a cache miss, seed `.cache/ksail`, and save the cache with `actions/cache/save@v4` for future runs
    - Execute `./ksail --version` (smoke test)
 2. Keep downstream jobs dependent on `build-artifact` so they only start after the cache is populated (or the fallback build completes).
