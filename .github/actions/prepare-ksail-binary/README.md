@@ -53,6 +53,7 @@ This path flexibility is intentional and necessary because:
 |--------|-------------|
 | `cache-hit` | Whether the cache was hit (`'true'` or `'false'`) |
 | `binary-path` | Absolute path to the prepared binary |
+| `output-path-normalized` | Normalized relative path to the binary (with leading `./` stripped) |
 
 ## Examples
 
