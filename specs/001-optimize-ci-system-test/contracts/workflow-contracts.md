@@ -139,7 +139,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 ## Metrics Contract (Deprecated)
 
-> **Note:** As of Phase 6 (T028-T030), custom metrics instrumentation was removed at maintainer request. The workflow now relies on native GitHub Actions job logs for performance diagnostics instead of custom metrics collection via `$GITHUB_STEP_SUMMARY`. See research.md (lines 27-29, 106-111) for details.
+> **Note:** Custom metrics instrumentation was removed at maintainer request. The workflow now relies on native GitHub Actions job logs for performance diagnostics instead of custom metrics collection via `$GITHUB_STEP_SUMMARY`. See research.md (lines 27-29, 109-111) for details.
 
 ## Guard Contract
 
@@ -155,7 +155,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 ## Post-Run Aggregation Contract (Deprecated)
 
-> **Note:** As of Phase 6 (T028), the `metrics-summary` aggregation job was removed entirely. Maintainers now review performance using native GitHub Actions timing data. See research.md (line 111) for details.
+> **Note:** The `metrics-summary` aggregation job was removed entirely. Maintainers now review performance using native GitHub Actions timing data. See research.md (line 111) for details.
 
 ## Notes
 
