@@ -38,7 +38,7 @@
 - [X] T005 [P] [US1] Update the `pre-commit` job in `.github/workflows/ci.yaml` to standardize Go cache usage and remove redundant `go mod download` commands, without consuming the cached binary
 - [X] T006 [P] [US1] Update the `ci` reusable-workflow invocation in `.github/workflows/ci.yaml` to pass artifact outputs, rely on action caching, and drop local compilation steps
 - [X] T007 [US1] Update the `system-test` matrix job in `.github/workflows/ci.yaml` to restore the cached binary per matrix entry, run the smoke step, and fall back to local `go build` on cache miss
-- [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to require the build artifact outputs and short-circuit when they are unavailable
+- [X] T008 [US1] Update the `system-test-status` job in `.github/workflows/ci.yaml` to guard execution with `if: needs.build-artifact.result != 'success'` and short-circuit when the build job fails
 - [X] T009 [US1] Standardize all Go jobs in `.github/workflows/ci.yaml` on `actions/setup-go@v6` with `cache-dependency-path: src/go.sum` and consistent cache keys
 - [X] T010 [US1] Trigger `.github/workflows/ci.yaml` on a draft pull request and confirm every original job and matrix command still executes unchanged, recording findings in `specs/001-optimize-ci-system-test/research.md` (covers FR-007)
 
