@@ -25,6 +25,9 @@ outputs:
   binary-path:
     description: Absolute path to the prepared binary.
     value: ${{ steps.prepare.outputs.binary-path }}
+  output-path-normalized:
+    description: Normalized relative path to the binary (with leading './' stripped).
+    value: ${{ steps.prepare.outputs.output-path-normalized }}
 
 runs:
   using: composite
@@ -86,8 +89,9 @@ runs:
         # Ensure binary is executable
         chmod +x "$output_relative"
         
-        # Output absolute path
+        # Output absolute path and normalized relative path
         echo "binary-path=$(realpath "$output_relative")" >> "$GITHUB_OUTPUT"
+        echo "output-path-normalized=$output_relative" >> "$GITHUB_OUTPUT"
 
     - name: ♻️ Save ksail binary cache
       if: steps.ksail-cache.outputs.cache-hit != 'true'
@@ -100,14 +104,12 @@ runs:
       if: inputs.run-smoke-test == 'true'
       shell: bash
       env:
-        OUTPUT_PATH: ${{ inputs.output-path }}
+        OUTPUT_PATH_NORMALIZED: ${{ steps.prepare.outputs.output-path-normalized }}
       run: |
         set -Eeuo pipefail
-        # Strip leading './' for consistency with prepare step
-        output_relative="${OUTPUT_PATH#./}"
         # Add ./ prefix for execution if path doesn't contain a directory separator
-        if [[ "$output_relative" != */* ]]; then
-          "./$output_relative" --version
+        if [[ "$OUTPUT_PATH_NORMALIZED" != */* ]]; then
+          "./$OUTPUT_PATH_NORMALIZED" --version
         else
-          "$output_relative" --version
+          "$OUTPUT_PATH_NORMALIZED" --version
         fi
