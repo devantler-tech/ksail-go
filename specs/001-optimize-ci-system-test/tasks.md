@@ -30,7 +30,7 @@
 
 **Goal**: Build the KSail binary once per workflow, reuse warmed Go caches, and cut system-test matrix runtimes below the 105-second target.
 
-**Independent Test**: Trigger the workflow on a pull request with no code changes; verify `build-artifact` runs once, every dependent job downloads the shared binary without rebuilding, and system-test matrix entries finish ≤105 seconds.
+**Independent Test**: Trigger the workflow on a pull request with no code changes; verify `build-artifact` runs once, system-test jobs restore the cached binary (or rebuild on cache miss), and system-test matrix entries finish ≤105 seconds.
 
 ### Implementation for User Story 1
 
