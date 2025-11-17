@@ -42,7 +42,7 @@
 ### 5. Binary Cache Mechanics and Fallback Strategy
 
 - **Decision**: Consolidate binary distribution around `actions/cache`, allowing downstream jobs to restore the executable directly and build their own copy only when the cache misses. Cache keys include the OS, Go toolchain, and hashes of `src/go.mod`, `src/go.sum`, and all Go source files.
-- **Rationale**: Many workflow reruns build identical binaries (e.g., flaky system-test retries). Sharing the executable through the cache trims the build job runtime by ~40 seconds and removes the need for per-run artifacts while still validating the binary with smoke tests. On cache misses the system-test job builds locally, ensuring first-run success and reseeding the cache for future runs.
+- **Rationale**: Many workflow re-runs build identical binaries (e.g., flaky system-test retries). Sharing the executable through the cache trims the build job runtime by ~40 seconds and removes the need for per-run artifacts while still validating the binary with smoke tests. On cache misses the system-test job builds locally, ensuring first-run success and reseeding the cache for future runs.
 - **Alternatives Considered**:
   - **Extending artifact retention**: Rejected; artifacts are scoped per run and cannot be downloaded by future runs without extra APIs or tokens.
   - **Caching the entire Go workspace**: Rejected as redundant—the existing `actions/setup-go` cache already handles module and build caches efficiently.
