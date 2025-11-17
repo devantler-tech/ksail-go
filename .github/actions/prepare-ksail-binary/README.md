@@ -44,7 +44,7 @@ This path flexibility is intentional and necessary because:
 |-------|----------|---------|-------------|
 | `go-version` | Yes | - | Go version from `setup-go` output, used for cache key computation |
 | `source-hash` | Yes | - | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`) |
-| `output-path` | No | `ksail` | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and not contain path traversal sequences (`/../`). |
+| `output-path` | No | `ksail` | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and must not contain path traversal sequences in the middle of the path (i.e., `*/../*`). |
 | `run-smoke-test` | No | `'true'` | Whether to run `--version` smoke test on the prepared binary |
 
 ## Outputs

@@ -63,17 +63,17 @@ runs:
           echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
           exit 1
         fi
-        if [[ "$OUTPUT_PATH" == */../* ]]; then
-          echo "Error: output-path must not contain '/../', got: $OUTPUT_PATH" >&2
+        if [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]] || [[ "$OUTPUT_PATH" == */.. ]]; then
+          echo "Error: output-path must not traverse parent directories (../), got: $OUTPUT_PATH" >&2
           exit 1
         fi
         
         # Strip leading './' from OUTPUT_PATH for clearer path construction
         output_relative="${OUTPUT_PATH#./}"
         
-        # Create output directory if needed
+        # Create output directory
         output_dir=$(dirname "$output_relative")
-        if [[ "$output_relative" == */* ]]; then mkdir -p "$output_dir"; fi
+        mkdir -p "$output_dir"
         
         if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
           # Use cached binary
