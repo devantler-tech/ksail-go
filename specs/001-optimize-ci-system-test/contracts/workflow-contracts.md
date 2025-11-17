@@ -125,13 +125,14 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
   outputs:
     cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
 
-- name: "Record cache status"
-  run: |
-    if [ "${{ steps.go-cache.outputs.cache-hit }}" = "true" ]; then
-      echo "cache=hit" >> $GITHUB_STEP_SUMMARY
-    else
-      echo "cache=miss" >> $GITHUB_STEP_SUMMARY
-    fi
+# - name: "Record cache status"
+#   run: |
+#     if [ "${{ steps.go-cache.outputs.cache-hit }}" = "true" ]; then
+#       echo "cache=hit" >> $GITHUB_STEP_SUMMARY
+#     else
+#       echo "cache=miss" >> $GITHUB_STEP_SUMMARY
+#     fi
+# > **Deprecated:** This step was removed from the workflow after custom metrics instrumentation was deprecated. See Metrics Contract below.
 ```
 
 **Success Criteria**: Every job reports cache hit/miss and completes without redundant `go mod download` steps (except build job).
