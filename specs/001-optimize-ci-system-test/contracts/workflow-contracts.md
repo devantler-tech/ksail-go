@@ -68,7 +68,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 - name: "Verify build artifact"
   if: needs.build-artifact.result != 'success'
   run: |
-    echo "build-artifact failed to seed the ksail binary cache. Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
+    echo "build-artifact job failed to seed the ksail binary cache (cache-only distribution; no artifact upload/download). Failing system-test matrix." >> "$GITHUB_STEP_SUMMARY"
     exit 1
 
 - name: "Compute ksail cache key"

@@ -76,8 +76,8 @@
 
 - [X] T018 [P] [US3] Add failing GitHub Actions workflow test `tests/actions/use-ksail-artifact.yml` that expects the composite action to download and verify the artifact
 - [X] T019 [US3] Create composite action `.github/actions/use-ksail-artifact/action.yaml` to download the artifact, verify checksum, and run the smoke test based on supplied inputs
-- [X] T020 [US3] Refactor jobs in `.github/workflows/ci.yaml` to replace inline artifact download steps with `./.github/actions/use-ksail-artifact`
-- [X] T021 [US3] Update `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to invoke the new composite action when artifact inputs are present so additional jobs require no manual wiring
+- [X] T020 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned refactor of jobs in `.github/workflows/ci.yaml` to use `./.github/actions/use-ksail-artifact` was not implemented; cache standardization replaced artifact-based distribution.
+- [X] T021 **[Deprecated]** (Superseded by Phase 8 cache-only distribution) — The planned update to `github/devantler-tech/github-actions/reusable-workflows/.github/workflows/ci-go.yaml` to invoke the new composite action when artifact inputs are present was not implemented; cache standardization replaced artifact-based distribution.
 - [X] T022 [US3] Update `specs/001-optimize-ci-system-test/quickstart.md` with instructions for using the composite action when adding new CI jobs or matrix entries
 
 **Checkpoint**: Additional jobs inherit artifact reuse automatically and documentation explains the integration pattern.

@@ -33,7 +33,7 @@
 
 ### 4. Runner Concurrency, Artifact Limits, and Failure Handling
 
-- **Decision**: Keep matrix jobs running in parallel but guard artifact consumption with `if: needs.build-artifact.result == 'success'` and configure artifact names using `${{ github.run_id }}` to keep runs isolated. Document the 5 GB artifact size limit and plan for automatic cleanup (artifacts expire after 90 days by default).
+- **Decision**: Keep matrix jobs running in parallel but guard artifact consumption with `if: needs.build-artifact.result == 'success'` and configure artifact names using `${{ github.run_id }}` to keep runs isolated. Document the 10 GB repository-wide cache limit and plan for automatic cache cleanup (cache entries expire after 7 days by default).
 - **Rationale**: Parallel execution maintains overall throughput while the guard prevents wasted runtime when the build fails. Unique artifact names avoid collisions during concurrent PR runs. The binary’s 216 MB size fits footprint limits comfortably, and failure handling aligns with FR-006.
 - **Alternatives Considered**:
   - **Serializing matrix execution**: Rejected; would erase gains from single build.
