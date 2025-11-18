@@ -63,7 +63,7 @@ runs:
           echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
           exit 1
         fi
-        if [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]] || [[ "$OUTPUT_PATH" == */.. ]]; then
+        if [[ "$OUTPUT_PATH" == ".." ]] || [[ "$OUTPUT_PATH" == ../* ]] || [[ "$OUTPUT_PATH" == */../* ]] || [[ "$OUTPUT_PATH" == */.. ]]; then
           echo "Error: output-path must not traverse parent directories (../), got: $OUTPUT_PATH" >&2
           exit 1
         fi
