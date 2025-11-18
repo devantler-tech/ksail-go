@@ -1,5 +1,5 @@
 recursive: true
-
+include-auto-generated: true
 packages:
   github.com/devantler-tech/ksail-go:
     config:
