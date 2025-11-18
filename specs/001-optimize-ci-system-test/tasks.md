@@ -119,7 +119,8 @@
 
 **Purpose**: Retire per-run artifacts and rely exclusively on the cache-backed binary.
 
-> **Note:** This phase supersedes the shared artifact consumption approach originally introduced in Phase 2. The change from artifact-based distribution to cache-only distribution clarifies the historical context and evolution of the CI optimization strategy.
+> **Historical Context:** Earlier phases (notably Phase 2) introduced a shared artifact consumption approach, where downstream jobs would consume a built artifact via workflow inputs. This method was later deprecated in favor of a cache-based strategy.
+> **Current Implementation:** As of Phase 8, the CI system relies exclusively on cache-backed distribution of the compiled `ksail` binary. Artifact upload/download steps are removed, and all jobs restore or rebuild the binary from cache.
 
 - [X] T033 Remove artifact upload/download steps from `.github/workflows/ci.yaml` and ensure system-test jobs restore or rebuild the binary from cache
 - [X] T034 Update supporting documentation (plan, research, quickstart) to describe cache-only distribution and the deprecation of `.github/actions/use-ksail-artifact`
