@@ -80,7 +80,7 @@ runs:
           cp ./.cache/ksail "$output_relative"
         else
           # Build binary
-          go build -C src -o "../${output_relative}" .
+          go build -C src -o "$GITHUB_WORKSPACE/${output_relative}" .
           # Store for cache
           mkdir -p ./.cache
           cp "$output_relative" ./.cache/ksail
