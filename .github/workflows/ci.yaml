@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
     needs: [ci, build-artifact]
-    if: !cancelled() && needs.build-artifact.result == 'success' && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    if: ${{ !cancelled() && needs.build-artifact.result == 'success' && (needs.ci.result == 'success' || needs.ci.result == 'skipped') }}
     strategy:
       matrix:
         include:
@@ -185,7 +185,7 @@ jobs:
   system-test-status:
     runs-on: ubuntu-latest
     needs: [system-test, build-artifact]
-    if: !cancelled() && needs.build-artifact.result == 'success'
+    if: ${{ !cancelled() && needs.build-artifact.result == 'success' }}
     steps:
       - name: Summarize matrix result
         shell: bash
