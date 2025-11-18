@@ -289,19 +289,19 @@ This feature MUST be implemented as a single atomic operation:
 
 ## Success Criteria Mapping
 
-| Success Criterion | Validated By |
-|-------------------|--------------|
-| SC-001: All source in src/ | T033-T041 (Phase 4 validation) |
-| SC-002: Build/test success | T002, T003, T033, T034, T044, T064, T065 |
-| SC-002a: Build time unchanged | T005, T040 (within 5% tolerance) |
-| SC-003: Pipelines pass | T052-T055, T066-T070 |
-| SC-004: IDE tasks work | T047-T050 |
-| SC-005: Coverage reports | T069 |
-| SC-006: Binary compilation | T036, T037, T056 |
-| SC-007: Git history preserved | T046 |
-| SC-008: Code quality tools | T004, T035, T045, T053, T055 |
-| SC-009: Mock generation | T006, T038 |
-| SC-010: Schema generation | T057, T068 |
+| Success Criterion             | Validated By                             |
+|-------------------------------|------------------------------------------|
+| SC-001: All source in src/    | T033-T041 (Phase 4 validation)           |
+| SC-002: Build/test success    | T002, T003, T033, T034, T044, T064, T065 |
+| SC-002a: Build time unchanged | T005, T040 (within 5% tolerance)         |
+| SC-003: Pipelines pass        | T052-T055, T066-T070                     |
+| SC-004: IDE tasks work        | T047-T050                                |
+| SC-005: Coverage reports      | T069                                     |
+| SC-006: Binary compilation    | T036, T037, T056                         |
+| SC-007: Git history preserved | T046                                     |
+| SC-008: Code quality tools    | T004, T035, T045, T053, T055             |
+| SC-009: Mock generation       | T006, T038                               |
+| SC-010: Schema generation     | T057, T068                               |
 
 ---
 

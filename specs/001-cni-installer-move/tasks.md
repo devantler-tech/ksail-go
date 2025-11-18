@@ -16,6 +16,7 @@
 ## Path Conventions
 
 Go project structure:
+
 - `pkg/` - Core business logic packages
 - `cmd/` - CLI command implementations
 - Tests co-located with source (`*_test.go`)

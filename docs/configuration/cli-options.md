@@ -16,16 +16,16 @@ ksail cluster connect -- --help  # Pass-through flags to k9s (note the `--`)
 
 The cluster subcommands (`init`, `create`, `start`, `stop`, `delete`, `list`, `connect`) all bind to the same underlying configuration manager. Flags map directly to fields inside `ksail.yaml`, environment variables prefixed with `KSAIL_`, and sensible defaults.
 
-| Flag | Short | Config key | Env variable | Default | Available on |
-| --- | --- | --- | --- | --- | --- |
-| `--distribution` | `-d` | `spec.distribution` | `KSAIL_SPEC_DISTRIBUTION` | `Kind` | `cluster init`, `cluster create`, `cluster start`, `cluster stop`, `cluster delete`, `cluster list`, `cluster connect` |
-| `--distribution-config` | – | `spec.distributionConfig` | `KSAIL_SPEC_DISTRIBUTIONCONFIG` | `kind.yaml` | Same as above |
-| `--context` | `-c` | `spec.connection.context` | `KSAIL_SPEC_CONNECTION_CONTEXT` | Derived from distribution | Same as above |
-| `--kubeconfig` | `-k` | `spec.connection.kubeconfig` | `KSAIL_SPEC_CONNECTION_KUBECONFIG` | `~/.kube/config` | Same as above |
-| `--source-directory` | `-s` | `spec.sourceDirectory` | `KSAIL_SPEC_SOURCEDIRECTORY` | `k8s` | `cluster init` |
-| `--cni` | – | `spec.cni` | `KSAIL_SPEC_CNI` | `Default` | `cluster init` |
-| `--metrics-server` | – | `spec.metricsServer` | `KSAIL_SPEC_METRICSSERVER` | `Enabled` | `cluster init`, `cluster create` |
-| `--gitops-engine` | `-g` | `spec.gitOpsEngine` | `KSAIL_SPEC_GITOPSENGINE` | `None` | `cluster init` |
+| Flag                    | Short | Config key                   | Env variable                       | Default                   | Available on                                                                                                           |
+|-------------------------|-------|------------------------------|------------------------------------|---------------------------|------------------------------------------------------------------------------------------------------------------------|
+| `--distribution`        | `-d`  | `spec.distribution`          | `KSAIL_SPEC_DISTRIBUTION`          | `Kind`                    | `cluster init`, `cluster create`, `cluster start`, `cluster stop`, `cluster delete`, `cluster list`, `cluster connect` |
+| `--distribution-config` | –     | `spec.distributionConfig`    | `KSAIL_SPEC_DISTRIBUTIONCONFIG`    | `kind.yaml`               | Same as above                                                                                                          |
+| `--context`             | `-c`  | `spec.connection.context`    | `KSAIL_SPEC_CONNECTION_CONTEXT`    | Derived from distribution | Same as above                                                                                                          |
+| `--kubeconfig`          | `-k`  | `spec.connection.kubeconfig` | `KSAIL_SPEC_CONNECTION_KUBECONFIG` | `~/.kube/config`          | Same as above                                                                                                          |
+| `--source-directory`    | `-s`  | `spec.sourceDirectory`       | `KSAIL_SPEC_SOURCEDIRECTORY`       | `k8s`                     | `cluster init`                                                                                                         |
+| `--cni`                 | –     | `spec.cni`                   | `KSAIL_SPEC_CNI`                   | `Default`                 | `cluster init`                                                                                                         |
+| `--metrics-server`      | –     | `spec.metricsServer`         | `KSAIL_SPEC_METRICSSERVER`         | `Enabled`                 | `cluster init`, `cluster create`                                                                                       |
+| `--gitops-engine`       | `-g`  | `spec.gitOpsEngine`          | `KSAIL_SPEC_GITOPSENGINE`          | `None`                    | `cluster init`                                                                                                         |
 
 > **Environment variables:** Viper replaces dots (`.`) and hyphens (`-`) with underscores, so any field in `ksail.yaml` can be overridden with `KSAIL_<UPPERCASE_PATH>`. For example, `KSAIL_SPEC_CONNECTION_TIMEOUT=10m` sets the optional timeout even though there is no dedicated flag.
 
