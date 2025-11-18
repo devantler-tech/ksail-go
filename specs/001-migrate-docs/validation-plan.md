@@ -2,11 +2,11 @@
 
 ## Tooling Summary
 
-| Check | Command | Purpose | Notes |
-|-------|---------|---------|-------|
-| Markdown style | `npx markdownlint-cli2 "docs/**/*.md"` | Enforces formatting and heading consistency across migrated docs. | Uses repo `.markdownlint.json`; requires Node.js/npm. |
-| Link integrity | `lychee docs` | Validates internal and external links referenced in documentation. | Requires Lychee CLI installed via Homebrew (`brew install lychee`) or Cargo. `.lycheeignore` is automatically honored. |
-| Manual preview | GitHub Markdown preview or VS Code built-in preview | Confirms layout, tables, and images render as expected. | Spot-check representative pages after automated checks. |
+| Check          | Command                                             | Purpose                                                            | Notes                                                                                                                  |
+|----------------|-----------------------------------------------------|--------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Markdown style | `npx markdownlint-cli2 "docs/**/*.md"`              | Enforces formatting and heading consistency across migrated docs.  | Uses repo `.markdownlint.json`; requires Node.js/npm.                                                                  |
+| Link integrity | `lychee docs`                                       | Validates internal and external links referenced in documentation. | Requires Lychee CLI installed via Homebrew (`brew install lychee`) or Cargo. `.lycheeignore` is automatically honored. |
+| Manual preview | GitHub Markdown preview or VS Code built-in preview | Confirms layout, tables, and images render as expected.            | Spot-check representative pages after automated checks.                                                                |
 
 ## Execution Cadence
 

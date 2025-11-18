@@ -53,10 +53,10 @@
 
 ## Derived Views
 
-| View                  | Description                                                                                                                      |
-|-----------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| `MigrationChecklist`  | Tabular summary of each `DocumentationSection` with `status`, assigned owner, command updates applied, outstanding issues.       |
-| `AssetUsageMatrix`    | Map of `DocumentationAsset` vs `DocumentationSection` to confirm no orphaned assets remain.                                      |
+| View                 | Description                                                                                                                |
+|----------------------|----------------------------------------------------------------------------------------------------------------------------|
+| `MigrationChecklist` | Tabular summary of each `DocumentationSection` with `status`, assigned owner, command updates applied, outstanding issues. |
+| `AssetUsageMatrix`   | Map of `DocumentationAsset` vs `DocumentationSection` to confirm no orphaned assets remain.                                |
 
 ## State Transitions
 
