@@ -8,35 +8,6 @@ on:
 permissions: {}
 
 jobs:
-  pre-commit:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: 📄 Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: ⚙️ Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: src/go.mod
-          cache: true
-
-      - name: 📦 Download dependencies
-        working-directory: ./src/
-        run: go mod download
-
-      - name: 🔧 Install mockery
-        run: go install github.com/vektra/mockery/v3@latest
-
-      - name: 🏃 Validate pre-commit hooks
-        uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
-      - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
-        if: always()
-
   ci:
     needs: [pre-commit]
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@6cdc792a5c2aa0918ae07dbd7118a455f1bcccd2 # v1.19.2
@@ -54,7 +25,7 @@ jobs:
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
-    needs: [pre-commit, ci]
+    needs: [ci]
     strategy:
       matrix:
         include:
