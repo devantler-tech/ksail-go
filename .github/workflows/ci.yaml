@@ -54,8 +54,7 @@ jobs:
   system-test:
     runs-on: ubuntu-latest
     # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
-    needs: [ci]
-    if: always() && (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+    needs: [pre-commit, ci]
     strategy:
       matrix:
         include:
