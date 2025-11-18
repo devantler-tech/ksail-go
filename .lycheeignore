@@ -7,6 +7,6 @@ https://registry-1.docker.io/
 # GitHub repository paths used in kustomize (not web URLs)
 https://github.com/stefanprodan/podinfo//kustomize
 
-# Kubernetes documentation (network errors in CI)
+# Kubernetes documentation (throws network errors in CI)
 https://kubernetes.io/docs/
 
