@@ -108,6 +108,6 @@ runs:
       run: |
         set -Eeuo pipefail
         # Strip leading './' for consistency with prepare step
-        output_relative="${OUTPUT_PATH#./}"
+        output_relative="${OUTPUT_PATH_NORMALIZED#./}"
         # Always use ./ prefix for execution; works for both root and subdirectory binaries
         "./$output_relative" --version
