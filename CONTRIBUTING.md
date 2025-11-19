@@ -51,7 +51,7 @@ The Markdown structure and workflow are described in [`docs/README.md`](./docs/R
 ### Build
 
 ```sh
-# working-directory: ./
+# working-directory: ./src
 go build ./...
 ```
 
@@ -60,14 +60,14 @@ go build ./...
 #### Generating mocks
 
 ```sh
-# working-directory: ./
+# working-directory: ./src
 mockery
 ```
 
 #### Unit tests
 
 ```sh
-# working-directory: ./
+# working-directory: ./src
 go test ./...
 ```
 
@@ -101,7 +101,7 @@ pre-commit install
 #### Unit Tests
 
 ```sh
-# working-directory: ./
+# working-directory: ./src
 go test ./...
 ```
 
