@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   ci:
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@553f1912953e38bd89786602ce6219290369c441 # v1.19.5
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@14ced1780351f91e8ebdc5324cf7590ebebf8a66 # v1.19.8
     with:
       working-directory: ./src/
     secrets:
