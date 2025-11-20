@@ -8,6 +8,32 @@ on:
 permissions: {}
 
 jobs:
+  generate-schema:
+    name: 📝 Generate JSON Schema
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: ⚙️ Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: ./src/go.mod
+          cache: true
+
+      - name: 📝 Generate JSON schema
+        run: .github/scripts/generate-schema.sh
+
+      - name: 📤 Commit and push schema changes
+        uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v7.0.0
+        with:
+          commit_message: "chore: update generated JSON schema"
+          file_pattern: schemas/ksail-config.schema.json
+
   ci:
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@14ced1780351f91e8ebdc5324cf7590ebebf8a66 # v1.19.8
     with:
