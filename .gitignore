@@ -11,6 +11,7 @@
 
 # KSail binaries and configs
 /ksail
+/src/ksail-go
 k3d.yaml
 kind.yaml
 eks.yaml
