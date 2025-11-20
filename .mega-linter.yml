@@ -12,7 +12,8 @@ EXCLUDED_DIRECTORIES:
   - .jscpd
 
 REPORTERS_MARKDOWN_SUMMARY_TYPE: sections
-GO_GOLANGCI_LINT_ARGUMENTS: ["--config=./src/.golangci.yml", "./src"]
+GO_DIRECTORY: src
+GO_GOLANGCI_LINT_ARGUMENTS: ["--config=./.golangci.yml"]
 DISABLE_LINTERS:
   - GO_REVIVE
   - REPOSITORY_GITLEAKS
