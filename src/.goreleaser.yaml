@@ -3,15 +3,15 @@ version: 2
 before:
   hooks:
     - cmd: go mod tidy
-      dir: src
+      dir: .
     - cmd: go generate ./...
-      dir: src
+      dir: .
 
 builds:
   - env:
       - CGO_ENABLED=0
     binary: ksail
-    main: ./src
+    main: .
     goos:
       - linux
       - windows
@@ -28,8 +28,8 @@ archives:
       - goos: windows
         format: zip
     files:
-      - README.md
-      - LICENSE*
+      - ../README.md
+      - ../LICENSE*
 
 dockers:
   - image_templates:
