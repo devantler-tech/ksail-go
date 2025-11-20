@@ -31,7 +31,7 @@ jobs:
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
-          go-version-file: ./go.mod
+          go-version-file: go.mod
           cache: true
 
       - name: 📝 Generate JSON schema
@@ -47,7 +47,7 @@ jobs:
     needs: [generate-schema]
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
     with:
-      working-directory: ./src/
+      working-directory: ./
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -88,7 +88,7 @@ jobs:
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
-          go-version-file: ./go.mod
+          go-version-file: go.mod
           cache: true
 
       - name: 📦 Download dependencies
