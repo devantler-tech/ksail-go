@@ -45,7 +45,7 @@ jobs:
 
   ci:
     needs: [generate-schema]
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@14ced1780351f91e8ebdc5324cf7590ebebf8a66 # v1.19.8
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
     with:
       working-directory: ./src/
     secrets:
@@ -81,23 +81,21 @@ jobs:
           - init-args: "--distribution K3d --metrics-server Disabled"
     steps:
       - name: 📄 Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: false
 
       - name: ⚙️ Setup Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
-          go-version-file: ./src/go.mod
+          go-version-file: ./go.mod
           cache: true
 
       - name: 📦 Download dependencies
-        working-directory: ./src/
         run: go mod download
 
       - name: 🏗️ Build application
-        working-directory: ./src/
-        run: go build -o ../ksail .
+        run: go build -o ksail .
 
       - name: 🧪 ksail cluster init
         run: |
