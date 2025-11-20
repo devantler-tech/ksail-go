@@ -2,6 +2,7 @@ filename: "mocks.go"
 dir: "{{.InterfaceDir}}"
 structname: "Mock{{.InterfaceName}}"
 pkgname: "{{.PackageName}}"
+include-auto-generated: true
 packages:
   github.com/devantler-tech/ksail-go/pkg/io/generator:
     config:
