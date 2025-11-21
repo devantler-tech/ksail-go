@@ -3,6 +3,10 @@
 **Branch**: `001-cni-installer-move` | **Date**: 2025-11-14 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-cni-installer-move/spec.md`
 
+> **✅ IMPLEMENTATION STATUS: COMPLETED**
+>
+> This plan was **SUCCESSFULLY EXECUTED**. The codebase now has CNI installers consolidated under `pkg/svc/installer/cni/` as specified.
+
 ## Summary
 
 Relocate CNI installer shared helpers (`InstallerBase`, readiness utilities, Helm configuration types) from `pkg/svc/installer/` root to `pkg/svc/installer/cni/` package, while moving Cilium and Calico installer implementations to `pkg/svc/installer/cni/cilium/` and `pkg/svc/installer/cni/calico/` subdirectories respectively. This pure structural refactor consolidates CNI-related code under a single parent package, simplifying future CNI additions while preserving all existing functionality, CLI output, and test coverage.

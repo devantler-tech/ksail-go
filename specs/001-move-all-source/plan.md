@@ -3,6 +3,10 @@
 **Branch**: `001-move-all-source` | **Date**: 2025-11-16 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-move-all-source/spec.md`
 
+> **⚠️ IMPLEMENTATION STATUS: NOT IMPLEMENTED**
+>
+> This plan was developed but **NEVER EXECUTED**. The codebase still has all Go source code at the repository root, not under a `src/` directory. This document represents planning work only.
+
 ## Summary
 
 Reorganize the KSail-Go repository by moving all Go source code files, including `go.mod` and `go.sum`, from the repository root to a new `src/` subdirectory. This structural change maintains backward compatibility for external package consumers while establishing a clearer separation between source code and repository configuration files. The migration will be executed atomically in a single pull request with comprehensive pre-merge and post-merge validation.

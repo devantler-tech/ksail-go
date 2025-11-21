@@ -1,5 +1,16 @@
 # Tasks: CNI Installer Consolidation
 
+> **✅ IMPLEMENTATION COMPLETE**
+>
+> This feature has been **successfully implemented** in the codebase. The tasks below track the work that was completed:
+> - CNI installer packages relocated to `pkg/svc/installer/cni/`
+> - Base helpers consolidated in `pkg/svc/installer/cni/base.go`
+> - Cilium and Calico installers in respective subdirectories
+> - All imports updated throughout the codebase
+> - Tests relocated and passing
+>
+> The checkmarks in this file represent actual completed implementation work.
+
 **Input**: Design documents from `/specs/001-cni-installer-move/`
 **Prerequisites**: plan.md ✅, spec.md ✅, research.md ✅, data-model.md ✅
 

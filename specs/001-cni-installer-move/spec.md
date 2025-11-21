@@ -2,8 +2,15 @@
 
 **Feature Branch**: `[001-cni-installer-move]`
 **Created**: 2025-11-14
-**Status**: Draft
+**Status**: Implemented
 **Input**: User description: "Implement the feature specification based on the updated constitution. I want to move all CNI installer packages and helpers to pkg/svc/installer/cni/"
+
+> **✅ IMPLEMENTATION STATUS**: This feature has been **SUCCESSFULLY IMPLEMENTED**. Current codebase structure reflects the specification:
+> - `pkg/svc/installer/cni/base.go` contains shared installer helpers
+> - `pkg/svc/installer/cni/cilium/` contains Cilium CNI installer
+> - `pkg/svc/installer/cni/calico/` contains Calico CNI installer
+> - All imports have been updated to use new paths
+> - No references to old paths (`pkg/svc/installer/calico`, `pkg/svc/installer/cilium`) remain in codebase
 
 ## Clarifications
 
