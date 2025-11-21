@@ -4,6 +4,8 @@
 **Date**: 2025-11-16
 **Audience**: Developers implementing this reorganization
 
+> **⚠️ NOTE**: This feature was **NEVER IMPLEMENTED**. This quickstart guide describes how the implementation would be performed, but the actual code reorganization did not happen. The codebase still has all Go source code at the repository root. If you wish to implement this reorganization, follow the steps below.
+
 ## Prerequisites
 
 - Go 1.25.4+ installed
