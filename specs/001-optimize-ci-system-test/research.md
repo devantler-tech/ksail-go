@@ -49,25 +49,25 @@
 
 ## Summary of Decisions
 
-| Topic | Decision | Impact |
-|-------|----------|--------|
-| Binary distribution | Build once, share via cache restore/save | Eliminates duplicate builds across jobs without artifact management |
-| Module caching | Rely on `setup-go` cache with unified key | Cuts 30–40 seconds per job in dependency setup |
-| Observability | Rely on standard job logs; custom metrics removed | Keeps workflow YAML lean while still exposing cache lineage |
-| Concurrency & limits | Parallel matrix guarded by build success and deterministic cache keys | Preserves throughput without collisions |
-| Cross-run binary cache | Cache binary keyed by toolchain + source hash | Skips redundant builds on reruns without risking stale binaries |
+| Topic                  | Decision                                                              | Impact                                                              |
+|------------------------|-----------------------------------------------------------------------|---------------------------------------------------------------------|
+| Binary distribution    | Build once, share via cache restore/save                              | Eliminates duplicate builds across jobs without artifact management |
+| Module caching         | Rely on `setup-go` cache with unified key                             | Cuts 30–40 seconds per job in dependency setup                      |
+| Observability          | Rely on standard job logs; custom metrics removed                     | Keeps workflow YAML lean while still exposing cache lineage         |
+| Concurrency & limits   | Parallel matrix guarded by build success and deterministic cache keys | Preserves throughput without collisions                             |
+| Cross-run binary cache | Cache binary keyed by toolchain + source hash                         | Skips redundant builds on reruns without risking stale binaries     |
 
 ## Baseline Metrics (T001)
 
 Source: GitHub Actions run 2025-11-14 (`ci.yaml` workflow, run ID 7926013846) captured prior to any optimization changes.
 
-| Job | Duration | Rebuilds Binary? | Go Cache Hit Rate |
-|-----|----------|------------------|-------------------|
-| `pre-commit` | 04m 18s | Yes (local `go build`) | 0% (`actions/setup-go` cache disabled) |
-| `ci` (reusable workflow) | 11m 07s | Yes (lint & test stages rebuild) | 0% (manual `go mod download` each job) |
-| `system-test` (mean across 11 entries) | 03m 26s | Yes (per-matrix build) | 0% (cold cache per runner) |
-| `system-test-status` | 00m 41s | No | n/a |
-| **Total workflow** | **38m 12s** | — | **≈5% overall** (occasional runner-level warm cache) |
+| Job                                    | Duration    | Rebuilds Binary?                 | Go Cache Hit Rate                                    |
+|----------------------------------------|-------------|----------------------------------|------------------------------------------------------|
+| `pre-commit`                           | 04m 18s     | Yes (local `go build`)           | 0% (`actions/setup-go` cache disabled)               |
+| `ci` (reusable workflow)               | 11m 07s     | Yes (lint & test stages rebuild) | 0% (manual `go mod download` each job)               |
+| `system-test` (mean across 11 entries) | 03m 26s     | Yes (per-matrix build)           | 0% (cold cache per runner)                           |
+| `system-test-status`                   | 00m 41s     | No                               | n/a                                                  |
+| **Total workflow**                     | **38m 12s** | —                                | **≈5% overall** (occasional runner-level warm cache) |
 
 Additional observations:
 
@@ -119,13 +119,13 @@ Additional observations:
 
 **Run analyzed**: [Actions run 19411774307](https://github.com/devantler-tech/ksail-go/actions/runs/19411774307) (2025-11-16, commit `3ae972b`)
 
-| Metric | Baseline (Run 7926013846) | Post-change | Delta |
-|--------|---------------------------|-------------|-------|
-| Workflow duration | 38m 12s | 14m 47s | ↓ 61.3% |
-| `build-artifact` job | n/a | 3m 46s | — |
-| `pre-commit` job | 4m 18s | 32s | ↓ 87.6% |
-| `ci / 🧪 Test` job | 11m 07s | 7m 29s | ↓ 32.7% |
-| System-test mean (11 entries) | 3m 26s | 1m 56s | ↓ 43.8% |
+| Metric                        | Baseline (Run 7926013846) | Post-change | Delta   |
+|-------------------------------|---------------------------|-------------|---------|
+| Workflow duration             | 38m 12s                   | 14m 47s     | ↓ 61.3% |
+| `build-artifact` job          | n/a                       | 3m 46s      | —       |
+| `pre-commit` job              | 4m 18s                    | 32s         | ↓ 87.6% |
+| `ci / 🧪 Test` job            | 11m 07s                   | 7m 29s      | ↓ 32.7% |
+| System-test mean (11 entries) | 3m 26s                    | 1m 56s      | ↓ 43.8% |
 
 Additional observations:
 
@@ -142,18 +142,18 @@ Additional observations:
 
 Queried the latest ten `push` events on `main` for `.github/workflows/ci.yaml`:
 
-| Run | Created (UTC) | Conclusion |
-|-----|---------------|------------|
-| 3699 | 2025-11-16 21:00 | success |
-| 3659 | 2025-11-16 16:17 | success |
-| 3657 | 2025-11-16 16:01 | success |
-| 3651 | 2025-11-16 15:13 | success |
-| 3639 | 2025-11-16 14:28 | success |
-| 3636 | 2025-11-16 14:20 | success |
-| 3605 | 2025-11-15 22:36 | failure |
-| 3582 | 2025-11-15 12:32 | failure |
-| 3581 | 2025-11-15 12:08 | failure |
-| 3577 | 2025-11-15 11:58 | failure |
+| Run  | Created (UTC)    | Conclusion |
+|------|------------------|------------|
+| 3699 | 2025-11-16 21:00 | success    |
+| 3659 | 2025-11-16 16:17 | success    |
+| 3657 | 2025-11-16 16:01 | success    |
+| 3651 | 2025-11-16 15:13 | success    |
+| 3639 | 2025-11-16 14:28 | success    |
+| 3636 | 2025-11-16 14:20 | success    |
+| 3605 | 2025-11-15 22:36 | failure    |
+| 3582 | 2025-11-15 12:32 | failure    |
+| 3581 | 2025-11-15 12:08 | failure    |
+| 3577 | 2025-11-15 11:58 | failure    |
 
 - Success rate across the ten-run window is **60%**. The four failures correspond to pre-optimization runs (before 2025-11-16) that previously exceeded the CI time budget.
 - All six post-optimization runs on 2025-11-16 completed successfully with system-test matrices passing, meeting SC-006. Continue monitoring subsequent merges to ensure the pass rate remains ≥ baseline.

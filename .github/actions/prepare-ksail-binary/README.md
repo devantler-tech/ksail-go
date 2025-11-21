@@ -23,6 +23,7 @@ The action supports different output paths to accommodate job-specific requireme
 - **`system-test` job**: Uses `bin/ksail` (bin directory) to avoid conflicts with test artifacts
 
 This path flexibility is intentional and necessary because:
+
 - The build-artifact job produces a standalone binary for verification
 - The system-test job needs the binary in `bin/` to align with the test execution context and avoid conflicts with KSail-generated cluster configuration files (e.g., `k8s/`, `kind.yaml`, `k3d.yaml`)
 
@@ -40,19 +41,19 @@ This path flexibility is intentional and necessary because:
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `go-version` | Yes | - | Go version from `setup-go` output, used for cache key computation |
-| `source-hash` | Yes | - | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`) |
-| `output-path` | No | `ksail` | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and must not contain path traversal sequences in the middle of the path (i.e., `*/../*`). |
-| `run-smoke-test` | No | `'true'` | Whether to run `--version` smoke test on the prepared binary |
+| Input            | Required | Default  | Description                                                                                                                                                                                                          |
+|------------------|----------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `go-version`     | Yes      | -        | Go version from `setup-go` output, used for cache key computation                                                                                                                                                    |
+| `source-hash`    | Yes      | -        | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`)                                                                                                                                    |
+| `output-path`    | No       | `ksail`  | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and must not contain path traversal sequences in the middle of the path (i.e., `*/../*`). |
+| `run-smoke-test` | No       | `'true'` | Whether to run `--version` smoke test on the prepared binary                                                                                                                                                         |
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `cache-hit` | Whether the cache was hit (`'true'` or `'false'`) |
-| `binary-path` | Absolute path to the prepared binary |
+| Output                   | Description                                                         |
+|--------------------------|---------------------------------------------------------------------|
+| `cache-hit`              | Whether the cache was hit (`'true'` or `'false'`)                   |
+| `binary-path`            | Absolute path to the prepared binary                                |
 | `output-path-normalized` | Normalized relative path to the binary (with leading `./` stripped) |
 
 ## Examples

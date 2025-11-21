@@ -16,7 +16,7 @@ inputs:
   run-smoke-test:
     description: Whether to run the smoke test after preparation.
     required: false
-    default: 'true'
+    default: "true"
 
 outputs:
   cache-hit:
@@ -57,7 +57,7 @@ runs:
         OUTPUT_PATH: ${{ inputs.output-path }}
       run: |
         set -Eeuo pipefail
-        
+
         # Validate output path is relative and does not escape repository
         if [[ "$OUTPUT_PATH" = /* ]]; then
           echo "Error: output-path must be relative to repository root, got: $OUTPUT_PATH" >&2
@@ -67,14 +67,14 @@ runs:
           echo "Error: output-path must not traverse parent directories (../), got: $OUTPUT_PATH" >&2
           exit 1
         fi
-        
+
         # Strip leading './' from OUTPUT_PATH for clearer path construction
         output_relative="${OUTPUT_PATH#./}"
-        
+
         # Create output directory
         output_dir=$(dirname "$output_relative")
         mkdir -p "$output_dir"
-        
+
         if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
           # Use cached binary
           cp ./.cache/ksail "$output_relative"
@@ -85,10 +85,10 @@ runs:
           mkdir -p ./.cache
           cp "$output_relative" ./.cache/ksail
         fi
-        
+
         # Ensure binary is executable
         chmod +x "$output_relative"
-        
+
         # Output absolute path and normalized relative path
         echo "binary-path=$(realpath "$output_relative")" >> "$GITHUB_OUTPUT"
         echo "output-path-normalized=$output_relative" >> "$GITHUB_OUTPUT"

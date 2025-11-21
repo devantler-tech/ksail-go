@@ -126,7 +126,7 @@ jobs:
           # NOTE: The build job uses the root path 'ksail' for the binary, while downstream jobs use 'bin/ksail' to avoid conflicts with test-generated files.
           # See quickstart.md (line 41) for rationale.
           output-path: ksail
-          run-smoke-test: 'true'
+          run-smoke-test: "true"
 
   system-test:
     runs-on: ubuntu-latest
@@ -165,7 +165,7 @@ jobs:
           go-version: ${{ steps.setup-go.outputs.go-version }}
           source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
           output-path: bin/ksail
-          run-smoke-test: 'false'
+          run-smoke-test: "false"
 
       - name: 🧪 ksail cluster init
         run: |
