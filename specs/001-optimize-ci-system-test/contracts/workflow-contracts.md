@@ -17,7 +17,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
   id: ksail-cache-key
   run: |
     GO_VERSION="$(go version | awk '{print $3}')"
-    SOURCE_HASH="$(sha256sum src/go.mod src/go.sum src/**/*.go | sha256sum | awk '{print $1}')"
+    SOURCE_HASH="$(sha256sum go.mod go.sum **/*.go | sha256sum | awk '{print $1}')"
     KSAIL_CACHE_KEY="${RUNNER_OS}-ksail-bin-${GO_VERSION}-${SOURCE_HASH}"
     printf 'value=%s\n' "$KSAIL_CACHE_KEY" >> "$GITHUB_OUTPUT"
 
