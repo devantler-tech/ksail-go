@@ -138,7 +138,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
   with:
     go-version-file: src/go.mod
     cache: true
-    cache-dependency-path: src/go.sum
+    cache-dependency-path: go.sum
   outputs:
     cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
 
