@@ -34,7 +34,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 
 - name: "Build ksail binary"
   if: steps.ksail-cache.outputs.cache-hit != 'true'
-  run: go build -C src -o ../ksail .
+  run: go build -o ksail .
   assertions:
     - file_exists: "ksail"
     - exit_code: 0
