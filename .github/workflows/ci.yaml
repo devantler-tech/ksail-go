@@ -43,23 +43,10 @@ jobs:
           commit_message: "chore: update generated JSON schema"
           file_pattern: schemas/ksail-config.schema.json
 
-  ci:
-    needs: [generate-schema]
-    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
-    with:
-      working-directory: ./
-    secrets:
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-    permissions:
-      contents: write
-      issues: write
-      packages: read
-      pull-requests: write
-
   golangci-lint:
     name: 🧹 Lint - golangci-lint
     runs-on: ubuntu-latest
+    needs: [generate-schema]
     permissions:
       contents: write
       pull-requests: write
@@ -105,6 +92,20 @@ jobs:
           commit_message: "chore: apply golangci-lint fixes"
           commit_user_name: golangci-lint-bot
           commit_user_email: golangci-lint-bot@users.noreply.github.com
+
+  ci:
+    needs: [generate-schema]
+    uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
+    with:
+      working-directory: ./
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+    permissions:
+      contents: write
+      issues: write
+      packages: read
+      pull-requests: write
 
   system-test:
     runs-on: ubuntu-latest
