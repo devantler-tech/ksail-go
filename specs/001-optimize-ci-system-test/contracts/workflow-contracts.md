@@ -136,7 +136,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
 - name: "Setup Go"
   uses: actions/setup-go@v6
   with:
-    go-version-file: src/go.mod
+    go-version-file: go.mod
     cache: true
     cache-dependency-path: go.sum
   outputs:
