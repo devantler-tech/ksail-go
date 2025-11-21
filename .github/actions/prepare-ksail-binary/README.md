@@ -41,12 +41,12 @@ This path flexibility is intentional and necessary because:
 
 ## Inputs
 
-| Input            | Required | Default  | Description                                                                                                                                                                                                          |
-|------------------|----------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `go-version`     | Yes      | -        | Go version from `setup-go` output, used for cache key computation                                                                                                                                                    |
-| `source-hash`    | Yes      | -        | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`)                                                                                                                                    |
+| Input            | Required | Default  | Description                                                                                                                                                                                                     |
+|------------------|----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `go-version`     | Yes      | -        | Go version from `setup-go` output, used for cache key computation                                                                                                                                               |
+| `source-hash`    | Yes      | -        | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`)                                                                                                                               |
 | `output-path`    | No       | `ksail`  | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and must not contain path traversal sequences (e.g., `..`, `../`, `*/../*`, `*/..`). |
-| `run-smoke-test` | No       | `'true'` | Whether to run `--version` smoke test on the prepared binary                                                                                                                                                         |
+| `run-smoke-test` | No       | `'true'` | Whether to run `--version` smoke test on the prepared binary                                                                                                                                                    |
 
 ## Outputs
 
