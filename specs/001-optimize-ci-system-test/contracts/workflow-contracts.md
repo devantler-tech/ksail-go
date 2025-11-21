@@ -111,7 +111,7 @@ These contracts define the mandatory behaviors for each CI job after the optimiz
     if [ "$CACHE_HIT" = "true" ] && [ -f ./.cache/ksail ]; then
       cp ./.cache/ksail ./bin/ksail
     else
-      go build -C src -o ../bin/ksail .
+      go build -o bin/ksail .
       mkdir -p ./.cache
       cp ./bin/ksail ./.cache/ksail
     fi
