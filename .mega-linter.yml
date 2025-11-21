@@ -10,6 +10,7 @@ EXCLUDED_DIRECTORIES:
   - .github/agents
   - .github/prompts
   - .jscpd
+  - schemas
 
 REPORTERS_MARKDOWN_SUMMARY_TYPE: sections
 DISABLE_LINTERS:
