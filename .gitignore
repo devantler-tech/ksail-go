@@ -69,3 +69,7 @@ vendor/
 
 # act (GitHub Actions local testing)
 bin/
+.act-artifacts/
+
+# actionlint binary
+actionlint

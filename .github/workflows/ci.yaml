@@ -11,7 +11,6 @@ jobs:
   generate-schema:
     name: 📝 Generate JSON Schema
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     permissions:
       contents: write
     steps:
@@ -41,12 +40,12 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v7.0.0
         with:
           commit_message: "chore: update generated JSON schema"
-          file_pattern: schemas/ksail-config.schema.json
+          commit_user_name: generator-bot
+          commit_user_email: generator-bot@users.noreply.github.com
 
   golangci-lint:
     name: 🧹 Lint - golangci-lint
     runs-on: ubuntu-latest
-    needs: [generate-schema]
     permissions:
       contents: write
       pull-requests: write
@@ -83,18 +82,11 @@ jobs:
       - name: 💾 Commit and push applied linter fixes
         uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v7.0.0
         with:
-          branch: >-
-            ${{
-              github.event.pull_request.head.ref ||
-              github.head_ref ||
-              github.ref
-            }}
           commit_message: "chore: apply golangci-lint fixes"
           commit_user_name: golangci-lint-bot
           commit_user_email: golangci-lint-bot@users.noreply.github.com
 
   ci:
-    needs: [generate-schema]
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
     with:
       working-directory: ./
@@ -107,10 +99,38 @@ jobs:
       packages: read
       pull-requests: write
 
+  build-artifact:
+    name: 🏗️ Build KSail Binary
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 📄 Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: ⚙️ Setup Go
+        id: setup-go
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: 📦 Prepare ksail binary
+        uses: ./.github/actions/prepare-ksail-binary
+        with:
+          go-version: ${{ steps.setup-go.outputs.go-version }}
+          source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
+          # NOTE: The build job uses the root path 'ksail' for the binary, while downstream jobs use 'bin/ksail' to avoid conflicts with test-generated files.
+          # See quickstart.md (line 41) for rationale.
+          output-path: ksail
+          run-smoke-test: "true"
+
   system-test:
     runs-on: ubuntu-latest
-    # Run system tests on both push and pull request, but only after pre-commit and ci jobs complete
-    needs: [ci]
+    needs: [build-artifact, ci]
     strategy:
       matrix:
         include:
@@ -118,16 +138,12 @@ jobs:
           - init-args: "--distribution Kind --cni Cilium"
           - init-args: "--distribution Kind --cni Calico"
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
-            test-workload: true
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
-            test-workload: true
           - init-args: "--distribution K3d"
           - init-args: "--distribution K3d --cni Cilium"
           - init-args: "--distribution K3d --cni Calico"
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
-            test-workload: true
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
-            test-workload: true
           - init-args: "--distribution K3d --metrics-server Disabled"
     steps:
       - name: 📄 Checkout
@@ -136,37 +152,39 @@ jobs:
           persist-credentials: false
 
       - name: ⚙️ Setup Go
+        id: setup-go
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: go.mod
           cache: true
+          cache-dependency-path: ./go.sum
 
-      - name: 📦 Download dependencies
-        run: go mod download
-
-      - name: 🏗️ Build application
-        run: go build -o ksail .
+      - name: 📦 Prepare ksail binary
+        uses: ./.github/actions/prepare-ksail-binary
+        with:
+          go-version: ${{ steps.setup-go.outputs.go-version }}
+          source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
+          output-path: bin/ksail
+          run-smoke-test: "false"
 
       - name: 🧪 ksail cluster init
         run: |
-          ./ksail cluster init ${{ matrix.init-args }}
+          ./bin/ksail cluster init ${{ matrix.init-args }}
 
       - name: 🧪 ksail cluster create
         run: |
-          ./ksail cluster create
+          ./bin/ksail cluster create
 
       - name: 🧪 ksail cluster list
         run: |
-          ./ksail cluster list
+          ./bin/ksail cluster list
 
       - name: 🧪 ksail workload create
-        if: matrix.test-workload
         run: |
-          ./ksail workload create deployment whoami --image=traefik/whoami:latest
-          ./ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
+          ./bin/ksail workload create deployment whoami --image=traefik/whoami:latest
+          ./bin/ksail workload wait --for=condition=Available deployment/whoami --timeout=120s
 
       - name: 🧪 ksail workload apply
-        if: matrix.test-workload
         run: |
           mkdir -p /tmp/podinfo-overlay
           cat > /tmp/podinfo-overlay/kustomization.yaml <<'EOF'
@@ -184,24 +202,24 @@ jobs:
                 metadata:
                   name: podinfo
           EOF
-          ./ksail workload apply -k /tmp/podinfo-overlay
-          ./ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
+          ./bin/ksail workload apply -k /tmp/podinfo-overlay
+          ./bin/ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
       - name: 🧪 ksail workload reconcile
         run: |
-          ./ksail workload reconcile
+          ./bin/ksail workload reconcile
 
       - name: 🧪 ksail cluster stop
         run: |
-          ./ksail cluster stop
+          ./bin/ksail cluster stop
 
       - name: 🧪 ksail cluster start
         run: |
-          ./ksail cluster start
+          ./bin/ksail cluster start
 
       - name: 🧪 ksail cluster delete
         run: |
-          ./ksail cluster delete
+          ./bin/ksail cluster delete
 
       - name: 🧹 Cleanup
         run: |
@@ -212,8 +230,8 @@ jobs:
 
   system-test-status:
     runs-on: ubuntu-latest
-    needs: [system-test]
-    if: always()
+    needs: [system-test, build-artifact]
+    if: ${{ !cancelled() && needs.build-artifact.result == 'success' }}
     steps:
       - name: Summarize matrix result
         shell: bash
