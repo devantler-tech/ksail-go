@@ -22,7 +22,7 @@ jobs:
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: 📄 Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: true
           token: ${{ steps.generate-token.outputs.token }}
@@ -43,53 +43,8 @@ jobs:
           commit_user_name: generator-bot
           commit_user_email: generator-bot@users.noreply.github.com
 
-  golangci-lint:
-    name: 🧹 Lint - golangci-lint
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: 🔑 Generate GitHub App Token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
-        id: generate-token
-        with:
-          app_id: ${{ vars.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-
-      - name: 📄 Checkout
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-        with:
-          ref: ${{ github.head_ref }}
-          persist-credentials: true
-          token: ${{ steps.generate-token.outputs.token }}
-
-      - name: ⚙️ Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
-        with:
-          go-version: 1.25.4
-          cache: true
-
-      - name: ⬇️ Download Go modules
-        run: go mod download
-
-      - name: 🧹 Run golangci-lint
-        uses: golangci/golangci-lint-action@e7fa5ac41e1cf5b7d48e45e42232ce7ada589601 # v9.1.0
-        with:
-          version: v2.6.2
-          args: --fix
-
-      - name: 💾 Commit and push applied linter fixes
-        uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v7.0.0
-        with:
-          commit_message: "chore: apply golangci-lint fixes"
-          commit_user_name: golangci-lint-bot
-          commit_user_email: golangci-lint-bot@users.noreply.github.com
-
   ci:
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0763de30f9598601916680b2f52c9f41f14082df # v1.21.0
-    with:
-      working-directory: ./
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -112,7 +67,7 @@ jobs:
 
       - name: ⚙️ Setup Go
         id: setup-go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: go.mod
           cache: true
@@ -123,8 +78,6 @@ jobs:
         with:
           go-version: ${{ steps.setup-go.outputs.go-version }}
           source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
-          # NOTE: The build job uses the root path 'ksail' for the binary, while downstream jobs use 'bin/ksail' to avoid conflicts with test-generated files.
-          # See quickstart.md (line 41) for rationale.
           output-path: ksail
           run-smoke-test: "true"
 
