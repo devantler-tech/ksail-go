@@ -78,8 +78,6 @@ jobs:
         with:
           go-version: ${{ steps.setup-go.outputs.go-version }}
           source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
-          # NOTE: The build job uses the root path 'ksail' for the binary, while downstream jobs use 'bin/ksail' to avoid conflicts with test-generated files.
-          # See quickstart.md (line 41) for rationale.
           output-path: ksail
           run-smoke-test: "true"
 

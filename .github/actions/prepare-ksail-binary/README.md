@@ -34,7 +34,7 @@ This path flexibility is intentional and necessary because:
   uses: ./.github/actions/prepare-ksail-binary
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
-    source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
+    source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
     output-path: ksail  # or bin/ksail
     run-smoke-test: 'true'  # optional, defaults to 'true'
 ```
@@ -44,7 +44,7 @@ This path flexibility is intentional and necessary because:
 | Input            | Required | Default  | Description                                                                                                                                                                                                     |
 |------------------|----------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `go-version`     | Yes      | -        | Go version from `setup-go` output, used for cache key computation                                                                                                                                               |
-| `source-hash`    | Yes      | -        | Hash of source files (use `hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go')`)                                                                                                                               |
+| `source-hash`    | Yes      | -        | Hash of source files (use `hashFiles('go.mod', 'go.sum', '**/*.go')`)                                                                                                                                           |
 | `output-path`    | No       | `ksail`  | Target path for the binary relative to repository root (e.g., `ksail` or `bin/ksail`). Must be relative to repository root and must not contain path traversal sequences (e.g., `..`, `../`, `*/../*`, `*/..`). |
 | `run-smoke-test` | No       | `'true'` | Whether to run `--version` smoke test on the prepared binary                                                                                                                                                    |
 
@@ -65,7 +65,7 @@ This path flexibility is intentional and necessary because:
   uses: ./.github/actions/prepare-ksail-binary
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
-    source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
+    source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
     output-path: ksail
     run-smoke-test: 'true'
 ```
@@ -77,7 +77,7 @@ This path flexibility is intentional and necessary because:
   uses: ./.github/actions/prepare-ksail-binary
   with:
     go-version: ${{ steps.setup-go.outputs.go-version }}
-    source-hash: ${{ hashFiles('src/go.mod', 'src/go.sum', 'src/**/*.go') }}
+    source-hash: ${{ hashFiles('go.mod', 'go.sum', '**/*.go') }}
     output-path: bin/ksail
     run-smoke-test: 'false'  # tests handle validation
 ```
