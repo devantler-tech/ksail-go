@@ -16,7 +16,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/k3d-io/k3d/v5 v5.8.3
 	github.com/mitchellh/go-wordwrap v1.0.1
-	github.com/mittwald/go-helm-client v0.12.18
+	github.com/mittwald/go-helm-client v0.12.19
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/samber/do/v2 v2.0.0
 	github.com/sirupsen/logrus v1.9.4-0.20251023124752-b61f268f75b6
