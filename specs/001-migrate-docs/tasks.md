@@ -48,7 +48,6 @@
 
 ### Implementation for User Story 2
 
-- [x] T010 [P] [US2] Create `docs/README.md` describing documentation layout and local preview commands (markdownlint, lychee, editor preview)
 - [x] T011 [P] [US2] Update `README.md` documentation section to reference the migrated `docs/` content and outline the preview workflow
 - [x] T012 [US2] Extend `CONTRIBUTING.md` with contributor instructions for running markdownlint and lychee before submitting doc changes
 
