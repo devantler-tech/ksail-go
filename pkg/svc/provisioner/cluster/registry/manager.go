@@ -278,7 +278,7 @@ func ConnectRegistriesToNetwork(
 	return nil
 }
 
-// CleanupRegistries removes the provided registries. Errors are logged as warnings.
+// CleanupRegistries removes the provided registry. Errors are logged as warnings.
 func CleanupRegistries(
 	ctx context.Context,
 	registryMgr *dockerclient.RegistryManager,

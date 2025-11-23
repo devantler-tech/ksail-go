@@ -703,7 +703,7 @@ func TestPrepareK3dConfigWithMirrors_AddsOverrides(t *testing.T) {
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
 
 	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
-	specs := registries.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
+	specs := registry.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
 
 	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, specs)
 
@@ -1312,7 +1312,6 @@ func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
 	require.NoError(t, err)
 }
 
-
 func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
@@ -1329,7 +1328,6 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, installer.installCalls)
 }
-
 
 func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
 	cmd, _ := testutils.NewCommand(t)

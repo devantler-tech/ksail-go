@@ -53,12 +53,12 @@
 
 ### Implementation for User Story 2
 
-- [X] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/registry` (create/start/stop/status)
-- [X] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/registry`
+- [X] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/provisioner/cluster/registry` (create/start/stop/status)
+- [X] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/provisioner/cluster/registry`
 - [ ] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
-- [X] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/registry`
+- [X] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/provisioner/cluster/registry`
 - [ ] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
-- [ ] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/registry` to satisfy FR-015
+- [ ] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/provisioner/cluster/registry` to satisfy FR-015
 
 **Checkpoint**: Local registry can be provisioned and used for manual image push/pull.
 
@@ -141,7 +141,7 @@
 
 - [ ] T036 [P] Update KSail-Go docs under `docs/` to describe Flux + OCI flows and quickstart steps
 - [ ] T039 Review error messages across Flux and registry services for clarity and consistency, including common edge cases (registry unavailable, corrupted artifact, auth failure)
-- [ ] T040 Implement basic artifact pruning options for local registry in `pkg/svc/registry` (for FR-018)
+- [ ] T040 Implement basic artifact pruning options for local registry in `pkg/svc/provisioner/cluster/registry` (for FR-018)
 - [ ] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
 - [ ] T042 Run through `quickstart.md` step-by-step and fix any mismatches in commands or behavior
 - [ ] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge

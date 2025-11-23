@@ -119,26 +119,26 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	return s.generateKustomizationConfig(output, force)
 }
 
-// GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
+// GenerateContainerdPatches generates containerd config patches for Kind mirror registry.
 // Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 // Container names match the registry host after sanitization to align with runtime provisioning.
 func (s *Scaffolder) GenerateContainerdPatches() []string {
-	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
+	specs := registry.ParseMirrorSpecs(s.MirrorRegistries)
 	if len(specs) == 0 {
 		return nil
 	}
 
-	entries := registries.BuildMirrorEntries(specs, "", nil, nil, nil)
+	entries := registry.BuildMirrorEntries(specs, "", nil, nil, nil)
 	patches := make([]string, 0, len(entries))
 
 	for _, entry := range entries {
-		patches = append(patches, registries.KindPatch(entry))
+		patches = append(patches, registry.KindPatch(entry))
 	}
 
 	return patches
 }
 
-// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
+// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registry.
 // Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 // K3d requires one registry per proxy, so we generate multiple create configs.
 func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
@@ -148,14 +148,14 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		return registryConfig
 	}
 
-	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
+	specs := registry.ParseMirrorSpecs(s.MirrorRegistries)
 
-	hostEndpoints, updated := registries.BuildHostEndpointMap(specs, "", nil)
+	hostEndpoints, updated := registry.BuildHostEndpointMap(specs, "", nil)
 	if len(hostEndpoints) == 0 || !updated {
 		return registryConfig
 	}
 
-	registryConfig.Config = registries.RenderK3dMirrorConfig(hostEndpoints)
+	registryConfig.Config = registry.RenderK3dMirrorConfig(hostEndpoints)
 
 	return registryConfig
 }

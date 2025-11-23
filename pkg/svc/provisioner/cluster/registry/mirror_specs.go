@@ -138,7 +138,7 @@ func BuildHostEndpointMap(
 		endpoints, existed := hostEndpoints[entry.Host]
 		previousLen := len(endpoints)
 
-		// Add the local mirror endpoint first (for K3d registries.yaml)
+		// Add the local mirror endpoint first (for K3d registry.yaml)
 		if entry.Endpoint != "" && !containsEndpoint(endpoints, entry.Endpoint) {
 			endpoints = append(endpoints, entry.Endpoint)
 		}

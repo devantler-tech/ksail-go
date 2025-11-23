@@ -16,7 +16,7 @@ var (
 	ErrInvalidPort = errors.New("registry port must be between 1 and 65535")
 )
 
-// Service models the lifecycle management interface for localhost-scoped OCI registries.
+// Service models the lifecycle management interface for localhost-scoped OCI registry.
 type Service interface {
 	// Create provisions (or updates) an OCI registry container definition using the supplied options.
 	Create(ctx context.Context, opts CreateOptions) (v1alpha1.OCIRegistry, error)

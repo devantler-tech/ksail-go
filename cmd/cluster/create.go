@@ -56,6 +56,7 @@ func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
 		},
 	}
 }
+
 // NewCreateCmd wires the cluster create command using the shared runtime container.
 func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
@@ -263,12 +264,12 @@ func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.Sim
 }
 
 const (
-	mirrorStageTitle   = "Create mirror registries..."
+	mirrorStageTitle   = "Create mirror registry..."
 	mirrorStageEmoji   = "🪞"
 	mirrorStageSuccess = "mirror registries created"
 	mirrorStageFailure = "failed to setup registries"
 
-	connectStageTitle   = "Connect registries..."
+	connectStageTitle   = "Connect registry..."
 	connectStageEmoji   = "🔗"
 	connectStageSuccess = "registries connected"
 	connectStageFailure = "failed to connect registries"
@@ -345,7 +346,7 @@ type registryStageContext struct {
 	clusterCfg  *v1alpha1.Cluster
 	kindConfig  *v1alpha4.Cluster
 	k3dConfig   *v1alpha5.SimpleConfig
-	mirrorSpecs []registries.MirrorSpec
+	mirrorSpecs []registry.MirrorSpec
 }
 
 type registryStageDefinition struct {
@@ -519,7 +520,7 @@ func newRegistryHandlers(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 	kindAction func(context.Context, client.APIClient) error,
 	k3dAction func(context.Context, client.APIClient) error,
 ) map[v1alpha1.Distribution]registryStageHandler {
@@ -543,7 +544,7 @@ func handleRegistryStage(
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
 	info registryStageInfo,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 	kindAction func(context.Context, client.APIClient) error,
 	k3dAction func(context.Context, client.APIClient) error,
 ) error {
@@ -574,7 +575,7 @@ func runRegistryStageWithRole(
 	k3dConfig *v1alpha5.SimpleConfig,
 	role registryStageRole,
 ) error {
-	mirrorSpecs := registries.ParseMirrorSpecs(
+	mirrorSpecs := registry.ParseMirrorSpecs(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
 	)
 
@@ -887,7 +888,7 @@ func prepareKindConfigWithMirrors(
 func prepareK3dConfigWithMirrors(
 	clusterCfg *v1alpha1.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 ) bool {
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
 		return false
@@ -897,12 +898,12 @@ func prepareK3dConfigWithMirrors(
 
 	hostEndpoints := parseK3dRegistryConfig(original)
 
-	updatedMap, _ := registries.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
+	updatedMap, _ := registry.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
 	if len(updatedMap) == 0 {
 		return false
 	}
 
-	rendered := registries.RenderK3dMirrorConfig(updatedMap)
+	rendered := registry.RenderK3dMirrorConfig(updatedMap)
 
 	if strings.TrimSpace(rendered) == strings.TrimSpace(original) {
 		return strings.TrimSpace(original) != ""
@@ -981,16 +982,16 @@ func resolveK3dClusterName(
 // generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
 // Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
 func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
-	parsed := registries.ParseMirrorSpecs(mirrorSpecs)
+	parsed := registry.ParseMirrorSpecs(mirrorSpecs)
 	if len(parsed) == 0 {
 		return nil
 	}
 
-	entries := registries.BuildMirrorEntries(parsed, "", nil, nil, nil)
+	entries := registry.BuildMirrorEntries(parsed, "", nil, nil, nil)
 
 	patches := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		patches = append(patches, registries.KindPatch(entry))
+		patches = append(patches, registry.KindPatch(entry))
 	}
 
 	return patches

@@ -26,7 +26,7 @@ func TestSanitizeHostIdentifier(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, registries.SanitizeHostIdentifier(tc.input))
+			assert.Equal(t, tc.expected, registry.SanitizeHostIdentifier(tc.input))
 		})
 	}
 }
@@ -47,7 +47,7 @@ func TestGenerateUpstreamURL(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, registries.GenerateUpstreamURL(tc.input))
+			assert.Equal(t, tc.expected, registry.GenerateUpstreamURL(tc.input))
 		})
 	}
 }
@@ -69,7 +69,7 @@ func TestExtractPortFromEndpoint(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, registries.ExtractPortFromEndpoint(tc.endpoint))
+			assert.Equal(t, tc.expected, registry.ExtractPortFromEndpoint(tc.endpoint))
 		})
 	}
 }
@@ -78,15 +78,15 @@ func TestExtractRegistryPort_UsesEndpointPortWhenAvailable(t *testing.T) {
 	t.Parallel()
 
 	usedPorts := map[int]struct{}{}
-	next := registries.DefaultRegistryPort
+	next := registry.DefaultRegistryPort
 
-	port := registries.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
+	port := registry.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
 	require.Equal(t, 5050, port)
 	assert.Contains(t, usedPorts, 5050)
 	assert.Equal(t, 5051, next)
 
 	// Subsequent call with an already-used port falls back to next free port.
-	port = registries.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
+	port = registry.ExtractRegistryPort([]string{"http://ghcr.io:5050"}, usedPorts, &next)
 	require.Equal(t, 5051, port)
 	assert.Contains(t, usedPorts, 5051)
 	assert.Equal(t, 5052, next)
@@ -95,19 +95,19 @@ func TestExtractRegistryPort_UsesEndpointPortWhenAvailable(t *testing.T) {
 func TestExtractRegistryPort_FallsBackToDefaultWhenNoEndpoint(t *testing.T) {
 	t.Parallel()
 
-	usedPorts := map[int]struct{}{registries.DefaultRegistryPort: {}}
-	next := registries.DefaultRegistryPort
+	usedPorts := map[int]struct{}{registry.DefaultRegistryPort: {}}
+	next := registry.DefaultRegistryPort
 
-	port := registries.ExtractRegistryPort(nil, usedPorts, &next)
-	require.Equal(t, registries.DefaultRegistryPort+1, port)
-	assert.Contains(t, usedPorts, registries.DefaultRegistryPort+1)
-	assert.Equal(t, registries.DefaultRegistryPort+2, next)
+	port := registry.ExtractRegistryPort(nil, usedPorts, &next)
+	require.Equal(t, registry.DefaultRegistryPort+1, port)
+	assert.Contains(t, usedPorts, registry.DefaultRegistryPort+1)
+	assert.Equal(t, registry.DefaultRegistryPort+2, next)
 
 	// Nil next pointer should still allocate the default port when map is empty.
 	newMap := map[int]struct{}{}
-	port = registries.ExtractRegistryPort(nil, newMap, nil)
-	require.Equal(t, registries.DefaultRegistryPort, port)
-	assert.Contains(t, newMap, registries.DefaultRegistryPort)
+	port = registry.ExtractRegistryPort(nil, newMap, nil)
+	require.Equal(t, registry.DefaultRegistryPort, port)
+	assert.Contains(t, newMap, registry.DefaultRegistryPort)
 }
 
 func TestExtractNameFromEndpoint(t *testing.T) {
@@ -126,7 +126,7 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.expected, registries.ExtractNameFromEndpoint(tc.endpoint))
+			assert.Equal(t, tc.expected, registry.ExtractNameFromEndpoint(tc.endpoint))
 		})
 	}
 }
@@ -137,7 +137,7 @@ func TestResolveRegistryName(t *testing.T) {
 	t.Run("usesEndpointNameWhenPresent", func(t *testing.T) {
 		t.Parallel()
 
-		name := registries.ResolveRegistryName(
+		name := registry.ResolveRegistryName(
 			"docker.io",
 			[]string{"http://docker.io:5000"},
 			"k3d-",
@@ -148,7 +148,7 @@ func TestResolveRegistryName(t *testing.T) {
 	t.Run("fallsBackToPrefixAndHost", func(t *testing.T) {
 		t.Parallel()
 
-		name := registries.ResolveRegistryName(
+		name := registry.ResolveRegistryName(
 			"ghcr.io",
 			[]string{"invalid-endpoint"},
 			"k3d-",
@@ -159,7 +159,7 @@ func TestResolveRegistryName(t *testing.T) {
 	t.Run("ignoresLocalhostEndpoints", func(t *testing.T) {
 		t.Parallel()
 
-		name := registries.ResolveRegistryName(
+		name := registry.ResolveRegistryName(
 			"docker.io",
 			[]string{"http://localhost:5000"},
 			"kind-",
@@ -171,10 +171,10 @@ func TestResolveRegistryName(t *testing.T) {
 func TestBuildRegistryInfo(t *testing.T) {
 	t.Parallel()
 
-	info := registries.BuildRegistryInfo(
+	info := registry.BuildRegistryInfo(
 		"docker.io",
 		[]string{"http://docker.io:5000"},
-		registries.DefaultRegistryPort,
+		registry.DefaultRegistryPort,
 		"",
 		"",
 	)
@@ -182,17 +182,17 @@ func TestBuildRegistryInfo(t *testing.T) {
 	require.Equal(t, "docker.io", info.Host)
 	assert.Equal(t, "docker.io", info.Name)
 	assert.Equal(t, "https://registry-1.docker.io", info.Upstream)
-	assert.Equal(t, registries.DefaultRegistryPort, info.Port)
+	assert.Equal(t, registry.DefaultRegistryPort, info.Port)
 	assert.Equal(t, "docker.io", info.Volume)
 }
 
 func TestBuildRegistryInfo_UsesOverride(t *testing.T) {
 	t.Parallel()
 
-	info := registries.BuildRegistryInfo(
+	info := registry.BuildRegistryInfo(
 		"docker.io",
 		[]string{"http://docker.io:5000"},
-		registries.DefaultRegistryPort,
+		registry.DefaultRegistryPort,
 		"",
 		"https://mirror.example.com",
 	)
@@ -203,19 +203,19 @@ func TestBuildRegistryInfo_UsesOverride(t *testing.T) {
 func TestBuildRegistryName(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "k3d-ghcr.io", registries.BuildRegistryName("k3d-", "ghcr.io"))
+	assert.Equal(t, "k3d-ghcr.io", registry.BuildRegistryName("k3d-", "ghcr.io"))
 }
 
 func TestGenerateVolumeName(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, "ghcr.io", registries.GenerateVolumeName("ghcr.io"))
+	assert.Equal(t, "ghcr.io", registry.GenerateVolumeName("ghcr.io"))
 }
 
 func TestSortHosts(t *testing.T) {
 	t.Parallel()
 
 	hosts := []string{"ghcr.io", "docker.io", "quay.io"}
-	registries.SortHosts(hosts)
+	registry.SortHosts(hosts)
 	assert.Equal(t, []string{"docker.io", "ghcr.io", "quay.io"}, hosts)
 }

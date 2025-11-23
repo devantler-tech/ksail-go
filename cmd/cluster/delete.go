@@ -199,7 +199,7 @@ func cleanupK3dMirrorRegistries(
 	)
 }
 
-func collectRegistryNames(infos []registries.Info) []string {
+func collectRegistryNames(infos []registry.Info) []string {
 	names := make([]string, 0, len(infos))
 
 	for _, reg := range infos {
@@ -229,7 +229,7 @@ func runMirrorRegistryCleanup(
 	cmd.Println()
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
-		Content: "Delete mirror registries...",
+		Content: "Delete mirror registry...",
 		Emoji:   "🗑️",
 		Writer:  cmd.OutOrStdout(),
 	})
