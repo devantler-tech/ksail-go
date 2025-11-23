@@ -17,10 +17,10 @@
 
 **Purpose**: Core plumbing and config extensions required before any user story implementation.
 
-- [ ] T004 Extend KSail-Go cluster configuration model in `pkg/apis` to support `GitOpsEngine`, registry, and Flux interval fields
-- [ ] T005 Update config parsing and validation in `pkg/cmd` / `pkg/di` to read and validate Flux + registry settings
-- [ ] T006 [P] Add data structures for `OCIRegistry`, `OCIArtifact`, and Flux CR models in `pkg/apis`
-- [ ] T007 [P] Ensure existing DI wiring can inject new services via interfaces in `pkg/svc`
+- [X] T004 Extend KSail-Go cluster configuration model in `pkg/apis` to support `GitOpsEngine`, registry, and Flux interval fields
+- [X] T005 Update config parsing and validation in `pkg/cmd` / `pkg/di` to read and validate Flux + registry settings
+- [X] T006 [P] Add data structures for `OCIRegistry`, `OCIArtifact`, and Flux CR models in `pkg/apis`
+- [X] T007 [P] Ensure existing DI wiring can inject new services via interfaces in `pkg/svc`
 
 **Checkpoint**: Foundation ready – user stories can now be implemented.
 
@@ -34,12 +34,12 @@
 
 ### Implementation for User Story 1
 
-- [ ] T008 [P] [US1] Define `FluxInstaller` interface and types in `pkg/svc/flux` (install/uninstall/status)
-- [ ] T009 [P] [US1] Implement `FluxInstaller` using Flux Installer Go SDK in `pkg/svc/flux`
-- [ ] T010 [US1] Integrate `FluxInstaller` into cluster bootstrap path in `cmd/cluster` (enable via `GitOpsEngine: Flux`)
-- [ ] T011 [US1] Add logic to perform on-demand Flux install for existing clusters in `cmd/cluster`
-- [ ] T012 [US1] Add basic unit tests for `FluxInstaller` and cluster bootstrap integration in `pkg/svc/flux` and `cmd/cluster` (write tests before implementation where practical)
-- [ ] T013 [US1] Implement detection logic to handle cases where Flux is already installed and avoid duplicate installation attempts
+- [X] T008 [P] [US1] Define `FluxInstaller` interface and types in `pkg/svc/installer/flux` (install/uninstall/status)
+- [X] T009 [P] [US1] Implement `FluxInstaller` using Flux Installer Go SDK in `pkg/svc/installer/flux`
+- [X] T010 [US1] Integrate `FluxInstaller` into cluster bootstrap path in `cmd/cluster` (enable via `GitOpsEngine: Flux`)
+- [X] T011 [US1] Add logic to perform on-demand Flux install for existing clusters in `cmd/cluster`
+- [X] T012 [US1] Add basic unit tests for `FluxInstaller` and cluster bootstrap integration in `pkg/svc/installer/flux` and `cmd/cluster` (write tests before implementation where practical)
+- [X] T013 [US1] Implement detection logic to handle cases where Flux is already installed and avoid duplicate installation attempts
 
 **Checkpoint**: Creating a cluster with Flux enabled installs controllers and CRDs without affecting other workloads.
 
@@ -53,10 +53,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/registry` (create/start/stop/status)
-- [ ] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/registry`
+- [X] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/registry` (create/start/stop/status)
+- [X] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/registry`
 - [ ] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
-- [ ] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/registry`
+- [X] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/registry`
 - [ ] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
 - [ ] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/registry` to satisfy FR-015
 
@@ -91,7 +91,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T026 [P] [US4] Implement helpers in `pkg/svc/flux` to generate `OCIRepository` and `Kustomization` manifests from config
+- [ ] T026 [P] [US4] Implement helpers in `pkg/svc/installer/flux` to generate `OCIRepository` and `Kustomization` manifests from config
 - [ ] T027 [P] [US4] Add a CLI command or subcommand in `cmd/workload` or `cmd/cluster` to generate/apply these Flux resources
 - [ ] T028 [US4] Ensure default reconciliation interval of 1 minute is applied when not overridden
 - [ ] T029 [US4] Validate that generated resources use the `oci://localhost:<port>/<project-name>` pattern and no auth
@@ -110,7 +110,7 @@
 ### Implementation for User Story 5
 
 - [ ] T031 [P] [US5] Confirm Flux reconciliation interval configuration in `OCIRepository`/`Kustomization` resources supports frequent polling
-- [ ] T032 [US5] Implement helper in `pkg/svc/flux` to check status/conditions for reconciliation results
+- [ ] T032 [US5] Implement helper in `pkg/svc/installer/flux` to check status/conditions for reconciliation results
 - [ ] T033 [US5] Add a simple CLI status command in `cmd/workload` or `cmd/cluster` to surface high-level success/failure based on Flux CRs
 - [ ] T034 [US5] Add tests simulating an artifact update and verifying Flux picks up the new version via status inspection
 
@@ -126,7 +126,7 @@
 
 ### Implementation for User Story 6
 
-- [ ] T035 [P] [US6] Implement reconciliation trigger helper in `pkg/svc/flux` (e.g., patching annotations or using Flux APIs)
+- [ ] T035 [P] [US6] Implement reconciliation trigger helper in `pkg/svc/installer/flux` (e.g., patching annotations or using Flux APIs)
 - [ ] T036 [US6] Implement `ksail workload reconcile` command in `cmd/workload` that calls the helper
 - [ ] T037 [US6] Ensure command returns appropriate exit codes based on reconciliation success/failure
 - [ ] T038 [US6] Add unit tests and snapshot tests for `ksail workload reconcile` behavior and output (tests first where practical)

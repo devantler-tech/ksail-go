@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )

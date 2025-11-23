@@ -86,3 +86,29 @@ func NewClusterOptionsHelm() OptionsHelm {
 func NewClusterOptionsKustomize() OptionsKustomize {
 	return OptionsKustomize{}
 }
+
+// NewOCIRegistry creates a new OCIRegistry with default lifecycle state.
+func NewOCIRegistry() OCIRegistry {
+	return OCIRegistry{
+		Status: OCIRegistryStatusNotProvisioned,
+	}
+}
+
+// NewOCIArtifact creates a new OCIArtifact with zero-valued metadata.
+func NewOCIArtifact() OCIArtifact {
+	return OCIArtifact{}
+}
+
+// NewFluxOCIRepository creates a new FluxOCIRepository with empty spec and status.
+func NewFluxOCIRepository() FluxOCIRepository {
+	return FluxOCIRepository{
+		Spec: FluxOCIRepositorySpec{
+			Ref: FluxOCIRepositoryRef{},
+		},
+	}
+}
+
+// NewFluxKustomization creates a new FluxKustomization with empty spec and status.
+func NewFluxKustomization() FluxKustomization {
+	return FluxKustomization{}
+}

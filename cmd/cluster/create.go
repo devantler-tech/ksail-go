@@ -17,13 +17,15 @@ import (
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
+	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
@@ -54,7 +56,6 @@ func newCreateLifecycleConfig() cmdhelpers.LifecycleConfig {
 		},
 	}
 }
-
 // NewCreateCmd wires the cluster create command using the shared runtime container.
 func NewCreateCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
@@ -101,6 +102,13 @@ func handleCreateRunE(
 		return err
 	}
 
+	if clusterCfg.Spec.RegistryEnabled {
+		err = ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+		if err != nil {
+			return fmt.Errorf("failed to provision local registry: %w", err)
+		}
+	}
+
 	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig)
 	if err != nil {
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
@@ -132,6 +140,13 @@ func handleCreateRunE(
 		})
 	}
 
+	if clusterCfg.Spec.RegistryEnabled {
+		err = connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+		if err != nil {
+			return fmt.Errorf("failed to connect local registry: %w", err)
+		}
+	}
+
 	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
@@ -142,18 +157,26 @@ func handlePostCreationSetup(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
+	var err error
+
 	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
 	switch clusterCfg.Spec.CNI {
 	case v1alpha1.CNICilium:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
 	case v1alpha1.CNIDefault, "":
-		return handleMetricsServer(cmd, clusterCfg, tmr)
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
 		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	return installFluxIfConfigured(cmd, clusterCfg, tmr)
 }
 
 // installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
@@ -249,6 +272,11 @@ const (
 	connectStageEmoji   = "🔗"
 	connectStageSuccess = "registries connected"
 	connectStageFailure = "failed to connect registries"
+
+	fluxStageTitle    = "Install Flux..."
+	fluxStageEmoji    = "☸️"
+	fluxStageActivity = "installing Flux controllers"
+	fluxStageSuccess  = "Flux controllers installed"
 )
 
 var (
@@ -285,6 +313,12 @@ var (
 	// connectRegistriesToClusterNetwork attaches mirror registries to the cluster network after creation.
 	//nolint:gochecknoglobals // Function reused by tests and runtime flow.
 	connectRegistriesToClusterNetwork = makeRegistryStageRunner(registryStageRoleConnect)
+	// fluxInstallerFactory is overridden in tests to stub Flux installer creation.
+	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) (installer.Installer, error) {
+		return fluxinstaller.NewFluxInstaller(client, timeout), nil
+	}
+	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
+	dockerClientInvoker = cmdhelpers.WithDockerClient
 )
 
 type registryStageRole int
@@ -604,7 +638,7 @@ func runRegistryStage(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err := cmdhelpers.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
+	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
 		if err != nil {
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)
@@ -1063,6 +1097,76 @@ func runMetricsServerInstallation(
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "Metrics Server installed " + timingStr,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
+func installFluxIfConfigured(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
+	if clusterCfg.Spec.GitOpsEngine != v1alpha1.GitOpsEngineFlux {
+		return nil
+	}
+
+	helmClient, _, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	installer, err := newFluxInstallerForCluster(clusterCfg, helmClient)
+	if err != nil {
+		return fmt.Errorf("create flux installer: %w", err)
+	}
+
+	return runFluxInstallation(cmd, installer, tmr)
+}
+
+func newFluxInstallerForCluster(
+	clusterCfg *v1alpha1.Cluster,
+	helmClient helm.Interface,
+) (installer.Installer, error) {
+	timeout := getInstallTimeout(clusterCfg)
+	return fluxInstallerFactory(helmClient, timeout)
+}
+
+func runFluxInstallation(
+	cmd *cobra.Command,
+	installer installer.Installer,
+	tmr timer.Timer,
+) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: fluxStageTitle,
+		Emoji:   fluxStageEmoji,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	tmr.NewStage()
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: fluxStageActivity,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	if err := installer.Install(ctx); err != nil {
+		return fmt.Errorf("failed to install flux controllers: %w", err)
+	}
+
+	total, stage := tmr.GetTiming()
+	timing := notify.FormatTiming(total, stage, true)
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: fmt.Sprintf("%s %s", fluxStageSuccess, timing),
 		Writer:  cmd.OutOrStdout(),
 	})
 

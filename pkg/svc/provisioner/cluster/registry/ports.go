@@ -1,4 +1,4 @@
-package registries
+package registry
 
 // InitPortAllocation prepares the used ports set and the next available port based on provided base mapping.
 func InitPortAllocation(baseUsedPorts map[int]struct{}) (map[int]struct{}, int) {

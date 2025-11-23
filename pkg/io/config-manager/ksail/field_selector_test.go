@@ -2,11 +2,13 @@ package configmanager_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // testCase represents a test case structure for AddFlagFromField tests.
@@ -94,9 +96,30 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 		{
 			name:            "gitops-engine",
 			factory:         configmanager.DefaultGitOpsEngineFieldSelector,
-			expectedDesc:    "GitOps engine to use",
+			expectedDesc:    "GitOps engine to use (None disables GitOps, Flux installs Flux controllers)",
 			expectedDefault: v1alpha1.GitOpsEngineNone,
 			assertPointer:   assertGitOpsEngineSelector,
+		},
+		{
+			name:            "local-registry-enabled",
+			factory:         configmanager.DefaultRegistryEnabledFieldSelector,
+			expectedDesc:    "Enable the local OCI registry",
+			expectedDefault: false,
+			assertPointer:   assertRegistryEnabledSelector,
+		},
+		{
+			name:            "local-registry-port",
+			factory:         configmanager.DefaultRegistryPortFieldSelector,
+			expectedDesc:    "Host port to expose the local OCI registry on",
+			expectedDefault: int32(5000),
+			assertPointer:   assertRegistryPortSelector,
+		},
+		{
+			name:            "flux-interval",
+			factory:         configmanager.DefaultFluxIntervalFieldSelector,
+			expectedDesc:    "Flux reconciliation interval (e.g. 1m, 30s)",
+			expectedDefault: metav1.Duration{Duration: time.Minute},
+			assertPointer:   assertFluxIntervalSelector,
 		},
 		{
 			name:            "metrics-server",
@@ -188,6 +211,21 @@ func assertGitOpsEngineSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any
 func assertMetricsServerSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.MetricsServer)
+}
+
+func assertRegistryEnabledSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.RegistryEnabled)
+}
+
+func assertRegistryPortSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.RegistryPort)
+}
+
+func assertFluxIntervalSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.FluxInterval)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
@@ -564,41 +602,121 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 	t.Parallel()
 
 	selectors := configmanager.DefaultClusterFieldSelectors()
-	require.Len(t, selectors, 4)
+	require.Len(t, selectors, 8)
 
 	cluster := v1alpha1.NewCluster()
 
-	for _, selector := range selectors {
-		field := selector.Selector(cluster)
-
-		if distribution, ok := field.(*v1alpha1.Distribution); ok {
-			assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
-
-			*distribution = v1alpha1.DistributionK3d
-			assert.Equal(t, v1alpha1.DistributionK3d, *distribution)
-
-			continue
-		}
-
-		pathPtr, ok := field.(*string)
-		require.True(t, ok, "selector did not return supported pointer type")
-
-		// Check that the default value is one of the expected values (if it's set)
-		if selector.DefaultValue != nil {
-			defaultValue, ok := selector.DefaultValue.(string)
-			require.True(t, ok, "selector default value must be a string when present")
-			assert.True(
-				t,
-				defaultValue == "kind.yaml" ||
-					defaultValue == "~/.kube/config",
-				"unexpected default value: %s",
-				defaultValue,
-			)
-		}
-
-		*pathPtr = "custom.yaml"
-		assert.Equal(t, "custom.yaml", *pathPtr)
+	testCases := []struct {
+		name        string
+		selector    configmanager.FieldSelector[v1alpha1.Cluster]
+		assertFunc  func(any)
+		assertValue any
+	}{
+		{
+			name:     "distribution",
+			selector: selectors[0],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*v1alpha1.Distribution)
+				require.True(t, ok)
+				*ptr = v1alpha1.DistributionK3d
+				assert.Equal(t, v1alpha1.DistributionK3d, *ptr)
+			},
+			assertValue: v1alpha1.DistributionKind,
+		},
+		{
+			name:     "distribution-config",
+			selector: selectors[1],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*string)
+				require.True(t, ok)
+				*ptr = "custom-kind.yaml"
+				assert.Equal(t, "custom-kind.yaml", *ptr)
+			},
+			assertValue: "kind.yaml",
+		},
+		{
+			name:     "context",
+			selector: selectors[2],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*string)
+				require.True(t, ok)
+				assert.Empty(t, selectorDefaultString(selectors[2]))
+				*ptr = "kind-kind"
+				assert.Equal(t, "kind-kind", *ptr)
+			},
+		},
+		{
+			name:     "kubeconfig",
+			selector: selectors[3],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*string)
+				require.True(t, ok)
+				assert.Equal(t, "~/.kube/config", selectors[3].DefaultValue)
+				*ptr = "./kubeconfig"
+				assert.Equal(t, "./kubeconfig", *ptr)
+			},
+			assertValue: "~/.kube/config",
+		},
+		{
+			name:     "gitops",
+			selector: selectors[4],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*v1alpha1.GitOpsEngine)
+				require.True(t, ok)
+				*ptr = v1alpha1.GitOpsEngineFlux
+				assert.Equal(t, v1alpha1.GitOpsEngineFlux, *ptr)
+			},
+			assertValue: v1alpha1.GitOpsEngineNone,
+		},
+		{
+			name:     "local-registry-enabled",
+			selector: selectors[5],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*bool)
+				require.True(t, ok)
+				*ptr = true
+				assert.True(t, *ptr)
+			},
+			assertValue: false,
+		},
+		{
+			name:     "local-registry-port",
+			selector: selectors[6],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*int32)
+				require.True(t, ok)
+				*ptr = 6000
+				assert.Equal(t, int32(6000), *ptr)
+			},
+			assertValue: int32(5000),
+		},
+		{
+			name:     "flux-interval",
+			selector: selectors[7],
+			assertFunc: func(field any) {
+				ptr, ok := field.(*metav1.Duration)
+				require.True(t, ok)
+				*ptr = metav1.Duration{Duration: 30 * time.Second}
+				assert.Equal(t, 30*time.Second, ptr.Duration)
+			},
+			assertValue: metav1.Duration{Duration: time.Minute},
+		},
 	}
+
+	for _, tc := range testCases {
+		field := tc.selector.Selector(cluster)
+		if tc.assertValue != nil {
+			assert.Equal(t, tc.assertValue, tc.selector.DefaultValue)
+		}
+		tc := tc
+		tc.assertFunc(field)
+	}
+}
+
+func selectorDefaultString(selector configmanager.FieldSelector[v1alpha1.Cluster]) string {
+	value, _ := selector.DefaultValue.(string)
+
+	return value
 }
 
 func TestDefaultContextFieldSelector(t *testing.T) {

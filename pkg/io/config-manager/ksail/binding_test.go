@@ -93,6 +93,36 @@ func getBasicFieldTests() []struct {
 			expectedFlag: "gitops-engine",
 			expectedType: "GitOpsEngine",
 		},
+		{
+			name: "RegistryEnabled field",
+			fieldSelector: configmanager.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryEnabled },
+				false,
+				"Enable registry",
+			),
+			expectedFlag: "local-registry-enabled",
+			expectedType: "bool",
+		},
+		{
+			name: "RegistryPort field",
+			fieldSelector: configmanager.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryPort },
+				int32(5000),
+				"Registry port",
+			),
+			expectedFlag: "local-registry-port",
+			expectedType: "int32",
+		},
+		{
+			name: "FluxInterval field",
+			fieldSelector: configmanager.AddFlagFromField(
+				func(c *v1alpha1.Cluster) any { return &c.Spec.FluxInterval },
+				metav1.Duration{Duration: time.Minute},
+				"Flux interval",
+			),
+			expectedFlag: "flux-interval",
+			expectedType: "duration",
+		},
 	}
 }
 
@@ -301,6 +331,18 @@ func TestGenerateFlagName(t *testing.T) {
 			"MetricsServer field",
 			&manager.Config.Spec.MetricsServer,
 			"metrics-server",
+		},
+		{"RegistryEnabled field",
+			&manager.Config.Spec.RegistryEnabled,
+			"local-registry-enabled",
+		},
+		{"RegistryPort field",
+			&manager.Config.Spec.RegistryPort,
+			"local-registry-port",
+		},
+		{"FluxInterval field",
+			&manager.Config.Spec.FluxInterval,
+			"flux-interval",
 		},
 	}
 

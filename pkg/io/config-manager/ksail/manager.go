@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -246,6 +247,36 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 		}
 
 		ptr.Duration = dur
+
+		return nil
+	case *bool:
+		if raw == "" {
+			*ptr = false
+
+			return nil
+		}
+
+		value, err := strconv.ParseBool(raw)
+		if err != nil {
+			return fmt.Errorf("parse bool %q: %w", raw, err)
+		}
+
+		*ptr = value
+
+		return nil
+	case *int32:
+		if raw == "" {
+			*ptr = 0
+
+			return nil
+		}
+
+		value, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil {
+			return fmt.Errorf("parse int32 %q: %w", raw, err)
+		}
+
+		*ptr = int32(value)
 
 		return nil
 	default:

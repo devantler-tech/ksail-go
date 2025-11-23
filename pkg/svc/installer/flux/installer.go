@@ -61,7 +61,7 @@ func (b *FluxInstaller) helmInstallOrUpgradeFluxOperator(ctx context.Context) er
 	timeoutCtx, cancel := context.WithTimeout(ctx, b.timeout)
 	defer cancel()
 
-	_, err := b.client.InstallChart(timeoutCtx, spec)
+	_, err := b.client.InstallOrUpgradeChart(timeoutCtx, spec)
 	if err != nil {
 		return fmt.Errorf("failed to install flux operator chart: %w", err)
 	}

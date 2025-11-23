@@ -15,7 +15,7 @@ import (
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
@@ -75,7 +75,12 @@ func handleDeleteRunE(
 
 	clusterCfg := cfgManager.Config
 
-	err = cleanupMirrorRegistries(cmd, clusterCfg, deps)
+	deleteVolumes, flagErr := cmd.Flags().GetBool("delete-registry-volumes")
+	if flagErr != nil {
+		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", flagErr)
+	}
+
+	err = cleanupMirrorRegistries(cmd, clusterCfg, deps, deleteVolumes)
 	if err != nil {
 		// Log warning but don't fail the delete operation
 		notify.WriteMessage(notify.Message{
@@ -83,6 +88,17 @@ func handleDeleteRunE(
 			Content: fmt.Sprintf("failed to cleanup registries: %v", err),
 			Writer:  cmd.OutOrStdout(),
 		})
+	}
+
+	if clusterCfg.Spec.RegistryEnabled {
+		err = cleanupLocalRegistry(cmd, clusterCfg, deps, deleteVolumes)
+		if err != nil {
+			notify.WriteMessage(notify.Message{
+				Type:    notify.WarningType,
+				Content: fmt.Sprintf("failed to cleanup local registry: %v", err),
+				Writer:  cmd.OutOrStdout(),
+			})
+		}
 	}
 
 	return nil
@@ -94,12 +110,8 @@ func cleanupMirrorRegistries(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps cmdhelpers.LifecycleDeps,
+	deleteVolumes bool,
 ) error {
-	deleteVolumes, err := cmd.Flags().GetBool("delete-registry-volumes")
-	if err != nil {
-		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", err)
-	}
-
 	switch clusterCfg.Spec.Distribution {
 	case v1alpha1.DistributionKind:
 		return cleanupKindMirrorRegistries(cmd, clusterCfg, deps, deleteVolumes)
@@ -222,7 +234,7 @@ func runMirrorRegistryCleanup(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err := cmdhelpers.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
+	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
 		return executeRegistryCleanup(cmd, dockerClient, registryNames, cleanup, deps.Timer)
 	})
 	if err != nil {

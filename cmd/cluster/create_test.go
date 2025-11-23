@@ -19,8 +19,9 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	installerpkg "github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -563,6 +564,49 @@ func (s *stubTimer) GetTiming() (time.Duration, time.Duration) {
 }
 
 func (s *stubTimer) Stop() {}
+
+type stubFluxInstaller struct {
+	installCalls int
+	installErr   error
+}
+
+func (s *stubFluxInstaller) Install(context.Context) error {
+	s.installCalls++
+	return s.installErr
+}
+
+func (s *stubFluxInstaller) Uninstall(context.Context) error {
+	return nil
+}
+
+func overrideFluxInstallerFactory(
+	t *testing.T,
+	factory func(helm.Interface, time.Duration) (installerpkg.Installer, error),
+) {
+	t.Helper()
+
+	original := fluxInstallerFactory
+	fluxInstallerFactory = factory
+	t.Cleanup(func() { fluxInstallerFactory = original })
+}
+
+func fluxTestClusterConfig(t *testing.T) *v1alpha1.Cluster {
+	t.Helper()
+
+	dir := t.TempDir()
+	kubeconfig := filepath.Join(dir, "kubeconfig")
+	require.NoError(t, os.WriteFile(kubeconfig, []byte("apiVersion: v1"), 0o600))
+
+	return &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			GitOpsEngine: v1alpha1.GitOpsEngineFlux,
+			Connection: v1alpha1.Connection{
+				Kubeconfig: kubeconfig,
+				Context:    "kind-kind",
+			},
+		},
+	}
+}
 
 // setupKindMirrorsTest creates the standard test setup for prepareKindConfigWithMirrors tests.
 func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManager, *kindv1alpha4.Cluster) {
@@ -1258,4 +1302,44 @@ func TestHandlePostCreationSetup_K3dEnabled(t *testing.T) {
 		err,
 		"Should not error when metrics-server is enabled on K3d (already present)",
 	)
+}
+
+func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	err := installFluxIfConfigured(cmd, &v1alpha1.Cluster{}, &stubTimer{})
+	require.NoError(t, err)
+}
+
+
+func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+	clusterCfg := fluxTestClusterConfig(t)
+	installer := &stubFluxInstaller{}
+	expectedTimeout := getInstallTimeout(clusterCfg)
+	overrideFluxInstallerFactory(t, func(client helm.Interface, timeout time.Duration) (installerpkg.Installer, error) {
+		require.NotNil(t, client)
+		require.Equal(t, expectedTimeout, timeout)
+		return installer, nil
+	})
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.NoError(t, err)
+	require.Equal(t, 1, installer.installCalls)
+}
+
+
+func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+	clusterCfg := fluxTestClusterConfig(t)
+	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) (installerpkg.Installer, error) {
+		return nil, errors.New("boom")
+	})
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "create flux installer")
 }

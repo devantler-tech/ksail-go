@@ -36,7 +36,7 @@ Implement Flux-based GitOps support in KSail-Go for local development clusters b
 - **YAGNI**: Feature intentionally omits HelmRelease support, advanced auth for the local registry, and multi-cluster orchestration until needed.
 - **Interface-Based Design (NON-NEGOTIABLE)**: New behavior (registry management, Flux installation, workload artifact building) will be introduced behind interfaces in `pkg/` with DI wiring and mocks generated via `mockery`.
 - **Test-First Development (NON-NEGOTIABLE)**: Each new package and public behavior will be accompanied by unit tests (and snapshot tests for CLI where applicable) before or alongside implementation.
-- **Package-First Architecture**: Core logic will live in `pkg/` (e.g., `pkg/svc/flux`, `pkg/svc/registry`, `pkg/workload`), with `cmd/` layers delegating directly into these services.
+- **Package-First Architecture**: Core logic will live in `pkg/` (e.g., `pkg/svc/installer/flux`, `pkg/svc/registry`, `pkg/workload`), with `cmd/` layers delegating directly into these services.
 - **Code Quality Standards (NON-NEGOTIABLE)**: All changes must pass `go test ./...` and `golangci-lint run` and integrate with existing CI (no suppression of linters without justification).
 
 **Gate Result**: PASS – Plan adheres to all constitutional principles, with interfaces and tests as first-class deliverables.

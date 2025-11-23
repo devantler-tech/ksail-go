@@ -81,6 +81,12 @@ ksail cluster delete
 - [.github/copilot-instructions.md](./.github/copilot-instructions.md) — GitHub Copilot configuration and best practices
 - [API Documentation](https://pkg.go.dev/github.com/devantler-tech/ksail-go) — Go package documentation
 
+## Flux Installer ☸️
+
+Flux installation during cluster bootstrap is handled by `pkg/svc/installer/flux`, a Helm-based implementation of the shared `pkg/svc/installer` interface. This installer provisions or upgrades the Flux Operator whenever `spec.gitOpsEngine: Flux` is configured, keeping the bootstrap experience consistent with other component installers.
+
+Because Flux is handled automatically when configured, the `ksail cluster flux` command has been removed.
+
 ## Related Projects 🔗
 
 ## Presentations 🎤

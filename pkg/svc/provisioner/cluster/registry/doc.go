@@ -1,4 +1,4 @@
-// Package registries centralizes all registry lifecycle helpers that KSail-Go
+// Package registry centralizes all registry lifecycle helpers that KSail-Go
 // needs for local development clusters.
 //
 // The package includes:
@@ -6,4 +6,4 @@
 //     handle pull-through caching containers consistently, and
 //   - the developer-facing registry service abstraction that provisions the
 //     localhost-only OCI registry leveraged by the CLI.
-package registries
+package registry

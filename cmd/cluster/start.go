@@ -38,11 +38,32 @@ func NewStartCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = cmdhelpers.NewStandardLifecycleRunE(
-		runtimeContainer,
-		cfgManager,
-		newStartLifecycleConfig(),
-	)
+	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleStartRunE)
 
 	return cmd
+}
+
+func handleStartRunE(
+	cmd *cobra.Command,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps cmdhelpers.LifecycleDeps,
+) error {
+	config := newStartLifecycleConfig()
+
+	err := cmdhelpers.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	if err != nil {
+		return err
+	}
+
+	clusterCfg := cfgManager.Config
+	if clusterCfg == nil || !clusterCfg.Spec.RegistryEnabled {
+		return nil
+	}
+
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	if err != nil {
+		return err
+	}
+
+	return connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
 }

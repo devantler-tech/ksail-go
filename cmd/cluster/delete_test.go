@@ -192,7 +192,7 @@ func TestCleanupMirrorRegistries_IgnoresNonKindDistribution(t *testing.T) {
 	cfg := v1alpha1.NewCluster()
 	cfg.Spec.Distribution = v1alpha1.DistributionK3d
 
-	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil))
+	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil), false)
 
 	require.NoError(t, err)
 }
@@ -211,26 +211,27 @@ func TestCleanupMirrorRegistries_ReturnsKindConfigLoadError(t *testing.T) {
 	cfg.Spec.Distribution = v1alpha1.DistributionKind
 	cfg.Spec.DistributionConfig = configPath
 
-	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil))
+	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil), false)
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to load kind config")
 }
 
-func TestCleanupMirrorRegistries_ReturnsFlagLookupError(t *testing.T) {
+func TestHandleDeleteRunE_ReturnsFlagLookupError(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := testutils.NewCommand(t)
-	configDir := t.TempDir()
+	cmd, out := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
 
-	kindPath := filepath.Join(configDir, "kind.yaml")
-	writeKindWithPatch(t, kindPath)
+	cfgManager, configDir := newDeleteTestConfigManager(t, out)
+	cfgManager.Viper.Set("spec.distributionConfig", filepath.Join(configDir, "kind.yaml"))
 
-	cfg := v1alpha1.NewCluster()
-	cfg.Spec.Distribution = v1alpha1.DistributionKind
-	cfg.Spec.DistributionConfig = kindPath
+	factory := &testutils.StubFactory{
+		Provisioner:        &testutils.StubProvisioner{},
+		DistributionConfig: &kindv1alpha4.Cluster{Name: "kind"},
+	}
 
-	err := cleanupMirrorRegistries(cmd, cfg, sharedLifecycleDeps(nil))
+	err := handleDeleteRunE(cmd, cfgManager, sharedLifecycleDeps(factory))
 
 	require.Error(t, err)
 	require.ErrorContains(t, err, "failed to get delete-registry-volumes flag")

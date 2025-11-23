@@ -318,6 +318,72 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 	testContextNotValidatedWithoutConfig(t)
 }
 
+func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
+	t.Parallel()
+
+	validator := ksailvalidator.NewValidator()
+
+	t.Run("invalid_gitops_engine", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.GitOpsEngine = v1alpha1.GitOpsEngine("Invalid")
+
+		result := validator.Validate(config)
+		assert.False(t, result.Valid)
+		validateExpectedErrors(t, []string{"spec.gitOpsEngine"}, result.Errors)
+	})
+
+	t.Run("registry_port_required_when_enabled", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.RegistryEnabled = true
+		config.Spec.RegistryPort = 0
+
+		result := validator.Validate(config)
+		assert.False(t, result.Valid)
+		validateExpectedErrors(t, []string{"spec.registryPort"}, result.Errors)
+	})
+
+	t.Run("registry_port_range", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.RegistryEnabled = true
+		config.Spec.RegistryPort = 70000
+
+		result := validator.Validate(config)
+		assert.False(t, result.Valid)
+		validateExpectedErrors(t, []string{"spec.registryPort"}, result.Errors)
+	})
+
+	t.Run("registry_port_warning_when_disabled", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.RegistryEnabled = false
+		config.Spec.RegistryPort = 5001
+
+		result := validator.Validate(config)
+		assert.True(t, result.Valid)
+		require.NotEmpty(t, result.Warnings)
+		assert.Equal(t, "spec.registryPort", result.Warnings[0].Field)
+	})
+
+	t.Run("flux_interval_must_be_positive", func(t *testing.T) {
+		t.Parallel()
+
+		config := createValidKSailConfig(v1alpha1.DistributionKind)
+		config.Spec.GitOpsEngine = v1alpha1.GitOpsEngineFlux
+		config.Spec.FluxInterval = metav1.Duration{}
+
+		result := validator.Validate(config)
+		assert.False(t, result.Valid)
+		validateExpectedErrors(t, []string{"spec.fluxInterval"}, result.Errors)
+	})
+}
+
 func testKindValidContext(t *testing.T) {
 	t.Helper()
 

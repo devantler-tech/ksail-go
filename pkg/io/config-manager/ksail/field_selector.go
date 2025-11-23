@@ -1,6 +1,11 @@
 package configmanager
 
-import "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+import (
+	"time"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {
@@ -85,8 +90,37 @@ func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
 func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
-		Description:  "GitOps engine to use",
+		Description:  "GitOps engine to use (None disables GitOps, Flux installs Flux controllers)",
 		DefaultValue: v1alpha1.GitOpsEngineNone,
+	}
+}
+
+// DefaultRegistryEnabledFieldSelector creates a selector for enabling the local OCI registry.
+func DefaultRegistryEnabledFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryEnabled },
+		Description:  "Enable the local OCI registry",
+		DefaultValue: false,
+	}
+}
+
+// DefaultRegistryPortFieldSelector creates a selector for the registry host port binding.
+func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryPort },
+		Description:  "Host port to expose the local OCI registry on",
+		DefaultValue: int32(5000),
+	}
+}
+
+// DefaultFluxIntervalFieldSelector creates a selector for the Flux reconciliation interval.
+func DefaultFluxIntervalFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.FluxInterval
+		},
+		Description:  "Flux reconciliation interval (e.g. 1m, 30s)",
+		DefaultValue: metav1.Duration{Duration: time.Minute},
 	}
 }
 
@@ -115,5 +149,9 @@ func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 		DefaultDistributionConfigFieldSelector(),
 		DefaultContextFieldSelector(),
 		DefaultKubeconfigFieldSelector(),
+		DefaultGitOpsEngineFieldSelector(),
+		DefaultRegistryEnabledFieldSelector(),
+		DefaultRegistryPortFieldSelector(),
+		DefaultFluxIntervalFieldSelector(),
 	}
 }

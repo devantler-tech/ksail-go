@@ -49,6 +49,7 @@ coverage*
 
 # Go test binaries
 *.test
+*.exe
 
 # megalinter output
 megalinter_output.log

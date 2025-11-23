@@ -85,7 +85,7 @@ func newFluxInstallerWithDefaults(
 func expectFluxInstall(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 	client.EXPECT().
-		InstallChart(
+		InstallOrUpgradeChart(
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				assert.Equal(t, "flux-operator", spec.ReleaseName)
