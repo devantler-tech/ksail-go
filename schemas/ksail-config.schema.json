@@ -101,7 +101,10 @@
                 }
               },
               "additionalProperties": false,
-              "type": "object"
+              "type": "object",
+              "required": [
+                "interval"
+              ]
             },
             "argocd": {
               "properties": {},
@@ -118,7 +121,11 @@
                 }
               },
               "additionalProperties": false,
-              "type": "object"
+              "type": "object",
+              "required": [
+                "enabled",
+                "hostPort"
+              ]
             },
             "helm": {
               "properties": {},
