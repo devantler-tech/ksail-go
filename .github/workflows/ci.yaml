@@ -44,6 +44,8 @@ jobs:
           commit_user_email: generator-bot@users.noreply.github.com
 
   ci:
+    name: 🔄 CI - Go
+    if: github.event_name != 'pull_request'
     uses: devantler-tech/reusable-workflows/.github/workflows/ci-go.yaml@0e68692337af526443489c48c5c9b199080f2b8d # v1.21.1
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
