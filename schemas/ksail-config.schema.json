@@ -71,16 +71,6 @@
             "None"
           ]
         },
-        "registryEnabled": {
-          "type": "boolean"
-        },
-        "registryPort": {
-          "type": "integer"
-        },
-        "fluxInterval": {
-          "type": "string",
-          "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$"
-        },
         "options": {
           "properties": {
             "kind": {
@@ -104,12 +94,29 @@
               "type": "object"
             },
             "flux": {
-              "properties": {},
+              "properties": {
+                "interval": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$"
+                }
+              },
               "additionalProperties": false,
               "type": "object"
             },
             "argocd": {
               "properties": {},
+              "additionalProperties": false,
+              "type": "object"
+            },
+            "localRegistry": {
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "hostPort": {
+                  "type": "integer"
+                }
+              },
               "additionalProperties": false,
               "type": "object"
             },

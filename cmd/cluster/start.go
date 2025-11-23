@@ -56,7 +56,7 @@ func handleStartRunE(
 	}
 
 	clusterCfg := cfgManager.Config
-	if clusterCfg == nil || !clusterCfg.Spec.RegistryEnabled {
+	if clusterCfg == nil || !clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		return nil
 	}
 

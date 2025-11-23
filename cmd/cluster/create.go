@@ -103,7 +103,7 @@ func handleCreateRunE(
 		return err
 	}
 
-	if clusterCfg.Spec.RegistryEnabled {
+	if clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		err = ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindConfig, k3dConfig)
 		if err != nil {
 			return fmt.Errorf("failed to provision local registry: %w", err)
@@ -141,7 +141,7 @@ func handleCreateRunE(
 		})
 	}
 
-	if clusterCfg.Spec.RegistryEnabled {
+	if clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		err = connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
 		if err != nil {
 			return fmt.Errorf("failed to connect local registry: %w", err)

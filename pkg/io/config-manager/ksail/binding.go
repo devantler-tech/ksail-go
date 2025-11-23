@@ -172,19 +172,19 @@ func (m *ConfigManager) handleDurationFlag(
 // We initialize this map once and reuse it for better performance.
 func (m *ConfigManager) getFieldMappings() map[any]string {
 	return map[any]string{
-		&m.Config.Spec.Distribution:          "distribution",
-		&m.Config.Spec.DistributionConfig:    "distribution-config",
-		&m.Config.Spec.SourceDirectory:       "source-directory",
-		&m.Config.Spec.Connection.Context:    "context",
-		&m.Config.Spec.Connection.Kubeconfig: "kubeconfig",
-		&m.Config.Spec.Connection.Timeout:    "timeout",
-		&m.Config.Spec.GitOpsEngine:          "gitops-engine",
-		&m.Config.Spec.CNI:                   "cni",
-		&m.Config.Spec.CSI:                   "csi",
-		&m.Config.Spec.MetricsServer:         "metrics-server",
-		&m.Config.Spec.RegistryEnabled:       "local-registry-enabled",
-		&m.Config.Spec.RegistryPort:          "local-registry-port",
-		&m.Config.Spec.FluxInterval:          "flux-interval",
+		&m.Config.Spec.Distribution:                   "distribution",
+		&m.Config.Spec.DistributionConfig:             "distribution-config",
+		&m.Config.Spec.SourceDirectory:                "source-directory",
+		&m.Config.Spec.Connection.Context:             "context",
+		&m.Config.Spec.Connection.Kubeconfig:          "kubeconfig",
+		&m.Config.Spec.Connection.Timeout:             "timeout",
+		&m.Config.Spec.GitOpsEngine:                   "gitops-engine",
+		&m.Config.Spec.CNI:                            "cni",
+		&m.Config.Spec.CSI:                            "csi",
+		&m.Config.Spec.MetricsServer:                  "metrics-server",
+		&m.Config.Spec.Options.LocalRegistry.Enabled:  "local-registry-enabled",
+		&m.Config.Spec.Options.LocalRegistry.HostPort: "local-registry-port",
+		&m.Config.Spec.Options.Flux.Interval:          "flux-interval",
 	}
 }
 

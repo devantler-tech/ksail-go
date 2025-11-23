@@ -6,9 +6,9 @@
 
 - **Fields (relevant additions/usage)**:
   - `GitOpsEngine` (enum): `Kubectl` | `Flux`
-  - `RegistryEnabled` (bool): whether to provision a local OCI registry
-  - `RegistryPort` (int, optional): host port for localhost registry binding
-  - `FluxInterval` (duration, optional): reconciliation interval for OCI sources (default: 1m)
+  - `Options.LocalRegistry.Enabled` (bool): whether to provision a local OCI registry
+  - `Options.LocalRegistry.HostPort` (int, optional): host port for localhost registry binding
+  - `Options.Flux.Interval` (duration, optional): reconciliation interval for OCI sources (default: 1m)
 
 ### OCIRegistry
 
@@ -40,7 +40,7 @@
   - `metadata.name`: name of the source
   - `metadata.namespace`: Flux namespace (typically `flux-system`)
   - `spec.url`: `oci://<endpoint>/<repository>`
-  - `spec.interval`: reconciliation interval (from `ClusterConfig.FluxInterval`)
+  - `spec.interval`: reconciliation interval (from `ClusterConfig.Options.Flux.Interval`)
   - `spec.ref.tag`: desired version tag
   - `status.conditions`: used by operators to see fetch/reconciliation status
 
@@ -67,7 +67,7 @@
 
 ## Relationships
 
-- `ClusterConfig` **owns** a single `OCIRegistry` configuration when `RegistryEnabled=true`.
+- `ClusterConfig` **owns** a single `OCIRegistry` configuration when `options.localRegistry.enabled=true`.
 - `OCIRegistry` **hosts** many `OCIArtifact` repositories.
 - Each `FluxOCIRepository` **points to** a specific `OCIArtifact` repository in `OCIRegistry`.
 - Each `FluxKustomization` **references** exactly one `FluxOCIRepository`.

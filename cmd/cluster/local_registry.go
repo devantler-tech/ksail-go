@@ -53,7 +53,7 @@ func ensureLocalRegistryProvisioned(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if !clusterCfg.Spec.RegistryEnabled {
+	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		return nil
 	}
 
@@ -78,7 +78,7 @@ func connectLocalRegistryToClusterNetwork(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if !clusterCfg.Spec.RegistryEnabled {
+	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func cleanupLocalRegistry(
 	deps cmdhelpers.LifecycleDeps,
 	deleteVolumes bool,
 ) error {
-	if !clusterCfg.Spec.RegistryEnabled {
+	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
 		return nil
 	}
 
@@ -194,8 +194,8 @@ func buildLocalRegistryName(_ string) string {
 }
 
 func resolveLocalRegistryPort(clusterCfg *v1alpha1.Cluster) int {
-	if clusterCfg.Spec.RegistryPort > 0 {
-		return int(clusterCfg.Spec.RegistryPort)
+	if clusterCfg.Spec.Options.LocalRegistry.HostPort > 0 {
+		return int(clusterCfg.Spec.Options.LocalRegistry.HostPort)
 	}
 
 	return dockerclient.DefaultRegistryPort

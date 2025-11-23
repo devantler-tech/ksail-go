@@ -387,16 +387,16 @@ func (v *Validator) validateRegistry(
 	config *v1alpha1.Cluster,
 	result *validator.ValidationResult,
 ) {
-	port := config.Spec.RegistryPort
+	port := config.Spec.Options.LocalRegistry.HostPort
 
-	if config.Spec.RegistryEnabled {
+	if config.Spec.Options.LocalRegistry.Enabled {
 		if port <= 0 || port > 65535 {
 			result.AddError(validator.ValidationError{
-				Field:         "spec.registryPort",
-				Message:       "registryPort must be between 1 and 65535 when registry is enabled",
+				Field:         "spec.options.localRegistry.hostPort",
+				Message:       "localRegistry.hostPort must be between 1 and 65535 when the registry is enabled",
 				CurrentValue:  port,
 				ExpectedValue: "1-65535",
-				FixSuggestion: "Choose a valid TCP port (e.g., 5000) for spec.registryPort",
+				FixSuggestion: "Choose a valid TCP port (e.g., 5000) for spec.options.localRegistry.hostPort",
 			})
 		}
 
@@ -405,10 +405,10 @@ func (v *Validator) validateRegistry(
 
 	if port != 0 {
 		result.AddWarning(validator.ValidationError{
-			Field:         "spec.registryPort",
-			Message:       "registryPort is ignored unless registryEnabled is true",
+			Field:         "spec.options.localRegistry.hostPort",
+			Message:       "localRegistry.hostPort is ignored unless localRegistry.enabled is true",
 			CurrentValue:  port,
-			FixSuggestion: "Remove spec.registryPort or enable spec.registryEnabled to use it",
+			FixSuggestion: "Remove spec.options.localRegistry.hostPort or enable spec.options.localRegistry.enabled to use it",
 		})
 	}
 }
@@ -422,13 +422,13 @@ func (v *Validator) validateFlux(
 		return
 	}
 
-	if config.Spec.FluxInterval.Duration <= 0 {
+	if config.Spec.Options.Flux.Interval.Duration <= 0 {
 		result.AddError(validator.ValidationError{
-			Field:         "spec.fluxInterval",
+			Field:         "spec.options.flux.interval",
 			Message:       "fluxInterval must be a positive duration when Flux is enabled",
-			CurrentValue:  config.Spec.FluxInterval.Duration,
+			CurrentValue:  config.Spec.Options.Flux.Interval.Duration,
 			ExpectedValue: "> 0",
-			FixSuggestion: "Set spec.fluxInterval to a positive duration (e.g., 1m)",
+			FixSuggestion: "Set spec.options.flux.interval to a positive duration (e.g., 1m)",
 		})
 	}
 }

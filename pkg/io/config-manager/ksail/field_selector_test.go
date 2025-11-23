@@ -215,17 +215,17 @@ func assertMetricsServerSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr an
 
 func assertRegistryEnabledSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.RegistryEnabled)
+	assertPointerSame(t, ptr, &cluster.Spec.Options.LocalRegistry.Enabled)
 }
 
 func assertRegistryPortSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.RegistryPort)
+	assertPointerSame(t, ptr, &cluster.Spec.Options.LocalRegistry.HostPort)
 }
 
 func assertFluxIntervalSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.FluxInterval)
+	assertPointerSame(t, ptr, &cluster.Spec.Options.Flux.Interval)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {

@@ -96,7 +96,7 @@ func getBasicFieldTests() []struct {
 		{
 			name: "RegistryEnabled field",
 			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryEnabled },
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Options.LocalRegistry.Enabled },
 				false,
 				"Enable registry",
 			),
@@ -106,7 +106,7 @@ func getBasicFieldTests() []struct {
 		{
 			name: "RegistryPort field",
 			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryPort },
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Options.LocalRegistry.HostPort },
 				int32(5000),
 				"Registry port",
 			),
@@ -116,7 +116,7 @@ func getBasicFieldTests() []struct {
 		{
 			name: "FluxInterval field",
 			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.FluxInterval },
+				func(c *v1alpha1.Cluster) any { return &c.Spec.Options.Flux.Interval },
 				metav1.Duration{Duration: time.Minute},
 				"Flux interval",
 			),
@@ -333,15 +333,15 @@ func TestGenerateFlagName(t *testing.T) {
 			"metrics-server",
 		},
 		{"RegistryEnabled field",
-			&manager.Config.Spec.RegistryEnabled,
+			&manager.Config.Spec.Options.LocalRegistry.Enabled,
 			"local-registry-enabled",
 		},
 		{"RegistryPort field",
-			&manager.Config.Spec.RegistryPort,
+			&manager.Config.Spec.Options.LocalRegistry.HostPort,
 			"local-registry-port",
 		},
 		{"FluxInterval field",
-			&manager.Config.Spec.FluxInterval,
+			&manager.Config.Spec.Options.Flux.Interval,
 			"flux-interval",
 		},
 	}

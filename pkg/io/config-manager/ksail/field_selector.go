@@ -98,7 +98,9 @@ func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 // DefaultRegistryEnabledFieldSelector creates a selector for enabling the local OCI registry.
 func DefaultRegistryEnabledFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryEnabled },
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.Options.LocalRegistry.Enabled
+		},
 		Description:  "Enable the local OCI registry",
 		DefaultValue: false,
 	}
@@ -107,7 +109,9 @@ func DefaultRegistryEnabledFieldSelector() FieldSelector[v1alpha1.Cluster] {
 // DefaultRegistryPortFieldSelector creates a selector for the registry host port binding.
 func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
-		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.RegistryPort },
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.Options.LocalRegistry.HostPort
+		},
 		Description:  "Host port to expose the local OCI registry on",
 		DefaultValue: int32(5000),
 	}
@@ -117,7 +121,7 @@ func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
 func DefaultFluxIntervalFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector: func(c *v1alpha1.Cluster) any {
-			return &c.Spec.FluxInterval
+			return &c.Spec.Options.Flux.Interval
 		},
 		Description:  "Flux reconciliation interval (e.g. 1m, 30s)",
 		DefaultValue: metav1.Duration{Duration: time.Minute},

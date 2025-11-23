@@ -42,13 +42,14 @@ func NewClusterConnection() Connection {
 // NewClusterOptions creates a new Options with default values.
 func NewClusterOptions() Options {
 	return Options{
-		Kind:      NewClusterOptionsKind(),
-		K3d:       NewClusterOptionsK3d(),
-		Cilium:    NewClusterOptionsCilium(),
-		Flux:      NewClusterOptionsFlux(),
-		ArgoCD:    NewClusterOptionsArgoCD(),
-		Helm:      NewClusterOptionsHelm(),
-		Kustomize: NewClusterOptionsKustomize(),
+		Kind:          NewClusterOptionsKind(),
+		K3d:           NewClusterOptionsK3d(),
+		Cilium:        NewClusterOptionsCilium(),
+		Flux:          NewClusterOptionsFlux(),
+		ArgoCD:        NewClusterOptionsArgoCD(),
+		LocalRegistry: NewClusterOptionsLocalRegistry(),
+		Helm:          NewClusterOptionsHelm(),
+		Kustomize:     NewClusterOptionsKustomize(),
 	}
 }
 
@@ -75,6 +76,11 @@ func NewClusterOptionsFlux() OptionsFlux {
 // NewClusterOptionsArgoCD creates a new OptionsArgoCD with default values.
 func NewClusterOptionsArgoCD() OptionsArgoCD {
 	return OptionsArgoCD{}
+}
+
+// NewClusterOptionsLocalRegistry creates a new OptionsLocalRegistry with default values.
+func NewClusterOptionsLocalRegistry() OptionsLocalRegistry {
+	return OptionsLocalRegistry{}
 }
 
 // NewClusterOptionsHelm creates a new OptionsHelm with default values.

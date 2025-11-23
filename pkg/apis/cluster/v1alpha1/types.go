@@ -55,9 +55,6 @@ type Spec struct {
 	CSI                CSI             `json:"csi,omitzero"`
 	MetricsServer      MetricsServer   `json:"metricsServer,omitzero"`
 	GitOpsEngine       GitOpsEngine    `json:"gitOpsEngine,omitzero"`
-	RegistryEnabled    bool            `json:"registryEnabled,omitzero"`
-	RegistryPort       int32           `json:"registryPort,omitzero"`
-	FluxInterval       metav1.Duration `json:"fluxInterval,omitzero"`
 	Options            Options         `json:"options,omitzero"`
 }
 
@@ -252,8 +249,9 @@ type Options struct {
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 	Calico OptionsCalico `json:"calico,omitzero"`
 
-	Flux   OptionsFlux   `json:"flux,omitzero"`
-	ArgoCD OptionsArgoCD `json:"argocd,omitzero"`
+	Flux          OptionsFlux          `json:"flux,omitzero"`
+	ArgoCD        OptionsArgoCD        `json:"argocd,omitzero"`
+	LocalRegistry OptionsLocalRegistry `json:"localRegistry,omitzero"`
 
 	Helm      OptionsHelm      `json:"helm,omitzero"`
 	Kustomize OptionsKustomize `json:"kustomize,omitzero"`
@@ -279,12 +277,18 @@ type OptionsCalico struct {
 
 // OptionsFlux defines options for the Flux deployment tool.
 type OptionsFlux struct {
-	// Add any specific fields for the Flux distribution here.
+	Interval metav1.Duration `json:"interval,omitzero"`
 }
 
 // OptionsArgoCD defines options for the ArgoCD deployment tool.
 type OptionsArgoCD struct {
 	// Add any specific fields for the ArgoCD distribution here.
+}
+
+// OptionsLocalRegistry defines options for the host-local OCI registry integration.
+type OptionsLocalRegistry struct {
+	Enabled bool  `json:"enabled,omitzero"`
+	HostPort int32 `json:"hostPort,omitzero"`
 }
 
 // OptionsHelm defines options for the Helm tool.

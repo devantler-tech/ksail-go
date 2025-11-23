@@ -29,7 +29,7 @@ func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.RegistryEnabled = false
+	clusterCfg.Spec.Options.LocalRegistry.Enabled = false
 
 	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, nil, nil)
 	if err != nil {
@@ -46,8 +46,8 @@ func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.RegistryEnabled = true
-	clusterCfg.Spec.RegistryPort = 5501
+	clusterCfg.Spec.Options.LocalRegistry.Enabled = true
+	clusterCfg.Spec.Options.LocalRegistry.HostPort = 5501
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 
 	kindCfg := &kindv1alpha4.Cluster{Name: "kind-dev"}
@@ -88,7 +88,7 @@ func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.RegistryEnabled = true
+	clusterCfg.Spec.Options.LocalRegistry.Enabled = true
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
 	clusterCfg.Spec.Connection.Context = "dev"
 
@@ -126,7 +126,7 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.RegistryEnabled = true
+	clusterCfg.Spec.Options.LocalRegistry.Enabled = true
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 	clusterCfg.Spec.DistributionConfig = kindConfigPath
 

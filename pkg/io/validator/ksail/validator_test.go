@@ -338,37 +338,37 @@ func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.RegistryEnabled = true
-		config.Spec.RegistryPort = 0
+		config.Spec.Options.LocalRegistry.Enabled = true
+		config.Spec.Options.LocalRegistry.HostPort = 0
 
 		result := validator.Validate(config)
 		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.registryPort"}, result.Errors)
+		validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
 	})
 
 	t.Run("registry_port_range", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.RegistryEnabled = true
-		config.Spec.RegistryPort = 70000
+		config.Spec.Options.LocalRegistry.Enabled = true
+		config.Spec.Options.LocalRegistry.HostPort = 70000
 
 		result := validator.Validate(config)
 		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.registryPort"}, result.Errors)
+		validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
 	})
 
 	t.Run("registry_port_warning_when_disabled", func(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.RegistryEnabled = false
-		config.Spec.RegistryPort = 5001
+		config.Spec.Options.LocalRegistry.Enabled = false
+		config.Spec.Options.LocalRegistry.HostPort = 5001
 
 		result := validator.Validate(config)
 		assert.True(t, result.Valid)
 		require.NotEmpty(t, result.Warnings)
-		assert.Equal(t, "spec.registryPort", result.Warnings[0].Field)
+		assert.Equal(t, "spec.options.localRegistry.hostPort", result.Warnings[0].Field)
 	})
 
 	t.Run("flux_interval_must_be_positive", func(t *testing.T) {
@@ -376,11 +376,11 @@ func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
 		config.Spec.GitOpsEngine = v1alpha1.GitOpsEngineFlux
-		config.Spec.FluxInterval = metav1.Duration{}
+		config.Spec.Options.Flux.Interval = metav1.Duration{}
 
 		result := validator.Validate(config)
 		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.fluxInterval"}, result.Errors)
+		validateExpectedErrors(t, []string{"spec.options.flux.interval"}, result.Errors)
 	})
 }
 

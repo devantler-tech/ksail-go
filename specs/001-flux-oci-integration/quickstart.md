@@ -4,9 +4,16 @@
    - Run `ksail init` in a new directory to create `ksail.yaml` and base config.
 
 2. **Enable Flux and local registry in cluster config**
-   - Edit `ksail.yaml` (or equivalent) to:
-     - Set `gitOpsEngine: Flux`.
-     - Enable the local registry (e.g., `registryEnabled: true`, `registryPort: 5000`).
+    - Edit `ksail.yaml` (or equivalent) to:
+       - Set `gitOpsEngine: Flux`.
+       - Configure the local registry block, for example:
+
+          ```yaml
+          options:
+             localRegistry:
+                enabled: true
+                hostPort: 5000
+          ```
 
 3. **Create or start the local cluster**
    - Run `ksail up` (or the existing cluster create command) to:
@@ -19,11 +26,11 @@
    - Use the planned KSail-Go workload command (e.g., `ksail workload build`) to:
      - Build an OCI artifact from that directory.
      - Tag it with a semantic version (e.g., `1.0.0`).
-     - Push it to the local registry at `localhost:<registryPort>`.
+     - Push it to the local registry at `localhost:<hostPort>`.
 
 5. **Configure Flux to track OCI artifacts**
    - Generate Flux `OCIRepository` and `Kustomization` resources that:
-     - Point to `oci://localhost:<registryPort>/<project-name>`.
+     - Point to `oci://localhost:<hostPort>/<project-name>`.
      - Use a 1-minute reconciliation interval by default.
    - Apply these resources to the cluster (e.g., via KSail-Go or `kubectl`).
 

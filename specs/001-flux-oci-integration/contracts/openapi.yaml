@@ -14,14 +14,23 @@ components:
         gitOpsEngine:
           type: string
           enum: [Kubectl, Flux]
-        registryEnabled:
-          type: boolean
-        registryPort:
-          type: integer
-          format: int32
-        fluxInterval:
-          type: string
-          description: Kubernetes duration string, default 1m.
+        options:
+          type: object
+          properties:
+            localRegistry:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                hostPort:
+                  type: integer
+                  format: int32
+            flux:
+              type: object
+              properties:
+                interval:
+                  type: string
+                  description: Kubernetes duration string, default 1m.
 
     OCIRegistry:
       type: object

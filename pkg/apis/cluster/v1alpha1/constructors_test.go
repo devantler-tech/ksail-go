@@ -307,6 +307,7 @@ func TestNewClusterOptions(t *testing.T) {
 	assert.NotNil(t, options.Cilium)
 	assert.NotNil(t, options.Flux)
 	assert.NotNil(t, options.ArgoCD)
+	assert.NotNil(t, options.LocalRegistry)
 	assert.NotNil(t, options.Helm)
 	assert.NotNil(t, options.Kustomize)
 }
@@ -346,6 +347,15 @@ func TestNewClusterOptionsFlux(t *testing.T) {
 	options := v1alpha1.NewClusterOptionsFlux()
 
 	// OptionsFlux is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
+func TestNewClusterOptionsLocalRegistry(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsLocalRegistry()
+
+	// OptionsLocalRegistry is an empty struct, just verify it's created
 	assert.NotNil(t, options)
 }
 
