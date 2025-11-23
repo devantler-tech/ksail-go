@@ -71,6 +71,16 @@
             "None"
           ]
         },
+        "registryEnabled": {
+          "type": "boolean"
+        },
+        "registryPort": {
+          "type": "integer"
+        },
+        "fluxInterval": {
+          "type": "string",
+          "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$"
+        },
         "options": {
           "properties": {
             "kind": {
