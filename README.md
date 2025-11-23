@@ -72,7 +72,7 @@ ksail cluster delete
 
 ### For Users 📖
 
-- Browse the Markdown documentation under [`docs/`](./docs/). Start with [`docs/README.md`](./docs/README.md) for the directory layout and validation commands.
+- Browse the documentation on [`devantler-tech/ksail-docs`](https://github.com/devantler-tech/ksail-docs) (Markdown) or on <https://ksail.devantler.tech> (GitHub Pages).
 - Run `ksail --help` or `ksail <command> --help` for the latest CLI flags.
 
 ### For Contributors 👥
