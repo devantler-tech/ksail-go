@@ -1,4 +1,4 @@
 [submodule "docs"]
 	path = docs
-	url = git@github.com:devantler-tech/ksail-docs.git
+	url = https://github.com/devantler-tech/ksail-docs.git
 	branch = main
