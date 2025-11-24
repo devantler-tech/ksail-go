@@ -9,22 +9,22 @@ import (
 	"github.com/docker/docker/client"
 )
 
-// Controller orchestrates registry lifecycle operations shared between mirror and local registries.
-type Controller struct {
+// Manager orchestrates registry lifecycle operations shared between mirror and local registries.
+type Manager struct {
 	backend Backend
 }
 
-// NewController creates a controller backed by the provided registry backend.
-func NewController(backend Backend) (*Controller, error) {
+// NewManager creates a manager backed by the provided registry backend.
+func NewManager(backend Backend) (*Manager, error) {
 	if backend == nil {
 		return nil, fmt.Errorf("registry backend is required")
 	}
 
-	return &Controller{backend: backend}, nil
+	return &Manager{backend: backend}, nil
 }
 
 // EnsureBatch creates all requested registries as an atomic batch. Any failure rolls back prior creations.
-func (c *Controller) EnsureBatch(
+func (c *Manager) EnsureBatch(
 	ctx context.Context,
 	registries []Info,
 	clusterName string,
@@ -51,7 +51,7 @@ func (c *Controller) EnsureBatch(
 }
 
 // EnsureOne provisions a single registry and reports whether a new container was created.
-func (c *Controller) EnsureOne(
+func (c *Manager) EnsureOne(
 	ctx context.Context,
 	spec Info,
 	clusterName string,
@@ -71,7 +71,7 @@ func (c *Controller) EnsureOne(
 }
 
 // Cleanup removes the provided registries via the backend.
-func (c *Controller) Cleanup(
+func (c *Manager) Cleanup(
 	ctx context.Context,
 	registries []Info,
 	clusterName string,
@@ -83,7 +83,7 @@ func (c *Controller) Cleanup(
 }
 
 // CleanupOne removes a single registry spec.
-func (c *Controller) CleanupOne(
+func (c *Manager) CleanupOne(
 	ctx context.Context,
 	registry Info,
 	clusterName string,
@@ -94,12 +94,12 @@ func (c *Controller) CleanupOne(
 	return c.backend.DeleteRegistry(ctx, registry.Name, clusterName, deleteVolume, networkName)
 }
 
-// NewDockerController constructs a controller backed by the Docker RegistryManager.
-func NewDockerController(apiClient client.APIClient) (*Controller, error) {
+// NewDockerManager constructs a manager backed by the Docker RegistryManager.
+func NewDockerManager(apiClient client.APIClient) (*Manager, error) {
 	mgr, err := dockerclient.NewRegistryManager(apiClient)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewController(mgr)
+	return NewManager(mgr)
 }

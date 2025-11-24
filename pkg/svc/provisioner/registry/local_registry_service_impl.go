@@ -28,7 +28,7 @@ type Config struct {
 type service struct {
 	docker   client.APIClient
 	registry Backend
-	ctrl     *Controller
+	manager  *Manager
 }
 
 // NewService constructs a registry lifecycle manager backed by the Docker API.
@@ -47,7 +47,7 @@ func NewService(cfg Config) (Service, error) {
 		backend = manager
 	}
 
-	controller, err := NewController(backend)
+	controller, err := NewManager(backend)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func NewService(cfg Config) (Service, error) {
 	return &service{
 		docker:   cfg.DockerClient,
 		registry: backend,
-		ctrl:     controller,
+		manager:  controller,
 	}, nil
 }
 
@@ -66,7 +66,7 @@ func (s *service) Create(ctx context.Context, opts CreateOptions) (v1alpha1.OCIR
 
 	resolved := opts.WithDefaults()
 
-	if _, err := s.ctrl.EnsureOne(ctx, resolved.toRegistryInfo(), resolved.ClusterName, io.Discard); err != nil {
+	if _, err := s.manager.EnsureOne(ctx, resolved.toRegistryInfo(), resolved.ClusterName, io.Discard); err != nil {
 		model := buildRegistryModel(resolved.Name, resolved.Endpoint(), int32(resolved.Port), resolved.VolumeName)
 		model.Status = v1alpha1.OCIRegistryStatusError
 		model.LastError = err.Error()
@@ -108,7 +108,7 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 	}
 
 	if opts.DeleteVolume {
-		return s.ctrl.CleanupOne(ctx, Info{Name: opts.Name}, opts.ClusterName, true, opts.NetworkName, io.Discard)
+		return s.manager.CleanupOne(ctx, Info{Name: opts.Name}, opts.ClusterName, true, opts.NetworkName, io.Discard)
 	}
 
 	summary, err := s.findRegistryContainer(ctx, opts.Name)
