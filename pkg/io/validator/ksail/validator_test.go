@@ -338,7 +338,7 @@ func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Options.LocalRegistry.Enabled = true
+		config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
 		config.Spec.Options.LocalRegistry.HostPort = 0
 
 		result := validator.Validate(config)
@@ -350,7 +350,7 @@ func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Options.LocalRegistry.Enabled = true
+		config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
 		config.Spec.Options.LocalRegistry.HostPort = 70000
 
 		result := validator.Validate(config)
@@ -362,7 +362,7 @@ func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 		t.Parallel()
 
 		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.Options.LocalRegistry.Enabled = false
+		config.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
 		config.Spec.Options.LocalRegistry.HostPort = 5001
 
 		result := validator.Validate(config)

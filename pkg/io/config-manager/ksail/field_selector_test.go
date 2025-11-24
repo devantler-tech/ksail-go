@@ -101,11 +101,11 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			assertPointer:   assertGitOpsEngineSelector,
 		},
 		{
-			name:            "local-registry-enabled",
-			factory:         configmanager.DefaultRegistryEnabledFieldSelector,
-			expectedDesc:    "Enable the local OCI registry",
-			expectedDefault: false,
-			assertPointer:   assertRegistryEnabledSelector,
+			name:            "local-registry",
+			factory:         configmanager.DefaultLocalRegistryFieldSelector,
+			expectedDesc:    "Local registry behavior (Enabled provisions a registry, Disabled skips it)",
+			expectedDefault: v1alpha1.LocalRegistryDisabled,
+			assertPointer:   assertLocalRegistrySelector,
 		},
 		{
 			name:            "local-registry-port",
@@ -213,9 +213,9 @@ func assertMetricsServerSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr an
 	assertPointerSame(t, ptr, &cluster.Spec.MetricsServer)
 }
 
-func assertRegistryEnabledSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+func assertLocalRegistrySelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
-	assertPointerSame(t, ptr, &cluster.Spec.Options.LocalRegistry.Enabled)
+	assertPointerSame(t, ptr, &cluster.Spec.LocalRegistry)
 }
 
 func assertRegistryPortSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
@@ -669,15 +669,15 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertValue: v1alpha1.GitOpsEngineNone,
 		},
 		{
-			name:     "local-registry-enabled",
+			name:     "local-registry",
 			selector: selectors[5],
 			assertFunc: func(field any) {
-				ptr, ok := field.(*bool)
+				ptr, ok := field.(*v1alpha1.LocalRegistry)
 				require.True(t, ok)
-				*ptr = true
-				assert.True(t, *ptr)
+				*ptr = v1alpha1.LocalRegistryEnabled
+				assert.Equal(t, v1alpha1.LocalRegistryEnabled, *ptr)
 			},
-			assertValue: false,
+			assertValue: v1alpha1.LocalRegistryDisabled,
 		},
 		{
 			name:     "local-registry-port",

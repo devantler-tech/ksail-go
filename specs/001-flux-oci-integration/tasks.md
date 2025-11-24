@@ -55,10 +55,10 @@
 
 - [X] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/provisioner/cluster/registry` (create/start/stop/status)
 - [X] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/provisioner/cluster/registry`
-- [ ] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
+- [X] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
 - [X] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/provisioner/cluster/registry`
-- [ ] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
-- [ ] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/provisioner/cluster/registry` to satisfy FR-015
+- [X] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
+- [X] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/provisioner/cluster/registry` to satisfy FR-015
 
 **Checkpoint**: Local registry can be provisioned and used for manual image push/pull.
 

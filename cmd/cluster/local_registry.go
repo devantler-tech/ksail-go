@@ -53,7 +53,7 @@ func ensureLocalRegistryProvisioned(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
+	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
 	}
 
@@ -78,7 +78,7 @@ func connectLocalRegistryToClusterNetwork(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
+	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func cleanupLocalRegistry(
 	deps cmdhelpers.LifecycleDeps,
 	deleteVolumes bool,
 ) error {
-	if !clusterCfg.Spec.Options.LocalRegistry.Enabled {
+	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
 	}
 

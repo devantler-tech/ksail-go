@@ -65,6 +65,13 @@
             "Disabled"
           ]
         },
+        "localRegistry": {
+          "type": "string",
+          "enum": [
+            "Enabled",
+            "Disabled"
+          ]
+        },
         "gitOpsEngine": {
           "type": "string",
           "enum": [
@@ -113,9 +120,6 @@
             },
             "localRegistry": {
               "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
                 "hostPort": {
                   "type": "integer"
                 }

@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -56,7 +57,7 @@ func handleStartRunE(
 	}
 
 	clusterCfg := cfgManager.Config
-	if clusterCfg == nil || !clusterCfg.Spec.Options.LocalRegistry.Enabled {
+	if clusterCfg == nil || clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
 	}
 

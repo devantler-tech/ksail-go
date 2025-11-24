@@ -389,7 +389,9 @@ func (v *Validator) validateRegistry(
 ) {
 	port := config.Spec.Options.LocalRegistry.HostPort
 
-	if config.Spec.Options.LocalRegistry.Enabled {
+	enabled := config.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled
+
+	if enabled {
 		if port <= 0 || port > 65535 {
 			result.AddError(validator.ValidationError{
 				Field:         "spec.options.localRegistry.hostPort",
@@ -405,10 +407,10 @@ func (v *Validator) validateRegistry(
 
 	if port != 0 {
 		result.AddWarning(validator.ValidationError{
-			Field:         "spec.options.localRegistry.hostPort",
-			Message:       "localRegistry.hostPort is ignored unless localRegistry.enabled is true",
-			CurrentValue:  port,
-			FixSuggestion: "Remove spec.options.localRegistry.hostPort or enable spec.options.localRegistry.enabled to use it",
+			Field:        "spec.options.localRegistry.hostPort",
+			Message:      "localRegistry.hostPort is ignored unless spec.localRegistry is set to Enabled",
+			CurrentValue: port,
+			FixSuggestion: "Remove spec.options.localRegistry.hostPort or set spec.localRegistry to Enabled to use it",
 		})
 	}
 }

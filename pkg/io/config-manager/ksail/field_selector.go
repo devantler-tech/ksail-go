@@ -95,14 +95,14 @@ func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	}
 }
 
-// DefaultRegistryEnabledFieldSelector creates a selector for enabling the local OCI registry.
-func DefaultRegistryEnabledFieldSelector() FieldSelector[v1alpha1.Cluster] {
+// DefaultLocalRegistryFieldSelector creates a selector for configuring the local OCI registry lifecycle.
+func DefaultLocalRegistryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector: func(c *v1alpha1.Cluster) any {
-			return &c.Spec.Options.LocalRegistry.Enabled
+			return &c.Spec.LocalRegistry
 		},
-		Description:  "Enable the local OCI registry",
-		DefaultValue: false,
+		Description: "Local registry behavior (Enabled provisions a registry, Disabled skips it)",
+		DefaultValue: v1alpha1.LocalRegistryDisabled,
 	}
 }
 
@@ -154,7 +154,7 @@ func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 		DefaultContextFieldSelector(),
 		DefaultKubeconfigFieldSelector(),
 		DefaultGitOpsEngineFieldSelector(),
-		DefaultRegistryEnabledFieldSelector(),
+		DefaultLocalRegistryFieldSelector(),
 		DefaultRegistryPortFieldSelector(),
 		DefaultFluxIntervalFieldSelector(),
 	}

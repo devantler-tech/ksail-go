@@ -182,7 +182,7 @@ func (m *ConfigManager) getFieldMappings() map[any]string {
 		&m.Config.Spec.CNI:                            "cni",
 		&m.Config.Spec.CSI:                            "csi",
 		&m.Config.Spec.MetricsServer:                  "metrics-server",
-		&m.Config.Spec.Options.LocalRegistry.Enabled:  "local-registry-enabled",
+		&m.Config.Spec.LocalRegistry:                  "local-registry",
 		&m.Config.Spec.Options.LocalRegistry.HostPort: "local-registry-port",
 		&m.Config.Spec.Options.Flux.Interval:          "flux-interval",
 	}
@@ -260,6 +260,8 @@ func (m *ConfigManager) setPflagValueDefault(pflagValue interface {
 	case v1alpha1.CSI:
 		_ = pflagValue.Set(string(val))
 	case v1alpha1.MetricsServer:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.LocalRegistry:
 		_ = pflagValue.Set(string(val))
 	default:
 		if str, ok := val.(string); ok {

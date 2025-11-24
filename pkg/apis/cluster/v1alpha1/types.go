@@ -26,6 +26,9 @@ var ErrInvalidCSI = errors.New("invalid CSI")
 // ErrInvalidMetricsServer is returned when an invalid metrics server is specified.
 var ErrInvalidMetricsServer = errors.New("invalid metrics server")
 
+// ErrInvalidLocalRegistry is returned when an invalid local registry mode is specified.
+var ErrInvalidLocalRegistry = errors.New("invalid local registry mode")
+
 const (
 	// Group is the API group for KSail.
 	Group = "ksail.dev"
@@ -54,6 +57,7 @@ type Spec struct {
 	CNI                CNI             `json:"cni,omitzero"`
 	CSI                CSI             `json:"csi,omitzero"`
 	MetricsServer      MetricsServer   `json:"metricsServer,omitzero"`
+	LocalRegistry      LocalRegistry   `json:"localRegistry,omitzero"`
 	GitOpsEngine       GitOpsEngine    `json:"gitOpsEngine,omitzero"`
 	Options            Options         `json:"options,omitzero"`
 }
@@ -223,6 +227,16 @@ const (
 	MetricsServerDisabled MetricsServer = "Disabled"
 )
 
+// LocalRegistry defines how the host-local OCI registry should behave.
+type LocalRegistry string
+
+const (
+	// LocalRegistryEnabled provisions and manages the local registry lifecycle.
+	LocalRegistryEnabled LocalRegistry = "Enabled"
+	// LocalRegistryDisabled skips local registry provisioning.
+	LocalRegistryDisabled LocalRegistry = "Disabled"
+)
+
 // GitOpsEngine defines the GitOps Engine options for a KSail cluster.
 type GitOpsEngine string
 
@@ -287,7 +301,6 @@ type OptionsArgoCD struct {
 
 // OptionsLocalRegistry defines options for the host-local OCI registry integration.
 type OptionsLocalRegistry struct {
-	Enabled bool  `json:"enabled,omitzero"`
 	HostPort int32 `json:"hostPort,omitzero"`
 }
 
@@ -385,6 +398,40 @@ func (m *MetricsServer) Set(value string) error {
 		MetricsServerEnabled,
 		MetricsServerDisabled,
 	)
+}
+
+// validLocalRegistryModes returns supported local registry configuration modes.
+func validLocalRegistryModes() []LocalRegistry {
+	return []LocalRegistry{LocalRegistryEnabled, LocalRegistryDisabled}
+}
+
+// Set for LocalRegistry.
+func (l *LocalRegistry) Set(value string) error {
+	for _, mode := range validLocalRegistryModes() {
+		if strings.EqualFold(value, string(mode)) {
+			*l = mode
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s)",
+		ErrInvalidLocalRegistry,
+		value,
+		LocalRegistryEnabled,
+		LocalRegistryDisabled,
+	)
+}
+
+// String returns the string representation of the LocalRegistry.
+func (l *LocalRegistry) String() string {
+	return string(*l)
+}
+
+// Type returns the type of the LocalRegistry.
+func (l *LocalRegistry) Type() string {
+	return "LocalRegistry"
 }
 
 // IsValid checks if the distribution value is supported.

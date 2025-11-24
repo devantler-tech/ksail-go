@@ -25,6 +25,7 @@ func NewClusterSpec() Spec {
 		Distribution:       "",
 		CNI:                "",
 		CSI:                "",
+		LocalRegistry:      LocalRegistryDisabled,
 		GitOpsEngine:       GitOpsEngineNone,
 		Options:            NewClusterOptions(),
 	}

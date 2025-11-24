@@ -6,7 +6,7 @@
 
 - **Fields (relevant additions/usage)**:
   - `GitOpsEngine` (enum): `Kubectl` | `Flux`
-  - `Options.LocalRegistry.Enabled` (bool): whether to provision a local OCI registry
+  - `LocalRegistry` (enum): `Enabled` | `Disabled` to control whether KSail provisions the local registry
   - `Options.LocalRegistry.HostPort` (int, optional): host port for localhost registry binding
   - `Options.Flux.Interval` (duration, optional): reconciliation interval for OCI sources (default: 1m)
 
@@ -67,7 +67,7 @@
 
 ## Relationships
 
-- `ClusterConfig` **owns** a single `OCIRegistry` configuration when `options.localRegistry.enabled=true`.
+- `ClusterConfig` **owns** a single `OCIRegistry` configuration when `localRegistry == Enabled`.
 - `OCIRegistry` **hosts** many `OCIArtifact` repositories.
 - Each `FluxOCIRepository` **points to** a specific `OCIArtifact` repository in `OCIRegistry`.
 - Each `FluxKustomization` **references** exactly one `FluxOCIRepository`.

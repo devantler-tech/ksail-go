@@ -6,12 +6,12 @@
 2. **Enable Flux and local registry in cluster config**
     - Edit `ksail.yaml` (or equivalent) to:
        - Set `gitOpsEngine: Flux`.
-       - Configure the local registry block, for example:
+       - Enable the local registry and optionally tune the host port, for example:
 
           ```yaml
+          localRegistry: Enabled
           options:
              localRegistry:
-                enabled: true
                 hostPort: 5000
           ```
 

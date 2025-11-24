@@ -14,14 +14,15 @@ components:
         gitOpsEngine:
           type: string
           enum: [Kubectl, Flux]
+        localRegistry:
+          type: string
+          enum: [Enabled, Disabled]
         options:
           type: object
           properties:
             localRegistry:
               type: object
               properties:
-                enabled:
-                  type: boolean
                 hostPort:
                   type: integer
                   format: int32

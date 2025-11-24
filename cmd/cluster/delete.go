@@ -90,7 +90,7 @@ func handleDeleteRunE(
 		})
 	}
 
-	if clusterCfg.Spec.Options.LocalRegistry.Enabled {
+	if clusterCfg.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
 		err = cleanupLocalRegistry(cmd, clusterCfg, deps, deleteVolumes)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
