@@ -46,6 +46,31 @@ type localRegistryContext struct {
 	networkName string
 }
 
+func runLocalRegistryAction(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	kindConfig *kindv1alpha4.Cluster,
+	k3dConfig *k3dv1alpha5.SimpleConfig,
+	info registryStageInfo,
+	action func(context.Context, registry.Service, localRegistryContext) error,
+) error {
+	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
+		return nil
+	}
+
+	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
+
+	return runLocalRegistryStage(
+		cmd,
+		deps,
+		info,
+		func(execCtx context.Context, svc registry.Service) error {
+			return action(execCtx, svc, ctx)
+		},
+	)
+}
+
 func ensureLocalRegistryProvisioned(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -53,18 +78,15 @@ func ensureLocalRegistryProvisioned(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
-		return nil
-	}
-
-	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
-	createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
-
-	return runLocalRegistryStage(
+	return runLocalRegistryAction(
 		cmd,
+		clusterCfg,
 		deps,
+		kindConfig,
+		k3dConfig,
 		localRegistryProvisionStageInfo,
-		func(execCtx context.Context, svc registry.Service) error {
+		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+			createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
 			if _, err := svc.Create(execCtx, createOpts); err != nil {
 				return err
 			}
@@ -83,21 +105,19 @@ func connectLocalRegistryToClusterNetwork(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 ) error {
-	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
-		return nil
-	}
-
-	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
-	startOpts := registry.StartOptions{
-		Name:        buildLocalRegistryName(),
-		NetworkName: ctx.networkName,
-	}
-
-	return runLocalRegistryStage(
+	return runLocalRegistryAction(
 		cmd,
+		clusterCfg,
 		deps,
+		kindConfig,
+		k3dConfig,
 		localRegistryConnectStageInfo,
-		func(execCtx context.Context, svc registry.Service) error {
+		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+			startOpts := registry.StartOptions{
+				Name:        buildLocalRegistryName(),
+				NetworkName: ctx.networkName,
+			}
+
 			_, err := svc.Start(execCtx, startOpts)
 
 			return err
@@ -120,19 +140,21 @@ func cleanupLocalRegistry(
 		return fmt.Errorf("failed to load distribution config: %w", err)
 	}
 
-	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
-	stopOpts := registry.StopOptions{
-		Name:         buildLocalRegistryName(),
-		ClusterName:  ctx.clusterName,
-		NetworkName:  ctx.networkName,
-		DeleteVolume: deleteVolumes,
-	}
-
-	return runLocalRegistryStage(
+	return runLocalRegistryAction(
 		cmd,
+		clusterCfg,
 		deps,
+		kindConfig,
+		k3dConfig,
 		localRegistryCleanupStageInfo,
-		func(execCtx context.Context, svc registry.Service) error {
+		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+			stopOpts := registry.StopOptions{
+				Name:         buildLocalRegistryName(),
+				ClusterName:  ctx.clusterName,
+				NetworkName:  ctx.networkName,
+				DeleteVolume: deleteVolumes,
+			}
+
 			return svc.Stop(execCtx, stopOpts)
 		},
 	)

@@ -39,15 +39,7 @@ func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
 }
 
 func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
-	stub := newStubRegistryService()
-	withStubRegistryServiceFactory(t, stub)
-	withStubDockerInvoker(t)
-
-	cmd, _ := testutils.NewCommand(t)
-	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
-
-	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
 	clusterCfg.Spec.Options.LocalRegistry.HostPort = 5501
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 
@@ -81,15 +73,7 @@ func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
 }
 
 func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
-	stub := newStubRegistryService()
-	withStubRegistryServiceFactory(t, stub)
-	withStubDockerInvoker(t)
-
-	cmd, _ := testutils.NewCommand(t)
-	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
-
-	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
 	clusterCfg.Spec.Connection.Context = "dev"
 
@@ -111,10 +95,7 @@ func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
 }
 
 func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
-	stub := newStubRegistryService()
-	withStubRegistryServiceFactory(t, stub)
-	withStubDockerInvoker(t)
-
+	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
 	tempDir := t.TempDir()
 	kindConfigPath := filepath.Join(tempDir, "kind.yaml")
 
@@ -127,13 +108,7 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 		t.Fatalf("failed to write kind config: %v", err)
 	}
 
-	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
-
-	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
-
-	clusterCfg := v1alpha1.NewCluster()
-	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 	clusterCfg.Spec.DistributionConfig = kindConfigPath
 
@@ -154,6 +129,29 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 	if stopOpts.NetworkName != "kind" {
 		t.Fatalf("expected kind network, got %q", stopOpts.NetworkName)
 	}
+}
+
+func newLocalRegistryTestEnv(
+	t *testing.T,
+) (
+	*stubRegistryService,
+	*cobra.Command,
+	cmdhelpers.LifecycleDeps,
+	*v1alpha1.Cluster,
+) {
+	t.Helper()
+
+	stub := newStubRegistryService()
+	withStubRegistryServiceFactory(t, stub)
+	withStubDockerInvoker(t)
+
+	cmd, _ := testutils.NewCommand(t)
+	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+
+	clusterCfg := v1alpha1.NewCluster()
+	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+
+	return stub, cmd, deps, clusterCfg
 }
 
 type stubRegistryService struct {

@@ -54,6 +54,24 @@ func (m *mockRegistryBackend) GetRegistryPort(ctx context.Context, name string) 
 	return args.Int(0), args.Error(1)
 }
 
+type registryTestHarness struct {
+	docker  *dockerclient.MockAPIClient
+	backend *mockRegistryBackend
+	svc     Service
+}
+
+func newRegistryTestHarness(t *testing.T) registryTestHarness {
+	t.Helper()
+
+	docker := dockerclient.NewMockAPIClient(t)
+	backend := &mockRegistryBackend{}
+
+	svc, err := NewService(Config{DockerClient: docker, RegistryManager: backend})
+	require.NoError(t, err)
+
+	return registryTestHarness{docker: docker, backend: backend, svc: svc}
+}
+
 func TestCreateOptionsWithDefaults(t *testing.T) {
 	t.Parallel()
 
@@ -138,15 +156,14 @@ func TestNewServiceRequiresDockerClient(t *testing.T) {
 func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 	t.Parallel()
 
-	docker := dockerclient.NewMockAPIClient(t)
-	backend := &mockRegistryBackend{}
+	h := newRegistryTestHarness(t)
 
-	backend.
+	h.backend.
 		On("ListRegistries", mock.Anything).
 		Return([]string{}, nil).
 		Once()
 
-	backend.
+	h.backend.
 		On(
 			"CreateRegistry",
 			mock.Anything,
@@ -158,18 +175,12 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 		Return(nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("ContainerList", mock.Anything, mock.Anything).
 		Return([]container.Summary{runningSummary()}, nil).
 		Once()
 
-	svc, err := NewService(Config{
-		DockerClient:    docker,
-		RegistryManager: backend,
-	})
-	require.NoError(t, err)
-
-	registry, err := svc.Create(
+	registry, err := h.svc.Create(
 		context.Background(),
 		CreateOptions{Name: "local-registry", Port: 5000},
 	)
@@ -184,38 +195,34 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 func TestStartStartsAndConnectsRegistry(t *testing.T) {
 	t.Parallel()
 
-	docker := dockerclient.NewMockAPIClient(t)
-	backend := &mockRegistryBackend{}
+	h := newRegistryTestHarness(t)
 
-	svc, err := NewService(Config{DockerClient: docker, RegistryManager: backend})
-	require.NoError(t, err)
-
-	docker.
+	h.docker.
 		On("ContainerList", mock.Anything, mock.Anything).
 		Return([]container.Summary{exitedSummary()}, nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("ContainerStart", mock.Anything, "registry-id", mock.Anything).
 		Return(nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("ContainerInspect", mock.Anything, "registry-id").
 		Return(container.InspectResponse{NetworkSettings: &types.NetworkSettings{Networks: map[string]*network.EndpointSettings{}}}, nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("NetworkConnect", mock.Anything, "kind", "registry-id", mock.Anything).
 		Return(nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("ContainerList", mock.Anything, mock.Anything).
 		Return([]container.Summary{runningSummary()}, nil).
 		Once()
 
-	registry, err := svc.Start(
+	registry, err := h.svc.Start(
 		context.Background(),
 		StartOptions{Name: "local-registry", NetworkName: "kind"},
 	)
@@ -226,18 +233,14 @@ func TestStartStartsAndConnectsRegistry(t *testing.T) {
 func TestStopDeletesResourcesWhenRequested(t *testing.T) {
 	t.Parallel()
 
-	docker := dockerclient.NewMockAPIClient(t)
-	backend := &mockRegistryBackend{}
+	h := newRegistryTestHarness(t)
 
-	svc, err := NewService(Config{DockerClient: docker, RegistryManager: backend})
-	require.NoError(t, err)
-
-	backend.
+	h.backend.
 		On("DeleteRegistry", mock.Anything, "local-registry", "dev", true, "kind").
 		Return(nil).
 		Once()
 
-	require.NoError(t, svc.Stop(context.Background(), StopOptions{
+	require.NoError(t, h.svc.Stop(context.Background(), StopOptions{
 		Name:         "local-registry",
 		ClusterName:  "dev",
 		NetworkName:  "kind",
@@ -248,48 +251,40 @@ func TestStopDeletesResourcesWhenRequested(t *testing.T) {
 func TestStopGracefullyStopsContainer(t *testing.T) {
 	t.Parallel()
 
-	docker := dockerclient.NewMockAPIClient(t)
-	backend := &mockRegistryBackend{}
+	h := newRegistryTestHarness(t)
 
-	svc, err := NewService(Config{DockerClient: docker, RegistryManager: backend})
-	require.NoError(t, err)
-
-	docker.
+	h.docker.
 		On("ContainerList", mock.Anything, mock.Anything).
 		Return([]container.Summary{runningSummary()}, nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("ContainerStop", mock.Anything, "registry-id", mock.Anything).
 		Return(nil).
 		Once()
 
-	docker.
+	h.docker.
 		On("NetworkDisconnect", mock.Anything, "kind", "registry-id", true).
 		Return(nil).
 		Once()
 
 	require.NoError(
 		t,
-		svc.Stop(context.Background(), StopOptions{Name: "local-registry", NetworkName: "kind"}),
+		h.svc.Stop(context.Background(), StopOptions{Name: "local-registry", NetworkName: "kind"}),
 	)
 }
 
 func TestStatusReturnsNotProvisionedWhenMissing(t *testing.T) {
 	t.Parallel()
 
-	docker := dockerclient.NewMockAPIClient(t)
-	backend := &mockRegistryBackend{}
+	h := newRegistryTestHarness(t)
 
-	svc, err := NewService(Config{DockerClient: docker, RegistryManager: backend})
-	require.NoError(t, err)
-
-	docker.
+	h.docker.
 		On("ContainerList", mock.Anything, mock.Anything).
 		Return([]container.Summary{}, nil).
 		Once()
 
-	registry, err := svc.Status(context.Background(), StatusOptions{Name: "local-registry"})
+	registry, err := h.svc.Status(context.Background(), StatusOptions{Name: "local-registry"})
 	require.NoError(t, err)
 	assert.Equal(t, v1alpha1.OCIRegistryStatusNotProvisioned, registry.Status)
 }
