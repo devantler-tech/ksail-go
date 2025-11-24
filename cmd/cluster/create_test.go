@@ -21,7 +21,7 @@ import (
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	installerpkg "github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"

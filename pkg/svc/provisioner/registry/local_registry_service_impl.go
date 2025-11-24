@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"strings"
@@ -21,18 +22,13 @@ import (
 // Config controls how the registry service interacts with the container engine.
 type Config struct {
 	DockerClient    client.APIClient
-	RegistryManager registryBackend
-}
-
-type registryBackend interface {
-	CreateRegistry(ctx context.Context, config dockerclient.RegistryConfig) error
-	DeleteRegistry(ctx context.Context, name, clusterName string, deleteVolume bool, networkName string) error
-	GetRegistryPort(ctx context.Context, name string) (int, error)
+	RegistryManager Backend
 }
 
 type service struct {
 	docker   client.APIClient
-	registry registryBackend
+	registry Backend
+	ctrl     *Controller
 }
 
 // NewService constructs a registry lifecycle manager backed by the Docker API.
@@ -51,9 +47,15 @@ func NewService(cfg Config) (Service, error) {
 		backend = manager
 	}
 
+	controller, err := NewController(backend)
+	if err != nil {
+		return nil, err
+	}
+
 	return &service{
 		docker:   cfg.DockerClient,
 		registry: backend,
+		ctrl:     controller,
 	}, nil
 }
 
@@ -63,14 +65,8 @@ func (s *service) Create(ctx context.Context, opts CreateOptions) (v1alpha1.OCIR
 	}
 
 	resolved := opts.WithDefaults()
-	config := dockerclient.RegistryConfig{
-		Name:        resolved.Name,
-		Port:        resolved.Port,
-		ClusterName: resolved.ClusterName,
-		VolumeName:  resolved.VolumeName,
-	}
 
-	if err := s.registry.CreateRegistry(ctx, config); err != nil {
+	if _, err := s.ctrl.EnsureOne(ctx, resolved.toRegistryInfo(), resolved.ClusterName, io.Discard); err != nil {
 		model := buildRegistryModel(resolved.Name, resolved.Endpoint(), int32(resolved.Port), resolved.VolumeName)
 		model.Status = v1alpha1.OCIRegistryStatusError
 		model.LastError = err.Error()
@@ -112,7 +108,7 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 	}
 
 	if opts.DeleteVolume {
-		return s.registry.DeleteRegistry(ctx, opts.Name, opts.ClusterName, true, opts.NetworkName)
+		return s.ctrl.CleanupOne(ctx, Info{Name: opts.Name}, opts.ClusterName, true, opts.NetworkName, io.Discard)
 	}
 
 	summary, err := s.findRegistryContainer(ctx, opts.Name)
@@ -139,6 +135,17 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 	}
 
 	return nil
+}
+
+func (o CreateOptions) toRegistryInfo() Info {
+	opts := o.WithDefaults()
+
+	return Info{
+		Host:   opts.Host,
+		Name:   opts.Name,
+		Port:   opts.Port,
+		Volume: opts.VolumeName,
+	}
 }
 
 func (s *service) Status(ctx context.Context, opts StatusOptions) (v1alpha1.OCIRegistry, error) {

@@ -3,7 +3,7 @@ package registry_test
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

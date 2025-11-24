@@ -30,6 +30,16 @@ func (m *mockRegistryBackend) DeleteRegistry(ctx context.Context, name, clusterN
 	return args.Error(0)
 }
 
+func (m *mockRegistryBackend) ListRegistries(ctx context.Context) ([]string, error) {
+	args := m.Called(ctx)
+
+	if registries, ok := args.Get(0).([]string); ok {
+		return registries, args.Error(1)
+	}
+
+	return nil, args.Error(1)
+}
+
 func (m *mockRegistryBackend) GetRegistryPort(ctx context.Context, name string) (int, error) {
 	args := m.Called(ctx, name)
 
@@ -46,6 +56,11 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 
 	docker := dockerclient.NewMockAPIClient(t)
 	backend := &mockRegistryBackend{}
+
+	backend.
+		On("ListRegistries", mock.Anything).
+		Return([]string{}, nil).
+		Once()
 
 	backend.
 		On("CreateRegistry", mock.Anything, mock.MatchedBy(func(cfg dockerclient.RegistryConfig) bool {

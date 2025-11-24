@@ -8,7 +8,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
-	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registry"
+	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
