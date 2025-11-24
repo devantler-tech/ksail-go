@@ -47,7 +47,14 @@ func SetupRegistries(
 		return nil
 	}
 
-	batch, err := newMirrorBatch(ctx, registryMgr, clusterName, networkName, writer, len(registries))
+	batch, err := newMirrorBatch(
+		ctx,
+		registryMgr,
+		clusterName,
+		networkName,
+		writer,
+		len(registries),
+	)
 	if err != nil {
 		return err
 	}
@@ -55,6 +62,7 @@ func SetupRegistries(
 	for _, reg := range registries {
 		if _, err := batch.ensure(ctx, reg); err != nil {
 			batch.rollback(ctx)
+
 			return err
 		}
 	}
@@ -97,7 +105,6 @@ func newMirrorBatch(
 		writer:      writer,
 	}, nil
 }
-
 
 func (b *mirrorBatch) ensure(ctx context.Context, reg Info) (bool, error) {
 	created, err := ensureRegistry(

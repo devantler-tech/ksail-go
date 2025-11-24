@@ -572,6 +572,7 @@ type stubFluxInstaller struct {
 
 func (s *stubFluxInstaller) Install(context.Context) error {
 	s.installCalls++
+
 	return s.installErr
 }
 
@@ -581,12 +582,13 @@ func (s *stubFluxInstaller) Uninstall(context.Context) error {
 
 func overrideFluxInstallerFactory(
 	t *testing.T,
-	factory func(helm.Interface, time.Duration) (installerpkg.Installer, error),
+	factory func(helm.Interface, time.Duration) installerpkg.Installer,
 ) {
 	t.Helper()
 
 	original := fluxInstallerFactory
 	fluxInstallerFactory = factory
+
 	t.Cleanup(func() { fluxInstallerFactory = original })
 }
 
@@ -1315,14 +1317,20 @@ func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
 func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
+
 	clusterCfg := fluxTestClusterConfig(t)
 	installer := &stubFluxInstaller{}
 	expectedTimeout := getInstallTimeout(clusterCfg)
-	overrideFluxInstallerFactory(t, func(client helm.Interface, timeout time.Duration) (installerpkg.Installer, error) {
-		require.NotNil(t, client)
-		require.Equal(t, expectedTimeout, timeout)
-		return installer, nil
-	})
+
+	overrideFluxInstallerFactory(
+		t,
+		func(client helm.Interface, timeout time.Duration) installerpkg.Installer {
+			require.NotNil(t, client)
+			require.Equal(t, expectedTimeout, timeout)
+
+			return installer
+		},
+	)
 
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
 	require.NoError(t, err)
@@ -1332,12 +1340,13 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
+
 	clusterCfg := fluxTestClusterConfig(t)
-	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) (installerpkg.Installer, error) {
-		return nil, errors.New("boom")
+	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
+		return &stubFluxInstaller{installErr: errors.New("boom")}
 	})
 
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "create flux installer")
+	require.Contains(t, err.Error(), "failed to install flux controllers")
 }

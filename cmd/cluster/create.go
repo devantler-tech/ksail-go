@@ -315,8 +315,8 @@ var (
 	//nolint:gochecknoglobals // Function reused by tests and runtime flow.
 	connectRegistriesToClusterNetwork = makeRegistryStageRunner(registryStageRoleConnect)
 	// fluxInstallerFactory is overridden in tests to stub Flux installer creation.
-	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) (installer.Installer, error) {
-		return fluxinstaller.NewFluxInstaller(client, timeout), nil
+	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) installer.Installer {
+		return fluxinstaller.NewFluxInstaller(client, timeout)
 	}
 	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
 	dockerClientInvoker = cmdhelpers.WithDockerClient
@@ -1131,7 +1131,8 @@ func newFluxInstallerForCluster(
 	helmClient helm.Interface,
 ) (installer.Installer, error) {
 	timeout := getInstallTimeout(clusterCfg)
-	return fluxInstallerFactory(helmClient, timeout)
+
+	return fluxInstallerFactory(helmClient, timeout), nil
 }
 
 func runFluxInstallation(
@@ -1148,6 +1149,7 @@ func runFluxInstallation(
 	})
 
 	tmr.NewStage()
+
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -1159,7 +1161,8 @@ func runFluxInstallation(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	if err := installer.Install(ctx); err != nil {
+	err := installer.Install(ctx)
+	if err != nil {
 		return fmt.Errorf("failed to install flux controllers: %w", err)
 	}
 

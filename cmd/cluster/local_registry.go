@@ -60,15 +60,20 @@ func ensureLocalRegistryProvisioned(
 	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
 	createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
 
-	return runLocalRegistryStage(cmd, deps, localRegistryProvisionStageInfo, func(execCtx context.Context, svc registry.Service) error {
-		if _, err := svc.Create(execCtx, createOpts); err != nil {
+	return runLocalRegistryStage(
+		cmd,
+		deps,
+		localRegistryProvisionStageInfo,
+		func(execCtx context.Context, svc registry.Service) error {
+			if _, err := svc.Create(execCtx, createOpts); err != nil {
+				return err
+			}
+
+			_, err := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
+
 			return err
-		}
-
-		_, err := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
-
-		return err
-	})
+		},
+	)
 }
 
 func connectLocalRegistryToClusterNetwork(
@@ -88,11 +93,16 @@ func connectLocalRegistryToClusterNetwork(
 		NetworkName: ctx.networkName,
 	}
 
-	return runLocalRegistryStage(cmd, deps, localRegistryConnectStageInfo, func(execCtx context.Context, svc registry.Service) error {
-		_, err := svc.Start(execCtx, startOpts)
+	return runLocalRegistryStage(
+		cmd,
+		deps,
+		localRegistryConnectStageInfo,
+		func(execCtx context.Context, svc registry.Service) error {
+			_, err := svc.Start(execCtx, startOpts)
 
-		return err
-	})
+			return err
+		},
+	)
 }
 
 func cleanupLocalRegistry(
@@ -118,9 +128,14 @@ func cleanupLocalRegistry(
 		DeleteVolume: deleteVolumes,
 	}
 
-	return runLocalRegistryStage(cmd, deps, localRegistryCleanupStageInfo, func(execCtx context.Context, svc registry.Service) error {
-		return svc.Stop(execCtx, stopOpts)
-	})
+	return runLocalRegistryStage(
+		cmd,
+		deps,
+		localRegistryCleanupStageInfo,
+		func(execCtx context.Context, svc registry.Service) error {
+			return svc.Stop(execCtx, stopOpts)
+		},
+	)
 }
 
 func newLocalRegistryContext(
@@ -207,16 +222,21 @@ func runLocalRegistryStage(
 	info registryStageInfo,
 	handler func(context.Context, registry.Service) error,
 ) error {
-	return runRegistryStage(cmd, deps, info, func(ctx context.Context, dockerClient client.APIClient) error {
-		service, err := registryServiceFactory(registry.Config{DockerClient: dockerClient})
-		if err != nil {
-			return fmt.Errorf("create registry service: %w", err)
-		}
+	return runRegistryStage(
+		cmd,
+		deps,
+		info,
+		func(ctx context.Context, dockerClient client.APIClient) error {
+			service, err := registryServiceFactory(registry.Config{DockerClient: dockerClient})
+			if err != nil {
+				return fmt.Errorf("create registry service: %w", err)
+			}
 
-		if ctx == nil {
-			ctx = context.Background()
-		}
+			if ctx == nil {
+				ctx = context.Background()
+			}
 
-		return handler(ctx, service)
-	})
+			return handler(ctx, service)
+		},
+	)
 }

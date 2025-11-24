@@ -2,7 +2,7 @@ package registry
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
@@ -17,7 +17,7 @@ type Manager struct {
 // NewManager creates a manager backed by the provided registry backend.
 func NewManager(backend Backend) (*Manager, error) {
 	if backend == nil {
-		return nil, fmt.Errorf("registry backend is required")
+		return nil, errors.New("registry backend is required")
 	}
 
 	return &Manager{backend: backend}, nil
@@ -43,6 +43,7 @@ func (c *Manager) EnsureBatch(
 	for _, reg := range registries {
 		if _, err := batch.ensure(ctx, reg); err != nil {
 			batch.rollback(ctx)
+
 			return err
 		}
 	}
@@ -79,7 +80,15 @@ func (c *Manager) Cleanup(
 	networkName string,
 	writer io.Writer,
 ) error {
-	return CleanupRegistries(ctx, c.backend, registries, clusterName, deleteVolumes, networkName, writer)
+	return CleanupRegistries(
+		ctx,
+		c.backend,
+		registries,
+		clusterName,
+		deleteVolumes,
+		networkName,
+		writer,
+	)
 }
 
 // CleanupOne removes a single registry spec.

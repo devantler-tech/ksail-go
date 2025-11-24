@@ -618,6 +618,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*v1alpha1.Distribution)
 				require.True(t, ok)
+
 				*ptr = v1alpha1.DistributionK3d
 				assert.Equal(t, v1alpha1.DistributionK3d, *ptr)
 			},
@@ -629,6 +630,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*string)
 				require.True(t, ok)
+
 				*ptr = "custom-kind.yaml"
 				assert.Equal(t, "custom-kind.yaml", *ptr)
 			},
@@ -641,6 +643,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 				ptr, ok := field.(*string)
 				require.True(t, ok)
 				assert.Empty(t, selectorDefaultString(selectors[2]))
+
 				*ptr = "kind-kind"
 				assert.Equal(t, "kind-kind", *ptr)
 			},
@@ -652,6 +655,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 				ptr, ok := field.(*string)
 				require.True(t, ok)
 				assert.Equal(t, "~/.kube/config", selectors[3].DefaultValue)
+
 				*ptr = "./kubeconfig"
 				assert.Equal(t, "./kubeconfig", *ptr)
 			},
@@ -663,6 +667,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*v1alpha1.GitOpsEngine)
 				require.True(t, ok)
+
 				*ptr = v1alpha1.GitOpsEngineFlux
 				assert.Equal(t, v1alpha1.GitOpsEngineFlux, *ptr)
 			},
@@ -674,6 +679,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*v1alpha1.LocalRegistry)
 				require.True(t, ok)
+
 				*ptr = v1alpha1.LocalRegistryEnabled
 				assert.Equal(t, v1alpha1.LocalRegistryEnabled, *ptr)
 			},
@@ -685,6 +691,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*int32)
 				require.True(t, ok)
+
 				*ptr = 6000
 				assert.Equal(t, int32(6000), *ptr)
 			},
@@ -696,6 +703,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 			assertFunc: func(field any) {
 				ptr, ok := field.(*metav1.Duration)
 				require.True(t, ok)
+
 				*ptr = metav1.Duration{Duration: 30 * time.Second}
 				assert.Equal(t, 30*time.Second, ptr.Duration)
 			},
@@ -708,7 +716,7 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 		if tc.assertValue != nil {
 			assert.Equal(t, tc.assertValue, tc.selector.DefaultValue)
 		}
-		tc := tc
+
 		tc.assertFunc(field)
 	}
 }

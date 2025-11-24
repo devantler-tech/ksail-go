@@ -21,7 +21,8 @@ func ComposeModules(modules ...Module) Module {
 				continue
 			}
 
-			if err := module(injector); err != nil {
+			err := module(injector)
+			if err != nil {
 				return err
 			}
 		}

@@ -407,9 +407,9 @@ func (v *Validator) validateRegistry(
 
 	if port != 0 {
 		result.AddWarning(validator.ValidationError{
-			Field:        "spec.options.localRegistry.hostPort",
-			Message:      "localRegistry.hostPort is ignored unless spec.localRegistry is set to Enabled",
-			CurrentValue: port,
+			Field:         "spec.options.localRegistry.hostPort",
+			Message:       "localRegistry.hostPort is ignored unless spec.localRegistry is set to Enabled",
+			CurrentValue:  port,
 			FixSuggestion: "Remove spec.options.localRegistry.hostPort or set spec.localRegistry to Enabled to use it",
 		})
 	}

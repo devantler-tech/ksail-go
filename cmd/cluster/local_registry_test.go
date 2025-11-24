@@ -23,6 +23,7 @@ func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
 
 		return nil, nil
 	}
+
 	t.Cleanup(func() { registryServiceFactory = originalFactory })
 
 	cmd, _ := testutils.NewCommand(t)
@@ -116,13 +117,19 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 
 	tempDir := t.TempDir()
 	kindConfigPath := filepath.Join(tempDir, "kind.yaml")
-	err := os.WriteFile(kindConfigPath, []byte("kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: local-kind\n"), 0o600)
+
+	err := os.WriteFile(
+		kindConfigPath,
+		[]byte("kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nname: local-kind\n"),
+		0o600,
+	)
 	if err != nil {
 		t.Fatalf("failed to write kind config: %v", err)
 	}
 
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
+
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
@@ -159,13 +166,19 @@ func newStubRegistryService() *stubRegistryService {
 	return &stubRegistryService{}
 }
 
-func (s *stubRegistryService) Create(_ context.Context, opts registry.CreateOptions) (v1alpha1.OCIRegistry, error) {
+func (s *stubRegistryService) Create(
+	_ context.Context,
+	opts registry.CreateOptions,
+) (v1alpha1.OCIRegistry, error) {
 	s.createCalls = append(s.createCalls, opts)
 
 	return v1alpha1.NewOCIRegistry(), nil
 }
 
-func (s *stubRegistryService) Start(_ context.Context, opts registry.StartOptions) (v1alpha1.OCIRegistry, error) {
+func (s *stubRegistryService) Start(
+	_ context.Context,
+	opts registry.StartOptions,
+) (v1alpha1.OCIRegistry, error) {
 	s.startCalls = append(s.startCalls, opts)
 
 	return v1alpha1.NewOCIRegistry(), nil
@@ -177,7 +190,10 @@ func (s *stubRegistryService) Stop(_ context.Context, opts registry.StopOptions)
 	return nil
 }
 
-func (s *stubRegistryService) Status(context.Context, registry.StatusOptions) (v1alpha1.OCIRegistry, error) {
+func (s *stubRegistryService) Status(
+	context.Context,
+	registry.StatusOptions,
+) (v1alpha1.OCIRegistry, error) {
 	return v1alpha1.NewOCIRegistry(), nil
 }
 

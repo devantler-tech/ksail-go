@@ -7,12 +7,8 @@ require (
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
-	github.com/fluxcd/flux2/v2 v2.4.0
 	github.com/fluxcd/helm-controller/api v1.4.4
-	github.com/fluxcd/image-automation-controller/api v0.39.0
-	github.com/fluxcd/image-reflector-controller/api v0.33.0
 	github.com/fluxcd/kustomize-controller/api v1.7.3
-	github.com/fluxcd/notification-controller/api v1.4.0
 	github.com/fluxcd/pkg/apis/meta v1.23.0
 	github.com/fluxcd/source-controller/api v1.7.3
 	github.com/getsops/sops/v3 v3.11.0
@@ -196,8 +192,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fluxcd/pkg/apis/acl v0.9.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v1.14.0 // indirect
-	github.com/fluxcd/pkg/kustomize v1.13.0 // indirect
-	github.com/fluxcd/pkg/tar v0.8.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect

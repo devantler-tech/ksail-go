@@ -18,13 +18,21 @@ type mockRegistryBackend struct {
 	mock.Mock
 }
 
-func (m *mockRegistryBackend) CreateRegistry(ctx context.Context, cfg dockerclient.RegistryConfig) error {
+func (m *mockRegistryBackend) CreateRegistry(
+	ctx context.Context,
+	cfg dockerclient.RegistryConfig,
+) error {
 	args := m.Called(ctx, cfg)
 
 	return args.Error(0)
 }
 
-func (m *mockRegistryBackend) DeleteRegistry(ctx context.Context, name, clusterName string, deleteVolume bool, networkName string) error {
+func (m *mockRegistryBackend) DeleteRegistry(
+	ctx context.Context,
+	name, clusterName string,
+	deleteVolume bool,
+	networkName string,
+) error {
 	args := m.Called(ctx, name, clusterName, deleteVolume, networkName)
 
 	return args.Error(0)
@@ -63,9 +71,14 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 		Once()
 
 	backend.
-		On("CreateRegistry", mock.Anything, mock.MatchedBy(func(cfg dockerclient.RegistryConfig) bool {
-			return cfg.Name == "local-registry" && cfg.Port == 5000 && cfg.VolumeName == "local-registry"
-		})).
+		On(
+			"CreateRegistry",
+			mock.Anything,
+			mock.MatchedBy(func(cfg dockerclient.RegistryConfig) bool {
+				return cfg.Name == "local-registry" && cfg.Port == 5000 &&
+					cfg.VolumeName == "local-registry"
+			}),
+		).
 		Return(nil).
 		Once()
 
@@ -80,7 +93,10 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	registry, err := svc.Create(context.Background(), CreateOptions{Name: "local-registry", Port: 5000})
+	registry, err := svc.Create(
+		context.Background(),
+		CreateOptions{Name: "local-registry", Port: 5000},
+	)
 	require.NoError(t, err)
 
 	assert.Equal(t, "127.0.0.1:5000", registry.Endpoint)
@@ -123,7 +139,10 @@ func TestStartStartsAndConnectsRegistry(t *testing.T) {
 		Return([]container.Summary{runningSummary()}, nil).
 		Once()
 
-	registry, err := svc.Start(context.Background(), StartOptions{Name: "local-registry", NetworkName: "kind"})
+	registry, err := svc.Start(
+		context.Background(),
+		StartOptions{Name: "local-registry", NetworkName: "kind"},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, v1alpha1.OCIRegistryStatusRunning, registry.Status)
 }
@@ -174,7 +193,10 @@ func TestStopGracefullyStopsContainer(t *testing.T) {
 		Return(nil).
 		Once()
 
-	require.NoError(t, svc.Stop(context.Background(), StopOptions{Name: "local-registry", NetworkName: "kind"}))
+	require.NoError(
+		t,
+		svc.Stop(context.Background(), StopOptions{Name: "local-registry", NetworkName: "kind"}),
+	)
 }
 
 func TestStatusReturnsNotProvisionedWhenMissing(t *testing.T) {
@@ -198,9 +220,11 @@ func TestStatusReturnsNotProvisionedWhenMissing(t *testing.T) {
 
 func runningSummary() container.Summary {
 	return container.Summary{
-		ID:     "registry-id",
-		State:  "running",
-		Ports:  []types.Port{{PrivatePort: dockerclient.DefaultRegistryPort, PublicPort: 5000, IP: "127.0.0.1"}},
+		ID:    "registry-id",
+		State: "running",
+		Ports: []types.Port{
+			{PrivatePort: dockerclient.DefaultRegistryPort, PublicPort: 5000, IP: "127.0.0.1"},
+		},
 		Mounts: []types.MountPoint{{Type: "volume", Name: "local-registry-data"}},
 		Labels: map[string]string{dockerclient.RegistryLabelKey: "local-registry"},
 	}

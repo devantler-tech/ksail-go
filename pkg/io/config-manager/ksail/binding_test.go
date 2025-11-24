@@ -332,15 +332,18 @@ func TestGenerateFlagName(t *testing.T) {
 			&manager.Config.Spec.MetricsServer,
 			"metrics-server",
 		},
-		{"LocalRegistry field",
+		{
+			"LocalRegistry field",
 			&manager.Config.Spec.LocalRegistry,
 			"local-registry",
 		},
-		{"RegistryPort field",
+		{
+			"RegistryPort field",
 			&manager.Config.Spec.Options.LocalRegistry.HostPort,
 			"local-registry-port",
 		},
-		{"FluxInterval field",
+		{
+			"FluxInterval field",
 			&manager.Config.Spec.Options.Flux.Interval,
 			"flux-interval",
 		},
