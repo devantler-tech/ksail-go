@@ -18,6 +18,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -161,7 +162,13 @@ func (m *ConfigManager) readConfig(silent bool) error {
 }
 
 func (m *ConfigManager) unmarshalAndApplyDefaults() error {
-	err := m.Viper.Unmarshal(m.Config)
+	decoderConfig := func(dc *mapstructure.DecoderConfig) {
+		dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+			metav1DurationDecodeHook(),
+		)
+	}
+
+	err := m.Viper.Unmarshal(m.Config, decoderConfig)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}

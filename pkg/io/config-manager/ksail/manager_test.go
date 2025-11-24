@@ -276,6 +276,63 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
 }
 
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigParsesFluxIntervalFromString(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfig := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindConfig), 0o600))
+
+	config := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n" +
+		"  gitOpsEngine: Flux\n" +
+		"  options:\n" +
+		"    flux:\n" +
+		"      interval: 2m30s\n"
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, 150*time.Second, manager.Config.Spec.Options.Flux.Interval.Duration)
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigFailsOnInvalidFluxIntervalString(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfig := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindConfig), 0o600))
+
+	config := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n" +
+		"  gitOpsEngine: Flux\n" +
+		"  options:\n" +
+		"    flux:\n" +
+		"      interval: not-a-duration\n"
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "parse duration")
+}
+
 func TestNewCommandConfigManagerBindsFlags(t *testing.T) {
 	t.Parallel()
 
