@@ -12,7 +12,6 @@
 1. **Create workspace snapshot**
    - Checkout branch `001-migrate-docs` in this repository.
    - Optionally open the [legacy KSail documentation](https://github.com/devantler-tech/ksail/tree/main/docs) in a split view for reference.
-   - Skim [`docs/README.md`](../../docs/README.md) to understand the target layout and validation workflow.
 2. **Inventory current docs**
    - Record relevant files from the legacy KSail documentation (`docs/` folder in the KSail repository) such as overview, configuration, use-cases, and images.
    - Capture legacy commands that require translation to the Go CLI.
