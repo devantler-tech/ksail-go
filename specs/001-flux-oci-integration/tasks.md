@@ -142,7 +142,7 @@
 - [ ] T036 [P] Update KSail-Go docs under `docs/` to describe Flux + OCI flows and quickstart steps
 - [ ] T039 Review error messages across Flux and registry services for clarity and consistency, including common edge cases (registry unavailable, corrupted artifact, auth failure)
 - [ ] T040 Implement basic artifact pruning options for local registry in `pkg/svc/provisioner/registry` (for FR-018)
-- [ ] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
+- [X] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
 - [ ] T042 Run through `quickstart.md` step-by-step and fix any mismatches in commands or behavior
 - [ ] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge
 

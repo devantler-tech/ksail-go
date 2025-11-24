@@ -92,11 +92,13 @@ jobs:
           - init-args: "--distribution Kind"
           - init-args: "--distribution Kind --cni Cilium"
           - init-args: "--distribution Kind --cni Calico"
+          - init-args: "--distribution Kind --gitops-engine Flux"
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io"
           - init-args: "--distribution Kind --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
           - init-args: "--distribution K3d"
           - init-args: "--distribution K3d --cni Cilium"
           - init-args: "--distribution K3d --cni Calico"
+          - init-args: "--distribution K3d --gitops-engine Flux"
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io"
           - init-args: "--distribution K3d --mirror-registry docker.io=https://registry-1.docker.io --mirror-registry ghcr.io=https://ghcr.io"
           - init-args: "--distribution K3d --metrics-server Disabled"
@@ -196,7 +198,6 @@ jobs:
           case "$MATRIX_RESULT" in
             success|skipped)
               echo "All matrix runs succeeded or were skipped."
-              exit 0
               ;;
             *)
               echo "At least one matrix run failed."
