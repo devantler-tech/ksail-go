@@ -3,8 +3,19 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net"
+	"strconv"
+	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
 )
 
 var (
@@ -26,4 +37,396 @@ type Service interface {
 	Stop(ctx context.Context, opts StopOptions) error
 	// Status inspects the registry container and returns its current lifecycle state and metadata.
 	Status(ctx context.Context, opts StatusOptions) (v1alpha1.OCIRegistry, error)
+}
+
+const (
+	// DefaultEndpointHost exposes the registry on the developer workstation only.
+	DefaultEndpointHost = "localhost"
+	minRegistryPort     = 1
+	maxRegistryPort     = 65535
+)
+
+// CreateOptions capture the desired shape of a managed OCI registry container.
+type CreateOptions struct {
+	Name        string
+	Host        string
+	Port        int
+	VolumeName  string
+	ClusterName string
+}
+
+// WithDefaults applies standard defaults for host bindings and storage metadata.
+func (o CreateOptions) WithDefaults() CreateOptions {
+	trimmed := o
+	trimmed.Name = strings.TrimSpace(trimmed.Name)
+	trimmed.Host = strings.TrimSpace(trimmed.Host)
+	trimmed.VolumeName = strings.TrimSpace(trimmed.VolumeName)
+
+	if trimmed.Host == "" {
+		trimmed.Host = DefaultEndpointHost
+	}
+
+	if trimmed.VolumeName == "" {
+		trimmed.VolumeName = trimmed.Name
+	}
+
+	return trimmed
+}
+
+// Validate asserts that the option set is well formed before interacting with the container engine.
+func (o CreateOptions) Validate() error {
+	opts := o.WithDefaults()
+
+	if opts.Name == "" {
+		return ErrNameRequired
+	}
+
+	if opts.Port < minRegistryPort || opts.Port > maxRegistryPort {
+		return fmt.Errorf("%w: %d", ErrInvalidPort, opts.Port)
+	}
+
+	if opts.Host == "" {
+		return ErrHostRequired
+	}
+
+	return nil
+}
+
+// Endpoint returns the host-facing endpoint string (host:port) for the registry.
+func (o CreateOptions) Endpoint() string {
+	opts := o.WithDefaults()
+	if opts.Port <= 0 {
+		return opts.Host
+	}
+
+	return net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port))
+}
+
+// StartOptions define how a registry instance should be started or connected.
+type StartOptions struct {
+	Name        string
+	NetworkName string
+}
+
+// Validate ensures the start options reference a registry container.
+func (o StartOptions) Validate() error {
+	if strings.TrimSpace(o.Name) == "" {
+		return ErrNameRequired
+	}
+
+	return nil
+}
+
+// StopOptions describe how a registry instance should be stopped and optionally cleaned up.
+type StopOptions struct {
+	Name         string
+	ClusterName  string
+	NetworkName  string
+	DeleteVolume bool
+}
+
+// Validate ensures the stop options reference a registry container.
+func (o StopOptions) Validate() error {
+	if strings.TrimSpace(o.Name) == "" {
+		return ErrNameRequired
+	}
+
+	return nil
+}
+
+// StatusOptions identify the registry instance whose status should be inspected.
+type StatusOptions struct {
+	Name string
+}
+
+// Validate ensures the status query references a registry container.
+func (o StatusOptions) Validate() error {
+	if strings.TrimSpace(o.Name) == "" {
+		return ErrNameRequired
+	}
+
+	return nil
+}
+
+// Config controls how the registry service interacts with the container engine.
+type Config struct {
+	DockerClient    client.APIClient
+	RegistryManager Backend
+}
+
+type service struct {
+	docker   client.APIClient
+	registry Backend
+	manager  *Manager
+}
+
+// NewService constructs a registry lifecycle manager backed by the Docker API.
+func NewService(cfg Config) (Service, error) {
+	if cfg.DockerClient == nil {
+		return nil, fmt.Errorf("docker client is required")
+	}
+
+	backend := cfg.RegistryManager
+	if backend == nil {
+		manager, err := dockerclient.NewRegistryManager(cfg.DockerClient)
+		if err != nil {
+			return nil, fmt.Errorf("create registry manager: %w", err)
+		}
+
+		backend = manager
+	}
+
+	controller, err := NewManager(backend)
+	if err != nil {
+		return nil, err
+	}
+
+	return &service{
+		docker:   cfg.DockerClient,
+		registry: backend,
+		manager:  controller,
+	}, nil
+}
+
+func (s *service) Create(ctx context.Context, opts CreateOptions) (v1alpha1.OCIRegistry, error) {
+	if err := opts.Validate(); err != nil {
+		return v1alpha1.NewOCIRegistry(), err
+	}
+
+	resolved := opts.WithDefaults()
+
+	if _, err := s.manager.EnsureOne(ctx, resolved.toRegistryInfo(), resolved.ClusterName, io.Discard); err != nil {
+		model := buildRegistryModel(resolved.Name, resolved.Endpoint(), int32(resolved.Port), resolved.VolumeName)
+		model.Status = v1alpha1.OCIRegistryStatusError
+		model.LastError = err.Error()
+
+		return model, fmt.Errorf("create registry: %w", err)
+	}
+
+	return s.Status(ctx, StatusOptions{Name: resolved.Name})
+}
+
+func (s *service) Start(ctx context.Context, opts StartOptions) (v1alpha1.OCIRegistry, error) {
+	if err := opts.Validate(); err != nil {
+		return v1alpha1.NewOCIRegistry(), err
+	}
+
+	summary, err := s.findRegistryContainer(ctx, opts.Name)
+	if err != nil {
+		return v1alpha1.NewOCIRegistry(), err
+	}
+
+	if !strings.EqualFold(summary.State, "running") {
+		if err := s.docker.ContainerStart(ctx, summary.ID, container.StartOptions{}); err != nil {
+			return v1alpha1.NewOCIRegistry(), fmt.Errorf("start registry container: %w", err)
+		}
+	}
+
+	if networkName := strings.TrimSpace(opts.NetworkName); networkName != "" {
+		if err := s.ensureNetworkAttachment(ctx, summary.ID, networkName); err != nil {
+			return v1alpha1.NewOCIRegistry(), err
+		}
+	}
+
+	return s.Status(ctx, StatusOptions{Name: opts.Name})
+}
+
+func (s *service) Stop(ctx context.Context, opts StopOptions) error {
+	if err := opts.Validate(); err != nil {
+		return err
+	}
+
+	if opts.DeleteVolume {
+		return s.manager.CleanupOne(ctx, Info{Name: opts.Name}, opts.ClusterName, true, opts.NetworkName, io.Discard)
+	}
+
+	summary, err := s.findRegistryContainer(ctx, opts.Name)
+	if err != nil {
+		if errors.Is(err, dockerclient.ErrRegistryNotFound) {
+			return nil
+		}
+
+		return err
+	}
+
+	if strings.EqualFold(summary.State, "running") {
+		if err := s.docker.ContainerStop(ctx, summary.ID, container.StopOptions{}); err != nil {
+			return fmt.Errorf("stop registry container: %w", err)
+		}
+	}
+
+	if networkName := strings.TrimSpace(opts.NetworkName); networkName != "" {
+		if err := s.docker.NetworkDisconnect(ctx, networkName, summary.ID, true); err != nil {
+			if !client.IsErrNotFound(err) {
+				return fmt.Errorf("disconnect registry from network %s: %w", networkName, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (o CreateOptions) toRegistryInfo() Info {
+	opts := o.WithDefaults()
+
+	return Info{
+		Host:   opts.Host,
+		Name:   opts.Name,
+		Port:   opts.Port,
+		Volume: opts.VolumeName,
+	}
+}
+
+func (s *service) Status(ctx context.Context, opts StatusOptions) (v1alpha1.OCIRegistry, error) {
+	if err := opts.Validate(); err != nil {
+		return v1alpha1.NewOCIRegistry(), err
+	}
+
+	model := v1alpha1.NewOCIRegistry()
+	model.Name = opts.Name
+	model.DataPath = dockerclient.RegistryDataPath
+
+	containers, err := s.listRegistryContainers(ctx, opts.Name)
+	if err != nil {
+		return model, err
+	}
+
+	if len(containers) == 0 {
+		return model, nil
+	}
+
+	summary := containers[0]
+	model.VolumeName = extractVolumeName(summary, opts.Name)
+
+	hostPort := resolveHostPort(summary)
+	if hostPort == 0 {
+		port, portErr := s.registry.GetRegistryPort(ctx, opts.Name)
+		if portErr != nil {
+			switch {
+			case errors.Is(portErr, dockerclient.ErrRegistryNotFound),
+				errors.Is(portErr, dockerclient.ErrRegistryPortNotFound):
+				// No additional metadata available.
+			default:
+				return model, fmt.Errorf("get registry port: %w", portErr)
+			}
+		} else {
+			hostPort = port
+		}
+	}
+
+	if hostPort > 0 {
+		model.Port = int32(hostPort)
+		host := resolveEndpointHost(summary)
+		model.Endpoint = net.JoinHostPort(host, strconv.Itoa(hostPort))
+	}
+
+	model.Status, model.LastError = mapContainerState(summary.State, summary.Status)
+
+	return model, nil
+}
+
+func (s *service) listRegistryContainers(ctx context.Context, name string) ([]container.Summary, error) {
+	filtersArgs := filters.NewArgs()
+	filtersArgs.Add("name", name)
+	filtersArgs.Add("ancestor", dockerclient.RegistryImageName)
+	filtersArgs.Add("label", fmt.Sprintf("%s=%s", dockerclient.RegistryLabelKey, name))
+
+	containers, err := s.docker.ContainerList(ctx, container.ListOptions{All: true, Filters: filtersArgs})
+	if err != nil {
+		return nil, fmt.Errorf("list registry containers: %w", err)
+	}
+
+	return containers, nil
+}
+
+func (s *service) findRegistryContainer(ctx context.Context, name string) (container.Summary, error) {
+	containers, err := s.listRegistryContainers(ctx, name)
+	if err != nil {
+		return container.Summary{}, err
+	}
+
+	if len(containers) == 0 {
+		return container.Summary{}, dockerclient.ErrRegistryNotFound
+	}
+
+	return containers[0], nil
+}
+
+func (s *service) ensureNetworkAttachment(ctx context.Context, containerID, networkName string) error {
+	inspect, err := s.docker.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return fmt.Errorf("inspect registry container: %w", err)
+	}
+
+	if inspect.NetworkSettings != nil {
+		if _, exists := inspect.NetworkSettings.Networks[networkName]; exists {
+			return nil
+		}
+	}
+
+	if err := s.docker.NetworkConnect(ctx, networkName, containerID, &network.EndpointSettings{}); err != nil {
+		return fmt.Errorf("connect registry to network %s: %w", networkName, err)
+	}
+
+	return nil
+}
+
+func buildRegistryModel(name, endpoint string, port int32, volumeName string) v1alpha1.OCIRegistry {
+	model := v1alpha1.NewOCIRegistry()
+	model.Name = name
+	model.Endpoint = endpoint
+	model.Port = port
+	model.VolumeName = volumeName
+	model.DataPath = dockerclient.RegistryDataPath
+	model.Status = v1alpha1.OCIRegistryStatusProvisioning
+
+	return model
+}
+
+func extractVolumeName(summary container.Summary, fallback string) string {
+	for _, mountPoint := range summary.Mounts {
+		if mountPoint.Type == mount.TypeVolume && strings.TrimSpace(mountPoint.Name) != "" {
+			return mountPoint.Name
+		}
+	}
+
+	return fallback
+}
+
+func resolveHostPort(summary container.Summary) int {
+	for _, port := range summary.Ports {
+		if port.PrivatePort == dockerclient.DefaultRegistryPort && port.PublicPort > 0 {
+			return int(port.PublicPort)
+		}
+	}
+
+	return 0
+}
+
+func resolveEndpointHost(summary container.Summary) string {
+	if len(summary.Ports) == 0 {
+		return dockerclient.RegistryHostIP
+	}
+
+	host := strings.TrimSpace(summary.Ports[0].IP)
+	if host == "" {
+		return dockerclient.RegistryHostIP
+	}
+
+	return host
+}
+
+func mapContainerState(state, status string) (v1alpha1.OCIRegistryStatus, string) {
+	switch strings.ToLower(strings.TrimSpace(state)) {
+	case "created", "restarting", "running":
+		return v1alpha1.OCIRegistryStatusReady, ""
+	case "removing", "exited", "dead":
+		if trimmed := strings.TrimSpace(status); trimmed != "" {
+			return v1alpha1.OCIRegistryStatusError, trimmed
+		}
+
+		return v1alpha1.OCIRegistryStatusError, "registry container not running"
+	default:
+		return v1alpha1.OCIRegistryStatusUnknown, strings.TrimSpace(status)
+	}
 }

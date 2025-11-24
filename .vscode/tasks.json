@@ -7,7 +7,7 @@
       "command": "go",
       "args": ["build", "./..."],
       "options": {
-        "cwd": "${workspaceFolder}/src"
+        "cwd": "${workspaceFolder}"
       },
       "problemMatcher": ["$go"],
       "presentation": {
@@ -30,7 +30,7 @@
       "command": "go",
       "args": ["test", "./..."],
       "options": {
-        "cwd": "${workspaceFolder}/src"
+        "cwd": "${workspaceFolder}"
       },
       "presentation": {
         "echo": true,
@@ -62,7 +62,7 @@
       },
       "problemMatcher": ["$go"],
       "options": {
-        "cwd": "${workspaceFolder}/src"
+        "cwd": "${workspaceFolder}"
       },
       "detail": "golangci-lint fmt"
     },
@@ -81,7 +81,7 @@
       },
       "problemMatcher": ["$go"],
       "options": {
-        "cwd": "${workspaceFolder}/src"
+        "cwd": "${workspaceFolder}"
       },
       "detail": "golangci-lint run"
     },
