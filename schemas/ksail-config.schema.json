@@ -104,10 +104,7 @@
                 }
               },
               "additionalProperties": false,
-              "type": "object",
-              "required": [
-                "interval"
-              ]
+              "type": "object"
             },
             "argocd": {
               "properties": {},
