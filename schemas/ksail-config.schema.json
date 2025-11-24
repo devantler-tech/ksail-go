@@ -66,11 +66,7 @@
           ]
         },
         "localRegistry": {
-          "type": "string",
-          "enum": [
-            "Enabled",
-            "Disabled"
-          ]
+          "type": "string"
         },
         "gitOpsEngine": {
           "type": "string",
@@ -127,7 +123,6 @@
               "additionalProperties": false,
               "type": "object",
               "required": [
-                "enabled",
                 "hostPort"
               ]
             },
