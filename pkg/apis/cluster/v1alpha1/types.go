@@ -241,7 +241,8 @@ const (
 type GitOpsEngine string
 
 const (
-	// GitOpsEngineNone disables managed GitOps integration (legacy value kept for backward compatibility).
+	// GitOpsEngineNone is the default and disables managed GitOps integration.
+	// It means "no GitOps engine" is configured for the cluster.
 	GitOpsEngineNone GitOpsEngine = "None"
 	// GitOpsEngineFlux installs and manages Flux controllers.
 	GitOpsEngineFlux GitOpsEngine = "Flux"

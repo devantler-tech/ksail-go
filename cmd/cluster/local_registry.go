@@ -89,7 +89,7 @@ func connectLocalRegistryToClusterNetwork(
 
 	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
 	startOpts := registry.StartOptions{
-		Name:        buildLocalRegistryName(ctx.clusterName),
+		Name:        buildLocalRegistryName(),
 		NetworkName: ctx.networkName,
 	}
 
@@ -122,7 +122,7 @@ func cleanupLocalRegistry(
 
 	ctx := newLocalRegistryContext(clusterCfg, kindConfig, k3dConfig)
 	stopOpts := registry.StopOptions{
-		Name:         buildLocalRegistryName(ctx.clusterName),
+		Name:         buildLocalRegistryName(),
 		ClusterName:  ctx.clusterName,
 		NetworkName:  ctx.networkName,
 		DeleteVolume: deleteVolumes,
@@ -196,15 +196,15 @@ func newLocalRegistryCreateOptions(
 	ctx localRegistryContext,
 ) registry.CreateOptions {
 	return registry.CreateOptions{
-		Name:        buildLocalRegistryName(ctx.clusterName),
+		Name:        buildLocalRegistryName(),
 		Host:        registry.DefaultEndpointHost,
 		Port:        resolveLocalRegistryPort(clusterCfg),
 		ClusterName: ctx.clusterName,
-		VolumeName:  buildLocalRegistryName(ctx.clusterName),
+		VolumeName:  buildLocalRegistryName(),
 	}
 }
 
-func buildLocalRegistryName(_ string) string {
+func buildLocalRegistryName() string {
 	return localRegistryResourceName
 }
 
