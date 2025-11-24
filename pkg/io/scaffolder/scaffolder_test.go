@@ -1066,3 +1066,12 @@ func TestCreateK3dConfig_MetricsServerDisabledWithCilium(t *testing.T) {
 	assert.True(t, hasCNIFlag, "CNI flag should be present")
 	assert.True(t, hasMetricsFlag, "metrics-server flag should be present")
 }
+
+func TestCreateK3dConfig_SetsDefaultImage(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, nil)
+	config := scaffolderInstance.CreateK3dConfig()
+
+	assert.Equal(t, "rancher/k3s:v1.29.4-k3s1", config.Image)
+}

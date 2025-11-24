@@ -28,6 +28,9 @@ const (
 	KindConfigFile = "kind.yaml"
 	// K3dConfigFile is the default filename for K3d distribution configuration.
 	K3dConfigFile = "k3d.yaml"
+
+	// defaultK3sImage pins K3d clusters to a Flux-compatible Kubernetes version.
+	defaultK3sImage = "rancher/k3s:v1.29.4-k3s1"
 )
 
 var (
@@ -167,6 +170,7 @@ func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
+		Image: defaultK3sImage,
 		// Additional configuration will be handled by the provisioner with sensible defaults
 		// Users can override any settings in this generated config file
 	}

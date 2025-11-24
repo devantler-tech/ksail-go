@@ -20,6 +20,7 @@
      - Provision a local Kind/K3d cluster.
      - Install Flux controllers.
      - Start a localhost-only `registry:3` instance with persistent storage.
+   - Use the pinned `rancher/k3s:v1.29.4-k3s1` image for K3d clusters so Flux always sees a supported Kubernetes version (>=1.22). Update existing `k3d.yaml` files if they still reference older images.
 
 4. **Package workloads as OCI artifacts**
    - Place Kubernetes manifests (or Kustomize bases) in a directory, for example `k8s/workloads/app`.
