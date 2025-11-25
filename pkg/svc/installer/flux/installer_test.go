@@ -95,6 +95,7 @@ func expectFluxInstall(t *testing.T, client *helm.MockInterface, installErr erro
 					spec.ChartName,
 				)
 				assert.Equal(t, "flux-system", spec.Namespace)
+				assert.True(t, spec.Silent, "Flux install should silence Helm stderr noise")
 
 				return true
 			}),
