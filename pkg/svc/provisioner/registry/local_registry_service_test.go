@@ -175,10 +175,7 @@ func TestCreateEnsuresRegistryMetadata(t *testing.T) {
 		Return(nil).
 		Once()
 
-	h.docker.
-		On("ContainerList", mock.Anything, mock.Anything).
-		Return([]container.Summary{runningSummary()}, nil).
-		Once()
+	expectContainerList(h.docker, runningSummary())
 
 	registry, err := h.svc.Create(
 		context.Background(),
@@ -197,10 +194,7 @@ func TestStartStartsAndConnectsRegistry(t *testing.T) {
 
 	h := newRegistryTestHarness(t)
 
-	h.docker.
-		On("ContainerList", mock.Anything, mock.Anything).
-		Return([]container.Summary{exitedSummary()}, nil).
-		Once()
+	expectContainerList(h.docker, exitedSummary())
 
 	h.docker.
 		On("ContainerStart", mock.Anything, "registry-id", mock.Anything).
@@ -217,10 +211,7 @@ func TestStartStartsAndConnectsRegistry(t *testing.T) {
 		Return(nil).
 		Once()
 
-	h.docker.
-		On("ContainerList", mock.Anything, mock.Anything).
-		Return([]container.Summary{runningSummary()}, nil).
-		Once()
+	expectContainerList(h.docker, runningSummary())
 
 	registry, err := h.svc.Start(
 		context.Background(),
@@ -256,10 +247,7 @@ func TestStopHandlesScenarios(t *testing.T) {
 		{
 			name: "gracefully stops container",
 			setup: func(h *registryTestHarness) {
-				h.docker.
-					On("ContainerList", mock.Anything, mock.Anything).
-					Return([]container.Summary{runningSummary()}, nil).
-					Once()
+				expectContainerList(h.docker, runningSummary())
 
 				h.docker.
 					On("ContainerStop", mock.Anything, "registry-id", mock.Anything).
@@ -295,14 +283,21 @@ func TestStatusReturnsNotProvisionedWhenMissing(t *testing.T) {
 
 	h := newRegistryTestHarness(t)
 
-	h.docker.
-		On("ContainerList", mock.Anything, mock.Anything).
-		Return([]container.Summary{}, nil).
-		Once()
+	expectContainerList(h.docker)
 
 	registry, err := h.svc.Status(context.Background(), StatusOptions{Name: "local-registry"})
 	require.NoError(t, err)
 	assert.Equal(t, v1alpha1.OCIRegistryStatusNotProvisioned, registry.Status)
+}
+
+func expectContainerList(
+	docker *dockerclient.MockAPIClient,
+	summaries ...container.Summary,
+) {
+	docker.
+		On("ContainerList", mock.Anything, mock.Anything).
+		Return(summaries, nil).
+		Once()
 }
 
 func runningSummary() container.Summary {
