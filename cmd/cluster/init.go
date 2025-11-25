@@ -81,10 +81,12 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	var (
-		targetPath string
-		err        error
-	)
+	clusterCfg, err := cfgManager.LoadConfigSilent()
+	if err != nil {
+		return fmt.Errorf("failed to resolve configuration for scaffolding: %w", err)
+	}
+
+	var targetPath string
 
 	flagOutputPath := cfgManager.Viper.GetString("output")
 	if flagOutputPath != "" {
@@ -100,7 +102,7 @@ func HandleInitRunE(
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
 
 	scaffolderInstance := scaffolder.NewScaffolder(
-		*cfgManager.Config,
+		*clusterCfg,
 		cmd.OutOrStdout(),
 	)
 	scaffolderInstance.MirrorRegistries = mirrorRegistries

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -146,6 +147,36 @@ func TestHandleInitRunE_UsesWorkingDirectoryWhenOutputUnset(t *testing.T) {
 	_, err = os.Stat(filepath.Join(workingDir, "ksail.yaml"))
 	if err != nil {
 		t.Fatalf("expected ksail.yaml in working directory: %v", err)
+	}
+}
+
+func TestHandleInitRunE_DefaultsLocalRegistryWithFlux(t *testing.T) {
+	t.Parallel()
+
+	outDir := t.TempDir()
+
+	cmd := newInitCommand(t)
+	cfgManager := newConfigManager(t, cmd, io.Discard)
+
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"output":        outDir,
+		"force":         "true",
+		"gitops-engine": "Flux",
+	})
+
+	deps := newInitDeps(t)
+
+	if err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps); err != nil {
+		t.Fatalf("HandleInitRunE returned error: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
+	if err != nil {
+		t.Fatalf("expected ksail.yaml to be scaffolded: %v", err)
+	}
+
+	if !strings.Contains(string(content), "localRegistry: Enabled") {
+		t.Fatalf("expected ksail.yaml to enable local registry when Flux is selected\n%s", content)
 	}
 }
 

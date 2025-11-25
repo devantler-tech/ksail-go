@@ -3,16 +3,15 @@
 1. **Initialize a KSail-Go project (if not already)**
    - Run `ksail init` in a new directory to create `ksail.yaml` and base config.
 
-2. **Enable Flux and local registry in cluster config**
-    - Edit `ksail.yaml` (or equivalent) to:
-       - Set `gitOpsEngine: Flux`.
-       - Enable the local registry and optionally tune the host port, for example:
+2. **Select Flux as the GitOps engine (registry auto-enables)**
+    - Edit `ksail.yaml` (or equivalent) to set `gitOpsEngine: Flux`.
+    - When Flux is selected KSail-Go now provisions the local registry automatically, so no additional switch is required.
+    - Optionally override the registry port if you do not want the default `5000`:
 
           ```yaml
-          localRegistry: Enabled
           options:
              localRegistry:
-                hostPort: 5000
+                hostPort: 5001
           ```
 
 3. **Create or start the local cluster**
