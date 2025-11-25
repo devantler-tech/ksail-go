@@ -107,6 +107,28 @@ func runLocalRegistryAction(
 	)
 }
 
+func runLocalRegistryStageWithInfo(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	kindConfig *kindv1alpha4.Cluster,
+	k3dConfig *k3dv1alpha5.SimpleConfig,
+	info registryStageInfo,
+	action func(context.Context, registry.Service, localRegistryContext) error,
+	options ...localRegistryOption,
+) error {
+	return runLocalRegistryAction(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		info,
+		action,
+		options...,
+	)
+}
+
 func ensureLocalRegistryProvisioned(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -115,7 +137,7 @@ func ensureLocalRegistryProvisioned(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	return runLocalRegistryAction(
+	return runLocalRegistryStageWithInfo(
 		cmd,
 		clusterCfg,
 		deps,
@@ -149,7 +171,7 @@ func connectLocalRegistryToClusterNetwork(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	return runLocalRegistryAction(
+	return runLocalRegistryStageWithInfo(
 		cmd,
 		clusterCfg,
 		deps,

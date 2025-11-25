@@ -26,10 +26,7 @@ const (
 func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
 	t.Parallel()
 
-	cmd, _ := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+	cmd, deps := newLocalRegistryCommandDeps(t)
 
 	clusterCfg := v1alpha1.NewCluster()
 	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
@@ -161,10 +158,7 @@ func newLocalRegistryTestEnv(
 
 	withStubDockerInvoker(t)
 
-	cmd, _ := testutils.NewCommand(t)
-	cmd.SetContext(context.Background())
-
-	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+	cmd, deps := newLocalRegistryCommandDeps(t)
 
 	clusterCfg := v1alpha1.NewCluster()
 	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
@@ -228,4 +222,15 @@ func withStubDockerInvoker(t *testing.T) {
 	t.Cleanup(func() {
 		dockerClientInvoker = originalInvoker
 	})
+}
+
+func newLocalRegistryCommandDeps(t *testing.T) (*cobra.Command, cmdhelpers.LifecycleDeps) {
+	t.Helper()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
+
+	return cmd, deps
 }

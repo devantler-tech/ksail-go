@@ -45,25 +45,14 @@ func (c *Manager) EnsureBatch(
 	networkName string,
 	writer io.Writer,
 ) error {
-	if len(registries) == 0 {
-		return nil
-	}
-
-	batch, err := newMirrorBatch(ctx, c.backend, clusterName, networkName, writer, len(registries))
-	if err != nil {
-		return fmt.Errorf("create registry batch: %w", err)
-	}
-
-	for _, reg := range registries {
-		_, ensureErr := batch.ensure(ctx, reg)
-		if ensureErr != nil {
-			batch.rollback(ctx)
-
-			return fmt.Errorf("ensure registry %s: %w", reg.Name, ensureErr)
-		}
-	}
-
-	return nil
+	return SetupRegistries(
+		ctx,
+		c.backend,
+		registries,
+		clusterName,
+		networkName,
+		writer,
+	)
 }
 
 // EnsureOne provisions a single registry and reports whether a new container was created.
