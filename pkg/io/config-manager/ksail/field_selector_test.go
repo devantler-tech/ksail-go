@@ -103,7 +103,7 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 		{
 			name:            "local-registry",
 			factory:         configmanager.DefaultLocalRegistryFieldSelector,
-			expectedDesc:    "Local registry behavior (Enabled provisions a registry, Disabled skips it)",
+			expectedDesc:    "Local registry behavior (Enabled provisions a registry, Disabled skips it; defaults to Enabled when a GitOps engine is configured)",
 			expectedDefault: v1alpha1.LocalRegistryDisabled,
 			assertPointer:   assertLocalRegistrySelector,
 		},

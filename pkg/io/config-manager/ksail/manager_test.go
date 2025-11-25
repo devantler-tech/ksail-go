@@ -12,6 +12,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -331,6 +332,106 @@ func TestLoadConfigFailsOnInvalidFluxIntervalString(t *testing.T) {
 	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parse duration")
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigDefaultsLocalRegistryWhenGitOpsEngineSet(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfig := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindConfig), 0o600))
+
+	config := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n" +
+		"  gitOpsEngine: Flux\n"
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	require.Equal(t, v1alpha1.GitOpsEngineFlux, manager.Config.Spec.GitOpsEngine)
+	assert.Equal(t, v1alpha1.LocalRegistryEnabled, manager.Config.Spec.LocalRegistry)
+	assert.Equal(t, int32(5000), manager.Config.Spec.Options.LocalRegistry.HostPort)
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigHonorsExplicitLocalRegistrySetting(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfig := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindConfig), 0o600))
+
+	config := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n" +
+		"  gitOpsEngine: Flux\n" +
+		"  localRegistry: Disabled\n"
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	require.Equal(t, v1alpha1.GitOpsEngineFlux, manager.Config.Spec.GitOpsEngine)
+	assert.Equal(t, v1alpha1.LocalRegistryDisabled, manager.Config.Spec.LocalRegistry)
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigDefaultsLocalRegistryDisabledWithoutGitOpsEngine(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	kindConfig := "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindConfig), 0o600))
+
+	config := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n" +
+		"  gitOpsEngine: None\n"
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	require.Equal(t, v1alpha1.GitOpsEngineNone, manager.Config.Spec.GitOpsEngine)
+	assert.Equal(t, v1alpha1.LocalRegistryDisabled, manager.Config.Spec.LocalRegistry)
+	assert.Equal(t, int32(0), manager.Config.Spec.Options.LocalRegistry.HostPort)
+}
+
+func TestLoadConfigDefaultsLocalRegistryDisabledWhenGitOpsEngineUnset(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	testutils.WriteValidKsailConfig(t, tempDir)
+
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.LocalRegistryDisabled, manager.Config.Spec.LocalRegistry)
+	assert.Equal(t, int32(0), manager.Config.Spec.Options.LocalRegistry.HostPort)
 }
 
 func TestNewCommandConfigManagerBindsFlags(t *testing.T) {

@@ -26,14 +26,18 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const defaultLocalRegistryPort int32 = 5000
+
 // ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
-	Viper          *viper.Viper
-	fieldSelectors []FieldSelector[v1alpha1.Cluster]
-	Config         *v1alpha1.Cluster // Exposed config property as suggested
-	configLoaded   bool              // Track if config has been actually loaded
-	Writer         io.Writer         // Writer for output notifications
-	command        *cobra.Command    // Associated Cobra command for flag introspection
+	Viper                         *viper.Viper
+	fieldSelectors                []FieldSelector[v1alpha1.Cluster]
+	Config                        *v1alpha1.Cluster // Exposed config property as suggested
+	configLoaded                  bool              // Track if config has been actually loaded
+	Writer                        io.Writer         // Writer for output notifications
+	command                       *cobra.Command    // Associated Cobra command for flag introspection
+	localRegistryExplicit         bool              // Tracks if config explicitly set the local registry behavior
+	localRegistryHostPortExplicit bool              // Tracks if config explicitly set the registry host port
 }
 
 // Compile-time interface compliance verification.
@@ -129,6 +133,8 @@ func (m *ConfigManager) loadConfigWithOptions(
 		return nil, err
 	}
 
+	m.applyGitOpsAwareDefaults(flagOverrides)
+
 	err = m.validateConfig()
 	if err != nil {
 		return nil, err
@@ -168,10 +174,16 @@ func (m *ConfigManager) unmarshalAndApplyDefaults() error {
 		)
 	}
 
+	// Reset derived defaults so we can detect whether users explicitly configured these values.
+	m.Config.Spec.LocalRegistry = ""
+
 	err := m.Viper.Unmarshal(m.Config, decoderConfig)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
+
+	m.localRegistryExplicit = m.Config.Spec.LocalRegistry != ""
+	m.localRegistryHostPortExplicit = m.Config.Spec.Options.LocalRegistry.HostPort != 0
 
 	// Apply field selector defaults for empty fields
 	for _, fieldSelector := range m.fieldSelectors {
@@ -224,6 +236,59 @@ func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
 	}
 
 	return nil
+}
+
+func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string) {
+	if m.Config == nil {
+		return
+	}
+
+	localRegistryExplicit := m.localRegistryExplicit
+	if flagOverrides != nil {
+		if _, ok := flagOverrides["local-registry"]; ok {
+			localRegistryExplicit = true
+		}
+	}
+
+	hostPortExplicit := m.localRegistryHostPortExplicit
+	if flagOverrides != nil {
+		if _, ok := flagOverrides["local-registry-port"]; ok {
+			hostPortExplicit = true
+		}
+	}
+
+	if !localRegistryExplicit {
+		if m.gitOpsEngineSelected() {
+			m.Config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+		} else {
+			m.Config.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
+		}
+	}
+
+	if m.Config.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
+		if !hostPortExplicit && m.Config.Spec.Options.LocalRegistry.HostPort == 0 {
+			m.Config.Spec.Options.LocalRegistry.HostPort = defaultLocalRegistryPort
+		}
+
+		return
+	}
+
+	if !hostPortExplicit {
+		m.Config.Spec.Options.LocalRegistry.HostPort = 0
+	}
+}
+
+func (m *ConfigManager) gitOpsEngineSelected() bool {
+	if m.Config == nil {
+		return false
+	}
+
+	switch m.Config.Spec.GitOpsEngine {
+	case "", v1alpha1.GitOpsEngineNone:
+		return false
+	default:
+		return true
+	}
 }
 
 func setFieldValueFromFlag(fieldPtr any, raw string) error {

@@ -101,7 +101,7 @@ func DefaultLocalRegistryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 		Selector: func(c *v1alpha1.Cluster) any {
 			return &c.Spec.LocalRegistry
 		},
-		Description:  "Local registry behavior (Enabled provisions a registry, Disabled skips it)",
+		Description:  "Local registry behavior (Enabled provisions a registry, Disabled skips it; defaults to Enabled when a GitOps engine is configured)",
 		DefaultValue: v1alpha1.LocalRegistryDisabled,
 	}
 }
