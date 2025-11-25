@@ -23,7 +23,7 @@ const (
 	kindNetworkName = "kind"
 )
 
-func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
+func TestExecuteLocalRegistryStage_SkipsWhenRegistryDisabled(t *testing.T) {
 	t.Parallel()
 
 	cmd, deps := newLocalRegistryCommandDeps(t)
@@ -37,13 +37,21 @@ func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
 		return nil, errUnexpectedRegistryInvocation
 	})
 
-	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, nil, nil, neverCalled)
+	err := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		nil,
+		nil,
+		localRegistryStageProvision,
+		neverCalled,
+	)
 	if err != nil {
 		t.Fatalf("expected nil error when registry disabled, got %v", err)
 	}
 }
 
-func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
+func TestExecuteLocalRegistryStage_ProvisionCreatesAndStarts(t *testing.T) {
 	t.Parallel()
 
 	stub, cmd, deps, clusterCfg, option := newLocalRegistryTestEnv(t)
@@ -52,7 +60,15 @@ func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
 
 	kindCfg := &kindv1alpha4.Cluster{Name: "kind-dev"}
 
-	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindCfg, nil, option)
+	err := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindCfg,
+		nil,
+		localRegistryStageProvision,
+		option,
+	)
 	if err != nil {
 		t.Fatalf("expected provisioning to succeed, got %v", err)
 	}
@@ -79,7 +95,7 @@ func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
 	}
 }
 
-func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
+func TestExecuteLocalRegistryStage_ConnectAttachesNetwork(t *testing.T) {
 	t.Parallel()
 
 	stub, cmd, deps, clusterCfg, option := newLocalRegistryTestEnv(t)
@@ -89,7 +105,15 @@ func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
 	k3dCfg := &k3dv1alpha5.SimpleConfig{}
 	k3dCfg.Name = "demo"
 
-	err := connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, nil, k3dCfg, option)
+	err := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		nil,
+		k3dCfg,
+		localRegistryStageConnect,
+		option,
+	)
 	if err != nil {
 		t.Fatalf("expected connection to succeed, got %v", err)
 	}

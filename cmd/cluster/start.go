@@ -67,7 +67,14 @@ func handleStartRunE(
 		return fmt.Errorf("load distribution configs: %w", err)
 	}
 
-	connectErr := connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	connectErr := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageConnect,
+	)
 	if connectErr != nil {
 		return fmt.Errorf("connect local registry: %w", connectErr)
 	}

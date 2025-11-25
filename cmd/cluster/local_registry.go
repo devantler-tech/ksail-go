@@ -20,7 +20,10 @@ const localRegistryResourceName = "local-registry"
 
 type localRegistryOption func(*localRegistryDependencies)
 
-var errNilRegistryContext = errors.New("registry stage context is nil")
+var (
+	errNilRegistryContext            = errors.New("registry stage context is nil")
+	errUnsupportedLocalRegistryStage = errors.New("unsupported local registry stage")
+)
 
 type localRegistryDependencies struct {
 	serviceFactory func(cfg registry.Config) (registry.Service, error)
@@ -80,6 +83,17 @@ type localRegistryContext struct {
 	networkName string
 }
 
+type localRegistryStageAction func(context.Context, registry.Service, localRegistryContext) error
+
+type localRegistryStageExecutor func(registryStageInfo, localRegistryStageAction) error
+
+type localRegistryStageType int
+
+const (
+	localRegistryStageProvision localRegistryStageType = iota
+	localRegistryStageConnect
+)
+
 type localRegistryStageRequest struct {
 	cmd        *cobra.Command
 	clusterCfg *v1alpha1.Cluster
@@ -123,28 +137,6 @@ func (r localRegistryStageRequest) run(
 	)
 }
 
-func runLocalRegistryStageWithConfigs(
-	cmd *cobra.Command,
-	clusterCfg *v1alpha1.Cluster,
-	deps cmdhelpers.LifecycleDeps,
-	kindConfig *kindv1alpha4.Cluster,
-	k3dConfig *k3dv1alpha5.SimpleConfig,
-	info registryStageInfo,
-	action func(context.Context, registry.Service, localRegistryContext) error,
-	options ...localRegistryOption,
-) error {
-	stage := newLocalRegistryStageRequest(
-		cmd,
-		clusterCfg,
-		deps,
-		kindConfig,
-		k3dConfig,
-		options...,
-	)
-
-	return stage.run(info, action)
-}
-
 func runLocalRegistryAction(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -172,70 +164,129 @@ func runLocalRegistryAction(
 	)
 }
 
-func ensureLocalRegistryProvisioned(
+func executeLocalRegistryStage(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps cmdhelpers.LifecycleDeps,
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
+	stage localRegistryStageType,
 	options ...localRegistryOption,
 ) error {
-	return runLocalRegistryStageWithConfigs(
+	info, builder, err := resolveLocalRegistryStage(stage)
+	if err != nil {
+		return err
+	}
+
+	return runLocalRegistryStageFromBuilder(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
-		localRegistryProvisionStageInfo(),
-		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
-			createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
-
-			_, createErr := svc.Create(execCtx, createOpts)
-			if createErr != nil {
-				return fmt.Errorf("create local registry: %w", createErr)
-			}
-
-			_, startErr := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
-			if startErr != nil {
-				return fmt.Errorf("start local registry: %w", startErr)
-			}
-
-			return nil
-		},
+		info,
+		builder,
 		options...,
 	)
 }
 
-func connectLocalRegistryToClusterNetwork(
+func newLocalRegistryStageExecutor(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps cmdhelpers.LifecycleDeps,
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
-) error {
-	return runLocalRegistryStageWithConfigs(
+) localRegistryStageExecutor {
+	stage := newLocalRegistryStageRequest(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
-		localRegistryConnectStageInfo(),
-		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
-			startOpts := registry.StartOptions{
-				Name:        buildLocalRegistryName(),
-				NetworkName: ctx.networkName,
-			}
-
-			_, err := svc.Start(execCtx, startOpts)
-			if err != nil {
-				return fmt.Errorf("attach local registry: %w", err)
-			}
-
-			return nil
-		},
 		options...,
 	)
+
+	return func(info registryStageInfo, action localRegistryStageAction) error {
+		return stage.run(info, action)
+	}
+}
+
+func runLocalRegistryStageFromBuilder(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	kindConfig *kindv1alpha4.Cluster,
+	k3dConfig *k3dv1alpha5.SimpleConfig,
+	info registryStageInfo,
+	buildAction func(*v1alpha1.Cluster) localRegistryStageAction,
+	options ...localRegistryOption,
+) error {
+	executor := newLocalRegistryStageExecutor(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		options...,
+	)
+
+	return executor(info, buildAction(clusterCfg))
+}
+
+func resolveLocalRegistryStage(
+	stage localRegistryStageType,
+) (registryStageInfo, func(*v1alpha1.Cluster) localRegistryStageAction, error) {
+	switch stage {
+	case localRegistryStageProvision:
+		return localRegistryProvisionStageInfo(), provisionLocalRegistryAction, nil
+	case localRegistryStageConnect:
+		return localRegistryConnectStageInfo(), connectLocalRegistryActionBuilder, nil
+	default:
+		return registryStageInfo{}, nil, fmt.Errorf(
+			"%w: %d",
+			errUnsupportedLocalRegistryStage,
+			stage,
+		)
+	}
+}
+
+func provisionLocalRegistryAction(clusterCfg *v1alpha1.Cluster) localRegistryStageAction {
+	return func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+		createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
+
+		_, createErr := svc.Create(execCtx, createOpts)
+		if createErr != nil {
+			return fmt.Errorf("create local registry: %w", createErr)
+		}
+
+		_, startErr := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
+		if startErr != nil {
+			return fmt.Errorf("start local registry: %w", startErr)
+		}
+
+		return nil
+	}
+}
+
+func connectLocalRegistryAction() localRegistryStageAction {
+	return func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+		startOpts := registry.StartOptions{
+			Name:        buildLocalRegistryName(),
+			NetworkName: ctx.networkName,
+		}
+
+		_, err := svc.Start(execCtx, startOpts)
+		if err != nil {
+			return fmt.Errorf("attach local registry: %w", err)
+		}
+
+		return nil
+	}
+}
+
+func connectLocalRegistryActionBuilder(_ *v1alpha1.Cluster) localRegistryStageAction {
+	return connectLocalRegistryAction()
 }
 
 func cleanupLocalRegistry(

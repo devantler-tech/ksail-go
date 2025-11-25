@@ -93,37 +93,131 @@ func handleCreateRunE(
 ) error {
 	deps.Timer.Start()
 
-	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	clusterCfg, kindConfig, k3dConfig, err := loadClusterConfiguration(cfgManager, deps)
 	if err != nil {
 		return err
 	}
 
-	err = ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	err = ensureLocalRegistriesReady(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to provision local registry: %w", err)
-	}
-
-	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig)
-	if err != nil {
-		return fmt.Errorf("failed to setup mirror registries: %w", err)
+		return err
 	}
 
 	// Configure metrics-server for K3d before cluster creation
 	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
+	err = executeClusterLifecycle(cmd, clusterCfg, deps)
+	if err != nil {
+		return err
+	}
+
+	connectMirrorRegistriesWithWarning(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
+
+	err = executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageConnect,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to connect local registry: %w", err)
+	}
+
+	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+}
+
+func loadClusterConfiguration(
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps cmdhelpers.LifecycleDeps,
+) (*v1alpha1.Cluster, *v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
+	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return clusterCfg, kindConfig, k3dConfig, nil
+}
+
+func ensureLocalRegistriesReady(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+) error {
+	err := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageProvision,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to provision local registry: %w", err)
+	}
+
+	err = setupMirrorRegistries(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to setup mirror registries: %w", err)
+	}
+
+	return nil
+}
+
+func executeClusterLifecycle(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+) error {
 	deps.Timer.NewStage()
 
-	err = cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to execute cluster lifecycle: %w", err)
 	}
 
-	err = connectRegistriesToClusterNetwork(
+	return nil
+}
+
+func connectMirrorRegistriesWithWarning(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+) {
+	err := connectRegistriesToClusterNetwork(
 		cmd,
 		clusterCfg,
 		deps,
@@ -138,13 +232,6 @@ func handleCreateRunE(
 			Writer:  cmd.OutOrStdout(),
 		})
 	}
-
-	err = connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
-	if err != nil {
-		return fmt.Errorf("failed to connect local registry: %w", err)
-	}
-
-	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
 // handlePostCreationSetup installs CNI and metrics-server after cluster creation.
