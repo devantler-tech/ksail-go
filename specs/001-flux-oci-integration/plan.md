@@ -104,4 +104,3 @@ No constitution violations or extra structural complexity beyond standard KSail-
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|---------------------------------------|
-
