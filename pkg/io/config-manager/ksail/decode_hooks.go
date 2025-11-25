@@ -13,8 +13,8 @@ import (
 // so that string values in ksail.yaml or environment variables are accepted.
 func metav1DurationDecodeHook() mapstructure.DecodeHookFunc {
 	return func(from reflect.Type, to reflect.Type, data any) (any, error) {
-		durationType := reflect.TypeOf(metav1.Duration{})
-		pointerDurationType := reflect.TypeOf(&metav1.Duration{})
+		durationType := reflect.TypeFor[metav1.Duration]()
+		pointerDurationType := reflect.TypeFor[*metav1.Duration]()
 
 		if to != durationType && to != pointerDurationType {
 			return data, nil

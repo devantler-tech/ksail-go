@@ -109,6 +109,7 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 	}
 
 	cmd.SetContext(context.Background())
+
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 	clusterCfg.Spec.DistributionConfig = kindConfigPath
 

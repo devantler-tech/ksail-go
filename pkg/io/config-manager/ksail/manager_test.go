@@ -351,7 +351,9 @@ func TestLoadConfigDefaultsLocalRegistryWhenGitOpsEngineSet(t *testing.T) {
 
 	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
 
-	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
 	_, err := manager.LoadConfig(nil)
@@ -380,7 +382,9 @@ func TestLoadConfigHonorsExplicitLocalRegistrySetting(t *testing.T) {
 
 	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
 
-	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
 	_, err := manager.LoadConfig(nil)
@@ -407,7 +411,9 @@ func TestLoadConfigDefaultsLocalRegistryDisabledWithoutGitOpsEngine(t *testing.T
 
 	require.NoError(t, os.WriteFile("ksail.yaml", []byte(config), 0o600))
 
-	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
 	_, err := manager.LoadConfig(nil)
@@ -424,7 +430,9 @@ func TestLoadConfigDefaultsLocalRegistryDisabledWhenGitOpsEngineUnset(t *testing
 	tempDir := t.TempDir()
 	testutils.WriteValidKsailConfig(t, tempDir)
 
-	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
 
 	_, err := manager.LoadConfig(nil)

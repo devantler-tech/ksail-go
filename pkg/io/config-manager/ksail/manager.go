@@ -244,6 +244,7 @@ func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string
 	}
 
 	localRegistryExplicit := m.localRegistryExplicit
+
 	if flagOverrides != nil {
 		if _, ok := flagOverrides["local-registry"]; ok {
 			localRegistryExplicit = true
@@ -251,6 +252,7 @@ func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string
 	}
 
 	hostPortExplicit := m.localRegistryHostPortExplicit
+
 	if flagOverrides != nil {
 		if _, ok := flagOverrides["local-registry-port"]; ok {
 			hostPortExplicit = true
