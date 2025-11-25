@@ -119,8 +119,8 @@ func TestNewDeleteCmd_FlagConfiguration(t *testing.T) {
 	runtimeContainer := runtime.NewRuntime()
 	cmd := NewDeleteCmd(runtimeContainer)
 
-	flag := cmd.Flags().Lookup("delete-registry-volumes")
-	assert.NotNil(t, flag, "delete-registry-volumes flag should be defined")
+	flag := cmd.Flags().Lookup("delete-volumes")
+	assert.NotNil(t, flag, "delete-volumes flag should be defined")
 	assert.Equal(t, "false", flag.DefValue, "default value should be false")
 }
 
@@ -187,7 +187,7 @@ func TestCleanupMirrorRegistries_IgnoresNonKindDistribution(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
-	cmd.Flags().Bool("delete-registry-volumes", false, "")
+	cmd.Flags().Bool("delete-volumes", false, "")
 
 	cfg := v1alpha1.NewCluster()
 	cfg.Spec.Distribution = v1alpha1.DistributionK3d
@@ -201,7 +201,7 @@ func TestCleanupMirrorRegistries_ReturnsKindConfigLoadError(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
-	cmd.Flags().Bool("delete-registry-volumes", false, "")
+	cmd.Flags().Bool("delete-volumes", false, "")
 
 	configDir := t.TempDir()
 	configPath := filepath.Join(configDir, "kind.yaml")
@@ -234,7 +234,7 @@ func TestHandleDeleteRunE_ReturnsFlagLookupError(t *testing.T) {
 	err := handleDeleteRunE(cmd, cfgManager, sharedLifecycleDeps(factory))
 
 	require.Error(t, err)
-	require.ErrorContains(t, err, "failed to get delete-registry-volumes flag")
+	require.ErrorContains(t, err, "failed to get delete-volumes flag")
 }
 
 func setupDeleteCommand(
@@ -244,7 +244,7 @@ func setupDeleteCommand(
 
 	cmd, out := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
-	cmd.Flags().Bool("delete-registry-volumes", false, "")
+	cmd.Flags().Bool("delete-volumes", false, "")
 
 	cfgManager, configDir := newDeleteTestConfigManager(t, out)
 	cfgManager.Viper.Set("spec.distributionConfig", filepath.Join(configDir, "kind.yaml"))

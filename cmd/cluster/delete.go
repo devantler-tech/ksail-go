@@ -52,7 +52,7 @@ func NewDeleteCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 	// Add flag for controlling registry volume deletion
 	cmd.Flags().
-		Bool("delete-registry-volumes", false, "Delete registry volumes when cleaning up registries")
+		Bool("delete-volumes", false, "Delete registry volumes when cleaning up registries")
 
 	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleDeleteRunE)
 
@@ -75,9 +75,9 @@ func handleDeleteRunE(
 
 	clusterCfg := cfgManager.Config
 
-	deleteVolumes, flagErr := cmd.Flags().GetBool("delete-registry-volumes")
+	deleteVolumes, flagErr := cmd.Flags().GetBool("delete-volumes")
 	if flagErr != nil {
-		return fmt.Errorf("failed to get delete-registry-volumes flag: %w", flagErr)
+		return fmt.Errorf("failed to get delete-volumes flag: %w", flagErr)
 	}
 
 	err = cleanupMirrorRegistries(cmd, clusterCfg, deps, deleteVolumes)
