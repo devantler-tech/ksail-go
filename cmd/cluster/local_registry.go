@@ -158,14 +158,16 @@ func ensureLocalRegistryProvisioned(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	return newLocalRegistryStageRequest(
+	stage := newLocalRegistryStageRequest(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
 		options...,
-	).run(
+	)
+
+	return stage.run(
 		localRegistryProvisionStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
@@ -193,14 +195,16 @@ func connectLocalRegistryToClusterNetwork(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	return newLocalRegistryStageRequest(
+	stage := newLocalRegistryStageRequest(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
 		options...,
-	).run(
+	)
+
+	return stage.run(
 		localRegistryConnectStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			startOpts := registry.StartOptions{
