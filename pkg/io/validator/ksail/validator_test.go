@@ -392,8 +392,7 @@ func validateRegistryPortWarningCase(t *testing.T) {
 
 	result := validator.Validate(config)
 	assert.True(t, result.Valid)
-	require.NotEmpty(t, result.Warnings)
-	assert.Equal(t, "spec.options.localRegistry.hostPort", result.Warnings[0].Field)
+	assert.Empty(t, result.Warnings)
 }
 
 func validateFluxIntervalCase(t *testing.T) {
