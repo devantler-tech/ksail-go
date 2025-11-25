@@ -323,11 +323,22 @@ func cleanupLocalRegistryWithOptions(
 		k3dConfig,
 		localRegistryCleanupStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
+			registryName := buildLocalRegistryName()
+			volumeName := registryName
+
+			if deleteVolumes {
+				status, statusErr := svc.Status(execCtx, registry.StatusOptions{Name: registryName})
+				if statusErr == nil && strings.TrimSpace(status.VolumeName) != "" {
+					volumeName = status.VolumeName
+				}
+			}
+
 			stopOpts := registry.StopOptions{
-				Name:         buildLocalRegistryName(),
+				Name:         registryName,
 				ClusterName:  ctx.clusterName,
 				NetworkName:  ctx.networkName,
 				DeleteVolume: deleteVolumes,
+				VolumeName:   volumeName,
 			}
 
 			err := svc.Stop(execCtx, stopOpts)

@@ -105,7 +105,14 @@ func (c *Manager) CleanupOne(
 	deleteVolume bool,
 	networkName string,
 ) error {
-	err := c.backend.DeleteRegistry(ctx, registry.Name, clusterName, deleteVolume, networkName)
+	err := c.backend.DeleteRegistry(
+		ctx,
+		registry.Name,
+		clusterName,
+		deleteVolume,
+		networkName,
+		registry.Volume,
+	)
 	if err != nil {
 		return fmt.Errorf("delete registry %s: %w", registry.Name, err)
 	}

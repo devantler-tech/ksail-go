@@ -299,7 +299,7 @@ func cleanupCreatedRegistries(
 	for i := len(created) - 1; i >= 0; i-- {
 		reg := created[i]
 
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName, reg.Volume)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type: notify.WarningType,
@@ -385,7 +385,7 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName, reg.Volume)
 		if err != nil {
 			_, _ = fmt.Fprintf(
 				writer,

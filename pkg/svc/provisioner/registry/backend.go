@@ -14,6 +14,7 @@ type Backend interface {
 		name, clusterName string,
 		deleteVolume bool,
 		networkName string,
+		volumeName string,
 	) error
 	ListRegistries(ctx context.Context) ([]string, error)
 	GetRegistryPort(ctx context.Context, name string) (int, error)

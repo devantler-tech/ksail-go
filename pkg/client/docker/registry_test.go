@@ -232,7 +232,7 @@ func runDeleteRegistryVolumeRemovalTest(
 		Return(nil).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, distinctName, "test-cluster", true, "")
+	err := manager.DeleteRegistry(ctx, distinctName, "test-cluster", true, "", "")
 
 	require.NoError(t, err)
 
@@ -501,10 +501,61 @@ func TestDeleteRegistry(t *testing.T) {
 
 		mockRegistryNotExists(ctx, mockClient)
 
-		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "")
+		err := manager.DeleteRegistry(ctx, "docker.io", "test-cluster", false, "", "")
 
 		require.Error(t, err)
 		assert.Equal(t, docker.ErrRegistryNotFound, err)
+	})
+
+	t.Run("removes orphaned explicit volume when registry missing", func(t *testing.T) {
+		t.Parallel()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
+
+		mockRegistryNotExists(ctx, mockClient)
+
+		mockClient.EXPECT().
+			VolumeRemove(ctx, "local-registry", false).
+			Return(nil).
+			Once()
+
+		err := manager.DeleteRegistry(
+			ctx,
+			"kind-local-registry",
+			"test-cluster",
+			true,
+			"",
+			"local-registry",
+		)
+
+		require.ErrorIs(t, err, docker.ErrRegistryNotFound)
+	})
+
+	t.Run("falls back to additional orphaned volume candidates", func(t *testing.T) {
+		t.Parallel()
+		mockClient, manager, ctx := setupTestRegistryManager(t)
+
+		mockRegistryNotExists(ctx, mockClient)
+
+		mockClient.EXPECT().
+			VolumeRemove(ctx, "docker.io", false).
+			Return(testNotFoundError{}).
+			Once()
+
+		mockClient.EXPECT().
+			VolumeRemove(ctx, "kind-docker.io", false).
+			Return(nil).
+			Once()
+
+		err := manager.DeleteRegistry(
+			ctx,
+			"kind-docker.io",
+			"test-cluster",
+			true,
+			"",
+			"",
+		)
+
+		require.ErrorIs(t, err, docker.ErrRegistryNotFound)
 	})
 }
 
@@ -745,7 +796,7 @@ func TestDeleteRegistry_ContainerStopError(t *testing.T) {
 		Return(errStopFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "", "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to stop registry container")
@@ -769,7 +820,7 @@ func TestDeleteRegistry_ContainerRemoveError(t *testing.T) {
 		Return(errRemoveFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "", "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to remove registry container")
@@ -786,7 +837,7 @@ func TestDeleteRegistry_VolumeRemoveError(t *testing.T) {
 		Return(errVolumeRemoveFailed).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", true, "")
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", true, "", "")
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to remove registry volume")
@@ -797,7 +848,7 @@ func TestDeleteRegistry_WithoutVolumeDelete(t *testing.T) {
 
 	mockClient, manager, ctx := setupDeleteRegistryTest(t, "running", "kind-docker.io")
 
-	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "")
+	err := manager.DeleteRegistry(ctx, "kind-docker.io", "test-cluster", false, "", "")
 
 	require.NoError(t, err)
 	mockClient.AssertNotCalled(t, "VolumeRemove")
@@ -823,7 +874,7 @@ func TestDeleteRegistry_SkipsRemovalWhenShared(t *testing.T) {
 		Return(newInspectResponse("k3d-beta"), nil).
 		Once()
 
-	err := manager.DeleteRegistry(ctx, "docker.io", "alpha", false, "k3d-alpha")
+	err := manager.DeleteRegistry(ctx, "docker.io", "alpha", false, "k3d-alpha", "")
 
 	require.NoError(t, err)
 	mockClient.AssertNotCalled(t, "ContainerStop")
@@ -906,6 +957,14 @@ type errorReader struct {
 func (e *errorReader) Read(_ []byte) (int, error) {
 	return 0, e.err
 }
+
+type testNotFoundError struct{}
+
+func (testNotFoundError) Error() string {
+	return "not found"
+}
+
+func (testNotFoundError) NotFound() {}
 
 func TestEnsureRegistryImage_ImagePullReadError(t *testing.T) {
 	t.Parallel()

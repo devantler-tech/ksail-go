@@ -123,6 +123,7 @@ type StopOptions struct {
 	ClusterName  string
 	NetworkName  string
 	DeleteVolume bool
+	VolumeName   string
 }
 
 // Validate ensures the stop options reference a registry container.
@@ -255,38 +256,19 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 		return validateErr
 	}
 
-	if opts.DeleteVolume {
-		return s.manager.CleanupOne(
-			ctx,
-			Info{Name: opts.Name},
-			opts.ClusterName,
-			true,
-			opts.NetworkName,
-		)
-	}
-
-	summary, err := s.findRegistryContainer(ctx, opts.Name)
-	if err != nil {
-		if errors.Is(err, dockerclient.ErrRegistryNotFound) {
+	cleanupErr := s.manager.CleanupOne(
+		ctx,
+		Info{Name: opts.Name, Volume: strings.TrimSpace(opts.VolumeName)},
+		opts.ClusterName,
+		opts.DeleteVolume,
+		opts.NetworkName,
+	)
+	if cleanupErr != nil {
+		if errors.Is(cleanupErr, dockerclient.ErrRegistryNotFound) {
 			return nil
 		}
 
-		return err
-	}
-
-	if strings.EqualFold(summary.State, "running") {
-		err := s.docker.ContainerStop(ctx, summary.ID, container.StopOptions{})
-		if err != nil {
-			return fmt.Errorf("stop registry container: %w", err)
-		}
-	}
-
-	if networkName := strings.TrimSpace(opts.NetworkName); networkName != "" {
-		disconnectErr := s.docker.NetworkDisconnect(ctx, networkName, summary.ID, true)
-		//nolint:staticcheck // client.IsErrNotFound avoids containerd errdefs, which depguard forbids
-		if disconnectErr != nil && !client.IsErrNotFound(disconnectErr) {
-			return fmt.Errorf("disconnect registry from network %s: %w", networkName, disconnectErr)
-		}
+		return fmt.Errorf("cleanup registry %s: %w", opts.Name, cleanupErr)
 	}
 
 	return nil

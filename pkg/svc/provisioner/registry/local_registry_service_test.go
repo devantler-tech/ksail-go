@@ -33,8 +33,9 @@ func (m *mockRegistryBackend) DeleteRegistry(
 	name, clusterName string,
 	deleteVolume bool,
 	networkName string,
+	volumeName string,
 ) error {
-	args := m.Called(ctx, name, clusterName, deleteVolume, networkName)
+	args := m.Called(ctx, name, clusterName, deleteVolume, networkName, volumeName)
 
 	return wrapMockError("DeleteRegistry", args.Error(0))
 }
@@ -235,10 +236,10 @@ func TestStopHandlesScenarios(t *testing.T) {
 		opts  registry.StopOptions
 	}{
 		{
-			name: "deletes resources when requested",
+			name: "deletes resources when volumes should be removed",
 			setup: func(harness *registryTestHarness) {
 				harness.backend.
-					On("DeleteRegistry", mock.Anything, "local-registry", "dev", true, "kind").
+					On("DeleteRegistry", mock.Anything, "local-registry", "dev", true, "kind", "").
 					Return(nil).
 					Once()
 			},
@@ -250,21 +251,24 @@ func TestStopHandlesScenarios(t *testing.T) {
 			},
 		},
 		{
-			name: "gracefully stops container",
+			name: "removes registry container but keeps volume",
 			setup: func(harness *registryTestHarness) {
-				expectContainerList(harness.docker, runningSummary())
-
-				harness.docker.
-					On("ContainerStop", mock.Anything, "registry-id", mock.Anything).
-					Return(nil).
-					Once()
-
-				harness.docker.
-					On("NetworkDisconnect", mock.Anything, "kind", "registry-id", true).
+				harness.backend.
+					On("DeleteRegistry", mock.Anything, "local-registry", "dev", false, "kind", "").
 					Return(nil).
 					Once()
 			},
-			opts: registry.StopOptions{Name: "local-registry", NetworkName: "kind"},
+			opts: registry.StopOptions{Name: "local-registry", ClusterName: "dev", NetworkName: "kind"},
+		},
+		{
+			name: "ignores missing registry",
+			setup: func(harness *registryTestHarness) {
+				harness.backend.
+					On("DeleteRegistry", mock.Anything, "local-registry", "dev", false, "kind", "").
+					Return(dockerclient.ErrRegistryNotFound).
+					Once()
+			},
+			opts: registry.StopOptions{Name: "local-registry", ClusterName: "dev", NetworkName: "kind"},
 		},
 	}
 
