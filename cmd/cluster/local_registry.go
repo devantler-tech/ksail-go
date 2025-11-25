@@ -123,6 +123,28 @@ func (r localRegistryStageRequest) run(
 	)
 }
 
+func runLocalRegistryStageWithConfigs(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	kindConfig *kindv1alpha4.Cluster,
+	k3dConfig *k3dv1alpha5.SimpleConfig,
+	info registryStageInfo,
+	action func(context.Context, registry.Service, localRegistryContext) error,
+	options ...localRegistryOption,
+) error {
+	stage := newLocalRegistryStageRequest(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		options...,
+	)
+
+	return stage.run(info, action)
+}
+
 func runLocalRegistryAction(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
@@ -158,16 +180,12 @@ func ensureLocalRegistryProvisioned(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	stage := newLocalRegistryStageRequest(
+	return runLocalRegistryStageWithConfigs(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
-		options...,
-	)
-
-	return stage.run(
 		localRegistryProvisionStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
@@ -184,6 +202,7 @@ func ensureLocalRegistryProvisioned(
 
 			return nil
 		},
+		options...,
 	)
 }
 
@@ -195,16 +214,12 @@ func connectLocalRegistryToClusterNetwork(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	options ...localRegistryOption,
 ) error {
-	stage := newLocalRegistryStageRequest(
+	return runLocalRegistryStageWithConfigs(
 		cmd,
 		clusterCfg,
 		deps,
 		kindConfig,
 		k3dConfig,
-		options...,
-	)
-
-	return stage.run(
 		localRegistryConnectStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			startOpts := registry.StartOptions{
@@ -219,6 +234,7 @@ func connectLocalRegistryToClusterNetwork(
 
 			return nil
 		},
+		options...,
 	)
 }
 
