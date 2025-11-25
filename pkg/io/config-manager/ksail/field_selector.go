@@ -7,6 +7,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultDistributionConfigPath = "kind.yaml"
+
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {
 	Selector     func(*T) any // Function that returns a pointer to the field
@@ -63,7 +65,7 @@ func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
 		Description:  "Configuration file for the distribution",
-		DefaultValue: "kind.yaml",
+		DefaultValue: defaultDistributionConfigPath,
 	}
 }
 
@@ -101,7 +103,9 @@ func DefaultLocalRegistryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 		Selector: func(c *v1alpha1.Cluster) any {
 			return &c.Spec.LocalRegistry
 		},
-		Description:  "Local registry behavior (Enabled provisions a registry, Disabled skips it; defaults to Enabled when a GitOps engine is configured)",
+		Description: "Local registry behavior (Enabled provisions a registry; " +
+			"Disabled skips provisioning. Defaults to Enabled when " +
+			"a GitOps engine is configured)",
 		DefaultValue: v1alpha1.LocalRegistryDisabled,
 	}
 }
@@ -113,7 +117,7 @@ func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
 			return &c.Spec.Options.LocalRegistry.HostPort
 		},
 		Description:  "Host port to expose the local OCI registry on",
-		DefaultValue: int32(5000),
+		DefaultValue: defaultLocalRegistryPort,
 	}
 }
 

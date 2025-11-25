@@ -243,30 +243,51 @@ func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string
 		return
 	}
 
-	localRegistryExplicit := m.localRegistryExplicit
-
-	if flagOverrides != nil {
-		if _, ok := flagOverrides["local-registry"]; ok {
-			localRegistryExplicit = true
-		}
+	if !m.wasLocalRegistryExplicit(flagOverrides) {
+		m.Config.Spec.LocalRegistry = m.defaultLocalRegistryBehavior()
 	}
 
-	hostPortExplicit := m.localRegistryHostPortExplicit
+	hostPortExplicit := m.wasLocalRegistryHostPortExplicit(flagOverrides)
+	m.applyLocalRegistryPortDefaults(hostPortExplicit)
+}
 
-	if flagOverrides != nil {
-		if _, ok := flagOverrides["local-registry-port"]; ok {
-			hostPortExplicit = true
-		}
+func (m *ConfigManager) wasLocalRegistryExplicit(flagOverrides map[string]string) bool {
+	if m.localRegistryExplicit {
+		return true
 	}
 
-	if !localRegistryExplicit {
-		if m.gitOpsEngineSelected() {
-			m.Config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
-		} else {
-			m.Config.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
-		}
+	if flagOverrides == nil {
+		return false
 	}
 
+	_, ok := flagOverrides["local-registry"]
+
+	return ok
+}
+
+func (m *ConfigManager) wasLocalRegistryHostPortExplicit(flagOverrides map[string]string) bool {
+	if m.localRegistryHostPortExplicit {
+		return true
+	}
+
+	if flagOverrides == nil {
+		return false
+	}
+
+	_, ok := flagOverrides["local-registry-port"]
+
+	return ok
+}
+
+func (m *ConfigManager) defaultLocalRegistryBehavior() v1alpha1.LocalRegistry {
+	if m.gitOpsEngineSelected() {
+		return v1alpha1.LocalRegistryEnabled
+	}
+
+	return v1alpha1.LocalRegistryDisabled
+}
+
+func (m *ConfigManager) applyLocalRegistryPortDefaults(hostPortExplicit bool) {
 	if m.Config.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
 		if !hostPortExplicit && m.Config.Spec.Options.LocalRegistry.HostPort == 0 {
 			m.Config.Spec.Options.LocalRegistry.HostPort = defaultLocalRegistryPort
@@ -288,16 +309,22 @@ func (m *ConfigManager) gitOpsEngineSelected() bool {
 	switch m.Config.Spec.GitOpsEngine {
 	case "", v1alpha1.GitOpsEngineNone:
 		return false
+	case v1alpha1.GitOpsEngineFlux:
+		return true
 	default:
 		return true
 	}
 }
 
+type flagValueSetter interface {
+	Set(value string) error
+}
+
 func setFieldValueFromFlag(fieldPtr any, raw string) error {
-	if setter, ok := fieldPtr.(interface{ Set(value string) error }); ok {
+	if setter, ok := fieldPtr.(flagValueSetter); ok {
 		err := setter.Set(raw)
 		if err != nil {
-			return fmt.Errorf("set field value via setter: %w", err)
+			return fmt.Errorf("set flag value: %w", err)
 		}
 
 		return nil
@@ -309,53 +336,65 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 
 		return nil
 	case *metav1.Duration:
-		if raw == "" {
-			ptr.Duration = 0
-
-			return nil
-		}
-
-		dur, err := time.ParseDuration(raw)
-		if err != nil {
-			return fmt.Errorf("parse duration %q: %w", raw, err)
-		}
-
-		ptr.Duration = dur
-
-		return nil
+		return setDurationFromFlag(ptr, raw)
 	case *bool:
-		if raw == "" {
-			*ptr = false
-
-			return nil
-		}
-
-		value, err := strconv.ParseBool(raw)
-		if err != nil {
-			return fmt.Errorf("parse bool %q: %w", raw, err)
-		}
-
-		*ptr = value
-
-		return nil
+		return setBoolFromFlag(ptr, raw)
 	case *int32:
-		if raw == "" {
-			*ptr = 0
-
-			return nil
-		}
-
-		value, err := strconv.ParseInt(raw, 10, 32)
-		if err != nil {
-			return fmt.Errorf("parse int32 %q: %w", raw, err)
-		}
-
-		*ptr = int32(value)
-
-		return nil
+		return setInt32FromFlag(ptr, raw)
 	default:
 		return nil
 	}
+}
+
+func setDurationFromFlag(target *metav1.Duration, raw string) error {
+	if raw == "" {
+		target.Duration = 0
+
+		return nil
+	}
+
+	duration, err := time.ParseDuration(raw)
+	if err != nil {
+		return fmt.Errorf("parse duration %q: %w", raw, err)
+	}
+
+	target.Duration = duration
+
+	return nil
+}
+
+func setBoolFromFlag(target *bool, raw string) error {
+	if raw == "" {
+		*target = false
+
+		return nil
+	}
+
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return fmt.Errorf("parse bool %q: %w", raw, err)
+	}
+
+	*target = value
+
+	return nil
+}
+
+func setInt32FromFlag(target *int32, raw string) error {
+	if raw == "" {
+		*target = 0
+
+		return nil
+	}
+
+	value, err := strconv.ParseInt(raw, 10, 32)
+	if err != nil {
+		return fmt.Errorf("parse int32 %q: %w", raw, err)
+	}
+
+	*target = int32(value)
+
+	return nil
 }
 
 func (m *ConfigManager) notifyLoadingStart() {

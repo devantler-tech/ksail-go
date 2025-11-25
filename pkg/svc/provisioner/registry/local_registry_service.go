@@ -160,10 +160,13 @@ type service struct {
 	manager  *Manager
 }
 
+// errDockerClientRequired ensures service construction validates inputs.
+var errDockerClientRequired = errors.New("docker client is required")
+
 // NewService constructs a registry lifecycle manager backed by the Docker API.
 func NewService(cfg Config) (Service, error) {
 	if cfg.DockerClient == nil {
-		return nil, errors.New("docker client is required")
+		return nil, errDockerClientRequired
 	}
 
 	backend := cfg.RegistryManager
@@ -178,7 +181,7 @@ func NewService(cfg Config) (Service, error) {
 
 	controller, err := NewManager(backend)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create registry controller: %w", err)
 	}
 
 	return &service{
@@ -196,25 +199,32 @@ func (s *service) Create(ctx context.Context, opts CreateOptions) (v1alpha1.OCIR
 
 	resolved := opts.WithDefaults()
 
-	if _, err := s.manager.EnsureOne(ctx, resolved.toRegistryInfo(), resolved.ClusterName, io.Discard); err != nil {
+	_, ensureErr := s.manager.EnsureOne(
+		ctx,
+		resolved.toRegistryInfo(),
+		resolved.ClusterName,
+		io.Discard,
+	)
+	if ensureErr != nil {
 		model := buildRegistryModel(
 			resolved.Name,
 			resolved.Endpoint(),
-			int32(resolved.Port),
+			int32(resolved.Port), //nolint:gosec // port validated to <= 65535
 			resolved.VolumeName,
 		)
 		model.Status = v1alpha1.OCIRegistryStatusError
-		model.LastError = err.Error()
+		model.LastError = ensureErr.Error()
 
-		return model, fmt.Errorf("create registry: %w", err)
+		return model, fmt.Errorf("create registry: %w", ensureErr)
 	}
 
 	return s.Status(ctx, StatusOptions{Name: resolved.Name})
 }
 
 func (s *service) Start(ctx context.Context, opts StartOptions) (v1alpha1.OCIRegistry, error) {
-	if err := opts.Validate(); err != nil {
-		return v1alpha1.NewOCIRegistry(), err
+	validateErr := opts.Validate()
+	if validateErr != nil {
+		return v1alpha1.NewOCIRegistry(), validateErr
 	}
 
 	summary, err := s.findRegistryContainer(ctx, opts.Name)
@@ -230,9 +240,9 @@ func (s *service) Start(ctx context.Context, opts StartOptions) (v1alpha1.OCIReg
 	}
 
 	if networkName := strings.TrimSpace(opts.NetworkName); networkName != "" {
-		err := s.ensureNetworkAttachment(ctx, summary.ID, networkName)
-		if err != nil {
-			return v1alpha1.NewOCIRegistry(), err
+		networkErr := s.ensureNetworkAttachment(ctx, summary.ID, networkName)
+		if networkErr != nil {
+			return v1alpha1.NewOCIRegistry(), networkErr
 		}
 	}
 
@@ -240,8 +250,9 @@ func (s *service) Start(ctx context.Context, opts StartOptions) (v1alpha1.OCIReg
 }
 
 func (s *service) Stop(ctx context.Context, opts StopOptions) error {
-	if err := opts.Validate(); err != nil {
-		return err
+	validateErr := opts.Validate()
+	if validateErr != nil {
+		return validateErr
 	}
 
 	if opts.DeleteVolume {
@@ -251,7 +262,6 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 			opts.ClusterName,
 			true,
 			opts.NetworkName,
-			io.Discard,
 		)
 	}
 
@@ -272,11 +282,10 @@ func (s *service) Stop(ctx context.Context, opts StopOptions) error {
 	}
 
 	if networkName := strings.TrimSpace(opts.NetworkName); networkName != "" {
-		err := s.docker.NetworkDisconnect(ctx, networkName, summary.ID, true)
-		if err != nil {
-			if !client.IsErrNotFound(err) {
-				return fmt.Errorf("disconnect registry from network %s: %w", networkName, err)
-			}
+		disconnectErr := s.docker.NetworkDisconnect(ctx, networkName, summary.ID, true)
+		//nolint:staticcheck // client.IsErrNotFound avoids containerd errdefs, which depguard forbids
+		if disconnectErr != nil && !client.IsErrNotFound(disconnectErr) {
+			return fmt.Errorf("disconnect registry from network %s: %w", networkName, disconnectErr)
 		}
 	}
 
@@ -295,8 +304,9 @@ func (o CreateOptions) toRegistryInfo() Info {
 }
 
 func (s *service) Status(ctx context.Context, opts StatusOptions) (v1alpha1.OCIRegistry, error) {
-	if err := opts.Validate(); err != nil {
-		return v1alpha1.NewOCIRegistry(), err
+	validateErr := opts.Validate()
+	if validateErr != nil {
+		return v1alpha1.NewOCIRegistry(), validateErr
 	}
 
 	model := v1alpha1.NewOCIRegistry()
@@ -332,7 +342,7 @@ func (s *service) Status(ctx context.Context, opts StatusOptions) (v1alpha1.OCIR
 	}
 
 	if hostPort > 0 {
-		model.Port = int32(hostPort)
+		model.Port = int32(hostPort) //nolint:gosec // port originates from Docker metadata
 		host := resolveEndpointHost(summary)
 		model.Endpoint = net.JoinHostPort(host, strconv.Itoa(hostPort))
 	}
@@ -393,8 +403,14 @@ func (s *service) ensureNetworkAttachment(
 		}
 	}
 
-	if err := s.docker.NetworkConnect(ctx, networkName, containerID, &network.EndpointSettings{}); err != nil {
-		return fmt.Errorf("connect registry to network %s: %w", networkName, err)
+	connectErr := s.docker.NetworkConnect(
+		ctx,
+		networkName,
+		containerID,
+		&network.EndpointSettings{},
+	)
+	if connectErr != nil {
+		return fmt.Errorf("connect registry to network %s: %w", networkName, connectErr)
 	}
 
 	return nil

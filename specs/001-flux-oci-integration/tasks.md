@@ -144,7 +144,7 @@
 - [ ] T040 Implement basic artifact pruning options for local registry in `pkg/svc/provisioner/registry` (for FR-018)
 - [X] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
 - [ ] T042 Run through `quickstart.md` step-by-step and fix any mismatches in commands or behavior
-- [ ] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge
+- [X] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge
 
 ---
 

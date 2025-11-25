@@ -321,67 +321,92 @@ func TestKSailValidatorContextNameValidation(t *testing.T) {
 func TestKSailValidatorFluxAndRegistryValidation(t *testing.T) {
 	t.Parallel()
 
+	for _, validationCase := range fluxRegistryValidationCases() {
+		t.Run(validationCase.name, func(t *testing.T) {
+			t.Parallel()
+			validationCase.run(t)
+		})
+	}
+}
+
+type fluxRegistryValidationCase struct {
+	name string
+	run  func(*testing.T)
+}
+
+func fluxRegistryValidationCases() []fluxRegistryValidationCase {
+	return []fluxRegistryValidationCase{
+		{name: "invalid_gitops_engine", run: validateInvalidGitOpsEngineCase},
+		{name: "registry_port_required_when_enabled", run: validateRegistryPortRequiredCase},
+		{name: "registry_port_range", run: validateRegistryPortRangeCase},
+		{name: "registry_port_warning_when_disabled", run: validateRegistryPortWarningCase},
+		{name: "flux_interval_must_be_positive", run: validateFluxIntervalCase},
+	}
+}
+
+func validateInvalidGitOpsEngineCase(t *testing.T) {
+	t.Helper()
+
 	validator := ksailvalidator.NewValidator()
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.GitOpsEngine = v1alpha1.GitOpsEngine("Invalid")
 
-	t.Run("invalid_gitops_engine", func(t *testing.T) {
-		t.Parallel()
+	result := validator.Validate(config)
+	assert.False(t, result.Valid)
+	validateExpectedErrors(t, []string{"spec.gitOpsEngine"}, result.Errors)
+}
 
-		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.GitOpsEngine = v1alpha1.GitOpsEngine("Invalid")
+func validateRegistryPortRequiredCase(t *testing.T) {
+	t.Helper()
 
-		result := validator.Validate(config)
-		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.gitOpsEngine"}, result.Errors)
-	})
+	validator := ksailvalidator.NewValidator()
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+	config.Spec.Options.LocalRegistry.HostPort = 0
 
-	t.Run("registry_port_required_when_enabled", func(t *testing.T) {
-		t.Parallel()
+	result := validator.Validate(config)
+	assert.False(t, result.Valid)
+	validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
+}
 
-		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
-		config.Spec.Options.LocalRegistry.HostPort = 0
+func validateRegistryPortRangeCase(t *testing.T) {
+	t.Helper()
 
-		result := validator.Validate(config)
-		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
-	})
+	validator := ksailvalidator.NewValidator()
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
+	config.Spec.Options.LocalRegistry.HostPort = 70000
 
-	t.Run("registry_port_range", func(t *testing.T) {
-		t.Parallel()
+	result := validator.Validate(config)
+	assert.False(t, result.Valid)
+	validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
+}
 
-		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
-		config.Spec.Options.LocalRegistry.HostPort = 70000
+func validateRegistryPortWarningCase(t *testing.T) {
+	t.Helper()
 
-		result := validator.Validate(config)
-		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.options.localRegistry.hostPort"}, result.Errors)
-	})
+	validator := ksailvalidator.NewValidator()
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
+	config.Spec.Options.LocalRegistry.HostPort = 5001
 
-	t.Run("registry_port_warning_when_disabled", func(t *testing.T) {
-		t.Parallel()
+	result := validator.Validate(config)
+	assert.True(t, result.Valid)
+	require.NotEmpty(t, result.Warnings)
+	assert.Equal(t, "spec.options.localRegistry.hostPort", result.Warnings[0].Field)
+}
 
-		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
-		config.Spec.Options.LocalRegistry.HostPort = 5001
+func validateFluxIntervalCase(t *testing.T) {
+	t.Helper()
 
-		result := validator.Validate(config)
-		assert.True(t, result.Valid)
-		require.NotEmpty(t, result.Warnings)
-		assert.Equal(t, "spec.options.localRegistry.hostPort", result.Warnings[0].Field)
-	})
+	validator := ksailvalidator.NewValidator()
+	config := createValidKSailConfig(v1alpha1.DistributionKind)
+	config.Spec.GitOpsEngine = v1alpha1.GitOpsEngineFlux
+	config.Spec.Options.Flux.Interval = metav1.Duration{}
 
-	t.Run("flux_interval_must_be_positive", func(t *testing.T) {
-		t.Parallel()
-
-		config := createValidKSailConfig(v1alpha1.DistributionKind)
-		config.Spec.GitOpsEngine = v1alpha1.GitOpsEngineFlux
-		config.Spec.Options.Flux.Interval = metav1.Duration{}
-
-		result := validator.Validate(config)
-		assert.False(t, result.Valid)
-		validateExpectedErrors(t, []string{"spec.options.flux.interval"}, result.Errors)
-	})
+	result := validator.Validate(config)
+	assert.False(t, result.Valid)
+	validateExpectedErrors(t, []string{"spec.options.flux.interval"}, result.Errors)
 }
 
 func testKindValidContext(t *testing.T) {

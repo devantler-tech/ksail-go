@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -17,29 +18,62 @@ import (
 
 const localRegistryResourceName = "local-registry"
 
-var (
-	localRegistryProvisionStageInfo = registryStageInfo{
+type localRegistryOption func(*localRegistryDependencies)
+
+var errNilRegistryContext = errors.New("registry stage context is nil")
+
+type localRegistryDependencies struct {
+	serviceFactory func(cfg registry.Config) (registry.Service, error)
+}
+
+func defaultLocalRegistryDependencies() localRegistryDependencies {
+	return localRegistryDependencies{serviceFactory: registry.NewService}
+}
+
+func newLocalRegistryDependencies(opts ...localRegistryOption) localRegistryDependencies {
+	deps := defaultLocalRegistryDependencies()
+
+	for _, opt := range opts {
+		opt(&deps)
+	}
+
+	return deps
+}
+
+func withLocalRegistryServiceFactory(
+	factory func(cfg registry.Config) (registry.Service, error),
+) localRegistryOption {
+	return func(deps *localRegistryDependencies) {
+		deps.serviceFactory = factory
+	}
+}
+
+func localRegistryProvisionStageInfo() registryStageInfo {
+	return registryStageInfo{
 		title:         "Provision local registry...",
 		emoji:         "🗄️",
 		success:       "local registry provisioned",
 		failurePrefix: "failed to provision local registry",
 	}
-	localRegistryConnectStageInfo = registryStageInfo{
+}
+
+func localRegistryConnectStageInfo() registryStageInfo {
+	return registryStageInfo{
 		title:         "Attach local registry...",
 		emoji:         "🔌",
 		success:       "local registry attached",
 		failurePrefix: "failed to attach local registry",
 	}
-	localRegistryCleanupStageInfo = registryStageInfo{
+}
+
+func localRegistryCleanupStageInfo() registryStageInfo {
+	return registryStageInfo{
 		title:         "Cleanup local registry...",
 		emoji:         "🧹",
 		success:       "local registry cleaned up",
 		failurePrefix: "failed to cleanup local registry",
 	}
-	registryServiceFactory = func(cfg registry.Config) (registry.Service, error) {
-		return registry.NewService(cfg)
-	}
-)
+}
 
 type localRegistryContext struct {
 	clusterName string
@@ -54,6 +88,7 @@ func runLocalRegistryAction(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	info registryStageInfo,
 	action func(context.Context, registry.Service, localRegistryContext) error,
+	options ...localRegistryOption,
 ) error {
 	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
@@ -68,6 +103,7 @@ func runLocalRegistryAction(
 		func(execCtx context.Context, svc registry.Service) error {
 			return action(execCtx, svc, ctx)
 		},
+		options...,
 	)
 }
 
@@ -77,6 +113,7 @@ func ensureLocalRegistryProvisioned(
 	deps cmdhelpers.LifecycleDeps,
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
+	options ...localRegistryOption,
 ) error {
 	return runLocalRegistryAction(
 		cmd,
@@ -84,17 +121,23 @@ func ensureLocalRegistryProvisioned(
 		deps,
 		kindConfig,
 		k3dConfig,
-		localRegistryProvisionStageInfo,
+		localRegistryProvisionStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			createOpts := newLocalRegistryCreateOptions(clusterCfg, ctx)
-			if _, err := svc.Create(execCtx, createOpts); err != nil {
-				return err
+
+			_, createErr := svc.Create(execCtx, createOpts)
+			if createErr != nil {
+				return fmt.Errorf("create local registry: %w", createErr)
 			}
 
-			_, err := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
+			_, startErr := svc.Start(execCtx, registry.StartOptions{Name: createOpts.Name})
+			if startErr != nil {
+				return fmt.Errorf("start local registry: %w", startErr)
+			}
 
-			return err
+			return nil
 		},
+		options...,
 	)
 }
 
@@ -104,6 +147,7 @@ func connectLocalRegistryToClusterNetwork(
 	deps cmdhelpers.LifecycleDeps,
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
+	options ...localRegistryOption,
 ) error {
 	return runLocalRegistryAction(
 		cmd,
@@ -111,7 +155,7 @@ func connectLocalRegistryToClusterNetwork(
 		deps,
 		kindConfig,
 		k3dConfig,
-		localRegistryConnectStageInfo,
+		localRegistryConnectStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			startOpts := registry.StartOptions{
 				Name:        buildLocalRegistryName(),
@@ -119,9 +163,13 @@ func connectLocalRegistryToClusterNetwork(
 			}
 
 			_, err := svc.Start(execCtx, startOpts)
+			if err != nil {
+				return fmt.Errorf("attach local registry: %w", err)
+			}
 
-			return err
+			return nil
 		},
+		options...,
 	)
 }
 
@@ -130,6 +178,17 @@ func cleanupLocalRegistry(
 	clusterCfg *v1alpha1.Cluster,
 	deps cmdhelpers.LifecycleDeps,
 	deleteVolumes bool,
+	options ...localRegistryOption,
+) error {
+	return cleanupLocalRegistryWithOptions(cmd, clusterCfg, deps, deleteVolumes, options...)
+}
+
+func cleanupLocalRegistryWithOptions(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	deleteVolumes bool,
+	options ...localRegistryOption,
 ) error {
 	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
 		return nil
@@ -146,7 +205,7 @@ func cleanupLocalRegistry(
 		deps,
 		kindConfig,
 		k3dConfig,
-		localRegistryCleanupStageInfo,
+		localRegistryCleanupStageInfo(),
 		func(execCtx context.Context, svc registry.Service, ctx localRegistryContext) error {
 			stopOpts := registry.StopOptions{
 				Name:         buildLocalRegistryName(),
@@ -155,8 +214,14 @@ func cleanupLocalRegistry(
 				DeleteVolume: deleteVolumes,
 			}
 
-			return svc.Stop(execCtx, stopOpts)
+			err := svc.Stop(execCtx, stopOpts)
+			if err != nil {
+				return fmt.Errorf("stop local registry: %w", err)
+			}
+
+			return nil
 		},
+		options...,
 	)
 }
 
@@ -243,19 +308,22 @@ func runLocalRegistryStage(
 	deps cmdhelpers.LifecycleDeps,
 	info registryStageInfo,
 	handler func(context.Context, registry.Service) error,
+	options ...localRegistryOption,
 ) error {
+	depsConfig := newLocalRegistryDependencies(options...)
+
 	return runRegistryStage(
 		cmd,
 		deps,
 		info,
 		func(ctx context.Context, dockerClient client.APIClient) error {
-			service, err := registryServiceFactory(registry.Config{DockerClient: dockerClient})
+			service, err := depsConfig.serviceFactory(registry.Config{DockerClient: dockerClient})
 			if err != nil {
 				return fmt.Errorf("create registry service: %w", err)
 			}
 
 			if ctx == nil {
-				ctx = context.Background()
+				return errNilRegistryContext
 			}
 
 			return handler(ctx, service)

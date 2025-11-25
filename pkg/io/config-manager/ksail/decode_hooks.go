@@ -11,16 +11,17 @@ import (
 
 // metav1DurationDecodeHook converts duration strings (e.g. "1m", "30s") into metav1.Duration values
 // so that string values in ksail.yaml or environment variables are accepted.
-func metav1DurationDecodeHook() mapstructure.DecodeHookFunc {
-	return func(from reflect.Type, to reflect.Type, data any) (any, error) {
+func metav1DurationDecodeHook() mapstructure.DecodeHookFunc { //nolint:ireturn
+	// mapstructure requires returning DecodeHookFunc for registration.
+	return func(fromType reflect.Type, toType reflect.Type, data any) (any, error) {
 		durationType := reflect.TypeFor[metav1.Duration]()
 		pointerDurationType := reflect.TypeFor[*metav1.Duration]()
 
-		if to != durationType && to != pointerDurationType {
+		if toType != durationType && toType != pointerDurationType {
 			return data, nil
 		}
 
-		if from.Kind() != reflect.String {
+		if fromType.Kind() != reflect.String {
 			return data, nil
 		}
 
@@ -30,7 +31,7 @@ func metav1DurationDecodeHook() mapstructure.DecodeHookFunc {
 		}
 
 		if raw == "" {
-			if to == pointerDurationType {
+			if toType == pointerDurationType {
 				return &metav1.Duration{}, nil
 			}
 
@@ -44,7 +45,7 @@ func metav1DurationDecodeHook() mapstructure.DecodeHookFunc {
 
 		durationValue := metav1.Duration{Duration: parsed}
 
-		if to == pointerDurationType {
+		if toType == pointerDurationType {
 			return &durationValue, nil
 		}
 

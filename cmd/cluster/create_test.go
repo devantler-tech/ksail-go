@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -39,6 +40,12 @@ const (
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
 var errClusterProvisionerFailed = errors.New("provisioner failed")
+
+var errFluxInstallerFailure = errors.New("boom")
+
+// fluxInstallerFactoryMu serializes flux installer factory overrides shared across
+// parallel tests.
+var fluxInstallerFactoryMu sync.Mutex //nolint:gochecknoglobals // global lock ensures safe swaps in parallel tests
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -586,10 +593,16 @@ func overrideFluxInstallerFactory(
 ) {
 	t.Helper()
 
+	fluxInstallerFactoryMu.Lock()
+
 	original := fluxInstallerFactory
 	fluxInstallerFactory = factory
 
-	t.Cleanup(func() { fluxInstallerFactory = original })
+	t.Cleanup(func() {
+		fluxInstallerFactory = original
+
+		fluxInstallerFactoryMu.Unlock()
+	})
 }
 
 func fluxTestClusterConfig(t *testing.T) *v1alpha1.Cluster {
@@ -1315,6 +1328,8 @@ func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
 }
 
 func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
+	t.Parallel()
+
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
 
@@ -1338,12 +1353,14 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 }
 
 func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
+	t.Parallel()
+
 	cmd, _ := testutils.NewCommand(t)
 	cmd.SetContext(context.Background())
 
 	clusterCfg := fluxTestClusterConfig(t)
 	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
-		return &stubFluxInstaller{installErr: errors.New("boom")}
+		return &stubFluxInstaller{installErr: errFluxInstallerFailure}
 	})
 
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})

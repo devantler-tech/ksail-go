@@ -63,7 +63,6 @@ func PrepareRegistryManager(
 
 // SetupRegistries ensures that the provided registries exist. Any newly created
 // registries are cleaned up if a later creation fails.
-
 func SetupRegistries(
 	ctx context.Context,
 	registryMgr Backend,
@@ -85,14 +84,15 @@ func SetupRegistries(
 		len(registries),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("create registry batch: %w", err)
 	}
 
 	for _, reg := range registries {
-		if _, err := batch.ensure(ctx, reg); err != nil {
+		_, ensureErr := batch.ensure(ctx, reg)
+		if ensureErr != nil {
 			batch.rollback(ctx)
 
-			return err
+			return fmt.Errorf("ensure registry %s: %w", reg.Name, ensureErr)
 		}
 	}
 

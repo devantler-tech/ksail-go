@@ -104,13 +104,13 @@ func TestGitOpsEngineSet(t *testing.T) {
 		{name: "flux lowercase", input: "flux", expected: v1alpha1.GitOpsEngineFlux},
 	}
 
-	for _, tc := range validCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range validCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			var tool v1alpha1.GitOpsEngine
-			require.NoError(t, tool.Set(tc.input))
-			assert.Equal(t, tc.expected, tool)
+			require.NoError(t, tool.Set(testCase.input))
+			assert.Equal(t, testCase.expected, tool)
 		})
 	}
 

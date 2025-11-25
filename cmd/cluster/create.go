@@ -103,11 +103,9 @@ func handleCreateRunE(
 		return err
 	}
 
-	if clusterCfg.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
-		err = ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindConfig, k3dConfig)
-		if err != nil {
-			return fmt.Errorf("failed to provision local registry: %w", err)
-		}
+	err = ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	if err != nil {
+		return fmt.Errorf("failed to provision local registry: %w", err)
 	}
 
 	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig)
@@ -141,11 +139,9 @@ func handleCreateRunE(
 		})
 	}
 
-	if clusterCfg.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
-		err = connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
-		if err != nil {
-			return fmt.Errorf("failed to connect local registry: %w", err)
-		}
+	err = connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	if err != nil {
+		return fmt.Errorf("failed to connect local registry: %w", err)
 	}
 
 	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
@@ -315,10 +311,12 @@ var (
 	//nolint:gochecknoglobals // Function reused by tests and runtime flow.
 	connectRegistriesToClusterNetwork = makeRegistryStageRunner(registryStageRoleConnect)
 	// fluxInstallerFactory is overridden in tests to stub Flux installer creation.
+	//nolint:gochecknoglobals // dependency injection for tests
 	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) installer.Installer {
 		return fluxinstaller.NewFluxInstaller(client, timeout)
 	}
 	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
+	//nolint:gochecknoglobals // dependency injection for tests
 	dockerClientInvoker = cmdhelpers.WithDockerClient
 )
 
@@ -1118,21 +1116,21 @@ func installFluxIfConfigured(
 		return err
 	}
 
-	installer, err := newFluxInstallerForCluster(clusterCfg, helmClient)
-	if err != nil {
-		return fmt.Errorf("create flux installer: %w", err)
-	}
+	fluxInstaller := newFluxInstallerForCluster(clusterCfg, helmClient)
 
-	return runFluxInstallation(cmd, installer, tmr)
+	return runFluxInstallation(cmd, fluxInstaller, tmr)
 }
 
+// newFluxInstallerForCluster returns an installer tuned for the cluster context.
+//
+//nolint:ireturn // returning the Installer interface enables dependency injection in tests
 func newFluxInstallerForCluster(
 	clusterCfg *v1alpha1.Cluster,
 	helmClient helm.Interface,
-) (installer.Installer, error) {
+) installer.Installer {
 	timeout := getInstallTimeout(clusterCfg)
 
-	return fluxInstallerFactory(helmClient, timeout), nil
+	return fluxInstallerFactory(helmClient, timeout)
 }
 
 func runFluxInstallation(

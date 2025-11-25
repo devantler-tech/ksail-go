@@ -268,22 +268,6 @@ func newDeleteTestConfigManager(
 	return manager, tempDir
 }
 
-func writeKindWithPatch(t *testing.T, path string) {
-	t.Helper()
-
-	const content = "" +
-		"kind: Cluster\n" +
-		"apiVersion: kind.x-k8s.io/v1alpha4\n" +
-		"name: kind\n" +
-		"containerdConfigPatches:\n" +
-		"- |\n" +
-		"  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]\n" +
-		"    endpoint = [\"http://localhost:5000\"]\n"
-
-	err := os.WriteFile(path, []byte(content), 0o600)
-	require.NoError(t, err, "failed to write kind config")
-}
-
 func sharedLifecycleDeps(
 	factory *testutils.StubFactory,
 ) cmdhelpers.LifecycleDeps {

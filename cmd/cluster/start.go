@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
@@ -53,7 +54,7 @@ func handleStartRunE(
 
 	err := cmdhelpers.HandleLifecycleRunE(cmd, cfgManager, deps, config)
 	if err != nil {
-		return err
+		return fmt.Errorf("start cluster lifecycle: %w", err)
 	}
 
 	clusterCfg := cfgManager.Config
@@ -63,8 +64,13 @@ func handleStartRunE(
 
 	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
 	if err != nil {
-		return err
+		return fmt.Errorf("load distribution configs: %w", err)
 	}
 
-	return connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	connectErr := connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, kindConfig, k3dConfig)
+	if connectErr != nil {
+		return fmt.Errorf("connect local registry: %w", connectErr)
+	}
+
+	return nil
 }

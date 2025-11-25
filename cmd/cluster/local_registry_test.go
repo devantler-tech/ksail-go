@@ -2,6 +2,7 @@ package cluster //nolint:testpackage // Access helpers for white-box testing.
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,36 +17,45 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+var errUnexpectedRegistryInvocation = errors.New("unexpected registry service invocation")
+
+const (
+	kindNetworkName = "kind"
+)
+
 func TestEnsureLocalRegistryProvisioned_SkipsWhenDisabled(t *testing.T) {
-	originalFactory := registryServiceFactory
-	registryServiceFactory = func(cfg registry.Config) (registry.Service, error) {
-		t.Fatalf("registry service should not be created when registry is disabled")
-
-		return nil, nil
-	}
-
-	t.Cleanup(func() { registryServiceFactory = originalFactory })
+	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
 	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryDisabled
 
-	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, nil, nil)
+	neverCalled := withLocalRegistryServiceFactory(func(registry.Config) (registry.Service, error) {
+		t.Fatalf("registry service should not be created when registry is disabled")
+
+		return nil, errUnexpectedRegistryInvocation
+	})
+
+	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, nil, nil, neverCalled)
 	if err != nil {
 		t.Fatalf("expected nil error when registry disabled, got %v", err)
 	}
 }
 
 func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
-	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
+	t.Parallel()
+
+	stub, cmd, deps, clusterCfg, option := newLocalRegistryTestEnv(t)
 	clusterCfg.Spec.Options.LocalRegistry.HostPort = 5501
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 
 	kindCfg := &kindv1alpha4.Cluster{Name: "kind-dev"}
 
-	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindCfg, nil)
+	err := ensureLocalRegistryProvisioned(cmd, clusterCfg, deps, kindCfg, nil, option)
 	if err != nil {
 		t.Fatalf("expected provisioning to succeed, got %v", err)
 	}
@@ -73,14 +83,16 @@ func TestEnsureLocalRegistryProvisioned_CreatesAndStarts(t *testing.T) {
 }
 
 func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
-	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
+	t.Parallel()
+
+	stub, cmd, deps, clusterCfg, option := newLocalRegistryTestEnv(t)
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
 	clusterCfg.Spec.Connection.Context = "dev"
 
 	k3dCfg := &k3dv1alpha5.SimpleConfig{}
 	k3dCfg.Name = "demo"
 
-	err := connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, nil, k3dCfg)
+	err := connectLocalRegistryToClusterNetwork(cmd, clusterCfg, deps, nil, k3dCfg, option)
 	if err != nil {
 		t.Fatalf("expected connection to succeed, got %v", err)
 	}
@@ -95,7 +107,9 @@ func TestConnectLocalRegistryToClusterNetwork_AttachesNetwork(t *testing.T) {
 }
 
 func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
-	stub, cmd, deps, clusterCfg := newLocalRegistryTestEnv(t)
+	t.Parallel()
+
+	stub, cmd, deps, clusterCfg, option := newLocalRegistryTestEnv(t)
 	tempDir := t.TempDir()
 	kindConfigPath := filepath.Join(tempDir, "kind.yaml")
 
@@ -113,7 +127,7 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionKind
 	clusterCfg.Spec.DistributionConfig = kindConfigPath
 
-	err = cleanupLocalRegistry(cmd, clusterCfg, deps, true)
+	err = cleanupLocalRegistry(cmd, clusterCfg, deps, true, option)
 	if err != nil {
 		t.Fatalf("expected cleanup to succeed, got %v", err)
 	}
@@ -127,7 +141,7 @@ func TestCleanupLocalRegistry_DeletesWithVolumeFlag(t *testing.T) {
 		t.Fatalf("expected delete volume to propagate")
 	}
 
-	if stopOpts.NetworkName != "kind" {
+	if stopOpts.NetworkName != kindNetworkName {
 		t.Fatalf("expected kind network, got %q", stopOpts.NetworkName)
 	}
 }
@@ -139,20 +153,27 @@ func newLocalRegistryTestEnv(
 	*cobra.Command,
 	cmdhelpers.LifecycleDeps,
 	*v1alpha1.Cluster,
+	localRegistryOption,
 ) {
 	t.Helper()
 
 	stub := newStubRegistryService()
-	withStubRegistryServiceFactory(t, stub)
+
 	withStubDockerInvoker(t)
 
 	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
 	deps := cmdhelpers.LifecycleDeps{Timer: &testutils.RecordingTimer{}}
 
 	clusterCfg := v1alpha1.NewCluster()
 	clusterCfg.Spec.LocalRegistry = v1alpha1.LocalRegistryEnabled
 
-	return stub, cmd, deps, clusterCfg
+	option := withLocalRegistryServiceFactory(func(registry.Config) (registry.Service, error) {
+		return stub, nil
+	})
+
+	return stub, cmd, deps, clusterCfg, option
 }
 
 type stubRegistryService struct {
@@ -196,18 +217,9 @@ func (s *stubRegistryService) Status(
 	return v1alpha1.NewOCIRegistry(), nil
 }
 
-func withStubRegistryServiceFactory(t *testing.T, stub *stubRegistryService) {
-	originalFactory := registryServiceFactory
-	registryServiceFactory = func(registry.Config) (registry.Service, error) {
-		return stub, nil
-	}
-
-	t.Cleanup(func() {
-		registryServiceFactory = originalFactory
-	})
-}
-
 func withStubDockerInvoker(t *testing.T) {
+	t.Helper()
+
 	originalInvoker := dockerClientInvoker
 	dockerClientInvoker = func(_ *cobra.Command, operation func(client.APIClient) error) error {
 		return operation(nil)

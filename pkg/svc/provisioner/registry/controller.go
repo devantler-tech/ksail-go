@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
@@ -14,13 +15,26 @@ type Manager struct {
 	backend Backend
 }
 
+// errRegistryBackendRequired ensures manager construction always validates input.
+var errRegistryBackendRequired = errors.New("registry backend is required")
+
 // NewManager creates a manager backed by the provided registry backend.
 func NewManager(backend Backend) (*Manager, error) {
 	if backend == nil {
-		return nil, errors.New("registry backend is required")
+		return nil, errRegistryBackendRequired
 	}
 
 	return &Manager{backend: backend}, nil
+}
+
+// NewDockerManager constructs a manager backed by the Docker RegistryManager.
+func NewDockerManager(apiClient client.APIClient) (*Manager, error) {
+	mgr, err := dockerclient.NewRegistryManager(apiClient)
+	if err != nil {
+		return nil, fmt.Errorf("create docker registry manager: %w", err)
+	}
+
+	return NewManager(mgr)
 }
 
 // EnsureBatch creates all requested registries as an atomic batch. Any failure rolls back prior creations.
@@ -37,14 +51,15 @@ func (c *Manager) EnsureBatch(
 
 	batch, err := newMirrorBatch(ctx, c.backend, clusterName, networkName, writer, len(registries))
 	if err != nil {
-		return err
+		return fmt.Errorf("create registry batch: %w", err)
 	}
 
 	for _, reg := range registries {
-		if _, err := batch.ensure(ctx, reg); err != nil {
+		_, ensureErr := batch.ensure(ctx, reg)
+		if ensureErr != nil {
 			batch.rollback(ctx)
 
-			return err
+			return fmt.Errorf("ensure registry %s: %w", reg.Name, ensureErr)
 		}
 	}
 
@@ -60,15 +75,17 @@ func (c *Manager) EnsureOne(
 ) (bool, error) {
 	tracker, err := newMirrorBatch(ctx, c.backend, clusterName, "", writer, 1)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("create registry tracker: %w", err)
 	}
 
 	created, ensureErr := tracker.ensure(ctx, spec)
 	if ensureErr != nil {
 		tracker.rollback(ctx)
+
+		return false, fmt.Errorf("ensure registry %s: %w", spec.Name, ensureErr)
 	}
 
-	return created, ensureErr
+	return created, nil
 }
 
 // Cleanup removes the provided registries via the backend.
@@ -98,17 +115,11 @@ func (c *Manager) CleanupOne(
 	clusterName string,
 	deleteVolume bool,
 	networkName string,
-	writer io.Writer,
 ) error {
-	return c.backend.DeleteRegistry(ctx, registry.Name, clusterName, deleteVolume, networkName)
-}
-
-// NewDockerManager constructs a manager backed by the Docker RegistryManager.
-func NewDockerManager(apiClient client.APIClient) (*Manager, error) {
-	mgr, err := dockerclient.NewRegistryManager(apiClient)
+	err := c.backend.DeleteRegistry(ctx, registry.Name, clusterName, deleteVolume, networkName)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("delete registry %s: %w", registry.Name, err)
 	}
 
-	return NewManager(mgr)
+	return nil
 }

@@ -10,7 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var errInvokeFailure = errors.New("failure")
+var (
+	errInvokeFailure           = errors.New("failure")
+	errUnexpectedInjectedValue = errors.New("unexpected value")
+)
 
 func expectResolutionError(t *testing.T, resolve func(do.Injector) error, failureMessage string) {
 	t.Helper()
@@ -240,7 +243,7 @@ func TestProvideDependencyRegistersProvider(t *testing.T) {
 		}
 
 		if value != "injected" {
-			return fmt.Errorf("unexpected value: %s", value)
+			return fmt.Errorf("%w: %s", errUnexpectedInjectedValue, value)
 		}
 
 		return nil
