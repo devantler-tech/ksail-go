@@ -230,48 +230,64 @@ func TestStartStartsAndConnectsRegistry(t *testing.T) {
 	assert.Equal(t, v1alpha1.OCIRegistryStatusRunning, registry.Status)
 }
 
-func TestStopDeletesResourcesWhenRequested(t *testing.T) {
+func TestStopHandlesScenarios(t *testing.T) {
 	t.Parallel()
 
-	h := newRegistryTestHarness(t)
+	testCases := []struct {
+		name  string
+		setup func(h *registryTestHarness)
+		opts  StopOptions
+	}{
+		{
+			name: "deletes resources when requested",
+			setup: func(h *registryTestHarness) {
+				h.backend.
+					On("DeleteRegistry", mock.Anything, "local-registry", "dev", true, "kind").
+					Return(nil).
+					Once()
+			},
+			opts: StopOptions{
+				Name:         "local-registry",
+				ClusterName:  "dev",
+				NetworkName:  "kind",
+				DeleteVolume: true,
+			},
+		},
+		{
+			name: "gracefully stops container",
+			setup: func(h *registryTestHarness) {
+				h.docker.
+					On("ContainerList", mock.Anything, mock.Anything).
+					Return([]container.Summary{runningSummary()}, nil).
+					Once()
 
-	h.backend.
-		On("DeleteRegistry", mock.Anything, "local-registry", "dev", true, "kind").
-		Return(nil).
-		Once()
+				h.docker.
+					On("ContainerStop", mock.Anything, "registry-id", mock.Anything).
+					Return(nil).
+					Once()
 
-	require.NoError(t, h.svc.Stop(context.Background(), StopOptions{
-		Name:         "local-registry",
-		ClusterName:  "dev",
-		NetworkName:  "kind",
-		DeleteVolume: true,
-	}))
-}
+				h.docker.
+					On("NetworkDisconnect", mock.Anything, "kind", "registry-id", true).
+					Return(nil).
+					Once()
+			},
+			opts: StopOptions{Name: "local-registry", NetworkName: "kind"},
+		},
+	}
 
-func TestStopGracefullyStopsContainer(t *testing.T) {
-	t.Parallel()
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	h := newRegistryTestHarness(t)
+			h := newRegistryTestHarness(t)
+			if tc.setup != nil {
+				tc.setup(&h)
+			}
 
-	h.docker.
-		On("ContainerList", mock.Anything, mock.Anything).
-		Return([]container.Summary{runningSummary()}, nil).
-		Once()
-
-	h.docker.
-		On("ContainerStop", mock.Anything, "registry-id", mock.Anything).
-		Return(nil).
-		Once()
-
-	h.docker.
-		On("NetworkDisconnect", mock.Anything, "kind", "registry-id", true).
-		Return(nil).
-		Once()
-
-	require.NoError(
-		t,
-		h.svc.Stop(context.Background(), StopOptions{Name: "local-registry", NetworkName: "kind"}),
-	)
+			require.NoError(t, h.svc.Stop(context.Background(), tc.opts))
+		})
+	}
 }
 
 func TestStatusReturnsNotProvisionedWhenMissing(t *testing.T) {
