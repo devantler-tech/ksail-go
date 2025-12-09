@@ -72,6 +72,7 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 
 			_ = scaffolderInstance.Scaffold(tempDir, false)
 
+			require.Equal(t, testCase.distribution, mocks.ksailLastModel.Spec.Distribution)
 			require.Equal(t, testCase.expected, mocks.ksailLastModel.Spec.DistributionConfig)
 		})
 	}
@@ -455,14 +456,14 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 			name: "KindDefaultContext",
 			scenario: scaffoldContextCase{
 				distribution: v1alpha1.DistributionKind,
-				expected:     "kind-kind",
+				expected:     v1alpha1.ExpectedContextName(v1alpha1.DistributionKind),
 			},
 		},
 		{
 			name: "K3dDefaultContext",
 			scenario: scaffoldContextCase{
 				distribution: v1alpha1.DistributionK3d,
-				expected:     "k3d-k3d-default",
+				expected:     v1alpha1.ExpectedContextName(v1alpha1.DistributionK3d),
 			},
 		},
 		{

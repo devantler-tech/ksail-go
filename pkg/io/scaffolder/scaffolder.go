@@ -46,30 +46,6 @@ var (
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
 
-// getExpectedDistributionConfigName returns the expected distribution config filename for a distribution.
-// This is used during scaffolding to set the correct config file name that matches the generated files.
-func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return KindConfigFile
-	case v1alpha1.DistributionK3d:
-		return K3dConfigFile
-	default:
-		return KindConfigFile // fallback default
-	}
-}
-
-func getExpectedContextName(distribution v1alpha1.Distribution) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return "kind-kind"
-	case v1alpha1.DistributionK3d:
-		return "k3d-k3d-default"
-	default:
-		return ""
-	}
-}
-
 // Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
 	KSailConfig            v1alpha1.Cluster
@@ -223,7 +199,7 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 
 	// Set the expected context if it's empty, based on the distribution and default cluster names
 	if config.Spec.Connection.Context == "" {
-		expectedContext := getExpectedContextName(config.Spec.Distribution)
+		expectedContext := v1alpha1.ExpectedContextName(config.Spec.Distribution)
 		if expectedContext != "" {
 			config.Spec.Connection.Context = expectedContext
 		}
@@ -231,7 +207,7 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 
 	// Set the expected distribution config filename if it's empty or set to default
 	if config.Spec.DistributionConfig == "" || config.Spec.DistributionConfig == KindConfigFile {
-		expectedConfigName := getExpectedDistributionConfigName(config.Spec.Distribution)
+		expectedConfigName := v1alpha1.ExpectedDistributionConfigName(config.Spec.Distribution)
 		config.Spec.DistributionConfig = expectedConfigName
 	}
 
@@ -404,7 +380,7 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 		return nil
 	}
 
-	newConfigName := getExpectedDistributionConfigName(s.KSailConfig.Spec.Distribution)
+	newConfigName := v1alpha1.ExpectedDistributionConfigName(s.KSailConfig.Spec.Distribution)
 	newConfigPath := filepath.Join(output, newConfigName)
 
 	previousPath := previous

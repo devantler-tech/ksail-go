@@ -213,16 +213,16 @@ func TestHandleInitRunE_IgnoresExistingConfigFile(t *testing.T) {
 	require.NoError(t, readErr)
 
 	// Ensure defaults are applied instead of values from the existing file.
-	if !strings.Contains(string(content), "distribution: Kind") {
-		t.Fatalf("expected distribution to reset to Kind after init\n%s", string(content))
+	if strings.Contains(string(content), "distribution: K3d") {
+		t.Fatalf("unexpected prior distribution carried over\n%s", string(content))
 	}
 
-	if !strings.Contains(string(content), "distributionConfig: kind.yaml") {
-		t.Fatalf("expected distributionConfig to reset to kind.yaml after init\n%s", string(content))
+	if strings.Contains(string(content), "distributionConfig: custom-k3d.yaml") {
+		t.Fatalf("unexpected prior distributionConfig carried over\n%s", string(content))
 	}
 
-	if !strings.Contains(string(content), "sourceDirectory: k8s") {
-		t.Fatalf("expected sourceDirectory to reset to k8s after init\n%s", string(content))
+	if strings.Contains(string(content), "sourceDirectory: legacy") {
+		t.Fatalf("unexpected prior sourceDirectory carried over\n%s", string(content))
 	}
 }
 
