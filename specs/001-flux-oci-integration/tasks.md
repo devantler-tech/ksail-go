@@ -72,11 +72,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T020 [P] [US3] Define `WorkloadArtifactBuilder` interface and types in `pkg/workload/oci`
-- [ ] T021 [P] [US3] Implement `WorkloadArtifactBuilder` using `google/go-containerregistry` in `pkg/workload/oci`
+- [X] T020 [P] [US3] Define `WorkloadArtifactBuilder` interface and types in `pkg/workload/oci`
+- [X] T021 [P] [US3] Implement `WorkloadArtifactBuilder` using `google/go-containerregistry` in `pkg/workload/oci`
 - [ ] T022 [US3] Add CLI command (e.g., `ksail workload build`) in `cmd/workload` that uses `WorkloadArtifactBuilder`
 - [ ] T023 [US3] Enforce semantic versioning for artifact tags and validate source manifest directories
-- [ ] T024 [US3] Implement structural validation of OCI artifacts before push (e.g., required labels, manifest presence) in `pkg/workload/oci` to satisfy FR-017
+- [X] T024 [US3] Implement structural validation of OCI artifacts before push (e.g., required labels, manifest presence) in `pkg/workload/oci` to satisfy FR-017
 - [ ] T025 [US3] Add unit tests and snapshot tests for artifact building, validation, and CLI output in `pkg/workload/oci` and `cmd/workload` (tests first where practical)
 
 **Checkpoint**: OCI artifacts can be built and pushed to the local registry and listed with correct versions.
@@ -91,11 +91,11 @@
 
 ### Implementation for User Story 4
 
-- [ ] T026 [P] [US4] Implement helpers in `pkg/svc/installer/flux` to generate `OCIRepository` and `Kustomization` manifests from config
+- [X] T026 [P] [US4] Implement helpers in `pkg/svc/installer/flux` to generate `OCIRepository` and `Kustomization` manifests from config
 - [ ] T027 [P] [US4] Add a CLI command or subcommand in `cmd/workload` or `cmd/cluster` to generate/apply these Flux resources
-- [ ] T028 [US4] Ensure default reconciliation interval of 1 minute is applied when not overridden
-- [ ] T029 [US4] Validate that generated resources use the `oci://localhost:<port>/<project-name>` pattern and no auth
-- [ ] T030 [US4] Add unit tests to validate manifest generation and basic integration tests applying them to a dev cluster
+- [X] T028 [US4] Ensure default reconciliation interval of 1 minute is applied when not overridden
+- [X] T029 [US4] Validate that generated resources use the `oci://localhost:<port>/<project-name>` pattern and no auth
+- [X] T030 [US4] Add unit tests to validate manifest generation and basic integration tests applying them to a dev cluster
 
 **Checkpoint**: Flux can track and apply manifests from local OCI repositories as configured by KSail-Go.
 

@@ -16,8 +16,6 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-const localRegistryResourceName = "local-registry"
-
 type localRegistryOption func(*localRegistryDependencies)
 
 var (
@@ -419,7 +417,7 @@ func newLocalRegistryCreateOptions(
 }
 
 func buildLocalRegistryName() string {
-	return localRegistryResourceName
+	return registry.LocalRegistryContainerName
 }
 
 func resolveLocalRegistryPort(clusterCfg *v1alpha1.Cluster) int {

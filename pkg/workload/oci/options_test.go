@@ -1,0 +1,118 @@
+package oci
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestBuildOptionsValidate(t *testing.T) {
+	t.Parallel()
+
+	t.Run("requires source path", func(t *testing.T) {
+		t.Parallel()
+
+		opts := BuildOptions{}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrSourcePathRequired)
+	})
+
+	t.Run("fails when source path missing", func(t *testing.T) {
+		t.Parallel()
+
+		opts := BuildOptions{SourcePath: filepath.Join(t.TempDir(), "missing"), RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrSourcePathNotFound)
+	})
+
+	t.Run("fails when source path is file", func(t *testing.T) {
+		t.Parallel()
+
+		file := filepath.Join(t.TempDir(), "manifest.yaml")
+		require.NoError(t, os.WriteFile(file, []byte("apiVersion: v1"), 0o600))
+
+		opts := BuildOptions{SourcePath: file, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrSourcePathNotDirectory)
+	})
+
+	t.Run("requires registry endpoint", func(t *testing.T) {
+		t.Parallel()
+
+		tempDir := t.TempDir()
+
+		opts := BuildOptions{SourcePath: tempDir, Version: "1.0.0"}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrRegistryEndpointRequired)
+	})
+
+	t.Run("requires version", func(t *testing.T) {
+		t.Parallel()
+
+		tempDir := t.TempDir()
+
+		opts := BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000"}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrVersionRequired)
+	})
+
+	t.Run("requires semantic version", func(t *testing.T) {
+		t.Parallel()
+
+		tempDir := t.TempDir()
+
+		opts := BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000", Version: "invalid"}
+
+		_, err := opts.Validate()
+
+		require.ErrorIs(t, err, ErrVersionInvalid)
+	})
+
+	t.Run("applies defaults", func(t *testing.T) {
+		t.Parallel()
+
+		source := filepath.Join(t.TempDir(), "k8s")
+		require.NoError(t, os.MkdirAll(source, 0o755))
+
+		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+
+		validated, err := opts.Validate()
+
+		require.NoError(t, err)
+		require.Equal(t, filepath.Clean(source), validated.SourcePath)
+		require.Equal(t, "localhost:5000", validated.RegistryEndpoint)
+		require.Equal(t, "1.0.0", validated.Version)
+		require.NotEmpty(t, validated.Repository)
+	})
+
+	t.Run("normalizes repository name", func(t *testing.T) {
+		t.Parallel()
+
+		source := filepath.Join(t.TempDir(), "my App")
+		require.NoError(t, os.MkdirAll(source, 0o755))
+
+		opts := BuildOptions{
+			SourcePath:       source,
+			RegistryEndpoint: "localhost:5000",
+			Version:          "1.0.0",
+			Repository:       "  KSail/Workloads/My-App  ",
+		}
+
+		validated, err := opts.Validate()
+
+		require.NoError(t, err)
+		require.Equal(t, "ksail/workloads/my-app", validated.Repository)
+	})
+}

@@ -82,7 +82,7 @@ func TestExecuteLocalRegistryStage_ProvisionCreatesAndStarts(t *testing.T) {
 		t.Fatalf("expected port 5501, got %d", createOpts.Port)
 	}
 
-	if createOpts.Name != localRegistryResourceName {
+	if createOpts.Name != registry.LocalRegistryContainerName {
 		t.Fatalf("unexpected registry name %q", createOpts.Name)
 	}
 

@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -46,6 +47,9 @@ var errFluxInstallerFailure = errors.New("boom")
 // fluxInstallerFactoryMu serializes flux installer factory overrides shared across
 // parallel tests.
 var fluxInstallerFactoryMu sync.Mutex //nolint:gochecknoglobals // global lock ensures safe swaps in parallel tests
+
+// ensureFluxResourcesMu serializes Flux resource bootstrap overrides across tests.
+var ensureFluxResourcesMu sync.Mutex //nolint:gochecknoglobals // shared lock for overrides
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -605,6 +609,24 @@ func overrideFluxInstallerFactory(
 	})
 }
 
+func overrideEnsureFluxResourcesFunc(
+	t *testing.T,
+	factory func(context.Context, string, *v1alpha1.Cluster) error,
+) {
+	t.Helper()
+
+	ensureFluxResourcesMu.Lock()
+
+	original := ensureFluxResourcesFunc
+	ensureFluxResourcesFunc = factory
+
+	t.Cleanup(func() {
+		ensureFluxResourcesFunc = original
+
+		ensureFluxResourcesMu.Unlock()
+	})
+}
+
 func fluxTestClusterConfig(t *testing.T) *v1alpha1.Cluster {
 	t.Helper()
 
@@ -614,10 +636,17 @@ func fluxTestClusterConfig(t *testing.T) *v1alpha1.Cluster {
 
 	return &v1alpha1.Cluster{
 		Spec: v1alpha1.Spec{
-			GitOpsEngine: v1alpha1.GitOpsEngineFlux,
+			GitOpsEngine:    v1alpha1.GitOpsEngineFlux,
+			SourceDirectory: "k8s",
 			Connection: v1alpha1.Connection{
 				Kubeconfig: kubeconfig,
 				Context:    "kind-kind",
+			},
+			Options: v1alpha1.Options{
+				Flux: v1alpha1.OptionsFlux{Interval: metav1.Duration{Duration: time.Minute}},
+				LocalRegistry: v1alpha1.OptionsLocalRegistry{
+					HostPort: 5000,
+				},
 			},
 		},
 	}
@@ -1323,8 +1352,14 @@ func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
 	t.Parallel()
 
 	cmd, _ := testutils.NewCommand(t)
+	calls := 0
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		calls++
+		return nil
+	})
 	err := installFluxIfConfigured(cmd, &v1alpha1.Cluster{}, &stubTimer{})
 	require.NoError(t, err)
+	require.Equal(t, 0, calls)
 }
 
 func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
@@ -1336,6 +1371,14 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	clusterCfg := fluxTestClusterConfig(t)
 	installer := &stubFluxInstaller{}
 	expectedTimeout := getInstallTimeout(clusterCfg)
+	resourceCalls := 0
+	overrideEnsureFluxResourcesFunc(t, func(ctx context.Context, kubeconfig string, cfg *v1alpha1.Cluster) error {
+		resourceCalls++
+		require.NotNil(t, ctx)
+		require.Equal(t, clusterCfg.Spec.Connection.Kubeconfig, kubeconfig)
+		require.Equal(t, clusterCfg, cfg)
+		return nil
+	})
 
 	overrideFluxInstallerFactory(
 		t,
@@ -1350,6 +1393,7 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
 	require.NoError(t, err)
 	require.Equal(t, 1, installer.installCalls)
+	require.Equal(t, 1, resourceCalls)
 }
 
 func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
@@ -1359,6 +1403,10 @@ func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	clusterCfg := fluxTestClusterConfig(t)
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		t.Fatalf("ensureFluxResourcesFunc should not be invoked when installer fails")
+		return nil
+	})
 	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
 		return &stubFluxInstaller{installErr: errFluxInstallerFailure}
 	})
@@ -1366,4 +1414,27 @@ func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to install flux controllers")
+}
+
+func TestInstallFluxIfConfiguredFailsWhenResourceBootstrapFails(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := fluxTestClusterConfig(t)
+	installer := &stubFluxInstaller{}
+
+	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
+		return installer
+	})
+
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		return errors.New("resources failed")
+	})
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to configure Flux resources")
+	require.Equal(t, 1, installer.installCalls)
 }

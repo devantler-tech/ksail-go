@@ -38,6 +38,8 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
+	fluxResourcesActivity       = "configuring default Flux resources"
+	fluxResourcesSuccess        = "FluxInstance configured"
 )
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
@@ -402,6 +404,9 @@ var (
 	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) installer.Installer {
 		return fluxinstaller.NewFluxInstaller(client, timeout)
 	}
+	// ensureFluxResourcesFunc enforces default Flux resources post-install.
+	//nolint:gochecknoglobals // dependency injection for tests
+	ensureFluxResourcesFunc = fluxinstaller.EnsureDefaultResources
 	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
 	//nolint:gochecknoglobals // dependency injection for tests
 	dockerClientInvoker = cmdhelpers.WithDockerClient
@@ -1198,14 +1203,36 @@ func installFluxIfConfigured(
 		return nil
 	}
 
-	helmClient, _, err := createHelmClientForCluster(clusterCfg)
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
 	if err != nil {
 		return err
 	}
 
 	fluxInstaller := newFluxInstallerForCluster(clusterCfg, helmClient)
 
-	return runFluxInstallation(cmd, fluxInstaller, tmr)
+	err = runFluxInstallation(cmd, fluxInstaller, tmr)
+	if err != nil {
+		return err
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: fluxResourcesActivity,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	err = ensureFluxResourcesFunc(cmd.Context(), kubeconfig, clusterCfg)
+	if err != nil {
+		return fmt.Errorf("failed to configure Flux resources: %w", err)
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: fluxResourcesSuccess,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
 }
 
 // newFluxInstallerForCluster returns an installer tuned for the cluster context.

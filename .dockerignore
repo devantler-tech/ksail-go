@@ -24,9 +24,12 @@ report/
 # Exclude environment and log files
 .env*
 *.log*
+Dockerfile*
+.dockerignore
 
 # Exclude documentation specs from Docker context
 specs/
+docs/
 
 # Exclude generated KSail configs
 ksail
