@@ -1238,9 +1238,12 @@ func installFluxIfConfigured(
 		return fmt.Errorf("failed to configure Flux resources: %w", err)
 	}
 
+	total, stage := tmr.GetTiming()
+	timing := notify.FormatTiming(total, stage, true)
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: fluxResourcesSuccess,
+		Content: fmt.Sprintf("%s %s", fluxResourcesSuccess, timing),
 		Writer:  cmd.OutOrStdout(),
 	})
 
@@ -1264,6 +1267,7 @@ func runFluxInstallation(
 	installer installer.Installer,
 	tmr timer.Timer,
 ) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: fluxStageTitle,
