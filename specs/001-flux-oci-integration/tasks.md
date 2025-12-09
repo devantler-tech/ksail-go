@@ -7,9 +7,9 @@
 
 **Purpose**: Ensure repo-level tooling and environment are ready for Flux + OCI work.
 
-- [X] T001 Verify Go toolchain and linters for KSail-Go in repository root
-- [X] T002 [P] Confirm KSail-Go builds successfully with `go build ./...` from `src/`
-- [X] T003 [P] Confirm KSail-Go tests pass with `go test ./...` from `src/`
+- [x] T001 Verify Go toolchain and linters for KSail-Go in repository root
+- [x] T002 [P] Confirm KSail-Go builds successfully with `go build ./...` from `src/`
+- [x] T003 [P] Confirm KSail-Go tests pass with `go test ./...` from `src/`
 
 ---
 
@@ -17,10 +17,10 @@
 
 **Purpose**: Core plumbing and config extensions required before any user story implementation.
 
-- [X] T004 Extend KSail-Go cluster configuration model in `pkg/apis` to support `GitOpsEngine`, registry, and Flux interval fields
-- [X] T005 Update config parsing and validation in `pkg/cmd` / `pkg/di` to read and validate Flux + registry settings
-- [X] T006 [P] Add data structures for `OCIRegistry`, `OCIArtifact`, and Flux CR models in `pkg/apis`
-- [X] T007 [P] Ensure existing DI wiring can inject new services via interfaces in `pkg/svc`
+- [x] T004 Extend KSail-Go cluster configuration model in `pkg/apis` to support `GitOpsEngine`, registry, and Flux interval fields
+- [x] T005 Update config parsing and validation in `pkg/cmd` / `pkg/di` to read and validate Flux + registry settings
+- [x] T006 [P] Add data structures for `OCIRegistry`, `OCIArtifact`, and Flux CR models in `pkg/apis`
+- [x] T007 [P] Ensure existing DI wiring can inject new services via interfaces in `pkg/svc`
 
 **Checkpoint**: Foundation ready – user stories can now be implemented.
 
@@ -34,12 +34,12 @@
 
 ### Implementation for User Story 1
 
-- [X] T008 [P] [US1] Define `FluxInstaller` interface and types in `pkg/svc/installer/flux` (install/uninstall/status)
-- [X] T009 [P] [US1] Implement `FluxInstaller` using Flux Installer Go SDK in `pkg/svc/installer/flux`
-- [X] T010 [US1] Integrate `FluxInstaller` into cluster bootstrap path in `cmd/cluster` (enable via `GitOpsEngine: Flux`)
-- [X] T011 [US1] Add logic to perform on-demand Flux install for existing clusters in `cmd/cluster`
-- [X] T012 [US1] Add basic unit tests for `FluxInstaller` and cluster bootstrap integration in `pkg/svc/installer/flux` and `cmd/cluster` (write tests before implementation where practical)
-- [X] T013 [US1] Implement detection logic to handle cases where Flux is already installed and avoid duplicate installation attempts
+- [x] T008 [P] [US1] Define `FluxInstaller` interface and types in `pkg/svc/installer/flux` (install/uninstall/status)
+- [x] T009 [P] [US1] Implement `FluxInstaller` using Flux Installer Go SDK in `pkg/svc/installer/flux`
+- [x] T010 [US1] Integrate `FluxInstaller` into cluster bootstrap path in `cmd/cluster` (enable via `GitOpsEngine: Flux`)
+- [x] T011 [US1] Add logic to perform on-demand Flux install for existing clusters in `cmd/cluster`
+- [x] T012 [US1] Add basic unit tests for `FluxInstaller` and cluster bootstrap integration in `pkg/svc/installer/flux` and `cmd/cluster` (write tests before implementation where practical)
+- [x] T013 [US1] Implement detection logic to handle cases where Flux is already installed and avoid duplicate installation attempts
 
 **Checkpoint**: Creating a cluster with Flux enabled installs controllers and CRDs without affecting other workloads.
 
@@ -53,12 +53,12 @@
 
 ### Implementation for User Story 2
 
-- [X] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/provisioner/registry` (create/start/stop/status)
-- [X] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/provisioner/registry`
-- [X] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
-- [X] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/provisioner/registry`
-- [X] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
-- [X] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/provisioner/registry` to satisfy FR-015
+- [x] T014 [P] [US2] Define `RegistryService` interface and types in `pkg/svc/provisioner/registry` (create/start/stop/status)
+- [x] T015 [P] [US2] Implement `RegistryService` for `registry:3` using container engine interaction in `pkg/svc/provisioner/registry`
+- [x] T016 [US2] Wire `RegistryService` into cluster creation/update commands in `cmd/cluster` when registry is enabled
+- [x] T017 [US2] Ensure registry endpoint is bound to `localhost:<port>` and persisted via volume in `pkg/svc/provisioner/registry`
+- [x] T018 [US2] Add unit tests for `RegistryService` behavior and basic CLI integration tests for enabling the registry, including verifying push from host and pull from pods
+- [x] T019 [US2] Implement cleanup of registry volumes and associated resources on cluster delete in `pkg/svc/provisioner/registry` to satisfy FR-015
 
 **Checkpoint**: Local registry can be provisioned and used for manual image push/pull.
 
@@ -72,11 +72,11 @@
 
 ### Implementation for User Story 3
 
-- [X] T020 [P] [US3] Define `WorkloadArtifactBuilder` interface and types in `pkg/workload/oci`
-- [X] T021 [P] [US3] Implement `WorkloadArtifactBuilder` using `google/go-containerregistry` in `pkg/workload/oci`
+- [x] T020 [P] [US3] Define `WorkloadArtifactBuilder` interface and types in `pkg/workload/oci`
+- [x] T021 [P] [US3] Implement `WorkloadArtifactBuilder` using `google/go-containerregistry` in `pkg/workload/oci`
 - [ ] T022 [US3] Add CLI command (e.g., `ksail workload build`) in `cmd/workload` that uses `WorkloadArtifactBuilder`
 - [ ] T023 [US3] Enforce semantic versioning for artifact tags and validate source manifest directories
-- [X] T024 [US3] Implement structural validation of OCI artifacts before push (e.g., required labels, manifest presence) in `pkg/workload/oci` to satisfy FR-017
+- [x] T024 [US3] Implement structural validation of OCI artifacts before push (e.g., required labels, manifest presence) in `pkg/workload/oci` to satisfy FR-017
 - [ ] T025 [US3] Add unit tests and snapshot tests for artifact building, validation, and CLI output in `pkg/workload/oci` and `cmd/workload` (tests first where practical)
 
 **Checkpoint**: OCI artifacts can be built and pushed to the local registry and listed with correct versions.
@@ -91,11 +91,11 @@
 
 ### Implementation for User Story 4
 
-- [X] T026 [P] [US4] Implement helpers in `pkg/svc/installer/flux` to generate `OCIRepository` and `Kustomization` manifests from config
+- [x] T026 [P] [US4] Implement helpers in `pkg/svc/installer/flux` to generate `OCIRepository` and `Kustomization` manifests from config
 - [ ] T027 [P] [US4] Add a CLI command or subcommand in `cmd/workload` or `cmd/cluster` to generate/apply these Flux resources
-- [X] T028 [US4] Ensure default reconciliation interval of 1 minute is applied when not overridden
-- [X] T029 [US4] Validate that generated resources use the `oci://localhost:<port>/<project-name>` pattern and no auth
-- [X] T030 [US4] Add unit tests to validate manifest generation and basic integration tests applying them to a dev cluster
+- [x] T028 [US4] Ensure default reconciliation interval of 1 minute is applied when not overridden
+- [x] T029 [US4] Validate that generated resources use the `oci://localhost:<port>/<project-name>` pattern and no auth
+- [x] T030 [US4] Add unit tests to validate manifest generation and basic integration tests applying them to a dev cluster
 
 **Checkpoint**: Flux can track and apply manifests from local OCI repositories as configured by KSail-Go.
 
@@ -142,9 +142,9 @@
 - [ ] T036 [P] Update KSail-Go docs under `docs/` to describe Flux + OCI flows and quickstart steps
 - [ ] T039 Review error messages across Flux and registry services for clarity and consistency, including common edge cases (registry unavailable, corrupted artifact, auth failure)
 - [ ] T040 Implement basic artifact pruning options for local registry in `pkg/svc/provisioner/registry` (for FR-018)
-- [X] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
+- [x] T041 [P] Add or refine end-to-end/system tests in existing CI workflows for the Flux + OCI path, including at least one edge-case scenario
 - [ ] T042 Run through `quickstart.md` step-by-step and fix any mismatches in commands or behavior
-- [X] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge
+- [x] T043 Run `golangci-lint run` and `go test ./...` to confirm feature-level quality gates before merge
 
 ---
 
