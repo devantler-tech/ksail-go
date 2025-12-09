@@ -426,18 +426,20 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 	}
 
 	if info.IsDir() {
+		// Clear directory so file generation can succeed on the expected path.
+		removeErr := os.RemoveAll(previousPath)
+		if removeErr != nil {
+			return fmt.Errorf(
+				"failed to remove previous distribution config '%s': %w",
+				previous,
+				removeErr,
+			)
+		}
+
 		return nil
 	}
 
-	removeErr := os.Remove(previousPath)
-	if removeErr != nil {
-		return fmt.Errorf(
-			"failed to remove previous distribution config '%s': %w",
-			previous,
-			removeErr,
-		)
-	}
-
+	// Keep existing files in place so overwrite detection can log accurately.
 	return nil
 }
 

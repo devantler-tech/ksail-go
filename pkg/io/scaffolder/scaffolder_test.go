@@ -230,6 +230,33 @@ func TestScaffoldOverwritesFilesWhenForceEnabled(t *testing.T) {
 	require.Contains(t, buffer.String(), "overwrote 'ksail.yaml'")
 }
 
+func TestScaffoldOverwritesKindConfigWhenForceEnabled(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	kindPath := filepath.Join(tempDir, scaffolder.KindConfigFile)
+
+	require.NoError(t, os.WriteFile(kindPath, []byte("existing-kind"), 0o600))
+
+	oldTime := time.Now().Add(-2 * time.Minute)
+	require.NoError(t, os.Chtimes(kindPath, oldTime, oldTime))
+
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+
+	mocks.kind.ExpectedCalls = nil
+	mocks.kind.On("Generate", mock.Anything, mock.Anything).Return("", nil).Once()
+
+	err := instance.Scaffold(tempDir, true)
+	require.NoError(t, err)
+
+	require.Contains(t, buffer.String(), "overwrote 'kind.yaml'")
+
+	info, statErr := os.Stat(kindPath)
+	require.NoError(t, statErr)
+	require.True(t, info.ModTime().After(oldTime), "expected mod time to update on overwrite")
+}
+
 func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
 	t.Parallel()
 
