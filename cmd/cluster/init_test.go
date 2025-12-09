@@ -15,6 +15,7 @@ import (
 	timermocks "github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
 )
 
 const mirrorRegistryHelp = "Configure mirror registries with format 'host=upstream' " +
@@ -177,6 +178,51 @@ func TestHandleInitRunE_DefaultsLocalRegistryWithFlux(t *testing.T) {
 
 	if !strings.Contains(string(content), "localRegistry: Enabled") {
 		t.Fatalf("expected ksail.yaml to enable local registry when Flux is selected\n%s", content)
+	}
+}
+
+func TestHandleInitRunE_IgnoresExistingConfigFile(t *testing.T) {
+	t.Parallel()
+
+	outDir := t.TempDir()
+	existing := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: K3d\n" +
+		"  distributionConfig: custom-k3d.yaml\n" +
+		"  sourceDirectory: legacy\n"
+
+	require.NoError(t, os.WriteFile(filepath.Join(outDir, "ksail.yaml"), []byte(existing), 0o600))
+
+	var buffer bytes.Buffer
+
+	cmd := newInitCommand(t)
+	cfgManager := newConfigManager(t, cmd, &buffer)
+
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"output": outDir,
+		"force":  "true",
+	})
+
+	deps := newInitDeps(t)
+
+	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
+	require.NoError(t, err)
+
+	content, readErr := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
+	require.NoError(t, readErr)
+
+	// Ensure defaults are applied instead of values from the existing file.
+	if !strings.Contains(string(content), "distribution: Kind") {
+		t.Fatalf("expected distribution to reset to Kind after init\n%s", string(content))
+	}
+
+	if !strings.Contains(string(content), "distributionConfig: kind.yaml") {
+		t.Fatalf("expected distributionConfig to reset to kind.yaml after init\n%s", string(content))
+	}
+
+	if !strings.Contains(string(content), "sourceDirectory: k8s") {
+		t.Fatalf("expected sourceDirectory to reset to k8s after init\n%s", string(content))
 	}
 }
 

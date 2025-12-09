@@ -84,19 +84,31 @@ func NewCommandConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
 func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
-	return m.loadConfigWithOptions(tmr, false)
+	return m.loadConfigWithOptions(tmr, false, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
 // Returns the loaded config, either freshly loaded or previously cached.
 func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
-	return m.loadConfigWithOptions(nil, true)
+	return m.loadConfigWithOptions(nil, true, false)
+}
+
+// LoadConfigWithoutFile loads configuration while ignoring any on-disk config files.
+// Environment variables and flags still apply, but existing ksail.yaml contents are not read.
+func (m *ConfigManager) LoadConfigWithoutFile(tmr timer.Timer) (*v1alpha1.Cluster, error) {
+	return m.loadConfigWithOptions(tmr, false, true)
+}
+
+// LoadConfigWithoutFileSilent loads configuration ignoring on-disk config files without notifications.
+func (m *ConfigManager) LoadConfigWithoutFileSilent() (*v1alpha1.Cluster, error) {
+	return m.loadConfigWithOptions(nil, true, true)
 }
 
 // loadConfigWithOptions is the internal implementation with silent option.
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,
+	ignoreConfigFile bool,
 ) (*v1alpha1.Cluster, error) {
 	if !silent {
 		m.notifyLoadingStart()
@@ -114,16 +126,18 @@ func (m *ConfigManager) loadConfigWithOptions(
 		m.notifyLoadingConfig()
 	}
 
-	// Use native Viper API to read configuration
-	err := m.readConfig(silent)
-	if err != nil {
-		return nil, err
+	if !ignoreConfigFile {
+		// Use native Viper API to read configuration
+		err := m.readConfig(silent)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Unmarshal and apply defaults
 	flagOverrides := m.captureChangedFlagValues()
 
-	err = m.unmarshalAndApplyDefaults()
+	err := m.unmarshalAndApplyDefaults()
 	if err != nil {
 		return nil, err
 	}

@@ -81,7 +81,7 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	clusterCfg, err := cfgManager.LoadConfigSilent()
+	clusterCfg, err := cfgManager.LoadConfigWithoutFileSilent()
 	if err != nil {
 		return fmt.Errorf("failed to resolve configuration for scaffolding: %w", err)
 	}

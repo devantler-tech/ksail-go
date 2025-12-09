@@ -155,6 +155,26 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 }
 
 //nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigWithoutFileIgnoresExistingConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	prevDir, dirErr := os.Getwd()
+	require.NoError(t, dirErr)
+	t.Cleanup(func() { _ = os.Chdir(prevDir) })
+
+	require.NoError(t, os.Chdir(tempDir))
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailClusterBaseYAML), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	config, err := manager.LoadConfigWithoutFileSilent()
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.DistributionKind, config.Spec.Distribution)
+	assert.Equal(t, "kind.yaml", config.Spec.DistributionConfig)
+}
+
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
 func TestLoadConfigAppliesFlagOverrides(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
