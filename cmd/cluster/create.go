@@ -38,8 +38,8 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
-	fluxResourcesActivity       = "configuring default Flux resources"
-	fluxResourcesSuccess        = "FluxInstance configured"
+	fluxResourcesActivity       = "applying default resources"
+	fluxResourcesSuccess        = "FluxInstance applied"
 )
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
@@ -349,20 +349,21 @@ func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.Sim
 }
 
 const (
-	mirrorStageTitle   = "Create mirror registry..."
-	mirrorStageEmoji   = "🪞"
-	mirrorStageSuccess = "mirror registries created"
-	mirrorStageFailure = "failed to setup registries"
+	mirrorStageTitle    = "Create mirror registry..."
+	mirrorStageEmoji    = "🪞"
+	mirrorStageActivity = "creating mirror registries"
+	mirrorStageSuccess  = "mirror registries created"
+	mirrorStageFailure  = "failed to setup registries"
 
-	connectStageTitle   = "Connect registry..."
-	connectStageEmoji   = "🔗"
-	connectStageSuccess = "registries connected"
-	connectStageFailure = "failed to connect registries"
+	connectStageTitle    = "Connect registry..."
+	connectStageEmoji    = "🔗"
+	connectStageActivity = "connecting registries"
+	connectStageSuccess  = "registries connected"
+	connectStageFailure  = "failed to connect registries"
 
 	fluxStageTitle    = "Install Flux..."
 	fluxStageEmoji    = "☸️"
 	fluxStageActivity = "installing Flux controllers"
-	fluxStageSuccess  = "Flux controllers installed"
 )
 
 var (
@@ -370,6 +371,7 @@ var (
 	mirrorRegistryStageInfo = registryStageInfo{
 		title:         mirrorStageTitle,
 		emoji:         mirrorStageEmoji,
+		activity:      mirrorStageActivity,
 		success:       mirrorStageSuccess,
 		failurePrefix: mirrorStageFailure,
 	}
@@ -377,6 +379,7 @@ var (
 	connectRegistryStageInfo = registryStageInfo{
 		title:         connectStageTitle,
 		emoji:         connectStageEmoji,
+		activity:      connectStageActivity,
 		success:       connectStageSuccess,
 		failurePrefix: connectStageFailure,
 	}
@@ -422,6 +425,7 @@ const (
 type registryStageInfo struct {
 	title         string
 	emoji         string
+	activity      string
 	success       string
 	failurePrefix string
 }
@@ -728,6 +732,14 @@ func runRegistryStage(
 		Emoji:   info.emoji,
 		Writer:  cmd.OutOrStdout(),
 	})
+
+	if info.activity != "" {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: info.activity,
+			Writer:  cmd.OutOrStdout(),
+		})
+	}
 
 	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
@@ -1252,7 +1264,6 @@ func runFluxInstallation(
 	installer installer.Installer,
 	tmr timer.Timer,
 ) error {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: fluxStageTitle,
@@ -1277,14 +1288,6 @@ func runFluxInstallation(
 	if err != nil {
 		return fmt.Errorf("failed to install flux controllers: %w", err)
 	}
-
-	total, stage := tmr.GetTiming()
-	timing := notify.FormatTiming(total, stage, true)
-	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: fmt.Sprintf("%s %s", fluxStageSuccess, timing),
-		Writer:  cmd.OutOrStdout(),
-	})
 
 	return nil
 }

@@ -974,6 +974,7 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 		info := registryStageInfo{
 			title:         "Test",
 			emoji:         "🔧",
+			activity:      "doing test",
 			success:       "success",
 			failurePrefix: "test failed",
 		}

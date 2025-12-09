@@ -53,6 +53,7 @@ func localRegistryProvisionStageInfo() registryStageInfo {
 	return registryStageInfo{
 		title:         "Provision local registry...",
 		emoji:         "🗄️",
+		activity:      "provisioning local registry",
 		success:       "local registry provisioned",
 		failurePrefix: "failed to provision local registry",
 	}
@@ -62,7 +63,8 @@ func localRegistryConnectStageInfo() registryStageInfo {
 	return registryStageInfo{
 		title:         "Attach local registry...",
 		emoji:         "🔌",
-		success:       "local registry attached",
+		activity:      "attaching local registry to cluster",
+		success:       "local registry attached to cluster",
 		failurePrefix: "failed to attach local registry",
 	}
 }
@@ -71,6 +73,7 @@ func localRegistryCleanupStageInfo() registryStageInfo {
 	return registryStageInfo{
 		title:         "Cleanup local registry...",
 		emoji:         "🧹",
+		activity:      "cleaning up local registry",
 		success:       "local registry cleaned up",
 		failurePrefix: "failed to cleanup local registry",
 	}
