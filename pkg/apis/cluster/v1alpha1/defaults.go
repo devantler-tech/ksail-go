@@ -7,6 +7,7 @@ import (
 )
 
 const (
+// DefaultDistributionConfig is the default cluster distribution configuration filename.
 	DefaultDistributionConfig          = "kind.yaml"
 	DefaultK3dDistributionConfig       = "k3d.yaml"
 	DefaultSourceDirectory             = "k8s"
@@ -16,6 +17,7 @@ const (
 
 var (
 	DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
+// DefaultFluxInterval is the default reconciliation interval for Flux.
 )
 
 // ExpectedDistributionConfigName returns the default config filename for a distribution.

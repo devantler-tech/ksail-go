@@ -149,7 +149,7 @@ func normalizeVersion(raw string) (string, error) {
 	}
 
 	if _, err := semver.NewVersion(trimmed); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrVersionInvalid, err)
+		return "", fmt.Errorf("%w: %w", ErrVersionInvalid, err)
 	}
 
 	return trimmed, nil
@@ -162,12 +162,14 @@ func normalizeRepositoryName(candidate, sourcePath string) string {
 	}
 
 	pathCandidate = filepath.ToSlash(pathCandidate)
+
 	pathCandidate = strings.Trim(pathCandidate, "/")
 	if pathCandidate == "" {
 		pathCandidate = defaultRepositoryName
 	}
 
 	segments := strings.Split(pathCandidate, "/")
+
 	normalized := make([]string, 0, len(segments))
 	for _, segment := range segments {
 		sanitized := sanitizeSegment(segment)
@@ -187,6 +189,7 @@ func normalizeRepositoryName(candidate, sourcePath string) string {
 
 func sanitizeSegment(segment string) string {
 	trimmed := strings.TrimSpace(segment)
+//nolint:cyclop // segment sanitization requires character-by-character validation
 	if trimmed == "" {
 		return ""
 	}
@@ -195,15 +198,15 @@ func sanitizeSegment(segment string) string {
 
 	var builder strings.Builder
 	prevHyphen := false
-	for _, r := range trimmed {
+	for _, char := range trimmed {
 		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
+		case char >= 'a' && char <= 'z':
+			builder.WriteRune(char)
 			prevHyphen = false
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
+		case char >= '0' && char <= '9':
+			builder.WriteRune(char)
 			prevHyphen = false
-		case r == '-':
+		case char == '-':
 			if !prevHyphen {
 				builder.WriteRune('-')
 				prevHyphen = true

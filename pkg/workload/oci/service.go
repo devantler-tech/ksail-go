@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//nolint:gochecknoglobals // static set of valid manifest extensions
 var manifestExtensions = map[string]struct{}{
 	".yaml": {},
 	".yml":  {},
@@ -38,9 +39,14 @@ type imagePusher interface {
 type remoteImagePusher struct{}
 
 func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Image) error {
-	return remote.Write(ref, img, remote.WithContext(ctx))
+	if err := remote.Write(ref, img, remote.WithContext(ctx)); err != nil {
+		return fmt.Errorf("write image to registry: %w", err)
+	}
+
+	return nil
 }
 
+//nolint:ireturn // returns interface for dependency injection
 // NewWorkloadArtifactBuilder returns a concrete implementation backed by go-containerregistry.
 func NewWorkloadArtifactBuilder() WorkloadArtifactBuilder {
 	return &builder{pusher: remoteImagePusher{}}
@@ -101,6 +107,7 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	}
 
 	return BuildResult{Artifact: artifact}, nil
+//nolint:ireturn // returns interface for internal use
 }
 
 func (b *builder) ensurePusher() imagePusher {
@@ -115,26 +122,27 @@ func (b *builder) ensurePusher() imagePusher {
 func collectManifestFiles(root string) ([]string, error) {
 	var manifests []string
 
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if d.IsDir() {
+		if entry.IsDir() {
 			return nil
 		}
 
-		ext := strings.ToLower(filepath.Ext(d.Name()))
+		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		if _, ok := manifestExtensions[ext]; !ok {
 			return nil
 		}
 
-		info, statErr := d.Info()
+		info, statErr := entry.Info()
 		if statErr != nil {
-			return statErr
+			return fmt.Errorf("get file info for %s: %w", path, statErr)
 		}
 
 		if info.Size() == 0 {
+			//nolint:err113 // includes dynamic file path for debugging
 			return fmt.Errorf("manifest file %s is empty", path)
 		}
 
@@ -143,62 +151,69 @@ func collectManifestFiles(root string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("walk directory %s: %w", root, err)
 	}
 
 	sort.Strings(manifests)
+//nolint:ireturn // returns interface from external library
 	return manifests, nil
 }
 
 func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
-	tw := tar.NewWriter(buf)
+	tarWriter := tar.NewWriter(buf)
 
 	for _, path := range files {
-		if err := addFileToArchive(tw, root, path); err != nil {
+		if err := addFileToArchive(tarWriter, root, path); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := tw.Close(); err != nil {
-		return nil, err
+	if err := tarWriter.Close(); err != nil {
+		return nil, fmt.Errorf("close tar writer: %w", err)
 	}
 
-	return tarball.LayerFromReader(bytes.NewReader(buf.Bytes()))
+	layer, err := tarball.LayerFromReader(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		return nil, fmt.Errorf("create layer from tar: %w", err)
+	}
+
+	return layer, nil
 }
 
-func addFileToArchive(tw *tar.Writer, root, path string) error {
+func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("stat file %s: %w", path, err)
 	}
 
 	rel, err := filepath.Rel(root, path)
 	if err != nil {
-		return err
+		return fmt.Errorf("get relative path for %s: %w", path, err)
 	}
 
 	header, err := tar.FileInfoHeader(info, "")
 	if err != nil {
-		return err
+		return fmt.Errorf("create tar header for %s: %w", path, err)
 	}
 
 	header.Name = filepath.ToSlash(rel)
 	header.Mode = 0o644
 
-	if err := tw.WriteHeader(header); err != nil {
-		return err
+	if err := tarWriter.WriteHeader(header); err != nil {
+		return fmt.Errorf("write tar header for %s: %w", path, err)
 	}
 
 	file, err := os.Open(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("open file %s: %w", path, err)
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(tw, file); err != nil {
-		return err
+	if _, err := io.Copy(tarWriter, file); err != nil {
+		return fmt.Errorf("copy file %s to tar: %w", path, err)
 	}
+//nolint:ireturn // returns interface from external library
 
 	return nil
 }
@@ -221,8 +236,13 @@ func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
 
 	img, err := mutate.ConfigFile(empty.Image, cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set config file: %w", err)
 	}
 
-	return mutate.AppendLayers(img, layer)
+	finalImg, err := mutate.AppendLayers(img, layer)
+	if err != nil {
+		return nil, fmt.Errorf("append layer: %w", err)
+	}
+
+	return finalImg, nil
 }

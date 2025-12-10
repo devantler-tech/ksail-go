@@ -1,3 +1,4 @@
+//nolint:testpackage // test needs access to unexported builder struct
 package oci
 
 import (
@@ -31,7 +32,7 @@ func TestBuilderBuildSuccess(t *testing.T) {
 
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o644))
+	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o600))
 
 	pusher := &fakePusher{}
 	builder := &builder{pusher: pusher}
@@ -60,7 +61,7 @@ func TestBuilderBuildRequiresManifests(t *testing.T) {
 
 	manifestDir := t.TempDir()
 	artifact := filepath.Join(manifestDir, "readme.txt")
-	require.NoError(t, os.WriteFile(artifact, []byte("hello"), 0o644))
+	require.NoError(t, os.WriteFile(artifact, []byte("hello"), 0o600))
 
 	builder := &builder{pusher: &fakePusher{}}
 
@@ -79,8 +80,9 @@ func TestBuilderBuildPropagatesPushError(t *testing.T) {
 
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o644))
+	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o600))
 
+	//nolint:err113 // test error for push failure
 	pushErr := errors.New("push failed")
 	pusher := &fakePusher{err: pushErr}
 	builder := &builder{pusher: pusher}

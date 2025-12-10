@@ -1,34 +1,36 @@
-package oci
+package oci_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/workload/oci"
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:funlen // comprehensive validation test cases
 func TestBuildOptionsValidate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("requires source path", func(t *testing.T) {
 		t.Parallel()
 
-		opts := BuildOptions{}
+		opts := oci.BuildOptions{}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrSourcePathRequired)
+		require.ErrorIs(t, err, oci.ErrSourcePathRequired)
 	})
 
 	t.Run("fails when source path missing", func(t *testing.T) {
 		t.Parallel()
 
-		opts := BuildOptions{SourcePath: filepath.Join(t.TempDir(), "missing"), RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+		opts := oci.BuildOptions{SourcePath: filepath.Join(t.TempDir(), "missing"), RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrSourcePathNotFound)
+		require.ErrorIs(t, err, oci.ErrSourcePathNotFound)
 	})
 
 	t.Run("fails when source path is file", func(t *testing.T) {
@@ -37,11 +39,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 		file := filepath.Join(t.TempDir(), "manifest.yaml")
 		require.NoError(t, os.WriteFile(file, []byte("apiVersion: v1"), 0o600))
 
-		opts := BuildOptions{SourcePath: file, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+		opts := oci.BuildOptions{SourcePath: file, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrSourcePathNotDirectory)
+		require.ErrorIs(t, err, oci.ErrSourcePathNotDirectory)
 	})
 
 	t.Run("requires registry endpoint", func(t *testing.T) {
@@ -49,11 +51,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		tempDir := t.TempDir()
 
-		opts := BuildOptions{SourcePath: tempDir, Version: "1.0.0"}
+		opts := oci.BuildOptions{SourcePath: tempDir, Version: "1.0.0"}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrRegistryEndpointRequired)
+		require.ErrorIs(t, err, oci.ErrRegistryEndpointRequired)
 	})
 
 	t.Run("requires version", func(t *testing.T) {
@@ -61,11 +63,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		tempDir := t.TempDir()
 
-		opts := BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000"}
+		opts := oci.BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000"}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrVersionRequired)
+		require.ErrorIs(t, err, oci.ErrVersionRequired)
 	})
 
 	t.Run("requires semantic version", func(t *testing.T) {
@@ -73,20 +75,20 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		tempDir := t.TempDir()
 
-		opts := BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000", Version: "invalid"}
+		opts := oci.BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000", Version: "invalid"}
 
 		_, err := opts.Validate()
 
-		require.ErrorIs(t, err, ErrVersionInvalid)
+		require.ErrorIs(t, err, oci.ErrVersionInvalid)
 	})
 
 	t.Run("allows latest tag", func(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o755))
+		require.NoError(t, os.MkdirAll(source, 0o750))
 
-		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "latest"}
+		opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "latest"}
 
 		validated, err := opts.Validate()
 
@@ -98,9 +100,9 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o755))
+		require.NoError(t, os.MkdirAll(source, 0o750))
 
-		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+		opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
 
 		validated, err := opts.Validate()
 
@@ -115,9 +117,9 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "my App")
-		require.NoError(t, os.MkdirAll(source, 0o755))
+		require.NoError(t, os.MkdirAll(source, 0o750))
 
-		opts := BuildOptions{
+		opts := oci.BuildOptions{
 			SourcePath:       source,
 			RegistryEndpoint: "localhost:5000",
 			Version:          "1.0.0",

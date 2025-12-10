@@ -482,6 +482,7 @@ func testCreateRegistryAlreadyExists(t *testing.T) {
 	require.NoError(t, err)
 }
 
+//nolint:funlen // comprehensive test case scenarios for registry deletion
 func TestDeleteRegistry(t *testing.T) {
 	t.Parallel()
 

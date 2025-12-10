@@ -157,11 +157,8 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 //nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
 func TestLoadConfigWithoutFileIgnoresExistingConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	prevDir, dirErr := os.Getwd()
-	require.NoError(t, dirErr)
-	t.Cleanup(func() { _ = os.Chdir(prevDir) })
+	t.Chdir(tempDir)
 
-	require.NoError(t, os.Chdir(tempDir))
 	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailClusterBaseYAML), 0o600))
 
 	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)

@@ -345,13 +345,13 @@ func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command 
 		Long:  "Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := options.Complete(restClientGetter, cmd); err != nil {
-				return err
+				return fmt.Errorf("complete cluster-info options: %w", err)
 			}
 
 			// Ensure REST config has defaults (notably GroupVersion) to avoid nil deref in upstream logic.
 			if options.Client != nil {
 				if err := rest.SetKubernetesDefaults(options.Client); err != nil {
-					return err
+					return fmt.Errorf("set Kubernetes defaults: %w", err)
 				}
 			}
 

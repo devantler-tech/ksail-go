@@ -1,3 +1,4 @@
+//nolint:testpackage // test needs access to unexported functions
 package fluxinstaller
 
 import (
@@ -98,6 +99,7 @@ func TestEnsureDefaultResourcesCreatesAndUpdatesFluxInstance(t *testing.T) {
 		return &rest.Config{}, nil
 	})
 	stubDiscovery := newStubDiscovery(nil)
+
 	overrideDiscoveryClientFactory(t, func(*rest.Config) (discovery.DiscoveryInterface, error) {
 		return stubDiscovery, nil
 	})
@@ -148,6 +150,7 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 
 	overrideDiscoveryClientFactory(t, func(*rest.Config) (discovery.DiscoveryInterface, error) {
 		return newStubDiscovery(map[string]error{
+		//nolint:err113 // includes dynamic group version for debugging
 			fluxInstanceGroupVersion.String(): fmt.Errorf("group %s unavailable", fluxInstanceGroupVersion.String()),
 		}), nil
 	})
@@ -214,6 +217,7 @@ func setFluxAPITimeouts(t *testing.T, timeout, interval time.Duration) {
 
 type stubDiscoveryClient struct {
 	*discoveryfake.FakeDiscovery
+
 	responses map[string]error
 	calls     int
 }

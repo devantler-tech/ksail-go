@@ -29,22 +29,22 @@ type clusterOutput struct {
 }
 
 type clusterSpecOutput struct {
-	Distribution       string                   `json:"distribution,omitempty" yaml:"distribution,omitempty"`
+	Distribution       string                   `json:"distribution,omitempty"       yaml:"distribution,omitempty"`
 	DistributionConfig string                   `json:"distributionConfig,omitempty" yaml:"distributionConfig,omitempty"`
-	SourceDirectory    string                   `json:"sourceDirectory,omitempty" yaml:"sourceDirectory,omitempty"`
-	Connection         *clusterConnectionOutput `json:"connection,omitempty" yaml:"connection,omitempty"`
-	CNI                string                   `json:"cni,omitempty" yaml:"cni,omitempty"`
-	CSI                string                   `json:"csi,omitempty" yaml:"csi,omitempty"`
-	MetricsServer      string                   `json:"metricsServer,omitempty" yaml:"metricsServer,omitempty"`
-	LocalRegistry      string                   `json:"localRegistry,omitempty" yaml:"localRegistry,omitempty"`
-	GitOpsEngine       string                   `json:"gitOpsEngine,omitempty" yaml:"gitOpsEngine,omitempty"`
-	Options            *clusterOptionsOutput    `json:"options,omitempty" yaml:"options,omitempty"`
+	SourceDirectory    string                   `json:"sourceDirectory,omitempty"    yaml:"sourceDirectory,omitempty"`
+	Connection         *clusterConnectionOutput `json:"connection,omitempty"         yaml:"connection,omitempty"`
+	CNI                string                   `json:"cni,omitempty"                yaml:"cni,omitempty"`
+	CSI                string                   `json:"csi,omitempty"                yaml:"csi,omitempty"`
+	MetricsServer      string                   `json:"metricsServer,omitempty"      yaml:"metricsServer,omitempty"`
+	LocalRegistry      string                   `json:"localRegistry,omitempty"      yaml:"localRegistry,omitempty"`
+	GitOpsEngine       string                   `json:"gitOpsEngine,omitempty"       yaml:"gitOpsEngine,omitempty"`
+	Options            *clusterOptionsOutput    `json:"options,omitempty"            yaml:"options,omitempty"`
 }
 
 type clusterConnectionOutput struct {
 	Kubeconfig string `json:"kubeconfig,omitempty" yaml:"kubeconfig,omitempty"`
-	Context    string `json:"context,omitempty" yaml:"context,omitempty"`
-	Timeout    string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Context    string `json:"context,omitempty"    yaml:"context,omitempty"`
+	Timeout    string `json:"timeout,omitempty"    yaml:"timeout,omitempty"`
 }
 
 type clusterOptionsOutput struct {
@@ -60,8 +60,10 @@ type localRegistryOptionsOutput struct {
 	HostPort int32 `json:"hostPort,omitempty" yaml:"hostPort,omitempty"`
 }
 
+//nolint:cyclop // marshalling logic requires checking multiple optional fields
 func buildClusterOutput(c Cluster) clusterOutput {
 	var spec clusterSpecOutput
+
 	hasSpec := false
 
 	if c.Spec.Distribution != "" {
@@ -86,9 +88,11 @@ func buildClusterOutput(c Cluster) clusterOutput {
 	if c.Spec.Connection.Context != "" {
 		conn.Context = c.Spec.Connection.Context
 	}
+
 	if c.Spec.Connection.Timeout.Duration != 0 {
 		conn.Timeout = c.Spec.Connection.Timeout.Duration.String()
 	}
+
 	if conn.Kubeconfig != "" || conn.Context != "" || conn.Timeout != "" {
 		spec.Connection = &conn
 		hasSpec = true
@@ -120,11 +124,14 @@ func buildClusterOutput(c Cluster) clusterOutput {
 	}
 
 	var opts clusterOptionsOutput
+
 	hasOpts := false
+
 	if c.Spec.Options.Flux.Interval.Duration != 0 {
 		opts.Flux = &fluxOptionsOutput{Interval: c.Spec.Options.Flux.Interval.Duration.String()}
 		hasOpts = true
 	}
+
 	if c.Spec.Options.LocalRegistry.HostPort != 0 {
 		opts.LocalRegistry = &localRegistryOptionsOutput{HostPort: c.Spec.Options.LocalRegistry.HostPort}
 		hasOpts = true
@@ -148,6 +155,7 @@ func buildClusterOutput(c Cluster) clusterOutput {
 
 // pruneClusterDefaults zeroes fields that match default values so they are omitted when marshalled.
 func pruneClusterDefaults(c Cluster) Cluster {
+//nolint:cyclop // default pruning requires checking multiple fields
 	// Distribution defaults
 	distribution := c.Spec.Distribution
 	if distribution == "" {
@@ -159,6 +167,7 @@ func pruneClusterDefaults(c Cluster) Cluster {
 	}
 
 	expectedDistConfig := ExpectedDistributionConfigName(distribution)
+
 	trimmedConfig := strings.TrimSpace(c.Spec.DistributionConfig)
 	if trimmedConfig == "" || trimmedConfig == expectedDistConfig {
 		c.Spec.DistributionConfig = ""

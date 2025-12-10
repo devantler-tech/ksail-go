@@ -14,6 +14,7 @@ const (
 	fluxInstanceVersion     = "v1"
 )
 
+//nolint:gochecknoglobals // package-level constant for API version
 var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Version: fluxInstanceVersion}
 
 // FluxInstance mirrors the Flux operator FluxInstance CRD with the minimal fields
@@ -22,10 +23,12 @@ var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Ver
 type FluxInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              FluxInstanceSpec   `json:"spec,omitempty"`
-	Status            FluxInstanceStatus `json:"status,omitempty"`
+
+	Spec   FluxInstanceSpec   `json:"spec,omitempty"`
+	Status FluxInstanceStatus `json:"status,omitempty"`
 }
 
+// DeepCopyInto copies all properties of this object into another object of the same type.
 func (in *FluxInstance) DeepCopyInto(out *FluxInstance) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
@@ -38,6 +41,7 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstance)
 	in.DeepCopyInto(out)
 	return out
@@ -54,7 +58,8 @@ func (in *FluxInstance) DeepCopyObject() runtime.Object {
 type FluxInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []FluxInstance `json:"items"`
+
+	Items []FluxInstance `json:"items"`
 }
 
 func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
@@ -151,6 +156,8 @@ func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
 }
 
 // addFluxInstanceToScheme registers the custom resources with the provided scheme.
+//
+//nolint:unparam // error return kept for consistency with Kubernetes scheme registration patterns
 func addFluxInstanceToScheme(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		fluxInstanceGroupVersion,

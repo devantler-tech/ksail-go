@@ -33,6 +33,9 @@ const (
 	fluxDistributionArtifact = "oci://ghcr.io/controlplaneio-fluxcd/flux-operator-manifests:latest"
 )
 
+var errKubeconfigRequired = errors.New("kubeconfig path is required")
+
+//nolint:gochecknoglobals // package-level timeout constants
 var (
 	fluxAPIAvailabilityTimeout      = 2 * time.Minute
 	fluxAPIAvailabilityPollInterval = 2 * time.Second
@@ -58,6 +61,7 @@ var (
 		if err != nil {
 			return nil, fmt.Errorf("failed to create flux resource client: %w", err)
 		}
+//nolint:gochecknoglobals // mutable for testing override
 
 		return fluxClient, nil
 	}
@@ -67,6 +71,7 @@ var (
 	}
 )
 
+//nolint:contextcheck // context passed from caller and used in nested functions
 // EnsureDefaultResources configures a default FluxInstance so the operator can
 // bootstrap controllers and sync from the local OCI registry.
 func EnsureDefaultResources(
@@ -116,6 +121,7 @@ func EnsureDefaultResources(
 	return nil
 }
 
+//nolint:unparam // error return kept for consistency with resource building patterns
 func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 	interval := clusterCfg.Spec.Options.Flux.Interval.Duration
 	if interval <= 0 {
@@ -180,7 +186,10 @@ func upsertFluxResource(
 		existing := &FluxInstance{}
 		if err := fluxClient.Get(ctx, key, existing); err != nil {
 			if apierrors.IsNotFound(err) {
-				return fluxClient.Create(ctx, desired)
+				if createErr := fluxClient.Create(ctx, desired); createErr != nil {
+					return fmt.Errorf("create FluxInstance %s/%s: %w", key.Namespace, key.Name, createErr)
+				}
+				return nil
 			}
 
 			return fmt.Errorf("failed to get FluxInstance %s/%s: %w", key.Namespace, key.Name, err)
@@ -194,12 +203,14 @@ func upsertFluxResource(
 
 		return nil
 	default:
+		//nolint:err113 // type information is dynamic and necessary for debugging
 		return fmt.Errorf("unsupported Flux resource type %T", obj)
 	}
 }
 
 func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Client) error {
 	key := client.ObjectKey{Name: defaultOCIRepositoryName, Namespace: fluxclient.DefaultNamespace}
+
 	waitCtx, cancel := context.WithTimeout(ctx, fluxAPIAvailabilityTimeout)
 	defer cancel()
 
@@ -208,6 +219,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 
 	for {
 		repo := &sourcev1.OCIRepository{}
+
 		err := fluxClient.Get(ctx, key, repo)
 		switch {
 		case err == nil:
@@ -223,6 +235,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			return nil
 		case apierrors.IsNotFound(err):
 			select {
+				//nolint:err113 // dynamic resource key necessary for debugging timeout
 			case <-waitCtx.Done():
 				return fmt.Errorf("timed out waiting for OCIRepository %s/%s", key.Namespace, key.Name)
 			case <-ticker.C:
@@ -231,6 +244,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			return fmt.Errorf("failed to get OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
 		}
 	}
+//nolint:cyclop // name sanitization requires character-by-character validation
 }
 
 func sanitizeFluxName(value, fallback string) string {
@@ -242,13 +256,13 @@ func sanitizeFluxName(value, fallback string) string {
 	var builder strings.Builder
 	previousHyphen := false
 
-	for _, r := range trimmed {
+	for _, char := range trimmed {
 		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
+		case char >= 'a' && char <= 'z':
+			builder.WriteRune(char)
 			previousHyphen = false
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
+		case char >= '0' && char <= '9':
+			builder.WriteRune(char)
 			previousHyphen = false
 		default:
 			if !previousHyphen {
@@ -279,7 +293,7 @@ func sanitizeFluxName(value, fallback string) string {
 	return fallback
 }
 
-func normalizeFluxPath(path string) string {
+func normalizeFluxPath(string) string {
 	// Flux expects paths to be relative to the root of the unpacked artifact.
 	return "./"
 }
@@ -297,6 +311,7 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 	defer ticker.Stop()
 
 	var lastErr error
+
 	for {
 		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
 			return nil
@@ -317,7 +332,7 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 
 func buildRESTConfig(kubeconfig string) (*rest.Config, error) {
 	if strings.TrimSpace(kubeconfig) == "" {
-		return nil, errors.New("kubeconfig path is required")
+		return nil, errKubeconfigRequired
 	}
 
 	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
