@@ -46,10 +46,10 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 
 	out := new(FluxInstance)
 	in.DeepCopyInto(out)
-// DeepCopyObject implements runtime.Object interface.
 	return out
 }
 
+// DeepCopyObject implements runtime.Object interface.
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
