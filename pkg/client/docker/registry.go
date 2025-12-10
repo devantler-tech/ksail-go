@@ -731,8 +731,8 @@ func removeRegistryVolume(
 		return false, nil
 	}
 
+	//nolint:staticcheck // using deprecated API for compatibility
 	err := dockerClient.VolumeRemove(ctx, trimmed, false)
-		//nolint:staticcheck // using deprecated API for compatibility
 	if err != nil {
 		if client.IsErrNotFound(err) {
 			return false, nil
