@@ -20,6 +20,8 @@ type k3dMirrorConfig struct {
 
 // ParseRegistryConfig parses K3d registry mirror configuration from raw YAML string.
 // Returns a map of host to endpoints, filtering out empty entries.
+// Intentionally returns an empty map (instead of an error) for invalid YAML to support
+// graceful degradation when registry configuration is malformed or missing.
 func ParseRegistryConfig(raw string) map[string][]string {
 	result := make(map[string][]string)
 
