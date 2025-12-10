@@ -298,7 +298,6 @@ func sanitizeFluxName(value, fallback string) string {
 	return fallback
 }
 
-//nolint:revive // parameter is used in function body
 func normalizeFluxPath(string) string {
 	// Flux expects paths to be relative to the root of the unpacked artifact.
 	return "./"
