@@ -1073,14 +1073,14 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 	}
 
 	timeout := installer.GetInstallTimeout(clusterCfg)
-	metricsInstaller := metricsserverinstaller.NewMetricsServerInstaller(
+	msInstaller := metricsserverinstaller.NewMetricsServerInstaller(
 		helmClient,
 		kubeconfig,
 		clusterCfg.Spec.Connection.Context,
 		timeout,
 	)
 
-	return runMetricsServerInstallation(cmd, metricsInstaller, tmr)
+	return runMetricsServerInstallation(cmd, msInstaller, tmr)
 }
 
 // runMetricsServerInstallation performs the metrics-server installation.
