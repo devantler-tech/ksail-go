@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -126,6 +127,8 @@ func (m *ConfigManager) loadConfigWithOptions(
 	if err != nil {
 		return nil, err
 	}
+
+	m.applyDistributionConfigDefaults()
 
 	err = m.validateConfig()
 	if err != nil {
@@ -341,6 +344,44 @@ func (m *ConfigManager) validateConfig() error {
 	}
 
 	return nil
+}
+
+func (m *ConfigManager) applyDistributionConfigDefaults() {
+	if m.Config == nil {
+		return
+	}
+
+	expected := expectedDistributionConfigName(m.Config.Spec.Distribution)
+	if expected == "" {
+		return
+	}
+
+	current := strings.TrimSpace(m.Config.Spec.DistributionConfig)
+	if current == "" || distributionConfigIsOppositeDefault(current, m.Config.Spec.Distribution) {
+		m.Config.Spec.DistributionConfig = expected
+	}
+}
+
+func expectedDistributionConfigName(distribution v1alpha1.Distribution) string {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return "kind.yaml"
+	case v1alpha1.DistributionK3d:
+		return "k3d.yaml"
+	default:
+		return ""
+	}
+}
+
+func distributionConfigIsOppositeDefault(current string, distribution v1alpha1.Distribution) bool {
+	switch distribution {
+	case v1alpha1.DistributionKind:
+		return current == expectedDistributionConfigName(v1alpha1.DistributionK3d)
+	case v1alpha1.DistributionK3d:
+		return current == expectedDistributionConfigName(v1alpha1.DistributionKind)
+	default:
+		return false
+	}
 }
 
 // isFieldEmpty checks if a field pointer points to an empty/zero value.

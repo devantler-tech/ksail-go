@@ -74,7 +74,7 @@ func standardFieldSelectorCases() []standardFieldSelectorCase {
 			name:            "distribution config",
 			factory:         configmanager.DefaultDistributionConfigFieldSelector,
 			expectedDesc:    "Configuration file for the distribution",
-			expectedDefault: "kind.yaml",
+			expectedDefault: "",
 			assertPointer:   assertDistributionConfigSelector,
 		},
 		{

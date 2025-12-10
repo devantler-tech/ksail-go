@@ -58,7 +58,7 @@ func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
 		Description:  "Configuration file for the distribution",
-		DefaultValue: "kind.yaml",
+		DefaultValue: "",
 	}
 }
 

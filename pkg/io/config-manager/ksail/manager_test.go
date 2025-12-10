@@ -30,7 +30,7 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 		),
 		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			"kind.yaml",
+			"",
 			"Distribution config",
 		),
 		configmanager.AddFlagFromField(
@@ -110,6 +110,32 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
 	assert.Equal(t, k3dConfigPath, manager.Config.Spec.DistributionConfig)
+}
+
+//nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
+func TestLoadConfigDefaultsDistributionConfigForDistribution(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: K3d\n" +
+		"  gitOpsEngine: Flux\n" +
+		"  localRegistry: Enabled\n" +
+		"  sourceDirectory: k8s\n" +
+		"  connection:\n" +
+		"    kubeconfig: ~/.kube/config\n"
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.DistributionK3d, manager.Config.Spec.Distribution)
+	assert.Equal(t, "k3d.yaml", manager.Config.Spec.DistributionConfig)
 }
 
 //nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
