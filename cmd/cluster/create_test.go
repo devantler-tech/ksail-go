@@ -44,6 +44,8 @@ var errClusterProvisionerFailed = errors.New("provisioner failed")
 
 var errFluxInstallerFailure = errors.New("boom")
 
+var errResourcesFailed = errors.New("resources failed")
+
 // fluxInstallerFactoryMu serializes flux installer factory overrides shared across
 // parallel tests.
 var fluxInstallerFactoryMu sync.Mutex //nolint:gochecknoglobals // global lock ensures safe swaps in parallel tests
@@ -1354,10 +1356,13 @@ func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
 
 	cmd, _ := testutils.NewCommand(t)
 	calls := 0
+
 	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
 		calls++
+
 		return nil
 	})
+
 	err := installFluxIfConfigured(cmd, &v1alpha1.Cluster{}, &stubTimer{})
 	require.NoError(t, err)
 	require.Equal(t, 0, calls)
@@ -1373,13 +1378,19 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 	installer := &stubFluxInstaller{}
 	expectedTimeout := getInstallTimeout(clusterCfg)
 	resourceCalls := 0
-	overrideEnsureFluxResourcesFunc(t, func(ctx context.Context, kubeconfig string, cfg *v1alpha1.Cluster) error {
-		resourceCalls++
-		require.NotNil(t, ctx)
-		require.Equal(t, clusterCfg.Spec.Connection.Kubeconfig, kubeconfig)
-		require.Equal(t, clusterCfg, cfg)
-		return nil
-	})
+
+	overrideEnsureFluxResourcesFunc(
+		t,
+		func(ctx context.Context, kubeconfig string, cfg *v1alpha1.Cluster) error {
+			resourceCalls++
+
+			require.NotNil(t, ctx)
+			require.Equal(t, clusterCfg.Spec.Connection.Kubeconfig, kubeconfig)
+			require.Equal(t, clusterCfg, cfg)
+
+			return nil
+		},
+	)
 
 	overrideFluxInstallerFactory(
 		t,
@@ -1406,6 +1417,7 @@ func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
 	clusterCfg := fluxTestClusterConfig(t)
 	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
 		t.Fatalf("ensureFluxResourcesFunc should not be invoked when installer fails")
+
 		return nil
 	})
 	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
@@ -1431,7 +1443,7 @@ func TestInstallFluxIfConfiguredFailsWhenResourceBootstrapFails(t *testing.T) {
 	})
 
 	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
-		return errors.New("resources failed")
+		return errResourcesFailed
 	})
 
 	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})

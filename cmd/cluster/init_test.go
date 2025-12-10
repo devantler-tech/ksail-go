@@ -167,10 +167,12 @@ func TestHandleInitRunE_DefaultsLocalRegistryWithFlux(t *testing.T) {
 
 	deps := newInitDeps(t)
 
-	if err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps); err != nil {
+	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
+	//nolint:gosec // test file path is safe
 	content, err := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
 	if err != nil {
 		t.Fatalf("expected ksail.yaml to be scaffolded: %v", err)
@@ -209,6 +211,7 @@ func TestHandleInitRunE_IgnoresExistingConfigFile(t *testing.T) {
 	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
 	require.NoError(t, err)
 
+	//nolint:gosec // test file path is safe
 	content, readErr := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
 	require.NoError(t, readErr)
 

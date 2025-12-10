@@ -1,6 +1,7 @@
 package workload
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -15,8 +16,12 @@ import (
 
 const defaultArtifactTag = "latest"
 
+var errLocalRegistryRequired = errors.New("local registry must be enabled to reconcile workloads")
+
 // NewReconcileCmd creates the workload reconcile command.
-func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
+//
+//nolint:funlen // Cobra command RunE functions typically combine setup, validation, and execution
+func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "reconcile",
 		Short:        "Reconcile workloads with the cluster",
@@ -33,11 +38,11 @@ func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 		clusterCfg, err := cfgManager.LoadConfig(tmr)
 		if err != nil {
-			return err
+			return fmt.Errorf("load config: %w", err)
 		}
 
 		if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
-			return fmt.Errorf("local registry must be enabled to reconcile workloads")
+			return errLocalRegistryRequired
 		}
 
 		sourceDir := clusterCfg.Spec.SourceDirectory
@@ -47,6 +52,7 @@ func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 
 		repoName := sourceDir
 		artifactVersion := defaultArtifactTag
+
 		registryPort := clusterCfg.Spec.Options.LocalRegistry.HostPort
 		if registryPort == 0 {
 			registryPort = v1alpha1.DefaultLocalRegistryPort
@@ -62,6 +68,7 @@ func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		})
 
 		tmr.NewStage()
+
 		_, err = builder.Build(cmd.Context(), oci.BuildOptions{
 			Name:             repoName,
 			SourcePath:       sourceDir,
@@ -76,7 +83,7 @@ func NewReconcileCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		total, stage := tmr.GetTiming()
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("artifact pushed %s", notify.FormatTiming(total, stage, true)),
+			Content: "artifact pushed " + notify.FormatTiming(total, stage, true),
 			Writer:  cmd.OutOrStdout(),
 		})
 
