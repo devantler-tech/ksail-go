@@ -23,7 +23,6 @@ var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Ver
 type FluxInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	//nolint:modernize // omitempty needed for YAML compatibility
 
 	Spec   FluxInstanceSpec   `json:"spec,omitempty"`
 	Status FluxInstanceStatus `json:"status,omitempty"`
