@@ -160,7 +160,6 @@ func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 }
 
 func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
-
 	if in == nil {
 		return nil
 	}
