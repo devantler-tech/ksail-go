@@ -260,7 +260,6 @@ func sanitizeFluxName(value, fallback string) string {
 	var builder strings.Builder
 	previousHyphen := false
 
-
 	for _, char := range trimmed {
 		switch {
 		case char >= 'a' && char <= 'z':
