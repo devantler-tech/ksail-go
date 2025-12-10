@@ -8,10 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// setupValidationTest creates a temporary source directory and validates BuildOptions.
-func setupValidationTest(t *testing.T, source string, registry string, version string) (ValidatedBuildOptions, error) {
+// setupValidationTest creates a temporary source directory (if createDir is true) and validates BuildOptions.
+func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (ValidatedBuildOptions, error) {
 	t.Helper()
-	require.NoError(t, os.MkdirAll(source, 0o755))
+	if createDir {
+		require.NoError(t, os.MkdirAll(source, 0o755))
+	}
 	opts := BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
 	return opts.Validate()
 }
