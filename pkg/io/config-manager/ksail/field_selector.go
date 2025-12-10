@@ -7,7 +7,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const defaultDistributionConfigPath = "kind.yaml"
+// defaultDistributionConfigPath set to auto so validation passes while allowing
+// distribution-specific defaults to be applied later (Kind vs K3d).
+const defaultDistributionConfigPath = "auto"
 
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {

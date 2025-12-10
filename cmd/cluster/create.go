@@ -289,9 +289,24 @@ func loadDistributionConfigs(
 	clusterCfg *v1alpha1.Cluster,
 	lifecycleTimer timer.Timer,
 ) (*v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
+	defaultConfigPath := defaultDistributionConfigPath(clusterCfg.Spec.Distribution)
+
+	configPath := strings.TrimSpace(clusterCfg.Spec.DistributionConfig)
+	if configPath == "" || strings.EqualFold(configPath, "auto") {
+		clusterCfg.Spec.DistributionConfig = defaultConfigPath
+		configPath = defaultConfigPath
+	}
+
+	// If distribution is K3d but the config path still points to the kind default,
+	// switch to the k3d default so we don’t try to read kind.yaml.
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d && configPath == defaultDistributionConfigPath(v1alpha1.DistributionKind) {
+		clusterCfg.Spec.DistributionConfig = defaultConfigPath
+		configPath = defaultConfigPath
+	}
+
 	switch clusterCfg.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		manager := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		manager := kindconfigmanager.NewConfigManager(configPath)
 
 		kindConfig, err := manager.LoadConfig(lifecycleTimer)
 		if err != nil {
@@ -300,7 +315,7 @@ func loadDistributionConfigs(
 
 		return kindConfig, nil, nil
 	case v1alpha1.DistributionK3d:
-		manager := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		manager := k3dconfigmanager.NewConfigManager(configPath)
 
 		k3dConfig, err := manager.LoadConfig(lifecycleTimer)
 		if err != nil {
