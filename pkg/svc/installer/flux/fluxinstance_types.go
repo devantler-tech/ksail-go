@@ -145,7 +145,7 @@ type FluxInstanceStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// DeepCopy creates a deep copy of FluxInstanceStatus.
+// DeepCopyInto copies all properties into another FluxInstanceStatus.
 func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 	*out = *in
 	if in.Conditions != nil {
