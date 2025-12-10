@@ -97,9 +97,9 @@ func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 		return c
 	}
 	return nil
-// DeepCopyInto copies all properties into another FluxInstanceSpec.
 }
 
+// DeepCopyInto copies all properties into another FluxInstanceSpec.
 // FluxInstanceSpec contains the distribution configuration and sync source.
 type FluxInstanceSpec struct {
 	Distribution Distribution `json:"distribution"`
