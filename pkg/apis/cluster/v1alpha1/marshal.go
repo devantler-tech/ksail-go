@@ -159,8 +159,8 @@ func buildClusterOutput(c Cluster) clusterOutput {
 }
 
 // pruneClusterDefaults zeroes fields that match default values so they are omitted when marshalled.
-func pruneClusterDefaults(c Cluster) Cluster {
 //nolint:cyclop // default pruning requires checking multiple fields
+func pruneClusterDefaults(c Cluster) Cluster {
 	// Distribution defaults
 	distribution := c.Spec.Distribution
 	if distribution == "" {
