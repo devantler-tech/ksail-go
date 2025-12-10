@@ -10,7 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//nolint:funlen // comprehensive validation test cases
+// setupValidationTest creates a temporary source directory (if createDir is true) and validates BuildOptions.
+func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (ValidatedBuildOptions, error) {
+	t.Helper()
+	if createDir {
+		require.NoError(t, os.MkdirAll(source, 0o755))
+	}
+	opts := BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
+	return opts.Validate()
+}
+
 func TestBuildOptionsValidate(t *testing.T) {
 	t.Parallel()
 
@@ -87,11 +96,8 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o750))
 
-		opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "latest"}
-
-		validated, err := opts.Validate()
+		validated, err := setupValidationTest(t, source, "localhost:5000", "latest", true)
 
 		require.NoError(t, err)
 		require.Equal(t, "latest", validated.Version)
@@ -101,11 +107,8 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o750))
 
-		opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
-
-		validated, err := opts.Validate()
+		validated, err := setupValidationTest(t, source, "localhost:5000", "1.0.0", true)
 
 		require.NoError(t, err)
 		require.Equal(t, filepath.Clean(source), validated.SourcePath)

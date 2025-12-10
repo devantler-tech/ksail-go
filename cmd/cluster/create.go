@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -429,6 +430,9 @@ var (
 	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
 	//nolint:gochecknoglobals // dependency injection for tests
 	dockerClientInvoker = cmdhelpers.WithDockerClient
+	// dockerClientInvokerMu protects concurrent access to dockerClientInvoker in tests.
+	//nolint:gochecknoglobals // protects dockerClientInvoker global variable
+	dockerClientInvokerMu sync.RWMutex
 )
 
 type registryStageRole int
@@ -757,7 +761,11 @@ func runRegistryStage(
 		})
 	}
 
-	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
+	dockerClientInvokerMu.RLock()
+	invoker := dockerClientInvoker
+	dockerClientInvokerMu.RUnlock()
+
+	err := invoker(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
 		if err != nil {
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)
