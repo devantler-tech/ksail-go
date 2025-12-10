@@ -248,7 +248,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			return fmt.Errorf("failed to get OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
 		}
 	}
-//nolint:cyclop // name sanitization requires character-by-character validation
+	//nolint:cyclop // name sanitization requires character-by-character validation
 }
 
 func sanitizeFluxName(value, fallback string) string {
