@@ -214,7 +214,6 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	if _, err := io.Copy(tarWriter, file); err != nil {
 		return fmt.Errorf("copy file %s to tar: %w", path, err)
 	}
-//nolint:ireturn // returns interface from external library
 
 	return nil
 }
