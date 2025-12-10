@@ -9,6 +9,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
+	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -377,7 +378,7 @@ func resolveLocalRegistryClusterName(
 			}
 		}
 	case v1alpha1.DistributionK3d:
-		return resolveK3dClusterName(clusterCfg, k3dConfig)
+		return k3dconfigmanager.ResolveClusterName(clusterCfg, k3dConfig)
 	}
 
 	if name := strings.TrimSpace(clusterCfg.Spec.Connection.Context); name != "" {
