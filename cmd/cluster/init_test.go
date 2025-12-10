@@ -52,6 +52,24 @@ func newConfigManager(
 	return manager
 }
 
+// writeKsailConfig creates a ksail.yaml config file in the specified directory.
+func writeKsailConfig(t *testing.T, outDir string, content string) {
+	t.Helper()
+	require.NoError(t, os.WriteFile(filepath.Join(outDir, "ksail.yaml"), []byte(content), 0o600))
+}
+
+// setupInitTest sets up a test command with configuration manager and common flags.
+func setupInitTest(t *testing.T, outDir string, force bool, buffer *bytes.Buffer) (*cobra.Command, *ksailconfigmanager.ConfigManager) {
+	t.Helper()
+	cmd := newInitCommand(t)
+	cfgManager := newConfigManager(t, cmd, buffer)
+	cmdtestutils.SetFlags(t, cmd, map[string]string{
+		"output": outDir,
+		"force":  "true",
+	})
+	return cmd, cfgManager
+}
+
 func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 	t.Parallel()
 
@@ -62,13 +80,7 @@ func TestHandleInitRunE_SuccessWithOutputFlag(t *testing.T) {
 
 	var buffer bytes.Buffer
 
-	cmd := newInitCommand(t)
-	cfgManager := newConfigManager(t, cmd, &buffer)
-
-	cmdtestutils.SetFlags(t, cmd, map[string]string{
-		"output": outDir,
-		"force":  "true",
-	})
+	cmd, cfgManager := setupInitTest(t, outDir, true, &buffer)
 
 	deps := newInitDeps(t)
 
@@ -192,17 +204,11 @@ func TestHandleInitRunE_IgnoresExistingConfigFile(t *testing.T) {
 		"  distributionConfig: custom-k3d.yaml\n" +
 		"  sourceDirectory: legacy\n"
 
-	require.NoError(t, os.WriteFile(filepath.Join(outDir, "ksail.yaml"), []byte(existing), 0o600))
+	writeKsailConfig(t, outDir, existing)
 
 	var buffer bytes.Buffer
 
-	cmd := newInitCommand(t)
-	cfgManager := newConfigManager(t, cmd, &buffer)
-
-	cmdtestutils.SetFlags(t, cmd, map[string]string{
-		"output": outDir,
-		"force":  "true",
-	})
+	cmd, cfgManager := setupInitTest(t, outDir, true, &buffer)
 
 	deps := newInitDeps(t)
 

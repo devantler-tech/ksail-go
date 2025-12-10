@@ -8,6 +8,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// setupValidationTest creates a temporary source directory and validates BuildOptions.
+func setupValidationTest(t *testing.T, source string, registry string, version string) (ValidatedBuildOptions, error) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(source, 0o755))
+	opts := BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
+	return opts.Validate()
+}
+
 func TestBuildOptionsValidate(t *testing.T) {
 	t.Parallel()
 
@@ -84,11 +92,8 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o755))
 
-		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "latest"}
-
-		validated, err := opts.Validate()
+		validated, err := setupValidationTest(t, source, "localhost:5000", "latest")
 
 		require.NoError(t, err)
 		require.Equal(t, "latest", validated.Version)
@@ -98,11 +103,8 @@ func TestBuildOptionsValidate(t *testing.T) {
 		t.Parallel()
 
 		source := filepath.Join(t.TempDir(), "k8s")
-		require.NoError(t, os.MkdirAll(source, 0o755))
 
-		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
-
-		validated, err := opts.Validate()
+		validated, err := setupValidationTest(t, source, "localhost:5000", "1.0.0")
 
 		require.NoError(t, err)
 		require.Equal(t, filepath.Clean(source), validated.SourcePath)
