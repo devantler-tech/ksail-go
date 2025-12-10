@@ -82,6 +82,7 @@ func TestBuildFluxInstanceFallsBackWhenRegistryDisabled(t *testing.T) {
 }
 
 func TestEnsureDefaultResourcesCreatesAndUpdatesFluxInstance(t *testing.T) {
+		t.Parallel()
 	scheme := runtime.NewScheme()
 	require.NoError(t, addFluxInstanceToScheme(scheme))
 	require.NoError(t, sourcev1.AddToScheme(scheme))
@@ -156,6 +157,7 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 	})
 
 	overrideFluxResourcesClientFactory(t, func(*rest.Config) (client.Client, error) {
+		//nolint:nilnil // test stub returns nil,nil intentionally
 		t.Fatalf("flux resource client should not be created when APIs unavailable")
 		return nil, nil
 	})

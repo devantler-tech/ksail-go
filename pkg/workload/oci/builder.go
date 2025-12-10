@@ -198,6 +198,7 @@ func sanitizeSegment(segment string) string {
 
 	var builder strings.Builder
 	prevHyphen := false
+
 	for _, char := range trimmed {
 		switch {
 		case char >= 'a' && char <= 'z':

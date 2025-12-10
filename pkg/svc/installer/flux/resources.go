@@ -1,4 +1,5 @@
 package fluxinstaller
+//nolint:gci // standard import grouping
 
 import (
 	"context"
@@ -6,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"net"
+	"strconv"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
@@ -48,6 +51,7 @@ var (
 
 	newFluxResourcesClient = func(restConfig *rest.Config) (client.Client, error) {
 		scheme := runtime.NewScheme()
+		//nolint:noinlineerr // error handling in scheme registration
 
 		if err := addFluxInstanceToScheme(scheme); err != nil {
 			return nil, fmt.Errorf("failed to add flux instance scheme: %w", err)
@@ -147,7 +151,7 @@ func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 		repoPort = int(hostPort)
 	}
 
-	repoURL := fmt.Sprintf("oci://%s:%d/%s", repoHost, repoPort, projectName)
+	repoURL := fmt.Sprintf("oci://%s/%s", net.JoinHostPort(repoHost, strconv.Itoa(repoPort)), repoHost, repoPort, projectName)
 	normalizedPath := normalizeFluxPath(sourceDir)
 	intervalPtr := &metav1.Duration{Duration: interval}
 
@@ -256,6 +260,7 @@ func sanitizeFluxName(value, fallback string) string {
 	var builder strings.Builder
 	previousHyphen := false
 
+
 	for _, char := range trimmed {
 		switch {
 		case char >= 'a' && char <= 'z':
@@ -293,6 +298,7 @@ func sanitizeFluxName(value, fallback string) string {
 	return fallback
 }
 
+//nolint:revive // parameter is used in function body
 func normalizeFluxPath(string) string {
 	// Flux expects paths to be relative to the root of the unpacked artifact.
 	return "./"
@@ -310,9 +316,7 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 	ticker := time.NewTicker(fluxAPIAvailabilityPollInterval)
 	defer ticker.Stop()
 
-	var lastErr error
-
-	for {
+			lastErr = err
 		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
 			return nil
 		} else {

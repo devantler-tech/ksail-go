@@ -23,6 +23,7 @@ var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Ver
 type FluxInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	//nolint:modernize // omitempty needed for YAML compatibility
 
 	Spec   FluxInstanceSpec   `json:"spec,omitempty"`
 	Status FluxInstanceStatus `json:"status,omitempty"`
@@ -35,6 +36,7 @@ func (in *FluxInstance) DeepCopyInto(out *FluxInstance) {
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
+// DeepCopy creates a deep copy of FluxInstance.
 }
 
 func (in *FluxInstance) DeepCopy() *FluxInstance {
@@ -44,6 +46,7 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 
 	out := new(FluxInstance)
 	in.DeepCopyInto(out)
+// DeepCopyObject implements runtime.Object interface.
 	return out
 }
 
@@ -58,6 +61,7 @@ func (in *FluxInstance) DeepCopyObject() runtime.Object {
 type FluxInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
+// DeepCopyInto copies all properties into another FluxInstanceList.
 
 	Items []FluxInstance `json:"items"`
 }
@@ -65,10 +69,12 @@ type FluxInstanceList struct {
 func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		out.Items = make([]FluxInstance, len(in.Items))
 		for i := range in.Items {
+// DeepCopy creates a deep copy of FluxInstanceList.
 			in.Items[i].DeepCopyInto(&out.Items[i])
 		}
 	}
@@ -76,6 +82,8 @@ func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 
 func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	if in == nil {
+
+// DeepCopyObject implements runtime.Object interface.
 		return nil
 	}
 	out := new(FluxInstanceList)
@@ -88,6 +96,7 @@ func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 		return c
 	}
 	return nil
+// DeepCopyInto copies all properties into another FluxInstanceSpec.
 }
 
 // FluxInstanceSpec contains the distribution configuration and sync source.
@@ -114,6 +123,7 @@ type Distribution struct {
 // Sync configures the OCI source that the operator will track and apply.
 type Sync struct {
 	Name       string           `json:"name,omitempty"`
+// DeepCopyInto copies all properties into another Sync.
 	Interval   *metav1.Duration `json:"interval,omitempty"`
 	Kind       string           `json:"kind"`
 	URL        string           `json:"url"`
@@ -126,6 +136,7 @@ type Sync struct {
 func (in *Sync) DeepCopyInto(out *Sync) {
 	*out = *in
 	if in.Interval != nil {
+// DeepCopyInto copies all properties into another FluxInstanceStatus.
 		intervalCopy := *in.Interval
 		out.Interval = &intervalCopy
 	}
@@ -135,6 +146,7 @@ func (in *Sync) DeepCopyInto(out *Sync) {
 type FluxInstanceStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+// DeepCopy creates a deep copy of FluxInstanceStatus.
 
 func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 	*out = *in
@@ -147,6 +159,7 @@ func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 }
 
 func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
+
 	if in == nil {
 		return nil
 	}

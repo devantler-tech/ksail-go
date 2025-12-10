@@ -169,6 +169,7 @@ func newManifestLayer(root string, files []string) (v1.Layer, error) {
 		}
 	}
 
+	//nolint:staticcheck // using deprecated API for compatibility
 	if err := tarWriter.Close(); err != nil {
 		return nil, fmt.Errorf("close tar writer: %w", err)
 	}

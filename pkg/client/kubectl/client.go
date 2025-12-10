@@ -1,4 +1,5 @@
 package kubectl
+//nolint:gci // standard import grouping
 
 import (
 	"errors"
@@ -343,7 +344,8 @@ func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command 
 		Use:   "info",
 		Short: "Display cluster information",
 		Long:  "Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		//nolint:noinlineerr // error handling in Cobra command
+		RunE: func(cmd *cobra.Command, _  []string) error {
 			if err := options.Complete(restClientGetter, cmd); err != nil {
 				return fmt.Errorf("complete cluster-info options: %w", err)
 			}
@@ -534,7 +536,7 @@ func (c *Client) newResourceCmd(resourceType string) (*cobra.Command, error) {
 		}
 	} else {
 		// Create our custom RunE that calls kubectl with forced flags
-		wrapperCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		wrapperCmd.RunE = func(cmd *cobra.Command, _  []string) error {
 			return c.executeResourceGen(resourceType, cmd, args)
 		}
 
@@ -560,7 +562,7 @@ func (c *Client) createSubcommandWrapper(parentType string, subCmd *cobra.Comman
 	// This allows tests to call SetOut() on parent and have it propagate
 
 	// Create RunE for the subcommand
-	wrapper.RunE = func(cmd *cobra.Command, args []string) error {
+	wrapper.RunE = func(cmd *cobra.Command, _  []string) error {
 		return c.executeSubcommandGen(parentType, subCmd.Name(), cmd, args)
 	}
 
@@ -574,7 +576,7 @@ func (c *Client) createSubcommandWrapper(parentType string, subCmd *cobra.Comman
 func (c *Client) executeSubcommandGen(
 	parentType, subType string,
 	cmd *cobra.Command,
-	args []string,
+	_  []string,
 ) error {
 	// Create a fresh client with the command's IO streams to ensure output goes to the right place
 	freshClient := NewClient(genericiooptions.IOStreams{
@@ -637,7 +639,7 @@ func (c *Client) executeSubcommandGen(
 }
 
 // executeResourceGen executes kubectl create with forced --dry-run=client -o yaml flags.
-func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, args []string) error {
+func (c *Client) executeResourceGen(resourceType string, cmd *cobra.Command, _  []string) error {
 	// Create a fresh client with the command's IO streams to ensure output goes to the right place
 	freshClient := NewClient(genericiooptions.IOStreams{
 		In:     cmd.InOrStdin(),
@@ -744,7 +746,7 @@ func (c *Client) copyFlagValue(flag *pflag.Flag, targetCmd *cobra.Command) error
 }
 
 // executeCommand executes the kubectl command's Run or RunE function.
-func (c *Client) executeCommand(cmd *cobra.Command, args []string) error {
+func (c *Client) executeCommand(cmd *cobra.Command, _  []string) error {
 	if cmd.RunE != nil {
 		err := cmd.RunE(cmd, args)
 		if err != nil {

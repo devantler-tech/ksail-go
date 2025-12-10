@@ -1,4 +1,5 @@
 package v1alpha1
+//nolint:gci // standard import grouping
 
 import (
 	"encoding/json"
@@ -11,12 +12,14 @@ import (
 func (c Cluster) MarshalYAML() (any, error) {
 	pruned := pruneClusterDefaults(c)
 	out := buildClusterOutput(pruned)
+
 	return out, nil
 }
 
 // MarshalJSON trims default values before emitting JSON (used by YAML library).
 func (c Cluster) MarshalJSON() ([]byte, error) {
 	pruned := pruneClusterDefaults(c)
+
 	out := buildClusterOutput(pruned)
 	return json.Marshal(out)
 }
@@ -25,7 +28,7 @@ func (c Cluster) MarshalJSON() ([]byte, error) {
 type clusterOutput struct {
 	APIVersion string             `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
 	Kind       string             `json:"kind,omitempty" yaml:"kind,omitempty"`
-	Spec       *clusterSpecOutput `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Spec       *clusterSpecOutput `json:"spec,omitempty"            yaml:"spec,omitempty"`
 }
 
 type clusterSpecOutput struct {
@@ -83,6 +86,7 @@ func buildClusterOutput(c Cluster) clusterOutput {
 
 	var conn clusterConnectionOutput
 	if c.Spec.Connection.Kubeconfig != "" {
+
 		conn.Kubeconfig = c.Spec.Connection.Kubeconfig
 	}
 	if c.Spec.Connection.Context != "" {
@@ -134,6 +138,7 @@ func buildClusterOutput(c Cluster) clusterOutput {
 
 	if c.Spec.Options.LocalRegistry.HostPort != 0 {
 		opts.LocalRegistry = &localRegistryOptionsOutput{HostPort: c.Spec.Options.LocalRegistry.HostPort}
+
 		hasOpts = true
 	}
 	if hasOpts {
