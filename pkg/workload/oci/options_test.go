@@ -95,7 +95,7 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		source := filepath.Join(t.TempDir(), "k8s")
 
-		validated, err := setupValidationTest(t, source, "localhost:5000", "latest")
+		validated, err := setupValidationTest(t, source, "localhost:5000", "latest", true)
 
 		require.NoError(t, err)
 		require.Equal(t, "latest", validated.Version)
@@ -106,7 +106,7 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		source := filepath.Join(t.TempDir(), "k8s")
 
-		validated, err := setupValidationTest(t, source, "localhost:5000", "1.0.0")
+		validated, err := setupValidationTest(t, source, "localhost:5000", "1.0.0", true)
 
 		require.NoError(t, err)
 		require.Equal(t, filepath.Clean(source), validated.SourcePath)

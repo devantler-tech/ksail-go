@@ -63,9 +63,15 @@ func setupInitTest(t *testing.T, outDir string, force bool, buffer *bytes.Buffer
 	t.Helper()
 	cmd := newInitCommand(t)
 	cfgManager := newConfigManager(t, cmd, buffer)
+	
+	forceStr := "false"
+	if force {
+		forceStr = "true"
+	}
+	
 	cmdtestutils.SetFlags(t, cmd, map[string]string{
 		"output": outDir,
-		"force":  "true",
+		"force":  forceStr,
 	})
 	return cmd, cfgManager
 }
