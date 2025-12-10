@@ -8,6 +8,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,7 +36,7 @@ func TestBuildFluxInstanceUsesDefaults(t *testing.T) {
 	require.Equal(t, fluxInstanceDefaultName, instance.Name)
 	require.Equal(t, fluxclient.DefaultNamespace, instance.Namespace)
 	require.Equal(t, "oci://local-registry:5000/workloads-env-prod", instance.Spec.Sync.URL)
-	require.Equal(t, "./workloads/env/prod", instance.Spec.Sync.Path)
+	require.Equal(t, "./", instance.Spec.Sync.Path)
 	require.Equal(t, defaultArtifactTag, instance.Spec.Sync.Ref)
 	require.Equal(t, metav1.Duration{Duration: fluxIntervalFallback}, *instance.Spec.Sync.Interval)
 }
@@ -82,8 +83,16 @@ func TestBuildFluxInstanceFallsBackWhenRegistryDisabled(t *testing.T) {
 func TestEnsureDefaultResourcesCreatesAndUpdatesFluxInstance(t *testing.T) {
 	scheme := runtime.NewScheme()
 	require.NoError(t, addFluxInstanceToScheme(scheme))
+	require.NoError(t, sourcev1.AddToScheme(scheme))
 
-	fakeClient := crfake.NewClientBuilder().WithScheme(scheme).Build()
+	defaultOCIRepo := &sourcev1.OCIRepository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      defaultOCIRepositoryName,
+			Namespace: fluxclient.DefaultNamespace,
+		},
+	}
+
+	fakeClient := crfake.NewClientBuilder().WithScheme(scheme).WithObjects(defaultOCIRepo).Build()
 
 	overrideRESTConfigLoader(t, func(string) (*rest.Config, error) {
 		return &rest.Config{}, nil
@@ -115,12 +124,17 @@ func TestEnsureDefaultResourcesCreatesAndUpdatesFluxInstance(t *testing.T) {
 	require.Equal(t, metav1.Duration{Duration: time.Minute}, *instance.Spec.Sync.Interval)
 	require.Equal(t, "oci://local-registry:5000/k8s", instance.Spec.Sync.URL)
 
+	repo := &sourcev1.OCIRepository{}
+	repoKey := client.ObjectKey{Name: defaultOCIRepositoryName, Namespace: fluxclient.DefaultNamespace}
+	require.NoError(t, fakeClient.Get(context.Background(), repoKey, repo))
+	require.True(t, repo.Spec.Insecure)
+
 	cluster.Spec.Options.Flux.Interval = metav1.Duration{Duration: 3 * time.Minute}
 
 	require.NoError(t, EnsureDefaultResources(context.Background(), "kubeconfig", cluster))
 	require.NoError(t, fakeClient.Get(context.Background(), key, instance))
 	require.Equal(t, metav1.Duration{Duration: 3 * time.Minute}, *instance.Spec.Sync.Interval)
-	require.GreaterOrEqual(t, stubDiscovery.calls, 1)
+	require.GreaterOrEqual(t, stubDiscovery.calls, 2)
 }
 
 func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T) {
@@ -147,7 +161,8 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 
 	err := EnsureDefaultResources(context.Background(), "kubeconfig", cluster)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "timed out waiting for Flux APIs")
+	require.Contains(t, err.Error(), fluxInstanceGroupVersion.String())
+	require.Contains(t, err.Error(), "timed out waiting for API")
 }
 
 func overrideFluxResourcesClientFactory(t *testing.T, factory func(*rest.Config) (client.Client, error)) {

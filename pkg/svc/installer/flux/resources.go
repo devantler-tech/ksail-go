@@ -10,9 +10,11 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
 	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -24,6 +26,7 @@ const (
 	defaultProjectName       = "ksail-workloads"
 	defaultSourceDirectory   = "k8s"
 	defaultArtifactTag       = "latest"
+	defaultOCIRepositoryName = fluxclient.DefaultNamespace
 	fluxIntervalFallback     = time.Minute
 	fluxDistributionVersion  = "2.x"
 	fluxDistributionRegistry = "ghcr.io/fluxcd"
@@ -45,6 +48,10 @@ var (
 
 		if err := addFluxInstanceToScheme(scheme); err != nil {
 			return nil, fmt.Errorf("failed to add flux instance scheme: %w", err)
+		}
+
+		if err := sourcev1.AddToScheme(scheme); err != nil {
+			return nil, fmt.Errorf("failed to add flux source scheme: %w", err)
 		}
 
 		fluxClient, err := client.New(restConfig, client.Options{Scheme: scheme})
@@ -80,7 +87,7 @@ func EnsureDefaultResources(
 		return err
 	}
 
-	if err := waitForFluxInstanceAPI(ctx, restConfig); err != nil {
+	if err := waitForGroupVersion(ctx, restConfig, fluxInstanceGroupVersion); err != nil {
 		return err
 	}
 
@@ -94,7 +101,19 @@ func EnsureDefaultResources(
 		return err
 	}
 
-	return upsertFluxResource(ctx, fluxClient, fluxInstance)
+	if err := upsertFluxResource(ctx, fluxClient, fluxInstance); err != nil {
+		return err
+	}
+
+	if err := waitForGroupVersion(ctx, restConfig, sourcev1.GroupVersion); err != nil {
+		return err
+	}
+
+	if clusterCfg.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
+		return ensureLocalOCIRepositoryInsecure(ctx, fluxClient)
+	}
+
+	return nil
 }
 
 func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
@@ -179,6 +198,41 @@ func upsertFluxResource(
 	}
 }
 
+func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Client) error {
+	key := client.ObjectKey{Name: defaultOCIRepositoryName, Namespace: fluxclient.DefaultNamespace}
+	waitCtx, cancel := context.WithTimeout(ctx, fluxAPIAvailabilityTimeout)
+	defer cancel()
+
+	ticker := time.NewTicker(fluxAPIAvailabilityPollInterval)
+	defer ticker.Stop()
+
+	for {
+		repo := &sourcev1.OCIRepository{}
+		err := fluxClient.Get(ctx, key, repo)
+		switch {
+		case err == nil:
+			if repo.Spec.Insecure {
+				return nil
+			}
+
+			repo.Spec.Insecure = true
+			if err := fluxClient.Update(ctx, repo); err != nil {
+				return fmt.Errorf("failed to update OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
+			}
+
+			return nil
+		case apierrors.IsNotFound(err):
+			select {
+			case <-waitCtx.Done():
+				return fmt.Errorf("timed out waiting for OCIRepository %s/%s", key.Namespace, key.Name)
+			case <-ticker.C:
+			}
+		default:
+			return fmt.Errorf("failed to get OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
+		}
+	}
+}
+
 func sanitizeFluxName(value, fallback string) string {
 	trimmed := strings.ToLower(strings.TrimSpace(value))
 	if trimmed == "" {
@@ -226,21 +280,11 @@ func sanitizeFluxName(value, fallback string) string {
 }
 
 func normalizeFluxPath(path string) string {
-	trimmed := strings.TrimSpace(path)
-	if trimmed == "" {
-		trimmed = defaultSourceDirectory
-	}
-
-	trimmed = strings.TrimPrefix(trimmed, "./")
-	trimmed = strings.TrimPrefix(trimmed, "/")
-	if trimmed == "" {
-		trimmed = defaultSourceDirectory
-	}
-
-	return "./" + trimmed
+	// Flux expects paths to be relative to the root of the unpacked artifact.
+	return "./"
 }
 
-func waitForFluxInstanceAPI(ctx context.Context, restConfig *rest.Config) error {
+func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVersion schema.GroupVersion) error {
 	discoveryClient, err := newDiscoveryClient(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create discovery client: %w", err)
@@ -254,7 +298,7 @@ func waitForFluxInstanceAPI(ctx context.Context, restConfig *rest.Config) error 
 
 	var lastErr error
 	for {
-		if _, err := discoveryClient.ServerResourcesForGroupVersion(fluxInstanceGroupVersion.String()); err == nil {
+		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
 			return nil
 		} else {
 			lastErr = err
@@ -265,7 +309,7 @@ func waitForFluxInstanceAPI(ctx context.Context, restConfig *rest.Config) error 
 			if lastErr == nil {
 				lastErr = waitCtx.Err()
 			}
-			return fmt.Errorf("timed out waiting for Flux APIs: %w", lastErr)
+			return fmt.Errorf("timed out waiting for API %s: %w", groupVersion.String(), lastErr)
 		case <-ticker.C:
 		}
 	}

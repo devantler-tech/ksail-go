@@ -76,7 +76,11 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 		return BuildResult{}, fmt.Errorf("build image: %w", err)
 	}
 
-	ref, err := name.ParseReference(fmt.Sprintf("%s/%s:%s", validated.RegistryEndpoint, validated.Repository, validated.Version), name.WeakValidation)
+	ref, err := name.ParseReference(
+		fmt.Sprintf("%s/%s:%s", validated.RegistryEndpoint, validated.Repository, validated.Version),
+		name.WeakValidation,
+		name.Insecure,
+	)
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("parse reference: %w", err)
 	}

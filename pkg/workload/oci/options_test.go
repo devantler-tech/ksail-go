@@ -80,6 +80,20 @@ func TestBuildOptionsValidate(t *testing.T) {
 		require.ErrorIs(t, err, ErrVersionInvalid)
 	})
 
+	t.Run("allows latest tag", func(t *testing.T) {
+		t.Parallel()
+
+		source := filepath.Join(t.TempDir(), "k8s")
+		require.NoError(t, os.MkdirAll(source, 0o755))
+
+		opts := BuildOptions{SourcePath: source, RegistryEndpoint: "localhost:5000", Version: "latest"}
+
+		validated, err := opts.Validate()
+
+		require.NoError(t, err)
+		require.Equal(t, "latest", validated.Version)
+	})
+
 	t.Run("applies defaults", func(t *testing.T) {
 		t.Parallel()
 

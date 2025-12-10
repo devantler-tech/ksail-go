@@ -138,6 +138,10 @@ func normalizeVersion(raw string) (string, error) {
 		return "", ErrVersionRequired
 	}
 
+	if strings.EqualFold(trimmed, "latest") {
+		return "latest", nil
+	}
+
 	trimmed = strings.TrimPrefix(trimmed, "v")
 
 	if trimmed == "" {
