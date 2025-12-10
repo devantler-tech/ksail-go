@@ -267,23 +267,6 @@ func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string
 	m.applyLocalRegistryPortDefaults(hostPortExplicit)
 }
 
-func (m *ConfigManager) applyDistributionConfigDefaults() {
-	if m.Config == nil {
-		return
-	}
-
-	if strings.TrimSpace(m.Config.Spec.DistributionConfig) != "" {
-		return
-	}
-
-	switch m.Config.Spec.Distribution {
-	case v1alpha1.DistributionK3d:
-		m.Config.Spec.DistributionConfig = "k3d.yaml"
-	default:
-		m.Config.Spec.DistributionConfig = "kind.yaml"
-	}
-}
-
 func (m *ConfigManager) wasLocalRegistryExplicit(flagOverrides map[string]string) bool {
 	if m.localRegistryExplicit {
 		return true
