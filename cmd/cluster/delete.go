@@ -218,7 +218,11 @@ func runMirrorRegistryCleanup(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
+	dockerClientInvokerMu.RLock()
+	invoker := dockerClientInvoker
+	dockerClientInvokerMu.RUnlock()
+
+	err := invoker(cmd, func(dockerClient client.APIClient) error {
 		return executeRegistryCleanup(cmd, dockerClient, registryNames, cleanup, deps.Timer)
 	})
 	if err != nil {
