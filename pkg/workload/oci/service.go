@@ -107,8 +107,8 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	}
 
 	return BuildResult{Artifact: artifact}, nil
-//nolint:ireturn // returns interface for internal use
 }
+//nolint:ireturn // returns interface for internal use
 
 func (b *builder) ensurePusher() imagePusher {
 	if b.pusher != nil {
