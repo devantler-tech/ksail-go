@@ -26,17 +26,29 @@ func (f *fakePusher) Push(_ context.Context, ref name.Reference, img v1.Image) e
 	return f.err
 }
 
+// createManifestFile creates a temporary directory with a manifest file for testing.
+func createManifestFile(t *testing.T, content string) string {
+	t.Helper()
+	manifestDir := t.TempDir()
+	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+	return manifestDir
+}
+
+// setupBuildTest creates a builder with the given pusher and executes a Build call with the provided options.
+func setupBuildTest(t *testing.T, pusher *fakePusher, opts BuildOptions) (BuildResult, error) {
+	t.Helper()
+	builder := &builder{pusher: pusher}
+	return builder.Build(context.Background(), opts)
+}
+
 func TestBuilderBuildSuccess(t *testing.T) {
 	t.Parallel()
 
-	manifestDir := t.TempDir()
-	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o644))
+	manifestDir := createManifestFile(t, "apiVersion: v1")
 
 	pusher := &fakePusher{}
-	builder := &builder{pusher: pusher}
-
-	result, err := builder.Build(context.Background(), BuildOptions{
+	result, err := setupBuildTest(t, pusher, BuildOptions{
 		SourcePath:       manifestDir,
 		RegistryEndpoint: "localhost:5000",
 		Repository:       "sample/app",
@@ -62,9 +74,8 @@ func TestBuilderBuildRequiresManifests(t *testing.T) {
 	artifact := filepath.Join(manifestDir, "readme.txt")
 	require.NoError(t, os.WriteFile(artifact, []byte("hello"), 0o644))
 
-	builder := &builder{pusher: &fakePusher{}}
-
-	_, err := builder.Build(context.Background(), BuildOptions{
+	pusher := &fakePusher{}
+	_, err := setupBuildTest(t, pusher, BuildOptions{
 		SourcePath:       manifestDir,
 		RegistryEndpoint: "localhost:5000",
 		Repository:       "sample/app",
@@ -77,15 +88,12 @@ func TestBuilderBuildRequiresManifests(t *testing.T) {
 func TestBuilderBuildPropagatesPushError(t *testing.T) {
 	t.Parallel()
 
-	manifestDir := t.TempDir()
-	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte("apiVersion: v1"), 0o644))
+	manifestDir := createManifestFile(t, "apiVersion: v1")
 
 	pushErr := errors.New("push failed")
 	pusher := &fakePusher{err: pushErr}
-	builder := &builder{pusher: pusher}
 
-	_, err := builder.Build(context.Background(), BuildOptions{
+	_, err := setupBuildTest(t, pusher, BuildOptions{
 		SourcePath:       manifestDir,
 		RegistryEndpoint: "localhost:5000",
 		Repository:       "sample/app",
@@ -102,9 +110,8 @@ func TestBuilderBuildRejectsEmptyManifest(t *testing.T) {
 	emptyManifest := filepath.Join(manifestDir, "empty.yaml")
 	require.NoError(t, os.WriteFile(emptyManifest, []byte{}, 0o644))
 
-	builder := &builder{pusher: &fakePusher{}}
-
-	_, err := builder.Build(context.Background(), BuildOptions{
+	pusher := &fakePusher{}
+	_, err := setupBuildTest(t, pusher, BuildOptions{
 		SourcePath:       manifestDir,
 		RegistryEndpoint: "localhost:5000",
 		Repository:       "sample/app",

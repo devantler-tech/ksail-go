@@ -238,13 +238,17 @@ func (s *stubRegistryService) Status(
 func withStubDockerInvoker(t *testing.T) {
 	t.Helper()
 
+	dockerClientInvokerMu.Lock()
 	originalInvoker := dockerClientInvoker
 	dockerClientInvoker = func(_ *cobra.Command, operation func(client.APIClient) error) error {
 		return operation(nil)
 	}
+	dockerClientInvokerMu.Unlock()
 
 	t.Cleanup(func() {
+		dockerClientInvokerMu.Lock()
 		dockerClientInvoker = originalInvoker
+		dockerClientInvokerMu.Unlock()
 	})
 }
 
