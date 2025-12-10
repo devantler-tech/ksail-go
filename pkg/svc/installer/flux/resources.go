@@ -49,9 +49,9 @@ var (
 
 	loadRESTConfig = buildRESTConfig
 
+	//nolint:noinlineerr // error handling in scheme registration
 	newFluxResourcesClient = func(restConfig *rest.Config) (client.Client, error) {
 		scheme := runtime.NewScheme()
-		//nolint:noinlineerr // error handling in scheme registration
 
 		if err := addFluxInstanceToScheme(scheme); err != nil {
 			return nil, fmt.Errorf("failed to add flux instance scheme: %w", err)
