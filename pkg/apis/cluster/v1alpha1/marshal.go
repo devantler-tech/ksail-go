@@ -86,7 +86,6 @@ func buildClusterOutput(c Cluster) clusterOutput {
 
 	var conn clusterConnectionOutput
 	if c.Spec.Connection.Kubeconfig != "" {
-
 		conn.Kubeconfig = c.Spec.Connection.Kubeconfig
 	}
 	if c.Spec.Connection.Context != "" {
