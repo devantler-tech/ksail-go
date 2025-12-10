@@ -151,7 +151,7 @@ func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 		repoPort = int(hostPort)
 	}
 
-	repoURL := fmt.Sprintf("oci://%s/%s", net.JoinHostPort(repoHost, strconv.Itoa(repoPort)), repoHost, repoPort, projectName)
+	repoURL := fmt.Sprintf("oci://%s/%s", net.JoinHostPort(repoHost, strconv.Itoa(repoPort)), projectName)
 	normalizedPath := normalizeFluxPath(sourceDir)
 	intervalPtr := &metav1.Duration{Duration: interval}
 
