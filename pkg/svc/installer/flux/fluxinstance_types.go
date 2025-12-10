@@ -74,16 +74,14 @@ func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 	if in.Items != nil {
 		out.Items = make([]FluxInstance, len(in.Items))
 		for i := range in.Items {
-// DeepCopy creates a deep copy of FluxInstanceList.
 			in.Items[i].DeepCopyInto(&out.Items[i])
 		}
 	}
 }
 
+// DeepCopy creates a deep copy of FluxInstanceList.
 func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	if in == nil {
-
-// DeepCopyObject implements runtime.Object interface.
 		return nil
 	}
 	out := new(FluxInstanceList)
@@ -91,6 +89,7 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	return out
 }
 
+// DeepCopyObject implements runtime.Object interface.
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
