@@ -134,10 +134,10 @@ type Sync struct {
 	Provider   string           `json:"provider,omitempty"`
 }
 
+// DeepCopyInto copies all properties into another Sync.
 func (in *Sync) DeepCopyInto(out *Sync) {
 	*out = *in
 	if in.Interval != nil {
-// DeepCopyInto copies all properties into another FluxInstanceStatus.
 		intervalCopy := *in.Interval
 		out.Interval = &intervalCopy
 	}
