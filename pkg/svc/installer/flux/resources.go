@@ -65,7 +65,6 @@ var (
 		if err != nil {
 			return nil, fmt.Errorf("failed to create flux resource client: %w", err)
 		}
-//nolint:gochecknoglobals // mutable for testing override
 
 		return fluxClient, nil
 	}
