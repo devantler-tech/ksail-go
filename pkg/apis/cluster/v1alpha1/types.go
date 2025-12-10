@@ -177,6 +177,19 @@ func validDistributions() []Distribution {
 	return []Distribution{DistributionK3d, DistributionKind}
 }
 
+// ProvidesMetricsServerByDefault returns true if the distribution includes metrics-server by default.
+// K3d (based on K3s) includes metrics-server, Kind does not.
+func (d Distribution) ProvidesMetricsServerByDefault() bool {
+	switch d {
+	case DistributionK3d:
+		return true
+	case DistributionKind:
+		return false
+	default:
+		return false
+	}
+}
+
 // validCNIs returns supported CNI values.
 func validCNIs() []CNI {
 	return []CNI{CNIDefault, CNICilium, CNICalico}

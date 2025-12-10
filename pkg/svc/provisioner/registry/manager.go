@@ -594,3 +594,20 @@ func BuildRegistryInfo(
 func SortHosts(hosts []string) {
 	sort.Strings(hosts)
 }
+
+// CollectRegistryNames extracts registry names from a slice of registry Info structs.
+// Empty names are filtered out. This is useful for collecting names before cleanup operations.
+func CollectRegistryNames(infos []Info) []string {
+	names := make([]string, 0, len(infos))
+
+	for _, reg := range infos {
+		name := strings.TrimSpace(reg.Name)
+		if name == "" {
+			continue
+		}
+
+		names = append(names, name)
+	}
+
+	return names
+}

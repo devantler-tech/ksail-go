@@ -3,7 +3,6 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
@@ -137,7 +136,7 @@ func cleanupKindMirrorRegistries(
 
 	registriesInfo := kindprovisioner.ExtractRegistriesFromKindForTesting(kindConfig, nil)
 
-	registryNames := collectRegistryNames(registriesInfo)
+	registryNames := registry.CollectRegistryNames(registriesInfo)
 	if len(registryNames) == 0 {
 		return nil
 	}
@@ -177,7 +176,7 @@ func cleanupK3dMirrorRegistries(
 
 	registriesInfo := k3dprovisioner.ExtractRegistriesFromConfigForTesting(k3dConfig)
 
-	registryNames := collectRegistryNames(registriesInfo)
+	registryNames := registry.CollectRegistryNames(registriesInfo)
 	if len(registryNames) == 0 {
 		return nil
 	}
@@ -197,21 +196,6 @@ func cleanupK3dMirrorRegistries(
 			)
 		},
 	)
-}
-
-func collectRegistryNames(infos []registry.Info) []string {
-	names := make([]string, 0, len(infos))
-
-	for _, reg := range infos {
-		name := strings.TrimSpace(reg.Name)
-		if name == "" {
-			continue
-		}
-
-		names = append(names, name)
-	}
-
-	return names
 }
 
 func runMirrorRegistryCleanup(
