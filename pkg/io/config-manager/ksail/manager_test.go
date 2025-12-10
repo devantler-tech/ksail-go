@@ -72,7 +72,7 @@ func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Clust
 		),
 		configmanager.AddFlagFromField(
 			func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
-			"kind.yaml",
+			"",
 			"Distribution config",
 		),
 		configmanager.AddFlagFromField(
