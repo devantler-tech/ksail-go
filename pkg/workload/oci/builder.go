@@ -187,9 +187,9 @@ func normalizeRepositoryName(candidate, sourcePath string) string {
 	return strings.Join(normalized, "/")
 }
 
+//nolint:cyclop // segment sanitization requires character-by-character validation
 func sanitizeSegment(segment string) string {
 	trimmed := strings.TrimSpace(segment)
-//nolint:cyclop // segment sanitization requires character-by-character validation
 	if trimmed == "" {
 		return ""
 	}
