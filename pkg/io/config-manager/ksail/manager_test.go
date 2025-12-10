@@ -543,13 +543,14 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
-	assert.Contains(t, err.Error(), "3 error(s)")
+	assert.Contains(t, err.Error(), "4 error(s)")
 
 	logOutput := output.String()
 	assert.Contains(t, logOutput, "error:")
 	assert.Contains(t, logOutput, "kind is required")
 	assert.Contains(t, logOutput, "apiVersion is required")
 	assert.Contains(t, logOutput, "field: spec.distribution")
+	assert.Contains(t, logOutput, "distributionConfig is required")
 }
 
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.
