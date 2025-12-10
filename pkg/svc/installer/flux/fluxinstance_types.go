@@ -36,9 +36,9 @@ func (in *FluxInstance) DeepCopyInto(out *FluxInstance) {
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
-// DeepCopy creates a deep copy of FluxInstance.
 }
 
+// DeepCopy creates a deep copy of FluxInstance.
 func (in *FluxInstance) DeepCopy() *FluxInstance {
 	if in == nil {
 		return nil
