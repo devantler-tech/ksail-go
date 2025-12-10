@@ -315,7 +315,8 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 	ticker := time.NewTicker(fluxAPIAvailabilityPollInterval)
 	defer ticker.Stop()
 
-			lastErr = err
+	var lastErr error
+	for {
 		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
 			return nil
 		} else {
