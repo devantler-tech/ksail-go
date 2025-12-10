@@ -238,7 +238,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			return nil
 		case apierrors.IsNotFound(err):
 			select {
-				//nolint:err113 // dynamic resource key necessary for debugging timeout
+			//nolint:err113 // dynamic resource key necessary for debugging timeout
 			case <-waitCtx.Done():
 				return fmt.Errorf("timed out waiting for OCIRepository %s/%s", key.Namespace, key.Name)
 			case <-ticker.C:
