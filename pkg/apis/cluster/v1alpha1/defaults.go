@@ -16,8 +16,8 @@ const (
 )
 
 var (
+	// DefaultFluxInterval is the default reconciliation interval for Flux.
 	DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
-// DefaultFluxInterval is the default reconciliation interval for Flux.
 )
 
 // ExpectedDistributionConfigName returns the default config filename for a distribution.
