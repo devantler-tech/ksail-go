@@ -122,7 +122,6 @@ type Distribution struct {
 // Sync configures the OCI source that the operator will track and apply.
 type Sync struct {
 	Name       string           `json:"name,omitempty"`
-// DeepCopyInto copies all properties into another Sync.
 	Interval   *metav1.Duration `json:"interval,omitempty"`
 	Kind       string           `json:"kind"`
 	URL        string           `json:"url"`
