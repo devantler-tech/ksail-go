@@ -155,7 +155,6 @@ func collectManifestFiles(root string) ([]string, error) {
 	}
 
 	sort.Strings(manifests)
-//nolint:ireturn // returns interface from external library
 	return manifests, nil
 }
 
