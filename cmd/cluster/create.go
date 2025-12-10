@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,7 +31,6 @@ import (
 	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-	"sigs.k8s.io/yaml"
 )
 
 const (
@@ -613,7 +611,7 @@ func runK3DRegistryAction(
 		return nil
 	}
 
-	targetName := resolveK3dClusterName(ctx.clusterCfg, ctx.k3dConfig)
+	targetName := k3dconfigmanager.ResolveClusterName(ctx.clusterCfg, ctx.k3dConfig)
 	writer := ctx.cmd.OutOrStdout()
 
 	err := action(execCtx, ctx.k3dConfig, targetName, dockerClient, writer)
@@ -781,9 +779,15 @@ func runRegistryStage(
 
 // createHelmClientForCluster creates a Helm client configured for the cluster.
 func createHelmClientForCluster(clusterCfg *v1alpha1.Cluster) (*helm.Client, string, error) {
-	kubeconfig, err := loadKubeconfig(clusterCfg)
+	kubeconfig, err := cmdhelpers.GetKubeconfigPathFromConfig(clusterCfg)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to get kubeconfig path: %w", err)
+	}
+
+	// Validate file exists
+	_, err = os.Stat(kubeconfig)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to access kubeconfig file: %w", err)
 	}
 
 	helmClient, err := helm.NewClient(kubeconfig, clusterCfg.Spec.Connection.Context)
@@ -826,7 +830,7 @@ func newCiliumInstaller(
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *ciliuminstaller.CiliumInstaller {
-	timeout := getInstallTimeout(clusterCfg)
+	timeout := installer.GetInstallTimeout(clusterCfg)
 
 	return ciliuminstaller.NewCiliumInstaller(
 		helmClient,
@@ -874,7 +878,7 @@ func newCalicoInstaller(
 	kubeconfig string,
 	clusterCfg *v1alpha1.Cluster,
 ) *calicoinstaller.CalicoInstaller {
-	timeout := getInstallTimeout(clusterCfg)
+	timeout := installer.GetInstallTimeout(clusterCfg)
 
 	return calicoinstaller.NewCalicoInstaller(
 		helmClient,
@@ -933,49 +937,6 @@ func runCNIInstallation(
 	return nil
 }
 
-// loadKubeconfig loads and returns the kubeconfig path.
-func loadKubeconfig(clusterCfg *v1alpha1.Cluster) (string, error) {
-	kubeconfig, err := expandKubeconfigPath(clusterCfg.Spec.Connection.Kubeconfig)
-	if err != nil {
-		return "", fmt.Errorf("failed to expand kubeconfig path: %w", err)
-	}
-
-	// Validate file exists
-	_, err = os.Stat(kubeconfig)
-	if err != nil {
-		return "", fmt.Errorf("failed to access kubeconfig file: %w", err)
-	}
-
-	return kubeconfig, nil
-}
-
-// getInstallTimeout determines the timeout for component installation (Cilium, Calico, metrics-server, etc.).
-// Uses cluster connection timeout if configured, otherwise defaults to 5 minutes.
-func getInstallTimeout(clusterCfg *v1alpha1.Cluster) time.Duration {
-	const defaultTimeout = 5
-
-	timeout := defaultTimeout * time.Minute
-	if clusterCfg.Spec.Connection.Timeout.Duration > 0 {
-		timeout = clusterCfg.Spec.Connection.Timeout.Duration
-	}
-
-	return timeout
-}
-
-// expandKubeconfigPath expands tilde (~) in kubeconfig paths to the user's home directory.
-func expandKubeconfigPath(kubeconfig string) (string, error) {
-	if len(kubeconfig) == 0 || kubeconfig[0] != '~' {
-		return kubeconfig, nil
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user home directory: %w", err)
-	}
-
-	return filepath.Join(home, kubeconfig[1:]), nil
-}
-
 // prepareKindConfigWithMirrors prepares the Kind config by adding mirror registry patches if needed.
 // Returns true if there are containerd patches to process, false otherwise.
 func prepareKindConfigWithMirrors(
@@ -1013,7 +974,7 @@ func prepareK3dConfigWithMirrors(
 
 	original := k3dConfig.Registries.Config
 
-	hostEndpoints := parseK3dRegistryConfig(original)
+	hostEndpoints := k3dconfigmanager.ParseRegistryConfig(original)
 
 	updatedMap, _ := registry.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
 	if len(updatedMap) == 0 {
@@ -1029,71 +990,6 @@ func prepareK3dConfigWithMirrors(
 	k3dConfig.Registries.Config = rendered
 
 	return true
-}
-
-type mirrorConfigEntry struct {
-	Endpoint []string `yaml:"endpoint"`
-}
-
-type k3dMirrorConfig struct {
-	Mirrors map[string]mirrorConfigEntry `yaml:"mirrors"`
-}
-
-func parseK3dRegistryConfig(raw string) map[string][]string {
-	result := make(map[string][]string)
-
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
-		return result
-	}
-
-	var cfg k3dMirrorConfig
-
-	err := yaml.Unmarshal([]byte(trimmed), &cfg)
-	if err != nil {
-		return result
-	}
-
-	for host, entry := range cfg.Mirrors {
-		if len(entry.Endpoint) == 0 {
-			continue
-		}
-
-		filtered := make([]string, 0, len(entry.Endpoint))
-		for _, endpoint := range entry.Endpoint {
-			endpoint = strings.TrimSpace(endpoint)
-			if endpoint == "" {
-				continue
-			}
-
-			filtered = append(filtered, endpoint)
-		}
-
-		if len(filtered) == 0 {
-			continue
-		}
-
-		result[host] = filtered
-	}
-
-	return result
-}
-
-func resolveK3dClusterName(
-	clusterCfg *v1alpha1.Cluster,
-	k3dConfig *v1alpha5.SimpleConfig,
-) string {
-	if k3dConfig != nil {
-		if name := strings.TrimSpace(k3dConfig.Name); name != "" {
-			return name
-		}
-	}
-
-	if name := strings.TrimSpace(clusterCfg.Spec.Connection.Context); name != "" {
-		return name
-	}
-
-	return "k3d"
 }
 
 // generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
@@ -1118,7 +1014,7 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 // For K3d, metrics-server should be disabled via config (handled in setupK3dMetricsServer), not uninstalled.
 func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	// Check if distribution provides metrics-server by default
-	hasMetricsByDefault := distributionProvidesMetricsByDefault(clusterCfg.Spec.Distribution)
+	hasMetricsByDefault := clusterCfg.Spec.Distribution.ProvidesMetricsServerByDefault()
 
 	// Enabled: Install if not present by default
 	if clusterCfg.Spec.MetricsServer == v1alpha1.MetricsServerEnabled {
@@ -1154,19 +1050,6 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 	return nil
 }
 
-// distributionProvidesMetricsByDefault returns true if the distribution includes metrics-server by default.
-// K3d (based on K3s) includes metrics-server, Kind does not.
-func distributionProvidesMetricsByDefault(distribution v1alpha1.Distribution) bool {
-	switch distribution {
-	case v1alpha1.DistributionK3d:
-		return true
-	case v1alpha1.DistributionKind:
-		return false
-	default:
-		return false
-	}
-}
-
 // installMetricsServer installs metrics-server on the cluster.
 func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
 	notify.WriteMessage(notify.Message{
@@ -1181,15 +1064,15 @@ func installMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr 
 		return err
 	}
 
-	timeout := getInstallTimeout(clusterCfg)
-	installer := metricsserverinstaller.NewMetricsServerInstaller(
+	timeout := installer.GetInstallTimeout(clusterCfg)
+	metricsInstaller := metricsserverinstaller.NewMetricsServerInstaller(
 		helmClient,
 		kubeconfig,
 		clusterCfg.Spec.Connection.Context,
 		timeout,
 	)
 
-	return runMetricsServerInstallation(cmd, installer, tmr)
+	return runMetricsServerInstallation(cmd, metricsInstaller, tmr)
 }
 
 // runMetricsServerInstallation performs the metrics-server installation.
@@ -1272,7 +1155,7 @@ func newFluxInstallerForCluster(
 	clusterCfg *v1alpha1.Cluster,
 	helmClient helm.Interface,
 ) installer.Installer {
-	timeout := getInstallTimeout(clusterCfg)
+	timeout := installer.GetInstallTimeout(clusterCfg)
 
 	return fluxInstallerFactory(helmClient, timeout)
 }
