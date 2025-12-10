@@ -163,6 +163,7 @@ jobs:
           ./bin/ksail workload wait --for=condition=Available deployment/podinfo --timeout=300s
 
       - name: 🧪 ksail workload reconcile
+        if: contains(matrix.init-args, '--gitops-engine Flux')
         run: |
           ./bin/ksail workload reconcile
 
