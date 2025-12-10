@@ -2,6 +2,7 @@ package di //nolint:testpackage // Access runtime internals for coverage.
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -9,7 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var errInvokeFailure = errors.New("failure")
+var (
+	errInvokeFailure           = errors.New("failure")
+	errUnexpectedInjectedValue = errors.New("unexpected value")
+)
 
 func expectResolutionError(t *testing.T, resolve func(do.Injector) error, failureMessage string) {
 	t.Helper()
@@ -222,5 +226,59 @@ func TestRuntimeInvokeNilModuleIgnored(t *testing.T) {
 	)
 	if !errors.Is(err, errInvokeFailure) {
 		t.Fatalf("expected sentinel error, got %v", err)
+	}
+}
+
+func TestProvideDependencyRegistersProvider(t *testing.T) {
+	t.Parallel()
+
+	runtime := New(ProvideDependency(func(do.Injector) (string, error) {
+		return "injected", nil
+	}))
+
+	err := runtime.Invoke(func(injector Injector) error {
+		value, err := do.Invoke[string](injector)
+		if err != nil {
+			return err
+		}
+
+		if value != "injected" {
+			return fmt.Errorf("%w: %s", errUnexpectedInjectedValue, value)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("invoke returned error: %v", err)
+	}
+}
+
+func TestComposeModulesExecutesSequentially(t *testing.T) {
+	t.Parallel()
+
+	order := make([]string, 0, 2)
+
+	combined := ComposeModules(
+		func(do.Injector) error {
+			order = append(order, "first")
+
+			return nil
+		},
+		func(do.Injector) error {
+			order = append(order, "second")
+
+			return nil
+		},
+	)
+
+	runtime := New(combined)
+
+	err := runtime.Invoke(func(do.Injector) error { return nil })
+	if err != nil {
+		t.Fatalf("invoke returned error: %v", err)
+	}
+
+	if len(order) != 2 || order[0] != "first" || order[1] != "second" {
+		t.Fatalf("modules executed out of order: %v", order)
 	}
 }

@@ -17,13 +17,15 @@ import (
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	kindconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/kind"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	calicoinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/calico"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
+	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	metricsserverinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/metrics-server"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	k3dprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/k3d"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/docker/docker/client"
@@ -36,6 +38,8 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
+	fluxResourcesActivity       = "applying default resources"
+	fluxResourcesSuccess        = "FluxInstance applied"
 )
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
@@ -91,32 +95,131 @@ func handleCreateRunE(
 ) error {
 	deps.Timer.Start()
 
-	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
-	if err != nil {
-		return fmt.Errorf("failed to load cluster configuration: %w", err)
-	}
-
-	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	clusterCfg, kindConfig, k3dConfig, err := loadClusterConfiguration(cfgManager, deps)
 	if err != nil {
 		return err
 	}
 
-	err = setupMirrorRegistries(cmd, clusterCfg, deps, cfgManager, kindConfig, k3dConfig)
+	err = ensureLocalRegistriesReady(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
 	if err != nil {
-		return fmt.Errorf("failed to setup mirror registries: %w", err)
+		return err
 	}
 
 	// Configure metrics-server for K3d before cluster creation
 	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
+	err = executeClusterLifecycle(cmd, clusterCfg, deps)
+	if err != nil {
+		return err
+	}
+
+	connectMirrorRegistriesWithWarning(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
+
+	err = executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageConnect,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to connect local registry: %w", err)
+	}
+
+	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+}
+
+func loadClusterConfiguration(
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps cmdhelpers.LifecycleDeps,
+) (*v1alpha1.Cluster, *v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
+	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to load cluster configuration: %w", err)
+	}
+
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return clusterCfg, kindConfig, k3dConfig, nil
+}
+
+func ensureLocalRegistriesReady(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+) error {
+	err := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageProvision,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to provision local registry: %w", err)
+	}
+
+	err = setupMirrorRegistries(
+		cmd,
+		clusterCfg,
+		deps,
+		cfgManager,
+		kindConfig,
+		k3dConfig,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to setup mirror registries: %w", err)
+	}
+
+	return nil
+}
+
+func executeClusterLifecycle(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+) error {
 	deps.Timer.NewStage()
 
-	err = cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
+	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 	if err != nil {
 		return fmt.Errorf("failed to execute cluster lifecycle: %w", err)
 	}
 
-	err = connectRegistriesToClusterNetwork(
+	return nil
+}
+
+func connectMirrorRegistriesWithWarning(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	deps cmdhelpers.LifecycleDeps,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	kindConfig *v1alpha4.Cluster,
+	k3dConfig *v1alpha5.SimpleConfig,
+) {
+	err := connectRegistriesToClusterNetwork(
 		cmd,
 		clusterCfg,
 		deps,
@@ -131,8 +234,6 @@ func handleCreateRunE(
 			Writer:  cmd.OutOrStdout(),
 		})
 	}
-
-	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
 }
 
 // handlePostCreationSetup installs CNI and metrics-server after cluster creation.
@@ -142,18 +243,26 @@ func handlePostCreationSetup(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 ) error {
+	var err error
+
 	// For custom CNI (Cilium or Calico), install CNI first as metrics-server needs networking
 	// For default CNI, install metrics-server first as it's independent
 	switch clusterCfg.Spec.CNI {
 	case v1alpha1.CNICilium:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
 	case v1alpha1.CNICalico:
-		return installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
 	case v1alpha1.CNIDefault, "":
-		return handleMetricsServer(cmd, clusterCfg, tmr)
+		err = handleMetricsServer(cmd, clusterCfg, tmr)
 	default:
 		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
 	}
+
+	if err != nil {
+		return err
+	}
+
+	return installFluxIfConfigured(cmd, clusterCfg, tmr)
 }
 
 // installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
@@ -180,9 +289,24 @@ func loadDistributionConfigs(
 	clusterCfg *v1alpha1.Cluster,
 	lifecycleTimer timer.Timer,
 ) (*v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
+	defaultConfigPath := defaultDistributionConfigPath(clusterCfg.Spec.Distribution)
+
+	configPath := strings.TrimSpace(clusterCfg.Spec.DistributionConfig)
+	if configPath == "" || strings.EqualFold(configPath, "auto") {
+		clusterCfg.Spec.DistributionConfig = defaultConfigPath
+		configPath = defaultConfigPath
+	}
+
+	// If distribution is K3d but the config path still points to the kind default,
+	// switch to the k3d default so we don’t try to read kind.yaml.
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d && configPath == defaultDistributionConfigPath(v1alpha1.DistributionKind) {
+		clusterCfg.Spec.DistributionConfig = defaultConfigPath
+		configPath = defaultConfigPath
+	}
+
 	switch clusterCfg.Spec.Distribution {
 	case v1alpha1.DistributionKind:
-		manager := kindconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		manager := kindconfigmanager.NewConfigManager(configPath)
 
 		kindConfig, err := manager.LoadConfig(lifecycleTimer)
 		if err != nil {
@@ -191,7 +315,7 @@ func loadDistributionConfigs(
 
 		return kindConfig, nil, nil
 	case v1alpha1.DistributionK3d:
-		manager := k3dconfigmanager.NewConfigManager(clusterCfg.Spec.DistributionConfig)
+		manager := k3dconfigmanager.NewConfigManager(configPath)
 
 		k3dConfig, err := manager.LoadConfig(lifecycleTimer)
 		if err != nil {
@@ -240,15 +364,21 @@ func setupK3dMetricsServer(clusterCfg *v1alpha1.Cluster, k3dConfig *v1alpha5.Sim
 }
 
 const (
-	mirrorStageTitle   = "Create mirror registries..."
-	mirrorStageEmoji   = "🪞"
-	mirrorStageSuccess = "mirror registries created"
-	mirrorStageFailure = "failed to setup registries"
+	mirrorStageTitle    = "Create mirror registry..."
+	mirrorStageEmoji    = "🪞"
+	mirrorStageActivity = "creating mirror registries"
+	mirrorStageSuccess  = "mirror registries created"
+	mirrorStageFailure  = "failed to setup registries"
 
-	connectStageTitle   = "Connect registries..."
-	connectStageEmoji   = "🔗"
-	connectStageSuccess = "registries connected"
-	connectStageFailure = "failed to connect registries"
+	connectStageTitle    = "Connect registry..."
+	connectStageEmoji    = "🔗"
+	connectStageActivity = "connecting registries"
+	connectStageSuccess  = "registries connected"
+	connectStageFailure  = "failed to connect registries"
+
+	fluxStageTitle    = "Install Flux..."
+	fluxStageEmoji    = "☸️"
+	fluxStageActivity = "installing Flux controllers"
 )
 
 var (
@@ -256,6 +386,7 @@ var (
 	mirrorRegistryStageInfo = registryStageInfo{
 		title:         mirrorStageTitle,
 		emoji:         mirrorStageEmoji,
+		activity:      mirrorStageActivity,
 		success:       mirrorStageSuccess,
 		failurePrefix: mirrorStageFailure,
 	}
@@ -263,6 +394,7 @@ var (
 	connectRegistryStageInfo = registryStageInfo{
 		title:         connectStageTitle,
 		emoji:         connectStageEmoji,
+		activity:      connectStageActivity,
 		success:       connectStageSuccess,
 		failurePrefix: connectStageFailure,
 	}
@@ -285,6 +417,17 @@ var (
 	// connectRegistriesToClusterNetwork attaches mirror registries to the cluster network after creation.
 	//nolint:gochecknoglobals // Function reused by tests and runtime flow.
 	connectRegistriesToClusterNetwork = makeRegistryStageRunner(registryStageRoleConnect)
+	// fluxInstallerFactory is overridden in tests to stub Flux installer creation.
+	//nolint:gochecknoglobals // dependency injection for tests
+	fluxInstallerFactory = func(client helm.Interface, timeout time.Duration) installer.Installer {
+		return fluxinstaller.NewFluxInstaller(client, timeout)
+	}
+	// ensureFluxResourcesFunc enforces default Flux resources post-install.
+	//nolint:gochecknoglobals // dependency injection for tests
+	ensureFluxResourcesFunc = fluxinstaller.EnsureDefaultResources
+	// dockerClientInvoker can be overridden in tests to avoid real Docker connections.
+	//nolint:gochecknoglobals // dependency injection for tests
+	dockerClientInvoker = cmdhelpers.WithDockerClient
 )
 
 type registryStageRole int
@@ -297,6 +440,7 @@ const (
 type registryStageInfo struct {
 	title         string
 	emoji         string
+	activity      string
 	success       string
 	failurePrefix string
 }
@@ -311,7 +455,7 @@ type registryStageContext struct {
 	clusterCfg  *v1alpha1.Cluster
 	kindConfig  *v1alpha4.Cluster
 	k3dConfig   *v1alpha5.SimpleConfig
-	mirrorSpecs []registries.MirrorSpec
+	mirrorSpecs []registry.MirrorSpec
 }
 
 type registryStageDefinition struct {
@@ -485,7 +629,7 @@ func newRegistryHandlers(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 	kindAction func(context.Context, client.APIClient) error,
 	k3dAction func(context.Context, client.APIClient) error,
 ) map[v1alpha1.Distribution]registryStageHandler {
@@ -509,7 +653,7 @@ func handleRegistryStage(
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
 	info registryStageInfo,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 	kindAction func(context.Context, client.APIClient) error,
 	k3dAction func(context.Context, client.APIClient) error,
 ) error {
@@ -540,7 +684,7 @@ func runRegistryStageWithRole(
 	k3dConfig *v1alpha5.SimpleConfig,
 	role registryStageRole,
 ) error {
-	mirrorSpecs := registries.ParseMirrorSpecs(
+	mirrorSpecs := registry.ParseMirrorSpecs(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
 	)
 
@@ -604,7 +748,15 @@ func runRegistryStage(
 		Writer:  cmd.OutOrStdout(),
 	})
 
-	err := cmdhelpers.WithDockerClient(cmd, func(dockerClient client.APIClient) error {
+	if info.activity != "" {
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: info.activity,
+			Writer:  cmd.OutOrStdout(),
+		})
+	}
+
+	err := dockerClientInvoker(cmd, func(dockerClient client.APIClient) error {
 		err := action(cmd.Context(), dockerClient)
 		if err != nil {
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)
@@ -853,7 +1005,7 @@ func prepareKindConfigWithMirrors(
 func prepareK3dConfigWithMirrors(
 	clusterCfg *v1alpha1.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 ) bool {
 	if clusterCfg.Spec.Distribution != v1alpha1.DistributionK3d || k3dConfig == nil {
 		return false
@@ -863,12 +1015,12 @@ func prepareK3dConfigWithMirrors(
 
 	hostEndpoints := parseK3dRegistryConfig(original)
 
-	updatedMap, _ := registries.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
+	updatedMap, _ := registry.BuildHostEndpointMap(mirrorSpecs, "", hostEndpoints)
 	if len(updatedMap) == 0 {
 		return false
 	}
 
-	rendered := registries.RenderK3dMirrorConfig(updatedMap)
+	rendered := registry.RenderK3dMirrorConfig(updatedMap)
 
 	if strings.TrimSpace(rendered) == strings.TrimSpace(original) {
 		return strings.TrimSpace(original) != ""
@@ -947,16 +1099,16 @@ func resolveK3dClusterName(
 // generateContainerdPatchesFromSpecs generates containerd config patches from mirror registry specs.
 // Input format: "registry=endpoint" (e.g., "docker.io=http://localhost:5000")
 func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
-	parsed := registries.ParseMirrorSpecs(mirrorSpecs)
+	parsed := registry.ParseMirrorSpecs(mirrorSpecs)
 	if len(parsed) == 0 {
 		return nil
 	}
 
-	entries := registries.BuildMirrorEntries(parsed, "", nil, nil, nil)
+	entries := registry.BuildMirrorEntries(parsed, "", nil, nil, nil)
 
 	patches := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		patches = append(patches, registries.KindPatch(entry))
+		patches = append(patches, registry.KindPatch(entry))
 	}
 
 	return patches
@@ -1065,6 +1217,96 @@ func runMetricsServerInstallation(
 		Content: "Metrics Server installed " + timingStr,
 		Writer:  cmd.OutOrStdout(),
 	})
+
+	return nil
+}
+
+func installFluxIfConfigured(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+) error {
+	if clusterCfg.Spec.GitOpsEngine != v1alpha1.GitOpsEngineFlux {
+		return nil
+	}
+
+	helmClient, kubeconfig, err := createHelmClientForCluster(clusterCfg)
+	if err != nil {
+		return err
+	}
+
+	fluxInstaller := newFluxInstallerForCluster(clusterCfg, helmClient)
+
+	err = runFluxInstallation(cmd, fluxInstaller, tmr)
+	if err != nil {
+		return err
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: fluxResourcesActivity,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	err = ensureFluxResourcesFunc(cmd.Context(), kubeconfig, clusterCfg)
+	if err != nil {
+		return fmt.Errorf("failed to configure Flux resources: %w", err)
+	}
+
+	total, stage := tmr.GetTiming()
+	timing := notify.FormatTiming(total, stage, true)
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.SuccessType,
+		Content: fmt.Sprintf("%s %s", fluxResourcesSuccess, timing),
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	return nil
+}
+
+// newFluxInstallerForCluster returns an installer tuned for the cluster context.
+//
+//nolint:ireturn // returning the Installer interface enables dependency injection in tests
+func newFluxInstallerForCluster(
+	clusterCfg *v1alpha1.Cluster,
+	helmClient helm.Interface,
+) installer.Installer {
+	timeout := getInstallTimeout(clusterCfg)
+
+	return fluxInstallerFactory(helmClient, timeout)
+}
+
+func runFluxInstallation(
+	cmd *cobra.Command,
+	installer installer.Installer,
+	tmr timer.Timer,
+) error {
+	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	notify.WriteMessage(notify.Message{
+		Type:    notify.TitleType,
+		Content: fluxStageTitle,
+		Emoji:   fluxStageEmoji,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	tmr.NewStage()
+
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ActivityType,
+		Content: fluxStageActivity,
+		Writer:  cmd.OutOrStdout(),
+	})
+
+	err := installer.Install(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to install flux controllers: %w", err)
+	}
 
 	return nil
 }

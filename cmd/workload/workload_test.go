@@ -95,7 +95,7 @@ func TestWorkloadCommandsLoadConfigOnly(t *testing.T) {
 			root.SetArgs([]string{"workload", commandName})
 
 			err := root.Execute()
-			require.NoErrorf(t, err, "expected workload %s handler to succeed", commandName)
+			require.ErrorContains(t, err, "local registry must be enabled", "expected workload %s handler to require local registry", commandName)
 
 			actual := out.String()
 			require.Contains(t, actual, "config loaded")

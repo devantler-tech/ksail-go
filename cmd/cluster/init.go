@@ -47,7 +47,6 @@ func InitFieldSelectors() []ksailconfigmanager.FieldSelector[v1alpha1.Cluster] {
 	selectors = append(selectors, ksailconfigmanager.StandardSourceDirectoryFieldSelector())
 	selectors = append(selectors, ksailconfigmanager.DefaultCNIFieldSelector())
 	selectors = append(selectors, ksailconfigmanager.DefaultMetricsServerFieldSelector())
-	selectors = append(selectors, ksailconfigmanager.DefaultGitOpsEngineFieldSelector())
 
 	return selectors
 }
@@ -82,10 +81,12 @@ func HandleInitRunE(
 		deps.Timer.Start()
 	}
 
-	var (
-		targetPath string
-		err        error
-	)
+	clusterCfg, err := cfgManager.LoadConfigWithoutFileSilent()
+	if err != nil {
+		return fmt.Errorf("failed to resolve configuration for scaffolding: %w", err)
+	}
+
+	var targetPath string
 
 	flagOutputPath := cfgManager.Viper.GetString("output")
 	if flagOutputPath != "" {
@@ -101,7 +102,7 @@ func HandleInitRunE(
 	mirrorRegistries := cfgManager.Viper.GetStringSlice("mirror-registry")
 
 	scaffolderInstance := scaffolder.NewScaffolder(
-		*cfgManager.Config,
+		*clusterCfg,
 		cmd.OutOrStdout(),
 	)
 	scaffolderInstance.MirrorRegistries = mirrorRegistries

@@ -15,7 +15,7 @@ import (
 	kindgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kind"
 	kustomizationgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
@@ -28,6 +28,9 @@ const (
 	KindConfigFile = "kind.yaml"
 	// K3dConfigFile is the default filename for K3d distribution configuration.
 	K3dConfigFile = "k3d.yaml"
+
+	// defaultK3sImage pins K3d clusters to a Flux-compatible Kubernetes version.
+	defaultK3sImage = "rancher/k3s:v1.29.4-k3s1"
 )
 
 var (
@@ -42,30 +45,6 @@ var (
 	// ErrKustomizationGeneration wraps failures when creating kustomization.yaml.
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
-
-// getExpectedDistributionConfigName returns the expected distribution config filename for a distribution.
-// This is used during scaffolding to set the correct config file name that matches the generated files.
-func getExpectedDistributionConfigName(distribution v1alpha1.Distribution) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return KindConfigFile
-	case v1alpha1.DistributionK3d:
-		return K3dConfigFile
-	default:
-		return KindConfigFile // fallback default
-	}
-}
-
-func getExpectedContextName(distribution v1alpha1.Distribution) string {
-	switch distribution {
-	case v1alpha1.DistributionKind:
-		return "kind-kind"
-	case v1alpha1.DistributionK3d:
-		return "k3d-k3d-default"
-	default:
-		return ""
-	}
-}
 
 // Scaffolder is responsible for generating KSail project files and configurations.
 type Scaffolder struct {
@@ -119,26 +98,26 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 	return s.generateKustomizationConfig(output, force)
 }
 
-// GenerateContainerdPatches generates containerd config patches for Kind mirror registries.
+// GenerateContainerdPatches generates containerd config patches for Kind mirror registry.
 // Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 // Container names match the registry host after sanitization to align with runtime provisioning.
 func (s *Scaffolder) GenerateContainerdPatches() []string {
-	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
+	specs := registry.ParseMirrorSpecs(s.MirrorRegistries)
 	if len(specs) == 0 {
 		return nil
 	}
 
-	entries := registries.BuildMirrorEntries(specs, "", nil, nil, nil)
+	entries := registry.BuildMirrorEntries(specs, "", nil, nil, nil)
 	patches := make([]string, 0, len(entries))
 
 	for _, entry := range entries {
-		patches = append(patches, registries.KindPatch(entry))
+		patches = append(patches, registry.KindPatch(entry))
 	}
 
 	return patches
 }
 
-// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registries.
+// GenerateK3dRegistryConfig generates K3d registry configuration for mirror registry.
 // Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
 // K3d requires one registry per proxy, so we generate multiple create configs.
 func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistries {
@@ -148,14 +127,14 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 		return registryConfig
 	}
 
-	specs := registries.ParseMirrorSpecs(s.MirrorRegistries)
+	specs := registry.ParseMirrorSpecs(s.MirrorRegistries)
 
-	hostEndpoints, updated := registries.BuildHostEndpointMap(specs, "", nil)
+	hostEndpoints, updated := registry.BuildHostEndpointMap(specs, "", nil)
 	if len(hostEndpoints) == 0 || !updated {
 		return registryConfig
 	}
 
-	registryConfig.Config = registries.RenderK3dMirrorConfig(hostEndpoints)
+	registryConfig.Config = registry.RenderK3dMirrorConfig(hostEndpoints)
 
 	return registryConfig
 }
@@ -167,6 +146,7 @@ func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 			APIVersion: "k3d.io/v1alpha5",
 			Kind:       "Simple",
 		},
+		Image: defaultK3sImage,
 		// Additional configuration will be handled by the provisioner with sensible defaults
 		// Users can override any settings in this generated config file
 	}
@@ -219,7 +199,7 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 
 	// Set the expected context if it's empty, based on the distribution and default cluster names
 	if config.Spec.Connection.Context == "" {
-		expectedContext := getExpectedContextName(config.Spec.Distribution)
+		expectedContext := v1alpha1.ExpectedContextName(config.Spec.Distribution)
 		if expectedContext != "" {
 			config.Spec.Connection.Context = expectedContext
 		}
@@ -227,7 +207,7 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 
 	// Set the expected distribution config filename if it's empty or set to default
 	if config.Spec.DistributionConfig == "" || config.Spec.DistributionConfig == KindConfigFile {
-		expectedConfigName := getExpectedDistributionConfigName(config.Spec.Distribution)
+		expectedConfigName := v1alpha1.ExpectedDistributionConfigName(config.Spec.Distribution)
 		config.Spec.DistributionConfig = expectedConfigName
 	}
 
@@ -400,7 +380,7 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 		return nil
 	}
 
-	newConfigName := getExpectedDistributionConfigName(s.KSailConfig.Spec.Distribution)
+	newConfigName := v1alpha1.ExpectedDistributionConfigName(s.KSailConfig.Spec.Distribution)
 	newConfigPath := filepath.Join(output, newConfigName)
 
 	previousPath := previous
@@ -422,18 +402,20 @@ func (s *Scaffolder) removeFormerDistributionConfig(output, previous string) err
 	}
 
 	if info.IsDir() {
+		// Clear directory so file generation can succeed on the expected path.
+		removeErr := os.RemoveAll(previousPath)
+		if removeErr != nil {
+			return fmt.Errorf(
+				"failed to remove previous distribution config '%s': %w",
+				previous,
+				removeErr,
+			)
+		}
+
 		return nil
 	}
 
-	removeErr := os.Remove(previousPath)
-	if removeErr != nil {
-		return fmt.Errorf(
-			"failed to remove previous distribution config '%s': %w",
-			previous,
-			removeErr,
-		)
-	}
-
+	// Keep existing files in place so overwrite detection can log accurately.
 	return nil
 }
 

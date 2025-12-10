@@ -93,15 +93,25 @@ func TestDistributionIsValid(t *testing.T) {
 func TestGitOpsEngineSet(t *testing.T) {
 	t.Parallel()
 
-	validCases := []struct{ input, expected string }{
-		{"None", "None"},
-		{"none", "None"},
-		{"NONE", "None"},
+	validCases := []struct {
+		name     string
+		input    string
+		expected v1alpha1.GitOpsEngine
+	}{
+		{name: "legacy none", input: "None", expected: v1alpha1.GitOpsEngineNone},
+		{name: "mixed case none", input: "nOnE", expected: v1alpha1.GitOpsEngineNone},
+		{name: "flux", input: "Flux", expected: v1alpha1.GitOpsEngineFlux},
+		{name: "flux lowercase", input: "flux", expected: v1alpha1.GitOpsEngineFlux},
 	}
-	for _, validCase := range validCases {
-		var tool v1alpha1.GitOpsEngine
 
-		require.NoError(t, tool.Set(validCase.input))
+	for _, testCase := range validCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			var tool v1alpha1.GitOpsEngine
+			require.NoError(t, tool.Set(testCase.input))
+			assert.Equal(t, testCase.expected, tool)
+		})
 	}
 
 	err := func() error {
@@ -297,6 +307,7 @@ func TestNewClusterOptions(t *testing.T) {
 	assert.NotNil(t, options.Cilium)
 	assert.NotNil(t, options.Flux)
 	assert.NotNil(t, options.ArgoCD)
+	assert.NotNil(t, options.LocalRegistry)
 	assert.NotNil(t, options.Helm)
 	assert.NotNil(t, options.Kustomize)
 }
@@ -339,6 +350,15 @@ func TestNewClusterOptionsFlux(t *testing.T) {
 	assert.NotNil(t, options)
 }
 
+func TestNewClusterOptionsLocalRegistry(t *testing.T) {
+	t.Parallel()
+
+	options := v1alpha1.NewClusterOptionsLocalRegistry()
+
+	// OptionsLocalRegistry is an empty struct, just verify it's created
+	assert.NotNil(t, options)
+}
+
 func TestNewClusterOptionsArgoCD(t *testing.T) {
 	t.Parallel()
 
@@ -364,4 +384,42 @@ func TestNewClusterOptionsKustomize(t *testing.T) {
 
 	// OptionsKustomize is an empty struct, just verify it's created
 	assert.NotNil(t, options)
+}
+
+func TestNewOCIRegistry(t *testing.T) {
+	t.Parallel()
+
+	registry := v1alpha1.NewOCIRegistry()
+
+	assert.Equal(t, v1alpha1.OCIRegistryStatusNotProvisioned, registry.Status)
+	assert.Empty(t, registry.Endpoint)
+}
+
+func TestNewOCIArtifact(t *testing.T) {
+	t.Parallel()
+
+	artifact := v1alpha1.NewOCIArtifact()
+
+	assert.Empty(t, artifact.Name)
+	assert.Empty(t, artifact.Version)
+}
+
+func TestNewFluxOCIRepository(t *testing.T) {
+	t.Parallel()
+
+	repo := v1alpha1.NewFluxOCIRepository()
+
+	assert.Empty(t, repo.Metadata.Name)
+	assert.Empty(t, repo.Spec.URL)
+	assert.Empty(t, repo.Spec.Ref.Tag)
+}
+
+func TestNewFluxKustomization(t *testing.T) {
+	t.Parallel()
+
+	kustomization := v1alpha1.NewFluxKustomization()
+
+	assert.Empty(t, kustomization.Metadata.Name)
+	assert.False(t, kustomization.Spec.Prune)
+	assert.Empty(t, kustomization.Spec.SourceRef.Name)
 }

@@ -65,6 +65,9 @@
             "Disabled"
           ]
         },
+        "localRegistry": {
+          "type": "string"
+        },
         "gitOpsEngine": {
           "type": "string",
           "enum": [
@@ -94,7 +97,12 @@
               "type": "object"
             },
             "flux": {
-              "properties": {},
+              "properties": {
+                "interval": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(ns|us|µs|ms|s|m|h)$"
+                }
+              },
               "additionalProperties": false,
               "type": "object"
             },
@@ -102,6 +110,18 @@
               "properties": {},
               "additionalProperties": false,
               "type": "object"
+            },
+            "localRegistry": {
+              "properties": {
+                "hostPort": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "hostPort"
+              ]
             },
             "helm": {
               "properties": {},

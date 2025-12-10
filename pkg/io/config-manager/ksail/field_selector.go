@@ -1,6 +1,14 @@
 package configmanager
 
-import "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+import (
+	"time"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// defaultDistributionConfigPath left empty so distribution-specific defaults are applied later (Kind vs K3d).
+const defaultDistributionConfigPath = ""
 
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {
@@ -58,7 +66,7 @@ func DefaultDistributionConfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.DistributionConfig },
 		Description:  "Configuration file for the distribution",
-		DefaultValue: "",
+		DefaultValue: defaultDistributionConfigPath,
 	}
 }
 
@@ -85,8 +93,43 @@ func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
 func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
-		Description:  "GitOps engine to use",
+		Description:  "GitOps engine to use (None disables GitOps, Flux installs Flux controllers)",
 		DefaultValue: v1alpha1.GitOpsEngineNone,
+	}
+}
+
+// DefaultLocalRegistryFieldSelector creates a selector for configuring the local OCI registry lifecycle.
+func DefaultLocalRegistryFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.LocalRegistry
+		},
+		Description: "Local registry behavior (Enabled provisions a registry; " +
+			"Disabled skips provisioning. Defaults to Enabled when " +
+			"a GitOps engine is configured)",
+		DefaultValue: v1alpha1.LocalRegistryDisabled,
+	}
+}
+
+// DefaultRegistryPortFieldSelector creates a selector for the registry host port binding.
+func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.Options.LocalRegistry.HostPort
+		},
+		Description:  "Host port to expose the local OCI registry on",
+		DefaultValue: v1alpha1.DefaultLocalRegistryPort,
+	}
+}
+
+// DefaultFluxIntervalFieldSelector creates a selector for the Flux reconciliation interval.
+func DefaultFluxIntervalFieldSelector() FieldSelector[v1alpha1.Cluster] {
+	return FieldSelector[v1alpha1.Cluster]{
+		Selector: func(c *v1alpha1.Cluster) any {
+			return &c.Spec.Options.Flux.Interval
+		},
+		Description:  "Flux reconciliation interval (e.g. 1m, 30s)",
+		DefaultValue: metav1.Duration{Duration: time.Minute},
 	}
 }
 
@@ -115,5 +158,9 @@ func DefaultClusterFieldSelectors() []FieldSelector[v1alpha1.Cluster] {
 		DefaultDistributionConfigFieldSelector(),
 		DefaultContextFieldSelector(),
 		DefaultKubeconfigFieldSelector(),
+		DefaultGitOpsEngineFieldSelector(),
+		DefaultLocalRegistryFieldSelector(),
+		DefaultRegistryPortFieldSelector(),
+		DefaultFluxIntervalFieldSelector(),
 	}
 }

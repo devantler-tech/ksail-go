@@ -10,6 +10,11 @@ bin/
 dist/
 *.test
 *.out
+vendor/
+tmp/
+
+# Exclude dependency directories
+node_modules/
 
 # Exclude coverage and lint artifacts
 coverage*
@@ -19,6 +24,16 @@ report/
 # Exclude environment and log files
 .env*
 *.log*
+Dockerfile*
+.dockerignore
 
 # Exclude documentation specs from Docker context
 specs/
+docs/
+
+# Exclude generated KSail configs
+ksail
+ksail.yaml
+k3d.yaml
+kind.yaml
+k8s/

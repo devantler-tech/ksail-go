@@ -8,7 +8,6 @@ apiVersion: ksail.dev/v1alpha1
 kind: Cluster
 spec:
   distribution: K3d
-  distributionConfig: k3d.yaml
 
 ---
 

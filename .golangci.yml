@@ -39,6 +39,9 @@ linters:
         path: pkg/svc/provisioner/cluster/factory.go
       - linters:
           - ireturn
+        path: pkg/svc/provisioner/registry/local_registry_service.go
+      - linters:
+          - ireturn
         path: cmd/cipher/encrypt.go
       - linters:
           - ireturn
@@ -64,6 +67,7 @@ linters:
             - github.com/derailed/k9s
             - github.com/fluxcd
             - github.com/getsops/sops
+            - github.com/go-viper/mapstructure/v2
             - github.com/invopop/jsonschema
             - github.com/mitchellh
             - github.com/wk8/go-ordered-map

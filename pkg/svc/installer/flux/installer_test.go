@@ -85,7 +85,7 @@ func newFluxInstallerWithDefaults(
 func expectFluxInstall(t *testing.T, client *helm.MockInterface, installErr error) {
 	t.Helper()
 	client.EXPECT().
-		InstallChart(
+		InstallOrUpgradeChart(
 			mock.Anything,
 			mock.MatchedBy(func(spec *helm.ChartSpec) bool {
 				assert.Equal(t, "flux-operator", spec.ReleaseName)
@@ -95,6 +95,7 @@ func expectFluxInstall(t *testing.T, client *helm.MockInterface, installErr erro
 					spec.ChartName,
 				)
 				assert.Equal(t, "flux-system", spec.Namespace)
+				assert.True(t, spec.Silent, "Flux install should silence Helm stderr noise")
 
 				return true
 			}),

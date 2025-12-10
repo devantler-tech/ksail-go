@@ -72,6 +72,7 @@ func TestScaffoldAppliesDistributionDefaults(t *testing.T) {
 
 			_ = scaffolderInstance.Scaffold(tempDir, false)
 
+			require.Equal(t, testCase.distribution, mocks.ksailLastModel.Spec.Distribution)
 			require.Equal(t, testCase.expected, mocks.ksailLastModel.Spec.DistributionConfig)
 		})
 	}
@@ -228,6 +229,33 @@ func TestScaffoldOverwritesFilesWhenForceEnabled(t *testing.T) {
 	// Verify ksail generator was called (force enabled)
 	mocks.ksail.AssertNumberOfCalls(t, "Generate", 1)
 	require.Contains(t, buffer.String(), "overwrote 'ksail.yaml'")
+}
+
+func TestScaffoldOverwritesKindConfigWhenForceEnabled(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	kindPath := filepath.Join(tempDir, scaffolder.KindConfigFile)
+
+	require.NoError(t, os.WriteFile(kindPath, []byte("existing-kind"), 0o600))
+
+	oldTime := time.Now().Add(-2 * time.Minute)
+	require.NoError(t, os.Chtimes(kindPath, oldTime, oldTime))
+
+	buffer := &bytes.Buffer{}
+	instance, mocks := newScaffolderWithMocks(t, buffer)
+
+	mocks.kind.ExpectedCalls = nil
+	mocks.kind.On("Generate", mock.Anything, mock.Anything).Return("", nil).Once()
+
+	err := instance.Scaffold(tempDir, true)
+	require.NoError(t, err)
+
+	require.Contains(t, buffer.String(), "overwrote 'kind.yaml'")
+
+	info, statErr := os.Stat(kindPath)
+	require.NoError(t, statErr)
+	require.True(t, info.ModTime().After(oldTime), "expected mod time to update on overwrite")
 }
 
 func TestScaffoldWrapsKSailGenerationErrors(t *testing.T) {
@@ -428,14 +456,14 @@ func TestScaffoldAppliesContextDefaults(t *testing.T) {
 			name: "KindDefaultContext",
 			scenario: scaffoldContextCase{
 				distribution: v1alpha1.DistributionKind,
-				expected:     "kind-kind",
+				expected:     v1alpha1.ExpectedContextName(v1alpha1.DistributionKind),
 			},
 		},
 		{
 			name: "K3dDefaultContext",
 			scenario: scaffoldContextCase{
 				distribution: v1alpha1.DistributionK3d,
-				expected:     "k3d-k3d-default",
+				expected:     v1alpha1.ExpectedContextName(v1alpha1.DistributionK3d),
 			},
 		},
 		{
@@ -1065,4 +1093,13 @@ func TestCreateK3dConfig_MetricsServerDisabledWithCilium(t *testing.T) {
 
 	assert.True(t, hasCNIFlag, "CNI flag should be present")
 	assert.True(t, hasMetricsFlag, "metrics-server flag should be present")
+}
+
+func TestCreateK3dConfig_SetsDefaultImage(t *testing.T) {
+	t.Parallel()
+
+	scaffolderInstance := newK3dScaffolder(t, nil)
+	config := scaffolderInstance.CreateK3dConfig()
+
+	assert.Equal(t, "rancher/k3s:v1.29.4-k3s1", config.Image)
 }

@@ -1,4 +1,4 @@
-package registries
+package registry
 
 import (
 	"context"
@@ -32,11 +32,40 @@ const expectedEndpointParts = 2
 // Registry Lifecycle Management
 // These functions handle the creation, setup, and cleanup of registry containers.
 
+// PrepareRegistryManager builds a registry manager and extracts registry info via the provided extractor.
+// The extractor receives the set of already used ports (if any) and should return the registries that need work.
+func PrepareRegistryManager(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	extractor func(baseUsedPorts map[int]struct{}) []Info,
+) (*dockerclient.RegistryManager, []Info, error) {
+	regManager, err := dockerclient.NewRegistryManager(dockerClient)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create registry manager: %w", err)
+	}
+
+	registryInfos := extractor(nil)
+	if len(registryInfos) == 0 {
+		return nil, nil, nil
+	}
+
+	existingPorts, err := CollectExistingRegistryPorts(ctx, regManager)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to collect existing registry ports: %w", err)
+	}
+
+	if len(existingPorts) != 0 {
+		registryInfos = extractor(existingPorts)
+	}
+
+	return regManager, registryInfos, nil
+}
+
 // SetupRegistries ensures that the provided registries exist. Any newly created
 // registries are cleaned up if a later creation fails.
 func SetupRegistries(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 	registries []Info,
 	clusterName string,
 	networkName string,
@@ -46,46 +75,104 @@ func SetupRegistries(
 		return nil
 	}
 
-	existingRegistries, err := collectExistingRegistryNames(ctx, registryMgr)
+	batch, err := newMirrorBatch(
+		ctx,
+		registryMgr,
+		clusterName,
+		networkName,
+		writer,
+		len(registries),
+	)
 	if err != nil {
-		return err
+		return fmt.Errorf("create registry batch: %w", err)
 	}
 
-	createdRegistries := make([]Info, 0, len(registries))
-
 	for _, reg := range registries {
-		created, createErr := ensureRegistry(
-			ctx,
-			registryMgr,
-			clusterName,
-			reg,
-			writer,
-			existingRegistries,
-		)
-		if createErr != nil {
-			cleanupCreatedRegistries(
-				ctx,
-				registryMgr,
-				createdRegistries,
-				clusterName,
-				networkName,
-				writer,
-			)
+		_, ensureErr := batch.ensure(ctx, reg)
+		if ensureErr != nil {
+			batch.rollback(ctx)
 
-			return createErr
-		}
-
-		if created {
-			createdRegistries = append(createdRegistries, reg)
+			return fmt.Errorf("ensure registry %s: %w", reg.Name, ensureErr)
 		}
 	}
 
 	return nil
 }
 
+type mirrorBatch struct {
+	manager     Backend
+	existing    map[string]struct{}
+	created     []Info
+	clusterName string
+	networkName string
+	writer      io.Writer
+}
+
+func newMirrorBatch(
+	ctx context.Context,
+	mgr Backend,
+	clusterName string,
+	networkName string,
+	writer io.Writer,
+	estimatedRegistries int,
+) (*mirrorBatch, error) {
+	existingRegistries, err := collectExistingRegistryNames(ctx, mgr)
+	if err != nil {
+		return nil, err
+	}
+
+	if estimatedRegistries < 0 {
+		estimatedRegistries = 0
+	}
+
+	return &mirrorBatch{
+		manager:     mgr,
+		existing:    existingRegistries,
+		created:     make([]Info, 0, estimatedRegistries),
+		clusterName: clusterName,
+		networkName: networkName,
+		writer:      writer,
+	}, nil
+}
+
+func (b *mirrorBatch) ensure(ctx context.Context, reg Info) (bool, error) {
+	created, err := ensureRegistry(
+		ctx,
+		b.manager,
+		b.clusterName,
+		reg,
+		b.writer,
+		b.existing,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	if created {
+		b.created = append(b.created, reg)
+	}
+
+	return created, nil
+}
+
+func (b *mirrorBatch) rollback(ctx context.Context) {
+	if len(b.created) == 0 {
+		return
+	}
+
+	cleanupCreatedRegistries(
+		ctx,
+		b.manager,
+		b.created,
+		b.clusterName,
+		b.networkName,
+		b.writer,
+	)
+}
+
 func collectExistingRegistryNames(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 ) (map[string]struct{}, error) {
 	existingRegistries := make(map[string]struct{})
 
@@ -111,7 +198,7 @@ func collectExistingRegistryNames(
 // when provisioning new registry mirrors for additional clusters.
 func CollectExistingRegistryPorts(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 ) (map[int]struct{}, error) {
 	ports := make(map[int]struct{})
 
@@ -155,7 +242,7 @@ func CollectExistingRegistryPorts(
 
 func ensureRegistry(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 	clusterName string,
 	reg Info,
 	writer io.Writer,
@@ -203,7 +290,7 @@ func ensureRegistry(
 
 func cleanupCreatedRegistries(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 	created []Info,
 	clusterName string,
 	networkName string,
@@ -212,7 +299,7 @@ func cleanupCreatedRegistries(
 	for i := len(created) - 1; i >= 0; i-- {
 		reg := created[i]
 
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName, reg.Volume)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type: notify.WarningType,
@@ -278,10 +365,10 @@ func ConnectRegistriesToNetwork(
 	return nil
 }
 
-// CleanupRegistries removes the provided registries. Errors are logged as warnings.
+// CleanupRegistries removes the provided registry. Errors are logged as warnings.
 func CleanupRegistries(
 	ctx context.Context,
-	registryMgr *dockerclient.RegistryManager,
+	registryMgr Backend,
 	registries []Info,
 	clusterName string,
 	deleteVolumes bool,
@@ -298,7 +385,7 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName)
+		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName, reg.Volume)
 		if err != nil {
 			_, _ = fmt.Fprintf(
 				writer,

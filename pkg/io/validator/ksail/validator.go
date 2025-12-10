@@ -67,12 +67,15 @@ func (v *Validator) Validate(config *v1alpha1.Cluster) *validator.ValidationResu
 
 	// Validate distribution field
 	v.validateDistribution(config, result)
+	v.validateGitOpsEngine(config, result)
 
 	// Perform cross-configuration validation
 	v.validateContextName(config, result)
 
 	// Validate CNI alignment with distribution config
 	v.validateCNIAlignment(config, result)
+	v.validateRegistry(config, result)
+	v.validateFlux(config, result)
 
 	return result
 }
@@ -354,4 +357,71 @@ func (v *Validator) validateK3dDefaultCNIAlignment(result *validator.ValidationR
 			strings.Join(problematicArgs, " and "),
 		),
 	})
+}
+
+// validateGitOpsEngine ensures the GitOps engine value is supported.
+func (v *Validator) validateGitOpsEngine(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	if config.Spec.GitOpsEngine == "" {
+		return
+	}
+
+	switch config.Spec.GitOpsEngine {
+	case v1alpha1.GitOpsEngineNone, v1alpha1.GitOpsEngineFlux:
+		return
+	default:
+		result.AddError(validator.ValidationError{
+			Field:         "spec.gitOpsEngine",
+			Message:       "invalid GitOps engine value",
+			CurrentValue:  config.Spec.GitOpsEngine,
+			ExpectedValue: "one of: None, Flux",
+			FixSuggestion: "Set spec.gitOpsEngine to a supported value (None or Flux)",
+		})
+	}
+}
+
+// validateRegistry ensures registry settings are coherent.
+func (v *Validator) validateRegistry(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	port := config.Spec.Options.LocalRegistry.HostPort
+
+	enabled := config.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled
+
+	if enabled {
+		if port <= 0 || port > 65535 {
+			result.AddError(validator.ValidationError{
+				Field:         "spec.options.localRegistry.hostPort",
+				Message:       "localRegistry.hostPort must be between 1 and 65535 when the registry is enabled",
+				CurrentValue:  port,
+				ExpectedValue: "1-65535",
+				FixSuggestion: "Choose a valid TCP port (e.g., 5111) for spec.options.localRegistry.hostPort",
+			})
+		}
+
+		return
+	}
+}
+
+// validateFlux ensures Flux-specific settings are valid when Flux is enabled.
+func (v *Validator) validateFlux(
+	config *v1alpha1.Cluster,
+	result *validator.ValidationResult,
+) {
+	if config.Spec.GitOpsEngine != v1alpha1.GitOpsEngineFlux {
+		return
+	}
+
+	if config.Spec.Options.Flux.Interval.Duration <= 0 {
+		result.AddError(validator.ValidationError{
+			Field:         "spec.options.flux.interval",
+			Message:       "fluxInterval must be a positive duration when Flux is enabled",
+			CurrentValue:  config.Spec.Options.Flux.Interval.Duration,
+			ExpectedValue: "> 0",
+			FixSuggestion: "Set spec.options.flux.interval to a positive duration (e.g., 1m)",
+		})
+	}
 }

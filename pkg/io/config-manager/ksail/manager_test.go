@@ -12,6 +12,7 @@ import (
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -19,6 +20,47 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const (
+	kindClusterConfigYAML = "apiVersion: kind.x-k8s.io/v1alpha4\nkind: Cluster\n"
+	ksailClusterBaseYAML  = "apiVersion: ksail.dev/v1alpha1\n" +
+		"kind: Cluster\n" +
+		"spec:\n" +
+		"  distribution: Kind\n" +
+		"  distributionConfig: kind.yaml\n"
+)
+
+func writeKindConfigFile(t *testing.T) {
+	t.Helper()
+	require.NoError(t, os.WriteFile("kind.yaml", []byte(kindClusterConfigYAML), 0o600))
+}
+
+func writeClusterConfigFile(t *testing.T, extraSpec ...string) {
+	t.Helper()
+
+	builder := strings.Builder{}
+	builder.WriteString(ksailClusterBaseYAML)
+
+	for _, section := range extraSpec {
+		builder.WriteString(section)
+
+		if !strings.HasSuffix(section, "\n") {
+			builder.WriteByte('\n')
+		}
+	}
+
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(builder.String()), 0o600))
+}
+
+func newManagerWithDefaultSelectors() *configmanager.ConfigManager {
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...,
+	)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	return manager
+}
 
 // createStandardFieldSelectors creates a common set of field selectors used in multiple tests.
 func createStandardFieldSelectors() []configmanager.FieldSelector[v1alpha1.Cluster] {
@@ -113,29 +155,23 @@ func TestLoadConfigLoadsK3dDistributionConfig(t *testing.T) {
 }
 
 //nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
-func TestLoadConfigDefaultsDistributionConfigForDistribution(t *testing.T) {
+func TestLoadConfigWithoutFileIgnoresExistingConfig(t *testing.T) {
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	prevDir, dirErr := os.Getwd()
+	require.NoError(t, dirErr)
+	t.Cleanup(func() { _ = os.Chdir(prevDir) })
 
-	ksailConfig := "apiVersion: ksail.dev/v1alpha1\n" +
-		"kind: Cluster\n" +
-		"spec:\n" +
-		"  distribution: K3d\n" +
-		"  gitOpsEngine: Flux\n" +
-		"  localRegistry: Enabled\n" +
-		"  sourceDirectory: k8s\n" +
-		"  connection:\n" +
-		"    kubeconfig: ~/.kube/config\n"
-	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailConfig), 0o600))
+	require.NoError(t, os.Chdir(tempDir))
+	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailClusterBaseYAML), 0o600))
 
-	manager := configmanager.NewConfigManager(io.Discard)
+	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
-	_, err := manager.LoadConfig(nil)
+	config, err := manager.LoadConfigWithoutFileSilent()
 	require.NoError(t, err)
 
-	assert.Equal(t, v1alpha1.DistributionK3d, manager.Config.Spec.Distribution)
-	assert.Equal(t, "k3d.yaml", manager.Config.Spec.DistributionConfig)
+	assert.Equal(t, v1alpha1.DistributionKind, config.Spec.Distribution)
+	assert.Equal(t, "kind.yaml", config.Spec.DistributionConfig)
 }
 
 //nolint:paralleltest // Uses t.Chdir to isolate file system state for config loading.
@@ -302,6 +338,139 @@ func TestLoadConfigConfigReusedNotification(t *testing.T) {
 	assert.Contains(t, output.String(), "config already loaded, reusing existing config")
 }
 
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigParsesFluxIntervalFromString(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	writeKindConfigFile(t)
+	writeClusterConfigFile(
+		t,
+		"  gitOpsEngine: Flux\n",
+		"  options:\n",
+		"    flux:\n",
+		"      interval: 2m30s\n",
+	)
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, 150*time.Second, manager.Config.Spec.Options.Flux.Interval.Duration)
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigFailsOnInvalidFluxIntervalString(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	writeKindConfigFile(t)
+	writeClusterConfigFile(
+		t,
+		"  gitOpsEngine: Flux\n",
+		"  options:\n",
+		"    flux:\n",
+		"      interval: not-a-duration\n",
+	)
+
+	manager := configmanager.NewConfigManager(io.Discard)
+	manager.Viper.SetConfigFile("ksail.yaml")
+
+	_, err := manager.LoadConfig(nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "parse duration")
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigHonorsExplicitLocalRegistrySetting(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	writeKindConfigFile(t)
+	writeClusterConfigFile(
+		t,
+		"  gitOpsEngine: Flux\n",
+		"  localRegistry: Disabled\n",
+	)
+
+	manager := newManagerWithDefaultSelectors()
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	require.Equal(t, v1alpha1.GitOpsEngineFlux, manager.Config.Spec.GitOpsEngine)
+	assert.Equal(t, v1alpha1.LocalRegistryDisabled, manager.Config.Spec.LocalRegistry)
+}
+
+//nolint:paralleltest // Uses t.Chdir for isolated filesystem state.
+func TestLoadConfigAppliesLocalRegistryDefaults(t *testing.T) {
+	testCases := []struct {
+		name             string
+		gitOpsEngine     v1alpha1.GitOpsEngine
+		expectedBehavior v1alpha1.LocalRegistry
+		expectedHostPort int32
+	}{
+		{
+			name:             "enabled-when-flux-configured",
+			gitOpsEngine:     v1alpha1.GitOpsEngineFlux,
+			expectedBehavior: v1alpha1.LocalRegistryEnabled,
+			expectedHostPort: v1alpha1.DefaultLocalRegistryPort,
+		},
+		{
+			name:             "disabled-when-no-gitops",
+			gitOpsEngine:     v1alpha1.GitOpsEngineNone,
+			expectedBehavior: v1alpha1.LocalRegistryDisabled,
+			expectedHostPort: 0,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			t.Chdir(tempDir)
+
+			writeKindConfigFile(t)
+			writeClusterConfigFile(
+				t,
+				fmt.Sprintf("  gitOpsEngine: %s\n", testCase.gitOpsEngine),
+			)
+
+			manager := newManagerWithDefaultSelectors()
+
+			_, err := manager.LoadConfig(nil)
+			require.NoError(t, err)
+
+			require.Equal(t, testCase.gitOpsEngine, manager.Config.Spec.GitOpsEngine)
+			assert.Equal(t, testCase.expectedBehavior, manager.Config.Spec.LocalRegistry)
+			assert.Equal(
+				t,
+				testCase.expectedHostPort,
+				manager.Config.Spec.Options.LocalRegistry.HostPort,
+			)
+		})
+	}
+}
+
+func TestLoadConfigDefaultsLocalRegistryDisabledWhenGitOpsEngineUnset(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	testutils.WriteValidKsailConfig(t, tempDir)
+
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
+	manager.Viper.SetConfigFile(filepath.Join(tempDir, "ksail.yaml"))
+
+	_, err := manager.LoadConfig(nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, v1alpha1.LocalRegistryDisabled, manager.Config.Spec.LocalRegistry)
+	assert.Equal(t, int32(0), manager.Config.Spec.Options.LocalRegistry.HostPort)
+}
+
 func TestNewCommandConfigManagerBindsFlags(t *testing.T) {
 	t.Parallel()
 
@@ -381,7 +550,7 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	assert.Contains(t, logOutput, "kind is required")
 	assert.Contains(t, logOutput, "apiVersion is required")
 	assert.Contains(t, logOutput, "field: spec.distribution")
-	assert.Contains(t, logOutput, "field: spec.distributionConfig")
+	assert.Contains(t, logOutput, "distributionConfig is required")
 }
 
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.

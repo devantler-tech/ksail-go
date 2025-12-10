@@ -2,7 +2,9 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -38,11 +40,44 @@ func NewStartCmd(runtimeContainer *runtime.Runtime) *cobra.Command {
 		ksailconfigmanager.DefaultClusterFieldSelectors(),
 	)
 
-	cmd.RunE = cmdhelpers.NewStandardLifecycleRunE(
-		runtimeContainer,
-		cfgManager,
-		newStartLifecycleConfig(),
-	)
+	cmd.RunE = cmdhelpers.WrapLifecycleHandler(runtimeContainer, cfgManager, handleStartRunE)
 
 	return cmd
+}
+
+func handleStartRunE(
+	cmd *cobra.Command,
+	cfgManager *ksailconfigmanager.ConfigManager,
+	deps cmdhelpers.LifecycleDeps,
+) error {
+	config := newStartLifecycleConfig()
+
+	err := cmdhelpers.HandleLifecycleRunE(cmd, cfgManager, deps, config)
+	if err != nil {
+		return fmt.Errorf("start cluster lifecycle: %w", err)
+	}
+
+	clusterCfg := cfgManager.Config
+	if clusterCfg == nil || clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
+		return nil
+	}
+
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	if err != nil {
+		return fmt.Errorf("load distribution configs: %w", err)
+	}
+
+	connectErr := executeLocalRegistryStage(
+		cmd,
+		clusterCfg,
+		deps,
+		kindConfig,
+		k3dConfig,
+		localRegistryStageConnect,
+	)
+	if connectErr != nil {
+		return fmt.Errorf("connect local registry: %w", connectErr)
+	}
+
+	return nil
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
@@ -21,15 +21,15 @@ func setupRegistryManager(
 	kindConfig *v1alpha4.Cluster,
 	dockerClient client.APIClient,
 	upstreams map[string]string,
-) (*dockerclient.RegistryManager, []registries.Info, error) {
+) (*dockerclient.RegistryManager, []registry.Info, error) {
 	if kindConfig == nil {
 		return nil, nil, nil
 	}
 
-	registryMgr, infos, err := registries.PrepareRegistryManager(
+	registryMgr, infos, err := registry.PrepareRegistryManager(
 		ctx,
 		dockerClient,
-		func(usedPorts map[int]struct{}) []registries.Info {
+		func(usedPorts map[int]struct{}) []registry.Info {
 			return extractRegistriesFromKind(kindConfig, upstreams, usedPorts)
 		},
 	)
@@ -44,16 +44,16 @@ func setupRegistryManager(
 // Registries are created without network attachment first, as the "kind" network
 // doesn't exist until after the cluster is created. mirrorSpecs should contain the
 // user-supplied mirror definitions so upstream URLs can be preserved when creating
-// local proxy registries.
+// local proxy registry.
 func SetupRegistries(
 	ctx context.Context,
 	kindConfig *v1alpha4.Cluster,
 	clusterName string,
 	dockerClient client.APIClient,
-	mirrorSpecs []registries.MirrorSpec,
+	mirrorSpecs []registry.MirrorSpec,
 	writer io.Writer,
 ) error {
-	upstreams := registries.BuildUpstreamLookup(mirrorSpecs)
+	upstreams := registry.BuildUpstreamLookup(mirrorSpecs)
 
 	registryMgr, registriesInfo, err := setupRegistryManager(
 		ctx,
@@ -69,7 +69,7 @@ func SetupRegistries(
 		return nil
 	}
 
-	errSetup := registries.SetupRegistries(
+	errSetup := registry.SetupRegistries(
 		ctx,
 		registryMgr,
 		registriesInfo,
@@ -101,7 +101,7 @@ func ConnectRegistriesToNetwork(
 		return nil
 	}
 
-	errConnect := registries.ConnectRegistriesToNetwork(
+	errConnect := registry.ConnectRegistriesToNetwork(
 		ctx,
 		dockerClient,
 		registriesInfo,
@@ -132,7 +132,7 @@ func CleanupRegistries(
 		return nil
 	}
 
-	errCleanup := registries.CleanupRegistries(
+	errCleanup := registry.CleanupRegistries(
 		ctx,
 		registryMgr,
 		registriesInfo,
@@ -153,7 +153,7 @@ func CleanupRegistries(
 func ExtractRegistriesFromKindForTesting(
 	kindConfig *v1alpha4.Cluster,
 	upstreams map[string]string,
-) []registries.Info {
+) []registry.Info {
 	return extractRegistriesFromKind(kindConfig, upstreams, nil)
 }
 
@@ -162,15 +162,15 @@ func extractRegistriesFromKind(
 	kindConfig *v1alpha4.Cluster,
 	upstreams map[string]string,
 	baseUsedPorts map[int]struct{},
-) []registries.Info {
+) []registry.Info {
 	if kindConfig == nil {
 		return nil
 	}
 
-	var registryInfos []registries.Info
+	var registryInfos []registry.Info
 
 	seenHosts := make(map[string]bool)
-	usedPorts, nextPort := registries.InitPortAllocation(baseUsedPorts)
+	usedPorts, nextPort := registry.InitPortAllocation(baseUsedPorts)
 
 	for _, patch := range kindConfig.ContainerdConfigPatches {
 		mirrors := parseContainerdConfig(patch)
@@ -183,7 +183,7 @@ func extractRegistriesFromKind(
 			hosts = append(hosts, host)
 		}
 
-		registries.SortHosts(hosts)
+		registry.SortHosts(hosts)
 
 		for _, host := range hosts {
 			if seenHosts[host] {
@@ -193,8 +193,8 @@ func extractRegistriesFromKind(
 			seenHosts[host] = true
 
 			endpoints := mirrors[host]
-			port := registries.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
-			info := registries.BuildRegistryInfo(host, endpoints, port, "", upstreams[host])
+			port := registry.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
+			info := registry.BuildRegistryInfo(host, endpoints, port, "", upstreams[host])
 			registryInfos = append(registryInfos, info)
 		}
 	}

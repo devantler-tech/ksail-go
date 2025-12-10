@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -19,14 +20,16 @@ import (
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
+	installerpkg "github.com/devantler-tech/ksail-go/pkg/svc/installer"
 	ciliuminstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/cni/cilium"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
@@ -38,6 +41,15 @@ const (
 var errCiliumReadiness = errors.New("cilium readiness failed")
 
 var errClusterProvisionerFailed = errors.New("provisioner failed")
+
+var errFluxInstallerFailure = errors.New("boom")
+
+// fluxInstallerFactoryMu serializes flux installer factory overrides shared across
+// parallel tests.
+var fluxInstallerFactoryMu sync.Mutex //nolint:gochecknoglobals // global lock ensures safe swaps in parallel tests
+
+// ensureFluxResourcesMu serializes Flux resource bootstrap overrides across tests.
+var ensureFluxResourcesMu sync.Mutex //nolint:gochecknoglobals // shared lock for overrides
 
 func TestNewCreateCmd(t *testing.T) {
 	t.Parallel()
@@ -564,6 +576,82 @@ func (s *stubTimer) GetTiming() (time.Duration, time.Duration) {
 
 func (s *stubTimer) Stop() {}
 
+type stubFluxInstaller struct {
+	installCalls int
+	installErr   error
+}
+
+func (s *stubFluxInstaller) Install(context.Context) error {
+	s.installCalls++
+
+	return s.installErr
+}
+
+func (s *stubFluxInstaller) Uninstall(context.Context) error {
+	return nil
+}
+
+func overrideFluxInstallerFactory(
+	t *testing.T,
+	factory func(helm.Interface, time.Duration) installerpkg.Installer,
+) {
+	t.Helper()
+
+	fluxInstallerFactoryMu.Lock()
+
+	original := fluxInstallerFactory
+	fluxInstallerFactory = factory
+
+	t.Cleanup(func() {
+		fluxInstallerFactory = original
+
+		fluxInstallerFactoryMu.Unlock()
+	})
+}
+
+func overrideEnsureFluxResourcesFunc(
+	t *testing.T,
+	factory func(context.Context, string, *v1alpha1.Cluster) error,
+) {
+	t.Helper()
+
+	ensureFluxResourcesMu.Lock()
+
+	original := ensureFluxResourcesFunc
+	ensureFluxResourcesFunc = factory
+
+	t.Cleanup(func() {
+		ensureFluxResourcesFunc = original
+
+		ensureFluxResourcesMu.Unlock()
+	})
+}
+
+func fluxTestClusterConfig(t *testing.T) *v1alpha1.Cluster {
+	t.Helper()
+
+	dir := t.TempDir()
+	kubeconfig := filepath.Join(dir, "kubeconfig")
+	require.NoError(t, os.WriteFile(kubeconfig, []byte("apiVersion: v1"), 0o600))
+
+	return &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			GitOpsEngine:    v1alpha1.GitOpsEngineFlux,
+			SourceDirectory: "k8s",
+			Connection: v1alpha1.Connection{
+				Kubeconfig: kubeconfig,
+				Context:    "kind-kind",
+			},
+			Options: v1alpha1.Options{
+				Flux: v1alpha1.OptionsFlux{Interval: metav1.Duration{Duration: time.Minute}},
+				LocalRegistry: v1alpha1.OptionsLocalRegistry{
+					HostPort: 5000,
+				},
+			},
+		},
+	}
+}
+
 // setupKindMirrorsTest creates the standard test setup for prepareKindConfigWithMirrors tests.
 func setupKindMirrorsTest() (*v1alpha1.Cluster, *ksailconfigmanager.ConfigManager, *kindv1alpha4.Cluster) {
 	clusterCfg := &v1alpha1.Cluster{}
@@ -659,7 +747,7 @@ func TestPrepareK3dConfigWithMirrors_AddsOverrides(t *testing.T) {
 	clusterCfg.Spec.Distribution = v1alpha1.DistributionK3d
 
 	k3dConfig := k3dconfigmanager.NewK3dSimpleConfig("k3d-test", "", "")
-	specs := registries.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
+	specs := registry.ParseMirrorSpecs([]string{"docker.io=https://registry-1.docker.io"})
 
 	result := prepareK3dConfigWithMirrors(clusterCfg, k3dConfig, specs)
 
@@ -886,6 +974,7 @@ func TestRunRegistryStageErrorWrapping(t *testing.T) {
 		info := registryStageInfo{
 			title:         "Test",
 			emoji:         "🔧",
+			activity:      "doing test",
 			success:       "success",
 			failurePrefix: "test failed",
 		}
@@ -1258,4 +1347,95 @@ func TestHandlePostCreationSetup_K3dEnabled(t *testing.T) {
 		err,
 		"Should not error when metrics-server is enabled on K3d (already present)",
 	)
+}
+
+func TestInstallFluxIfConfiguredSkipsWhenDisabled(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	calls := 0
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		calls++
+		return nil
+	})
+	err := installFluxIfConfigured(cmd, &v1alpha1.Cluster{}, &stubTimer{})
+	require.NoError(t, err)
+	require.Equal(t, 0, calls)
+}
+
+func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := fluxTestClusterConfig(t)
+	installer := &stubFluxInstaller{}
+	expectedTimeout := getInstallTimeout(clusterCfg)
+	resourceCalls := 0
+	overrideEnsureFluxResourcesFunc(t, func(ctx context.Context, kubeconfig string, cfg *v1alpha1.Cluster) error {
+		resourceCalls++
+		require.NotNil(t, ctx)
+		require.Equal(t, clusterCfg.Spec.Connection.Kubeconfig, kubeconfig)
+		require.Equal(t, clusterCfg, cfg)
+		return nil
+	})
+
+	overrideFluxInstallerFactory(
+		t,
+		func(client helm.Interface, timeout time.Duration) installerpkg.Installer {
+			require.NotNil(t, client)
+			require.Equal(t, expectedTimeout, timeout)
+
+			return installer
+		},
+	)
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.NoError(t, err)
+	require.Equal(t, 1, installer.installCalls)
+	require.Equal(t, 1, resourceCalls)
+}
+
+func TestInstallFluxIfConfiguredPropagatesFactoryErrors(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := fluxTestClusterConfig(t)
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		t.Fatalf("ensureFluxResourcesFunc should not be invoked when installer fails")
+		return nil
+	})
+	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
+		return &stubFluxInstaller{installErr: errFluxInstallerFailure}
+	})
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to install flux controllers")
+}
+
+func TestInstallFluxIfConfiguredFailsWhenResourceBootstrapFails(t *testing.T) {
+	t.Parallel()
+
+	cmd, _ := testutils.NewCommand(t)
+	cmd.SetContext(context.Background())
+
+	clusterCfg := fluxTestClusterConfig(t)
+	installer := &stubFluxInstaller{}
+
+	overrideFluxInstallerFactory(t, func(helm.Interface, time.Duration) installerpkg.Installer {
+		return installer
+	})
+
+	overrideEnsureFluxResourcesFunc(t, func(context.Context, string, *v1alpha1.Cluster) error {
+		return errors.New("resources failed")
+	})
+
+	err := installFluxIfConfigured(cmd, clusterCfg, &stubTimer{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to configure Flux resources")
+	require.Equal(t, 1, installer.installCalls)
 }

@@ -20,6 +20,13 @@ type flagNameTestCase struct {
 	expected string
 }
 
+type fieldTestCase struct {
+	name          string
+	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
+	expectedFlag  string
+	expectedType  string
+}
+
 // runFlagNameGenerationTests is a helper function to run multiple flag name generation test cases.
 func runFlagNameGenerationTests(
 	t *testing.T,
@@ -49,50 +56,93 @@ func setupFlagBindingTest(
 	return cmd
 }
 
-// TestAddFlagFromField tests the addFlagFromField method with various field types and scenarios.
 // getBasicFieldTests returns test cases for basic field testing.
-func getBasicFieldTests() []struct {
-	name          string
-	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-	expectedFlag  string
-	expectedType  string
-} {
-	return []struct {
-		name          string
-		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-		expectedFlag  string
-		expectedType  string
-	}{
-		{
-			name: "Distribution field",
-			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
-				v1alpha1.DistributionKind,
-				"Kubernetes distribution",
-			),
-			expectedFlag: "distribution",
-			expectedType: "Distribution",
-		},
-		{
-			name: "SourceDirectory field",
-			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
-				"k8s",
-				"Source directory",
-			),
-			expectedFlag: "source-directory",
-			expectedType: "string",
-		},
-		{
-			name: "GitOpsEngine field",
-			fieldSelector: configmanager.AddFlagFromField(
-				func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
-				v1alpha1.GitOpsEngineNone,
-				"GitOps engine",
-			),
-			expectedFlag: "gitops-engine",
-			expectedType: "GitOpsEngine",
-		},
+func getBasicFieldTests() []fieldTestCase {
+	return []fieldTestCase{
+		newDistributionFieldTest(),
+		newSourceDirectoryFieldTest(),
+		newGitOpsEngineFieldTest(),
+		newLocalRegistryFieldTest(),
+		newRegistryPortFieldTest(),
+		newFluxIntervalFieldTest(),
+	}
+}
+
+func newDistributionFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "Distribution field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
+			v1alpha1.DistributionKind,
+			"Kubernetes distribution",
+		),
+		expectedFlag: "distribution",
+		expectedType: "Distribution",
+	}
+}
+
+func newSourceDirectoryFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "SourceDirectory field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
+			"k8s",
+			"Source directory",
+		),
+		expectedFlag: "source-directory",
+		expectedType: "string",
+	}
+}
+
+func newGitOpsEngineFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "GitOpsEngine field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
+			v1alpha1.GitOpsEngineNone,
+			"GitOps engine",
+		),
+		expectedFlag: "gitops-engine",
+		expectedType: "GitOpsEngine",
+	}
+}
+
+func newLocalRegistryFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "LocalRegistry field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.LocalRegistry },
+			v1alpha1.LocalRegistryDisabled,
+			"Local registry",
+		),
+		expectedFlag: "local-registry",
+		expectedType: "LocalRegistry",
+	}
+}
+
+func newRegistryPortFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "RegistryPort field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Options.LocalRegistry.HostPort },
+			int32(5000),
+			"Registry port",
+		),
+		expectedFlag: "local-registry-port",
+		expectedType: "int32",
+	}
+}
+
+func newFluxIntervalFieldTest() fieldTestCase {
+	return fieldTestCase{
+		name: "FluxInterval field",
+		fieldSelector: configmanager.AddFlagFromField(
+			func(c *v1alpha1.Cluster) any { return &c.Spec.Options.Flux.Interval },
+			metav1.Duration{Duration: time.Minute},
+			"Flux interval",
+		),
+		expectedFlag: "flux-interval",
+		expectedType: "duration",
 	}
 }
 
@@ -121,18 +171,8 @@ func TestAddFlagFromField(t *testing.T) {
 }
 
 // getConnectionFieldTests returns test cases for connection field testing.
-func getConnectionFieldTests() []struct {
-	name          string
-	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-	expectedFlag  string
-	expectedType  string
-} {
-	return []struct {
-		name          string
-		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-		expectedFlag  string
-		expectedType  string
-	}{
+func getConnectionFieldTests() []fieldTestCase {
+	return []fieldTestCase{
 		{
 			name: "Context field",
 			fieldSelector: configmanager.AddFlagFromField(
@@ -157,18 +197,8 @@ func getConnectionFieldTests() []struct {
 }
 
 // getNetworkingFieldTests returns test cases for networking field testing.
-func getNetworkingFieldTests() []struct {
-	name          string
-	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-	expectedFlag  string
-	expectedType  string
-} {
-	return []struct {
-		name          string
-		fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-		expectedFlag  string
-		expectedType  string
-	}{
+func getNetworkingFieldTests() []fieldTestCase {
+	return []fieldTestCase{
 		{
 			name: "CNI field",
 			fieldSelector: configmanager.AddFlagFromField(
@@ -247,12 +277,7 @@ func testAddFlagFromFieldErrorHandling(t *testing.T) {
 }
 
 // testAddFlagFromFieldCases is a helper function to test field selector functionality.
-func testAddFlagFromFieldCases(t *testing.T, tests []struct {
-	name          string
-	fieldSelector configmanager.FieldSelector[v1alpha1.Cluster]
-	expectedFlag  string
-	expectedType  string
-},
+func testAddFlagFromFieldCases(t *testing.T, tests []fieldTestCase,
 ) {
 	t.Helper()
 
@@ -301,6 +326,21 @@ func TestGenerateFlagName(t *testing.T) {
 			"MetricsServer field",
 			&manager.Config.Spec.MetricsServer,
 			"metrics-server",
+		},
+		{
+			"LocalRegistry field",
+			&manager.Config.Spec.LocalRegistry,
+			"local-registry",
+		},
+		{
+			"RegistryPort field",
+			&manager.Config.Spec.Options.LocalRegistry.HostPort,
+			"local-registry-port",
+		},
+		{
+			"FluxInterval field",
+			&manager.Config.Spec.Options.Flux.Interval,
+			"flux-interval",
 		},
 	}
 

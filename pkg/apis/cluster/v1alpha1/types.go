@@ -26,6 +26,9 @@ var ErrInvalidCSI = errors.New("invalid CSI")
 // ErrInvalidMetricsServer is returned when an invalid metrics server is specified.
 var ErrInvalidMetricsServer = errors.New("invalid metrics server")
 
+// ErrInvalidLocalRegistry is returned when an invalid local registry mode is specified.
+var ErrInvalidLocalRegistry = errors.New("invalid local registry mode")
+
 const (
 	// Group is the API group for KSail.
 	Group = "ksail.dev"
@@ -54,8 +57,102 @@ type Spec struct {
 	CNI                CNI           `json:"cni,omitzero"`
 	CSI                CSI           `json:"csi,omitzero"`
 	MetricsServer      MetricsServer `json:"metricsServer,omitzero"`
+	LocalRegistry      LocalRegistry `json:"localRegistry,omitzero"`
 	GitOpsEngine       GitOpsEngine  `json:"gitOpsEngine,omitzero"`
 	Options            Options       `json:"options,omitzero"`
+}
+
+// OCIRegistryStatus represents lifecycle states for the local OCI registry instance.
+type OCIRegistryStatus string
+
+const (
+	// OCIRegistryStatusNotProvisioned indicates the registry has not been created.
+	OCIRegistryStatusNotProvisioned OCIRegistryStatus = "NotProvisioned"
+	// OCIRegistryStatusProvisioning indicates the registry is currently being created or started.
+	OCIRegistryStatusProvisioning OCIRegistryStatus = "Provisioning"
+	// OCIRegistryStatusRunning indicates the registry is available for pushes/pulls.
+	OCIRegistryStatusRunning OCIRegistryStatus = "Running"
+	// OCIRegistryStatusError indicates the registry failed to start or crashed.
+	OCIRegistryStatusError OCIRegistryStatus = "Error"
+)
+
+// OCIRegistry captures host-local OCI registry metadata and lifecycle status.
+type OCIRegistry struct {
+	Name       string            `json:"name,omitzero"`
+	Endpoint   string            `json:"endpoint,omitzero"`
+	Port       int32             `json:"port,omitzero"`
+	DataPath   string            `json:"dataPath,omitzero"`
+	VolumeName string            `json:"volumeName,omitzero"`
+	Status     OCIRegistryStatus `json:"status,omitzero"`
+	LastError  string            `json:"lastError,omitzero"`
+}
+
+// OCIArtifact describes a versioned OCI artifact that packages Kubernetes manifests.
+type OCIArtifact struct {
+	Name             string      `json:"name,omitzero"`
+	Version          string      `json:"version,omitzero"`
+	RegistryEndpoint string      `json:"registryEndpoint,omitzero"`
+	Repository       string      `json:"repository,omitzero"`
+	Tag              string      `json:"tag,omitzero"`
+	SourcePath       string      `json:"sourcePath,omitzero"`
+	CreatedAt        metav1.Time `json:"createdAt,omitzero"`
+}
+
+// FluxObjectMeta provides the minimal metadata required for Flux custom resources.
+type FluxObjectMeta struct {
+	Name      string `json:"name,omitzero"`
+	Namespace string `json:"namespace,omitzero"`
+}
+
+// FluxOCIRepository models the Flux OCIRepository custom resource fields relevant to KSail-Go.
+type FluxOCIRepository struct {
+	Metadata FluxObjectMeta          `json:"metadata,omitzero"`
+	Spec     FluxOCIRepositorySpec   `json:"spec,omitzero"`
+	Status   FluxOCIRepositoryStatus `json:"status,omitzero"`
+}
+
+// FluxOCIRepositorySpec encodes connection details to an OCI registry repository.
+type FluxOCIRepositorySpec struct {
+	URL      string               `json:"url,omitzero"`
+	Interval metav1.Duration      `json:"interval,omitzero"`
+	Ref      FluxOCIRepositoryRef `json:"ref,omitzero"`
+}
+
+// FluxOCIRepositoryRef targets a specific OCI artifact tag.
+type FluxOCIRepositoryRef struct {
+	Tag string `json:"tag,omitzero"`
+}
+
+// FluxOCIRepositoryStatus exposes reconciliation conditions for OCIRepository resources.
+type FluxOCIRepositoryStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitzero"`
+}
+
+// FluxKustomization models the Flux Kustomization custom resource fields relevant to KSail-Go.
+type FluxKustomization struct {
+	Metadata FluxObjectMeta          `json:"metadata,omitzero"`
+	Spec     FluxKustomizationSpec   `json:"spec,omitzero"`
+	Status   FluxKustomizationStatus `json:"status,omitzero"`
+}
+
+// FluxKustomizationSpec defines how Flux should apply manifests from a referenced source.
+type FluxKustomizationSpec struct {
+	Path            string                     `json:"path,omitzero"`
+	Interval        metav1.Duration            `json:"interval,omitzero"`
+	Prune           bool                       `json:"prune,omitzero"`
+	TargetNamespace string                     `json:"targetNamespace,omitzero"`
+	SourceRef       FluxKustomizationSourceRef `json:"sourceRef,omitzero"`
+}
+
+// FluxKustomizationSourceRef identifies the Flux source object backing a Kustomization.
+type FluxKustomizationSourceRef struct {
+	Name      string `json:"name,omitzero"`
+	Namespace string `json:"namespace,omitzero"`
+}
+
+// FluxKustomizationStatus exposes reconciliation conditions for Kustomization resources.
+type FluxKustomizationStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitzero"`
 }
 
 // Connection defines connection options for a KSail cluster.
@@ -130,18 +227,32 @@ const (
 	MetricsServerDisabled MetricsServer = "Disabled"
 )
 
+// LocalRegistry defines how the host-local OCI registry should behave.
+type LocalRegistry string
+
+const (
+	// LocalRegistryEnabled provisions and manages the local registry lifecycle.
+	LocalRegistryEnabled LocalRegistry = "Enabled"
+	// LocalRegistryDisabled skips local registry provisioning.
+	LocalRegistryDisabled LocalRegistry = "Disabled"
+)
+
 // GitOpsEngine defines the GitOps Engine options for a KSail cluster.
 type GitOpsEngine string
 
 const (
-	// GitOpsEngineNone is no GitOps engine.
+	// GitOpsEngineNone is the default and disables managed GitOps integration.
+	// It means "no GitOps engine" is configured for the cluster.
 	GitOpsEngineNone GitOpsEngine = "None"
+	// GitOpsEngineFlux installs and manages Flux controllers.
+	GitOpsEngineFlux GitOpsEngine = "Flux"
 )
 
 // validGitOpsEngines enumerates supported GitOps engine values.
 func validGitOpsEngines() []GitOpsEngine {
 	return []GitOpsEngine{
 		GitOpsEngineNone,
+		GitOpsEngineFlux,
 	}
 }
 
@@ -153,8 +264,9 @@ type Options struct {
 	Cilium OptionsCilium `json:"cilium,omitzero"`
 	Calico OptionsCalico `json:"calico,omitzero"`
 
-	Flux   OptionsFlux   `json:"flux,omitzero"`
-	ArgoCD OptionsArgoCD `json:"argocd,omitzero"`
+	Flux          OptionsFlux          `json:"flux,omitzero"`
+	ArgoCD        OptionsArgoCD        `json:"argocd,omitzero"`
+	LocalRegistry OptionsLocalRegistry `json:"localRegistry,omitzero"`
 
 	Helm      OptionsHelm      `json:"helm,omitzero"`
 	Kustomize OptionsKustomize `json:"kustomize,omitzero"`
@@ -180,12 +292,17 @@ type OptionsCalico struct {
 
 // OptionsFlux defines options for the Flux deployment tool.
 type OptionsFlux struct {
-	// Add any specific fields for the Flux distribution here.
+	Interval metav1.Duration `json:"interval,omitzero"`
 }
 
 // OptionsArgoCD defines options for the ArgoCD deployment tool.
 type OptionsArgoCD struct {
 	// Add any specific fields for the ArgoCD distribution here.
+}
+
+// OptionsLocalRegistry defines options for the host-local OCI registry integration.
+type OptionsLocalRegistry struct {
+	HostPort int32 `json:"hostPort,omitzero"`
 }
 
 // OptionsHelm defines options for the Helm tool.
@@ -282,6 +399,40 @@ func (m *MetricsServer) Set(value string) error {
 		MetricsServerEnabled,
 		MetricsServerDisabled,
 	)
+}
+
+// validLocalRegistryModes returns supported local registry configuration modes.
+func validLocalRegistryModes() []LocalRegistry {
+	return []LocalRegistry{LocalRegistryEnabled, LocalRegistryDisabled}
+}
+
+// Set for LocalRegistry.
+func (l *LocalRegistry) Set(value string) error {
+	for _, mode := range validLocalRegistryModes() {
+		if strings.EqualFold(value, string(mode)) {
+			*l = mode
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf(
+		"%w: %s (valid options: %s, %s)",
+		ErrInvalidLocalRegistry,
+		value,
+		LocalRegistryEnabled,
+		LocalRegistryDisabled,
+	)
+}
+
+// String returns the string representation of the LocalRegistry.
+func (l *LocalRegistry) String() string {
+	return string(*l)
+}
+
+// Type returns the type of the LocalRegistry.
+func (l *LocalRegistry) Type() string {
+	return "LocalRegistry"
 }
 
 // IsValid checks if the distribution value is supported.

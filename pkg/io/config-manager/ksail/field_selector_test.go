@@ -2,11 +2,13 @@ package configmanager_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // testCase represents a test case structure for AddFlagFromField tests.
@@ -24,6 +26,13 @@ type standardFieldSelectorCase struct {
 	expectedDesc    string
 	expectedDefault any
 	assertPointer   func(*testing.T, *v1alpha1.Cluster, any)
+}
+
+type defaultClusterSelectorCase struct {
+	name            string
+	selector        configmanager.FieldSelector[v1alpha1.Cluster]
+	expectedDefault any
+	assertField     func(*testing.T, any)
 }
 
 // runAddFlagFromFieldTests is a helper function to run multiple test cases.
@@ -56,55 +65,119 @@ func TestStandardFieldSelectors(t *testing.T) {
 
 func standardFieldSelectorCases() []standardFieldSelectorCase {
 	return []standardFieldSelectorCase{
-		{
-			name:            "distribution",
-			factory:         configmanager.DefaultDistributionFieldSelector,
-			expectedDesc:    "Kubernetes distribution to use",
-			expectedDefault: v1alpha1.DistributionKind,
-			assertPointer:   assertDistributionSelector,
-		},
-		{
-			name:            "source directory",
-			factory:         configmanager.StandardSourceDirectoryFieldSelector,
-			expectedDesc:    "Directory containing workloads to deploy",
-			expectedDefault: "k8s",
-			assertPointer:   assertSourceDirectorySelector,
-		},
-		{
-			name:            "distribution config",
-			factory:         configmanager.DefaultDistributionConfigFieldSelector,
-			expectedDesc:    "Configuration file for the distribution",
-			expectedDefault: "",
-			assertPointer:   assertDistributionConfigSelector,
-		},
-		{
-			name:            "context",
-			factory:         configmanager.DefaultContextFieldSelector,
-			expectedDesc:    "Kubernetes context of cluster",
-			expectedDefault: nil,
-			assertPointer:   assertContextSelector,
-		},
-		{
-			name:            "cni",
-			factory:         configmanager.DefaultCNIFieldSelector,
-			expectedDesc:    "Container Network Interface (CNI) to use",
-			expectedDefault: v1alpha1.CNIDefault,
-			assertPointer:   assertCNISelector,
-		},
-		{
-			name:            "gitops-engine",
-			factory:         configmanager.DefaultGitOpsEngineFieldSelector,
-			expectedDesc:    "GitOps engine to use",
-			expectedDefault: v1alpha1.GitOpsEngineNone,
-			assertPointer:   assertGitOpsEngineSelector,
-		},
-		{
-			name:            "metrics-server",
-			factory:         configmanager.DefaultMetricsServerFieldSelector,
-			expectedDesc:    "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
-			expectedDefault: v1alpha1.MetricsServerEnabled,
-			assertPointer:   assertMetricsServerSelector,
-		},
+		newDistributionSelectorCase(),
+		newSourceDirectorySelectorCase(),
+		newDistributionConfigSelectorCase(),
+		newContextSelectorCase(),
+		newCNISelectorCase(),
+		newGitOpsSelectorCase(),
+		newLocalRegistrySelectorCase(),
+		newLocalRegistryPortSelectorCase(),
+		newFluxIntervalSelectorCase(),
+		newMetricsServerSelectorCase(),
+	}
+}
+
+func newDistributionSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "distribution",
+		factory:         configmanager.DefaultDistributionFieldSelector,
+		expectedDesc:    "Kubernetes distribution to use",
+		expectedDefault: v1alpha1.DistributionKind,
+		assertPointer:   assertDistributionSelector,
+	}
+}
+
+func newSourceDirectorySelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "source directory",
+		factory:         configmanager.StandardSourceDirectoryFieldSelector,
+		expectedDesc:    "Directory containing workloads to deploy",
+		expectedDefault: "k8s",
+		assertPointer:   assertSourceDirectorySelector,
+	}
+}
+
+func newDistributionConfigSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "distribution config",
+		factory:         configmanager.DefaultDistributionConfigFieldSelector,
+		expectedDesc:    "Configuration file for the distribution",
+		expectedDefault: "",
+		assertPointer:   assertDistributionConfigSelector,
+	}
+}
+
+func newContextSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "context",
+		factory:         configmanager.DefaultContextFieldSelector,
+		expectedDesc:    "Kubernetes context of cluster",
+		expectedDefault: nil,
+		assertPointer:   assertContextSelector,
+	}
+}
+
+func newCNISelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "cni",
+		factory:         configmanager.DefaultCNIFieldSelector,
+		expectedDesc:    "Container Network Interface (CNI) to use",
+		expectedDefault: v1alpha1.CNIDefault,
+		assertPointer:   assertCNISelector,
+	}
+}
+
+func newGitOpsSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:    "gitops-engine",
+		factory: configmanager.DefaultGitOpsEngineFieldSelector,
+		expectedDesc: "GitOps engine to use (None disables GitOps, " +
+			"Flux installs Flux controllers)",
+		expectedDefault: v1alpha1.GitOpsEngineNone,
+		assertPointer:   assertGitOpsEngineSelector,
+	}
+}
+
+func newLocalRegistrySelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:    "local-registry",
+		factory: configmanager.DefaultLocalRegistryFieldSelector,
+		expectedDesc: "Local registry behavior (Enabled provisions a registry; " +
+			"Disabled skips provisioning. Defaults to Enabled " +
+			"when a GitOps engine is configured)",
+		expectedDefault: v1alpha1.LocalRegistryDisabled,
+		assertPointer:   assertLocalRegistrySelector,
+	}
+}
+
+func newLocalRegistryPortSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "local-registry-port",
+		factory:         configmanager.DefaultRegistryPortFieldSelector,
+		expectedDesc:    "Host port to expose the local OCI registry on",
+		expectedDefault: v1alpha1.DefaultLocalRegistryPort,
+		assertPointer:   assertRegistryPortSelector,
+	}
+}
+
+func newFluxIntervalSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "flux-interval",
+		factory:         configmanager.DefaultFluxIntervalFieldSelector,
+		expectedDesc:    "Flux reconciliation interval (e.g. 1m, 30s)",
+		expectedDefault: metav1.Duration{Duration: time.Minute},
+		assertPointer:   assertFluxIntervalSelector,
+	}
+}
+
+func newMetricsServerSelectorCase() standardFieldSelectorCase {
+	return standardFieldSelectorCase{
+		name:            "metrics-server",
+		factory:         configmanager.DefaultMetricsServerFieldSelector,
+		expectedDesc:    "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
+		expectedDefault: v1alpha1.MetricsServerEnabled,
+		assertPointer:   assertMetricsServerSelector,
 	}
 }
 
@@ -188,6 +261,21 @@ func assertGitOpsEngineSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any
 func assertMetricsServerSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
 	t.Helper()
 	assertPointerSame(t, ptr, &cluster.Spec.MetricsServer)
+}
+
+func assertLocalRegistrySelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.LocalRegistry)
+}
+
+func assertRegistryPortSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Options.LocalRegistry.HostPort)
+}
+
+func assertFluxIntervalSelector(t *testing.T, cluster *v1alpha1.Cluster, ptr any) {
+	t.Helper()
+	assertPointerSame(t, ptr, &cluster.Spec.Options.Flux.Interval)
 }
 
 func runStandardFieldSelectorTests(t *testing.T, cases []standardFieldSelectorCase) {
@@ -564,41 +652,196 @@ func TestDefaultClusterFieldSelectorsProvideDefaults(t *testing.T) {
 	t.Parallel()
 
 	selectors := configmanager.DefaultClusterFieldSelectors()
-	require.Len(t, selectors, 4)
+	require.Len(t, selectors, 8)
 
 	cluster := v1alpha1.NewCluster()
 
-	for _, selector := range selectors {
-		field := selector.Selector(cluster)
+	for _, selectorCase := range defaultClusterSelectorCases(selectors) {
+		t.Run(selectorCase.name, func(t *testing.T) {
+			t.Parallel()
 
-		if distribution, ok := field.(*v1alpha1.Distribution); ok {
-			assert.Equal(t, v1alpha1.DistributionKind, selector.DefaultValue)
+			field := selectorCase.selector.Selector(cluster)
+			if selectorCase.expectedDefault != nil {
+				assert.Equal(t, selectorCase.expectedDefault, selectorCase.selector.DefaultValue)
+			}
 
-			*distribution = v1alpha1.DistributionK3d
-			assert.Equal(t, v1alpha1.DistributionK3d, *distribution)
-
-			continue
-		}
-
-		pathPtr, ok := field.(*string)
-		require.True(t, ok, "selector did not return supported pointer type")
-
-		// Check that the default value is one of the expected values (if it's set)
-		if selector.DefaultValue != nil {
-			defaultValue, ok := selector.DefaultValue.(string)
-			require.True(t, ok, "selector default value must be a string when present")
-			assert.True(
-				t,
-				defaultValue == "kind.yaml" ||
-					defaultValue == "~/.kube/config",
-				"unexpected default value: %s",
-				defaultValue,
-			)
-		}
-
-		*pathPtr = "custom.yaml"
-		assert.Equal(t, "custom.yaml", *pathPtr)
+			selectorCase.assertField(t, field)
+		})
 	}
+}
+
+func defaultClusterSelectorCases(
+	selectors []configmanager.FieldSelector[v1alpha1.Cluster],
+) []defaultClusterSelectorCase {
+	return []defaultClusterSelectorCase{
+		newDefaultDistributionCase(selectors[0]),
+		newDefaultDistributionConfigCase(selectors[1]),
+		newDefaultContextCase(selectors[2]),
+		newDefaultKubeconfigCase(selectors[3]),
+		newDefaultGitOpsCase(selectors[4]),
+		newDefaultLocalRegistryCase(selectors[5]),
+		newDefaultRegistryPortCase(selectors[6]),
+		newDefaultFluxIntervalCase(selectors[7]),
+	}
+}
+
+func newDefaultDistributionCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "distribution",
+		selector:        selector,
+		expectedDefault: v1alpha1.DistributionKind,
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*v1alpha1.Distribution)
+			require.True(t, ok)
+
+			*ptr = v1alpha1.DistributionK3d
+			assert.Equal(t, v1alpha1.DistributionK3d, *ptr)
+		},
+	}
+}
+
+func newDefaultDistributionConfigCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "distribution-config",
+		selector:        selector,
+		expectedDefault: "",
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*string)
+			require.True(t, ok)
+
+			*ptr = "custom-kind.yaml"
+			assert.Equal(t, "custom-kind.yaml", *ptr)
+		},
+	}
+}
+
+func newDefaultContextCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:     "context",
+		selector: selector,
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*string)
+			require.True(t, ok)
+			assert.Empty(t, selectorDefaultString(selector))
+
+			*ptr = "kind-kind"
+			assert.Equal(t, "kind-kind", *ptr)
+		},
+	}
+}
+
+func newDefaultKubeconfigCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "kubeconfig",
+		selector:        selector,
+		expectedDefault: "~/.kube/config",
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*string)
+			require.True(t, ok)
+			assert.Equal(t, "~/.kube/config", selector.DefaultValue)
+
+			*ptr = "./kubeconfig"
+			assert.Equal(t, "./kubeconfig", *ptr)
+		},
+	}
+}
+
+func newDefaultGitOpsCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "gitops",
+		selector:        selector,
+		expectedDefault: v1alpha1.GitOpsEngineNone,
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*v1alpha1.GitOpsEngine)
+			require.True(t, ok)
+
+			*ptr = v1alpha1.GitOpsEngineFlux
+			assert.Equal(t, v1alpha1.GitOpsEngineFlux, *ptr)
+		},
+	}
+}
+
+func newDefaultLocalRegistryCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "local-registry",
+		selector:        selector,
+		expectedDefault: v1alpha1.LocalRegistryDisabled,
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*v1alpha1.LocalRegistry)
+			require.True(t, ok)
+
+			*ptr = v1alpha1.LocalRegistryEnabled
+			assert.Equal(t, v1alpha1.LocalRegistryEnabled, *ptr)
+		},
+	}
+}
+
+func newDefaultRegistryPortCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "local-registry-port",
+		selector:        selector,
+		expectedDefault: v1alpha1.DefaultLocalRegistryPort,
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*int32)
+			require.True(t, ok)
+
+			*ptr = 6000
+			assert.Equal(t, int32(6000), *ptr)
+		},
+	}
+}
+
+func newDefaultFluxIntervalCase(
+	selector configmanager.FieldSelector[v1alpha1.Cluster],
+) defaultClusterSelectorCase {
+	return defaultClusterSelectorCase{
+		name:            "flux-interval",
+		selector:        selector,
+		expectedDefault: metav1.Duration{Duration: time.Minute},
+		assertField: func(t *testing.T, field any) {
+			t.Helper()
+
+			ptr, ok := field.(*metav1.Duration)
+			require.True(t, ok)
+
+			*ptr = metav1.Duration{Duration: 30 * time.Second}
+			assert.Equal(t, 30*time.Second, ptr.Duration)
+		},
+	}
+}
+
+func selectorDefaultString(selector configmanager.FieldSelector[v1alpha1.Cluster]) string {
+	value, _ := selector.DefaultValue.(string)
+
+	return value
 }
 
 func TestDefaultContextFieldSelector(t *testing.T) {

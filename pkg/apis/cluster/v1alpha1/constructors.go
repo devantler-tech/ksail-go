@@ -25,6 +25,7 @@ func NewClusterSpec() Spec {
 		Distribution:       "",
 		CNI:                "",
 		CSI:                "",
+		LocalRegistry:      LocalRegistryDisabled,
 		GitOpsEngine:       GitOpsEngineNone,
 		Options:            NewClusterOptions(),
 	}
@@ -42,13 +43,14 @@ func NewClusterConnection() Connection {
 // NewClusterOptions creates a new Options with default values.
 func NewClusterOptions() Options {
 	return Options{
-		Kind:      NewClusterOptionsKind(),
-		K3d:       NewClusterOptionsK3d(),
-		Cilium:    NewClusterOptionsCilium(),
-		Flux:      NewClusterOptionsFlux(),
-		ArgoCD:    NewClusterOptionsArgoCD(),
-		Helm:      NewClusterOptionsHelm(),
-		Kustomize: NewClusterOptionsKustomize(),
+		Kind:          NewClusterOptionsKind(),
+		K3d:           NewClusterOptionsK3d(),
+		Cilium:        NewClusterOptionsCilium(),
+		Flux:          NewClusterOptionsFlux(),
+		ArgoCD:        NewClusterOptionsArgoCD(),
+		LocalRegistry: NewClusterOptionsLocalRegistry(),
+		Helm:          NewClusterOptionsHelm(),
+		Kustomize:     NewClusterOptionsKustomize(),
 	}
 }
 
@@ -77,6 +79,11 @@ func NewClusterOptionsArgoCD() OptionsArgoCD {
 	return OptionsArgoCD{}
 }
 
+// NewClusterOptionsLocalRegistry creates a new OptionsLocalRegistry with default values.
+func NewClusterOptionsLocalRegistry() OptionsLocalRegistry {
+	return OptionsLocalRegistry{}
+}
+
 // NewClusterOptionsHelm creates a new OptionsHelm with default values.
 func NewClusterOptionsHelm() OptionsHelm {
 	return OptionsHelm{}
@@ -85,4 +92,30 @@ func NewClusterOptionsHelm() OptionsHelm {
 // NewClusterOptionsKustomize creates a new OptionsKustomize with default values.
 func NewClusterOptionsKustomize() OptionsKustomize {
 	return OptionsKustomize{}
+}
+
+// NewOCIRegistry creates a new OCIRegistry with default lifecycle state.
+func NewOCIRegistry() OCIRegistry {
+	return OCIRegistry{
+		Status: OCIRegistryStatusNotProvisioned,
+	}
+}
+
+// NewOCIArtifact creates a new OCIArtifact with zero-valued metadata.
+func NewOCIArtifact() OCIArtifact {
+	return OCIArtifact{}
+}
+
+// NewFluxOCIRepository creates a new FluxOCIRepository with empty spec and status.
+func NewFluxOCIRepository() FluxOCIRepository {
+	return FluxOCIRepository{
+		Spec: FluxOCIRepositorySpec{
+			Ref: FluxOCIRepositoryRef{},
+		},
+	}
+}
+
+// NewFluxKustomization creates a new FluxKustomization with empty spec and status.
+func NewFluxKustomization() FluxKustomization {
+	return FluxKustomization{}
 }

@@ -16,6 +16,42 @@ func (m *ConfigManager) AddFlagsFromFields(cmd *cobra.Command) {
 	}
 }
 
+// handleBoolFlag handles bool type flags.
+func (m *ConfigManager) handleBoolFlag(
+	cmd *cobra.Command,
+	ptr *bool,
+	fieldSelector FieldSelector[v1alpha1.Cluster],
+	flagName, shorthand string,
+) {
+	defaultBool := false
+
+	if fieldSelector.DefaultValue != nil {
+		if value, ok := fieldSelector.DefaultValue.(bool); ok {
+			defaultBool = value
+		}
+	}
+
+	cmd.Flags().BoolVarP(ptr, flagName, shorthand, defaultBool, fieldSelector.Description)
+}
+
+// handleInt32Flag handles int32 type flags.
+func (m *ConfigManager) handleInt32Flag(
+	cmd *cobra.Command,
+	ptr *int32,
+	fieldSelector FieldSelector[v1alpha1.Cluster],
+	flagName, shorthand string,
+) {
+	var defaultValue int32
+
+	if fieldSelector.DefaultValue != nil {
+		if value, ok := fieldSelector.DefaultValue.(int32); ok {
+			defaultValue = value
+		}
+	}
+
+	cmd.Flags().Int32VarP(ptr, flagName, shorthand, defaultValue, fieldSelector.Description)
+}
+
 // addFlagFromField adds a CLI flag for a specific field using type assertion and reflection.
 func (m *ConfigManager) addFlagFromField(
 	cmd *cobra.Command,
@@ -83,6 +119,10 @@ func (m *ConfigManager) handleStandardTypes(
 		m.handleStringFlag(cmd, ptr, fieldSelector, flagName, shorthand)
 	case *metav1.Duration:
 		m.handleDurationFlag(cmd, ptr, fieldSelector, flagName, shorthand)
+	case *bool:
+		m.handleBoolFlag(cmd, ptr, fieldSelector, flagName, shorthand)
+	case *int32:
+		m.handleInt32Flag(cmd, ptr, fieldSelector, flagName, shorthand)
 	}
 }
 
@@ -132,16 +172,19 @@ func (m *ConfigManager) handleDurationFlag(
 // We initialize this map once and reuse it for better performance.
 func (m *ConfigManager) getFieldMappings() map[any]string {
 	return map[any]string{
-		&m.Config.Spec.Distribution:          "distribution",
-		&m.Config.Spec.DistributionConfig:    "distribution-config",
-		&m.Config.Spec.SourceDirectory:       "source-directory",
-		&m.Config.Spec.Connection.Context:    "context",
-		&m.Config.Spec.Connection.Kubeconfig: "kubeconfig",
-		&m.Config.Spec.Connection.Timeout:    "timeout",
-		&m.Config.Spec.GitOpsEngine:          "gitops-engine",
-		&m.Config.Spec.CNI:                   "cni",
-		&m.Config.Spec.CSI:                   "csi",
-		&m.Config.Spec.MetricsServer:         "metrics-server",
+		&m.Config.Spec.Distribution:                   "distribution",
+		&m.Config.Spec.DistributionConfig:             "distribution-config",
+		&m.Config.Spec.SourceDirectory:                "source-directory",
+		&m.Config.Spec.Connection.Context:             "context",
+		&m.Config.Spec.Connection.Kubeconfig:          "kubeconfig",
+		&m.Config.Spec.Connection.Timeout:             "timeout",
+		&m.Config.Spec.GitOpsEngine:                   "gitops-engine",
+		&m.Config.Spec.CNI:                            "cni",
+		&m.Config.Spec.CSI:                            "csi",
+		&m.Config.Spec.MetricsServer:                  "metrics-server",
+		&m.Config.Spec.LocalRegistry:                  "local-registry",
+		&m.Config.Spec.Options.LocalRegistry.HostPort: "local-registry-port",
+		&m.Config.Spec.Options.Flux.Interval:          "flux-interval",
 	}
 }
 
@@ -217,6 +260,8 @@ func (m *ConfigManager) setPflagValueDefault(pflagValue interface {
 	case v1alpha1.CSI:
 		_ = pflagValue.Set(string(val))
 	case v1alpha1.MetricsServer:
+		_ = pflagValue.Set(string(val))
+	case v1alpha1.LocalRegistry:
 		_ = pflagValue.Set(string(val))
 	default:
 		if str, ok := val.(string); ok {

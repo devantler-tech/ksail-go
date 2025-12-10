@@ -1,0 +1,68 @@
+openapi: 3.1.0
+info:
+  title: KSail-Go Flux OCI Integration
+  version: 0.1.0
+  description: Logical contracts for KSail-Go CLI and Flux/OCI interactions (non-HTTP, for reference).
+
+paths: {}
+
+components:
+  schemas:
+    ClusterConfig:
+      type: object
+      properties:
+        gitOpsEngine:
+          type: string
+          enum: [Kubectl, Flux]
+        localRegistry:
+          type: string
+          enum: [Enabled, Disabled]
+        options:
+          type: object
+          properties:
+            localRegistry:
+              type: object
+              properties:
+                hostPort:
+                  type: integer
+                  format: int32
+            flux:
+              type: object
+              properties:
+                interval:
+                  type: string
+                  description: Kubernetes duration string, default 1m.
+
+    OCIRegistry:
+      type: object
+      properties:
+        name:
+          type: string
+        endpoint:
+          type: string
+          example: localhost:5000
+        port:
+          type: integer
+        dataPath:
+          type: string
+        status:
+          type: string
+          enum: [NotProvisioned, Provisioning, Running, Error]
+        lastError:
+          type: string
+
+    OCIArtifact:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        registryEndpoint:
+          type: string
+        repository:
+          type: string
+        tag:
+          type: string
+        sourcePath:
+          type: string

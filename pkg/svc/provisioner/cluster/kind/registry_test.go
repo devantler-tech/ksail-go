@@ -14,7 +14,7 @@ import (
 
 	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
@@ -668,7 +668,7 @@ func TestGenerateUpstreamURL(t *testing.T) {
 	runRegistryExtractionTestCases(
 		t,
 		tests,
-		func(t *testing.T, expected string, registries []registries.Info) {
+		func(t *testing.T, expected string, registries []registry.Info) {
 			t.Helper()
 			assert.Equal(t, expected, registries[0].Upstream)
 		},
@@ -676,7 +676,7 @@ func TestGenerateUpstreamURL(t *testing.T) {
 }
 
 // testRegistryExtraction is a helper for testing registry extraction from Kind config.
-func testRegistryExtraction(t *testing.T, host, endpoint string) []registries.Info {
+func testRegistryExtraction(t *testing.T, host, endpoint string) []registry.Info {
 	t.Helper()
 
 	patch := fmt.Sprintf(`[plugins."io.containerd.grpc.v1.cri".registry.mirrors."%s"]
@@ -690,7 +690,7 @@ func testRegistryExtraction(t *testing.T, host, endpoint string) []registries.In
 }
 
 // runRegistryExtractionTest is a helper to run a single registry extraction test case.
-func runRegistryExtractionTest(t *testing.T, host string) []registries.Info {
+func runRegistryExtractionTest(t *testing.T, host string) []registry.Info {
 	t.Helper()
 	registries := testRegistryExtraction(t, host, "http://localhost:5000")
 	assert.Len(t, registries, 1)
@@ -706,7 +706,7 @@ func runRegistryExtractionTestCases(
 		host     string
 		expected string
 	},
-	assertFunc func(*testing.T, string, []registries.Info),
+	assertFunc func(*testing.T, string, []registry.Info),
 ) {
 	t.Helper()
 
@@ -810,7 +810,7 @@ func TestGenerateNameFromHost(t *testing.T) {
 	runRegistryExtractionTestCases(
 		t,
 		tests,
-		func(t *testing.T, expected string, registries []registries.Info) {
+		func(t *testing.T, expected string, registries []registry.Info) {
 			t.Helper()
 			assert.Equal(t, expected, registries[0].Name)
 		},
@@ -867,7 +867,7 @@ func TestExtractNameFromEndpoint(t *testing.T) {
 			infos := kindprovisioner.ExtractRegistriesFromKindForTesting(config, nil)
 			assert.Len(t, infos, 1)
 			assert.Equal(t, testCase.expectedName, infos[0].Name)
-			assert.Equal(t, registries.GenerateUpstreamURL("test.io"), infos[0].Upstream)
+			assert.Equal(t, registry.GenerateUpstreamURL("test.io"), infos[0].Upstream)
 		})
 	}
 }

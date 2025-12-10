@@ -1,4 +1,4 @@
-package registries
+package registry
 
 import (
 	"fmt"
@@ -138,7 +138,7 @@ func BuildHostEndpointMap(
 		endpoints, existed := hostEndpoints[entry.Host]
 		previousLen := len(endpoints)
 
-		// Add the local mirror endpoint first (for K3d registries.yaml)
+		// Add the local mirror endpoint first (for K3d registry.yaml)
 		if entry.Endpoint != "" && !containsEndpoint(endpoints, entry.Endpoint) {
 			endpoints = append(endpoints, entry.Endpoint)
 		}
@@ -195,6 +195,22 @@ func collectUsedPorts(hostEndpoints map[string][]string) (map[int]struct{}, int)
 	}
 
 	return used, next
+}
+
+// InitPortAllocation prepares the used ports set and the next available port based on provided base mapping.
+func InitPortAllocation(baseUsedPorts map[int]struct{}) (map[int]struct{}, int) {
+	usedPorts := make(map[int]struct{}, len(baseUsedPorts))
+	nextPort := DefaultRegistryPort
+
+	for port := range baseUsedPorts {
+		usedPorts[port] = struct{}{}
+
+		if port >= nextPort {
+			nextPort = port + 1
+		}
+	}
+
+	return usedPorts, nextPort
 }
 
 func containsEndpoint(endpoints []string, candidate string) bool {

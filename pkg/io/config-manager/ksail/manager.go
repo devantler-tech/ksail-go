@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	mapstructure "github.com/go-viper/mapstructure/v2"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -25,14 +27,18 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
+const defaultLocalRegistryPort int32 = v1alpha1.DefaultLocalRegistryPort
+
 // ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
-	Viper          *viper.Viper
-	fieldSelectors []FieldSelector[v1alpha1.Cluster]
-	Config         *v1alpha1.Cluster // Exposed config property as suggested
-	configLoaded   bool              // Track if config has been actually loaded
-	Writer         io.Writer         // Writer for output notifications
-	command        *cobra.Command    // Associated Cobra command for flag introspection
+	Viper                         *viper.Viper
+	fieldSelectors                []FieldSelector[v1alpha1.Cluster]
+	Config                        *v1alpha1.Cluster // Exposed config property as suggested
+	configLoaded                  bool              // Track if config has been actually loaded
+	Writer                        io.Writer         // Writer for output notifications
+	command                       *cobra.Command    // Associated Cobra command for flag introspection
+	localRegistryExplicit         bool              // Tracks if config explicitly set the local registry behavior
+	localRegistryHostPortExplicit bool              // Tracks if config explicitly set the registry host port
 }
 
 // Compile-time interface compliance verification.
@@ -79,19 +85,31 @@ func NewCommandConfigManager(
 // Configuration priority: defaults < config files < environment variables < flags.
 // If timer is provided, timing information will be included in the success notification.
 func (m *ConfigManager) LoadConfig(tmr timer.Timer) (*v1alpha1.Cluster, error) {
-	return m.loadConfigWithOptions(tmr, false)
+	return m.loadConfigWithOptions(tmr, false, false)
 }
 
 // LoadConfigSilent loads the configuration without outputting notifications.
 // Returns the loaded config, either freshly loaded or previously cached.
 func (m *ConfigManager) LoadConfigSilent() (*v1alpha1.Cluster, error) {
-	return m.loadConfigWithOptions(nil, true)
+	return m.loadConfigWithOptions(nil, true, false)
+}
+
+// LoadConfigWithoutFile loads configuration while ignoring any on-disk config files.
+// Environment variables and flags still apply, but existing ksail.yaml contents are not read.
+func (m *ConfigManager) LoadConfigWithoutFile(tmr timer.Timer) (*v1alpha1.Cluster, error) {
+	return m.loadConfigWithOptions(tmr, false, true)
+}
+
+// LoadConfigWithoutFileSilent loads configuration ignoring on-disk config files without notifications.
+func (m *ConfigManager) LoadConfigWithoutFileSilent() (*v1alpha1.Cluster, error) {
+	return m.loadConfigWithOptions(nil, true, true)
 }
 
 // loadConfigWithOptions is the internal implementation with silent option.
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,
+	ignoreConfigFile bool,
 ) (*v1alpha1.Cluster, error) {
 	if !silent {
 		m.notifyLoadingStart()
@@ -109,16 +127,18 @@ func (m *ConfigManager) loadConfigWithOptions(
 		m.notifyLoadingConfig()
 	}
 
-	// Use native Viper API to read configuration
-	err := m.readConfig(silent)
-	if err != nil {
-		return nil, err
+	if !ignoreConfigFile {
+		// Use native Viper API to read configuration
+		err := m.readConfig(silent)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Unmarshal and apply defaults
 	flagOverrides := m.captureChangedFlagValues()
 
-	err = m.unmarshalAndApplyDefaults()
+	err := m.unmarshalAndApplyDefaults()
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +148,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 		return nil, err
 	}
 
+	m.applyGitOpsAwareDefaults(flagOverrides)
 	m.applyDistributionConfigDefaults()
 
 	err = m.validateConfig()
@@ -163,10 +184,22 @@ func (m *ConfigManager) readConfig(silent bool) error {
 }
 
 func (m *ConfigManager) unmarshalAndApplyDefaults() error {
-	err := m.Viper.Unmarshal(m.Config)
+	decoderConfig := func(dc *mapstructure.DecoderConfig) {
+		dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+			metav1DurationDecodeHook(),
+		)
+	}
+
+	// Reset derived defaults so we can detect whether users explicitly configured these values.
+	m.Config.Spec.LocalRegistry = ""
+
+	err := m.Viper.Unmarshal(m.Config, decoderConfig)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
+
+	m.localRegistryExplicit = m.Config.Spec.LocalRegistry != ""
+	m.localRegistryHostPortExplicit = m.Config.Spec.Options.LocalRegistry.HostPort != 0
 
 	// Apply field selector defaults for empty fields
 	for _, fieldSelector := range m.fieldSelectors {
@@ -221,11 +254,93 @@ func (m *ConfigManager) applyFlagOverrides(overrides map[string]string) error {
 	return nil
 }
 
+func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string) {
+	if m.Config == nil {
+		return
+	}
+
+	if !m.wasLocalRegistryExplicit(flagOverrides) {
+		m.Config.Spec.LocalRegistry = m.defaultLocalRegistryBehavior()
+	}
+
+	hostPortExplicit := m.wasLocalRegistryHostPortExplicit(flagOverrides)
+	m.applyLocalRegistryPortDefaults(hostPortExplicit)
+}
+
+func (m *ConfigManager) wasLocalRegistryExplicit(flagOverrides map[string]string) bool {
+	if m.localRegistryExplicit {
+		return true
+	}
+
+	if flagOverrides == nil {
+		return false
+	}
+
+	_, ok := flagOverrides["local-registry"]
+
+	return ok
+}
+
+func (m *ConfigManager) wasLocalRegistryHostPortExplicit(flagOverrides map[string]string) bool {
+	if m.localRegistryHostPortExplicit {
+		return true
+	}
+
+	if flagOverrides == nil {
+		return false
+	}
+
+	_, ok := flagOverrides["local-registry-port"]
+
+	return ok
+}
+
+func (m *ConfigManager) defaultLocalRegistryBehavior() v1alpha1.LocalRegistry {
+	if m.gitOpsEngineSelected() {
+		return v1alpha1.LocalRegistryEnabled
+	}
+
+	return v1alpha1.LocalRegistryDisabled
+}
+
+func (m *ConfigManager) applyLocalRegistryPortDefaults(hostPortExplicit bool) {
+	if m.Config.Spec.LocalRegistry == v1alpha1.LocalRegistryEnabled {
+		if !hostPortExplicit && m.Config.Spec.Options.LocalRegistry.HostPort == 0 {
+			m.Config.Spec.Options.LocalRegistry.HostPort = defaultLocalRegistryPort
+		}
+
+		return
+	}
+
+	if !hostPortExplicit {
+		m.Config.Spec.Options.LocalRegistry.HostPort = 0
+	}
+}
+
+func (m *ConfigManager) gitOpsEngineSelected() bool {
+	if m.Config == nil {
+		return false
+	}
+
+	switch m.Config.Spec.GitOpsEngine {
+	case "", v1alpha1.GitOpsEngineNone:
+		return false
+	case v1alpha1.GitOpsEngineFlux:
+		return true
+	default:
+		return true
+	}
+}
+
+type flagValueSetter interface {
+	Set(value string) error
+}
+
 func setFieldValueFromFlag(fieldPtr any, raw string) error {
-	if setter, ok := fieldPtr.(interface{ Set(value string) error }); ok {
+	if setter, ok := fieldPtr.(flagValueSetter); ok {
 		err := setter.Set(raw)
 		if err != nil {
-			return fmt.Errorf("set field value via setter: %w", err)
+			return fmt.Errorf("set flag value: %w", err)
 		}
 
 		return nil
@@ -237,23 +352,65 @@ func setFieldValueFromFlag(fieldPtr any, raw string) error {
 
 		return nil
 	case *metav1.Duration:
-		if raw == "" {
-			ptr.Duration = 0
-
-			return nil
-		}
-
-		dur, err := time.ParseDuration(raw)
-		if err != nil {
-			return fmt.Errorf("parse duration %q: %w", raw, err)
-		}
-
-		ptr.Duration = dur
-
-		return nil
+		return setDurationFromFlag(ptr, raw)
+	case *bool:
+		return setBoolFromFlag(ptr, raw)
+	case *int32:
+		return setInt32FromFlag(ptr, raw)
 	default:
 		return nil
 	}
+}
+
+func setDurationFromFlag(target *metav1.Duration, raw string) error {
+	if raw == "" {
+		target.Duration = 0
+
+		return nil
+	}
+
+	duration, err := time.ParseDuration(raw)
+	if err != nil {
+		return fmt.Errorf("parse duration %q: %w", raw, err)
+	}
+
+	target.Duration = duration
+
+	return nil
+}
+
+func setBoolFromFlag(target *bool, raw string) error {
+	if raw == "" {
+		*target = false
+
+		return nil
+	}
+
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return fmt.Errorf("parse bool %q: %w", raw, err)
+	}
+
+	*target = value
+
+	return nil
+}
+
+func setInt32FromFlag(target *int32, raw string) error {
+	if raw == "" {
+		*target = 0
+
+		return nil
+	}
+
+	value, err := strconv.ParseInt(raw, 10, 32)
+	if err != nil {
+		return fmt.Errorf("parse int32 %q: %w", raw, err)
+	}
+
+	*target = int32(value)
+
+	return nil
 }
 
 func (m *ConfigManager) notifyLoadingStart() {

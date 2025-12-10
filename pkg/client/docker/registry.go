@@ -142,6 +142,7 @@ func (rm *RegistryManager) DeleteRegistry(
 	name, _ string,
 	deleteVolume bool,
 	networkName string,
+	volumeName string,
 ) error {
 	containers, err := rm.listRegistryContainers(ctx, name)
 	if err != nil {
@@ -149,6 +150,13 @@ func (rm *RegistryManager) DeleteRegistry(
 	}
 
 	if len(containers) == 0 {
+		if deleteVolume {
+			orphanErr := cleanupOrphanedRegistryVolume(ctx, rm.client, volumeName, name)
+			if orphanErr != nil {
+				return orphanErr
+			}
+		}
+
 		return ErrRegistryNotFound
 	}
 
@@ -187,7 +195,7 @@ func (rm *RegistryManager) DeleteRegistry(
 		return fmt.Errorf("failed to remove registry container: %w", removeErr)
 	}
 
-	return cleanupRegistryVolume(ctx, rm.client, registryContainer, name, deleteVolume)
+	return cleanupRegistryVolume(ctx, rm.client, registryContainer, volumeName, name, deleteVolume)
 }
 
 // ListRegistries returns a list of all ksail registry containers.
@@ -669,6 +677,7 @@ func cleanupRegistryVolume(
 	ctx context.Context,
 	dockerClient client.APIClient,
 	registryContainer container.Summary,
+	explicitVolume string,
 	fallbackName string,
 	deleteVolume bool,
 ) error {
@@ -676,17 +685,82 @@ func cleanupRegistryVolume(
 		return nil
 	}
 
-	volumeName := deriveRegistryVolumeName(registryContainer, fallbackName)
-	if volumeName == "" {
-		return nil
+	volumeCandidate := strings.TrimSpace(explicitVolume)
+	if volumeCandidate == "" {
+		volumeCandidate = deriveRegistryVolumeName(registryContainer, fallbackName)
 	}
 
-	err := dockerClient.VolumeRemove(ctx, volumeName, false)
-	if err != nil {
-		return fmt.Errorf("failed to remove registry volume: %w", err)
+	_, err := removeRegistryVolume(ctx, dockerClient, volumeCandidate)
+	return err
+}
+
+func cleanupOrphanedRegistryVolume(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	explicitVolume string,
+	fallbackName string,
+) error {
+	candidates := uniqueNonEmpty(
+		explicitVolume,
+		NormalizeVolumeName(fallbackName),
+		fallbackName,
+	)
+
+	for _, candidate := range candidates {
+		removed, err := removeRegistryVolume(ctx, dockerClient, candidate)
+		if err != nil {
+			return err
+		}
+
+		if removed {
+			return nil
+		}
 	}
 
 	return nil
+}
+
+func removeRegistryVolume(
+	ctx context.Context,
+	dockerClient client.APIClient,
+	volumeName string,
+) (bool, error) {
+	trimmed := strings.TrimSpace(volumeName)
+	if trimmed == "" {
+		return false, nil
+	}
+
+	err := dockerClient.VolumeRemove(ctx, trimmed, false)
+	if err != nil {
+		if client.IsErrNotFound(err) {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("failed to remove registry volume: %w", err)
+	}
+
+	return true, nil
+}
+
+func uniqueNonEmpty(values ...string) []string {
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+
+		if _, exists := seen[trimmed]; exists {
+			continue
+		}
+
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+
+	return result
 }
 
 func registryAttachedToOtherClusters(

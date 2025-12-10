@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/cmd/apply"
 	"k8s.io/kubectl/pkg/cmd/clusterinfo"
 	"k8s.io/kubectl/pkg/cmd/create"
@@ -328,22 +329,38 @@ func (c *Client) CreateExposeCommand(kubeConfigPath string) *cobra.Command {
 	return exposeCmd
 }
 
-// CreateClusterInfoCommand creates a kubectl cluster-info command with all its flags and behavior.
+// CreateClusterInfoCommand wires kubectl's cluster-info with minimal guarding.
 func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command {
-	// Create config flags with kubeconfig path
 	configFlags := genericclioptions.NewConfigFlags(true)
 	if kubeConfigPath != "" {
 		configFlags.KubeConfig = &kubeConfigPath
 	}
 
-	// Create the cluster-info command using kubectl's NewCmdClusterInfo
-	clusterInfoCmd := clusterinfo.NewCmdClusterInfo(configFlags, c.ioStreams)
+	restClientGetter := cmdutil.NewMatchVersionFlags(configFlags)
+	options := &clusterinfo.ClusterInfoOptions{IOStreams: c.ioStreams}
 
-	// Customize command metadata to fit ksail context
-	clusterInfoCmd.Use = "info"
-	clusterInfoCmd.Short = "Display cluster information"
-	clusterInfoCmd.Long = "Display addresses of the control plane and services with label " +
-		"kubernetes.io/cluster-service=true."
+	clusterInfoCmd := &cobra.Command{
+		Use:   "info",
+		Short: "Display cluster information",
+		Long:  "Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := options.Complete(restClientGetter, cmd); err != nil {
+				return err
+			}
+
+			// Ensure REST config has defaults (notably GroupVersion) to avoid nil deref in upstream logic.
+			if options.Client != nil {
+				if err := rest.SetKubernetesDefaults(options.Client); err != nil {
+					return err
+				}
+			}
+
+			return options.Run()
+		},
+	}
+
+	configFlags.AddFlags(clusterInfoCmd.Flags())
+	clusterInfoCmd.AddCommand(clusterinfo.NewCmdClusterInfoDump(restClientGetter, c.ioStreams))
 
 	return clusterInfoCmd
 }

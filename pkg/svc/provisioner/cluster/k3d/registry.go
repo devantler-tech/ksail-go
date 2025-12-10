@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/registries"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"sigs.k8s.io/yaml"
@@ -32,7 +32,7 @@ func SetupRegistries(
 
 	networkName := resolveK3dNetworkName(clusterName)
 
-	errRegistry := registries.SetupRegistries(
+	errRegistry := registry.SetupRegistries(
 		ctx,
 		registryMgr,
 		registryInfos,
@@ -66,7 +66,7 @@ func ConnectRegistriesToNetwork(
 
 	networkName := resolveK3dNetworkName(clusterName)
 
-	errConnect := registries.ConnectRegistriesToNetwork(
+	errConnect := registry.ConnectRegistriesToNetwork(
 		ctx,
 		dockerClient,
 		registryInfos,
@@ -100,7 +100,7 @@ func CleanupRegistries(
 
 	networkName := resolveK3dNetworkName(clusterName)
 
-	errCleanup := registries.CleanupRegistries(
+	errCleanup := registry.CleanupRegistries(
 		ctx,
 		registryMgr,
 		registryInfos,
@@ -120,15 +120,15 @@ func setupRegistryManager(
 	ctx context.Context,
 	simpleCfg *k3dv1alpha5.SimpleConfig,
 	dockerClient client.APIClient,
-) (*dockerclient.RegistryManager, []registries.Info, error) {
+) (*dockerclient.RegistryManager, []registry.Info, error) {
 	if simpleCfg == nil {
 		return nil, nil, nil
 	}
 
-	registryMgr, infos, err := registries.PrepareRegistryManager(
+	registryMgr, infos, err := registry.PrepareRegistryManager(
 		ctx,
 		dockerClient,
-		func(usedPorts map[int]struct{}) []registries.Info {
+		func(usedPorts map[int]struct{}) []registry.Info {
 			return extractRegistriesFromConfig(simpleCfg, usedPorts)
 		},
 	)
@@ -159,7 +159,7 @@ type k3dMirrorConfig struct {
 func extractRegistriesFromConfig(
 	simpleCfg *k3dv1alpha5.SimpleConfig,
 	baseUsedPorts map[int]struct{},
-) []registries.Info {
+) []registry.Info {
 	if simpleCfg == nil {
 		return nil
 	}
@@ -185,18 +185,18 @@ func extractRegistriesFromConfig(
 		hosts = append(hosts, host)
 	}
 
-	registries.SortHosts(hosts)
+	registry.SortHosts(hosts)
 
-	usedPorts, nextPort := registries.InitPortAllocation(baseUsedPorts)
+	usedPorts, nextPort := registry.InitPortAllocation(baseUsedPorts)
 
-	registryInfos := make([]registries.Info, 0, len(hosts))
+	registryInfos := make([]registry.Info, 0, len(hosts))
 
 	for _, host := range hosts {
 		endpoints := mirrorCfg.Mirrors[host].Endpoint
-		port := registries.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
+		port := registry.ExtractRegistryPort(endpoints, usedPorts, &nextPort)
 		upstream := upstreamFromEndpoints(host, endpoints)
 
-		info := registries.BuildRegistryInfo(host, endpoints, port, "", upstream)
+		info := registry.BuildRegistryInfo(host, endpoints, port, "", upstream)
 		registryInfos = append(registryInfos, info)
 	}
 
@@ -204,7 +204,7 @@ func extractRegistriesFromConfig(
 }
 
 // ExtractRegistriesFromConfigForTesting exposes registry extraction for testing and callers that need inspection.
-func ExtractRegistriesFromConfigForTesting(simpleCfg *k3dv1alpha5.SimpleConfig) []registries.Info {
+func ExtractRegistriesFromConfigForTesting(simpleCfg *k3dv1alpha5.SimpleConfig) []registry.Info {
 	return extractRegistriesFromConfig(simpleCfg, nil)
 }
 
@@ -213,7 +213,7 @@ func upstreamFromEndpoints(host string, endpoints []string) string {
 		return ""
 	}
 
-	expectedLocal := registries.BuildRegistryName("", host)
+	expectedLocal := registry.BuildRegistryName("", host)
 
 	for idx := len(endpoints) - 1; idx >= 0; idx-- {
 		candidate := strings.TrimSpace(endpoints[idx])
@@ -221,7 +221,7 @@ func upstreamFromEndpoints(host string, endpoints []string) string {
 			continue
 		}
 
-		switch extracted := registries.ExtractNameFromEndpoint(candidate); {
+		switch extracted := registry.ExtractNameFromEndpoint(candidate); {
 		case extracted == "":
 			return candidate
 		case extracted != expectedLocal:
