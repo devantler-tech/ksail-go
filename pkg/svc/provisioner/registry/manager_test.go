@@ -219,3 +219,114 @@ func TestSortHosts(t *testing.T) {
 	registry.SortHosts(hosts)
 	assert.Equal(t, []string{"docker.io", "ghcr.io", "quay.io"}, hosts)
 }
+
+func TestCollectRegistryNames(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns_empty_slice_for_empty_input", func(t *testing.T) {
+		t.Parallel()
+
+		names := registry.CollectRegistryNames([]registry.Info{})
+
+		assert.NotNil(t, names)
+		assert.Empty(t, names)
+	})
+
+	t.Run("collects_names_from_single_registry", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "registry-1", Host: "docker.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1"}, names)
+	})
+
+	t.Run("collects_names_from_multiple_registries", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "registry-1", Host: "docker.io"},
+			{Name: "registry-2", Host: "ghcr.io"},
+			{Name: "registry-3", Host: "quay.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1", "registry-2", "registry-3"}, names)
+	})
+
+	t.Run("filters_out_empty_names", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "registry-1", Host: "docker.io"},
+			{Name: "", Host: "ghcr.io"},
+			{Name: "registry-3", Host: "quay.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1", "registry-3"}, names)
+	})
+
+	t.Run("filters_out_all_empty_names", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "", Host: "docker.io"},
+			{Name: "", Host: "ghcr.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.NotNil(t, names)
+		assert.Empty(t, names)
+	})
+
+	t.Run("trims_whitespace_from_names", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "  registry-1  ", Host: "docker.io"},
+			{Name: "	registry-2	", Host: "ghcr.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1", "registry-2"}, names)
+	})
+
+	t.Run("filters_out_whitespace_only_names", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "registry-1", Host: "docker.io"},
+			{Name: "   ", Host: "ghcr.io"},
+			{Name: "	", Host: "quay.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1"}, names)
+	})
+
+	t.Run("handles_mixed_empty_and_valid_names", func(t *testing.T) {
+		t.Parallel()
+
+		infos := []registry.Info{
+			{Name: "registry-1", Host: "docker.io"},
+			{Name: "", Host: "ghcr.io"},
+			{Name: "  registry-2  ", Host: "quay.io"},
+			{Name: "   ", Host: "k8s.gcr.io"},
+			{Name: "registry-3", Host: "registry.k8s.io"},
+		}
+
+		names := registry.CollectRegistryNames(infos)
+
+		assert.Equal(t, []string{"registry-1", "registry-2", "registry-3"}, names)
+	})
+}
+
