@@ -416,7 +416,7 @@ func TestLoadConfigAppliesLocalRegistryDefaults(t *testing.T) {
 			name:             "enabled-when-flux-configured",
 			gitOpsEngine:     v1alpha1.GitOpsEngineFlux,
 			expectedBehavior: v1alpha1.LocalRegistryEnabled,
-			expectedHostPort: 5000,
+			expectedHostPort: v1alpha1.DefaultLocalRegistryPort,
 		},
 		{
 			name:             "disabled-when-no-gitops",
@@ -543,14 +543,13 @@ func TestLoadConfigValidationFailureMessages(t *testing.T) {
 	_, err := manager.LoadConfig(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validation reported")
-	assert.Contains(t, err.Error(), "4 error(s)")
+	assert.Contains(t, err.Error(), "3 error(s)")
 
 	logOutput := output.String()
 	assert.Contains(t, logOutput, "error:")
 	assert.Contains(t, logOutput, "kind is required")
 	assert.Contains(t, logOutput, "apiVersion is required")
 	assert.Contains(t, logOutput, "field: spec.distribution")
-	assert.Contains(t, logOutput, "field: spec.distributionConfig")
 }
 
 // testLoadConfigCase is a helper function to test a single LoadConfig scenario.

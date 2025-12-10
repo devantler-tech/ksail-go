@@ -398,7 +398,7 @@ func (v *Validator) validateRegistry(
 				Message:       "localRegistry.hostPort must be between 1 and 65535 when the registry is enabled",
 				CurrentValue:  port,
 				ExpectedValue: "1-65535",
-				FixSuggestion: "Choose a valid TCP port (e.g., 5000) for spec.options.localRegistry.hostPort",
+				FixSuggestion: "Choose a valid TCP port (e.g., 5111) for spec.options.localRegistry.hostPort",
 			})
 		}
 

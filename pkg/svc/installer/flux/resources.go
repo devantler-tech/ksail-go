@@ -124,7 +124,7 @@ func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 
 	hostPort := clusterCfg.Spec.Options.LocalRegistry.HostPort
 	if hostPort == 0 {
-		hostPort = int32(registry.DefaultRegistryPort)
+		hostPort = v1alpha1.DefaultLocalRegistryPort
 	}
 
 	sourceDir := strings.TrimSpace(clusterCfg.Spec.SourceDirectory)

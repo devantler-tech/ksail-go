@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
@@ -26,7 +27,7 @@ import (
 	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
-const defaultLocalRegistryPort int32 = 5000
+const defaultLocalRegistryPort int32 = v1alpha1.DefaultLocalRegistryPort
 
 // ConfigManager implements configuration management for KSail v1alpha1.Cluster configurations.
 type ConfigManager struct {
@@ -148,6 +149,7 @@ func (m *ConfigManager) loadConfigWithOptions(
 	}
 
 	m.applyGitOpsAwareDefaults(flagOverrides)
+	m.applyDistributionConfigDefaults()
 
 	err = m.validateConfig()
 	if err != nil {
@@ -263,6 +265,23 @@ func (m *ConfigManager) applyGitOpsAwareDefaults(flagOverrides map[string]string
 
 	hostPortExplicit := m.wasLocalRegistryHostPortExplicit(flagOverrides)
 	m.applyLocalRegistryPortDefaults(hostPortExplicit)
+}
+
+func (m *ConfigManager) applyDistributionConfigDefaults() {
+	if m.Config == nil {
+		return
+	}
+
+	if strings.TrimSpace(m.Config.Spec.DistributionConfig) != "" {
+		return
+	}
+
+	switch m.Config.Spec.Distribution {
+	case v1alpha1.DistributionK3d:
+		m.Config.Spec.DistributionConfig = "k3d.yaml"
+	default:
+		m.Config.Spec.DistributionConfig = "kind.yaml"
+	}
 }
 
 func (m *ConfigManager) wasLocalRegistryExplicit(flagOverrides map[string]string) bool {

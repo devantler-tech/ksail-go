@@ -103,7 +103,7 @@ func newDistributionConfigSelectorCase() standardFieldSelectorCase {
 		name:            "distribution config",
 		factory:         configmanager.DefaultDistributionConfigFieldSelector,
 		expectedDesc:    "Configuration file for the distribution",
-		expectedDefault: "kind.yaml",
+		expectedDefault: "",
 		assertPointer:   assertDistributionConfigSelector,
 	}
 }
@@ -156,7 +156,7 @@ func newLocalRegistryPortSelectorCase() standardFieldSelectorCase {
 		name:            "local-registry-port",
 		factory:         configmanager.DefaultRegistryPortFieldSelector,
 		expectedDesc:    "Host port to expose the local OCI registry on",
-		expectedDefault: int32(5000),
+		expectedDefault: v1alpha1.DefaultLocalRegistryPort,
 		assertPointer:   assertRegistryPortSelector,
 	}
 }
@@ -710,7 +710,7 @@ func newDefaultDistributionConfigCase(
 	return defaultClusterSelectorCase{
 		name:            "distribution-config",
 		selector:        selector,
-		expectedDefault: "kind.yaml",
+		expectedDefault: "",
 		assertField: func(t *testing.T, field any) {
 			t.Helper()
 
@@ -806,7 +806,7 @@ func newDefaultRegistryPortCase(
 	return defaultClusterSelectorCase{
 		name:            "local-registry-port",
 		selector:        selector,
-		expectedDefault: int32(5000),
+		expectedDefault: v1alpha1.DefaultLocalRegistryPort,
 		assertField: func(t *testing.T, field any) {
 			t.Helper()
 

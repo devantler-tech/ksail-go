@@ -7,9 +7,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// defaultDistributionConfigPath set to auto so validation passes while allowing
-// distribution-specific defaults to be applied later (Kind vs K3d).
-const defaultDistributionConfigPath = "auto"
+// defaultDistributionConfigPath left empty so distribution-specific defaults are applied later (Kind vs K3d).
+const defaultDistributionConfigPath = ""
 
 // FieldSelector defines a field and its metadata for configuration management.
 type FieldSelector[T any] struct {
@@ -119,7 +118,7 @@ func DefaultRegistryPortFieldSelector() FieldSelector[v1alpha1.Cluster] {
 			return &c.Spec.Options.LocalRegistry.HostPort
 		},
 		Description:  "Host port to expose the local OCI registry on",
-		DefaultValue: defaultLocalRegistryPort,
+		DefaultValue: v1alpha1.DefaultLocalRegistryPort,
 	}
 }
 
