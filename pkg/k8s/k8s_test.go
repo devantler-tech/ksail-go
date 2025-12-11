@@ -74,7 +74,7 @@ func testWaitForDaemonSetReadyAPIError(t *testing.T) {
 	testutils.ExpectErrorContains(
 		t,
 		err,
-		"get daemonset observability/test-agent: boom",
+		"failed to get daemonset observability/test-agent: boom",
 		"waitForDaemonSetReady api error",
 	)
 }
@@ -95,7 +95,9 @@ func testWaitForDaemonSetReadyTimeout(t *testing.T) {
 
 	err := k8s.WaitForDaemonSetReady(ctx, client, namespace, name, 150*time.Millisecond)
 
-	testutils.ExpectErrorContains(t, err, "poll for readiness", "waitForDaemonSetReady timeout")
+	testutils.ExpectErrorContains(
+		t, err, "failed to poll for readiness", "waitForDaemonSetReady timeout",
+	)
 }
 
 func TestWaitForDeploymentReady(t *testing.T) {
@@ -158,7 +160,7 @@ func testWaitForDeploymentReadyAPIError(t *testing.T) {
 	testutils.ExpectErrorContains(
 		t,
 		err,
-		"get deployment platform-system/test-operator: fail",
+		"failed to get deployment platform-system/test-operator: fail",
 		"waitForDeploymentReady api error",
 	)
 }
@@ -185,7 +187,9 @@ func testWaitForDeploymentReadyTimeout(t *testing.T) {
 
 	err := k8s.WaitForDeploymentReady(ctx, client, namespace, name, 150*time.Millisecond)
 
-	testutils.ExpectErrorContains(t, err, "poll for readiness", "waitForDeploymentReady timeout")
+	testutils.ExpectErrorContains(
+		t, err, "failed to poll for readiness", "waitForDeploymentReady timeout",
+	)
 }
 
 func TestPollForReadiness(t *testing.T) {
@@ -211,7 +215,7 @@ func TestPollForReadiness(t *testing.T) {
 		testutils.ExpectErrorContains(
 			t,
 			err,
-			"poll for readiness: boom",
+			"failed to poll for readiness: boom",
 			"pollForReadiness error wrap",
 		)
 	})
