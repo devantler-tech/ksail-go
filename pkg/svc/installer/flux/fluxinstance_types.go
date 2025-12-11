@@ -14,8 +14,12 @@ const (
 	fluxInstanceVersion     = "v1"
 )
 
+//
 //nolint:gochecknoglobals // package-level constant for API version
-var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Version: fluxInstanceVersion}
+var fluxInstanceGroupVersion = schema.GroupVersion{
+	Group:   fluxInstanceGroup,
+	Version: fluxInstanceVersion,
+}
 
 // FluxInstance mirrors the Flux operator FluxInstance CRD with the minimal fields
 // KSail-Go needs to configure default sync behavior. Keeping a local definition
@@ -50,6 +54,7 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 }
 
 // DeepCopyObject implements runtime.Object interface.
+//
 //nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
@@ -73,6 +78,7 @@ func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 	out.TypeMeta = in.TypeMeta
 
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
+
 	if in.Items != nil {
 		out.Items = make([]FluxInstance, len(in.Items))
 		for i := range in.Items {
@@ -86,13 +92,16 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstanceList)
 	in.DeepCopyInto(out)
+
 	return out
 }
 
-//nolint:ireturn // Required by Kubernetes runtime.Object interface
 // DeepCopyObject implements runtime.Object interface.
+//
+//nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
@@ -165,8 +174,10 @@ func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstanceStatus)
 	in.DeepCopyInto(out)
+
 	return out
 }
 
