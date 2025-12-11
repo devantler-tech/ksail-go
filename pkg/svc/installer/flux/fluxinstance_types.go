@@ -98,8 +98,6 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 }
 
 // DeepCopyObject implements runtime.Object interface.
-//
-
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
