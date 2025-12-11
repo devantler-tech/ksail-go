@@ -53,8 +53,14 @@ linters:
           - ireturn
         path: pkg/client/flux/client.go
       - linters:
+          - ireturn
+        path: pkg/svc/installer/flux/fluxinstance_types.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
+      - linters:
+          - funlen
+        path: pkg/svc/provisioner/registry/local_registry_service_test.go
   settings:
     wsl_v5:
       allow-first-in-block: true
