@@ -3,14 +3,15 @@ package k3d_test
 import (
 	"testing"
 
-	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	"github.com/k3d-io/k3d/v5/pkg/config/types"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
+
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 )
 
-// assertSingleDockerIOMirror is a helper that asserts the result contains only docker.io with two specific endpoints
+// assertSingleDockerIOMirror is a helper that asserts the result contains only docker.io with two specific endpoints.
 func assertSingleDockerIOMirror(t *testing.T, result map[string][]string) {
 	t.Helper()
 	assert.Len(t, result, 1)
@@ -21,7 +22,7 @@ func assertSingleDockerIOMirror(t *testing.T, result map[string][]string) {
 	}, result["docker.io"])
 }
 
-// createK3dConfig is a helper that creates a SimpleConfig with the given name
+// createK3dConfig is a helper that creates a SimpleConfig with the given name.
 func createK3dConfig(name string) *v1alpha5.SimpleConfig {
 	return &v1alpha5.SimpleConfig{
 		ObjectMeta: types.ObjectMeta{
@@ -30,7 +31,7 @@ func createK3dConfig(name string) *v1alpha5.SimpleConfig {
 	}
 }
 
-// createClusterConfig is a helper that creates a Cluster with the given context
+// createClusterConfig is a helper that creates a Cluster with the given context.
 func createClusterConfig(context string) *v1alpha1.Cluster {
 	return &v1alpha1.Cluster{
 		Spec: v1alpha1.Spec{
@@ -41,7 +42,7 @@ func createClusterConfig(context string) *v1alpha1.Cluster {
 	}
 }
 
-func TestParseRegistryConfig(t *testing.T) {
+func TestParseRegistryConfig_EmptyCases(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns_empty_map_for_empty_string", func(t *testing.T) {
@@ -75,6 +76,10 @@ func TestParseRegistryConfig(t *testing.T) {
 		assert.NotNil(t, result)
 		assert.Empty(t, result)
 	})
+}
+
+func TestParseRegistryConfig_SingleMirror(t *testing.T) {
+	t.Parallel()
 
 	t.Run("parses_single_mirror_with_one_endpoint", func(t *testing.T) {
 		t.Parallel()
@@ -115,11 +120,12 @@ mirrors:
 			"http://localhost:5002",
 		}, result["docker.io"])
 	})
+}
 
-	t.Run("parses_multiple_mirrors", func(t *testing.T) {
-		t.Parallel()
+func TestParseRegistryConfig_MultipleMirrors(t *testing.T) {
+	t.Parallel()
 
-		yaml := `
+	yaml := `
 mirrors:
   docker.io:
     endpoint:
@@ -132,16 +138,19 @@ mirrors:
       - http://localhost:5002
 `
 
-		result := k3d.ParseRegistryConfig(yaml)
+	result := k3d.ParseRegistryConfig(yaml)
 
-		assert.Len(t, result, 3)
-		assert.Contains(t, result, "docker.io")
-		assert.Contains(t, result, "ghcr.io")
-		assert.Contains(t, result, "registry.k8s.io")
-		assert.Equal(t, []string{"http://localhost:5000"}, result["docker.io"])
-		assert.Equal(t, []string{"http://localhost:5001"}, result["ghcr.io"])
-		assert.Equal(t, []string{"http://localhost:5002"}, result["registry.k8s.io"])
-	})
+	assert.Len(t, result, 3)
+	assert.Contains(t, result, "docker.io")
+	assert.Contains(t, result, "ghcr.io")
+	assert.Contains(t, result, "registry.k8s.io")
+	assert.Equal(t, []string{"http://localhost:5000"}, result["docker.io"])
+	assert.Equal(t, []string{"http://localhost:5001"}, result["ghcr.io"])
+	assert.Equal(t, []string{"http://localhost:5002"}, result["registry.k8s.io"])
+}
+
+func TestParseRegistryConfig_FilteringAndTrimming(t *testing.T) {
+	t.Parallel()
 
 	t.Run("filters_out_empty_endpoints", func(t *testing.T) {
 		t.Parallel()
@@ -174,6 +183,10 @@ mirrors:
 		result := k3d.ParseRegistryConfig(yaml)
 		assertSingleDockerIOMirror(t, result)
 	})
+}
+
+func TestParseRegistryConfig_EmptyEndpoints(t *testing.T) {
+	t.Parallel()
 
 	t.Run("skips_mirrors_with_no_endpoints", func(t *testing.T) {
 		t.Parallel()

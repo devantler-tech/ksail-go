@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	traefikinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/traefik"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	traefikinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/traefik"
 )
 
 func TestNewTraefikInstaller(t *testing.T) {

@@ -1,6 +1,5 @@
 package v1alpha1
 
-//nolint:gci // standard import grouping
 import (
 	"encoding/json"
 	"fmt"
@@ -34,8 +33,8 @@ func (c Cluster) MarshalJSON() ([]byte, error) {
 // buildClusterOutput converts a Cluster into a YAML/JSON-friendly projection with omitempty tags.
 type clusterOutput struct {
 	APIVersion string             `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Kind       string             `json:"kind,omitempty" yaml:"kind,omitempty"`
-	Spec       *clusterSpecOutput `json:"spec,omitempty"            yaml:"spec,omitempty"`
+	Kind       string             `json:"kind,omitempty"       yaml:"kind,omitempty"`
+	Spec       *clusterSpecOutput `json:"spec,omitempty"       yaml:"spec,omitempty"`
 }
 
 type clusterSpecOutput struct {
@@ -58,7 +57,7 @@ type clusterConnectionOutput struct {
 }
 
 type clusterOptionsOutput struct {
-	Flux          *fluxOptionsOutput          `json:"flux,omitempty" yaml:"flux,omitempty"`
+	Flux          *fluxOptionsOutput          `json:"flux,omitempty"          yaml:"flux,omitempty"`
 	LocalRegistry *localRegistryOptionsOutput `json:"localRegistry,omitempty" yaml:"localRegistry,omitempty"`
 }
 
@@ -139,12 +138,16 @@ func buildClusterOutput(cluster Cluster) clusterOutput {
 	hasOpts := false
 
 	if cluster.Spec.Options.Flux.Interval.Duration != 0 {
-		opts.Flux = &fluxOptionsOutput{Interval: cluster.Spec.Options.Flux.Interval.Duration.String()}
+		opts.Flux = &fluxOptionsOutput{
+			Interval: cluster.Spec.Options.Flux.Interval.Duration.String(),
+		}
 		hasOpts = true
 	}
 
 	if cluster.Spec.Options.LocalRegistry.HostPort != 0 {
-		opts.LocalRegistry = &localRegistryOptionsOutput{HostPort: cluster.Spec.Options.LocalRegistry.HostPort}
+		opts.LocalRegistry = &localRegistryOptionsOutput{
+			HostPort: cluster.Spec.Options.LocalRegistry.HostPort,
+		}
 
 		hasOpts = true
 	}
@@ -167,6 +170,7 @@ func buildClusterOutput(cluster Cluster) clusterOutput {
 }
 
 // pruneClusterDefaults zeroes fields that match default values so they are omitted when marshalled.
+//
 //nolint:cyclop,funlen // default pruning requires checking multiple fields
 func pruneClusterDefaults(cluster Cluster) Cluster {
 	// Distribution defaults
@@ -186,11 +190,13 @@ func pruneClusterDefaults(cluster Cluster) Cluster {
 		cluster.Spec.DistributionConfig = ""
 	}
 
-	if cluster.Spec.SourceDirectory == DefaultSourceDirectory || cluster.Spec.SourceDirectory == "" {
+	if cluster.Spec.SourceDirectory == DefaultSourceDirectory ||
+		cluster.Spec.SourceDirectory == "" {
 		cluster.Spec.SourceDirectory = ""
 	}
 
-	if cluster.Spec.Connection.Kubeconfig == DefaultKubeconfigPath || cluster.Spec.Connection.Kubeconfig == "" {
+	if cluster.Spec.Connection.Kubeconfig == DefaultKubeconfigPath ||
+		cluster.Spec.Connection.Kubeconfig == "" {
 		cluster.Spec.Connection.Kubeconfig = ""
 	}
 
@@ -222,11 +228,13 @@ func pruneClusterDefaults(cluster Cluster) Cluster {
 		cluster.Spec.GitOpsEngine = ""
 	}
 
-	if cluster.Spec.Options.Flux.Interval == DefaultFluxInterval || cluster.Spec.Options.Flux.Interval.Duration == 0 {
+	if cluster.Spec.Options.Flux.Interval == DefaultFluxInterval ||
+		cluster.Spec.Options.Flux.Interval.Duration == 0 {
 		cluster.Spec.Options.Flux.Interval = metav1.Duration{}
 	}
 
-	if cluster.Spec.Options.LocalRegistry.HostPort == DefaultLocalRegistryPort || cluster.Spec.Options.LocalRegistry.HostPort == 0 {
+	if cluster.Spec.Options.LocalRegistry.HostPort == DefaultLocalRegistryPort ||
+		cluster.Spec.Options.LocalRegistry.HostPort == 0 {
 		cluster.Spec.Options.LocalRegistry.HostPort = 0
 	}
 

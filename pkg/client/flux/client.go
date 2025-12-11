@@ -101,8 +101,6 @@ func extractNameAndNamespace(cmd *cobra.Command, args []string) (string, string)
 }
 
 // getClient returns a controller-runtime client configured for Flux APIs.
-//
-//nolint:ireturn // Returning interface is necessary for controller-runtime client abstraction
 func (c *Client) getClient() (client.Client, error) {
 	if c.client != nil {
 		return c.client, nil

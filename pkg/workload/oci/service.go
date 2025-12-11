@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
@@ -22,6 +21,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
 //nolint:gochecknoglobals // static set of valid manifest extensions
@@ -47,7 +48,6 @@ func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Im
 	return nil
 }
 
-//nolint:ireturn // returns interface for dependency injection
 // NewWorkloadArtifactBuilder returns a concrete implementation backed by go-containerregistry.
 func NewWorkloadArtifactBuilder() WorkloadArtifactBuilder {
 	return &builder{pusher: remoteImagePusher{}}
@@ -84,7 +84,12 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	}
 
 	ref, err := name.ParseReference(
-		fmt.Sprintf("%s/%s:%s", validated.RegistryEndpoint, validated.Repository, validated.Version),
+		fmt.Sprintf(
+			"%s/%s:%s",
+			validated.RegistryEndpoint,
+			validated.Repository,
+			validated.Version,
+		),
 		name.WeakValidation,
 		name.Insecure,
 	)
@@ -93,6 +98,7 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	}
 
 	pusher := b.ensurePusher()
+
 	err = pusher.Push(ctx, ref, img)
 	if err != nil {
 		return BuildResult{}, fmt.Errorf("push artifact: %w", err)
@@ -111,13 +117,13 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	return BuildResult{Artifact: artifact}, nil
 }
 
-//nolint:ireturn // returns interface for internal use
 func (b *builder) ensurePusher() imagePusher {
 	if b.pusher != nil {
 		return b.pusher
 	}
 
 	b.pusher = remoteImagePusher{}
+
 	return b.pusher
 }
 
@@ -149,6 +155,7 @@ func collectManifestFiles(root string) ([]string, error) {
 		}
 
 		manifests = append(manifests, path)
+
 		return nil
 	})
 
@@ -157,21 +164,24 @@ func collectManifestFiles(root string) ([]string, error) {
 	}
 
 	sort.Strings(manifests)
+
 	return manifests, nil
 }
 
-//nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
 func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
 
+	var err error
 	for _, path := range files {
-		if err := addFileToArchive(tarWriter, root, path); err != nil {
+		err = addFileToArchive(tarWriter, root, path)
+		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := tarWriter.Close(); err != nil {
+	err = tarWriter.Close()
+	if err != nil {
 		return nil, fmt.Errorf("close tar writer: %w", err)
 	}
 
@@ -204,7 +214,8 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	header.Name = filepath.ToSlash(rel)
 	header.Mode = 0o644
 
-	if err := tarWriter.WriteHeader(header); err != nil {
+	err = tarWriter.WriteHeader(header)
+	if err != nil {
 		return fmt.Errorf("write tar header for %s: %w", path, err)
 	}
 
@@ -212,16 +223,17 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", path, err)
 	}
+
 	defer func() { _ = file.Close() }()
 
-	if _, err := io.Copy(tarWriter, file); err != nil {
+	_, err = io.Copy(tarWriter, file)
+	if err != nil {
 		return fmt.Errorf("copy file %s to tar: %w", path, err)
 	}
 
 	return nil
 }
 
-//nolint:ireturn // Returns v1.Image interface from go-containerregistry library
 func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
 	cfg := &v1.ConfigFile{
 		Architecture: runtime.GOARCH,

@@ -5,11 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	argocdinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/argocd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	argocdinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/argocd"
 )
 
 const testTimeout = 5 * time.Minute

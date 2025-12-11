@@ -3,10 +3,11 @@ package metadata_test
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/io/validator"
-	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
 )
 
 func TestValidateMetadata(t *testing.T) {

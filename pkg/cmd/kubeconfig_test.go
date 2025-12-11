@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	cmdtestutils "github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetDefaultKubeconfigPath(t *testing.T) {

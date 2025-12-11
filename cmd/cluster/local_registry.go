@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/docker/client"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/spf13/cobra"
+	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
-	"github.com/docker/docker/client"
-	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/spf13/cobra"
-	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 type localRegistryOption func(*localRegistryDependencies)
@@ -40,14 +41,6 @@ func newLocalRegistryDependencies(opts ...localRegistryOption) localRegistryDepe
 	}
 
 	return deps
-}
-
-func withLocalRegistryServiceFactory(
-	factory func(cfg registry.Config) (registry.Service, error),
-) localRegistryOption {
-	return func(deps *localRegistryDependencies) {
-		deps.serviceFactory = factory
-	}
 }
 
 func localRegistryProvisionStageInfo() registryStageInfo {

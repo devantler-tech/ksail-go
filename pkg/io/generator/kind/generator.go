@@ -3,11 +3,12 @@ package kindgenerator
 import (
 	"fmt"
 
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // KindGenerator generates a kind Cluster YAML.

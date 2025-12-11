@@ -19,11 +19,10 @@ const (
 	DefaultLocalRegistryPort int32 = 5111
 )
 
-var (
-	// DefaultFluxInterval is the default reconciliation interval for Flux.
-	//nolint:gochecknoglobals // Default configuration value
-	DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
-)
+// DefaultFluxInterval is the default reconciliation interval for Flux.
+//
+//nolint:gochecknoglobals // Default configuration value
+var DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
 
 // ExpectedDistributionConfigName returns the default config filename for a distribution.
 func ExpectedDistributionConfigName(distribution Distribution) string {

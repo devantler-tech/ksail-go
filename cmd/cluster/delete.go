@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/docker/docker/client"
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
@@ -17,8 +20,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/docker/docker/client"
-	"github.com/spf13/cobra"
 )
 
 // newDeleteLifecycleConfig creates the lifecycle configuration for cluster deletion.
@@ -219,7 +220,9 @@ func runMirrorRegistryCleanup(
 	})
 
 	dockerClientInvokerMu.RLock()
+
 	invoker := dockerClientInvoker
+
 	dockerClientInvokerMu.RUnlock()
 
 	err := invoker(cmd, func(dockerClient client.APIClient) error {

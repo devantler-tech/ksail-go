@@ -3,9 +3,10 @@ package testutils
 import (
 	"testing"
 
-	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
 )
 
 // AssertFileEquals compares the file content with the expected string.

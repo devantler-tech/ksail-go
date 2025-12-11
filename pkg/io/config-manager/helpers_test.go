@@ -3,11 +3,12 @@ package configmanager_test
 import (
 	"testing"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
 	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/require"
 	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 )
 
 func TestGetClusterName(t *testing.T) {

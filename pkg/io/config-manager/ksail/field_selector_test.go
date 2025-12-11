@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 )
 
 // testCase represents a test case structure for AddFlagFromField tests.

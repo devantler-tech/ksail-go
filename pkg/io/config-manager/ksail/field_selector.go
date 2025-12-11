@@ -3,8 +3,9 @@ package configmanager
 import (
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
 // defaultDistributionConfigPath left empty so distribution-specific defaults are applied later (Kind vs K3d).

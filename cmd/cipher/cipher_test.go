@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	"github.com/spf13/cobra"
 )
 
 func TestNewCipherCmd(t *testing.T) {

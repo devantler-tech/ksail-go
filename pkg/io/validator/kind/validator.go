@@ -1,9 +1,10 @@
 package kind
 
 import (
+	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
-	kindapi "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 // Validator validates Kind cluster configurations using upstream Kind APIs.

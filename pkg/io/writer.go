@@ -1,4 +1,3 @@
-//nolint:revive // Package name io is intentional for input/output operations
 package io
 
 import (

@@ -3,11 +3,12 @@ package k3dgenerator
 import (
 	"fmt"
 
+	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
-	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
 // K3dGenerator generates a k3d SimpleConfig YAML.

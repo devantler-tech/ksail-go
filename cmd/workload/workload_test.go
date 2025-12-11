@@ -7,14 +7,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/samber/do/v2"
+	"github.com/stretchr/testify/require"
+
 	"github.com/devantler-tech/ksail-go/cmd"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	testutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/samber/do/v2"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }

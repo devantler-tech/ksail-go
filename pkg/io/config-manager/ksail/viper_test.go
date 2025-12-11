@@ -7,10 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 )
 
 // envTestCase represents a test case for environment variable binding.

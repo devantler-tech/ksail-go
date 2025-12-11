@@ -1,8 +1,9 @@
 package cipher
 
 import (
-	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/spf13/cobra"
+
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 )
 
 // NewCipherCmd creates the cipher command that integrates with SOPS.
