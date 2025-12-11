@@ -123,7 +123,7 @@ func TestNewConfigLoaderRunETimerResolutionError(t *testing.T) {
 		t.Fatal("expected timer resolution error")
 	}
 
-	if !strings.Contains(err.Error(), "resolve timer dependency") {
+	if !strings.Contains(err.Error(), "failed to resolve timer dependency") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
