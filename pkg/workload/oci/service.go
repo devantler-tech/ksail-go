@@ -39,7 +39,8 @@ type imagePusher interface {
 type remoteImagePusher struct{}
 
 func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Image) error {
-	if err := remote.Write(ref, img, remote.WithContext(ctx)); err != nil {
+	err := remote.Write(ref, img, remote.WithContext(ctx))
+	if err != nil {
 		return fmt.Errorf("write image to registry: %w", err)
 	}
 
@@ -92,7 +93,8 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	}
 
 	pusher := b.ensurePusher()
-	if err := pusher.Push(ctx, ref, img); err != nil {
+	err = pusher.Push(ctx, ref, img)
+	if err != nil {
 		return BuildResult{}, fmt.Errorf("push artifact: %w", err)
 	}
 
@@ -109,8 +111,7 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	return BuildResult{Artifact: artifact}, nil
 }
 
-//nolint:ireturn // returns interface for internal use
-func (b *builder) ensurePusher() imagePusher {
+func (b *builder) ensurePusher() imagePusher { //nolint:ireturn // returns interface for internal use
 	if b.pusher != nil {
 		return b.pusher
 	}
@@ -158,8 +159,7 @@ func collectManifestFiles(root string) ([]string, error) {
 	return manifests, nil
 }
 
-//nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
-func newManifestLayer(root string, files []string) (v1.Layer, error) {
+func newManifestLayer(root string, files []string) (v1.Layer, error) { //nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
 

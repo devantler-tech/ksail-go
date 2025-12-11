@@ -151,7 +151,7 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 
 	overrideDiscoveryClientFactory(t, func(*rest.Config) (discovery.DiscoveryInterface, error) {
 		return newStubDiscovery(map[string]error{
-		//nolint:err113 // includes dynamic group version for debugging
+			//nolint:err113 // includes dynamic group version for debugging
 			fluxInstanceGroupVersion.String(): fmt.Errorf("group %s unavailable", fluxInstanceGroupVersion.String()),
 		}), nil
 	})

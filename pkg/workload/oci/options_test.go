@@ -19,6 +19,7 @@ func setupValidationTest(t *testing.T, source string, registry string, version s
 	return opts.Validate()
 }
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestBuildOptionsValidate(t *testing.T) {
 	t.Parallel()
 
