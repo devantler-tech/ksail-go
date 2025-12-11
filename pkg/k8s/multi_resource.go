@@ -2,17 +2,11 @@ package k8s
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
 )
-
-// ErrTimeoutExceeded is returned when a timeout is exceeded.
-var ErrTimeoutExceeded = errors.New("timeout exceeded")
-
-var errUnknownResourceType = errors.New("unknown resource type")
 
 // ReadinessCheck defines a check to perform for a Kubernetes resource.
 type ReadinessCheck struct {
@@ -26,6 +20,17 @@ type ReadinessCheck struct {
 }
 
 // WaitForMultipleResources waits for multiple Kubernetes resources to be ready.
+//
+// This function checks each resource in sequence, allocating remaining timeout
+// proportionally. If any resource fails to become ready within the allocated time,
+// the function returns an error.
+//
+// The timeout parameter is shared across all resources, so each subsequent resource
+// gets less time to become ready. Resources are checked in the order they appear
+// in the checks slice.
+//
+// Returns ErrTimeoutExceeded if the timeout is reached before a resource is checked.
+// Returns an error if any resource fails to become ready.
 func WaitForMultipleResources(
 	ctx context.Context,
 	clientset kubernetes.Interface,
@@ -70,6 +75,8 @@ func WaitForMultipleResources(
 
 	return nil
 }
+
+// Helper functions.
 
 func errTimeoutExceeded(resourceType, namespace, name string) error {
 	return fmt.Errorf(
