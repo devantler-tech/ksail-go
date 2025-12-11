@@ -6,8 +6,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
 // DefaultDistributionConfig is the default cluster distribution configuration filename.
+const (
 	DefaultDistributionConfig          = "kind.yaml"
 	DefaultK3dDistributionConfig       = "k3d.yaml"
 	DefaultSourceDirectory             = "k8s"
