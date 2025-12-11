@@ -114,36 +114,52 @@ func buildOptionsOutput(opts Options) *clusterOptionsOutput {
 	return &out
 }
 
-// buildSpecComponentFields populates component-related fields in the spec output.
-func buildSpecComponentFields(spec *clusterSpecOutput, clusterSpec Spec) bool {
+// componentFields holds the populated component field values.
+type componentFields struct {
+	CNI           string
+	CSI           string
+	MetricsServer string
+	LocalRegistry string
+	GitOpsEngine  string
+}
+
+// buildComponentFields extracts component-related fields from the spec.
+// Returns nil if no component fields are set.
+func buildComponentFields(clusterSpec Spec) *componentFields {
+	var fields componentFields
+
 	hasFields := false
 
 	if clusterSpec.CNI != "" {
-		spec.CNI = string(clusterSpec.CNI)
+		fields.CNI = string(clusterSpec.CNI)
 		hasFields = true
 	}
 
 	if clusterSpec.CSI != "" {
-		spec.CSI = string(clusterSpec.CSI)
+		fields.CSI = string(clusterSpec.CSI)
 		hasFields = true
 	}
 
 	if clusterSpec.MetricsServer != "" {
-		spec.MetricsServer = string(clusterSpec.MetricsServer)
+		fields.MetricsServer = string(clusterSpec.MetricsServer)
 		hasFields = true
 	}
 
 	if clusterSpec.LocalRegistry != "" {
-		spec.LocalRegistry = string(clusterSpec.LocalRegistry)
+		fields.LocalRegistry = string(clusterSpec.LocalRegistry)
 		hasFields = true
 	}
 
 	if clusterSpec.GitOpsEngine != "" {
-		spec.GitOpsEngine = string(clusterSpec.GitOpsEngine)
+		fields.GitOpsEngine = string(clusterSpec.GitOpsEngine)
 		hasFields = true
 	}
 
-	return hasFields
+	if !hasFields {
+		return nil
+	}
+
+	return &fields
 }
 
 // buildSpecOutput converts Spec to clusterSpecOutput for marshaling.
@@ -173,7 +189,12 @@ func buildSpecOutput(clusterSpec Spec) *clusterSpecOutput {
 		hasSpec = true
 	}
 
-	if buildSpecComponentFields(&spec, clusterSpec) {
+	if components := buildComponentFields(clusterSpec); components != nil {
+		spec.CNI = components.CNI
+		spec.CSI = components.CSI
+		spec.MetricsServer = components.MetricsServer
+		spec.LocalRegistry = components.LocalRegistry
+		spec.GitOpsEngine = components.GitOpsEngine
 		hasSpec = true
 	}
 
