@@ -146,8 +146,9 @@ func buildSpecComponentFields(spec *clusterSpecOutput, clusterSpec Spec) bool {
 	return hasFields
 }
 
-// buildSpecOutput converts Spec to clusterSpecOutput and reports whether it has content.
-func buildSpecOutput(clusterSpec Spec) (*clusterSpecOutput, bool) {
+// buildSpecOutput converts Spec to clusterSpecOutput for marshaling.
+// Returns nil if the spec has no non-empty fields.
+func buildSpecOutput(clusterSpec Spec) *clusterSpecOutput {
 	var spec clusterSpecOutput
 
 	hasSpec := false
@@ -182,14 +183,14 @@ func buildSpecOutput(clusterSpec Spec) (*clusterSpecOutput, bool) {
 	}
 
 	if !hasSpec {
-		return nil, false
+		return nil
 	}
 
-	return &spec, true
+	return &spec
 }
 
 func buildClusterOutput(c Cluster) clusterOutput {
-	specPtr, _ := buildSpecOutput(c.Spec)
+	specPtr := buildSpecOutput(c.Spec)
 
 	return clusterOutput{
 		APIVersion: c.APIVersion,
