@@ -11,12 +11,12 @@ import (
 )
 
 // setupValidationTest creates a temporary source directory (if createDir is true) and validates BuildOptions.
-func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (ValidatedBuildOptions, error) {
+func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (oci.ValidatedBuildOptions, error) {
 	t.Helper()
 	if createDir {
 		require.NoError(t, os.MkdirAll(source, 0o755))
 	}
-	opts := BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
+	opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
 	return opts.Validate()
 }
 

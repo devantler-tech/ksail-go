@@ -18,6 +18,7 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	iopath "github.com/devantler-tech/ksail-go/pkg/io"
 	k3dconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/k3d"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	installerpkg "github.com/devantler-tech/ksail-go/pkg/svc/installer"
@@ -208,7 +209,7 @@ func TestGetInstallTimeout(t *testing.T) {
 			cfg := &v1alpha1.Cluster{}
 			cfg.Spec.Connection.Timeout.Duration = test.duration
 
-			result := getInstallTimeout(cfg)
+			result := installerpkg.GetInstallTimeout(cfg)
 			if result != test.expected {
 				t.Fatalf("expected %v, got %v", test.expected, result)
 			}
@@ -277,7 +278,7 @@ func readUnexportedDuration(t *testing.T, value reflect.Value, field string) tim
 //nolint:paralleltest // Uses t.Setenv to control home directory.
 func TestExpandKubeconfigPath(t *testing.T) {
 	t.Run("returns_unmodified_when_no_tilde", func(t *testing.T) {
-		path, err := expandKubeconfigPath("/tmp/config")
+		path, err := iopath.ExpandHomePath("/tmp/config")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -292,7 +293,7 @@ func TestExpandKubeconfigPath(t *testing.T) {
 		t.Setenv("HOME", home)
 		t.Setenv("USERPROFILE", home)
 
-		path, err := expandKubeconfigPath("~/config")
+		path, err := iopath.ExpandHomePath("~/config")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -321,9 +322,15 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = kubeconfigPath
 
-		path, err := loadKubeconfig(clusterCfg)
+		path, err := cmdhelpers.GetKubeconfigPathFromConfig(clusterCfg)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Validate file exists
+		_, statErr := os.Stat(path)
+		if statErr != nil {
+			t.Fatalf("kubeconfig file should exist: %v", statErr)
 		}
 
 		if path != kubeconfigPath {
@@ -337,9 +344,13 @@ func TestLoadKubeconfig(t *testing.T) {
 		clusterCfg := &v1alpha1.Cluster{}
 		clusterCfg.Spec.Connection.Kubeconfig = filepath.Join(t.TempDir(), "missing")
 
-		_, err := loadKubeconfig(clusterCfg)
+		path, err := cmdhelpers.GetKubeconfigPathFromConfig(clusterCfg)
+		// GetKubeconfigPathFromConfig doesn't validate file existence, so we need to check it
 		if err == nil {
-			t.Fatal("expected error for missing kubeconfig")
+			_, statErr := os.Stat(path)
+			if statErr == nil {
+				t.Fatal("expected error for missing kubeconfig")
+			}
 		}
 	})
 }
@@ -1017,7 +1028,7 @@ func TestDistributionProvidesMetricsByDefault(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := distributionProvidesMetricsByDefault(tt.distribution)
+			result := tt.distribution.ProvidesMetricsServerByDefault()
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -1270,14 +1281,14 @@ func TestInstallMetricsServer_KubeconfigReadError(t *testing.T) {
 func TestDistributionProvidesMetricsByDefault_UnknownDistribution(t *testing.T) {
 	t.Parallel()
 
-	result := distributionProvidesMetricsByDefault(v1alpha1.Distribution("unknown"))
+	result := v1alpha1.Distribution("unknown").ProvidesMetricsServerByDefault()
 	assert.False(t, result, "Unknown distribution should default to false")
 }
 
 func TestDistributionProvidesMetricsByDefault_EmptyDistribution(t *testing.T) {
 	t.Parallel()
 
-	result := distributionProvidesMetricsByDefault(v1alpha1.Distribution(""))
+	result := v1alpha1.Distribution("").ProvidesMetricsServerByDefault()
 	assert.False(t, result, "Empty distribution should default to false")
 }
 
@@ -1376,7 +1387,7 @@ func TestInstallFluxIfConfiguredInstallsWhenEnabled(t *testing.T) {
 
 	clusterCfg := fluxTestClusterConfig(t)
 	installer := &stubFluxInstaller{}
-	expectedTimeout := getInstallTimeout(clusterCfg)
+	expectedTimeout := installerpkg.GetInstallTimeout(clusterCfg)
 	resourceCalls := 0
 
 	overrideEnsureFluxResourcesFunc(
