@@ -10,7 +10,37 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//nolint:funlen // Table-driven test with many scenarios
+// assertSingleDockerIOMirror is a helper that asserts the result contains only docker.io with two specific endpoints
+func assertSingleDockerIOMirror(t *testing.T, result map[string][]string) {
+	t.Helper()
+	assert.Len(t, result, 1)
+	assert.Contains(t, result, "docker.io")
+	assert.Equal(t, []string{
+		"http://localhost:5000",
+		"http://localhost:5001",
+	}, result["docker.io"])
+}
+
+// createK3dConfig is a helper that creates a SimpleConfig with the given name
+func createK3dConfig(name string) *v1alpha5.SimpleConfig {
+	return &v1alpha5.SimpleConfig{
+		ObjectMeta: types.ObjectMeta{
+			Name: name,
+		},
+	}
+}
+
+// createClusterConfig is a helper that creates a Cluster with the given context
+func createClusterConfig(context string) *v1alpha1.Cluster {
+	return &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Connection: v1alpha1.Connection{
+				Context: context,
+			},
+		},
+	}
+}
+
 func TestParseRegistryConfig(t *testing.T) {
 	t.Parallel()
 
@@ -127,13 +157,7 @@ mirrors:
 `
 
 		result := k3d.ParseRegistryConfig(yaml)
-
-		assert.Len(t, result, 1)
-		assert.Contains(t, result, "docker.io")
-		assert.Equal(t, []string{
-			"http://localhost:5000",
-			"http://localhost:5001",
-		}, result["docker.io"])
+		assertSingleDockerIOMirror(t, result)
 	})
 
 	t.Run("trims_whitespace_from_endpoints", func(t *testing.T) {
@@ -148,13 +172,7 @@ mirrors:
 `
 
 		result := k3d.ParseRegistryConfig(yaml)
-
-		assert.Len(t, result, 1)
-		assert.Contains(t, result, "docker.io")
-		assert.Equal(t, []string{
-			"http://localhost:5000",
-			"http://localhost:5001",
-		}, result["docker.io"])
+		assertSingleDockerIOMirror(t, result)
 	})
 
 	t.Run("skips_mirrors_with_no_endpoints", func(t *testing.T) {
@@ -234,18 +252,8 @@ func TestResolveClusterName(t *testing.T) {
 	t.Run("returns_cluster_context_when_k3d_name_is_empty", func(t *testing.T) {
 		t.Parallel()
 
-		k3dConfig := &v1alpha5.SimpleConfig{
-			ObjectMeta: types.ObjectMeta{
-				Name: "",
-			},
-		}
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Context: "test-context",
-				},
-			},
-		}
+		k3dConfig := createK3dConfig("")
+		clusterCfg := createClusterConfig("test-context")
 
 		name := k3d.ResolveClusterName(clusterCfg, k3dConfig)
 
@@ -255,13 +263,7 @@ func TestResolveClusterName(t *testing.T) {
 	t.Run("returns_cluster_context_when_k3d_config_is_nil", func(t *testing.T) {
 		t.Parallel()
 
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Context: "test-context",
-				},
-			},
-		}
+		clusterCfg := createClusterConfig("test-context")
 
 		name := k3d.ResolveClusterName(clusterCfg, nil)
 
@@ -271,18 +273,8 @@ func TestResolveClusterName(t *testing.T) {
 	t.Run("returns_default_when_both_names_are_empty", func(t *testing.T) {
 		t.Parallel()
 
-		k3dConfig := &v1alpha5.SimpleConfig{
-			ObjectMeta: types.ObjectMeta{
-				Name: "",
-			},
-		}
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Context: "",
-				},
-			},
-		}
+		k3dConfig := createK3dConfig("")
+		clusterCfg := createClusterConfig("")
 
 		name := k3d.ResolveClusterName(clusterCfg, k3dConfig)
 
@@ -322,18 +314,8 @@ func TestResolveClusterName(t *testing.T) {
 	t.Run("returns_default_when_k3d_name_is_whitespace_only", func(t *testing.T) {
 		t.Parallel()
 
-		k3dConfig := &v1alpha5.SimpleConfig{
-			ObjectMeta: types.ObjectMeta{
-				Name: "   ",
-			},
-		}
-		clusterCfg := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Context: "",
-				},
-			},
-		}
+		k3dConfig := createK3dConfig("   ")
+		clusterCfg := createClusterConfig("")
 
 		name := k3d.ResolveClusterName(clusterCfg, k3dConfig)
 
