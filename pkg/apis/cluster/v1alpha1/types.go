@@ -280,7 +280,7 @@ type OptionsFlux struct {
 
 // OptionsArgoCD defines options for the ArgoCD deployment tool.
 type OptionsArgoCD struct {
-	// Add any specific fields for the ArgoCD distribution here.
+	// Add any specific fields for the ArgoCD tool here.
 }
 
 // OptionsLocalRegistry defines options for the host-local OCI registry integration.
@@ -290,12 +290,12 @@ type OptionsLocalRegistry struct {
 
 // OptionsHelm defines options for the Helm tool.
 type OptionsHelm struct {
-	// Add any specific fields for the Helm distribution here.
+	// Add any specific fields for the Helm tool here.
 }
 
 // OptionsKustomize defines options for the Kustomize tool.
 type OptionsKustomize struct {
-	// Add any specific fields for the Kustomize distribution here.
+	// Add any specific fields for the Kustomize tool here.
 }
 
 // --- pflags Interface Implementations ---
