@@ -48,8 +48,13 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 - **pkg/** - Public packages (importable by external projects)
   - **apis/** - API type definitions and schemas
   - **client/** - Kubernetes and container runtime clients
+  - **cmd/** - Shared command utilities and helpers
+  - **di/** - Dependency injection and service initialization
   - **io/** - Configuration management and file operations
+  - **k8s/** - Kubernetes-specific utilities and helpers
   - **svc/** - Core services (provisioner, installer, registry)
+  - **testutils/** - Test utilities and helpers for unit/integration tests
+  - **ui/** - User interface components and formatting
   - **workload/** - Workload management and OCI operations
 - **docs/** - User documentation (also available at <https://ksail.devantler.tech>)
 - **schemas/** - JSON schemas for configuration validation
