@@ -10,6 +10,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// assertTimeoutEquals is a helper that creates a cluster with the given timeout and asserts the result
+func assertTimeoutEquals(t *testing.T, clusterTimeout time.Duration, expected time.Duration) {
+	t.Helper()
+	cluster := &v1alpha1.Cluster{
+		Spec: v1alpha1.Spec{
+			Connection: v1alpha1.Connection{
+				Timeout: metav1.Duration{Duration: clusterTimeout},
+			},
+		},
+	}
+	timeout := installer.GetInstallTimeout(cluster)
+	assert.Equal(t, expected, timeout)
+}
+
 func TestGetInstallTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -23,84 +37,26 @@ func TestGetInstallTimeout(t *testing.T) {
 
 	t.Run("returns_default_when_timeout_is_zero", func(t *testing.T) {
 		t.Parallel()
-
-		cluster := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: 0},
-				},
-			},
-		}
-
-		timeout := installer.GetInstallTimeout(cluster)
-
-		assert.Equal(t, installer.DefaultInstallTimeout, timeout)
+		assertTimeoutEquals(t, 0, installer.DefaultInstallTimeout)
 	})
 
 	t.Run("returns_default_when_timeout_is_negative", func(t *testing.T) {
 		t.Parallel()
-
-		cluster := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: -1 * time.Minute},
-				},
-			},
-		}
-
-		timeout := installer.GetInstallTimeout(cluster)
-
-		assert.Equal(t, installer.DefaultInstallTimeout, timeout)
+		assertTimeoutEquals(t, -1*time.Minute, installer.DefaultInstallTimeout)
 	})
 
 	t.Run("returns_configured_timeout_when_set", func(t *testing.T) {
 		t.Parallel()
-
-		expectedTimeout := 10 * time.Minute
-		cluster := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: expectedTimeout},
-				},
-			},
-		}
-
-		timeout := installer.GetInstallTimeout(cluster)
-
-		assert.Equal(t, expectedTimeout, timeout)
+		assertTimeoutEquals(t, 10*time.Minute, 10*time.Minute)
 	})
 
 	t.Run("returns_configured_timeout_for_short_duration", func(t *testing.T) {
 		t.Parallel()
-
-		expectedTimeout := 30 * time.Second
-		cluster := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: expectedTimeout},
-				},
-			},
-		}
-
-		timeout := installer.GetInstallTimeout(cluster)
-
-		assert.Equal(t, expectedTimeout, timeout)
+		assertTimeoutEquals(t, 30*time.Second, 30*time.Second)
 	})
 
 	t.Run("returns_configured_timeout_for_long_duration", func(t *testing.T) {
 		t.Parallel()
-
-		expectedTimeout := 2 * time.Hour
-		cluster := &v1alpha1.Cluster{
-			Spec: v1alpha1.Spec{
-				Connection: v1alpha1.Connection{
-					Timeout: metav1.Duration{Duration: expectedTimeout},
-				},
-			},
-		}
-
-		timeout := installer.GetInstallTimeout(cluster)
-
-		assert.Equal(t, expectedTimeout, timeout)
+		assertTimeoutEquals(t, 2*time.Hour, 2*time.Hour)
 	})
 }
