@@ -1,6 +1,6 @@
 package kubectl
-//nolint:gci // standard import grouping
 
+//nolint:gci // standard import grouping
 import (
 	"errors"
 	"fmt"
