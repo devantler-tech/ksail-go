@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
@@ -733,7 +734,7 @@ func removeRegistryVolume(
 
 	err := dockerClient.VolumeRemove(ctx, trimmed, false)
 	if err != nil {
-		if client.IsErrNotFound(err) {
+		if cerrdefs.IsNotFound(err) {
 			return false, nil
 		}
 

@@ -216,6 +216,7 @@ mirrors:
 	})
 }
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestResolveClusterName(t *testing.T) {
 	t.Parallel()
 

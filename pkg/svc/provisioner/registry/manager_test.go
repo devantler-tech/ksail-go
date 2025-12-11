@@ -220,6 +220,7 @@ func TestSortHosts(t *testing.T) {
 	assert.Equal(t, []string{"docker.io", "ghcr.io", "quay.io"}, hosts)
 }
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestCollectRegistryNames(t *testing.T) {
 	t.Parallel()
 

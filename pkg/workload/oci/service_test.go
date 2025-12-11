@@ -32,7 +32,7 @@ func createManifestFile(t *testing.T, content string) string {
 	t.Helper()
 	manifestDir := t.TempDir()
 	manifestPath := filepath.Join(manifestDir, "deployment.yaml")
-	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o600))
 	return manifestDir
 }
 
@@ -110,7 +110,7 @@ func TestBuilderBuildRejectsEmptyManifest(t *testing.T) {
 
 	manifestDir := t.TempDir()
 	emptyManifest := filepath.Join(manifestDir, "empty.yaml")
-	require.NoError(t, os.WriteFile(emptyManifest, []byte{}, 0o644))
+	require.NoError(t, os.WriteFile(emptyManifest, []byte{}, 0o600))
 
 	pusher := &fakePusher{}
 	_, err := setupBuildTest(t, pusher, BuildOptions{
