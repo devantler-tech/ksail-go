@@ -15,7 +15,11 @@ type ConfigLoadDeps struct {
 	Timer timer.Timer
 }
 
-// NewConfigLoaderRunE returns a cobra RunE that loads the KSail configuration using the runtime container.
+// NewConfigLoaderRunE returns a cobra RunE function that loads the KSail configuration
+// using the provided runtime container for dependency injection.
+//
+// The returned function can be assigned directly to a cobra.Command's RunE field.
+// It resolves the timer dependency from the runtime container and invokes LoadConfig.
 func NewConfigLoaderRunE(runtimeContainer *runtime.Runtime) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		cfgManager := ksailconfigmanager.NewConfigManager(cmd.OutOrStdout())
@@ -23,7 +27,7 @@ func NewConfigLoaderRunE(runtimeContainer *runtime.Runtime) func(*cobra.Command,
 		return runtimeContainer.Invoke(func(injector runtime.Injector) error {
 			tmr, err := do.Invoke[timer.Timer](injector)
 			if err != nil {
-				return fmt.Errorf("resolve timer dependency: %w", err)
+				return fmt.Errorf("failed to resolve timer dependency: %w", err)
 			}
 
 			deps := ConfigLoadDeps{Timer: tmr}
@@ -34,6 +38,8 @@ func NewConfigLoaderRunE(runtimeContainer *runtime.Runtime) func(*cobra.Command,
 }
 
 // LoadConfig loads the KSail configuration while tracking timing information.
+// It starts the timer if provided, loads the configuration using the manager,
+// and returns an error if the configuration cannot be loaded.
 func LoadConfig(cfgManager *ksailconfigmanager.ConfigManager, deps ConfigLoadDeps) error {
 	if deps.Timer != nil {
 		deps.Timer.Start()
