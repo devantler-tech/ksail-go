@@ -1,6 +1,6 @@
 package fluxinstaller
-//nolint:gci // standard import grouping
 
+//nolint:gci // standard import grouping
 import (
 	"context"
 	"errors"
