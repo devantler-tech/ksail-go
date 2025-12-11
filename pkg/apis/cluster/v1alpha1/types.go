@@ -1,33 +1,12 @@
 package v1alpha1
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// --- Errors ---
-
-// ErrInvalidDistribution is returned when an invalid distribution is specified.
-var ErrInvalidDistribution = errors.New("invalid distribution")
-
-// ErrInvalidGitOpsEngine is returned when an invalid GitOps engine is specified.
-var ErrInvalidGitOpsEngine = errors.New("invalid GitOps engine")
-
-// ErrInvalidCNI is returned when an invalid CNI is specified.
-var ErrInvalidCNI = errors.New("invalid CNI")
-
-// ErrInvalidCSI is returned when an invalid CSI is specified.
-var ErrInvalidCSI = errors.New("invalid CSI")
-
-// ErrInvalidMetricsServer is returned when an invalid metrics server is specified.
-var ErrInvalidMetricsServer = errors.New("invalid metrics server")
-
-// ErrInvalidLocalRegistry is returned when an invalid local registry mode is specified.
-var ErrInvalidLocalRegistry = errors.New("invalid local registry mode")
 
 const (
 	// Group is the API group for KSail.
@@ -39,6 +18,8 @@ const (
 	// APIVersion is the full API version for KSail.
 	APIVersion = Group + "/" + Version
 )
+
+// --- Core Types ---
 
 // Cluster represents a KSail cluster configuration including API metadata and desired state.
 // It contains TypeMeta for API versioning information and Spec for the cluster specification.
@@ -61,6 +42,15 @@ type Spec struct {
 	GitOpsEngine       GitOpsEngine  `json:"gitOpsEngine,omitzero"`
 	Options            Options       `json:"options,omitzero"`
 }
+
+// Connection defines connection options for a KSail cluster.
+type Connection struct {
+	Kubeconfig string          `json:"kubeconfig,omitzero"`
+	Context    string          `json:"context,omitzero"`
+	Timeout    metav1.Duration `json:"timeout,omitzero"`
+}
+
+// --- OCI Registry Types ---
 
 // OCIRegistryStatus represents lifecycle states for the local OCI registry instance.
 type OCIRegistryStatus string
@@ -97,6 +87,8 @@ type OCIArtifact struct {
 	SourcePath       string      `json:"sourcePath,omitzero"`
 	CreatedAt        metav1.Time `json:"createdAt,omitzero"`
 }
+
+// --- Flux Types ---
 
 // FluxObjectMeta provides the minimal metadata required for Flux custom resources.
 type FluxObjectMeta struct {
@@ -155,12 +147,7 @@ type FluxKustomizationStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitzero"`
 }
 
-// Connection defines connection options for a KSail cluster.
-type Connection struct {
-	Kubeconfig string          `json:"kubeconfig,omitzero"`
-	Context    string          `json:"context,omitzero"`
-	Timeout    metav1.Duration `json:"timeout,omitzero"`
-}
+// --- Distribution Types ---
 
 // Distribution defines the distribution options for a KSail cluster.
 type Distribution string
@@ -171,11 +158,6 @@ const (
 	// DistributionK3d is the K3d distribution.
 	DistributionK3d Distribution = "K3d"
 )
-
-// validDistributions returns supported distribution values.
-func validDistributions() []Distribution {
-	return []Distribution{DistributionK3d, DistributionKind}
-}
 
 // ProvidesMetricsServerByDefault returns true if the distribution includes metrics-server by default.
 // K3d (based on K3s) includes metrics-server, Kind does not.
@@ -190,23 +172,7 @@ func (d *Distribution) ProvidesMetricsServerByDefault() bool {
 	}
 }
 
-// validCNIs returns supported CNI values.
-func validCNIs() []CNI {
-	return []CNI{CNIDefault, CNICilium, CNICalico}
-}
-
-// validCSIs returns supported CSI values.
-func validCSIs() []CSI {
-	return []CSI{CSIDefault, CSILocalPathStorage}
-}
-
-// validMetricsServers returns supported metrics server values.
-func validMetricsServers() []MetricsServer {
-	return []MetricsServer{
-		MetricsServerEnabled,
-		MetricsServerDisabled,
-	}
-}
+// --- CNI Types ---
 
 // CNI defines the CNI options for a KSail cluster.
 type CNI string
@@ -220,6 +186,8 @@ const (
 	CNICalico CNI = "Calico"
 )
 
+// --- CSI Types ---
+
 // CSI defines the CSI options for a KSail cluster.
 type CSI string
 
@@ -229,6 +197,8 @@ const (
 	// CSILocalPathStorage is the LocalPathStorage CSI.
 	CSILocalPathStorage CSI = "LocalPathStorage"
 )
+
+// --- Metrics Server Types ---
 
 // MetricsServer defines the Metrics Server options for a KSail cluster.
 type MetricsServer string
@@ -240,6 +210,8 @@ const (
 	MetricsServerDisabled MetricsServer = "Disabled"
 )
 
+// --- Local Registry Types ---
+
 // LocalRegistry defines how the host-local OCI registry should behave.
 type LocalRegistry string
 
@@ -249,6 +221,8 @@ const (
 	// LocalRegistryDisabled skips local registry provisioning.
 	LocalRegistryDisabled LocalRegistry = "Disabled"
 )
+
+// --- GitOps Engine Types ---
 
 // GitOpsEngine defines the GitOps Engine options for a KSail cluster.
 type GitOpsEngine string
@@ -261,13 +235,7 @@ const (
 	GitOpsEngineFlux GitOpsEngine = "Flux"
 )
 
-// validGitOpsEngines enumerates supported GitOps engine values.
-func validGitOpsEngines() []GitOpsEngine {
-	return []GitOpsEngine{
-		GitOpsEngineNone,
-		GitOpsEngineFlux,
-	}
-}
+// --- Options Types ---
 
 // Options holds optional settings for distributions, networking, and deployment tools.
 type Options struct {
@@ -310,7 +278,7 @@ type OptionsFlux struct {
 
 // OptionsArgoCD defines options for the ArgoCD deployment tool.
 type OptionsArgoCD struct {
-	// Add any specific fields for the ArgoCD distribution here.
+	// Add any specific fields for the ArgoCD tool here.
 }
 
 // OptionsLocalRegistry defines options for the host-local OCI registry integration.
@@ -320,15 +288,15 @@ type OptionsLocalRegistry struct {
 
 // OptionsHelm defines options for the Helm tool.
 type OptionsHelm struct {
-	// Add any specific fields for the Helm distribution here.
+	// Add any specific fields for the Helm tool here.
 }
 
 // OptionsKustomize defines options for the Kustomize tool.
 type OptionsKustomize struct {
-	// Add any specific fields for the Kustomize distribution here.
+	// Add any specific fields for the Kustomize tool here.
 }
 
-// --- Setters for pflags ---
+// --- pflags Interface Implementations ---
 
 // Set for Distribution.
 func (d *Distribution) Set(value string) error {
@@ -346,11 +314,11 @@ func (d *Distribution) Set(value string) error {
 }
 
 // Set for GitOpsEngine.
-func (d *GitOpsEngine) Set(value string) error {
+func (g *GitOpsEngine) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
 	for _, tool := range validGitOpsEngines() {
 		if strings.EqualFold(value, string(tool)) {
-			*d = tool
+			*g = tool
 
 			return nil
 		}
@@ -414,13 +382,9 @@ func (m *MetricsServer) Set(value string) error {
 	)
 }
 
-// validLocalRegistryModes returns supported local registry configuration modes.
-func validLocalRegistryModes() []LocalRegistry {
-	return []LocalRegistry{LocalRegistryEnabled, LocalRegistryDisabled}
-}
-
 // Set for LocalRegistry.
 func (l *LocalRegistry) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
 	for _, mode := range validLocalRegistryModes() {
 		if strings.EqualFold(value, string(mode)) {
 			*l = mode
@@ -464,12 +428,12 @@ func (d *Distribution) Type() string {
 }
 
 // String returns the string representation of the GitOpsEngine.
-func (d *GitOpsEngine) String() string {
-	return string(*d)
+func (g *GitOpsEngine) String() string {
+	return string(*g)
 }
 
 // Type returns the type of the GitOpsEngine.
-func (d *GitOpsEngine) Type() string {
+func (g *GitOpsEngine) Type() string {
 	return "GitOpsEngine"
 }
 
