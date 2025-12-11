@@ -26,7 +26,7 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 
 - Standard Go CI workflow runs: build, test, and lint via reusable workflows
 - System tests run in matrix across Kind and K3d distributions
-- Full lifecycle validation: init → create → info → list → start → stop → delete
+- Full lifecycle validation: init → create → list → workload operations → stop → start → delete
 - All tests MUST pass before merge
 - **NEVER CANCEL** long-running operations - they need time to complete
 
