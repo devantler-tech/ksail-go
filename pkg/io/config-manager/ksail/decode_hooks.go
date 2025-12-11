@@ -11,7 +11,9 @@ import (
 
 // metav1DurationDecodeHook converts duration strings (e.g. "1m", "30s") into metav1.Duration values
 // so that string values in ksail.yaml or environment variables are accepted.
-func metav1DurationDecodeHook() mapstructure.DecodeHookFunc { //nolint:ireturn
+//
+//nolint:ireturn // mapstructure requires returning DecodeHookFunc interface for registration
+func metav1DurationDecodeHook() mapstructure.DecodeHookFunc {
 	// mapstructure requires returning DecodeHookFunc for registration.
 	return func(fromType reflect.Type, toType reflect.Type, data any) (any, error) {
 		durationType := reflect.TypeFor[metav1.Duration]()

@@ -1,6 +1,7 @@
 package oci_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,13 +11,27 @@ import (
 )
 
 // setupValidationTest creates a temporary source directory (if createDir is true) and validates BuildOptions.
-func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (oci.ValidatedBuildOptions, error) {
+func setupValidationTest(
+	t *testing.T,
+	source string,
+	registry string,
+	version string,
+	createDir bool,
+) (oci.ValidatedBuildOptions, error) {
 	t.Helper()
+
 	if createDir {
 		require.NoError(t, os.MkdirAll(source, 0o750))
 	}
+
 	opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
-	return opts.Validate()
+
+	validated, err := opts.Validate()
+	if err != nil {
+		return oci.ValidatedBuildOptions{}, fmt.Errorf("validate build options: %w", err)
+	}
+
+	return validated, nil
 }
 
 //nolint:funlen // Table-driven test with many scenarios
@@ -36,7 +51,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 	t.Run("fails when source path missing", func(t *testing.T) {
 		t.Parallel()
 
-		opts := oci.BuildOptions{SourcePath: filepath.Join(t.TempDir(), "missing"), RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+		opts := oci.BuildOptions{
+			SourcePath:       filepath.Join(t.TempDir(), "missing"),
+			RegistryEndpoint: "localhost:5000",
+			Version:          "1.0.0",
+		}
 
 		_, err := opts.Validate()
 
@@ -49,7 +68,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 		file := filepath.Join(t.TempDir(), "manifest.yaml")
 		require.NoError(t, os.WriteFile(file, []byte("apiVersion: v1"), 0o600))
 
-		opts := oci.BuildOptions{SourcePath: file, RegistryEndpoint: "localhost:5000", Version: "1.0.0"}
+		opts := oci.BuildOptions{
+			SourcePath:       file,
+			RegistryEndpoint: "localhost:5000",
+			Version:          "1.0.0",
+		}
 
 		_, err := opts.Validate()
 
@@ -85,7 +108,11 @@ func TestBuildOptionsValidate(t *testing.T) {
 
 		tempDir := t.TempDir()
 
-		opts := oci.BuildOptions{SourcePath: tempDir, RegistryEndpoint: "localhost:5000", Version: "invalid"}
+		opts := oci.BuildOptions{
+			SourcePath:       tempDir,
+			RegistryEndpoint: "localhost:5000",
+			Version:          "invalid",
+		}
 
 		_, err := opts.Validate()
 

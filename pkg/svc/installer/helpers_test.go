@@ -10,9 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// assertTimeoutEquals is a helper that creates a cluster with the given timeout and asserts the result
+// assertTimeoutEquals is a helper that creates a cluster with the given timeout and asserts the result.
 func assertTimeoutEquals(t *testing.T, clusterTimeout time.Duration, expected time.Duration) {
 	t.Helper()
+
 	cluster := &v1alpha1.Cluster{
 		Spec: v1alpha1.Spec{
 			Connection: v1alpha1.Connection{

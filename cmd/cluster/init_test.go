@@ -59,16 +59,21 @@ func writeKsailConfig(t *testing.T, outDir string, content string) {
 }
 
 // setupInitTest sets up a test command with configuration manager and common flags.
-func setupInitTest(t *testing.T, outDir string, force bool, buffer *bytes.Buffer) (*cobra.Command, *ksailconfigmanager.ConfigManager) {
+func setupInitTest(
+	t *testing.T,
+	outDir string,
+	force bool,
+	buffer *bytes.Buffer,
+) (*cobra.Command, *ksailconfigmanager.ConfigManager) {
 	t.Helper()
 	cmd := newInitCommand(t)
 	cfgManager := newConfigManager(t, cmd, buffer)
-	
+
 	forceStr := "false"
 	if force {
 		forceStr = "true"
 	}
-	
+
 	cmdtestutils.SetFlags(t, cmd, map[string]string{
 		"output": outDir,
 		"force":  forceStr,

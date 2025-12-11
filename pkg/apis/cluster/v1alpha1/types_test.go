@@ -37,7 +37,11 @@ func TestDistribution_ProvidesMetricsServerByDefault(t *testing.T) {
 
 		result := dist.ProvidesMetricsServerByDefault()
 
-		assert.False(t, result, "Unknown distributions should not provide metrics-server by default")
+		assert.False(
+			t,
+			result,
+			"Unknown distributions should not provide metrics-server by default",
+		)
 	})
 
 	t.Run("returns_false_for_empty_distribution", func(t *testing.T) {

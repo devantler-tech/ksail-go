@@ -330,4 +330,3 @@ func TestCollectRegistryNames(t *testing.T) {
 		assert.Equal(t, []string{"registry-1", "registry-2", "registry-3"}, names)
 	})
 }
-

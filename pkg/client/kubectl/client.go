@@ -1,6 +1,5 @@
 package kubectl
 
-//nolint:gci // standard import grouping
 import (
 	"errors"
 	"fmt"
@@ -345,7 +344,7 @@ func (c *Client) CreateClusterInfoCommand(kubeConfigPath string) *cobra.Command 
 		Short: "Display cluster information",
 		Long:  "Display addresses of the control plane and services with label kubernetes.io/cluster-service=true.",
 		//nolint:noinlineerr // error handling in Cobra command
-		RunE: func(cmd *cobra.Command, _  []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := options.Complete(restClientGetter, cmd); err != nil {
 				return fmt.Errorf("complete cluster-info options: %w", err)
 			}

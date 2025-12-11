@@ -161,7 +161,9 @@ func TestLoadConfigWithoutFileIgnoresExistingConfig(t *testing.T) {
 
 	require.NoError(t, os.WriteFile("ksail.yaml", []byte(ksailClusterBaseYAML), 0o600))
 
-	manager := configmanager.NewConfigManager(io.Discard, configmanager.DefaultClusterFieldSelectors()...)
+	manager := configmanager.NewConfigManager(
+		io.Discard,
+		configmanager.DefaultClusterFieldSelectors()...)
 	manager.Viper.SetConfigFile("ksail.yaml")
 
 	config, err := manager.LoadConfigWithoutFileSilent()

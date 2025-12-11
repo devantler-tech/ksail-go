@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
 const (

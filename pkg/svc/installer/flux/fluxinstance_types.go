@@ -14,6 +14,7 @@ const (
 	fluxInstanceVersion     = "v1"
 )
 
+//
 //nolint:gochecknoglobals // package-level constant for API version
 var fluxInstanceGroupVersion = schema.GroupVersion{
 	Group:   fluxInstanceGroup,
@@ -25,10 +26,10 @@ var fluxInstanceGroupVersion = schema.GroupVersion{
 // avoids pulling the entire operator module into go.mod.
 type FluxInstance struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   FluxInstanceSpec   `json:"spec,omitempty"`
-	Status FluxInstanceStatus `json:"status,omitempty"`
+	Spec   FluxInstanceSpec   `json:"spec"`
+	Status FluxInstanceStatus `json:"status"`
 }
 
 // DeepCopyInto copies all properties of this object into another object of the same type.
@@ -53,8 +54,6 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 }
 
 // DeepCopyObject implements runtime.Object interface.
-//
-//nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
@@ -66,7 +65,7 @@ func (in *FluxInstance) DeepCopyObject() runtime.Object {
 // FluxInstanceList registers the list kind with the scheme for completeness.
 type FluxInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []FluxInstance `json:"items"`
 }

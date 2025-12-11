@@ -299,7 +299,14 @@ func cleanupCreatedRegistries(
 	for i := len(created) - 1; i >= 0; i-- {
 		reg := created[i]
 
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName, reg.Volume)
+		err := registryMgr.DeleteRegistry(
+			ctx,
+			reg.Name,
+			clusterName,
+			false,
+			networkName,
+			reg.Volume,
+		)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type: notify.WarningType,
@@ -385,7 +392,14 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName, reg.Volume)
+		err := registryMgr.DeleteRegistry(
+			ctx,
+			reg.Name,
+			clusterName,
+			deleteVolumes,
+			networkName,
+			reg.Volume,
+		)
 		if err != nil {
 			_, _ = fmt.Fprintf(
 				writer,
@@ -521,8 +535,9 @@ func ResolveRegistryName(host string, endpoints []string, prefix string) string 
 			return name
 		}
 
-		if isLocalEndpointName(name) {
-			continue
+		// Return first non-local endpoint name
+		if !isLocalEndpointName(name) {
+			return name
 		}
 	}
 

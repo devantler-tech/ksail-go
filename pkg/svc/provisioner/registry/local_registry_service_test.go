@@ -258,7 +258,11 @@ func TestStopHandlesScenarios(t *testing.T) {
 					Return(nil).
 					Once()
 			},
-			opts: registry.StopOptions{Name: "local-registry", ClusterName: "dev", NetworkName: "kind"},
+			opts: registry.StopOptions{
+				Name:        "local-registry",
+				ClusterName: "dev",
+				NetworkName: "kind",
+			},
 		},
 		{
 			name: "ignores missing registry",
@@ -268,7 +272,11 @@ func TestStopHandlesScenarios(t *testing.T) {
 					Return(dockerclient.ErrRegistryNotFound).
 					Once()
 			},
-			opts: registry.StopOptions{Name: "local-registry", ClusterName: "dev", NetworkName: "kind"},
+			opts: registry.StopOptions{
+				Name:        "local-registry",
+				ClusterName: "dev",
+				NetworkName: "kind",
+			},
 		},
 	}
 
