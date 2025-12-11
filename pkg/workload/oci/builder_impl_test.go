@@ -2,6 +2,7 @@ package oci_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,7 +19,24 @@ func TestNewWorkloadArtifactBuilder(t *testing.T) {
 	require.NotNil(t, builder)
 }
 
-//nolint:funlen // table-driven test with multiple scenarios
+// buildWithTempDir is a test helper that creates a builder, temp directory, and calls Build.
+func buildWithTempDir(t *testing.T, sourceDir string) error {
+	t.Helper()
+
+	builder := oci.NewWorkloadArtifactBuilder()
+
+	_, err := builder.Build(context.Background(), oci.BuildOptions{
+		SourcePath:       sourceDir,
+		RegistryEndpoint: "localhost:5000",
+		Version:          "1.0.0",
+	})
+	if err != nil {
+		return fmt.Errorf("build failed: %w", err)
+	}
+
+	return nil
+}
+
 func TestBuild(t *testing.T) {
 	t.Parallel()
 
@@ -35,14 +53,9 @@ func TestBuild(t *testing.T) {
 	t.Run("fails when source directory is empty", func(t *testing.T) {
 		t.Parallel()
 
-		builder := oci.NewWorkloadArtifactBuilder()
 		sourceDir := t.TempDir()
 
-		_, err := builder.Build(context.Background(), oci.BuildOptions{
-			SourcePath:       sourceDir,
-			RegistryEndpoint: "localhost:5000",
-			Version:          "1.0.0",
-		})
+		err := buildWithTempDir(t, sourceDir)
 
 		require.ErrorIs(t, err, oci.ErrNoManifestFiles)
 	})
@@ -50,7 +63,6 @@ func TestBuild(t *testing.T) {
 	t.Run("fails when source contains only non-manifest files", func(t *testing.T) {
 		t.Parallel()
 
-		builder := oci.NewWorkloadArtifactBuilder()
 		sourceDir := t.TempDir()
 
 		// Create non-manifest files
@@ -63,11 +75,7 @@ func TestBuild(t *testing.T) {
 			os.WriteFile(filepath.Join(sourceDir, "script.sh"), []byte("#!/bin/bash"), 0o600),
 		)
 
-		_, err := builder.Build(context.Background(), oci.BuildOptions{
-			SourcePath:       sourceDir,
-			RegistryEndpoint: "localhost:5000",
-			Version:          "1.0.0",
-		})
+		err := buildWithTempDir(t, sourceDir)
 
 		require.ErrorIs(t, err, oci.ErrNoManifestFiles)
 	})
@@ -75,18 +83,13 @@ func TestBuild(t *testing.T) {
 	t.Run("fails when manifest file is empty", func(t *testing.T) {
 		t.Parallel()
 
-		builder := oci.NewWorkloadArtifactBuilder()
 		sourceDir := t.TempDir()
 
 		// Create empty manifest file
 		emptyFile := filepath.Join(sourceDir, "empty.yaml")
 		require.NoError(t, os.WriteFile(emptyFile, []byte(""), 0o600))
 
-		_, err := builder.Build(context.Background(), oci.BuildOptions{
-			SourcePath:       sourceDir,
-			RegistryEndpoint: "localhost:5000",
-			Version:          "1.0.0",
-		})
+		err := buildWithTempDir(t, sourceDir)
 
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "empty")
