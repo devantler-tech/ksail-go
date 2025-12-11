@@ -11,6 +11,17 @@ import (
 )
 
 // WaitForDaemonSetReady waits for a DaemonSet to be ready.
+//
+// This function polls the specified DaemonSet until it is ready or the deadline is reached.
+// A DaemonSet is considered ready when:
+//   - At least one pod is scheduled
+//   - No pods are unavailable
+//   - All pods have been updated to the current specification
+//
+// The function tolerates NotFound errors and continues polling. Other API errors
+// are returned immediately.
+//
+// Returns an error if the DaemonSet is not ready within the deadline or if an API error occurs.
 func WaitForDaemonSetReady(
 	ctx context.Context,
 	clientset kubernetes.Interface,
@@ -26,7 +37,7 @@ func WaitForDaemonSetReady(
 				return false, nil
 			}
 
-			return false, fmt.Errorf("get daemonset %s/%s: %w", namespace, name, err)
+			return false, fmt.Errorf("failed to get daemonset %s/%s: %w", namespace, name, err)
 		}
 
 		if daemonSet.Status.DesiredNumberScheduled == 0 {
