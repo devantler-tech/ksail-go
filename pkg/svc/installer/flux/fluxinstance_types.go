@@ -91,8 +91,9 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	return out
 }
 
+//nolint:ireturn // Required by Kubernetes runtime.Object interface
 // DeepCopyObject implements runtime.Object interface.
-func (in *FluxInstanceList) DeepCopyObject() runtime.Object { //nolint:ireturn // Required by Kubernetes runtime.Object interface
+func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}

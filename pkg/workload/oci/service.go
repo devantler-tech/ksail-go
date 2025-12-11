@@ -111,7 +111,8 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	return BuildResult{Artifact: artifact}, nil
 }
 
-func (b *builder) ensurePusher() imagePusher { //nolint:ireturn // returns interface for internal use
+//nolint:ireturn // returns interface for internal use
+func (b *builder) ensurePusher() imagePusher {
 	if b.pusher != nil {
 		return b.pusher
 	}
@@ -159,7 +160,8 @@ func collectManifestFiles(root string) ([]string, error) {
 	return manifests, nil
 }
 
-func newManifestLayer(root string, files []string) (v1.Layer, error) { //nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
+//nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
+func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
 
@@ -219,7 +221,8 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	return nil
 }
 
-func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) { //nolint:ireturn // Returns v1.Image interface from go-containerregistry library
+//nolint:ireturn // Returns v1.Image interface from go-containerregistry library
+func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
 	cfg := &v1.ConfigFile{
 		Architecture: runtime.GOARCH,
 		OS:           runtime.GOOS,
