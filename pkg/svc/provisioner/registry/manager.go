@@ -534,23 +534,9 @@ func ResolveRegistryName(host string, endpoints []string, prefix string) string 
 		if expected != "" && strings.EqualFold(name, expected) {
 			return name
 		}
-
-		// Return first non-local endpoint name
-		if !isLocalEndpointName(name) {
-			return name
-		}
 	}
 
 	return BuildRegistryName(prefix, host)
-}
-
-func isLocalEndpointName(name string) bool {
-	lower := strings.ToLower(strings.TrimSpace(name))
-	if lower == "localhost" || lower == "0.0.0.0" {
-		return true
-	}
-
-	return strings.HasPrefix(lower, "127.")
 }
 
 // ExtractNameFromEndpoint extracts the hostname portion from an endpoint URL.
