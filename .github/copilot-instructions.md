@@ -4,6 +4,67 @@ KSail is a Go-based CLI tool for managing Kubernetes clusters and workloads. It 
 
 **ALWAYS reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.**
 
+## Code Standards
+
+### Required Before Each Commit
+
+- Run `mockery` to generate fresh mocks for all interfaces
+- Run `go test ./...` to ensure all tests pass
+- Run `golangci-lint run` to ensure code quality standards are met
+- Ensure `go build ./...` completes successfully
+
+### Development Flow
+
+- **Build**: `go build ./...` - Builds all packages in the repository
+- **Test**: `go test ./...` - Runs all unit tests (expected ~37s, timeout: 90+s)
+- **Generate Mocks**: `mockery` - Generates test mocks from interfaces (expected ~1.2s)
+- **Lint**: `golangci-lint run` - Runs all linters (expected ~1m16s, timeout: 120+s)
+- **Full Lint**: `mega-linter-runner -f go` - Runs mega-linter with Go flavor (expected 5+ minutes, timeout: 600+s)
+- **Build Binary**: `go build -o ksail .` - Builds the CLI binary (expected ~1.4s)
+
+### CI Pipeline
+
+- Standard Go CI workflow runs: build, test, and lint via reusable workflows
+- System tests run in matrix across Kind and K3d distributions
+- Full lifecycle validation: init → create → list → workload operations → stop → start → delete
+- All tests MUST pass before merge
+- **NEVER CANCEL** long-running operations - they need time to complete
+
+### Timing Expectations
+
+**Critical**: Give commands adequate time to complete. Premature cancellation causes incomplete builds and false failures.
+
+- `go mod download`: ~0.045s (when cached)
+- `go build ./...`: ~2.1s
+- `go build -o ksail .`: ~1.4s
+- `mockery`: ~1.2s
+- `go test ./...`: ~37s (timeout: 90+s minimum)
+- `golangci-lint run`: ~1m16s (timeout: 120+s minimum)
+- `mega-linter-runner -f go`: 5+ minutes (timeout: 600+s minimum)
+
+## Repository Structure
+
+- **cmd/** - CLI command implementations using Cobra framework
+- **pkg/** - Public packages (importable by external projects)
+  - **apis/** - API type definitions and schemas
+  - **client/** - Kubernetes and container runtime clients
+  - **cmd/** - Shared command utilities and helpers
+  - **di/** - Dependency injection and service initialization
+  - **io/** - Configuration management and file operations
+  - **k8s/** - Kubernetes-specific utilities and helpers
+  - **svc/** - Core services (provisioner, installer, registry)
+  - **testutils/** - Test utilities and helpers for unit/integration tests
+  - **ui/** - User interface components and formatting
+  - **workload/** - Workload management and OCI operations
+- **docs/** - User documentation (also available at <https://ksail.devantler.tech>)
+- **schemas/** - JSON schemas for configuration validation
+- **specs/** - Feature specifications and planning artifacts
+- **.github/** - GitHub workflows, actions, and Copilot instructions
+- **.specify/** - SpecKit templates and constitution
+- **main.go** - CLI entry point
+
+**Note**: This project avoids using `internal/` directory to keep all functionality importable by external projects.
+
 ## Core Software Engineering Principles
 
 When working on KSail-Go, always adhere to these fundamental software engineering principles:
