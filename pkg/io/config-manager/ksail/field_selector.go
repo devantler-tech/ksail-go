@@ -48,7 +48,7 @@ func DefaultDistributionFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Distribution },
 		Description:  "Kubernetes distribution to use",
-		DefaultValue: v1alpha1.DistributionKind,
+		DefaultValue: v1alpha1.DefaultDistribution,
 	}
 }
 
@@ -57,7 +57,7 @@ func StandardSourceDirectoryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.SourceDirectory },
 		Description:  "Directory containing workloads to deploy",
-		DefaultValue: "k8s",
+		DefaultValue: v1alpha1.DefaultSourceDirectory,
 	}
 }
 
@@ -85,7 +85,7 @@ func DefaultCNIFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.CNI },
 		Description:  "Container Network Interface (CNI) to use",
-		DefaultValue: v1alpha1.CNIDefault,
+		DefaultValue: v1alpha1.DefaultCNI,
 	}
 }
 
@@ -94,7 +94,7 @@ func DefaultGitOpsEngineFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.GitOpsEngine },
 		Description:  "GitOps engine to use (None disables GitOps, Flux installs Flux controllers)",
-		DefaultValue: v1alpha1.GitOpsEngineNone,
+		DefaultValue: v1alpha1.DefaultGitOpsEngine,
 	}
 }
 
@@ -107,7 +107,7 @@ func DefaultLocalRegistryFieldSelector() FieldSelector[v1alpha1.Cluster] {
 		Description: "Local registry behavior (Enabled provisions a registry; " +
 			"Disabled skips provisioning. Defaults to Enabled when " +
 			"a GitOps engine is configured)",
-		DefaultValue: v1alpha1.LocalRegistryDisabled,
+		DefaultValue: v1alpha1.DefaultLocalRegistry,
 	}
 }
 
@@ -138,7 +138,7 @@ func DefaultMetricsServerFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.MetricsServer },
 		Description:  "Metrics Server configuration (Enabled: install, Disabled: uninstall)",
-		DefaultValue: v1alpha1.MetricsServerEnabled,
+		DefaultValue: v1alpha1.DefaultMetricsServer,
 	}
 }
 
@@ -147,7 +147,7 @@ func DefaultKubeconfigFieldSelector() FieldSelector[v1alpha1.Cluster] {
 	return FieldSelector[v1alpha1.Cluster]{
 		Selector:     func(c *v1alpha1.Cluster) any { return &c.Spec.Connection.Kubeconfig },
 		Description:  "Path to kubeconfig file",
-		DefaultValue: "~/.kube/config",
+		DefaultValue: v1alpha1.DefaultKubeconfigPath,
 	}
 }
 

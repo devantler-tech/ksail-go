@@ -7,7 +7,9 @@ import (
 )
 
 const (
-	// DefaultDistributionConfig is the default config file name for Kind clusters.
+	// DefaultDistribution is the default Kubernetes distribution.
+	DefaultDistribution = DistributionKind
+	// DefaultDistributionConfig is the default config file name for the default distribution (Kind).
 	DefaultDistributionConfig = "kind.yaml"
 	// DefaultK3dDistributionConfig is the default config file name for K3d clusters.
 	DefaultK3dDistributionConfig = "k3d.yaml"
@@ -17,6 +19,16 @@ const (
 	DefaultKubeconfigPath = "~/.kube/config"
 	// DefaultLocalRegistryPort is the default port for the local OCI registry.
 	DefaultLocalRegistryPort int32 = 5111
+	// DefaultCNI is the default CNI.
+	DefaultCNI = CNIDefault
+	// DefaultCSI is the default CSI.
+	DefaultCSI = CSIDefault
+	// DefaultMetricsServer is the default metrics server setting.
+	DefaultMetricsServer = MetricsServerEnabled
+	// DefaultLocalRegistry is the default local registry setting.
+	DefaultLocalRegistry = LocalRegistryDisabled
+	// DefaultGitOpsEngine is the default GitOps engine.
+	DefaultGitOpsEngine = GitOpsEngineNone
 )
 
 // DefaultFluxInterval is the default reconciliation interval for Flux resources.
