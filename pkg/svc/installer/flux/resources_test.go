@@ -82,7 +82,7 @@ func TestBuildFluxInstanceFallsBackWhenRegistryDisabled(t *testing.T) {
 }
 
 func TestEnsureDefaultResourcesCreatesAndUpdatesFluxInstance(t *testing.T) {
-		t.Parallel()
+	t.Parallel()
 	scheme := runtime.NewScheme()
 	require.NoError(t, addFluxInstanceToScheme(scheme))
 	require.NoError(t, sourcev1.AddToScheme(scheme))

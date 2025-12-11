@@ -21,7 +21,7 @@ var errLocalRegistryRequired = errors.New("local registry must be enabled to rec
 // NewReconcileCmd creates the workload reconcile command.
 //
 //nolint:funlen // Cobra command RunE functions typically combine setup, validation, and execution
-func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
+func NewReconcileCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "reconcile",
 		Short:        "Reconcile workloads with the cluster",

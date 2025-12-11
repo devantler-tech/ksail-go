@@ -1,5 +1,6 @@
 package v1alpha1
 
+//nolint:gci // standard import grouping
 import (
 	"encoding/json"
 	"strings"
