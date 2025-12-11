@@ -199,16 +199,18 @@ func buildClusterOutput(c Cluster) clusterOutput {
 	}
 }
 
-// pruneDistributionDefaults zeroes distribution-related fields that match defaults.
+// pruneDistributionDefaults zeroes distribution-related fields that match base defaults.
+// Only prunes values that match the absolute base defaults, not derived defaults for other distributions.
 func pruneDistributionDefaults(spec *Spec, distribution Distribution) {
-	if spec.Distribution == DistributionKind {
+	// Only prune if distribution matches the base default
+	if spec.Distribution == DefaultDistribution {
 		spec.Distribution = ""
 	}
 
-	expectedDistConfig := ExpectedDistributionConfigName(distribution)
+	// Only prune distributionConfig if it matches the base default (kind.yaml)
+	// Do NOT prune if it's a derived default for a non-default distribution (e.g., k3d.yaml when using K3d)
 	trimmedConfig := strings.TrimSpace(spec.DistributionConfig)
-
-	if trimmedConfig == "" || trimmedConfig == expectedDistConfig {
+	if trimmedConfig == "" || trimmedConfig == DefaultDistributionConfig {
 		spec.DistributionConfig = ""
 	}
 
@@ -217,12 +219,14 @@ func pruneDistributionDefaults(spec *Spec, distribution Distribution) {
 	}
 }
 
-// pruneConnectionDefaults zeroes connection fields that match defaults.
+// pruneConnectionDefaults zeroes connection fields that match base defaults or distribution-specific defaults.
 func pruneConnectionDefaults(conn *Connection, distribution Distribution) {
 	if conn.Kubeconfig == DefaultKubeconfigPath || conn.Kubeconfig == "" {
 		conn.Kubeconfig = ""
 	}
 
+	// Prune context if it matches the expected default for the current distribution
+	// This is intentional: the context is a derived default that changes with distribution
 	if defaultCtx := ExpectedContextName(distribution); conn.Context == defaultCtx {
 		conn.Context = ""
 	}
@@ -232,25 +236,25 @@ func pruneConnectionDefaults(conn *Connection, distribution Distribution) {
 	}
 }
 
-// pruneComponentDefaults zeroes component fields (CNI, CSI, MetricsServer, etc.) that match defaults.
+// pruneComponentDefaults zeroes component fields (CNI, CSI, MetricsServer, etc.) that match base defaults.
 func pruneComponentDefaults(spec *Spec) {
-	if spec.CNI == CNIDefault {
+	if spec.CNI == DefaultCNI {
 		spec.CNI = ""
 	}
 
-	if spec.CSI == CSIDefault {
+	if spec.CSI == DefaultCSI {
 		spec.CSI = ""
 	}
 
-	if spec.MetricsServer == MetricsServerEnabled || spec.MetricsServer == "" {
+	if spec.MetricsServer == DefaultMetricsServer || spec.MetricsServer == "" {
 		spec.MetricsServer = ""
 	}
 
-	if spec.LocalRegistry == LocalRegistryDisabled || spec.LocalRegistry == "" {
+	if spec.LocalRegistry == DefaultLocalRegistry || spec.LocalRegistry == "" {
 		spec.LocalRegistry = ""
 	}
 
-	if spec.GitOpsEngine == GitOpsEngineNone || spec.GitOpsEngine == "" {
+	if spec.GitOpsEngine == DefaultGitOpsEngine || spec.GitOpsEngine == "" {
 		spec.GitOpsEngine = ""
 	}
 }
