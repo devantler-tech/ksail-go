@@ -148,7 +148,8 @@ func normalizeVersion(raw string) (string, error) {
 		return "", ErrVersionRequired
 	}
 
-	if _, err := semver.NewVersion(trimmed); err != nil {
+	_, err := semver.NewVersion(trimmed)
+	if err != nil {
 		return "", fmt.Errorf("%w: %w", ErrVersionInvalid, err)
 	}
 

@@ -47,9 +47,10 @@ var (
 var (
 	errInvalidClusterConfig = errors.New("cluster configuration is required")
 
+	//nolint:gochecknoglobals // Allows mocking REST config for tests
 	loadRESTConfig = buildRESTConfig
 
-	//nolint:noinlineerr // error handling in scheme registration
+	//nolint:noinlineerr,gochecknoglobals // error handling in scheme registration, allows mocking for tests
 	newFluxResourcesClient = func(restConfig *rest.Config) (client.Client, error) {
 		scheme := runtime.NewScheme()
 
@@ -69,6 +70,7 @@ var (
 		return fluxClient, nil
 	}
 
+	//nolint:gochecknoglobals // Allows mocking discovery client for tests
 	newDiscoveryClient = func(restConfig *rest.Config) (discovery.DiscoveryInterface, error) {
 		return discovery.NewDiscoveryClientForConfig(restConfig)
 	}
@@ -95,7 +97,8 @@ func EnsureDefaultResources(
 		return err
 	}
 
-	if err := waitForGroupVersion(ctx, restConfig, fluxInstanceGroupVersion); err != nil {
+	err = waitForGroupVersion(ctx, restConfig, fluxInstanceGroupVersion)
+	if err != nil {
 		return err
 	}
 
@@ -109,11 +112,13 @@ func EnsureDefaultResources(
 		return err
 	}
 
-	if err := upsertFluxResource(ctx, fluxClient, fluxInstance); err != nil {
+	err = upsertFluxResource(ctx, fluxClient, fluxInstance)
+	if err != nil {
 		return err
 	}
 
-	if err := waitForGroupVersion(ctx, restConfig, sourcev1.GroupVersion); err != nil {
+	err = waitForGroupVersion(ctx, restConfig, sourcev1.GroupVersion)
+	if err != nil {
 		return err
 	}
 
@@ -187,11 +192,14 @@ func upsertFluxResource(
 	switch desired := obj.(type) {
 	case *FluxInstance:
 		existing := &FluxInstance{}
-		if err := fluxClient.Get(ctx, key, existing); err != nil {
+		err := fluxClient.Get(ctx, key, existing)
+		if err != nil {
 			if apierrors.IsNotFound(err) {
-				if createErr := fluxClient.Create(ctx, desired); createErr != nil {
+				createErr := fluxClient.Create(ctx, desired)
+				if createErr != nil {
 					return fmt.Errorf("create FluxInstance %s/%s: %w", key.Namespace, key.Name, createErr)
 				}
+
 				return nil
 			}
 
@@ -200,7 +208,8 @@ func upsertFluxResource(
 
 		existing.Spec = desired.Spec
 
-		if err := fluxClient.Update(ctx, existing); err != nil {
+		err = fluxClient.Update(ctx, existing)
+		if err != nil {
 			return fmt.Errorf("failed to update FluxInstance %s/%s: %w", key.Namespace, key.Name, err)
 		}
 
@@ -317,9 +326,9 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 	for {
 		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
 			return nil
-		} else {
-			lastErr = err
 		}
+
+		lastErr = err
 
 		select {
 		case <-waitCtx.Done():

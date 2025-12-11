@@ -13,12 +13,13 @@ import (
 func setupValidationTest(t *testing.T, source string, registry string, version string, createDir bool) (oci.ValidatedBuildOptions, error) {
 	t.Helper()
 	if createDir {
-		require.NoError(t, os.MkdirAll(source, 0o755))
+		require.NoError(t, os.MkdirAll(source, 0o750))
 	}
 	opts := oci.BuildOptions{SourcePath: source, RegistryEndpoint: registry, Version: version}
 	return opts.Validate()
 }
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestBuildOptionsValidate(t *testing.T) {
 	t.Parallel()
 

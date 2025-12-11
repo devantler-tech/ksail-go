@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestGetInstallTimeout(t *testing.T) {
 	t.Parallel()
 

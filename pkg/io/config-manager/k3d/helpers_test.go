@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestParseRegistryConfig(t *testing.T) {
 	t.Parallel()
 
@@ -197,6 +198,7 @@ mirrors:
 	})
 }
 
+//nolint:funlen // Table-driven test with many scenarios
 func TestResolveClusterName(t *testing.T) {
 	t.Parallel()
 
