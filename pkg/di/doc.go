@@ -37,7 +37,7 @@
 //
 //	mockTimer := timer.NewMockTimer(t)
 //	runtime := di.New(func(i di.Injector) error {
-//		do.Provide(i, func(di.Injector) (timer.Timer, error) {
+//		do.Provide(i, func(do.Injector) (timer.Timer, error) {
 //			return mockTimer, nil
 //		})
 //		return nil
