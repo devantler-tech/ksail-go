@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// String assertion helpers.
+
 // AssertStringContains asserts that the haystack contains all provided substrings.
 func AssertStringContains(t *testing.T, haystack string, subs ...string) {
 	t.Helper()

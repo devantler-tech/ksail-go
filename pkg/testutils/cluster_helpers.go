@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Test doubles for cluster provisioner.
+
 // StubFactory is a test double for clusterprovisioner.Factory.
 type StubFactory struct {
 	Provisioner        clusterprovisioner.ClusterProvisioner
@@ -91,6 +93,8 @@ func (p *StubProvisioner) Exists(context.Context, string) (bool, error) {
 	return false, nil
 }
 
+// Command creation helpers.
+
 // NewCommand creates a test command with output buffers.
 func NewCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 	t.Helper()
@@ -103,6 +107,8 @@ func NewCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
 
 	return cmd, &out
 }
+
+// Configuration manager helpers.
 
 // CreateConfigManager creates a config manager for testing with a valid ksail config.
 func CreateConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.ConfigManager {
@@ -118,6 +124,8 @@ func CreateConfigManager(t *testing.T, writer io.Writer) *ksailconfigmanager.Con
 
 	return cfgManager
 }
+
+// Compile-time interface verification.
 
 var (
 	_ clusterprovisioner.Factory            = (*StubFactory)(nil)

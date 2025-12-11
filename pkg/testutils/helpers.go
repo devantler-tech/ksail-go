@@ -10,25 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	defaultKsailConfigContent = `apiVersion: ksail.dev/v1alpha1
-kind: Cluster
-spec:
-  distribution: Kind
-  distributionConfig: kind.yaml
-  sourceDirectory: k8s
-`
-
-	defaultKindConfigContent = `kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-name: kind
-`
-)
-
-const (
-	testDirectoryPerm = 0o750
-	testFilePerm      = 0o600
-)
+// Configuration helpers.
 
 // WriteValidKsailConfig writes a minimal valid KSail configuration into the provided directory.
 func WriteValidKsailConfig(t *testing.T, dir string) {
@@ -44,7 +26,7 @@ func WriteValidKsailConfig(t *testing.T, dir string) {
 	require.NoError(t, os.WriteFile(kindConfigPath, []byte(defaultKindConfigContent), testFilePerm))
 }
 
-// --- Generic snapshot & assertion helpers (merged from duplicate block) ---
+// Test lifecycle helpers.
 
 // RunTestMainWithSnapshotCleanup runs the standard TestMain pattern with snapshot cleanup.
 // Shared across packages that only need snapshot cleanup (non command-specific logic).
@@ -60,6 +42,8 @@ func RunTestMainWithSnapshotCleanup(m *testing.M) {
 
 	os.Exit(exitCode)
 }
+
+// Generic assertion helpers.
 
 // ExpectNoError fails the test if err is not nil.
 func ExpectNoError(t *testing.T, err error, description string) {
