@@ -60,7 +60,7 @@ func TestBuildFluxInstanceRespectsClusterOptions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "oci://local-registry:5000/my-workloads", instance.Spec.Sync.URL)
 	require.Equal(t, metav1.Duration{Duration: 2 * time.Minute}, *instance.Spec.Sync.Interval)
-	require.Equal(t, normalizeFluxPath(" ../My Workloads  "), instance.Spec.Sync.Path)
+	require.Equal(t, "./", instance.Spec.Sync.Path)
 }
 
 func TestBuildFluxInstanceFallsBackWhenRegistryDisabled(t *testing.T) {
