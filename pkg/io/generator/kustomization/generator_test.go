@@ -3,11 +3,12 @@ package kustomizationgenerator_test
 import (
 	"testing"
 
+	"github.com/gkampitakis/go-snaps/snaps"
+	"sigs.k8s.io/kustomize/api/types"
+
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/kustomization"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/gkampitakis/go-snaps/snaps"
-	"sigs.k8s.io/kustomize/api/types"
 )
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }

@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/cmd"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
+
+	"github.com/devantler-tech/ksail-go/cmd"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 var errRootTest = errors.New("boom")

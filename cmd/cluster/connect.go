@@ -3,11 +3,12 @@ package cluster
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
-	"github.com/spf13/cobra"
 )
 
 // NewConnectCmd creates the connect command for clusters.

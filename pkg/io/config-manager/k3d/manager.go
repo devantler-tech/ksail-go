@@ -3,12 +3,13 @@ package k3d
 import (
 	"fmt"
 
+	"github.com/k3d-io/k3d/v5/pkg/config/types"
+	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+
 	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
 	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/k3d-io/k3d/v5/pkg/config/types"
-	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 )
 
 // ConfigManager implements configuration management for K3d v1alpha5.SimpleConfig configurations.

@@ -3,9 +3,10 @@ package registry_test
 import (
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 func TestSanitizeHostIdentifier(t *testing.T) {
@@ -330,4 +331,3 @@ func TestCollectRegistryNames(t *testing.T) {
 		assert.Equal(t, []string{"registry-1", "registry-2", "registry-3"}, names)
 	})
 }
-

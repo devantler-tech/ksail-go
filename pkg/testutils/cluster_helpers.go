@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
-	"github.com/spf13/cobra"
 )
 
 // StubFactory is a test double for clusterprovisioner.Factory.

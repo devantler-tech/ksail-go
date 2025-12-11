@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	errorhandler "github.com/devantler-tech/ksail-go/pkg/ui/error-handler"
 	"github.com/spf13/cobra"
+
+	errorhandler "github.com/devantler-tech/ksail-go/pkg/ui/error-handler"
 )
 
 var (

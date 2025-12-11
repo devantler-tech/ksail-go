@@ -3,11 +3,12 @@ package yamlmarshaller_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // sample model used for tests.

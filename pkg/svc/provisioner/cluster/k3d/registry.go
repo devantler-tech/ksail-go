@@ -6,11 +6,12 @@ import (
 	"io"
 	"strings"
 
-	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"sigs.k8s.io/yaml"
+
+	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 // SetupRegistries creates mirror registries based on the K3d simple configuration.

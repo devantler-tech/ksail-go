@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/k8s"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 func TestWaitForDaemonSetReady(t *testing.T) {

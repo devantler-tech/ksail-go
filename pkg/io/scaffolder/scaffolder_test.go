@@ -11,11 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	"github.com/devantler-tech/ksail-go/pkg/io/generator"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/gkampitakis/go-snaps/snaps"
 	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +19,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 	ktypes "sigs.k8s.io/kustomize/api/types"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/io/generator"
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 var errGenerateFailure = errors.New("generate failure")

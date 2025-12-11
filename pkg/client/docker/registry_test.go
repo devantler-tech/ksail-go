@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
@@ -16,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
 )
 
 var (

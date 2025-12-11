@@ -3,8 +3,9 @@ package io_test
 import (
 	"testing"
 
-	io "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/stretchr/testify/assert"
+
+	io "github.com/devantler-tech/ksail-go/pkg/io"
 )
 
 func TestTrimNonEmpty(t *testing.T) {

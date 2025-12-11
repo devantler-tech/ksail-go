@@ -5,9 +5,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 )
 
 var (

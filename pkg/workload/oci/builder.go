@@ -1,3 +1,4 @@
+// Package oci provides OCI artifact management for Kubernetes workloads.
 package oci
 
 import (
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	semver "github.com/Masterminds/semver/v3"
+
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
@@ -198,24 +200,29 @@ func sanitizeSegment(segment string) string {
 	trimmed = strings.ToLower(trimmed)
 
 	var builder strings.Builder
+
 	prevHyphen := false
 
 	for _, char := range trimmed {
 		switch {
 		case char >= 'a' && char <= 'z':
 			builder.WriteRune(char)
+
 			prevHyphen = false
 		case char >= '0' && char <= '9':
 			builder.WriteRune(char)
+
 			prevHyphen = false
 		case char == '-':
 			if !prevHyphen {
 				builder.WriteRune('-')
+
 				prevHyphen = true
 			}
 		default:
 			if !prevHyphen {
 				builder.WriteRune('-')
+
 				prevHyphen = true
 			}
 		}

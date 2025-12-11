@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
-	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	ioutils "github.com/devantler-tech/ksail-go/pkg/io"
+	"github.com/devantler-tech/ksail-go/pkg/testutils"
 )
 
 // Tests are intentionally minimal and explicit to keep coverage high and behavior clear.

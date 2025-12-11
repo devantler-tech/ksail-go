@@ -1,6 +1,5 @@
 package fluxinstaller
 
-//nolint:gci // standard import grouping
 import (
 	"context"
 	"errors"
@@ -10,9 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
-	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +19,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
+	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 const (
@@ -76,9 +76,10 @@ var (
 	}
 )
 
-//nolint:contextcheck // context passed from caller and used in nested functions
 // EnsureDefaultResources configures a default FluxInstance so the operator can
 // bootstrap controllers and sync from the local OCI registry.
+//
+//nolint:contextcheck // context passed from caller and used in nested functions
 func EnsureDefaultResources(
 	ctx context.Context,
 	kubeconfig string,
@@ -155,7 +156,11 @@ func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 		repoPort = int(hostPort)
 	}
 
-	repoURL := fmt.Sprintf("oci://%s/%s", net.JoinHostPort(repoHost, strconv.Itoa(repoPort)), projectName)
+	repoURL := fmt.Sprintf(
+		"oci://%s/%s",
+		net.JoinHostPort(repoHost, strconv.Itoa(repoPort)),
+		projectName,
+	)
 	normalizedPath := normalizeFluxPath()
 	intervalPtr := &metav1.Duration{Duration: interval}
 
@@ -192,6 +197,7 @@ func upsertFluxResource(
 	switch desired := obj.(type) {
 	case *FluxInstance:
 		existing := &FluxInstance{}
+
 		err := fluxClient.Get(ctx, key, existing)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -240,8 +246,15 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			}
 
 			repo.Spec.Insecure = true
-			if err := fluxClient.Update(ctx, repo); err != nil {
-				return fmt.Errorf("failed to update OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
+
+			err = fluxClient.Update(ctx, repo)
+			if err != nil {
+				return fmt.Errorf(
+					"failed to update OCIRepository %s/%s: %w",
+					key.Namespace,
+					key.Name,
+					err,
+				)
 			}
 
 			return nil
@@ -249,7 +262,11 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			select {
 			//nolint:err113 // dynamic resource key necessary for debugging timeout
 			case <-waitCtx.Done():
-				return fmt.Errorf("timed out waiting for OCIRepository %s/%s", key.Namespace, key.Name)
+				return fmt.Errorf(
+					"timed out waiting for OCIRepository %s/%s",
+					key.Namespace,
+					key.Name,
+				)
 			case <-ticker.C:
 			}
 		default:
@@ -266,19 +283,23 @@ func sanitizeFluxName(value, fallback string) string {
 	}
 
 	var builder strings.Builder
+
 	previousHyphen := false
 
 	for _, char := range trimmed {
 		switch {
 		case char >= 'a' && char <= 'z':
 			builder.WriteRune(char)
+
 			previousHyphen = false
 		case char >= '0' && char <= '9':
 			builder.WriteRune(char)
+
 			previousHyphen = false
 		default:
 			if !previousHyphen {
 				builder.WriteRune('-')
+
 				previousHyphen = true
 			}
 		}
@@ -310,7 +331,11 @@ func normalizeFluxPath() string {
 	return "./"
 }
 
-func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVersion schema.GroupVersion) error {
+func waitForGroupVersion(
+	ctx context.Context,
+	restConfig *rest.Config,
+	groupVersion schema.GroupVersion,
+) error {
 	discoveryClient, err := newDiscoveryClient(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create discovery client: %w", err)
@@ -323,8 +348,10 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 	defer ticker.Stop()
 
 	var lastErr error
+
 	for {
-		if _, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String()); err == nil {
+		_, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String())
+		if err == nil {
 			return nil
 		}
 
@@ -335,6 +362,7 @@ func waitForGroupVersion(ctx context.Context, restConfig *rest.Config, groupVers
 			if lastErr == nil {
 				lastErr = waitCtx.Err()
 			}
+
 			return fmt.Errorf("timed out waiting for API %s: %w", groupVersion.String(), lastErr)
 		case <-ticker.C:
 		}

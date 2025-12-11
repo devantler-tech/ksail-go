@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
+
+	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 )
 
 // createTestIOStreams creates IO streams for testing.

@@ -10,6 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/client"
+	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/spf13/cobra"
+	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
@@ -28,10 +33,6 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/docker/docker/client"
-	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/spf13/cobra"
-	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 const (
@@ -760,7 +761,9 @@ func runRegistryStage(
 	}
 
 	dockerClientInvokerMu.RLock()
+
 	invoker := dockerClientInvoker
+
 	dockerClientInvokerMu.RUnlock()
 
 	err := invoker(cmd, func(dockerClient client.APIClient) error {

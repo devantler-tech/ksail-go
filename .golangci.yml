@@ -47,6 +47,12 @@ linters:
           - ireturn
         path: pkg/svc/installer/cni/base.go
       - linters:
+          - ireturn
+        path: pkg/workload/oci/service.go
+      - linters:
+          - ireturn
+        path: pkg/client/flux/client.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
   settings:
@@ -74,6 +80,7 @@ linters:
             - github.com/mitchellh
             - github.com/wk8/go-ordered-map
             - github.com/samber/do/v2
+            - github.com/containerd
             - github.com/docker
             - github.com/fatih/color
             - github.com/fluxcd

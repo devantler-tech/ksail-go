@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
-	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 const requiredCiliumArgs = 2

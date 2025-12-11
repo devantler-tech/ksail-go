@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devantler-tech/ksail-go/pkg/k8s"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/devantler-tech/ksail-go/pkg/k8s"
 )
 
 // WaitForResourceReadiness waits for multiple Kubernetes resources to become ready.

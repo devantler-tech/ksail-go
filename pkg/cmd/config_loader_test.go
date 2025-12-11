@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/do/v2"
+	"github.com/spf13/cobra"
+
 	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/samber/do/v2"
-	"github.com/spf13/cobra"
 )
 
 type recordingTimer struct {

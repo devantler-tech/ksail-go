@@ -6,10 +6,11 @@ import (
 	"io"
 	"strings"
 
-	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
+
+	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 const kindNetworkName = "kind"
