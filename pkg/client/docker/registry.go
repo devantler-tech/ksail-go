@@ -661,8 +661,7 @@ func disconnectRegistryNetwork(
 	}
 
 	err := dockerClient.NetworkDisconnect(ctx, network, containerID, true)
-	//nolint:staticcheck // client.IsErrNotFound avoids importing containerd errdefs, which depguard forbids
-	if err != nil && !client.IsErrNotFound(err) {
+	if err != nil && !cerrdefs.IsNotFound(err) {
 		return container.InspectResponse{}, fmt.Errorf(
 			"failed to disconnect registry %s from network %s: %w",
 			name,

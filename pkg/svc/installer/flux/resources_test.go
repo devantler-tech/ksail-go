@@ -159,8 +159,7 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 	overrideFluxResourcesClientFactory(t, func(*rest.Config) (client.Client, error) {
 		t.Fatalf("flux resource client should not be created when APIs unavailable")
 
-		//nolint:nilnil // unreachable after t.Fatalf
-		return nil, nil
+		panic("unreachable: t.Fatalf should have terminated the test")
 	})
 
 	cluster := &v1alpha1.Cluster{Spec: v1alpha1.Spec{SourceDirectory: "k8s"}}

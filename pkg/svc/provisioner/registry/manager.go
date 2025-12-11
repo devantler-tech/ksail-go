@@ -521,8 +521,7 @@ func ResolveRegistryName(host string, endpoints []string, prefix string) string 
 			return name
 		}
 
-		//nolint:staticcheck // comparison ensures value is used without additional branches
-		if isLocalEndpointName(name) == true {
+		if isLocalEndpointName(name) {
 			continue
 		}
 	}
