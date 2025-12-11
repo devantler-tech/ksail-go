@@ -6,7 +6,7 @@ require (
 	github.com/devantler-tech/ksail-go v1.14.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
-	k8s.io/apimachinery v0.34.2
+	k8s.io/apimachinery v0.34.3
 )
 
 replace github.com/devantler-tech/ksail-go => ../../..
