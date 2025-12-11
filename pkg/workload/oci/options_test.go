@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/devantler-tech/ksail-go/pkg/workload/oci"
+	"github.com/stretchr/testify/require"
 )
 
 // setupValidationTest creates a temporary source directory (if createDir is true) and validates BuildOptions.

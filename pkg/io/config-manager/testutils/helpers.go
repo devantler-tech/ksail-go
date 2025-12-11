@@ -5,10 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	configmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 )
 
 const testFilePermissions = 0o600

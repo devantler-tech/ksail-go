@@ -7,9 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/pkg/cmd/runner"
+	"github.com/spf13/cobra"
 )
 
 var (

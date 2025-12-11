@@ -9,11 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/docker/docker/client"
-
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/docker/docker/client"
 )
 
 // Info describes a registry mirror that should be managed for a cluster.
@@ -183,7 +181,7 @@ func collectExistingRegistryNames(
 	}
 
 	for _, name := range current {
-		trimmed, ok := ksailio.TrimNonEmpty(name)
+		trimmed, ok := trimNonEmpty(name)
 		if !ok {
 			continue
 		}
@@ -334,13 +332,13 @@ func ConnectRegistriesToNetwork(
 	networkName string,
 	writer io.Writer,
 ) error {
-	networkName, networkOK := ksailio.TrimNonEmpty(networkName)
+	networkName, networkOK := trimNonEmpty(networkName)
 	if dockerClient == nil || len(registries) == 0 || !networkOK {
 		return nil
 	}
 
 	for _, reg := range registries {
-		containerName, nameOK := ksailio.TrimNonEmpty(reg.Name)
+		containerName, nameOK := trimNonEmpty(reg.Name)
 		if !nameOK {
 			continue
 		}
@@ -625,4 +623,12 @@ func CollectRegistryNames(infos []Info) []string {
 	}
 
 	return names
+}
+
+// trimNonEmpty returns the trimmed string and whether it's non-empty.
+// This consolidates the common pattern of trimming and checking for emptiness.
+func trimNonEmpty(s string) (string, bool) {
+	trimmed := strings.TrimSpace(s)
+
+	return trimmed, trimmed != ""
 }

@@ -5,10 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-
-	"github.com/devantler-tech/ksail-go/pkg/client/k9s"
 )
 
 func TestNewClient(t *testing.T) {

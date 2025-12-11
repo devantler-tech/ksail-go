@@ -3,9 +3,8 @@ package cluster
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
 )
 
 // NewClusterCmd creates the parent cluster command and wires lifecycle subcommands beneath it.

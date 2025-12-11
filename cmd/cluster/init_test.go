@@ -9,14 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/require"
-
 	clusterpkg "github.com/devantler-tech/ksail-go/cmd/cluster"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	cmdtestutils "github.com/devantler-tech/ksail-go/pkg/testutils"
 	timermocks "github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/require"
 )
 
 const mirrorRegistryHelp = "Configure mirror registries with format 'host=upstream' " +

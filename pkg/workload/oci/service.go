@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
@@ -21,8 +22,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 
 //nolint:gochecknoglobals // static set of valid manifest extensions
@@ -158,7 +157,6 @@ func collectManifestFiles(root string) ([]string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("walk directory %s: %w", root, err)
 	}

@@ -3,14 +3,13 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 	errorhandler "github.com/devantler-tech/ksail-go/pkg/ui/error-handler"
+	"github.com/spf13/cobra"
 )
 
 // NewRootCmd creates and returns the root command with version info and subcommands.

@@ -1,10 +1,9 @@
 package workload
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/cmd/workload/gen"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
 )
 
 // NewWorkloadCmd creates and returns the workload command group namespace.

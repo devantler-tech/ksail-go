@@ -3,9 +3,8 @@ package testutils
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
+	"github.com/stretchr/testify/require"
 )
 
 // ValidatorTestCase represents a common test case structure for validator tests.

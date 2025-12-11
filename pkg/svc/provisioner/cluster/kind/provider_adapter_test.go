@@ -3,9 +3,8 @@ package kindprovisioner_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDefaultKindProviderAdapter(t *testing.T) {

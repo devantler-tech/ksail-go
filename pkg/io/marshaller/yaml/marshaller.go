@@ -3,9 +3,8 @@ package yamlmarshaller
 import (
 	"fmt"
 
-	"sigs.k8s.io/yaml"
-
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
+	"sigs.k8s.io/yaml"
 )
 
 // YAMLMarshaller marshals/unmarshals YAML documents for a model type.

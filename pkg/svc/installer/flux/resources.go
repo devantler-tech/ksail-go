@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
+	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,10 +22,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
-	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
-	registry "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 const (

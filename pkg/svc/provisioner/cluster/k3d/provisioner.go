@@ -8,12 +8,11 @@ import (
 	"slices"
 	"strings"
 
+	runner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 	clustercommand "github.com/k3d-io/k3d/v5/cmd/cluster"
 	v1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	runner "github.com/devantler-tech/ksail-go/pkg/cmd/runner"
 )
 
 // CommandBuilders supplies constructors for k3d Cobra commands, allowing test injection.

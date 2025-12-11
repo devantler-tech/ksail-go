@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/docker/docker/client"
-
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	"github.com/docker/docker/client"
 )
 
 // Manager orchestrates registry lifecycle operations shared between mirror and local registries.

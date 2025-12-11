@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	semver "github.com/Masterminds/semver/v3"
-
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 )
 

@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	fcolor "github.com/fatih/color"
-
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	fcolor "github.com/fatih/color"
 )
 
 // MessageType defines the type of notification message.

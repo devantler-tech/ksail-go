@@ -3,15 +3,14 @@ package k3dgenerator_test
 import (
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
-	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	generator "github.com/devantler-tech/ksail-go/pkg/io/generator/k3d"
 	generatortestutils "github.com/devantler-tech/ksail-go/pkg/io/generator/testutils"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
+	"github.com/gkampitakis/go-snaps/snaps"
+	"github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) { testutils.RunTestMainWithSnapshotCleanup(m) }

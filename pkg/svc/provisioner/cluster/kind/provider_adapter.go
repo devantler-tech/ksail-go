@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 	"github.com/docker/docker/client"
 	"sigs.k8s.io/kind/pkg/cluster"
-
-	"github.com/devantler-tech/ksail-go/pkg/client/docker"
 )
 
 var errUnexpectedDockerClientType = errors.New("unexpected docker client type")

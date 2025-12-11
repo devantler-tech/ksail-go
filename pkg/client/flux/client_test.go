@@ -5,11 +5,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
-
-	"github.com/devantler-tech/ksail-go/pkg/client/flux"
 )
 
 const sourceCommandName = "source"
