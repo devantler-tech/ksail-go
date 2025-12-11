@@ -485,7 +485,9 @@ func (rm *RegistryManager) generateRegistryConfig(upstreamURL string) string {
 }
 
 // createRegistryConfigFile creates a temporary registry configuration file.
-// The caller is responsible for deleting the returned file path.
+// The caller is responsible for deleting the returned file path when done.
+// Deletion can be done with os.Remove() - if deletion fails, it will leave
+// a temporary file in the system temp directory.
 func (rm *RegistryManager) createRegistryConfigFile(
 	registryName, upstreamURL string,
 ) (string, error) {

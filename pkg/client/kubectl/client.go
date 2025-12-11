@@ -377,11 +377,11 @@ func (c *Client) CreatePriorityClassCmd() (*cobra.Command, error) {
 	return c.newResourceCmd("priorityclass")
 }
 
-// Helper methods.
+// Factory and command customization helpers.
 
 // createFactory creates a kubectl factory with the given kubeconfig path.
 //
-//nolint:ireturn // Returns kubectl Factory interface for compatibility with kubectl command constructors
+//nolint:ireturn // Returns kubectl Factory interface for compatibility with kubectl command constructors.
 func (c *Client) createFactory(kubeConfigPath string) cmdutil.Factory {
 	configFlags := genericclioptions.NewConfigFlags(true)
 	if kubeConfigPath != "" {
