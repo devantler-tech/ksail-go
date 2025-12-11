@@ -159,8 +159,6 @@ const (
 	DistributionK3d Distribution = "K3d"
 )
 
-// --- CNI Types ---
-
 // ProvidesMetricsServerByDefault returns true if the distribution includes metrics-server by default.
 // K3d (based on K3s) includes metrics-server, Kind does not.
 func (d *Distribution) ProvidesMetricsServerByDefault() bool {
