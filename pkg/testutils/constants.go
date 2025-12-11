@@ -15,8 +15,8 @@ var (
 
 // File permissions.
 const (
-	// FilePermUserReadWrite is the permission for user read/write only (0o600).
-	FilePermUserReadWrite fs.FileMode = 0o600
+	// filePermUserReadWrite is the permission for user read/write only (0o600).
+	filePermUserReadWrite fs.FileMode = 0o600
 
 	// testDirectoryPerm is the permission for test directories (0o750).
 	testDirectoryPerm fs.FileMode = 0o750
