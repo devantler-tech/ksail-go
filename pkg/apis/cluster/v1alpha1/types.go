@@ -314,11 +314,11 @@ func (d *Distribution) Set(value string) error {
 }
 
 // Set for GitOpsEngine.
-func (d *GitOpsEngine) Set(value string) error {
+func (g *GitOpsEngine) Set(value string) error {
 	// Check against constant values with case-insensitive comparison
 	for _, tool := range validGitOpsEngines() {
 		if strings.EqualFold(value, string(tool)) {
-			*d = tool
+			*g = tool
 
 			return nil
 		}
@@ -428,12 +428,12 @@ func (d *Distribution) Type() string {
 }
 
 // String returns the string representation of the GitOpsEngine.
-func (d *GitOpsEngine) String() string {
-	return string(*d)
+func (g *GitOpsEngine) String() string {
+	return string(*g)
 }
 
 // Type returns the type of the GitOpsEngine.
-func (d *GitOpsEngine) Type() string {
+func (g *GitOpsEngine) Type() string {
 	return "GitOpsEngine"
 }
 
