@@ -100,6 +100,8 @@ func extractNameAndNamespace(cmd *cobra.Command, args []string) (string, string)
 	return name, namespace
 }
 
+// Client configuration and initialization.
+
 // getClient returns a controller-runtime client configured for Flux APIs.
 func (c *Client) getClient() (client.Client, error) {
 	if c.client != nil {
@@ -164,6 +166,8 @@ func (c *Client) getRestConfig() (*rest.Config, error) {
 	return config, nil
 }
 
+// Resource management helpers.
+
 // exportResource exports a resource as YAML to stdout.
 func (c *Client) exportResource(obj runtime.Object) error {
 	data, err := yaml.Marshal(obj)
@@ -210,6 +214,7 @@ func (c *Client) upsertResource(
 	return c.updateExisting(ctx, k8sClient, obj, existing, resourceKind)
 }
 
+// printSuccess formats and prints a success message for resource operations.
 func (c *Client) printSuccess(obj client.Object, resourceKind, action string) error {
 	_, err := fmt.Fprintf(
 		c.ioStreams.Out,
@@ -226,6 +231,7 @@ func (c *Client) printSuccess(obj client.Object, resourceKind, action string) er
 	return nil
 }
 
+// updateExisting updates an existing Flux resource with new spec from obj.
 func (c *Client) updateExisting(
 	ctx context.Context,
 	k8sClient client.Client,
@@ -253,6 +259,8 @@ func (c *Client) updateExisting(
 	return c.printSuccess(obj, resourceKind, "updated")
 }
 
+// Spec copying helpers.
+
 // copySpec copies the Spec field from src to dst using type assertions.
 func copySpec(src, dst client.Object) error {
 	switch sourceObj := src.(type) {
@@ -271,6 +279,7 @@ func copySpec(src, dst client.Object) error {
 	}
 }
 
+// copyGitRepositorySpec copies the spec from a GitRepository source to destination.
 func copyGitRepositorySpec(src *sourcev1.GitRepository, dst client.Object) error {
 	dstObj, ok := dst.(*sourcev1.GitRepository)
 	if !ok {
@@ -282,6 +291,7 @@ func copyGitRepositorySpec(src *sourcev1.GitRepository, dst client.Object) error
 	return nil
 }
 
+// copyHelmRepositorySpec copies the spec from a HelmRepository source to destination.
 func copyHelmRepositorySpec(src *sourcev1.HelmRepository, dst client.Object) error {
 	dstObj, ok := dst.(*sourcev1.HelmRepository)
 	if !ok {
@@ -293,6 +303,7 @@ func copyHelmRepositorySpec(src *sourcev1.HelmRepository, dst client.Object) err
 	return nil
 }
 
+// copyOCIRepositorySpec copies the spec from an OCIRepository source to destination.
 func copyOCIRepositorySpec(src *sourcev1.OCIRepository, dst client.Object) error {
 	dstObj, ok := dst.(*sourcev1.OCIRepository)
 	if !ok {
@@ -304,6 +315,7 @@ func copyOCIRepositorySpec(src *sourcev1.OCIRepository, dst client.Object) error
 	return nil
 }
 
+// copyKustomizationSpec copies the spec from a Kustomization source to destination.
 func copyKustomizationSpec(src *kustomizev1.Kustomization, dst client.Object) error {
 	dstObj, ok := dst.(*kustomizev1.Kustomization)
 	if !ok {
@@ -315,6 +327,7 @@ func copyKustomizationSpec(src *kustomizev1.Kustomization, dst client.Object) er
 	return nil
 }
 
+// copyHelmReleaseSpec copies the spec from a HelmRelease source to destination.
 func copyHelmReleaseSpec(src *helmv2.HelmRelease, dst client.Object) error {
 	dstObj, ok := dst.(*helmv2.HelmRelease)
 	if !ok {

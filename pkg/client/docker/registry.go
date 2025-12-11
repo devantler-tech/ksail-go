@@ -32,10 +32,18 @@ var (
 )
 
 const (
+	// Registry image configuration.
+
 	// RegistryImageName is the default registry image to use.
 	RegistryImageName = "registry:3"
+
+	// Registry labeling and identification.
+
 	// RegistryLabelKey marks registry containers as managed by ksail.
 	RegistryLabelKey = "io.ksail.registry"
+
+	// Registry port configuration.
+
 	// DefaultRegistryPort is the default port for registry containers.
 	DefaultRegistryPort = 5000
 	// RegistryPortBase is the base port number for calculating registry ports.
@@ -44,12 +52,16 @@ const (
 	HostPortParts = 2
 	// RegistryContainerPort is the internal port exposed by the registry container.
 	RegistryContainerPort = "5000/tcp"
+	// RegistryHostIP is the host IP address to bind registry ports to.
+	RegistryHostIP = "127.0.0.1"
+
+	// Registry container configuration.
+
 	// RegistryDataPath is the path inside the container where registry data is stored.
 	RegistryDataPath = "/var/lib/registry"
 	// RegistryRestartPolicy defines the container restart policy.
 	RegistryRestartPolicy = "unless-stopped"
-	// RegistryHostIP is the host IP address to bind registry ports to.
-	RegistryHostIP = "127.0.0.1"
+
 	// RegistryConfigTemplate is the base configuration template for registry containers.
 	RegistryConfigTemplate = `version: 0.1
 log:
@@ -338,8 +350,9 @@ func (rm *RegistryManager) createAndStartContainer(
 	return nil
 }
 
-// Helper methods
+// Container management helpers.
 
+// registryExists checks if a registry container with the given name exists.
 func (rm *RegistryManager) registryExists(ctx context.Context, name string) (bool, error) {
 	containers, err := rm.listRegistryContainers(ctx, name)
 	if err != nil {
@@ -349,6 +362,7 @@ func (rm *RegistryManager) registryExists(ctx context.Context, name string) (boo
 	return len(containers) > 0, nil
 }
 
+// listRegistryContainers lists all containers matching the given registry name.
 func (rm *RegistryManager) listRegistryContainers(
 	ctx context.Context,
 	name string,
@@ -369,6 +383,7 @@ func (rm *RegistryManager) listRegistryContainers(
 	return containers, nil
 }
 
+// listAllRegistryContainers lists all ksail-managed registry containers.
 func (rm *RegistryManager) listAllRegistryContainers(
 	ctx context.Context,
 ) ([]container.Summary, error) {
@@ -387,6 +402,7 @@ func (rm *RegistryManager) listAllRegistryContainers(
 	return containers, nil
 }
 
+// ensureRegistryImage pulls the registry image if not already present locally.
 func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	// Check if image exists
 	_, err := rm.client.ImageInspect(ctx, RegistryImageName)
@@ -415,6 +431,7 @@ func (rm *RegistryManager) ensureRegistryImage(ctx context.Context) error {
 	return nil
 }
 
+// createVolume creates a Docker volume if it doesn't already exist.
 func (rm *RegistryManager) createVolume(
 	ctx context.Context,
 	volumeName string,
@@ -436,6 +453,9 @@ func (rm *RegistryManager) createVolume(
 	return nil
 }
 
+// Configuration builders.
+
+// buildContainerConfig builds the container configuration for a registry.
 func (rm *RegistryManager) buildContainerConfig(
 	config RegistryConfig,
 ) *container.Config {
@@ -453,6 +473,7 @@ func (rm *RegistryManager) buildContainerConfig(
 	}
 }
 
+// generateRegistryConfig creates a registry configuration with optional proxy settings.
 func (rm *RegistryManager) generateRegistryConfig(upstreamURL string) string {
 	baseConfig := RegistryConfigTemplate
 
@@ -463,6 +484,10 @@ func (rm *RegistryManager) generateRegistryConfig(upstreamURL string) string {
 	return baseConfig
 }
 
+// createRegistryConfigFile creates a temporary registry configuration file.
+// The caller is responsible for deleting the returned file path when done.
+// Deletion can be done with os.Remove() - if deletion fails, it will leave
+// a temporary file in the system temp directory.
 func (rm *RegistryManager) createRegistryConfigFile(
 	registryName, upstreamURL string,
 ) (string, error) {
@@ -497,6 +522,7 @@ func (rm *RegistryManager) createRegistryConfigFile(
 	return tmpFile.Name(), nil
 }
 
+// buildHostConfig builds the host configuration including port bindings and mounts.
 func (rm *RegistryManager) buildHostConfig(
 	config RegistryConfig,
 	volumeName string,
@@ -553,6 +579,7 @@ func (rm *RegistryManager) buildHostConfig(
 	}
 }
 
+// buildNetworkConfig builds the network configuration for connecting to a cluster network.
 func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.NetworkingConfig {
 	if config.NetworkName == "" {
 		return nil
@@ -565,6 +592,7 @@ func (rm *RegistryManager) buildNetworkConfig(config RegistryConfig) *network.Ne
 	}
 }
 
+// resolveVolumeName determines the volume name to use for the registry.
 func (rm *RegistryManager) resolveVolumeName(config RegistryConfig) string {
 	if config.VolumeName != "" {
 		return config.VolumeName
@@ -602,6 +630,7 @@ func (rm *RegistryManager) addClusterLabel(
 	return nil
 }
 
+// stopRegistryContainer stops a registry container if it's running.
 func (rm *RegistryManager) stopRegistryContainer(
 	ctx context.Context,
 	registry container.Summary,
@@ -618,6 +647,9 @@ func (rm *RegistryManager) stopRegistryContainer(
 	return nil
 }
 
+// Volume management helpers.
+
+// deriveRegistryVolumeName extracts the volume name from a registry container.
 func deriveRegistryVolumeName(registry container.Summary, fallback string) string {
 	for _, mountPoint := range registry.Mounts {
 		if mountPoint.Type == mount.TypeVolume && mountPoint.Name != "" {
@@ -632,6 +664,9 @@ func deriveRegistryVolumeName(registry container.Summary, fallback string) strin
 	return strings.TrimSpace(fallback)
 }
 
+// Network management helpers.
+
+// inspectContainer retrieves detailed information about a container.
 func inspectContainer(
 	ctx context.Context,
 	dockerClient client.APIClient,
@@ -648,6 +683,7 @@ func inspectContainer(
 	return inspect, nil
 }
 
+// disconnectRegistryNetwork disconnects a registry from a network and returns updated inspection data.
 func disconnectRegistryNetwork(
 	ctx context.Context,
 	dockerClient client.APIClient,
@@ -673,6 +709,9 @@ func disconnectRegistryNetwork(
 	return inspectContainer(ctx, dockerClient, containerID)
 }
 
+// Cleanup helpers.
+
+// cleanupRegistryVolume removes a registry's volume if deletion is requested.
 func cleanupRegistryVolume(
 	ctx context.Context,
 	dockerClient client.APIClient,
@@ -695,6 +734,7 @@ func cleanupRegistryVolume(
 	return err
 }
 
+// cleanupOrphanedRegistryVolume attempts to remove orphaned registry volumes.
 func cleanupOrphanedRegistryVolume(
 	ctx context.Context,
 	dockerClient client.APIClient,
@@ -721,6 +761,8 @@ func cleanupOrphanedRegistryVolume(
 	return nil
 }
 
+// removeRegistryVolume attempts to remove a volume by name.
+// Returns true if the volume was successfully removed, false if it didn't exist.
 func removeRegistryVolume(
 	ctx context.Context,
 	dockerClient client.APIClient,
@@ -743,6 +785,9 @@ func removeRegistryVolume(
 	return true, nil
 }
 
+// Utility helpers.
+
+// uniqueNonEmpty returns unique non-empty strings from the input, preserving order.
 func uniqueNonEmpty(values ...string) []string {
 	result := make([]string, 0, len(values))
 	seen := make(map[string]struct{}, len(values))
@@ -764,6 +809,8 @@ func uniqueNonEmpty(values ...string) []string {
 	return result
 }
 
+// registryAttachedToOtherClusters checks if a registry is connected to cluster networks
+// other than the one being ignored.
 func registryAttachedToOtherClusters(
 	inspect container.InspectResponse,
 	ignoredNetwork string,
@@ -793,6 +840,7 @@ func registryAttachedToOtherClusters(
 	return false
 }
 
+// isClusterNetworkName determines if a network name represents a cluster network.
 func isClusterNetworkName(network string) bool {
 	switch {
 	case network == "":
