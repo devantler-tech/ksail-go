@@ -7,7 +7,16 @@ import (
 	"strings"
 )
 
+// Path expansion operations.
+
 // ExpandHomePath expands a path beginning with ~/ to the user's home directory.
+//
+// Parameters:
+//   - path: The path to expand (e.g., "~/config.yaml")
+//
+// Returns:
+//   - string: The expanded path with home directory substituted
+//   - error: Error if unable to get current user information
 func ExpandHomePath(path string) (string, error) {
 	if strings.HasPrefix(path, "~/") {
 		usr, err := user.Current()

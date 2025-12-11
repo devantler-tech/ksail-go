@@ -9,19 +9,17 @@ import (
 	"strings"
 )
 
-// ErrEmptyOutputPath is returned when the output path is empty.
-var ErrEmptyOutputPath = errors.New("output path cannot be empty")
-
-// ErrBasePath is returned when the base path is empty.
-var ErrBasePath = errors.New("base path cannot be empty")
-
-// user read/write permission.
-const filePermUserRW = 0o600
-
-// directory permissions: user read/write/execute, group read/execute.
-const dirPermUserGroupRX = 0o750
+// Writer operations.
 
 // TryWrite writes content to the provided writer.
+//
+// Parameters:
+//   - content: The string content to write
+//   - writer: The io.Writer to write to
+//
+// Returns:
+//   - string: The content that was written (for chaining)
+//   - error: Error if write fails
 func TryWrite(content string, writer io.Writer) (string, error) {
 	_, err := writer.Write([]byte(content))
 	if err != nil {
@@ -31,8 +29,20 @@ func TryWrite(content string, writer io.Writer) (string, error) {
 	return content, nil
 }
 
+// Safe file writing operations.
+
 // WriteFileSafe writes content to a file path only if it is within the specified base directory.
-// It prevents path traversal attacks by validating the path is within baseDir.
+// It prevents path traversal attacks by validating the path is within basePath.
+//
+// Parameters:
+//   - content: The content to write to the file
+//   - basePath: The base directory that filePath must be within
+//   - filePath: The file path to write to (must be within basePath)
+//   - force: If true, overwrites existing files; if false, skips existing files
+//
+// Returns:
+//   - error: ErrBasePath if basePath is empty, ErrEmptyOutputPath if filePath is empty,
+//     ErrPathOutsideBase if path is outside base, or write error
 func WriteFileSafe(content, basePath, filePath string, force bool) error {
 	if basePath == "" {
 		return ErrBasePath
@@ -77,8 +87,23 @@ func WriteFileSafe(content, basePath, filePath string, force bool) error {
 	return nil
 }
 
+// File writing operations.
+
 // TryWriteFile writes content to a file path, handling force/overwrite logic.
 // It validates that the output path doesn't contain path traversal attempts.
+//
+// Parameters:
+//   - content: The content to write to the file
+//   - output: The output file path
+//   - force: If true, overwrites existing files; if false, skips existing files
+//
+// Returns:
+//   - string: The content that was written (for chaining)
+//   - error: ErrEmptyOutputPath if output is empty, or write error
+//
+// Caller responsibilities:
+//   - Ensure the output path is within intended bounds
+//   - Handle the returned content appropriately
 func TryWriteFile(content string, output string, force bool) (string, error) {
 	if output == "" {
 		return "", ErrEmptyOutputPath
@@ -114,9 +139,15 @@ func TryWriteFile(content string, output string, force bool) (string, error) {
 	return content, nil
 }
 
+// Writer selection helpers.
+
 // GetWriter returns an appropriate writer based on the quiet flag.
-// If quiet is true, returns io.Discard to silence output.
-// If quiet is false, returns os.Stdout for normal output.
+//
+// Parameters:
+//   - quiet: If true, returns io.Discard to silence output; if false, returns os.Stdout
+//
+// Returns:
+//   - io.Writer: Either io.Discard or os.Stdout
 func GetWriter(quiet bool) io.Writer {
 	if quiet {
 		return io.Discard
