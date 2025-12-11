@@ -168,7 +168,6 @@ func newManifestLayer(root string, files []string) (v1.Layer, error) {
 		}
 	}
 
-	//nolint:staticcheck // using deprecated API for compatibility
 	if err := tarWriter.Close(); err != nil {
 		return nil, fmt.Errorf("close tar writer: %w", err)
 	}
@@ -208,7 +207,7 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", path, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if _, err := io.Copy(tarWriter, file); err != nil {
 		return fmt.Errorf("copy file %s to tar: %w", path, err)

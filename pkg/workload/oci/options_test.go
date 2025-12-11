@@ -1,5 +1,4 @@
 package oci_test
-//nolint:cyclop,funlen,errcheck // complex validation logic acceptable in tests
 
 import (
 	"os"
