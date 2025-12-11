@@ -386,6 +386,7 @@ func (m *MetricsServer) Set(value string) error {
 
 // Set for LocalRegistry.
 func (l *LocalRegistry) Set(value string) error {
+	// Check against constant values with case-insensitive comparison
 	for _, mode := range validLocalRegistryModes() {
 		if strings.EqualFold(value, string(mode)) {
 			*l = mode
