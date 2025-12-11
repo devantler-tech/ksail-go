@@ -157,8 +157,9 @@ func TestEnsureDefaultResourcesFailsWhenFluxInstanceAPIsUnavailable(t *testing.T
 	})
 
 	overrideFluxResourcesClientFactory(t, func(*rest.Config) (client.Client, error) {
-		//nolint:nilnil // test stub returns nil,nil intentionally
 		t.Fatalf("flux resource client should not be created when APIs unavailable")
+
+		//nolint:nilnil // unreachable after t.Fatalf
 		return nil, nil
 	})
 

@@ -1,14 +1,13 @@
 package fluxinstaller
-//nolint:gci // standard import grouping
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 	"net"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
