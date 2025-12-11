@@ -225,6 +225,7 @@ func upsertFluxResource(
 	}
 }
 
+//nolint:cyclop // polling loop requires multiple conditional branches for different error types
 func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Client) error {
 	key := client.ObjectKey{Name: defaultOCIRepositoryName, Namespace: fluxclient.DefaultNamespace}
 
@@ -237,7 +238,7 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 	for {
 		repo := &sourcev1.OCIRepository{}
 
-		err := fluxClient.Get(ctx, key, repo)
+		err := fluxClient.Get(waitCtx, key, repo)
 		switch {
 		case err == nil:
 			if repo.Spec.Insecure {
@@ -246,13 +247,13 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 
 			repo.Spec.Insecure = true
 
-			err = fluxClient.Update(ctx, repo)
-			if err != nil {
+			updateErr := fluxClient.Update(ctx, repo)
+			if updateErr != nil {
 				return fmt.Errorf(
 					"failed to update OCIRepository %s/%s: %w",
 					key.Namespace,
 					key.Name,
-					err,
+					updateErr,
 				)
 			}
 
@@ -262,14 +263,20 @@ func ensureLocalOCIRepositoryInsecure(ctx context.Context, fluxClient client.Cli
 			//nolint:err113 // dynamic resource key necessary for debugging timeout
 			case <-waitCtx.Done():
 				return fmt.Errorf(
-					"timed out waiting for OCIRepository %s/%s",
+					"timed out waiting for OCIRepository %s/%s to be created by FluxInstance",
 					key.Namespace,
 					key.Name,
 				)
 			case <-ticker.C:
 			}
 		default:
-			return fmt.Errorf("failed to get OCIRepository %s/%s: %w", key.Namespace, key.Name, err)
+			// Handle "no matches for kind" errors and other API errors by retrying
+			select {
+			case <-waitCtx.Done():
+				return fmt.Errorf("timed out waiting for OCIRepository CRD to be ready: %w", err)
+			case <-ticker.C:
+				// Continue waiting - CRD might not be fully registered yet
+			}
 		}
 	}
 }
@@ -335,11 +342,6 @@ func waitForGroupVersion(
 	restConfig *rest.Config,
 	groupVersion schema.GroupVersion,
 ) error {
-	discoveryClient, err := newDiscoveryClient(restConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create discovery client: %w", err)
-	}
-
 	waitCtx, cancel := context.WithTimeout(ctx, fluxAPIAvailabilityTimeout)
 	defer cancel()
 
@@ -349,7 +351,13 @@ func waitForGroupVersion(
 	var lastErr error
 
 	for {
-		_, err := discoveryClient.ServerResourcesForGroupVersion(groupVersion.String())
+		// Create a new discovery client on each iteration to avoid caching issues
+		discoveryClient, err := newDiscoveryClient(restConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create discovery client: %w", err)
+		}
+
+		_, err = discoveryClient.ServerResourcesForGroupVersion(groupVersion.String())
 		if err == nil {
 			return nil
 		}
