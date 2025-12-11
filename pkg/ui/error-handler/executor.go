@@ -7,10 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Normalizer interface.
+
 // Normalizer transforms raw stderr output captured from Cobra into a final error message.
 type Normalizer interface {
 	Normalize(raw string) string
 }
+
+// Executor configuration options.
 
 // Option configures an Executor.
 type Option func(*Executor)
@@ -23,6 +27,8 @@ func WithNormalizer(normalizer Normalizer) Option {
 		}
 	}
 }
+
+// Executor type.
 
 // Executor coordinates Cobra execution, capturing stderr output and surfacing aggregated errors.
 type Executor struct {
@@ -43,6 +49,9 @@ func NewExecutor(opts ...Option) *Executor {
 // Execute runs the provided command while intercepting Cobra's error stream.
 // It returns nil on success, or a *CommandError containing both the normalized message
 // and the original error to preserve error-chain semantics.
+//
+// The function captures stderr output during command execution and applies
+// normalization to produce user-friendly error messages.
 func (e *Executor) Execute(cmd *cobra.Command) error {
 	if cmd == nil {
 		return nil
@@ -70,6 +79,8 @@ func (e *Executor) Execute(cmd *cobra.Command) error {
 		cause:   err,
 	}
 }
+
+// CommandError type.
 
 // CommandError represents a Cobra execution failure augmented with normalized stderr output.
 type CommandError struct {
@@ -113,6 +124,8 @@ func (e *CommandError) Unwrap() error {
 
 	return e.cause
 }
+
+// DefaultNormalizer implementation.
 
 // DefaultNormalizer implements Normalizer with the same semantics previously embedded in root.go.
 type DefaultNormalizer struct{}
