@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -1201,4 +1202,44 @@ func runFluxInstallation(
 	}
 
 	return nil
+}
+
+// getInstallTimeout is a test helper that wraps installer.GetInstallTimeout.
+func getInstallTimeout(cfg *v1alpha1.Cluster) time.Duration {
+	return installer.GetInstallTimeout(cfg)
+}
+
+// expandKubeconfigPath is a test helper that expands home directory in kubeconfig paths.
+func expandKubeconfigPath(path string) (string, error) {
+	if !strings.HasPrefix(path, "~/") {
+		return path, nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, path[2:]), nil
+}
+
+// loadKubeconfig is a test helper that gets and validates the kubeconfig path from cluster config.
+func loadKubeconfig(cfg *v1alpha1.Cluster) (string, error) {
+	kubeconfigPath, err := cmdhelpers.GetKubeconfigPathFromConfig(cfg)
+	if err != nil {
+		return "", fmt.Errorf("failed to get kubeconfig path: %w", err)
+	}
+
+	// Validate file exists
+	_, err = os.Stat(kubeconfigPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to access kubeconfig file: %w", err)
+	}
+
+	return kubeconfigPath, nil
+}
+
+// distributionProvidesMetricsByDefault is a test helper that wraps Distribution.ProvidesMetricsServerByDefault.
+func distributionProvidesMetricsByDefault(dist v1alpha1.Distribution) bool {
+	return dist.ProvidesMetricsServerByDefault()
 }
