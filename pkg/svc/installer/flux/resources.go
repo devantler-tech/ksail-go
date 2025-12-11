@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 	"net"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	fluxclient "github.com/devantler-tech/ksail-go/pkg/client/flux"
@@ -151,7 +151,7 @@ func buildFluxInstance(clusterCfg *v1alpha1.Cluster) (*FluxInstance, error) {
 	}
 
 	repoURL := fmt.Sprintf("oci://%s/%s", net.JoinHostPort(repoHost, strconv.Itoa(repoPort)), projectName)
-	normalizedPath := normalizeFluxPath(sourceDir)
+	normalizedPath := normalizeFluxPath()
 	intervalPtr := &metav1.Duration{Duration: interval}
 
 	return &FluxInstance{

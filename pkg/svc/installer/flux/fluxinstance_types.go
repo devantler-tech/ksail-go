@@ -45,6 +45,7 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 
 	out := new(FluxInstance)
 	in.DeepCopyInto(out)
+
 	return out
 }
 

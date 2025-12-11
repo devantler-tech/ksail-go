@@ -6,9 +6,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DefaultDistributionConfig is the default cluster distribution configuration filename.
 const (
-	DefaultDistributionConfig          = "kind.yaml"
+	// DefaultDistributionConfig is the default cluster distribution configuration filename.
+	DefaultDistributionConfig = "kind.yaml"
+	// DefaultK3dDistributionConfig is the default K3d cluster distribution configuration filename.
 	DefaultK3dDistributionConfig       = "k3d.yaml"
 	DefaultSourceDirectory             = "k8s"
 	DefaultKubeconfigPath              = "~/.kube/config"

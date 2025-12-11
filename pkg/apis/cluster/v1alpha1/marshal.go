@@ -21,6 +21,7 @@ func (c Cluster) MarshalJSON() ([]byte, error) {
 	pruned := pruneClusterDefaults(c)
 
 	out := buildClusterOutput(pruned)
+
 	return json.Marshal(out)
 }
 

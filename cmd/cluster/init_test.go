@@ -73,6 +73,7 @@ func setupInitTest(t *testing.T, outDir string, force bool, buffer *bytes.Buffer
 		"output": outDir,
 		"force":  forceStr,
 	})
+
 	return cmd, cfgManager
 }
 
