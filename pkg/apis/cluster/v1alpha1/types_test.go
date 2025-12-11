@@ -3,9 +3,8 @@ package v1alpha1_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDistribution_ProvidesMetricsServerByDefault(t *testing.T) {

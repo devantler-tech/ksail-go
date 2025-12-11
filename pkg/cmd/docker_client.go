@@ -3,10 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
-
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 )
 
 // WithDockerClient creates a Docker client, executes the given function, and cleans up.

@@ -5,10 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gkampitakis/go-snaps/snaps"
-
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
+	"github.com/gkampitakis/go-snaps/snaps"
 )
 
 func TestMain(main *testing.M) {

@@ -12,6 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
+	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
@@ -22,10 +25,6 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-
-	docker "github.com/devantler-tech/ksail-go/pkg/client/docker"
-	kindprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster/kind"
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 var (

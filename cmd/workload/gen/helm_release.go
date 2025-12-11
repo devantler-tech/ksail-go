@@ -10,6 +10,10 @@ import (
 	"strings"
 	"time"
 
+	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	"github.com/fluxcd/pkg/apis/meta"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1"
@@ -17,11 +21,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-
-	runtime "github.com/devantler-tech/ksail-go/pkg/di"
-	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
-	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
-	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 )
 
 const (

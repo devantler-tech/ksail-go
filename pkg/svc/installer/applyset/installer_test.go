@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	applysetinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/applyset"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -17,8 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
-
-	applysetinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/applyset"
 )
 
 // Static errors for testing to satisfy err113 linter.

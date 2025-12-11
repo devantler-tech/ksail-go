@@ -3,11 +3,10 @@ package di
 import (
 	"fmt"
 
-	"github.com/samber/do/v2"
-	"github.com/spf13/cobra"
-
 	clusterprovisioner "github.com/devantler-tech/ksail-go/pkg/svc/provisioner/cluster"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/samber/do/v2"
+	"github.com/spf13/cobra"
 )
 
 // Module registers dependencies with the DI container.

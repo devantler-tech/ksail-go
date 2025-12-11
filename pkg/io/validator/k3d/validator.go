@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/devantler-tech/ksail-go/pkg/io/validator"
+	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
 	"github.com/jinzhu/copier"
 	k3dconfig "github.com/k3d-io/k3d/v5/pkg/config"
 	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
 	"github.com/k3d-io/k3d/v5/pkg/runtimes"
-
-	"github.com/devantler-tech/ksail-go/pkg/io/validator"
-	"github.com/devantler-tech/ksail-go/pkg/io/validator/metadata"
 )
 
 // Validator validates K3d cluster configurations using upstream K3d APIs.

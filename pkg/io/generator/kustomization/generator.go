@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	ktypes "sigs.k8s.io/kustomize/api/types"
-
 	"github.com/devantler-tech/ksail-go/pkg/io"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
 	yamlmarshaller "github.com/devantler-tech/ksail-go/pkg/io/marshaller/yaml"
+	ktypes "sigs.k8s.io/kustomize/api/types"
 )
 
 // KustomizationGenerator generates a kustomization.yaml.

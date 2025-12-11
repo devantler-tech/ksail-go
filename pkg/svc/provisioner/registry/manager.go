@@ -9,11 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/docker/docker/client"
-
 	dockerclient "github.com/devantler-tech/ksail-go/pkg/client/docker"
 	ksailio "github.com/devantler-tech/ksail-go/pkg/io"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/docker/docker/client"
 )
 
 // Info describes a registry mirror that should be managed for a cluster.

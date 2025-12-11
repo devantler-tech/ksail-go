@@ -3,10 +3,9 @@ package registry_test
 import (
 	"testing"
 
+	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/devantler-tech/ksail-go/pkg/svc/provisioner/registry"
 )
 
 func TestSanitizeHostIdentifier(t *testing.T) {

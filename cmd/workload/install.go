@@ -3,11 +3,10 @@ package workload
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
 )
 
 const minInstallArgs = 2

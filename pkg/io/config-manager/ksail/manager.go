@@ -10,14 +10,6 @@ import (
 	"strings"
 	"time"
 
-	mapstructure "github.com/go-viper/mapstructure/v2"
-	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
-
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
 	configmanagerinterface "github.com/devantler-tech/ksail-go/pkg/io/config-manager"
 	"github.com/devantler-tech/ksail-go/pkg/io/config-manager/helpers"
@@ -26,6 +18,13 @@ import (
 	ksailvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	mapstructure "github.com/go-viper/mapstructure/v2"
+	k3dv1alpha5 "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kindv1alpha4 "sigs.k8s.io/kind/pkg/apis/config/v1alpha4"
 )
 
 const defaultLocalRegistryPort int32 = v1alpha1.DefaultLocalRegistryPort

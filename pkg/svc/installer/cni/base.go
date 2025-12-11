@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/rest"
-
 	"github.com/devantler-tech/ksail-go/pkg/client/helm"
 	"github.com/devantler-tech/ksail-go/pkg/k8s"
+	"k8s.io/client-go/rest"
 )
 
 // InstallerBase provides common fields and methods for CNI installers.

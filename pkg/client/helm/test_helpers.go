@@ -3,9 +3,8 @@ package helm
 import (
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
+	"github.com/stretchr/testify/mock"
 )
 
 // RepoExpectation configures expectations for Helm repository operations.

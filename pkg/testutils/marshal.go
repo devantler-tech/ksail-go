@@ -3,9 +3,8 @@ package testutils
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/devantler-tech/ksail-go/pkg/io/marshaller"
+	"github.com/stretchr/testify/require"
 )
 
 // MustMarshal marshals a value or fails the test.

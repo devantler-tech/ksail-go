@@ -3,12 +3,11 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/samber/do/v2"
-	"github.com/spf13/cobra"
-
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
+	"github.com/samber/do/v2"
+	"github.com/spf13/cobra"
 )
 
 // ConfigLoadDeps captures dependencies required for loading KSail configuration files.

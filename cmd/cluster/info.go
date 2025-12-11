@@ -3,12 +3,11 @@ package cluster
 import (
 	"os"
 
-	"github.com/spf13/cobra"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
-
 	"github.com/devantler-tech/ksail-go/pkg/client/kubectl"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
+	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
 )
 
 // NewInfoCmd creates the cluster info command.

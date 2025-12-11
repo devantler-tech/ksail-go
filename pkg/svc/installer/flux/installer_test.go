@@ -5,12 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/devantler-tech/ksail-go/pkg/client/helm"
+	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/devantler-tech/ksail-go/pkg/client/helm"
-	fluxinstaller "github.com/devantler-tech/ksail-go/pkg/svc/installer/flux"
 )
 
 func TestNewFluxInstaller(t *testing.T) {

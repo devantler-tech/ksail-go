@@ -3,13 +3,12 @@ package k3d_test
 import (
 	"testing"
 
-	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
-	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 	k3dvalidator "github.com/devantler-tech/ksail-go/pkg/io/validator/k3d"
 	"github.com/devantler-tech/ksail-go/pkg/io/validator/testutils"
+	configtypes "github.com/k3d-io/k3d/v5/pkg/config/types"
+	k3dapi "github.com/k3d-io/k3d/v5/pkg/config/v1alpha5"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
