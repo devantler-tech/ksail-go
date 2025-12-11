@@ -54,8 +54,6 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 }
 
 // DeepCopyObject implements runtime.Object interface.
-//
-//nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
@@ -100,8 +98,6 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 }
 
 // DeepCopyObject implements runtime.Object interface.
-//
-//nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
