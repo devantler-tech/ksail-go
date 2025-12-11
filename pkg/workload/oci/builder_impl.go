@@ -24,6 +24,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Manifest file extensions.
+//
 //nolint:gochecknoglobals // static set of valid manifest extensions
 var manifestExtensions = map[string]struct{}{
 	".yaml": {},
@@ -31,6 +33,9 @@ var manifestExtensions = map[string]struct{}{
 	".json": {},
 }
 
+// Registry push abstraction.
+
+// imagePusher abstracts pushing OCI images to a registry.
 type imagePusher interface {
 	Push(ctx context.Context, ref name.Reference, img v1.Image) error
 }
@@ -38,6 +43,7 @@ type imagePusher interface {
 // remoteImagePusher pushes OCI images using the go-containerregistry remote helpers.
 type remoteImagePusher struct{}
 
+// Push writes an OCI image to the specified registry reference.
 func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Image) error {
 	err := remote.Write(ref, img, remote.WithContext(ctx))
 	if err != nil {
@@ -47,7 +53,14 @@ func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Im
 	return nil
 }
 
+// Builder implementation.
+
 // NewWorkloadArtifactBuilder returns a concrete implementation backed by go-containerregistry.
+//
+// The returned builder uses the go-containerregistry library to package manifests
+// into OCI artifacts and push them to container registries.
+//
+//nolint:ireturn // returning interface is the intended design pattern
 func NewWorkloadArtifactBuilder() WorkloadArtifactBuilder {
 	return &builder{pusher: remoteImagePusher{}}
 }
@@ -57,6 +70,17 @@ type builder struct {
 }
 
 // Build collects manifests from the source path, packages them into an OCI artifact, and pushes it to the registry.
+//
+// The build process follows these steps:
+//  1. Validates build options and normalizes inputs
+//  2. Discovers and collects manifest files from the source directory
+//  3. Packages manifests into a tarball layer
+//  4. Builds an OCI image with the layer and metadata labels
+//  5. Constructs a registry reference from endpoint, repository, and version
+//  6. Pushes the image to the registry
+//  7. Returns artifact metadata on success
+//
+// Returns BuildResult with complete artifact metadata, or an error if any step fails.
 func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, error) {
 	validated, err := opts.Validate()
 	if err != nil {
@@ -116,6 +140,9 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 	return BuildResult{Artifact: artifact}, nil
 }
 
+// ensurePusher returns the configured pusher or initializes a default remote pusher.
+//
+//nolint:ireturn // returning interface is the intended design pattern
 func (b *builder) ensurePusher() imagePusher {
 	if b.pusher != nil {
 		return b.pusher
@@ -126,6 +153,15 @@ func (b *builder) ensurePusher() imagePusher {
 	return b.pusher
 }
 
+// Manifest collection helpers.
+
+// collectManifestFiles walks the source directory and returns paths to all valid manifest files.
+//
+// A file is considered a valid manifest if:
+//   - It has a .yaml, .yml, or .json extension
+//   - It is not empty (size > 0)
+//
+// Returns a sorted list of absolute file paths, or an error if directory traversal fails.
 func collectManifestFiles(root string) ([]string, error) {
 	var manifests []string
 
@@ -166,6 +202,16 @@ func collectManifestFiles(root string) ([]string, error) {
 	return manifests, nil
 }
 
+// OCI layer construction helpers.
+
+// newManifestLayer creates an OCI layer containing all manifest files as a tarball.
+//
+// Files are added to the tar archive with their relative paths from the root directory.
+// File permissions are set to 0o644 for consistency.
+//
+// Returns an OCI v1.Layer suitable for inclusion in an OCI image.
+//
+//nolint:ireturn // returning interface from go-containerregistry
 func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
@@ -193,6 +239,12 @@ func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	return layer, nil
 }
 
+// addFileToArchive adds a single file to the tar archive with its relative path from root.
+//
+// The file is added with:
+//   - Relative path from root (converted to forward slashes)
+//   - Fixed permissions of 0o644
+//   - Original file content
 func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -232,6 +284,19 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	return nil
 }
 
+// OCI image construction helpers.
+
+// buildImage creates an OCI image from a manifest layer with appropriate metadata labels.
+//
+// The image is constructed with:
+//   - Current OS and architecture
+//   - Creation timestamp
+//   - OCI standard labels (title, version, source)
+//   - KSail-specific labels (repository, registry endpoint)
+//
+// Returns a complete OCI v1.Image ready for push to a registry.
+//
+//nolint:ireturn // returning interface from go-containerregistry
 func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
 	cfg := &v1.ConfigFile{
 		Architecture: runtime.GOARCH,
