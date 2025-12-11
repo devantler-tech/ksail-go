@@ -1,3 +1,4 @@
+// Package oci provides OCI artifact management for Kubernetes workloads.
 package oci
 
 import (
@@ -148,8 +149,9 @@ func normalizeVersion(raw string) (string, error) {
 		return "", ErrVersionRequired
 	}
 
-	if _, err := semver.NewVersion(trimmed); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrVersionInvalid, err)
+	_, err := semver.NewVersion(trimmed)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", ErrVersionInvalid, err)
 	}
 
 	return trimmed, nil
@@ -162,12 +164,14 @@ func normalizeRepositoryName(candidate, sourcePath string) string {
 	}
 
 	pathCandidate = filepath.ToSlash(pathCandidate)
+
 	pathCandidate = strings.Trim(pathCandidate, "/")
 	if pathCandidate == "" {
 		pathCandidate = defaultRepositoryName
 	}
 
 	segments := strings.Split(pathCandidate, "/")
+
 	normalized := make([]string, 0, len(segments))
 	for _, segment := range segments {
 		sanitized := sanitizeSegment(segment)
@@ -185,6 +189,7 @@ func normalizeRepositoryName(candidate, sourcePath string) string {
 	return strings.Join(normalized, "/")
 }
 
+//nolint:cyclop // segment sanitization requires character-by-character validation
 func sanitizeSegment(segment string) string {
 	trimmed := strings.TrimSpace(segment)
 	if trimmed == "" {
@@ -194,23 +199,29 @@ func sanitizeSegment(segment string) string {
 	trimmed = strings.ToLower(trimmed)
 
 	var builder strings.Builder
+
 	prevHyphen := false
-	for _, r := range trimmed {
+
+	for _, char := range trimmed {
 		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
+		case char >= 'a' && char <= 'z':
+			builder.WriteRune(char)
+
 			prevHyphen = false
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
+		case char >= '0' && char <= '9':
+			builder.WriteRune(char)
+
 			prevHyphen = false
-		case r == '-':
+		case char == '-':
 			if !prevHyphen {
 				builder.WriteRune('-')
+
 				prevHyphen = true
 			}
 		default:
 			if !prevHyphen {
 				builder.WriteRune('-')
+
 				prevHyphen = true
 			}
 		}

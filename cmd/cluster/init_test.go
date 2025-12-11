@@ -59,20 +59,26 @@ func writeKsailConfig(t *testing.T, outDir string, content string) {
 }
 
 // setupInitTest sets up a test command with configuration manager and common flags.
-func setupInitTest(t *testing.T, outDir string, force bool, buffer *bytes.Buffer) (*cobra.Command, *ksailconfigmanager.ConfigManager) {
+func setupInitTest(
+	t *testing.T,
+	outDir string,
+	force bool,
+	buffer *bytes.Buffer,
+) (*cobra.Command, *ksailconfigmanager.ConfigManager) {
 	t.Helper()
 	cmd := newInitCommand(t)
 	cfgManager := newConfigManager(t, cmd, buffer)
-	
+
 	forceStr := "false"
 	if force {
 		forceStr = "true"
 	}
-	
+
 	cmdtestutils.SetFlags(t, cmd, map[string]string{
 		"output": outDir,
 		"force":  forceStr,
 	})
+
 	return cmd, cfgManager
 }
 
@@ -185,10 +191,12 @@ func TestHandleInitRunE_DefaultsLocalRegistryWithFlux(t *testing.T) {
 
 	deps := newInitDeps(t)
 
-	if err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps); err != nil {
+	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
+	if err != nil {
 		t.Fatalf("HandleInitRunE returned error: %v", err)
 	}
 
+	//nolint:gosec // test file path is safe
 	content, err := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
 	if err != nil {
 		t.Fatalf("expected ksail.yaml to be scaffolded: %v", err)
@@ -221,6 +229,7 @@ func TestHandleInitRunE_IgnoresExistingConfigFile(t *testing.T) {
 	err := clusterpkg.HandleInitRunE(cmd, cfgManager, deps)
 	require.NoError(t, err)
 
+	//nolint:gosec // test file path is safe
 	content, readErr := os.ReadFile(filepath.Join(outDir, "ksail.yaml"))
 	require.NoError(t, readErr)
 

@@ -7,16 +7,22 @@ import (
 )
 
 const (
-	DefaultDistributionConfig          = "kind.yaml"
-	DefaultK3dDistributionConfig       = "k3d.yaml"
-	DefaultSourceDirectory             = "k8s"
-	DefaultKubeconfigPath              = "~/.kube/config"
-	DefaultLocalRegistryPort     int32 = 5111
+	// DefaultDistributionConfig is the default cluster distribution configuration filename.
+	DefaultDistributionConfig = "kind.yaml"
+	// DefaultK3dDistributionConfig is the default K3d cluster distribution configuration filename.
+	DefaultK3dDistributionConfig = "k3d.yaml"
+	// DefaultSourceDirectory is the default directory for Kubernetes manifests.
+	DefaultSourceDirectory = "k8s"
+	// DefaultKubeconfigPath is the default path to the kubeconfig file.
+	DefaultKubeconfigPath = "~/.kube/config"
+	// DefaultLocalRegistryPort is the default port for the local registry.
+	DefaultLocalRegistryPort int32 = 5111
 )
 
-var (
-	DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
-)
+// DefaultFluxInterval is the default reconciliation interval for Flux.
+//
+//nolint:gochecknoglobals // Default configuration value
+var DefaultFluxInterval = metav1.Duration{Duration: time.Minute}
 
 // ExpectedDistributionConfigName returns the default config filename for a distribution.
 func ExpectedDistributionConfigName(distribution Distribution) string {

@@ -298,7 +298,8 @@ func loadDistributionConfigs(
 
 	// If distribution is K3d but the config path still points to the kind default,
 	// switch to the k3d default so we don’t try to read kind.yaml.
-	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d && configPath == defaultDistributionConfigPath(v1alpha1.DistributionKind) {
+	if clusterCfg.Spec.Distribution == v1alpha1.DistributionK3d &&
+		configPath == defaultDistributionConfigPath(v1alpha1.DistributionKind) {
 		clusterCfg.Spec.DistributionConfig = defaultConfigPath
 		configPath = defaultConfigPath
 	}
@@ -759,7 +760,9 @@ func runRegistryStage(
 	}
 
 	dockerClientInvokerMu.RLock()
+
 	invoker := dockerClientInvoker
+
 	dockerClientInvokerMu.RUnlock()
 
 	err := invoker(cmd, func(dockerClient client.APIClient) error {
@@ -1158,7 +1161,7 @@ func installFluxIfConfigured(
 
 // newFluxInstallerForCluster returns an installer tuned for the cluster context.
 //
-//nolint:ireturn // returning the Installer interface enables dependency injection in tests
+//nolint:ireturn // returns interface for dependency injection in tests
 func newFluxInstallerForCluster(
 	clusterCfg *v1alpha1.Cluster,
 	helmClient helm.Interface,

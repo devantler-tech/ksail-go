@@ -42,14 +42,6 @@ func newLocalRegistryDependencies(opts ...localRegistryOption) localRegistryDepe
 	return deps
 }
 
-func withLocalRegistryServiceFactory(
-	factory func(cfg registry.Config) (registry.Service, error),
-) localRegistryOption {
-	return func(deps *localRegistryDependencies) {
-		deps.serviceFactory = factory
-	}
-}
-
 func localRegistryProvisionStageInfo() registryStageInfo {
 	return registryStageInfo{
 		title:         "Provision local registry...",

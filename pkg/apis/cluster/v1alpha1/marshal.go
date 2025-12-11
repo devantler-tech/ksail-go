@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,44 +12,52 @@ import (
 func (c Cluster) MarshalYAML() (any, error) {
 	pruned := pruneClusterDefaults(c)
 	out := buildClusterOutput(pruned)
+
 	return out, nil
 }
 
 // MarshalJSON trims default values before emitting JSON (used by YAML library).
 func (c Cluster) MarshalJSON() ([]byte, error) {
 	pruned := pruneClusterDefaults(c)
+
 	out := buildClusterOutput(pruned)
-	return json.Marshal(out)
+
+	b, err := json.Marshal(out)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal cluster to JSON: %w", err)
+	}
+
+	return b, nil
 }
 
 // buildClusterOutput converts a Cluster into a YAML/JSON-friendly projection with omitempty tags.
 type clusterOutput struct {
 	APIVersion string             `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Kind       string             `json:"kind,omitempty" yaml:"kind,omitempty"`
-	Spec       *clusterSpecOutput `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Kind       string             `json:"kind,omitempty"       yaml:"kind,omitempty"`
+	Spec       *clusterSpecOutput `json:"spec,omitempty"       yaml:"spec,omitempty"`
 }
 
 type clusterSpecOutput struct {
-	Distribution       string                   `json:"distribution,omitempty" yaml:"distribution,omitempty"`
+	Distribution       string                   `json:"distribution,omitempty"       yaml:"distribution,omitempty"`
 	DistributionConfig string                   `json:"distributionConfig,omitempty" yaml:"distributionConfig,omitempty"`
-	SourceDirectory    string                   `json:"sourceDirectory,omitempty" yaml:"sourceDirectory,omitempty"`
-	Connection         *clusterConnectionOutput `json:"connection,omitempty" yaml:"connection,omitempty"`
-	CNI                string                   `json:"cni,omitempty" yaml:"cni,omitempty"`
-	CSI                string                   `json:"csi,omitempty" yaml:"csi,omitempty"`
-	MetricsServer      string                   `json:"metricsServer,omitempty" yaml:"metricsServer,omitempty"`
-	LocalRegistry      string                   `json:"localRegistry,omitempty" yaml:"localRegistry,omitempty"`
-	GitOpsEngine       string                   `json:"gitOpsEngine,omitempty" yaml:"gitOpsEngine,omitempty"`
-	Options            *clusterOptionsOutput    `json:"options,omitempty" yaml:"options,omitempty"`
+	SourceDirectory    string                   `json:"sourceDirectory,omitempty"    yaml:"sourceDirectory,omitempty"`
+	Connection         *clusterConnectionOutput `json:"connection,omitempty"         yaml:"connection,omitempty"`
+	CNI                string                   `json:"cni,omitempty"                yaml:"cni,omitempty"`
+	CSI                string                   `json:"csi,omitempty"                yaml:"csi,omitempty"`
+	MetricsServer      string                   `json:"metricsServer,omitempty"      yaml:"metricsServer,omitempty"`
+	LocalRegistry      string                   `json:"localRegistry,omitempty"      yaml:"localRegistry,omitempty"`
+	GitOpsEngine       string                   `json:"gitOpsEngine,omitempty"       yaml:"gitOpsEngine,omitempty"`
+	Options            *clusterOptionsOutput    `json:"options,omitempty"            yaml:"options,omitempty"`
 }
 
 type clusterConnectionOutput struct {
 	Kubeconfig string `json:"kubeconfig,omitempty" yaml:"kubeconfig,omitempty"`
-	Context    string `json:"context,omitempty" yaml:"context,omitempty"`
-	Timeout    string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Context    string `json:"context,omitempty"    yaml:"context,omitempty"`
+	Timeout    string `json:"timeout,omitempty"    yaml:"timeout,omitempty"`
 }
 
 type clusterOptionsOutput struct {
-	Flux          *fluxOptionsOutput          `json:"flux,omitempty" yaml:"flux,omitempty"`
+	Flux          *fluxOptionsOutput          `json:"flux,omitempty"          yaml:"flux,omitempty"`
 	LocalRegistry *localRegistryOptionsOutput `json:"localRegistry,omitempty" yaml:"localRegistry,omitempty"`
 }
 
@@ -60,75 +69,89 @@ type localRegistryOptionsOutput struct {
 	HostPort int32 `json:"hostPort,omitempty" yaml:"hostPort,omitempty"`
 }
 
-func buildClusterOutput(c Cluster) clusterOutput {
+//nolint:cyclop,funlen // marshalling logic requires checking multiple optional fields
+func buildClusterOutput(cluster Cluster) clusterOutput {
 	var spec clusterSpecOutput
+
 	hasSpec := false
 
-	if c.Spec.Distribution != "" {
-		spec.Distribution = string(c.Spec.Distribution)
+	if cluster.Spec.Distribution != "" {
+		spec.Distribution = string(cluster.Spec.Distribution)
 		hasSpec = true
 	}
 
-	if trimmed := strings.TrimSpace(c.Spec.DistributionConfig); trimmed != "" {
+	if trimmed := strings.TrimSpace(cluster.Spec.DistributionConfig); trimmed != "" {
 		spec.DistributionConfig = trimmed
 		hasSpec = true
 	}
 
-	if c.Spec.SourceDirectory != "" {
-		spec.SourceDirectory = c.Spec.SourceDirectory
+	if cluster.Spec.SourceDirectory != "" {
+		spec.SourceDirectory = cluster.Spec.SourceDirectory
 		hasSpec = true
 	}
 
 	var conn clusterConnectionOutput
-	if c.Spec.Connection.Kubeconfig != "" {
-		conn.Kubeconfig = c.Spec.Connection.Kubeconfig
+	if cluster.Spec.Connection.Kubeconfig != "" {
+		conn.Kubeconfig = cluster.Spec.Connection.Kubeconfig
 	}
-	if c.Spec.Connection.Context != "" {
-		conn.Context = c.Spec.Connection.Context
+
+	if cluster.Spec.Connection.Context != "" {
+		conn.Context = cluster.Spec.Connection.Context
 	}
-	if c.Spec.Connection.Timeout.Duration != 0 {
-		conn.Timeout = c.Spec.Connection.Timeout.Duration.String()
+
+	if cluster.Spec.Connection.Timeout.Duration != 0 {
+		conn.Timeout = cluster.Spec.Connection.Timeout.Duration.String()
 	}
+
 	if conn.Kubeconfig != "" || conn.Context != "" || conn.Timeout != "" {
 		spec.Connection = &conn
 		hasSpec = true
 	}
 
-	if c.Spec.CNI != "" {
-		spec.CNI = string(c.Spec.CNI)
+	if cluster.Spec.CNI != "" {
+		spec.CNI = string(cluster.Spec.CNI)
 		hasSpec = true
 	}
 
-	if c.Spec.CSI != "" {
-		spec.CSI = string(c.Spec.CSI)
+	if cluster.Spec.CSI != "" {
+		spec.CSI = string(cluster.Spec.CSI)
 		hasSpec = true
 	}
 
-	if c.Spec.MetricsServer != "" {
-		spec.MetricsServer = string(c.Spec.MetricsServer)
+	if cluster.Spec.MetricsServer != "" {
+		spec.MetricsServer = string(cluster.Spec.MetricsServer)
 		hasSpec = true
 	}
 
-	if c.Spec.LocalRegistry != "" {
-		spec.LocalRegistry = string(c.Spec.LocalRegistry)
+	if cluster.Spec.LocalRegistry != "" {
+		spec.LocalRegistry = string(cluster.Spec.LocalRegistry)
 		hasSpec = true
 	}
 
-	if c.Spec.GitOpsEngine != "" {
-		spec.GitOpsEngine = string(c.Spec.GitOpsEngine)
+	if cluster.Spec.GitOpsEngine != "" {
+		spec.GitOpsEngine = string(cluster.Spec.GitOpsEngine)
 		hasSpec = true
 	}
 
 	var opts clusterOptionsOutput
+
 	hasOpts := false
-	if c.Spec.Options.Flux.Interval.Duration != 0 {
-		opts.Flux = &fluxOptionsOutput{Interval: c.Spec.Options.Flux.Interval.Duration.String()}
+
+	if cluster.Spec.Options.Flux.Interval.Duration != 0 {
+		opts.Flux = &fluxOptionsOutput{
+			Interval: cluster.Spec.Options.Flux.Interval.Duration.String(),
+		}
 		hasOpts = true
 	}
-	if c.Spec.Options.LocalRegistry.HostPort != 0 {
-		opts.LocalRegistry = &localRegistryOptionsOutput{HostPort: c.Spec.Options.LocalRegistry.HostPort}
+
+	if cluster.Spec.Options.LocalRegistry.HostPort != 0 {
+		opts.LocalRegistry = &localRegistryOptionsOutput{
+			HostPort: cluster.Spec.Options.LocalRegistry.HostPort,
+		}
+
 		hasOpts = true
 	}
+
 	if hasOpts {
 		spec.Options = &opts
 		hasSpec = true
@@ -140,73 +163,80 @@ func buildClusterOutput(c Cluster) clusterOutput {
 	}
 
 	return clusterOutput{
-		APIVersion: c.APIVersion,
-		Kind:       c.Kind,
+		APIVersion: cluster.APIVersion,
+		Kind:       cluster.Kind,
 		Spec:       specPtr,
 	}
 }
 
 // pruneClusterDefaults zeroes fields that match default values so they are omitted when marshalled.
-func pruneClusterDefaults(c Cluster) Cluster {
+//
+//nolint:cyclop,funlen // default pruning requires checking multiple fields
+func pruneClusterDefaults(cluster Cluster) Cluster {
 	// Distribution defaults
-	distribution := c.Spec.Distribution
+	distribution := cluster.Spec.Distribution
 	if distribution == "" {
 		distribution = DistributionKind
 	}
 
-	if c.Spec.Distribution == DistributionKind {
-		c.Spec.Distribution = ""
+	if cluster.Spec.Distribution == DistributionKind {
+		cluster.Spec.Distribution = ""
 	}
 
 	expectedDistConfig := ExpectedDistributionConfigName(distribution)
-	trimmedConfig := strings.TrimSpace(c.Spec.DistributionConfig)
+
+	trimmedConfig := strings.TrimSpace(cluster.Spec.DistributionConfig)
 	if trimmedConfig == "" || trimmedConfig == expectedDistConfig {
-		c.Spec.DistributionConfig = ""
+		cluster.Spec.DistributionConfig = ""
 	}
 
-	if c.Spec.SourceDirectory == DefaultSourceDirectory || c.Spec.SourceDirectory == "" {
-		c.Spec.SourceDirectory = ""
+	if cluster.Spec.SourceDirectory == DefaultSourceDirectory ||
+		cluster.Spec.SourceDirectory == "" {
+		cluster.Spec.SourceDirectory = ""
 	}
 
-	if c.Spec.Connection.Kubeconfig == DefaultKubeconfigPath || c.Spec.Connection.Kubeconfig == "" {
-		c.Spec.Connection.Kubeconfig = ""
+	if cluster.Spec.Connection.Kubeconfig == DefaultKubeconfigPath ||
+		cluster.Spec.Connection.Kubeconfig == "" {
+		cluster.Spec.Connection.Kubeconfig = ""
 	}
 
-	if defaultCtx := ExpectedContextName(distribution); c.Spec.Connection.Context == defaultCtx {
-		c.Spec.Connection.Context = ""
+	if defaultCtx := ExpectedContextName(distribution); cluster.Spec.Connection.Context == defaultCtx {
+		cluster.Spec.Connection.Context = ""
 	}
 
-	if c.Spec.Connection.Timeout.Duration == 0 {
-		c.Spec.Connection.Timeout = metav1.Duration{}
+	if cluster.Spec.Connection.Timeout.Duration == 0 {
+		cluster.Spec.Connection.Timeout = metav1.Duration{}
 	}
 
-	if c.Spec.CNI == CNIDefault {
-		c.Spec.CNI = ""
+	if cluster.Spec.CNI == CNIDefault {
+		cluster.Spec.CNI = ""
 	}
 
-	if c.Spec.CSI == CSIDefault {
-		c.Spec.CSI = ""
+	if cluster.Spec.CSI == CSIDefault {
+		cluster.Spec.CSI = ""
 	}
 
-	if c.Spec.MetricsServer == MetricsServerEnabled || c.Spec.MetricsServer == "" {
-		c.Spec.MetricsServer = ""
+	if cluster.Spec.MetricsServer == MetricsServerEnabled || cluster.Spec.MetricsServer == "" {
+		cluster.Spec.MetricsServer = ""
 	}
 
-	if c.Spec.LocalRegistry == LocalRegistryDisabled || c.Spec.LocalRegistry == "" {
-		c.Spec.LocalRegistry = ""
+	if cluster.Spec.LocalRegistry == LocalRegistryDisabled || cluster.Spec.LocalRegistry == "" {
+		cluster.Spec.LocalRegistry = ""
 	}
 
-	if c.Spec.GitOpsEngine == GitOpsEngineNone || c.Spec.GitOpsEngine == "" {
-		c.Spec.GitOpsEngine = ""
+	if cluster.Spec.GitOpsEngine == GitOpsEngineNone || cluster.Spec.GitOpsEngine == "" {
+		cluster.Spec.GitOpsEngine = ""
 	}
 
-	if c.Spec.Options.Flux.Interval == DefaultFluxInterval || c.Spec.Options.Flux.Interval.Duration == 0 {
-		c.Spec.Options.Flux.Interval = metav1.Duration{}
+	if cluster.Spec.Options.Flux.Interval == DefaultFluxInterval ||
+		cluster.Spec.Options.Flux.Interval.Duration == 0 {
+		cluster.Spec.Options.Flux.Interval = metav1.Duration{}
 	}
 
-	if c.Spec.Options.LocalRegistry.HostPort == DefaultLocalRegistryPort || c.Spec.Options.LocalRegistry.HostPort == 0 {
-		c.Spec.Options.LocalRegistry.HostPort = 0
+	if cluster.Spec.Options.LocalRegistry.HostPort == DefaultLocalRegistryPort ||
+		cluster.Spec.Options.LocalRegistry.HostPort == 0 {
+		cluster.Spec.Options.LocalRegistry.HostPort = 0
 	}
 
-	return c
+	return cluster
 }

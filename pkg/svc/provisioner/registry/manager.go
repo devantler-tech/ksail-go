@@ -299,7 +299,14 @@ func cleanupCreatedRegistries(
 	for i := len(created) - 1; i >= 0; i-- {
 		reg := created[i]
 
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, false, networkName, reg.Volume)
+		err := registryMgr.DeleteRegistry(
+			ctx,
+			reg.Name,
+			clusterName,
+			false,
+			networkName,
+			reg.Volume,
+		)
 		if err != nil {
 			notify.WriteMessage(notify.Message{
 				Type: notify.WarningType,
@@ -385,7 +392,14 @@ func CleanupRegistries(
 	}
 
 	for _, reg := range registries {
-		err := registryMgr.DeleteRegistry(ctx, reg.Name, clusterName, deleteVolumes, networkName, reg.Volume)
+		err := registryMgr.DeleteRegistry(
+			ctx,
+			reg.Name,
+			clusterName,
+			deleteVolumes,
+			networkName,
+			reg.Volume,
+		)
 		if err != nil {
 			_, _ = fmt.Fprintf(
 				writer,
@@ -520,23 +534,9 @@ func ResolveRegistryName(host string, endpoints []string, prefix string) string 
 		if expected != "" && strings.EqualFold(name, expected) {
 			return name
 		}
-
-		//nolint:staticcheck // comparison ensures value is used without additional branches
-		if isLocalEndpointName(name) == true {
-			continue
-		}
 	}
 
 	return BuildRegistryName(prefix, host)
-}
-
-func isLocalEndpointName(name string) bool {
-	lower := strings.ToLower(strings.TrimSpace(name))
-	if lower == "localhost" || lower == "0.0.0.0" {
-		return true
-	}
-
-	return strings.HasPrefix(lower, "127.")
 }
 
 // ExtractNameFromEndpoint extracts the hostname portion from an endpoint URL.

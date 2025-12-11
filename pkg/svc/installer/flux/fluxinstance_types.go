@@ -14,18 +14,25 @@ const (
 	fluxInstanceVersion     = "v1"
 )
 
-var fluxInstanceGroupVersion = schema.GroupVersion{Group: fluxInstanceGroup, Version: fluxInstanceVersion}
+//
+//nolint:gochecknoglobals // package-level constant for API version
+var fluxInstanceGroupVersion = schema.GroupVersion{
+	Group:   fluxInstanceGroup,
+	Version: fluxInstanceVersion,
+}
 
 // FluxInstance mirrors the Flux operator FluxInstance CRD with the minimal fields
 // KSail-Go needs to configure default sync behavior. Keeping a local definition
 // avoids pulling the entire operator module into go.mod.
 type FluxInstance struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              FluxInstanceSpec   `json:"spec,omitempty"`
-	Status            FluxInstanceStatus `json:"status,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec   FluxInstanceSpec   `json:"spec"`
+	Status FluxInstanceStatus `json:"status"`
 }
 
+// DeepCopyInto copies all properties of this object into another object of the same type.
 func (in *FluxInstance) DeepCopyInto(out *FluxInstance) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
@@ -34,33 +41,42 @@ func (in *FluxInstance) DeepCopyInto(out *FluxInstance) {
 	in.Status.DeepCopyInto(&out.Status)
 }
 
+// DeepCopy creates a deep copy of FluxInstance.
 func (in *FluxInstance) DeepCopy() *FluxInstance {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstance)
 	in.DeepCopyInto(out)
+
 	return out
 }
 
+// DeepCopyObject implements runtime.Object interface.
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}
+
 	return nil
 }
 
 // FluxInstanceList registers the list kind with the scheme for completeness.
 type FluxInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []FluxInstance `json:"items"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []FluxInstance `json:"items"`
 }
 
+// DeepCopyInto copies all properties into another FluxInstanceList.
 func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
+
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
+
 	if in.Items != nil {
 		out.Items = make([]FluxInstance, len(in.Items))
 		for i := range in.Items {
@@ -69,19 +85,24 @@ func (in *FluxInstanceList) DeepCopyInto(out *FluxInstanceList) {
 	}
 }
 
+// DeepCopy creates a deep copy of FluxInstanceList.
 func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstanceList)
 	in.DeepCopyInto(out)
+
 	return out
 }
 
+// DeepCopyObject implements runtime.Object interface.
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}
+
 	return nil
 }
 
@@ -91,6 +112,7 @@ type FluxInstanceSpec struct {
 	Sync         *Sync        `json:"sync,omitempty"`
 }
 
+// DeepCopyInto copies all properties from this FluxInstanceSpec into another.
 func (in *FluxInstanceSpec) DeepCopyInto(out *FluxInstanceSpec) {
 	*out = *in
 	if in.Sync != nil {
@@ -118,6 +140,7 @@ type Sync struct {
 	Provider   string           `json:"provider,omitempty"`
 }
 
+// DeepCopyInto copies all properties into another Sync.
 func (in *Sync) DeepCopyInto(out *Sync) {
 	*out = *in
 	if in.Interval != nil {
@@ -131,6 +154,7 @@ type FluxInstanceStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
+// DeepCopyInto copies all properties into another FluxInstanceStatus.
 func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 	*out = *in
 	if in.Conditions != nil {
@@ -141,16 +165,21 @@ func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 	}
 }
 
+// DeepCopy creates a deep copy of this FluxInstanceStatus.
 func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
 	if in == nil {
 		return nil
 	}
+
 	out := new(FluxInstanceStatus)
 	in.DeepCopyInto(out)
+
 	return out
 }
 
 // addFluxInstanceToScheme registers the custom resources with the provided scheme.
+//
+//nolint:unparam // error return kept for consistency with Kubernetes scheme registration patterns
 func addFluxInstanceToScheme(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		fluxInstanceGroupVersion,

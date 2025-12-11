@@ -106,6 +106,8 @@ func (m *ConfigManager) LoadConfigWithoutFileSilent() (*v1alpha1.Cluster, error)
 }
 
 // loadConfigWithOptions is the internal implementation with silent option.
+//
+//nolint:cyclop // config loading requires multiple option checks
 func (m *ConfigManager) loadConfigWithOptions(
 	tmr timer.Timer,
 	silent bool,

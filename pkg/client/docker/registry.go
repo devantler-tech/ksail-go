@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
@@ -660,8 +661,7 @@ func disconnectRegistryNetwork(
 	}
 
 	err := dockerClient.NetworkDisconnect(ctx, network, containerID, true)
-	//nolint:staticcheck // client.IsErrNotFound avoids importing containerd errdefs, which depguard forbids
-	if err != nil && !client.IsErrNotFound(err) {
+	if err != nil && !cerrdefs.IsNotFound(err) {
 		return container.InspectResponse{}, fmt.Errorf(
 			"failed to disconnect registry %s from network %s: %w",
 			name,
@@ -691,6 +691,7 @@ func cleanupRegistryVolume(
 	}
 
 	_, err := removeRegistryVolume(ctx, dockerClient, volumeCandidate)
+
 	return err
 }
 
@@ -732,7 +733,7 @@ func removeRegistryVolume(
 
 	err := dockerClient.VolumeRemove(ctx, trimmed, false)
 	if err != nil {
-		if client.IsErrNotFound(err) {
+		if cerrdefs.IsNotFound(err) {
 			return false, nil
 		}
 
