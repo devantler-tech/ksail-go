@@ -1282,14 +1282,16 @@ func TestInstallMetricsServer_KubeconfigReadError(t *testing.T) {
 func TestDistributionProvidesMetricsByDefault_UnknownDistribution(t *testing.T) {
 	t.Parallel()
 
-	result := v1alpha1.Distribution("unknown").ProvidesMetricsServerByDefault()
+	dist := v1alpha1.Distribution("unknown")
+	result := dist.ProvidesMetricsServerByDefault()
 	assert.False(t, result, "Unknown distribution should default to false")
 }
 
 func TestDistributionProvidesMetricsByDefault_EmptyDistribution(t *testing.T) {
 	t.Parallel()
 
-	result := v1alpha1.Distribution("").ProvidesMetricsServerByDefault()
+	dist := v1alpha1.Distribution("")
+	result := dist.ProvidesMetricsServerByDefault()
 	assert.False(t, result, "Empty distribution should default to false")
 }
 

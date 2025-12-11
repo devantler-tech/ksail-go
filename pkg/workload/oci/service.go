@@ -158,6 +158,7 @@ func collectManifestFiles(root string) ([]string, error) {
 	return manifests, nil
 }
 
+//nolint:ireturn // Returns v1.Layer interface from go-containerregistry library
 func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
@@ -172,7 +173,9 @@ func newManifestLayer(root string, files []string) (v1.Layer, error) {
 		return nil, fmt.Errorf("close tar writer: %w", err)
 	}
 
-	layer, err := tarball.LayerFromReader(bytes.NewReader(buf.Bytes()))
+	layer, err := tarball.LayerFromOpener(func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(buf.Bytes())), nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("create layer from tar: %w", err)
 	}
@@ -216,7 +219,7 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 	return nil
 }
 
-func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
+func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) { //nolint:ireturn // Returns v1.Image interface from go-containerregistry library
 	cfg := &v1.ConfigFile{
 		Architecture: runtime.GOARCH,
 		OS:           runtime.GOOS,

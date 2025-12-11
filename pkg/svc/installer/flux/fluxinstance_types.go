@@ -50,10 +50,12 @@ func (in *FluxInstance) DeepCopy() *FluxInstance {
 }
 
 // DeepCopyObject implements runtime.Object interface.
+//nolint:ireturn // Required by Kubernetes runtime.Object interface
 func (in *FluxInstance) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}
+
 	return nil
 }
 
@@ -89,11 +91,13 @@ func (in *FluxInstanceList) DeepCopy() *FluxInstanceList {
 	return out
 }
 
+//nolint:ireturn // Required by Kubernetes runtime.Object interface
 // DeepCopyObject implements runtime.Object interface.
 func (in *FluxInstanceList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	}
+
 	return nil
 }
 
@@ -103,6 +107,7 @@ type FluxInstanceSpec struct {
 	Sync         *Sync        `json:"sync,omitempty"`
 }
 
+// DeepCopyInto copies all properties from this FluxInstanceSpec into another.
 func (in *FluxInstanceSpec) DeepCopyInto(out *FluxInstanceSpec) {
 	*out = *in
 	if in.Sync != nil {
@@ -155,6 +160,7 @@ func (in *FluxInstanceStatus) DeepCopyInto(out *FluxInstanceStatus) {
 	}
 }
 
+// DeepCopy creates a deep copy of this FluxInstanceStatus.
 func (in *FluxInstanceStatus) DeepCopy() *FluxInstanceStatus {
 	if in == nil {
 		return nil

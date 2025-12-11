@@ -3,6 +3,7 @@ package v1alpha1
 //nolint:gci // standard import grouping
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,12 @@ func (c Cluster) MarshalJSON() ([]byte, error) {
 
 	out := buildClusterOutput(pruned)
 
-	return json.Marshal(out)
+	b, err := json.Marshal(out)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal cluster to JSON: %w", err)
+	}
+
+	return b, nil
 }
 
 // buildClusterOutput converts a Cluster into a YAML/JSON-friendly projection with omitempty tags.
