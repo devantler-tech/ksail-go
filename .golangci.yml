@@ -61,6 +61,10 @@ linters:
       - linters:
           - funlen
         path: pkg/svc/provisioner/registry/local_registry_service_test.go
+      - linters:
+          - revive
+        text: "var-naming: avoid package names that conflict with Go standard library package names"
+        path: pkg/io/writer.go
   settings:
     wsl_v5:
       allow-first-in-block: true
