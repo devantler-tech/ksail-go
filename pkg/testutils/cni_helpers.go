@@ -126,7 +126,7 @@ func WriteServerBackedKubeconfig(t *testing.T, serverURL string) string {
 		"- name: default\n" +
 		"  user: {}\n"
 
-	err := os.WriteFile(path, []byte(content), FilePermUserReadWrite)
+	err := os.WriteFile(path, []byte(content), filePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("failed to write kubeconfig: %v", err)
 	}
@@ -168,7 +168,7 @@ users:
 
 	path := filepath.Join(dir, "config")
 
-	err := os.WriteFile(path, []byte(contents), FilePermUserReadWrite)
+	err := os.WriteFile(path, []byte(contents), filePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("write kubeconfig file: %v", err)
 	}
