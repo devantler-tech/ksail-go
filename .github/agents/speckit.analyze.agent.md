@@ -1,6 +1,6 @@
 ---
 description: Perform a non-destructive cross-artifact consistency and quality analysis across spec.md, plan.md, and tasks.md after task generation.
-model: GPT-5.1 (Preview) (copilot)
+model: GPT-5.2 (Preview) (copilot)
 handoffs:
   - label: Implement Project
     agent: speckit.implement

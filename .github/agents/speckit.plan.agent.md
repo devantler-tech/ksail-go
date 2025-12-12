@@ -1,6 +1,6 @@
 ---
 description: Execute the implementation planning workflow using the plan template to generate design artifacts.
-model: GPT-5.1 (Preview) (copilot)
+model: GPT-5.2 (Preview) (copilot)
 handoffs:
   - label: Create Tasks
     agent: speckit.tasks
