@@ -64,7 +64,7 @@ linters:
       - linters:
           - revive
         text: "var-naming: avoid package names that conflict with Go standard library package names"
-        path: pkg/io/writer.go
+        path: pkg/io/
   settings:
     wsl_v5:
       allow-first-in-block: true

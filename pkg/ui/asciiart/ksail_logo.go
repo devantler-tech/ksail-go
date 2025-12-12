@@ -11,6 +11,7 @@ import (
 //go:embed ksail_logo.txt
 var ksailLogo string
 
+// Color segment split indices for logo rendering.
 const (
 	greenCyanSplitIndex = 32
 	blueStartIndex      = 37
@@ -46,18 +47,26 @@ func PrintLogoFromString(writer io.Writer, logoContent string) {
 	}
 }
 
-// --- internals ---
+// Color printing helpers.
 
-// small helpers to reduce repetition.
-func printc(out io.Writer, c *color.Color, s string)   { _, _ = c.Fprint(out, s) }
+// printc writes a colored string to the output writer.
+func printc(out io.Writer, c *color.Color, s string) { _, _ = c.Fprint(out, s) }
+
+// printlnc writes a colored string followed by a newline to the output writer.
 func printlnc(out io.Writer, c *color.Color, s string) { _, _ = c.Fprintln(out, s) }
 
-// color constructors (avoid package globals for linter compliance).
+// Color constructors.
+// These functions create color instances on demand to avoid package-level globals.
+
 func colorYellow() *color.Color { return color.New(color.Bold, color.FgYellow) }
 func colorBlue() *color.Color   { return color.New(color.Bold, color.FgBlue) }
 func colorGreen() *color.Color  { return color.New(color.Bold, color.FgGreen) }
 func colorCyan() *color.Color   { return color.New(color.FgCyan) }
 
+// Multi-segment color rendering helpers.
+
+// printGreenBlueCyanPart renders a line with green, cyan, and blue color segments.
+// Used for middle sections of the logo that require three-color rendering.
 func printGreenBlueCyanPart(out io.Writer, line string) {
 	lineLen := len(line)
 
@@ -93,6 +102,8 @@ func printGreenBlueCyanPart(out io.Writer, line string) {
 	printlnc(out, colorCyan(), line[cyanStartIndex:])
 }
 
+// printGreenCyanPart renders a line with green and cyan color segments.
+// Used for sections of the logo that require two-color rendering.
 func printGreenCyanPart(out io.Writer, line string) {
 	lineLen := len(line)
 
