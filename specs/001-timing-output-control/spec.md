@@ -86,11 +86,11 @@ As a CLI user, I want timing output to be consistently formatted, so that CLI ou
      total:  <duration>
   ```
 
-- **FR-005a**: When timing output is enabled, the timing block MUST be printed after each timed activity completes.
+- **FR-006**: When timing output is enabled, the timing block MUST be printed after each timed activity completes.
 
-- **FR-006**: `current` MUST represent the duration of the most recently completed activity; `total` MUST represent the accumulated duration of all activities completed so far within the invocation.
-- **FR-007**: Documentation MUST describe the `--timing` option, the default behavior, and the output format.
-- **FR-008**: Automated tests MUST cover the flag activation point and MUST validate behavior via public APIs only (no white-box tests).
+- **FR-007**: `current` MUST represent the duration of the most recently completed activity; `total` MUST represent the accumulated duration of all activities completed so far within the invocation.
+- **FR-008**: Documentation MUST describe the `--timing` option, the default behavior, and the output format.
+- **FR-009**: Automated tests MUST cover the flag activation point and MUST validate behavior via public APIs only (no white-box tests).
 
 ### Key Entities _(include if feature involves data)_
 
