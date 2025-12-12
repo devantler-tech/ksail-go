@@ -78,7 +78,7 @@ As a CLI user, I want timing output to be consistently formatted, so that CLI ou
 
 - **FR-001**: The CLI MUST support a boolean `--timing` option that enables timing output for the current invocation.
 - **FR-002**: Timing output MUST be OFF by default unless enabled by the `--timing` flag.
-- **FR-005**: When timing output is enabled, the output MUST include the following block (including labels and indentation):
+- **FR-003**: When timing output is enabled, the output MUST include the following block (including labels and indentation):
 
   ```
    ✔ completion message
@@ -86,11 +86,11 @@ As a CLI user, I want timing output to be consistently formatted, so that CLI ou
      total:  <duration>
   ```
 
-- **FR-006**: When timing output is enabled, the timing block MUST be printed after each timed activity completes.
+- **FR-004**: When timing output is enabled, the timing block MUST be printed after each timed activity completes.
 
-- **FR-007**: `current` MUST represent the duration of the most recently completed activity; `total` MUST represent the accumulated duration of all activities completed so far within the invocation.
-- **FR-008**: Documentation MUST describe the `--timing` option, the default behavior, and the output format.
-- **FR-009**: Automated tests MUST cover the flag activation point and MUST validate behavior via public APIs only (no white-box tests).
+- **FR-005**: `current` MUST represent the duration of the most recently completed activity; `total` MUST represent the accumulated duration of all activities completed so far within the invocation.
+- **FR-006**: Documentation MUST describe the `--timing` option, the default behavior, and the output format.
+- **FR-007**: Automated tests MUST cover the flag activation point and MUST validate behavior via public APIs only (no white-box tests).
 
 ### Key Entities _(include if feature involves data)_
 
