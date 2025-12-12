@@ -1,5 +1,4 @@
 ---
-
 description: "Task list template for feature implementation"
 ---
 
@@ -8,7 +7,9 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Tests**: For KSail-Go code changes, tests are REQUIRED (constitution: test-first). Only omit tests for docs-only changes.
+
+**No white-box tests**: Tests MUST validate exported behavior only. Do not test unexported functions/fields or internal implementation details.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -20,26 +21,26 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **CLI commands**: `cmd/`
+- **Business logic**: `pkg/`
+- **Tests**: `*_test.go` files live alongside code in the same package directories
+- Adjust any sample paths below to match the plan.md structure
 
-<!-- 
+<!--
   ============================================================================
   IMPORTANT: The tasks below are SAMPLE TASKS for illustration purposes only.
-  
+
   The /speckit.tasks command MUST replace these with actual tasks based on:
   - User stories from spec.md (with their priorities P1, P2, P3...)
   - Feature requirements from plan.md
   - Entities from data-model.md
   - Endpoints from contracts/
-  
+
   Tasks MUST be organized by user story so each story can be:
   - Implemented independently
   - Tested independently
   - Delivered as an MVP increment
-  
+
   DO NOT keep these sample tasks in the generated tasks.md file.
   ============================================================================
 -->
@@ -51,6 +52,8 @@ description: "Task list template for feature implementation"
 - [ ] T001 Create project structure per implementation plan
 - [ ] T002 Initialize [language] project with [framework] dependencies
 - [ ] T003 [P] Configure linting and formatting tools
+- [ ] T004 [P] Define/confirm interfaces for new components and run `mockery`
+- [ ] T005 [P] Add failing tests first in `pkg/.../*_test.go`
 
 ---
 
@@ -79,19 +82,19 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (REQUIRED for code changes) ⚠️
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T010 [P] [US1] Public-API test(s) in `pkg/<area>/*_test.go` exercising exported behavior only
+- [ ] T011 [P] [US1] CLI snapshot/behavior test(s) in `cmd/*_test.go` (if the story affects CLI output)
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T012 [P] [US1] Define exported types/functions for [Entity1] in `pkg/<area>/<entity1>.go`
+- [ ] T013 [P] [US1] Define exported types/functions for [Entity2] in `pkg/<area>/<entity2>.go`
+- [ ] T014 [US1] Implement [Service] as exported behavior in `pkg/<area>/<service>.go` (depends on T012, T013)
+- [ ] T015 [US1] Wire CLI behavior (if applicable) in `cmd/<command>.go`
 - [ ] T016 [US1] Add validation and error handling
 - [ ] T017 [US1] Add logging for user story 1 operations
 
@@ -105,16 +108,16 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2 (REQUIRED for code changes) ⚠️
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T018 [P] [US2] Public-API test(s) in `pkg/<area>/*_test.go` exercising exported behavior only
+- [ ] T019 [P] [US2] CLI snapshot/behavior test(s) in `cmd/*_test.go` (if applicable)
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T020 [P] [US2] Define exported types/functions for [Entity] in `pkg/<area>/<entity>.go`
+- [ ] T021 [US2] Implement [Service] as exported behavior in `pkg/<area>/<service>.go`
+- [ ] T022 [US2] Wire CLI behavior (if applicable) in `cmd/<command>.go`
 - [ ] T023 [US2] Integrate with User Story 1 components (if needed)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
@@ -127,16 +130,16 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3 (REQUIRED for code changes) ⚠️
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T024 [P] [US3] Public-API test(s) in `pkg/<area>/*_test.go` exercising exported behavior only
+- [ ] T025 [P] [US3] CLI snapshot/behavior test(s) in `cmd/*_test.go` (if applicable)
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T026 [P] [US3] Define exported types/functions for [Entity] in `pkg/<area>/<entity>.go`
+- [ ] T027 [US3] Implement [Service] as exported behavior in `pkg/<area>/<service>.go`
+- [ ] T028 [US3] Wire CLI behavior (if applicable) in `cmd/<command>.go`
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -153,7 +156,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
 - [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX [P] Additional public-API tests in `pkg/.../*_test.go` (exported behavior only)
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
@@ -198,13 +201,13 @@ Examples of foundational tasks (adjust based on your project):
 ## Parallel Example: User Story 1
 
 ```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
+# Launch all tests for User Story 1 together (required for code changes):
+Task: "Public-API test(s) in pkg/<area>/*_test.go (exported behavior only)"
+Task: "CLI snapshot/behavior test(s) in cmd/*_test.go (if applicable)"
 
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+# Launch exported domain primitives for User Story 1 together:
+Task: "Define exported [Entity1] API in pkg/<area>/<entity1>.go"
+Task: "Define exported [Entity2] API in pkg/<area>/<entity2>.go"
 ```
 
 ---

@@ -1,24 +1,17 @@
 <!--
 Sync Impact Report:
-- Version: NEW → 1.0.0
-- New constitution created from template
-- Core principles established:
-  1. KISS (Keep It Simple, Stupid)
-  2. DRY (Don't Repeat Yourself)
-  3. YAGNI (You Aren't Gonna Need It)
-  4. Interface-Based Design
-  5. Test-First Development
-  6. Package-First Architecture
-  7. Code Quality Standards
-- Additional sections:
-  - Design Patterns & Refactoring
-  - Development Workflow & Validation
+- Version: 1.0.1 → 1.0.2
+- Modified principles:
+  - V. Test-First Development: Clarified tests must cover public APIs only (no white-box)
+  - VI. Package-First Architecture: Clarified KSail-Go avoids `internal/` to keep packages importable
+- Added sections: None
+- Removed sections: None
 - Templates requiring updates:
-  ✅ Constitution created (initial version)
-  ⚠ Plan template - should reference constitution principles
-  ⚠ Spec template - should enforce interface-based and test-first requirements
-  ⚠ Tasks template - should categorize tasks by constitutional compliance
-  ⚠ Command templates - should verify constitutional alignment
+  ✅ .specify/templates/plan-template.md
+  ✅ .specify/templates/spec-template.md
+  ✅ .specify/templates/tasks-template.md
+  ⚠ .specify/templates/commands/*.md (not present in this repository)
+- Follow-up TODOs: None
 -->
 
 # KSail-Go Constitution
@@ -62,10 +55,11 @@ Sync Impact Report:
 
 **Requirements**:
 
-- Unit tests for all packages in `pkg/`
-- Integration tests via `go test ./...` execution
-- System tests in CI for end-to-end validation
-- Snapshot testing for CLI output consistency
+- Tests MUST validate behavior via public APIs only (black-box): exported identifiers and CLI surface
+- Tests MUST NOT assert on unexported functions, unexported fields, or internal implementation details
+- Refactors that do not change public behavior SHOULD NOT require test rewrites
+- `go test ./...` is the baseline test runner; system tests may exist in CI for end-to-end validation
+- Snapshot testing is allowed for CLI output consistency
 - Pre-commit hooks MUST pass: `mockery`, `go test ./...`, `golangci-lint run`
 
 **Rationale**: Test-first ensures testable code, prevents regressions, provides living documentation, and enables confident refactoring.
@@ -78,7 +72,7 @@ Sync Impact Report:
 
 - Core business logic in `pkg/` packages
 - CLI commands in `cmd/` (thin wrappers around `pkg/` logic)
-- Internal utilities in `internal/` (not exposed externally)
+- Avoid `internal/` in KSail-Go to keep functionality importable by external projects
 - Clear package purposes with godoc comments
 - No circular dependencies
 
@@ -231,4 +225,4 @@ This constitution supersedes all other development practices. All pull requests 
 - ✅ Well-suited: Bug fixes, test improvements, documentation, refactoring, dependency updates, CLI enhancements, technical debt
 - ❌ Human-required: Architecture decisions, complex integrations, security-critical changes, production incidents, business logic
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-15 | **Last Amended**: 2025-11-15
+**Version**: 1.0.2 | **Ratified**: 2025-11-15 | **Last Amended**: 2025-12-12
