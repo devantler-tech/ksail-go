@@ -1,16 +1,12 @@
 package testutils
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,26 +16,7 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 )
 
-// Suppress unused warnings for shared utilities that may not be used in all test files.
-var (
-	_ = context.Background
-	_ = time.Second
-)
-
-const (
-	// FilePermUserReadWrite is the permission for user read/write only (0o600).
-	FilePermUserReadWrite fs.FileMode = 0o600
-)
-
-// Common test errors used across installer tests.
-var (
-	ErrInstallFailed   = errors.New("install failed")
-	ErrAddRepoFailed   = errors.New("add repo failed")
-	ErrUninstallFailed = errors.New("uninstall failed")
-	ErrDaemonSetBoom   = errors.New("boom")
-	ErrDeploymentFail  = errors.New("fail")
-	ErrPollBoom        = errors.New("boom")
-)
+// Generic assertion helpers.
 
 // ExpectEqual is a generic test helper that compares two comparable values.
 func ExpectEqual[T comparable](t *testing.T, got, want T, description string) {
@@ -51,6 +28,7 @@ func ExpectEqual[T comparable](t *testing.T, got, want T, description string) {
 }
 
 // ExpectInstallerResult checks if an error matches the expected result.
+// This is used to validate installer operations in CNI and other installer tests.
 func ExpectInstallerResult(t *testing.T, err error, wantErr, operation string) {
 	t.Helper()
 
@@ -74,6 +52,8 @@ func ExpectInstallerResult(t *testing.T, err error, wantErr, operation string) {
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
+
+// Kubernetes resource status helpers.
 
 // UpdateDeploymentStatusToUnready modifies a deployment payload to mark it as unready.
 func UpdateDeploymentStatusToUnready(t *testing.T, payload map[string]any) {
@@ -104,6 +84,8 @@ func getStatusMap(t *testing.T, payload map[string]any) map[string]any {
 	return status
 }
 
+// JSON encoding helpers.
+
 // EncodeJSON encodes a payload as JSON and writes it to an HTTP response.
 func EncodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
 	t.Helper()
@@ -117,6 +99,8 @@ func EncodeJSON(t *testing.T, writer http.ResponseWriter, payload any) {
 		t.Fatalf("failed to encode response: %v", err)
 	}
 }
+
+// Kubeconfig helpers.
 
 // WriteServerBackedKubeconfig creates a minimal kubeconfig file for testing.
 func WriteServerBackedKubeconfig(t *testing.T, serverURL string) string {
@@ -142,7 +126,7 @@ func WriteServerBackedKubeconfig(t *testing.T, serverURL string) string {
 		"- name: default\n" +
 		"  user: {}\n"
 
-	err := os.WriteFile(path, []byte(content), FilePermUserReadWrite)
+	err := os.WriteFile(path, []byte(content), filePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("failed to write kubeconfig: %v", err)
 	}
@@ -184,13 +168,15 @@ users:
 
 	path := filepath.Join(dir, "config")
 
-	err := os.WriteFile(path, []byte(contents), FilePermUserReadWrite)
+	err := os.WriteFile(path, []byte(contents), filePermUserReadWrite)
 	if err != nil {
 		t.Fatalf("write kubeconfig file: %v", err)
 	}
 
 	return path
 }
+
+// Fake Kubernetes client helpers.
 
 // CreateReadyDaemonSetClient creates a fake clientset with a ready DaemonSet.
 func CreateReadyDaemonSetClient(namespace, name string) kubernetes.Interface {

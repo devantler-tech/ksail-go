@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Marshalling helpers.
+
 // MustMarshal marshals a value or fails the test.
 func MustMarshal[T any](t *testing.T, m marshaller.Marshaller[T], v T) string {
 	t.Helper()

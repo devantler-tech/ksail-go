@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Flag helpers.
+
 // SetFlags sets multiple flags on a Cobra command, failing the test on first error.
 // Keeps tests concise and ensures consistent error handling.
 func SetFlags(t *testing.T, cmd *cobra.Command, values map[string]string) {

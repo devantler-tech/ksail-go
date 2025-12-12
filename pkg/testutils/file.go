@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// File assertion helpers.
+
 // AssertFileEquals compares the file content with the expected string.
 func AssertFileEquals(t *testing.T, dir, path, expected string) {
 	t.Helper()

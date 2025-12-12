@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// HTTP mock response helpers.
+
 // ServeDeployment serves a mock Kubernetes Deployment resource response.
 // This is used in test API servers to simulate deployment readiness checks.
 func ServeDeployment(t *testing.T, writer http.ResponseWriter, ready bool) {
@@ -49,6 +51,8 @@ func ServeDaemonSet(t *testing.T, writer http.ResponseWriter, ready bool) {
 
 	EncodeJSON(t, writer, payload)
 }
+
+// Test server helpers.
 
 // NewTestAPIServer creates a test HTTP server with a custom handler function.
 // This eliminates boilerplate for creating httptest servers in CNI installer tests.

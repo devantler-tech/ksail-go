@@ -3,7 +3,7 @@ package testutils
 import "time"
 
 // RecordingTimer is a lightweight test implementation of the timer.Timer interface
-// capturing the number of Start() and NewStage() calls and returning a fixed
+// that captures the number of Start() and NewStage() calls and returns a fixed
 // duration for deterministic snapshot output.
 type RecordingTimer struct {
 	StartCalls    int
@@ -24,7 +24,7 @@ func (r *RecordingTimer) NewStage() {
 	r.NewStageCount++
 }
 
-// Stop implements timer.Timer without additional behaviour for tests.
+// Stop implements timer.Timer without additional behavior for tests.
 func (r *RecordingTimer) Stop() {}
 
 // GetTiming returns deterministic durations for snapshot-friendly assertions.
