@@ -1,16 +1,8 @@
 package testutils
 
 import (
-	"context"
 	"errors"
 	"io/fs"
-	"time"
-)
-
-// Suppress unused warnings for shared utilities that may not be used in all test files.
-var (
-	_ = context.Background
-	_ = time.Second
 )
 
 // File permissions.
