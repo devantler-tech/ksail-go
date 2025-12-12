@@ -19,9 +19,9 @@
 
 **Purpose**: Establish a baseline and identify impacted CLI outputs.
 
-- [ ] T001 Run baseline quality gates in `projects/ksail-go/` (`go test ./...`, `go build ./...`, `golangci-lint run --timeout 5m`)
-- [ ] T002 [P] Inventory existing timing output call sites in `projects/ksail-go/` (grep for `notify.FormatTiming(` and `Message{Timer: ...}`)
-- [ ] T003 [P] Inventory snapshot expectations containing legacy timing suffix in `projects/ksail-go/cmd/__snapshots__/root_test.snap`, `projects/ksail-go/cmd/__snapshots__/init_test.snap`, `projects/ksail-go/cmd/cluster/__snapshots__/init_test.snap`
+- [ ] T001 Run baseline quality gates in repository root (`go test ./...`, `go build ./...`, `golangci-lint run --timeout 5m`)
+- [ ] T002 [P] Inventory existing timing output call sites in repository (grep for `notify.FormatTiming(` and `Message{Timer: ...}`)
+- [ ] T003 [P] Inventory snapshot expectations containing legacy timing suffix in `cmd/__snapshots__/root_test.snap`, `cmd/__snapshots__/init_test.snap`, `cmd/cluster/__snapshots__/init_test.snap`
 
 ---
 
@@ -31,11 +31,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Add persistent `--timing` flag to root command in `projects/ksail-go/cmd/root.go`
-- [ ] T005 [P] Add public helper to read timing flag state (and/or context) in `projects/ksail-go/pkg/cmd/timing.go`
-- [ ] T006 [P] Add timing block formatter(s) for the spec format in `projects/ksail-go/pkg/ui/notify/notify.go` (e.g., `FormatTimingBlock(current, total time.Duration) string`)
-- [ ] T007 [P] Add notify helper to print the timing block after a completion message in `projects/ksail-go/pkg/ui/notify/notify.go` (writer-aware; no direct stdout)
-- [ ] T008 [P] Add public-API tests for the new notify formatter(s) in `projects/ksail-go/pkg/ui/notify/notify_test.go`
+- [ ] T004 Add persistent `--timing` flag to root command in `cmd/root.go`
+- [ ] T005 [P] Add public helper to read timing flag state (and/or context) in `pkg/cmd/timing.go`
+- [ ] T006 [P] Add timing block formatter(s) for the spec format in `pkg/ui/notify/notify.go` (e.g., `FormatTimingBlock(current, total time.Duration) string`)
+- [ ] T007 [P] Add notify helper to print the timing block after a completion message in `pkg/ui/notify/notify.go` (writer-aware; no direct stdout)
+- [ ] T008 [P] Add public-API tests for the new notify formatter(s) in `pkg/ui/notify/notify_test.go`
 
 **Checkpoint**: Foundation ready — commands can now be updated story-by-story.
 
@@ -51,18 +51,18 @@
 
 > Write these tests FIRST and ensure they FAIL before implementing behavior.
 
-- [ ] T009 [P] [US1] Update root help snapshot to include `--timing` flag in `projects/ksail-go/cmd/__snapshots__/root_test.snap`
-- [ ] T010 [P] [US1] Add/extend root command snapshot coverage for `--timing` presence in `projects/ksail-go/cmd/root_test.go`
-- [ ] T011 [P] [US1] Update init command snapshots to remove default timing suffix in `projects/ksail-go/cmd/__snapshots__/init_test.snap` and `projects/ksail-go/cmd/cluster/__snapshots__/init_test.snap`
-- [ ] T012 [P] [US1] Add new snapshot test case for `--timing` on init to validate the 3-line timing block format in `projects/ksail-go/cmd/init_test.go`
-- [ ] T013 [P] [US1] Add new snapshot test case for `--timing` on cluster init to validate the 3-line timing block format in `projects/ksail-go/cmd/cluster/init_test.go`
+- [ ] T009 [P] [US1] Update root help snapshot to include `--timing` flag in `cmd/__snapshots__/root_test.snap`
+- [ ] T010 [P] [US1] Add/extend root command snapshot coverage for `--timing` presence in `cmd/root_test.go`
+- [ ] T011 [P] [US1] Update init command snapshots to remove default timing suffix in `cmd/__snapshots__/init_test.snap` and `cmd/cluster/__snapshots__/init_test.snap`
+- [ ] T012 [P] [US1] Add new snapshot test case for `--timing` on init to validate the 3-line timing block format in `cmd/init_test.go`
+- [ ] T013 [P] [US1] Add new snapshot test case for `--timing` on cluster init to validate the 3-line timing block format in `cmd/cluster/init_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Wire `--timing` flag value into command execution (e.g., via context) in `projects/ksail-go/cmd/root.go`
-- [ ] T015 [US1] Stop appending legacy timing suffix to init completion output unless `--timing` is enabled in `projects/ksail-go/cmd/init.go`
-- [ ] T016 [US1] When `--timing` is enabled, print the spec timing block after the init completion message in `projects/ksail-go/cmd/init.go`
-- [ ] T017 [US1] Ensure stage boundaries are correct for init (use `Timer.Start()` and `Timer.NewStage()` appropriately) in `projects/ksail-go/cmd/init.go`
+- [ ] T014 [US1] Wire `--timing` flag value into command execution (e.g., via context) in `cmd/root.go`
+- [ ] T015 [US1] Stop appending legacy timing suffix to init completion output unless `--timing` is enabled in `cmd/init.go`
+- [ ] T016 [US1] When `--timing` is enabled, print the spec timing block after the init completion message in `cmd/init.go`
+- [ ] T017 [US1] Ensure stage boundaries are correct for init (use `Timer.Start()` and `Timer.NewStage()` appropriately) in `cmd/init.go`
 
 **Checkpoint**: `ksail --timing init` (and `ksail init`) behaves per spec and is independently testable.
 
@@ -76,17 +76,17 @@
 
 ### Tests for User Story 2 (REQUIRED) ⚠️
 
-- [ ] T018 [P] [US2] Update notify timing tests away from legacy `"[stage: ...]"` usage where needed in `projects/ksail-go/pkg/ui/notify/notify_test.go`
-- [ ] T019 [P] [US2] Add snapshot coverage for a multi-stage command with `--timing` (pick an existing test harness) in `projects/ksail-go/cmd/cluster/create_test.go` (or the nearest existing create tests)
+- [ ] T018 [P] [US2] Update notify timing tests away from legacy `"[stage: ...]"` usage where needed in `pkg/ui/notify/notify_test.go`
+- [ ] T019 [P] [US2] Add snapshot coverage for a multi-stage command with `--timing` (pick an existing test harness) in `cmd/cluster/create_test.go` (or the nearest existing create tests)
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Refactor lifecycle success output to stop concatenating `notify.FormatTiming(...)` into the same line in `projects/ksail-go/pkg/cmd/lifecycle_helpers.go`
-- [ ] T021 [US2] Update lifecycle flow to print timing block only when `--timing` is enabled, after each `✔` completion message, in `projects/ksail-go/pkg/cmd/lifecycle_helpers.go`
-- [ ] T022 [US2] Refactor cluster create to remove `notify.FormatTiming(...)` suffixes and use the timing block when enabled in `projects/ksail-go/cmd/cluster/create.go`
-- [ ] T023 [US2] Refactor workload reconcile to remove `notify.FormatTiming(...)` suffix usage and use the timing block when enabled in `projects/ksail-go/cmd/workload/reconcile.go`
-- [ ] T024 [US2] Refactor workload helm release generation to remove `notify.FormatTiming(...)` suffix usage and use the timing block when enabled in `projects/ksail-go/cmd/workload/gen/helm_release.go`
-- [ ] T025 [US2] Ensure each refactored command creates stage boundaries per timed activity (call `Timer.NewStage()` after emitting completion+timing) in `projects/ksail-go/cmd/cluster/create.go`, `projects/ksail-go/cmd/workload/reconcile.go`, `projects/ksail-go/cmd/workload/gen/helm_release.go`, `projects/ksail-go/pkg/cmd/lifecycle_helpers.go`
+- [ ] T020 [US2] Refactor lifecycle success output to stop concatenating `notify.FormatTiming(...)` into the same line in `pkg/cmd/lifecycle_helpers.go`
+- [ ] T021 [US2] Update lifecycle flow to print timing block only when `--timing` is enabled, after each `✔` completion message, in `pkg/cmd/lifecycle_helpers.go`
+- [ ] T022 [US2] Refactor cluster create to remove `notify.FormatTiming(...)` suffixes and use the timing block when enabled in `cmd/cluster/create.go`
+- [ ] T023 [US2] Refactor workload reconcile to remove `notify.FormatTiming(...)` suffix usage and use the timing block when enabled in `cmd/workload/reconcile.go`
+- [ ] T024 [US2] Refactor workload helm release generation to remove `notify.FormatTiming(...)` suffix usage and use the timing block when enabled in `cmd/workload/gen/helm_release.go`
+- [ ] T025 [US2] Ensure each refactored command creates stage boundaries per timed activity (call `Timer.NewStage()` after emitting completion+timing) in `cmd/cluster/create.go`, `cmd/workload/reconcile.go`, `cmd/workload/gen/helm_release.go`, `pkg/cmd/lifecycle_helpers.go`
 
 **Checkpoint**: With `--timing`, timing blocks appear after each `✔ ...` across the updated multi-stage flows.
 
@@ -96,10 +96,10 @@
 
 **Purpose**: Consistency, docs, and final validation.
 
-- [ ] T026 [P] Update user-facing documentation to mention `--timing` and show the output format in `projects/ksail-go/README.md`
-- [ ] T027 [P] Update quickstart instructions for this feature in `projects/ksail-go/specs/001-timing-output-control/quickstart.md` if implementation details changed
-- [ ] T028 Regenerate/refresh snapshots after output changes in `projects/ksail-go/cmd/__snapshots__/root_test.snap`, `projects/ksail-go/cmd/__snapshots__/init_test.snap`, `projects/ksail-go/cmd/cluster/__snapshots__/init_test.snap`
-- [ ] T029 Run full quality gates after implementation in `projects/ksail-go/` (`mockery`, `go test ./...`, `golangci-lint run --timeout 5m`, `go build ./...`)
+- [ ] T026 [P] Update user-facing documentation to mention `--timing` and show the output format in `README.md`
+- [ ] T027 [P] Update quickstart instructions for this feature in `specs/001-timing-output-control/quickstart.md` if implementation details changed
+- [ ] T028 Regenerate/refresh snapshots after output changes in `cmd/__snapshots__/root_test.snap`, `cmd/__snapshots__/init_test.snap`, `cmd/cluster/__snapshots__/init_test.snap`
+- [ ] T029 Run full quality gates after implementation in repository root (`mockery`, `go test ./...`, `golangci-lint run --timeout 5m`, `go build ./...`)
 
 ---
 
