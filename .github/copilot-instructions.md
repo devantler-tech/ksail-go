@@ -43,7 +43,9 @@
 - Snapshot tests exist under `cmd/__snapshots__/` (via `go-snaps`).
 
 ## Active Technologies
+
 - Go 1.25.4 + Cobra, Viper, samber/do (DI), fatih/color, go-snaps, testify (001-timing-output-control)
 
 ## Recent Changes
+
 - 001-timing-output-control: Added Go 1.25.4 + Cobra, Viper, samber/do (DI), fatih/color, go-snaps, testify
