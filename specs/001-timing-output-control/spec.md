@@ -11,6 +11,7 @@
 
 - Q: When timing is enabled, when should the timing block be printed? → A: After each timed activity (so `current` is that activity; `total` accumulates across activities)
 - Q: Should timing be configurable via `ksail.yaml`? → A: No, timing is controlled only via a CLI flag.
+- Q: What counts as a “timed activity” for printing timing output? → A: Each progress/spinner step (each unit that emits a `✔ completion message`).
 
 ## Constitution Constraints _(mandatory)_
 
@@ -95,7 +96,7 @@ As a CLI user, I want timing output to be consistently formatted, so that CLI ou
 ### Key Entities _(include if feature involves data)_
 
 - **Timing setting**: A boolean user preference that can be provided via CLI option.
-- **Timed activity**: A unit of work that can produce a duration.
+- **Timed activity**: A single progress/spinner step (a unit that emits a `✔ completion message`) that can produce a duration.
 - **Timing output block**: A user-visible text block containing `current` and `total` durations.
 
 ## Success Criteria _(mandatory)_
@@ -104,4 +105,5 @@ As a CLI user, I want timing output to be consistently formatted, so that CLI ou
 
 - **SC-001**: With default settings, timing output is not shown in command output.
 - **SC-002**: With timing enabled via `--timing`, the timing output block matches the documented format exactly.
+- **SC-002a**: With timing enabled via `--timing`, each `✔ completion message` is immediately followed by a timing block where `current` is that step and `total` accumulates across steps.
 - **SC-003**: Automated tests verify flag-based activation using only public interfaces (CLI behavior) and pass in CI.
