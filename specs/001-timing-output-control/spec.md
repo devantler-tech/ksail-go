@@ -39,7 +39,7 @@ As a CLI user, I want to enable timing output for a single command run using a `
 
 ---
 
-### User Story 3 - Consistent timing output format (Priority: P3)
+### User Story 2 - Consistent timing output format (Priority: P3)
 
 As a CLI user, I want timing output to be consistently formatted, so that CLI output remains readable and predictable.
 
