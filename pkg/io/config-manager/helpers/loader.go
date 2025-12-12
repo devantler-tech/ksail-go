@@ -13,6 +13,8 @@ import (
 	"github.com/devantler-tech/ksail-go/pkg/io/validator"
 )
 
+// Configuration validation errors.
+
 // ErrConfigurationValidationFailed is returned when configuration validation fails.
 var ErrConfigurationValidationFailed = errors.New("configuration validation failed")
 
@@ -44,6 +46,8 @@ func (e *ValidationSummaryError) Error() string {
 
 	return "validation reported " + strconv.Itoa(e.WarningCount) + " warning(s)"
 }
+
+// Configuration loading operations.
 
 // LoadConfigFromFile loads a configuration from a file with common error handling and path resolution.
 // This function eliminates duplication between different config managers.
@@ -97,6 +101,8 @@ func LoadConfigFromFile[T any](
 
 	return config, nil
 }
+
+// Validation error formatting helpers.
 
 // FormatValidationErrors formats validation errors into a single-line readable string.
 // This function eliminates duplication between different config managers.
@@ -186,6 +192,8 @@ func FormatValidationWarnings(result *validator.ValidationResult) []string {
 
 	return warnings
 }
+
+// Configuration validation operations.
 
 // ValidateConfig validates a configuration and returns an error if validation fails.
 // This function eliminates duplication between different config managers.

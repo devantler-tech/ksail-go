@@ -19,13 +19,17 @@ import (
 var ErrMissingClusterProvisionerDependency = errors.New("missing cluster provisioner dependency")
 
 // LifecycleAction represents a lifecycle operation executed against a cluster provisioner.
+// The action receives a context for cancellation, the provisioner instance, and the cluster name.
+// It returns an error if the lifecycle operation fails.
 type LifecycleAction func(
 	ctx context.Context,
 	provisioner clusterprovisioner.ClusterProvisioner,
 	clusterName string,
 ) error
 
-// LifecycleConfig describes the messaging and action behaviour for a lifecycle command.
+// LifecycleConfig describes the messaging and action behavior for a lifecycle command.
+// It configures the user-facing messages displayed during command execution and specifies
+// the action to perform on the cluster provisioner.
 type LifecycleConfig struct {
 	TitleEmoji         string
 	TitleContent       string
@@ -42,7 +46,11 @@ type LifecycleDeps struct {
 }
 
 // NewStandardLifecycleRunE creates a standard RunE handler for simple lifecycle commands.
-// It handles dependency injection and calls HandleLifecycleRunE with the provided config.
+// It handles dependency injection from the runtime container and delegates to HandleLifecycleRunE
+// with the provided lifecycle configuration.
+//
+// This is the recommended way to create lifecycle command handlers for standard operations like
+// start, stop, and delete. The returned function can be assigned directly to a cobra.Command's RunE field.
 func NewStandardLifecycleRunE(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -57,7 +65,12 @@ func NewStandardLifecycleRunE(
 	)
 }
 
-// WrapLifecycleHandler resolves lifecycle dependencies from the runtime container before calling the provided handler.
+// WrapLifecycleHandler resolves lifecycle dependencies from the runtime container
+// and invokes the provided handler function with those dependencies.
+//
+// This function is used internally by NewStandardLifecycleRunE but can also be used
+// directly for custom lifecycle handlers that need dependency injection but require
+// custom logic beyond the standard HandleLifecycleRunE flow.
 func WrapLifecycleHandler(
 	runtimeContainer *runtime.Runtime,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -80,7 +93,14 @@ func WrapLifecycleHandler(
 	)
 }
 
-// HandleLifecycleRunE orchestrates the standard lifecycle workflow including config loading and timing.
+// HandleLifecycleRunE orchestrates the standard lifecycle workflow.
+// It performs the following steps in order:
+//  1. Start the timer
+//  2. Load the cluster configuration
+//  3. Create a new timer stage
+//  4. Execute the lifecycle action via RunLifecycleWithConfig
+//
+// This function provides the complete workflow for standard lifecycle commands.
 func HandleLifecycleRunE(
 	cmd *cobra.Command,
 	cfgManager *ksailconfigmanager.ConfigManager,
@@ -99,6 +119,8 @@ func HandleLifecycleRunE(
 	return RunLifecycleWithConfig(cmd, deps, config, clusterCfg)
 }
 
+// showLifecycleTitle displays the title message for a lifecycle operation.
+// It prints a blank line followed by the title message with the specified emoji and content.
 func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
 	cmd.Println()
 	notify.WriteMessage(
@@ -112,6 +134,16 @@ func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
 }
 
 // RunLifecycleWithConfig executes a lifecycle command using a pre-loaded cluster configuration.
+// This function is useful when the cluster configuration has already been loaded, avoiding
+// the need to reload it.
+//
+// It performs the following steps:
+//  1. Create the cluster provisioner using the factory
+//  2. Extract the cluster name from the distribution config
+//  3. Execute the lifecycle action
+//  4. Display success message with timing information
+//
+// Returns an error if provisioner creation, cluster name extraction, or the action itself fails.
 func RunLifecycleWithConfig(
 	cmd *cobra.Command,
 	deps LifecycleDeps,
@@ -135,6 +167,16 @@ func RunLifecycleWithConfig(
 	return runLifecycleWithProvisioner(cmd, deps, config, provisioner, clusterName)
 }
 
+// runLifecycleWithProvisioner executes a lifecycle action using a resolved provisioner instance.
+// This is an internal helper that handles the user-facing messaging and action execution.
+//
+// It performs the following steps:
+//  1. Display the lifecycle title
+//  2. Display the activity message
+//  3. Execute the lifecycle action
+//  4. Display success message with timing information
+//
+// Returns an error if the action fails.
 func runLifecycleWithProvisioner(
 	cmd *cobra.Command,
 	deps LifecycleDeps,

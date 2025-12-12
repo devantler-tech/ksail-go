@@ -1,19 +1,25 @@
 package io
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// ErrPathOutsideBase is returned when a file path is outside the specified base directory.
-var ErrPathOutsideBase = errors.New("invalid path: file is outside base directory")
+// File reading operations.
 
-// ReadFileSafe reads the file at path only if it is located within baseDir.
+// ReadFileSafe reads the file at filePath only if it is located within basePath.
 // It resolves absolute paths and rejects reads where the resolved path is
-// outside baseDir (prevents path traversal and accidental file inclusion).
+// outside basePath (prevents path traversal and accidental file inclusion).
+//
+// Parameters:
+//   - basePath: The base directory that filePath must be within
+//   - filePath: The file path to read (must be within basePath)
+//
+// Returns:
+//   - []byte: The file contents
+//   - error: ErrPathOutsideBase if path is outside base, or read error
 func ReadFileSafe(basePath, filePath string) ([]byte, error) {
 	filePath = filepath.Clean(filePath)
 
@@ -29,10 +35,18 @@ func ReadFileSafe(basePath, filePath string) ([]byte, error) {
 	return data, nil
 }
 
+// Path resolution operations.
+
 // FindFile resolves a file path with directory traversal.
 // For absolute paths, returns the path as-is.
 // For relative paths, traverses up from the current directory to find the file.
-// Returns the resolved absolute path if found, or the original path if not found.
+//
+// Parameters:
+//   - filePath: The file path to resolve
+//
+// Returns:
+//   - string: The resolved absolute path if found, or the original path if not found
+//   - error: Error if unable to get current directory
 func FindFile(filePath string) (string, error) {
 	// If absolute path, return as-is
 	if filepath.IsAbs(filePath) {

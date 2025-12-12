@@ -24,24 +24,37 @@ import (
 )
 
 const (
+	// Configuration file names.
+
 	// KindConfigFile is the default filename for Kind distribution configuration.
 	KindConfigFile = "kind.yaml"
+
 	// K3dConfigFile is the default filename for K3d distribution configuration.
 	K3dConfigFile = "k3d.yaml"
+)
+
+const (
+	// Default images.
 
 	// defaultK3sImage pins K3d clusters to a Flux-compatible Kubernetes version.
 	defaultK3sImage = "rancher/k3s:v1.29.4-k3s1"
 )
 
 var (
+	// Scaffolding errors.
+
 	// ErrUnknownDistribution indicates an unsupported distribution was requested.
 	ErrUnknownDistribution = errors.New("unknown distribution")
+
 	// ErrKSailConfigGeneration wraps failures when creating ksail.yaml.
 	ErrKSailConfigGeneration = errors.New("failed to generate ksail configuration")
+
 	// ErrKindConfigGeneration wraps failures when creating Kind configuration.
 	ErrKindConfigGeneration = errors.New("failed to generate kind configuration")
+
 	// ErrK3dConfigGeneration wraps failures when creating K3d configuration.
 	ErrK3dConfigGeneration = errors.New("failed to generate k3d configuration")
+
 	// ErrKustomizationGeneration wraps failures when creating kustomization.yaml.
 	ErrKustomizationGeneration = errors.New("failed to generate kustomization configuration")
 )
@@ -74,7 +87,21 @@ func NewScaffolder(cfg v1alpha1.Cluster, writer io.Writer) *Scaffolder {
 	}
 }
 
+// Main scaffolding operations.
+
 // Scaffold generates project files and configurations.
+//
+// This method orchestrates the generation of:
+//   - ksail.yaml configuration
+//   - Distribution-specific configuration (kind.yaml or k3d.yaml)
+//   - kustomization.yaml in the source directory
+//
+// Parameters:
+//   - output: The output directory for generated files
+//   - force: If true, overwrites existing files; if false, skips existing files
+//
+// Returns:
+//   - error: Any error encountered during scaffolding
 func (s *Scaffolder) Scaffold(output string, force bool) error {
 	previousDistributionConfig := strings.TrimSpace(s.KSailConfig.Spec.DistributionConfig)
 
@@ -97,6 +124,8 @@ func (s *Scaffolder) Scaffold(output string, force bool) error {
 
 	return s.generateKustomizationConfig(output, force)
 }
+
+// Registry configuration helpers.
 
 // GenerateContainerdPatches generates containerd config patches for Kind mirror registry.
 // Input format: "name=upstream" (e.g., "docker.io=https://registry-1.docker.io")
@@ -138,6 +167,8 @@ func (s *Scaffolder) GenerateK3dRegistryConfig() k3dv1alpha5.SimpleConfigRegistr
 
 	return registryConfig
 }
+
+// Distribution configuration builders.
 
 // CreateK3dConfig creates a K3d configuration with distribution-specific settings.
 func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
@@ -191,6 +222,8 @@ func (s *Scaffolder) CreateK3dConfig() k3dv1alpha5.SimpleConfig {
 	return config
 }
 
+// Configuration defaults and helpers.
+
 // applyKSailConfigDefaults applies distribution-specific defaults to the KSail configuration.
 // This ensures the generated ksail.yaml has consistent context and distributionConfig values
 // that match the distribution-specific configuration files being generated.
@@ -213,6 +246,8 @@ func (s *Scaffolder) applyKSailConfigDefaults() v1alpha1.Cluster {
 
 	return config
 }
+
+// File handling helpers.
 
 // checkFileExistsAndSkip checks if a file exists and should be skipped based on force flag.
 // Returns true if the file should be skipped (exists and force=false), false otherwise.
@@ -244,6 +279,8 @@ func (s *Scaffolder) checkFileExistsAndSkip(
 
 	return false, false, time.Time{}
 }
+
+// Template generation helpers.
 
 // GenerationParams groups parameters for generateWithFileHandling.
 type GenerationParams[T any] struct {
@@ -336,6 +373,8 @@ func (s *Scaffolder) notifyFileAction(displayName string, overwritten bool) {
 		Writer:  s.Writer,
 	})
 }
+
+// Configuration file generators.
 
 // generateKSailConfig generates the ksail.yaml configuration file.
 func (s *Scaffolder) generateKSailConfig(output string, force bool) error {
