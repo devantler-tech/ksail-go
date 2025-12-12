@@ -1,11 +1,12 @@
 <!--
 Sync Impact Report:
-- Version: 1.0.1 → 1.0.2
+- Version: 1.0.3 → 1.0.4
 - Modified principles:
-  - V. Test-First Development: Clarified tests must cover public APIs only (no white-box)
-  - VI. Package-First Architecture: Clarified KSail-Go avoids `internal/` to keep packages importable
-- Added sections: None
-- Removed sections: None
+  - V. Test-First Development: Strengthened black-box requirement (public APIs only) and clarified package-level testing convention
+- Added sections:
+  - Development Workflow & Validation: added VS Code workspace navigation guidance
+- Removed sections:
+  - Serena Semantic Tools (references removed; tooling guidance updated)
 - Templates requiring updates:
   ✅ .specify/templates/plan-template.md
   ✅ .specify/templates/spec-template.md
@@ -56,6 +57,7 @@ Sync Impact Report:
 **Requirements**:
 
 - Tests MUST validate behavior via public APIs only (black-box): exported identifiers and CLI surface
+- Tests MUST be written as black-box tests using external test packages (`package <name>_test`) by default
 - Tests MUST NOT assert on unexported functions, unexported fields, or internal implementation details
 - Refactors that do not change public behavior SHOULD NOT require test rewrites
 - `go test ./...` is the baseline test runner; system tests may exist in CI for end-to-end validation
@@ -186,18 +188,18 @@ go build -o ksail .       # Ensure clean build (~1.4s)
 - Linter commands: 120+ seconds minimum
 - Mega-linter: 600+ seconds minimum
 
-### Serena Semantic Tools (CRITICAL)
+### VS Code Workspace Navigation (CRITICAL)
 
-**For ALL analysis, investigation, and code understanding tasks, use Serena semantic tools first.**
+**For ALL analysis, investigation, and code understanding tasks, use targeted workspace tools first.**
 
-**Standard Serena Workflow**:
+**Standard Workflow**:
 
-1. List and read relevant Serena memories for context
-2. Use semantic analysis to find symbols/functions/patterns
-3. Get symbol-level insights and show referencing symbols
-4. Create new memories about findings for future reference
+1. Locate relevant files quickly with glob search (e.g., `file_search`) before opening large files
+2. Find symbol usage sites via reference lookup (e.g., `list_code_usages`) when changing APIs
+3. Prefer semantic or regex search (e.g., `semantic_search`, `grep_search`) over scanning entire files
+4. Read only the necessary sections (targeted reads) to keep context tight and decisions precise
 
-**Rationale**: Serena provides token-efficient, symbol-level code navigation. Avoid reading entire files when targeted semantic search suffices.
+**Rationale**: Targeted navigation is faster and reduces accidental changes. Avoid reading entire files when symbol- or pattern-level search suffices.
 
 ## Governance
 
@@ -225,4 +227,4 @@ This constitution supersedes all other development practices. All pull requests 
 - ✅ Well-suited: Bug fixes, test improvements, documentation, refactoring, dependency updates, CLI enhancements, technical debt
 - ❌ Human-required: Architecture decisions, complex integrations, security-critical changes, production incidents, business logic
 
-**Version**: 1.0.2 | **Ratified**: 2025-11-15 | **Last Amended**: 2025-12-12
+**Version**: 1.0.4 | **Ratified**: 2025-11-15 | **Last Amended**: 2025-12-13

@@ -29,7 +29,10 @@
 
 ## Tests & fixtures
 
-- **Black-box tests only**: tests should only touch exported/public APIs (use `package X_test`) and/or exercise CLI behavior; do not call unexported functions/methods or test internal helpers directly.
+- **Black-box tests only (NON-NEGOTIABLE)**: tests MUST validate exported/public APIs only.
+  - Prefer external test packages: `package <pkg>_test`
+  - It is FORBIDDEN to call unexported functions/methods, access unexported fields, or test internal helpers directly
+  - CLI behavior tests and snapshot tests are allowed when asserting user-visible output
 - Snapshot tests use `github.com/gkampitakis/go-snaps` and write to `__snapshots__/` under the relevant package (e.g. [cmd/**snapshots**/](cmd/__snapshots__/)). Tests typically call `testutils.RunTestMainWithSnapshotCleanup(...)` to keep snapshots deterministic: [pkg/testutils/helpers.go](pkg/testutils/helpers.go).
 
 ## CI expectations (do not regress)
