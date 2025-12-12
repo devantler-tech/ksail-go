@@ -59,6 +59,12 @@ linters:
           - ireturn
         path: pkg/svc/installer/flux/fluxinstance_types.go
       - linters:
+          - ireturn
+        path: pkg/testutils/cni_helpers.go
+      - linters:
+          - ireturn
+        path: pkg/client/kubectl/client.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
       - linters:
