@@ -54,6 +54,9 @@ linters:
         path: pkg/client/flux/client.go
       - linters:
           - ireturn
+        path: pkg/client/kubectl/client.go
+      - linters:
+          - ireturn
         path: pkg/svc/installer/flux/fluxinstance_types.go
       - linters:
           - ireturn

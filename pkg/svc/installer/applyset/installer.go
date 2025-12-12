@@ -29,57 +29,26 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
-// createDefaultDeleteOptions creates a metav1.DeleteOptions with minimal necessary fields.
+// createDefaultDeleteOptions creates a metav1.DeleteOptions with default values.
 func createDefaultDeleteOptions() metav1.DeleteOptions {
 	return metav1.DeleteOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		GracePeriodSeconds: nil,
-		Preconditions:      nil,
-		OrphanDependents:   nil,
-		PropagationPolicy:  nil,
-		DryRun:             nil,
 		IgnoreStoreReadErrorWithClusterBreakingPotential: boolPtr(false),
 	}
 }
 
-// createDefaultGetOptions creates a metav1.GetOptions with all necessary fields.
+// createDefaultGetOptions creates a metav1.GetOptions with default values.
 func createDefaultGetOptions() metav1.GetOptions {
-	return metav1.GetOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		ResourceVersion: "",
-	}
+	return metav1.GetOptions{}
 }
 
-// createDefaultCreateOptions creates a metav1.CreateOptions with all necessary fields.
+// createDefaultCreateOptions creates a metav1.CreateOptions with default values.
 func createDefaultCreateOptions() metav1.CreateOptions {
-	return metav1.CreateOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		DryRun:          nil,
-		FieldManager:    "",
-		FieldValidation: "",
-	}
+	return metav1.CreateOptions{}
 }
 
-// createDefaultUpdateOptions creates a metav1.UpdateOptions with all necessary fields.
+// createDefaultUpdateOptions creates a metav1.UpdateOptions with default values.
 func createDefaultUpdateOptions() metav1.UpdateOptions {
-	return metav1.UpdateOptions{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "",
-			APIVersion: "",
-		},
-		DryRun:          nil,
-		FieldManager:    "",
-		FieldValidation: "",
-	}
+	return metav1.UpdateOptions{}
 }
 
 // ErrCRDNameNotAccepted is returned when CRD names are not accepted.
