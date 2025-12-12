@@ -1,4 +1,4 @@
 ---
 agent: speckit.implement
-model: GPT-5.1-Codex-Max (Preview) (copilot)
+model: GPT-5.2 (Preview) (copilot)
 ---
