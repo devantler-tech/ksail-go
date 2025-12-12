@@ -11,9 +11,8 @@ import (
 	fcolor "github.com/fatih/color"
 )
 
-// MessageType defines the type of notification message.
-type MessageType int
-
+// Message type constants.
+// Each type determines the message styling (color and symbol).
 const (
 	// ErrorType represents an error message (red, with ✗ symbol).
 	ErrorType MessageType = iota
@@ -30,6 +29,9 @@ const (
 	// TitleType represents a title/header message (bold, with emoji (custom or default)).
 	TitleType
 )
+
+// MessageType defines the type of notification message.
+type MessageType int
 
 // Message represents a notification message to be displayed to the user.
 type Message struct {
@@ -95,6 +97,8 @@ func WriteMessage(msg Message) {
 	handleNotifyError(err)
 }
 
+// Message configuration helpers.
+
 // messageConfig holds the styling configuration for each message type.
 type messageConfig struct {
 	symbol string
@@ -147,12 +151,17 @@ func getMessageConfig(msgType MessageType) messageConfig {
 	}
 }
 
+// Error handling helpers.
+
 // handleNotifyError handles errors that occur during notification printing.
+// Errors are logged to stderr rather than returned to avoid disrupting the user experience.
 func handleNotifyError(err error) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "notify: failed to print message: %v\n", err)
 	}
 }
+
+// Timing formatting helpers.
 
 // FormatTiming formats timing durations into a display string using Go's Duration.String() method.
 // Returns "[stage: X|total: Y]" for multi-stage commands when isMultiStage is true.
@@ -166,7 +175,10 @@ func FormatTiming(total, stage time.Duration, isMultiStage bool) string {
 	return fmt.Sprintf("[stage: %s|total: %s]", stage.String(), total.String())
 }
 
+// Content formatting helpers.
+
 // indentMultilineContent indents subsequent lines of multi-line content based on the symbol width.
+// This ensures that multi-line messages are properly aligned with the first line's symbol.
 func indentMultilineContent(content, symbol string) string {
 	if symbol == "" || !strings.Contains(content, "\n") {
 		return content
