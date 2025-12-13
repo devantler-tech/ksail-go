@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	notify "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -486,7 +487,7 @@ func TestActivityMessage_MustBeLowercase(t *testing.T) {
 
 func hasUppercaseLetters(s string) bool {
 	for _, r := range s {
-		if r >= 'A' && r <= 'Z' {
+		if unicode.IsUpper(r) {
 			return true
 		}
 	}
