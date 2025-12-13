@@ -60,7 +60,7 @@ func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Im
 // The returned builder uses the go-containerregistry library to package manifests
 // into OCI artifacts and push them to container registries.
 //
-//nolint:ireturn // returning interface is the intended design pattern
+
 func NewWorkloadArtifactBuilder() WorkloadArtifactBuilder {
 	return &builder{pusher: remoteImagePusher{}}
 }
@@ -142,7 +142,7 @@ func (b *builder) Build(ctx context.Context, opts BuildOptions) (BuildResult, er
 
 // ensurePusher returns the configured pusher or initializes a default remote pusher.
 //
-//nolint:ireturn // returning interface is the intended design pattern
+
 func (b *builder) ensurePusher() imagePusher {
 	if b.pusher != nil {
 		return b.pusher
@@ -211,7 +211,7 @@ func collectManifestFiles(root string) ([]string, error) {
 //
 // Returns an OCI v1.Layer suitable for inclusion in an OCI image.
 //
-//nolint:ireturn // returning interface from go-containerregistry
+
 func newManifestLayer(root string, files []string) (v1.Layer, error) {
 	buf := bytes.NewBuffer(nil)
 	tarWriter := tar.NewWriter(buf)
@@ -296,7 +296,7 @@ func addFileToArchive(tarWriter *tar.Writer, root, path string) error {
 //
 // Returns a complete OCI v1.Image ready for push to a registry.
 //
-//nolint:ireturn // returning interface from go-containerregistry
+
 func buildImage(layer v1.Layer, opts ValidatedBuildOptions) (v1.Image, error) {
 	cfg := &v1.ConfigFile{
 		Architecture: runtime.GOARCH,
