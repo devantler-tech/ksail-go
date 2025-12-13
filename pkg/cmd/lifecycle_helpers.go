@@ -211,9 +211,7 @@ func runLifecycleWithProvisioner(
 			Type:    notify.SuccessType,
 			Content: config.SuccessContent,
 			Timer:   outputTimer,
-			// Lifecycle operations are multi-stage (config load + stage transitions).
-			MultiStage: true,
-			Writer:     cmd.OutOrStdout(),
+			Writer:  cmd.OutOrStdout(),
 		},
 	)
 

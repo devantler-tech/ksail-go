@@ -34,9 +34,8 @@
 //	timer.Start()
 //	// ... perform operation ...
 //	notify.WriteMessage(notify.Message{
-//	    Type:       notify.SuccessType,
-//	    Content:    "Operation complete",
-//	    Timer:      timer,
-//	    MultiStage: true,  // Set based on whether NewStage() was called
+//	    Type:    notify.SuccessType,
+//	    Content: "Operation complete",
+//	    Timer:   timer,
 //	})
 package timer

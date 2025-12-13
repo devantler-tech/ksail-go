@@ -197,11 +197,10 @@ func TestWriteMessage_WithTimer(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "operation complete",
-		Timer:      tmr,
-		Writer:     &out,
-		MultiStage: true,
+		Type:    notify.SuccessType,
+		Content: "operation complete",
+		Timer:   tmr,
+		Writer:  &out,
 	})
 
 	got := out.String()
@@ -235,11 +234,10 @@ func TestWriteMessage_SuccessType_RendersTimingBlock_FormatAndPlacement(t *testi
 	tmr := &fixedTimer{total: 3 * time.Second, stage: 500 * time.Millisecond}
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "completion message",
-		Timer:      tmr,
-		Writer:     &out,
-		MultiStage: true,
+		Type:    notify.SuccessType,
+		Content: "completion message",
+		Timer:   tmr,
+		Writer:  &out,
 	})
 
 	got := out.String()
