@@ -59,8 +59,6 @@ func (remoteImagePusher) Push(ctx context.Context, ref name.Reference, img v1.Im
 //
 // The returned builder uses the go-containerregistry library to package manifests
 // into OCI artifacts and push them to container registries.
-//
-
 func NewWorkloadArtifactBuilder() WorkloadArtifactBuilder {
 	return &builder{pusher: remoteImagePusher{}}
 }

@@ -65,6 +65,9 @@ linters:
           - ireturn
         path: pkg/testutils/cni_helpers.go
       - linters:
+          - ireturn
+        path: pkg/workload/oci/builder_impl.go
+      - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
       - linters:
