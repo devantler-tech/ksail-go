@@ -6,12 +6,12 @@ import (
 	"strings"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	"github.com/devantler-tech/ksail-go/pkg/client/oci"
 	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
-	"github.com/devantler-tech/ksail-go/pkg/workload/oci"
 	"github.com/spf13/cobra"
 )
 

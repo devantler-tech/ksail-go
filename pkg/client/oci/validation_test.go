@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/devantler-tech/ksail-go/pkg/workload/oci"
+	"github.com/devantler-tech/ksail-go/pkg/client/oci"
 	"github.com/stretchr/testify/require"
 )
 
