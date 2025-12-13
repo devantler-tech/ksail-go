@@ -776,11 +776,10 @@ func runRegistryStage(
 		outputTimer := cmdhelpers.MaybeTimer(cmd, deps.Timer)
 
 		notify.WriteMessage(notify.Message{
-			Type:       notify.SuccessType,
-			Content:    info.success,
-			Timer:      outputTimer,
-			Writer:     cmd.OutOrStdout(),
-			MultiStage: true,
+			Type:    notify.SuccessType,
+			Content: info.success,
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
 		})
 
 		return nil
@@ -946,9 +945,7 @@ func runCNIInstallation(
 		Type:    notify.SuccessType,
 		Content: "CNI installed",
 		Timer:   outputTimer,
-		// Uses stage timing (current) + total timing.
-		MultiStage: true,
-		Writer:     cmd.OutOrStdout(),
+		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil
@@ -1112,11 +1109,10 @@ func runMetricsServerInstallation(
 	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "Metrics Server installed",
-		Timer:      outputTimer,
-		MultiStage: true,
-		Writer:     cmd.OutOrStdout(),
+		Type:    notify.SuccessType,
+		Content: "Metrics Server installed",
+		Timer:   outputTimer,
+		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil
@@ -1157,11 +1153,10 @@ func installFluxIfConfigured(
 	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    fluxResourcesSuccess,
-		Timer:      outputTimer,
-		MultiStage: true,
-		Writer:     cmd.OutOrStdout(),
+		Type:    notify.SuccessType,
+		Content: fluxResourcesSuccess,
+		Timer:   outputTimer,
+		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil

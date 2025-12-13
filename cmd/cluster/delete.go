@@ -258,11 +258,10 @@ func executeRegistryCleanup(
 	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "mirror registries deleted",
-		Timer:      outputTimer,
-		Writer:     cmd.OutOrStdout(),
-		MultiStage: true,
+		Type:    notify.SuccessType,
+		Content: "mirror registries deleted",
+		Timer:   outputTimer,
+		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil

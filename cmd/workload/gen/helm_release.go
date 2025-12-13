@@ -282,11 +282,10 @@ func outputHelmRelease(cmd *cobra.Command, yaml string, tmr timer.Timer) error {
 	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
-		Type:       notify.SuccessType,
-		Content:    "generated HelmRelease",
-		Timer:      outputTimer,
-		MultiStage: false,
-		Writer:     cmd.OutOrStdout(),
+		Type:    notify.SuccessType,
+		Content: "generated HelmRelease",
+		Timer:   outputTimer,
+		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil

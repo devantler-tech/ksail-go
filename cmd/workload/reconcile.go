@@ -84,11 +84,10 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 		}
 
 		notify.WriteMessage(notify.Message{
-			Type:       notify.SuccessType,
-			Content:    "artifact pushed",
-			Timer:      outputTimer,
-			MultiStage: true,
-			Writer:     cmd.OutOrStdout(),
+			Type:    notify.SuccessType,
+			Content: "artifact pushed",
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
 		})
 
 		return nil

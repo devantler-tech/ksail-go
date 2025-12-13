@@ -41,9 +41,6 @@ type Message struct {
 	Content string
 	// Timer is optional. If provided, timing information will be appended to the message.
 	Timer timer.Timer
-	// MultiStage MUST be set to true for multi-stage timers (i.e., when the command advances through stages).
-	// If false, the timing output will be rendered in single-stage form regardless of internal durations.
-	MultiStage bool
 	// Emoji is used only for TitleType messages to customize the title icon.
 	Emoji string
 	// Writer is the output destination. If nil, defaults to os.Stdout.

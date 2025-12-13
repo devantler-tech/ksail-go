@@ -142,11 +142,10 @@ func TestTimingFlagEnablesTimingOutput(t *testing.T) {
 			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
 
 			notify.WriteMessage(notify.Message{
-				Type:       notify.SuccessType,
-				Content:    "probe complete",
-				Timer:      outputTimer,
-				MultiStage: true,
-				Writer:     cmd.OutOrStdout(),
+				Type:    notify.SuccessType,
+				Content: "probe complete",
+				Timer:   outputTimer,
+				Writer:  cmd.OutOrStdout(),
 			})
 
 			return nil
