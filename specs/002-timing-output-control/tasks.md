@@ -31,7 +31,7 @@ description: "Task list for Timing Output Control"
 
 - [x] T005 Add global/root persistent `--timing` flag (default false) in cmd/root.go
 - [x] T006 [P] Add helper to read the timing flag consistently (pkg/cmd/flags.go)
-- [x] T007 [P] Document the flag in repo docs (README.md)
+- [x] T007 [P] Document the flag in the docs submodule (docs/configuration/cli-options.md); keep root README brief
 
 **Checkpoint**: `--timing` exists globally and is discoverable in docs.
 
@@ -52,7 +52,6 @@ description: "Task list for Timing Output Control"
 
 - [x] T010 [US1] Gate timing output off by default by not attaching timers unless `--timing` is set (cmd/cluster/create.go, cmd/cluster/delete.go, cmd/cluster/init.go, cmd/workload/reconcile.go)
 - [x] T011 [US1] Update non-cmd code paths that emit success messages with timers to respect `--timing` (pkg/io/config-manager/ksail/manager.go, pkg/cmd/lifecycle_helpers.go)
-
 
 **Checkpoint**: Running the same commands without `--timing` produces unchanged output (no timing lines).
 
