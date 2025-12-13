@@ -467,27 +467,29 @@ func TestActivityMessage_MustBeLowercase(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			hasUppercase := false
-			for _, r := range tc.content {
-				if r >= 'A' && r <= 'Z' {
-					hasUppercase = true
-					break
-				}
+			hasUppercase := hasUppercaseLetters(testCase.content)
+
+			if hasUppercase && !testCase.shouldError {
+				t.Errorf("Expected no uppercase letters in %q but found some", testCase.content)
 			}
 
-			if hasUppercase && !tc.shouldError {
-				t.Errorf("Expected no uppercase letters in %q but found some", tc.content)
-			}
-
-			if !hasUppercase && tc.shouldError {
-				t.Errorf("Expected uppercase letters in %q but found none", tc.content)
+			if !hasUppercase && testCase.shouldError {
+				t.Errorf("Expected uppercase letters in %q but found none", testCase.content)
 			}
 		})
 	}
 }
 
+func hasUppercaseLetters(s string) bool {
+	for _, r := range s {
+		if r >= 'A' && r <= 'Z' {
+			return true
+		}
+	}
+
+	return false
+}
