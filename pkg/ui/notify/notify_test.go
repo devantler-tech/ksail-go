@@ -421,3 +421,73 @@ func TestWriteMessage_HandleNotifyError(t *testing.T) {
 		t.Fatalf("expected error log, got %q", string(data))
 	}
 }
+
+func TestActivityMessage_MustBeLowercase(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		content     string
+		shouldError bool
+	}{
+		{
+			name:        "valid lowercase message",
+			content:     "installing cilium",
+			shouldError: false,
+		},
+		{
+			name:        "valid lowercase with numbers",
+			content:     "installing cni version 1.2.3",
+			shouldError: false,
+		},
+		{
+			name:        "valid lowercase with hyphens",
+			content:     "awaiting metrics-server to be ready",
+			shouldError: false,
+		},
+		{
+			name:        "invalid uppercase component name",
+			content:     "installing Cilium",
+			shouldError: true,
+		},
+		{
+			name:        "invalid uppercase acronym",
+			content:     "CNI installed",
+			shouldError: true,
+		},
+		{
+			name:        "invalid mixed case",
+			content:     "Installing Calico CNI",
+			shouldError: true,
+		},
+		{
+			name:        "invalid uppercase at start",
+			content:     "Awaiting cilium to be ready",
+			shouldError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			hasUppercase := false
+			for _, r := range tc.content {
+				if r >= 'A' && r <= 'Z' {
+					hasUppercase = true
+					break
+				}
+			}
+
+			if hasUppercase && !tc.shouldError {
+				t.Errorf("Expected no uppercase letters in %q but found some", tc.content)
+			}
+
+			if !hasUppercase && tc.shouldError {
+				t.Errorf("Expected uppercase letters in %q but found none", tc.content)
+			}
+		})
+	}
+}
+

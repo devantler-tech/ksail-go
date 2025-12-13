@@ -919,7 +919,7 @@ func runCNIInstallation(
 ) error {
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "installing " + cniName,
+		Content: "installing " + strings.ToLower(cniName),
 		Writer:  cmd.OutOrStdout(),
 	})
 
@@ -930,7 +930,7 @@ func runCNIInstallation(
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.ActivityType,
-		Content: "awaiting " + cniName + " to be ready",
+		Content: "awaiting " + strings.ToLower(cniName) + " to be ready",
 		Writer:  cmd.OutOrStdout(),
 	})
 
@@ -943,7 +943,7 @@ func runCNIInstallation(
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: "CNI installed",
+		Content: "cni installed",
 		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
@@ -1110,7 +1110,7 @@ func runMetricsServerInstallation(
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: "Metrics Server installed",
+		Content: "metrics server installed",
 		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
