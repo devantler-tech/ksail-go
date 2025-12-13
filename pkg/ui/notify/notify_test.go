@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
 	notify "github.com/devantler-tech/ksail-go/pkg/ui/notify"
 	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
@@ -420,4 +421,76 @@ func TestWriteMessage_HandleNotifyError(t *testing.T) {
 	if !strings.Contains(string(data), "notify: failed to print message") {
 		t.Fatalf("expected error log, got %q", string(data))
 	}
+}
+
+func TestActivityMessage_MustBeLowercase(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name        string
+		content     string
+		shouldError bool
+	}{
+		{
+			name:        "valid lowercase message",
+			content:     "installing cilium",
+			shouldError: false,
+		},
+		{
+			name:        "valid lowercase with numbers",
+			content:     "installing cni version 1.2.3",
+			shouldError: false,
+		},
+		{
+			name:        "valid lowercase with hyphens",
+			content:     "awaiting metrics-server to be ready",
+			shouldError: false,
+		},
+		{
+			name:        "invalid uppercase component name",
+			content:     "installing Cilium",
+			shouldError: true,
+		},
+		{
+			name:        "invalid uppercase acronym",
+			content:     "CNI installed",
+			shouldError: true,
+		},
+		{
+			name:        "invalid mixed case",
+			content:     "Installing Calico CNI",
+			shouldError: true,
+		},
+		{
+			name:        "invalid uppercase at start",
+			content:     "Awaiting cilium to be ready",
+			shouldError: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			hasUppercase := hasUppercaseLetters(testCase.content)
+
+			if hasUppercase && !testCase.shouldError {
+				t.Errorf("Expected no uppercase letters in %q but found some", testCase.content)
+			}
+
+			if !hasUppercase && testCase.shouldError {
+				t.Errorf("Expected uppercase letters in %q but found none", testCase.content)
+			}
+		})
+	}
+}
+
+func hasUppercaseLetters(s string) bool {
+	for _, r := range s {
+		if unicode.IsUpper(r) {
+			return true
+		}
+	}
+
+	return false
 }
