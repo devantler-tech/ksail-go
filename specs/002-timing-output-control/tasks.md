@@ -43,12 +43,12 @@ description: "Task list for Timing Output Control"
 
 **Independent Test**: Run representative commands without `--timing` and assert no `⏲` timing lines are printed.
 
-### Tests (write first; ensure failing before implementation)
+### User Story 1 Tests (write first; ensure failing before implementation)
 
 - [x] T008 [P] [US1] Add CLI behavior/snapshot test asserting default output contains no `⏲` (cmd/root_test.go)
 - [x] T009 [P] [US1] Add unit test asserting `--timing` default is false (cmd/root_test.go)
 
-### Implementation
+### User Story 1 Implementation
 
 - [x] T010 [US1] Gate timing output off by default by not attaching timers unless `--timing` is set (cmd/cluster/create.go, cmd/cluster/delete.go, cmd/cluster/init.go, cmd/workload/reconcile.go)
 - [x] T011 [US1] Update non-cmd code paths that emit success messages with timers to respect `--timing` (pkg/io/config-manager/ksail/manager.go, pkg/cmd/lifecycle_helpers.go)
@@ -63,14 +63,14 @@ description: "Task list for Timing Output Control"
 
 **Independent Test**: Run a multi-stage command with `--timing` enabled and assert per-activity timing blocks with monotonic totals.
 
-### Tests (write first; ensure failing before implementation)
+### User Story 2 Tests (write first; ensure failing before implementation)
 
 - [x] T012 [P] [US2] Add notify rendering test for required timing block format with `⏲ current` + `total` lines (pkg/ui/notify/notify_test.go)
 - [x] T013 [P] [US2] Add notify rendering test ensuring the `✔` line remains unchanged and timing block prints immediately after it (pkg/ui/notify/notify_test.go)
 - [x] T014 [P] [US2] Add CLI test asserting `--timing` enables timing output lines (cmd/root_test.go)
 - [x] T015 [P] [US2] Add error-path test ensuring timing output is not printed on failure (cmd/root_test.go)
 
-### Implementation
+### User Story 2 Implementation
 
 - [x] T016 [US2] Replace inline timing suffix formatting with a multi-line timing block renderer (pkg/ui/notify/notify.go)
 - [x] T017 [US2] Ensure durations use Go `time.Duration` string formatting in the timing renderer (pkg/ui/notify/notify.go)

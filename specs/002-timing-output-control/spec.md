@@ -67,7 +67,7 @@ As a CLI user or developer, I want to enable timing output for a single invocati
 
 1. **Given** timing is enabled via the `--timing` flag, **When** an activity/stage completes successfully, **Then** the output includes a timing block matching:
 
-   ```
+   ```text
     ✔ completion message
     ⏲ current: <duration>
       total:  <duration>
@@ -75,7 +75,7 @@ As a CLI user or developer, I want to enable timing output for a single invocati
 
    Where `current` is the time that the current activity took, and `total` is the accumulated time of all activities so far.
 
-And `<duration>` is formatted using Go `time.Duration` string formatting (e.g., `12ms`, `1.2s`, `3m4.5s`).
+   And `<duration>` is formatted using Go `time.Duration` string formatting (e.g., `12ms`, `1.2s`, `3m4.5s`).
 
 2. **Given** timing is enabled via the `--timing` flag, **When** multiple activities/stages complete within a single command run, **Then** each activity completion prints a timing block where `total` is monotonically non-decreasing across the run.
 
@@ -99,7 +99,7 @@ And `<duration>` is formatted using Go `time.Duration` string formatting (e.g., 
 - **FR-002**: Timing output MUST be enable-able via a global/root persistent `--timing` CLI flag (available on all commands and subcommands).
 - **FR-003**: When timing is enabled, the CLI MUST display timing output immediately after each completed activity/stage’s existing `✔` completion message, and the timing block must include the `⏲` label:
 
-  ```
+  ```text
    ✔ completion message
    ⏲ current: <duration>
      total:  <duration>
