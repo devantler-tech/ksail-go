@@ -63,7 +63,7 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 
 		builder := oci.NewWorkloadArtifactBuilder()
 
-		fmt.Println()
+		cmd.Println()
 		notify.WriteMessage(notify.Message{
 			Type:    notify.TitleType,
 			Emoji:   "📦",
