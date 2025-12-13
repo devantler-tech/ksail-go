@@ -174,7 +174,7 @@ func setupRootWithBuffer(out *bytes.Buffer) *cobra.Command {
 
 // timingProbeRunE creates a RunE function that simulates timing operations for testing.
 // It takes a message type, content, and multiStage flag, and returns a function that can be used as a Cobra RunE.
-// When msgType is ErrorType, the function returns errRootTest.
+// When msgType is notify.ErrorType, the returned function will return errRootTest.
 func timingProbeRunE(msgType notify.MessageType, content string, multiStage bool) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		tmr := timer.New()
