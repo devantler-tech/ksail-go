@@ -63,14 +63,29 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 
 		builder := oci.NewWorkloadArtifactBuilder()
 
+		cmd.Println()
 		notify.WriteMessage(notify.Message{
 			Type:    notify.TitleType,
 			Emoji:   "📦",
-			Content: "Build workload artifact...",
+			Content: "Build and Push OCI Artifact...",
 			Writer:  cmd.OutOrStdout(),
 		})
 
 		tmr.NewStage()
+
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "building oci artifact",
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
+		})
+
+		notify.WriteMessage(notify.Message{
+			Type:    notify.ActivityType,
+			Content: "pushing oci artifact",
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
+		})
 
 		_, err = builder.Build(cmd.Context(), oci.BuildOptions{
 			Name:             repoName,
@@ -80,12 +95,12 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 			Version:          artifactVersion,
 		})
 		if err != nil {
-			return fmt.Errorf("build workload artifact: %w", err)
+			return fmt.Errorf("build and push oci artifact: %w", err)
 		}
 
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: "artifact pushed",
+			Content: "oci artifact pushed",
 			Timer:   outputTimer,
 			Writer:  cmd.OutOrStdout(),
 		})

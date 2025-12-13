@@ -37,8 +37,8 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
-	fluxResourcesActivity       = "applying default resources"
-	fluxResourcesSuccess        = "FluxInstance applied"
+	fluxResourcesActivity       = "applying custom resources"
+	fluxResourcesSuccess        = "flux installed"
 )
 
 // ErrUnsupportedCNI is returned when an unsupported CNI type is encountered.
@@ -380,7 +380,7 @@ const (
 
 	fluxStageTitle    = "Install Flux..."
 	fluxStageEmoji    = "☸️"
-	fluxStageActivity = "installing Flux controllers"
+	fluxStageActivity = "installing controllers"
 )
 
 var (
