@@ -189,7 +189,6 @@ func TestWriteMessage_TitleType_DefaultEmoji(t *testing.T) {
 func TestWriteMessage_WithTimer(t *testing.T) {
 	t.Parallel()
 
-	// Updated: explicitly single-stage (MultiStage false)
 	var out bytes.Buffer
 
 	tmr := timer.New()
@@ -202,17 +201,74 @@ func TestWriteMessage_WithTimer(t *testing.T) {
 		Content:    "operation complete",
 		Timer:      tmr,
 		Writer:     &out,
-		MultiStage: false, // explicit single-stage
+		MultiStage: true,
 	})
 
 	got := out.String()
-	// Verify it has the success symbol and timing brackets
-	if !strings.HasPrefix(got, "✔ operation complete [stage: ") { // updated prefix
-		t.Fatalf("output should start with success symbol and have timing, got %q", got)
+	if !strings.HasPrefix(got, "✔ operation complete\n⏲ current: ") {
+		t.Fatalf("output should start with success line and timing block, got %q", got)
 	}
 
-	if !strings.Contains(got, "ms]") && !strings.Contains(got, "µs]") {
-		t.Fatalf("output should contain timing in ms or µs, got %q", got)
+	if !strings.Contains(got, "\n  total:  ") {
+		t.Fatalf("output should include total timing line, got %q", got)
+	}
+}
+
+type fixedTimer struct {
+	total time.Duration
+	stage time.Duration
+}
+
+func (t *fixedTimer) Start() {}
+
+func (t *fixedTimer) NewStage() {}
+
+func (t *fixedTimer) GetTiming() (time.Duration, time.Duration) { return t.total, t.stage }
+
+func (t *fixedTimer) Stop() {}
+
+func TestWriteMessage_SuccessType_RendersTimingBlock_FormatAndPlacement(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	tmr := &fixedTimer{total: 3 * time.Second, stage: 500 * time.Millisecond}
+
+	notify.WriteMessage(notify.Message{
+		Type:       notify.SuccessType,
+		Content:    "completion message",
+		Timer:      tmr,
+		Writer:     &out,
+		MultiStage: true,
+	})
+
+	got := out.String()
+
+	want := "✔ completion message\n⏲ current: 500ms\n  total:  3s\n"
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
+	}
+}
+
+func TestWriteMessage_ErrorType_DoesNotRenderTimingBlock(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	tmr := &fixedTimer{total: time.Second, stage: 10 * time.Millisecond}
+
+	notify.WriteMessage(notify.Message{
+		Type:    notify.ErrorType,
+		Content: "test error",
+		Timer:   tmr,
+		Writer:  &out,
+	})
+
+	got := out.String()
+
+	want := "✗ test error\n"
+	if got != want {
+		t.Fatalf("output mismatch. want %q, got %q", want, got)
 	}
 }
 

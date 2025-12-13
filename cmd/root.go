@@ -6,6 +6,7 @@ import (
 	"github.com/devantler-tech/ksail-go/cmd/cipher"
 	cluster "github.com/devantler-tech/ksail-go/cmd/cluster"
 	"github.com/devantler-tech/ksail-go/cmd/workload"
+	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	"github.com/devantler-tech/ksail-go/pkg/ui/asciiart"
 	errorhandler "github.com/devantler-tech/ksail-go/pkg/ui/error-handler"
@@ -28,6 +29,12 @@ func NewRootCmd(version, commit, date string) *cobra.Command {
 
 	// Set version if available
 	cmd.Version = fmt.Sprintf("%s (Built on %s from Git SHA %s)", version, date, commit)
+
+	cmd.PersistentFlags().Bool(
+		pkgcmd.TimingFlagName,
+		false,
+		"Show per-activity timing output",
+	)
 
 	// Add all subcommands
 	cmd.AddCommand(cluster.NewClusterCmd(runtimeContainer))

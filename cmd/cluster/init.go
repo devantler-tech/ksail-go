@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/io/scaffolder"
@@ -86,16 +87,9 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to resolve configuration for scaffolding: %w", err)
 	}
 
-	var targetPath string
-
-	flagOutputPath := cfgManager.Viper.GetString("output")
-	if flagOutputPath != "" {
-		targetPath = flagOutputPath
-	} else {
-		targetPath, err = os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current directory: %w", err)
-		}
+	targetPath, err := resolveInitTargetPath(cfgManager)
+	if err != nil {
+		return err
 	}
 
 	force := cfgManager.Viper.GetBool("force")
@@ -123,12 +117,28 @@ func HandleInitRunE(
 		return fmt.Errorf("failed to scaffold project files: %w", err)
 	}
 
+	outputTimer := cmdhelpers.MaybeTimer(cmd, deps.Timer)
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
 		Content: "initialized project",
-		Timer:   deps.Timer,
+		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
 
 	return nil
+}
+
+func resolveInitTargetPath(cfgManager *ksailconfigmanager.ConfigManager) (string, error) {
+	flagOutputPath := cfgManager.Viper.GetString("output")
+	if flagOutputPath != "" {
+		return flagOutputPath, nil
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	return wd, nil
 }

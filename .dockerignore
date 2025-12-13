@@ -37,3 +37,7 @@ ksail.yaml
 k3d.yaml
 kind.yaml
 k8s/
+
+# The Docker build expects these files to be present in the build context.
+!Dockerfile
+!ksail

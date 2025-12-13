@@ -4,7 +4,7 @@
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'
-✔ initialized project [stage: 1ms]
+✔ initialized project
 
 ---
 
@@ -13,6 +13,6 @@
 ✚ created 'ksail.yaml'
 ✚ created 'kind.yaml'
 ✚ created 'k8s/kustomization.yaml'
-✔ initialized project [stage: 1ms]
+✔ initialized project
 
 ---

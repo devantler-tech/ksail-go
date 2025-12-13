@@ -3,10 +3,14 @@ package cmd_test
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/devantler-tech/ksail-go/cmd"
+	pkgcmd "github.com/devantler-tech/ksail-go/pkg/cmd"
 	"github.com/devantler-tech/ksail-go/pkg/testutils"
+	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
+	"github.com/devantler-tech/ksail-go/pkg/ui/timer"
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/spf13/cobra"
 )
@@ -54,6 +58,154 @@ func TestExecuteShowsVersion(t *testing.T) {
 	_ = root.Execute()
 
 	snaps.MatchSnapshot(t, out.String())
+}
+
+func TestNewRootCmdTimingFlagDefaultFalse(t *testing.T) {
+	t.Parallel()
+
+	root := cmd.NewRootCmd("test", "test", "test")
+
+	flag := root.PersistentFlags().Lookup(pkgcmd.TimingFlagName)
+	if flag == nil {
+		t.Fatalf("expected persistent flag %q to exist", pkgcmd.TimingFlagName)
+	}
+
+	got, err := root.PersistentFlags().GetBool(pkgcmd.TimingFlagName)
+	if err != nil {
+		t.Fatalf("expected to read %q flag: %v", pkgcmd.TimingFlagName, err)
+	}
+
+	if got {
+		t.Fatalf("expected %q to default to false", pkgcmd.TimingFlagName)
+	}
+}
+
+func TestDefaultRunDoesNotPrintTimingOutput(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("test", "test", "test")
+	root.SetOut(&out)
+	root.SetErr(&out)
+
+	probe := &cobra.Command{
+		Use: "timing-probe",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			tmr := timer.New()
+			tmr.Start()
+
+			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
+
+			notify.WriteMessage(notify.Message{
+				Type:    notify.SuccessType,
+				Content: "probe complete",
+				Timer:   outputTimer,
+				Writer:  cmd.OutOrStdout(),
+			})
+
+			return nil
+		},
+	}
+
+	root.AddCommand(probe)
+	root.SetArgs([]string{"timing-probe"})
+
+	_ = root.Execute()
+
+	got := out.String()
+	if strings.Contains(got, "⏲") {
+		t.Fatalf("expected no timing glyph in default output, got %q", got)
+	}
+
+	if strings.Contains(got, "[stage:") {
+		t.Fatalf("expected no timing bracket output in default output, got %q", got)
+	}
+}
+
+func TestTimingFlagEnablesTimingOutput(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("test", "test", "test")
+	root.SetOut(&out)
+	root.SetErr(&out)
+
+	probe := &cobra.Command{
+		Use:          "timing-probe",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			tmr := timer.New()
+			tmr.Start()
+
+			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
+
+			notify.WriteMessage(notify.Message{
+				Type:       notify.SuccessType,
+				Content:    "probe complete",
+				Timer:      outputTimer,
+				MultiStage: true,
+				Writer:     cmd.OutOrStdout(),
+			})
+
+			return nil
+		},
+	}
+
+	root.AddCommand(probe)
+	root.SetArgs([]string{"--timing", "timing-probe"})
+
+	_ = root.Execute()
+
+	got := out.String()
+	if !strings.Contains(got, "⏲ current:") {
+		t.Fatalf("expected timing block when --timing enabled, got %q", got)
+	}
+
+	if !strings.Contains(got, "total:") {
+		t.Fatalf("expected total timing line when --timing enabled, got %q", got)
+	}
+}
+
+func TestTimingDoesNotPrintOnError(t *testing.T) {
+	t.Parallel()
+
+	var out bytes.Buffer
+
+	root := cmd.NewRootCmd("test", "test", "test")
+	root.SetOut(&out)
+	root.SetErr(&out)
+
+	failing := &cobra.Command{
+		Use:          "timing-fail",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			tmr := timer.New()
+			tmr.Start()
+
+			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
+
+			notify.WriteMessage(notify.Message{
+				Type:    notify.ErrorType,
+				Content: "boom",
+				Timer:   outputTimer,
+				Writer:  cmd.OutOrStdout(),
+			})
+
+			return errRootTest
+		},
+	}
+
+	root.AddCommand(failing)
+	root.SetArgs([]string{"--timing", "timing-fail"})
+
+	_ = root.Execute()
+
+	got := out.String()
+	if strings.Contains(got, "⏲") {
+		t.Fatalf("expected no timing output on errors, got %q", got)
+	}
 }
 
 // newTestCommand creates a cobra.Command for testing with exhaustive field initialization.

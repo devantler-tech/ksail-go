@@ -107,14 +107,20 @@ func HandleLifecycleRunE(
 	deps LifecycleDeps,
 	config LifecycleConfig,
 ) error {
-	deps.Timer.Start()
+	if deps.Timer != nil {
+		deps.Timer.Start()
+	}
 
-	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
+	outputTimer := MaybeTimer(cmd, deps.Timer)
+
+	clusterCfg, err := cfgManager.LoadConfig(outputTimer)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	deps.Timer.NewStage()
+	if deps.Timer != nil {
+		deps.Timer.NewStage()
+	}
 
 	return RunLifecycleWithConfig(cmd, deps, config, clusterCfg)
 }
@@ -198,14 +204,16 @@ func runLifecycleWithProvisioner(
 		return fmt.Errorf("%s: %w", config.ErrorMessagePrefix, err)
 	}
 
-	total, stage := deps.Timer.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
+	outputTimer := MaybeTimer(cmd, deps.Timer)
 
 	notify.WriteMessage(
 		notify.Message{
 			Type:    notify.SuccessType,
-			Content: fmt.Sprintf("%s %s", config.SuccessContent, timingStr),
-			Writer:  cmd.OutOrStdout(),
+			Content: config.SuccessContent,
+			Timer:   outputTimer,
+			// Lifecycle operations are multi-stage (config load + stage transitions).
+			MultiStage: true,
+			Writer:     cmd.OutOrStdout(),
 		},
 	)
 

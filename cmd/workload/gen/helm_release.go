@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	yamlgenerator "github.com/devantler-tech/ksail-go/pkg/io/generator/yaml"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
@@ -278,13 +279,14 @@ func outputHelmRelease(cmd *cobra.Command, yaml string, tmr timer.Timer) error {
 		return errNotImplemented
 	}
 
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, false)
+	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
+
 	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "generated HelmRelease %s",
-		Args:    []any{timingStr},
-		Writer:  cmd.OutOrStdout(),
+		Type:       notify.SuccessType,
+		Content:    "generated HelmRelease",
+		Timer:      outputTimer,
+		MultiStage: false,
+		Writer:     cmd.OutOrStdout(),
 	})
 
 	return nil

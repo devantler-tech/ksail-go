@@ -66,14 +66,6 @@ func WriteMessage(msg Message) {
 		content = fmt.Sprintf(msg.Content, msg.Args...)
 	}
 
-	// Append timing information if timer is provided
-	if msg.Timer != nil {
-		total, stage := msg.Timer.GetTiming()
-		// Use explicit MultiStage flag only; heuristic removed to avoid accidental misclassification.
-		timingStr := FormatTiming(total, stage, msg.MultiStage)
-		content = fmt.Sprintf("%s %s", content, timingStr)
-	}
-
 	// Get message configuration based on type
 	config := getMessageConfig(msg.Type)
 
@@ -95,6 +87,17 @@ func WriteMessage(msg Message) {
 	// Write message with symbol and color
 	_, err := config.color.Fprintf(msg.Writer, "%s%s\n", config.symbol, content)
 	handleNotifyError(err)
+
+	// Emit timing block only for success messages.
+	// This preserves the existing success line unchanged and prints timing immediately after.
+	if msg.Type == SuccessType && msg.Timer != nil {
+		total, stage := msg.Timer.GetTiming()
+
+		_, err = config.color.Fprintf(msg.Writer, "⏲ current: %s\n", stage.String())
+		handleNotifyError(err)
+		_, err = config.color.Fprintf(msg.Writer, "  total:  %s\n", total.String())
+		handleNotifyError(err)
+	}
 }
 
 // Message configuration helpers.
