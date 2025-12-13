@@ -120,10 +120,11 @@ func HandleInitRunE(
 	outputTimer := cmdhelpers.MaybeTimer(cmd, deps.Timer)
 
 	notify.WriteMessage(notify.Message{
-		Type:    notify.SuccessType,
-		Content: "initialized project",
-		Timer:   outputTimer,
-		Writer:  cmd.OutOrStdout(),
+		Type:       notify.SuccessType,
+		Content:    "initialized project",
+		Timer:      outputTimer,
+		MultiStage: true,
+		Writer:     cmd.OutOrStdout(),
 	})
 
 	return nil
