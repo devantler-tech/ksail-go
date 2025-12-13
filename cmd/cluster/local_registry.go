@@ -118,6 +118,7 @@ func newLocalRegistryStageRequest(
 func (r localRegistryStageRequest) run(
 	info registryStageInfo,
 	action func(context.Context, registry.Service, localRegistryContext) error,
+	firstActivityShown *bool,
 ) error {
 	return runLocalRegistryAction(
 		r.cmd,
@@ -127,6 +128,7 @@ func (r localRegistryStageRequest) run(
 		r.k3dConfig,
 		info,
 		action,
+		firstActivityShown,
 		r.options...,
 	)
 }
@@ -139,6 +141,7 @@ func runLocalRegistryAction(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	info registryStageInfo,
 	action func(context.Context, registry.Service, localRegistryContext) error,
+	firstActivityShown *bool,
 	options ...localRegistryOption,
 ) error {
 	if clusterCfg.Spec.LocalRegistry != v1alpha1.LocalRegistryEnabled {
@@ -154,6 +157,7 @@ func runLocalRegistryAction(
 		func(execCtx context.Context, svc registry.Service) error {
 			return action(execCtx, svc, ctx)
 		},
+		firstActivityShown,
 		options...,
 	)
 }
@@ -165,6 +169,7 @@ func executeLocalRegistryStage(
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	stage localRegistryStageType,
+	firstActivityShown *bool,
 	options ...localRegistryOption,
 ) error {
 	info, builder, err := resolveLocalRegistryStage(stage)
@@ -180,6 +185,7 @@ func executeLocalRegistryStage(
 		k3dConfig,
 		info,
 		builder,
+		firstActivityShown,
 		options...,
 	)
 }
@@ -190,6 +196,7 @@ func newLocalRegistryStageExecutor(
 	deps cmdhelpers.LifecycleDeps,
 	kindConfig *kindv1alpha4.Cluster,
 	k3dConfig *k3dv1alpha5.SimpleConfig,
+	firstActivityShown *bool,
 	options ...localRegistryOption,
 ) localRegistryStageExecutor {
 	stage := newLocalRegistryStageRequest(
@@ -202,7 +209,7 @@ func newLocalRegistryStageExecutor(
 	)
 
 	return func(info registryStageInfo, action localRegistryStageAction) error {
-		return stage.run(info, action)
+		return stage.run(info, action, firstActivityShown)
 	}
 }
 
@@ -214,6 +221,7 @@ func runLocalRegistryStageFromBuilder(
 	k3dConfig *k3dv1alpha5.SimpleConfig,
 	info registryStageInfo,
 	buildAction func(*v1alpha1.Cluster) localRegistryStageAction,
+	firstActivityShown *bool,
 	options ...localRegistryOption,
 ) error {
 	executor := newLocalRegistryStageExecutor(
@@ -222,6 +230,7 @@ func runLocalRegistryStageFromBuilder(
 		deps,
 		kindConfig,
 		k3dConfig,
+		firstActivityShown,
 		options...,
 	)
 
@@ -309,6 +318,9 @@ func cleanupLocalRegistryWithOptions(
 		return fmt.Errorf("failed to load distribution config: %w", err)
 	}
 
+	// Cleanup doesn't show title activity messages, so use a dummy tracker
+	dummyTracker := true
+
 	return runLocalRegistryAction(
 		cmd,
 		clusterCfg,
@@ -342,6 +354,7 @@ func cleanupLocalRegistryWithOptions(
 
 			return nil
 		},
+		&dummyTracker,
 		options...,
 	)
 }
@@ -429,6 +442,7 @@ func runLocalRegistryStage(
 	deps cmdhelpers.LifecycleDeps,
 	info registryStageInfo,
 	handler func(context.Context, registry.Service) error,
+	firstActivityShown *bool,
 	options ...localRegistryOption,
 ) error {
 	depsConfig := newLocalRegistryDependencies(options...)
@@ -449,5 +463,6 @@ func runLocalRegistryStage(
 
 			return handler(ctx, service)
 		},
+		firstActivityShown,
 	)
 }

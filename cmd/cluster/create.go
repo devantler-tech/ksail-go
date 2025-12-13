@@ -101,6 +101,9 @@ func handleCreateRunE(
 		return err
 	}
 
+	// Track whether first activity has been shown to manage blank line spacing
+	firstActivityShown := false
+
 	err = ensureLocalRegistriesReady(
 		cmd,
 		clusterCfg,
@@ -108,6 +111,7 @@ func handleCreateRunE(
 		cfgManager,
 		kindConfig,
 		k3dConfig,
+		&firstActivityShown,
 	)
 	if err != nil {
 		return err
@@ -116,7 +120,7 @@ func handleCreateRunE(
 	// Configure metrics-server for K3d before cluster creation
 	setupK3dMetricsServer(clusterCfg, k3dConfig)
 
-	err = executeClusterLifecycle(cmd, clusterCfg, deps)
+	err = executeClusterLifecycle(cmd, clusterCfg, deps, &firstActivityShown)
 	if err != nil {
 		return err
 	}
@@ -128,6 +132,7 @@ func handleCreateRunE(
 		cfgManager,
 		kindConfig,
 		k3dConfig,
+		&firstActivityShown,
 	)
 
 	err = executeLocalRegistryStage(
@@ -137,12 +142,13 @@ func handleCreateRunE(
 		kindConfig,
 		k3dConfig,
 		localRegistryStageConnect,
+		&firstActivityShown,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to connect local registry: %w", err)
 	}
 
-	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer)
+	return handlePostCreationSetup(cmd, clusterCfg, deps.Timer, &firstActivityShown)
 }
 
 func loadClusterConfiguration(
@@ -169,6 +175,7 @@ func ensureLocalRegistriesReady(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
+	firstActivityShown *bool,
 ) error {
 	err := executeLocalRegistryStage(
 		cmd,
@@ -177,6 +184,7 @@ func ensureLocalRegistriesReady(
 		kindConfig,
 		k3dConfig,
 		localRegistryStageProvision,
+		firstActivityShown,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to provision local registry: %w", err)
@@ -189,6 +197,7 @@ func ensureLocalRegistriesReady(
 		cfgManager,
 		kindConfig,
 		k3dConfig,
+		firstActivityShown,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to setup mirror registries: %w", err)
@@ -201,8 +210,14 @@ func executeClusterLifecycle(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	deps cmdhelpers.LifecycleDeps,
+	firstActivityShown *bool,
 ) error {
 	deps.Timer.NewStage()
+
+	if *firstActivityShown {
+		cmd.Println()
+	}
+	*firstActivityShown = true
 
 	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
 	if err != nil {
@@ -219,6 +234,7 @@ func connectMirrorRegistriesWithWarning(
 	cfgManager *ksailconfigmanager.ConfigManager,
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
+	firstActivityShown *bool,
 ) {
 	err := connectRegistriesToClusterNetwork(
 		cmd,
@@ -227,6 +243,7 @@ func connectMirrorRegistriesWithWarning(
 		cfgManager,
 		kindConfig,
 		k3dConfig,
+		firstActivityShown,
 	)
 	if err != nil {
 		notify.WriteMessage(notify.Message{
@@ -243,6 +260,7 @@ func handlePostCreationSetup(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
+	firstActivityShown *bool,
 ) error {
 	var err error
 
@@ -250,11 +268,11 @@ func handlePostCreationSetup(
 	// For default CNI, install metrics-server first as it's independent
 	switch clusterCfg.Spec.CNI {
 	case v1alpha1.CNICilium:
-		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCiliumCNI, firstActivityShown)
 	case v1alpha1.CNICalico:
-		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI)
+		err = installCustomCNIAndMetrics(cmd, clusterCfg, tmr, installCalicoCNI, firstActivityShown)
 	case v1alpha1.CNIDefault, "":
-		err = handleMetricsServer(cmd, clusterCfg, tmr)
+		err = handleMetricsServer(cmd, clusterCfg, tmr, firstActivityShown)
 	default:
 		return fmt.Errorf("%w: %s", ErrUnsupportedCNI, clusterCfg.Spec.CNI)
 	}
@@ -263,7 +281,7 @@ func handlePostCreationSetup(
 		return err
 	}
 
-	return installFluxIfConfigured(cmd, clusterCfg, tmr)
+	return installFluxIfConfigured(cmd, clusterCfg, tmr, firstActivityShown)
 }
 
 // installCustomCNIAndMetrics installs a custom CNI and then metrics-server.
@@ -272,8 +290,12 @@ func installCustomCNIAndMetrics(
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
 	installFunc func(*cobra.Command, *v1alpha1.Cluster, timer.Timer) error,
+	firstActivityShown *bool,
 ) error {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	if *firstActivityShown {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	}
+	*firstActivityShown = true
 
 	tmr.NewStage()
 
@@ -283,7 +305,7 @@ func installCustomCNIAndMetrics(
 	}
 
 	// Install metrics-server after CNI is ready
-	return handleMetricsServer(cmd, clusterCfg, tmr)
+	return handleMetricsServer(cmd, clusterCfg, tmr, firstActivityShown)
 }
 
 func loadDistributionConfigs(
@@ -497,6 +519,7 @@ func makeRegistryStageRunner(role registryStageRole) func(
 	*ksailconfigmanager.ConfigManager,
 	*v1alpha4.Cluster,
 	*v1alpha5.SimpleConfig,
+	*bool,
 ) error {
 	return func(
 		cmd *cobra.Command,
@@ -505,6 +528,7 @@ func makeRegistryStageRunner(role registryStageRole) func(
 		cfgManager *ksailconfigmanager.ConfigManager,
 		kindConfig *v1alpha4.Cluster,
 		k3dConfig *v1alpha5.SimpleConfig,
+		firstActivityShown *bool,
 	) error {
 		return runRegistryStageWithRole(
 			cmd,
@@ -514,6 +538,7 @@ func makeRegistryStageRunner(role registryStageRole) func(
 			kindConfig,
 			k3dConfig,
 			role,
+			firstActivityShown,
 		)
 	}
 }
@@ -661,6 +686,7 @@ func handleRegistryStage(
 	mirrorSpecs []registry.MirrorSpec,
 	kindAction func(context.Context, client.APIClient) error,
 	k3dAction func(context.Context, client.APIClient) error,
+	firstActivityShown *bool,
 ) error {
 	handlers := newRegistryHandlers(
 		clusterCfg,
@@ -677,7 +703,7 @@ func handleRegistryStage(
 		return nil
 	}
 
-	return executeRegistryStage(cmd, deps, info, handler.prepare, handler.action)
+	return executeRegistryStage(cmd, deps, info, handler.prepare, handler.action, firstActivityShown)
 }
 
 func runRegistryStageWithRole(
@@ -688,6 +714,7 @@ func runRegistryStageWithRole(
 	kindConfig *v1alpha4.Cluster,
 	k3dConfig *v1alpha5.SimpleConfig,
 	role registryStageRole,
+	firstActivityShown *bool,
 ) error {
 	mirrorSpecs := registry.ParseMirrorSpecs(
 		cfgManager.Viper.GetStringSlice("mirror-registry"),
@@ -720,6 +747,7 @@ func runRegistryStageWithRole(
 		mirrorSpecs,
 		kindAction,
 		k3dAction,
+		firstActivityShown,
 	)
 }
 
@@ -729,12 +757,13 @@ func executeRegistryStage(
 	info registryStageInfo,
 	shouldPrepare func() bool,
 	action func(context.Context, client.APIClient) error,
+	firstActivityShown *bool,
 ) error {
 	if !shouldPrepare() {
 		return nil
 	}
 
-	return runRegistryStage(cmd, deps, info, action)
+	return runRegistryStage(cmd, deps, info, action, firstActivityShown)
 }
 
 func runRegistryStage(
@@ -742,10 +771,15 @@ func runRegistryStage(
 	deps cmdhelpers.LifecycleDeps,
 	info registryStageInfo,
 	action func(context.Context, client.APIClient) error,
+	firstActivityShown *bool,
 ) error {
 	deps.Timer.NewStage()
 
-	cmd.Println()
+	if *firstActivityShown {
+		cmd.Println()
+	}
+	*firstActivityShown = true
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: info.title,
@@ -1026,7 +1060,7 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 
 // handleMetricsServer manages metrics-server installation based on cluster configuration.
 // For K3d, metrics-server should be disabled via config (handled in setupK3dMetricsServer), not uninstalled.
-func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer) error {
+func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer, firstActivityShown *bool) error {
 	// Check if distribution provides metrics-server by default
 	hasMetricsByDefault := clusterCfg.Spec.Distribution.ProvidesMetricsServerByDefault()
 
@@ -1037,7 +1071,10 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 			return nil
 		}
 
-		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		if *firstActivityShown {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout())
+		}
+		*firstActivityShown = true
 
 		tmr.NewStage()
 
@@ -1122,6 +1159,7 @@ func installFluxIfConfigured(
 	cmd *cobra.Command,
 	clusterCfg *v1alpha1.Cluster,
 	tmr timer.Timer,
+	firstActivityShown *bool,
 ) error {
 	if clusterCfg.Spec.GitOpsEngine != v1alpha1.GitOpsEngineFlux {
 		return nil
@@ -1134,7 +1172,7 @@ func installFluxIfConfigured(
 
 	fluxInstaller := newFluxInstallerForCluster(clusterCfg, helmClient)
 
-	err = runFluxInstallation(cmd, fluxInstaller, tmr)
+	err = runFluxInstallation(cmd, fluxInstaller, tmr, firstActivityShown)
 	if err != nil {
 		return err
 	}
@@ -1178,8 +1216,13 @@ func runFluxInstallation(
 	cmd *cobra.Command,
 	installer installer.Installer,
 	tmr timer.Timer,
+	firstActivityShown *bool,
 ) error {
-	_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	if *firstActivityShown {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout())
+	}
+	*firstActivityShown = true
+
 	notify.WriteMessage(notify.Message{
 		Type:    notify.TitleType,
 		Content: fluxStageTitle,
