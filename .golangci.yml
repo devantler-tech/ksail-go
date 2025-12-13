@@ -51,7 +51,7 @@ linters:
         path: pkg/svc/installer/cni/base.go
       - linters:
           - ireturn
-        path: pkg/workload/oci/service.go
+        path: pkg/client/oci/service.go
       - linters:
           - ireturn
         path: pkg/client/flux/client.go
@@ -66,7 +66,7 @@ linters:
         path: pkg/testutils/cni_helpers.go
       - linters:
           - ireturn
-        path: pkg/workload/oci/builder_impl.go
+        path: pkg/client/oci/builder_impl.go
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go
