@@ -80,7 +80,7 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 			Writer:  cmd.OutOrStdout(),
 		})
 
-    		notify.WriteMessage(notify.Message{
+		notify.WriteMessage(notify.Message{
 			Type:    notify.ActivityType,
 			Content: "pushing oci artifact",
 			Timer:   outputTimer,
