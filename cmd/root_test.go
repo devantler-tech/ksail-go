@@ -84,6 +84,7 @@ func TestDefaultRunDoesNotPrintTimingOutput(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	root := setupRootWithBuffer(&out)
 
 	probe := &cobra.Command{
@@ -110,6 +111,7 @@ func TestTimingFlagEnablesTimingOutput(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	root := setupRootWithBuffer(&out)
 
 	probe := &cobra.Command{
@@ -137,6 +139,7 @@ func TestTimingDoesNotPrintOnError(t *testing.T) {
 	t.Parallel()
 
 	var out bytes.Buffer
+
 	root := setupRootWithBuffer(&out)
 
 	failing := &cobra.Command{
@@ -169,13 +172,18 @@ func setupRootWithBuffer(out *bytes.Buffer) *cobra.Command {
 	root := cmd.NewRootCmd("test", "test", "test")
 	root.SetOut(out)
 	root.SetErr(out)
+
 	return root
 }
 
 // timingProbeRunE creates a RunE function that simulates timing operations for testing.
 // It takes a message type, content, and multiStage flag, and returns a function that can be used as a Cobra RunE.
 // When msgType is notify.ErrorType, the returned function will return errRootTest.
-func timingProbeRunE(msgType notify.MessageType, content string, multiStage bool) func(*cobra.Command, []string) error {
+func timingProbeRunE(
+	msgType notify.MessageType,
+	content string,
+	multiStage bool,
+) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		tmr := timer.New()
 		tmr.Start()
@@ -193,6 +201,7 @@ func timingProbeRunE(msgType notify.MessageType, content string, multiStage bool
 		if msgType == notify.ErrorType {
 			return errRootTest
 		}
+
 		return nil
 	}
 }
