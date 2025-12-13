@@ -37,7 +37,7 @@ import (
 const (
 	// k3sDisableMetricsServerFlag is the K3s flag to disable metrics-server.
 	k3sDisableMetricsServerFlag = "--disable=metrics-server"
-	fluxResourcesActivity       = "setting up custom resources"
+	fluxResourcesActivity       = "applying custom resources"
 	fluxResourcesSuccess        = "flux installed"
 )
 
