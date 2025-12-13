@@ -217,6 +217,7 @@ func executeClusterLifecycle(
 	if *firstActivityShown {
 		cmd.Println()
 	}
+
 	*firstActivityShown = true
 
 	err := cmdhelpers.RunLifecycleWithConfig(cmd, deps, newCreateLifecycleConfig(), clusterCfg)
@@ -295,6 +296,7 @@ func installCustomCNIAndMetrics(
 	if *firstActivityShown {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	}
+
 	*firstActivityShown = true
 
 	tmr.NewStage()
@@ -703,7 +705,14 @@ func handleRegistryStage(
 		return nil
 	}
 
-	return executeRegistryStage(cmd, deps, info, handler.prepare, handler.action, firstActivityShown)
+	return executeRegistryStage(
+		cmd,
+		deps,
+		info,
+		handler.prepare,
+		handler.action,
+		firstActivityShown,
+	)
 }
 
 func runRegistryStageWithRole(
@@ -778,6 +787,7 @@ func runRegistryStage(
 	if *firstActivityShown {
 		cmd.Println()
 	}
+
 	*firstActivityShown = true
 
 	notify.WriteMessage(notify.Message{
@@ -1060,7 +1070,12 @@ func generateContainerdPatchesFromSpecs(mirrorSpecs []string) []string {
 
 // handleMetricsServer manages metrics-server installation based on cluster configuration.
 // For K3d, metrics-server should be disabled via config (handled in setupK3dMetricsServer), not uninstalled.
-func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr timer.Timer, firstActivityShown *bool) error {
+func handleMetricsServer(
+	cmd *cobra.Command,
+	clusterCfg *v1alpha1.Cluster,
+	tmr timer.Timer,
+	firstActivityShown *bool,
+) error {
 	// Check if distribution provides metrics-server by default
 	hasMetricsByDefault := clusterCfg.Spec.Distribution.ProvidesMetricsServerByDefault()
 
@@ -1074,6 +1089,7 @@ func handleMetricsServer(cmd *cobra.Command, clusterCfg *v1alpha1.Cluster, tmr t
 		if *firstActivityShown {
 			_, _ = fmt.Fprintln(cmd.OutOrStdout())
 		}
+
 		*firstActivityShown = true
 
 		tmr.NewStage()
@@ -1221,6 +1237,7 @@ func runFluxInstallation(
 	if *firstActivityShown {
 		_, _ = fmt.Fprintln(cmd.OutOrStdout())
 	}
+
 	*firstActivityShown = true
 
 	notify.WriteMessage(notify.Message{
