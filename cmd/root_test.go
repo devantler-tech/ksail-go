@@ -190,10 +190,10 @@ func timingProbeRunE(
 		outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
 
 		notify.WriteMessage(notify.Message{
-			Type:       msgType,
-			Content:    content,
-			Timer:      outputTimer,
-			Writer:     cmd.OutOrStdout(),
+			Type:    msgType,
+			Content: content,
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
 		})
 
 		if msgType == notify.ErrorType {
