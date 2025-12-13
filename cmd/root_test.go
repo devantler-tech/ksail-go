@@ -194,7 +194,6 @@ func timingProbeRunE(
 			Type:       msgType,
 			Content:    content,
 			Timer:      outputTimer,
-			MultiStage: multiStage,
 			Writer:     cmd.OutOrStdout(),
 		})
 
