@@ -67,6 +67,9 @@ func handleStartRunE(
 		return fmt.Errorf("load distribution configs: %w", err)
 	}
 
+	// Start command's registry connection happens after cluster start, so use a dummy tracker
+	dummyTracker := true
+
 	connectErr := executeLocalRegistryStage(
 		cmd,
 		clusterCfg,
@@ -74,6 +77,7 @@ func handleStartRunE(
 		kindConfig,
 		k3dConfig,
 		localRegistryStageConnect,
+		&dummyTracker,
 	)
 	if connectErr != nil {
 		return fmt.Errorf("connect local registry: %w", connectErr)

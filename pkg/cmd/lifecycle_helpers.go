@@ -126,9 +126,7 @@ func HandleLifecycleRunE(
 }
 
 // showLifecycleTitle displays the title message for a lifecycle operation.
-// It prints a blank line followed by the title message with the specified emoji and content.
 func showLifecycleTitle(cmd *cobra.Command, emoji, content string) {
-	cmd.Println()
 	notify.WriteMessage(
 		notify.Message{
 			Type:    notify.TitleType,
