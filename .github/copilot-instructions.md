@@ -39,3 +39,11 @@
 
 - CI runs an end-to-end matrix that executes the built binary through: `cluster init` → `cluster create` → `cluster list` → workload ops → stop/start/delete, across Kind/K3d and options (CNI/Flux/mirror registries/metrics). See [.github/workflows/ci.yaml](.github/workflows/ci.yaml).
 - A separate workflow job regenerates JSON schema and auto-commits changes via [.github/scripts/generate-schema.sh](.github/scripts/generate-schema.sh).
+
+## Active Technologies
+
+- Go 1.25.4 + Cobra CLI (`github.com/spf13/cobra`), DI runtime (`github.com/samber/do/v2`), output styling (`github.com/fatih/color`) (002-timing-output-control)
+
+## Recent Changes
+
+- 002-timing-output-control: Added Go 1.25.4 + Cobra CLI (`github.com/spf13/cobra`), DI runtime (`github.com/samber/do/v2`), output styling (`github.com/fatih/color`)

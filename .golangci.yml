@@ -30,6 +30,9 @@ linters:
         path: pkg/client/docker/engine.go
       - linters:
           - ireturn
+        path: pkg/cmd/flags.go
+      - linters:
+          - ireturn
         path: cmd/cluster/list_test.go
       - linters:
           - ireturn
@@ -63,7 +66,7 @@ linters:
         path: pkg/testutils/cni_helpers.go
       - linters:
           - ireturn
-        path: pkg/client/kubectl/client.go
+        path: pkg/workload/oci/builder_impl.go
       - linters:
           - nlreturn
         path: pkg/scaffolder/scaffolder_test.go

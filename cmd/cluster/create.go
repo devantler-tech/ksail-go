@@ -94,7 +94,9 @@ func handleCreateRunE(
 ) error {
 	deps.Timer.Start()
 
-	clusterCfg, kindConfig, k3dConfig, err := loadClusterConfiguration(cfgManager, deps)
+	outputTimer := cmdhelpers.MaybeTimer(cmd, deps.Timer)
+
+	clusterCfg, kindConfig, k3dConfig, err := loadClusterConfiguration(cfgManager, outputTimer)
 	if err != nil {
 		return err
 	}
@@ -145,14 +147,14 @@ func handleCreateRunE(
 
 func loadClusterConfiguration(
 	cfgManager *ksailconfigmanager.ConfigManager,
-	deps cmdhelpers.LifecycleDeps,
+	tmr timer.Timer,
 ) (*v1alpha1.Cluster, *v1alpha4.Cluster, *v1alpha5.SimpleConfig, error) {
-	clusterCfg, err := cfgManager.LoadConfig(deps.Timer)
+	clusterCfg, err := cfgManager.LoadConfig(tmr)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
 
-	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, deps.Timer)
+	kindConfig, k3dConfig, err := loadDistributionConfigs(clusterCfg, tmr)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -771,12 +773,13 @@ func runRegistryStage(
 			return fmt.Errorf("%s: %w", info.failurePrefix, err)
 		}
 
+		outputTimer := cmdhelpers.MaybeTimer(cmd, deps.Timer)
+
 		notify.WriteMessage(notify.Message{
-			Type:       notify.SuccessType,
-			Content:    info.success,
-			Timer:      deps.Timer,
-			Writer:     cmd.OutOrStdout(),
-			MultiStage: true,
+			Type:    notify.SuccessType,
+			Content: info.success,
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
 		})
 
 		return nil
@@ -936,12 +939,12 @@ func runCNIInstallation(
 		return fmt.Errorf("%s readiness check failed: %w", cniName, readinessErr)
 	}
 
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
+	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: "CNI installed " + timingStr,
+		Content: "CNI installed",
+		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
 
@@ -1103,12 +1106,12 @@ func runMetricsServerInstallation(
 		return fmt.Errorf("metrics-server installation failed: %w", installErr)
 	}
 
-	total, stage := tmr.GetTiming()
-	timingStr := notify.FormatTiming(total, stage, true)
+	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: "Metrics Server installed " + timingStr,
+		Content: "Metrics Server installed",
+		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
 
@@ -1147,12 +1150,12 @@ func installFluxIfConfigured(
 		return fmt.Errorf("failed to configure Flux resources: %w", err)
 	}
 
-	total, stage := tmr.GetTiming()
-	timing := notify.FormatTiming(total, stage, true)
+	outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
 
 	notify.WriteMessage(notify.Message{
 		Type:    notify.SuccessType,
-		Content: fmt.Sprintf("%s %s", fluxResourcesSuccess, timing),
+		Content: fluxResourcesSuccess,
+		Timer:   outputTimer,
 		Writer:  cmd.OutOrStdout(),
 	})
 

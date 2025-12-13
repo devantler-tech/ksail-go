@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	v1alpha1 "github.com/devantler-tech/ksail-go/pkg/apis/cluster/v1alpha1"
+	cmdhelpers "github.com/devantler-tech/ksail-go/pkg/cmd"
 	runtime "github.com/devantler-tech/ksail-go/pkg/di"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
 	"github.com/devantler-tech/ksail-go/pkg/ui/notify"
@@ -36,7 +37,9 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 		fieldSelectors := ksailconfigmanager.DefaultClusterFieldSelectors()
 		cfgManager := ksailconfigmanager.NewCommandConfigManager(cmd, fieldSelectors)
 
-		clusterCfg, err := cfgManager.LoadConfig(tmr)
+		outputTimer := cmdhelpers.MaybeTimer(cmd, tmr)
+
+		clusterCfg, err := cfgManager.LoadConfig(outputTimer)
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
 		}
@@ -80,10 +83,10 @@ func NewReconcileCmd(_ *runtime.Runtime) *cobra.Command {
 			return fmt.Errorf("build workload artifact: %w", err)
 		}
 
-		total, stage := tmr.GetTiming()
 		notify.WriteMessage(notify.Message{
 			Type:    notify.SuccessType,
-			Content: "artifact pushed " + notify.FormatTiming(total, stage, true),
+			Content: "artifact pushed",
+			Timer:   outputTimer,
 			Writer:  cmd.OutOrStdout(),
 		})
 

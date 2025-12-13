@@ -22,17 +22,16 @@ megalinter-reports/
 report/
 
 # Exclude environment and log files
+Dockerfile*
 .env*
 *.log*
-Dockerfile*
 .dockerignore
 
 # Exclude documentation specs from Docker context
 specs/
 docs/
 
-# Exclude generated KSail configs
-ksail
+# Exclude generated KSail config files
 ksail.yaml
 k3d.yaml
 kind.yaml

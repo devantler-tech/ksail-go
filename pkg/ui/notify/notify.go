@@ -39,11 +39,9 @@ type Message struct {
 	Type MessageType
 	// Content is the main message text to display.
 	Content string
-	// Timer is optional. If provided, timing information will be appended to the message.
+	// Timer is optional. If provided and the message type is SuccessType,
+	// timing information will be printed in a separate block after the message.
 	Timer timer.Timer
-	// MultiStage MUST be set to true for multi-stage timers (i.e., when the command advances through stages).
-	// If false, the timing output will be rendered in single-stage form regardless of internal durations.
-	MultiStage bool
 	// Emoji is used only for TitleType messages to customize the title icon.
 	Emoji string
 	// Writer is the output destination. If nil, defaults to os.Stdout.
@@ -64,14 +62,6 @@ func WriteMessage(msg Message) {
 	content := msg.Content
 	if len(msg.Args) > 0 {
 		content = fmt.Sprintf(msg.Content, msg.Args...)
-	}
-
-	// Append timing information if timer is provided
-	if msg.Timer != nil {
-		total, stage := msg.Timer.GetTiming()
-		// Use explicit MultiStage flag only; heuristic removed to avoid accidental misclassification.
-		timingStr := FormatTiming(total, stage, msg.MultiStage)
-		content = fmt.Sprintf("%s %s", content, timingStr)
 	}
 
 	// Get message configuration based on type
@@ -95,6 +85,17 @@ func WriteMessage(msg Message) {
 	// Write message with symbol and color
 	_, err := config.color.Fprintf(msg.Writer, "%s%s\n", config.symbol, content)
 	handleNotifyError(err)
+
+	// Emit timing block only for success messages.
+	// This preserves the existing success line unchanged and prints timing immediately after.
+	if msg.Type == SuccessType && msg.Timer != nil {
+		total, stage := msg.Timer.GetTiming()
+
+		_, err = config.color.Fprintf(msg.Writer, "⏲ current: %s\n", stage.String())
+		handleNotifyError(err)
+		_, err = config.color.Fprintf(msg.Writer, "  total:  %s\n", total.String())
+		handleNotifyError(err)
+	}
 }
 
 // Message configuration helpers.

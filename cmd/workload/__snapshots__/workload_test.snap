@@ -92,6 +92,9 @@ Flags:
       --validate string[="strict"]      Must be one of: strict (or true), warn, ignore (or false). "true" or "strict" will use a schema to validate the input and fail the request if invalid. It will perform server side validation if ServerSideFieldValidation is enabled on the api-server, but will fall back to less reliable client-side validation if not. "warn" will warn about unknown or duplicate fields without blocking the request if server-side field validation is enabled on the API server, and behave as "ignore" otherwise. "false" or "ignore" will not perform any schema validation, silently dropping any unknown or duplicate fields. (default "strict")
       --wait                            If true, wait for resources to be gone before returning. This waits for finalizers.
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 Use "ksail workload apply [command] --help" for more information about a command.
 
 ---
@@ -153,7 +156,69 @@ Flags:
       --validate string[="strict"]     Must be one of: strict (or true), warn, ignore (or false). "true" or "strict" will use a schema to validate the input and fail the request if invalid. It will perform server side validation if ServerSideFieldValidation is enabled on the api-server, but will fall back to less reliable client-side validation if not. "warn" will warn about unknown or duplicate fields without blocking the request if server-side field validation is enabled on the API server, and behave as "ignore" otherwise. "false" or "ignore" will not perform any schema validation, silently dropping any unknown or duplicate fields. (default "strict")
       --windows-line-endings           Only relevant if --edit=true. Defaults to the line ending native to your platform.
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 Use "ksail workload create [command] --help" for more information about a command.
+
+---
+
+[TestWorkloadHelpSnapshots/create_kustomization - 1]
+Create or update a Kustomization resource using Flux APIs
+
+Usage:
+  ksail workload create kustomization [name] [flags]
+
+Examples:
+  # Create a Kustomization from a GitRepository source
+  ksail workload create kustomization podinfo \
+    --source=GitRepository/podinfo \
+    --path="./kustomize" \
+    --prune=true \
+    --interval=5m
+
+  # Create a Kustomization with a target namespace
+  ksail workload create kustomization podinfo \
+    --source=GitRepository/podinfo \
+    --path="./kustomize" \
+    --target-namespace=default \
+    --prune=true
+
+Flags:
+      --depends-on strings        Kustomization that must be ready before this one
+      --export                    export in YAML format to stdout
+  -h, --help                      help for kustomization
+      --interval duration         reconciliation interval (default 1m0s)
+      --path string               path to the directory containing a kustomization.yaml file (default "./")
+      --prune                     enable garbage collection
+      --source string             source name in format 'Kind/name' or 'Kind/name.namespace'
+      --source-kind string        source kind (GitRepository, OCIRepository, Bucket) (default "GitRepository")
+      --target-namespace string   overrides the namespace of all Kustomization objects
+      --wait                      enable health checking
+
+Global Flags:
+      --timing   Show per-activity timing output
+
+---
+
+[TestWorkloadHelpSnapshots/create_source - 1]
+Create or update Flux sources
+
+Usage:
+  ksail workload create source [command]
+
+Available Commands:
+  git         Create or update a GitRepository source
+  helm        Create or update a HelmRepository source
+  oci         Create or update an OCIRepository source
+
+Flags:
+  -h, --help   help for source
+
+Global Flags:
+      --timing   Show per-activity timing output
+
+Use "ksail workload create source [command] --help" for more information about a command.
 
 ---
 
@@ -215,6 +280,9 @@ Flags:
       --timeout duration                The length of time to wait before giving up on a delete, zero means determine a timeout from the size of the object
       --wait                            If true, wait for resources to be gone before returning. This waits for finalizers. (default true)
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 ---
 
 [TestWorkloadHelpSnapshots/describe - 1]
@@ -252,6 +320,9 @@ Flags:
   -R, --recursive          Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests organized within the same directory.
   -l, --selector string    Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label constraints.
       --show-events        If true, display events related to the described object. (default true)
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -292,6 +363,9 @@ Flags:
       --template string               Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
       --validate string[="strict"]    Must be one of: strict (or true), warn, ignore (or false). "true" or "strict" will use a schema to validate the input and fail the request if invalid. It will perform server side validation if ServerSideFieldValidation is enabled on the api-server, but will fall back to less reliable client-side validation if not. "warn" will warn about unknown or duplicate fields without blocking the request if server-side field validation is enabled on the API server, and behave as "ignore" otherwise. "false" or "ignore" will not perform any schema validation, silently dropping any unknown or duplicate fields. (default "strict")
       --windows-line-endings          Defaults to the line ending native to your platform.
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -334,6 +408,9 @@ Flags:
   -i, --stdin                          Pass stdin to the container
   -t, --tty                            Stdin is a TTY
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 ---
 
 [TestWorkloadHelpSnapshots/explain - 1]
@@ -363,6 +440,9 @@ Flags:
   -h, --help                 help for explain
   -o, --output string        Format in which to render the schema (plaintext, plaintext-openapiv2) (default "plaintext")
       --recursive            Print the fields of fields (Currently only 1 level deep)
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -419,6 +499,9 @@ Flags:
       --target-port string             Name or number for the port on the container that the service should direct traffic to. Optional.
       --template string                Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
       --type string                    Type for this service: ClusterIP, NodePort, LoadBalancer, or ExternalName. Default is 'ClusterIP'.
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -497,6 +580,9 @@ Flags:
   -w, --watch                         After listing/getting the requested object, watch for changes.
       --watch-only                    Watch for changes to the requested object(s), without listing/getting first.
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 ---
 
 [TestWorkloadHelpSnapshots/install - 1]
@@ -511,6 +597,9 @@ Flags:
   -h, --help               help for install
   -n, --namespace string   namespace scope for the request (default "default")
       --wait               wait until resources are ready
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -594,6 +683,9 @@ Flags:
       --tail int                           Lines of recent log file to display. Defaults to -1 with no selector, showing all log lines otherwise 10, if a selector is provided. (default -1)
       --timestamps                         Include timestamps on each line in the log output
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 ---
 
 [TestWorkloadHelpSnapshots/namespace - 1]
@@ -624,6 +716,9 @@ Available Commands:
 Flags:
   -h, --help   help for workload
 
+Global Flags:
+      --timing   Show per-activity timing output
+
 Use "ksail workload [command] --help" for more information about a command.
 
 ---
@@ -636,6 +731,9 @@ Usage:
 
 Flags:
   -h, --help   help for reconcile
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -669,6 +767,9 @@ Available Commands:
 
 Flags:
   -h, --help   help for rollout
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 Use "ksail workload rollout [command] --help" for more information about a command.
 
@@ -713,58 +814,8 @@ Flags:
       --template string                Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
       --timeout duration               The length of time to wait before giving up on a scale operation, zero means don't wait. Any other values should contain a corresponding time unit (e.g. 1s, 2m, 3h).
 
----
-
-[TestWorkloadHelpSnapshots/create_source - 1]
-Create or update Flux sources
-
-Usage:
-  ksail workload create source [command]
-
-Available Commands:
-  git         Create or update a GitRepository source
-  helm        Create or update a HelmRepository source
-  oci         Create or update an OCIRepository source
-
-Flags:
-  -h, --help   help for source
-
-Use "ksail workload create source [command] --help" for more information about a command.
-
----
-
-[TestWorkloadHelpSnapshots/create_kustomization - 1]
-Create or update a Kustomization resource using Flux APIs
-
-Usage:
-  ksail workload create kustomization [name] [flags]
-
-Examples:
-  # Create a Kustomization from a GitRepository source
-  ksail workload create kustomization podinfo \
-    --source=GitRepository/podinfo \
-    --path="./kustomize" \
-    --prune=true \
-    --interval=5m
-
-  # Create a Kustomization with a target namespace
-  ksail workload create kustomization podinfo \
-    --source=GitRepository/podinfo \
-    --path="./kustomize" \
-    --target-namespace=default \
-    --prune=true
-
-Flags:
-      --depends-on strings        Kustomization that must be ready before this one
-      --export                    export in YAML format to stdout
-  -h, --help                      help for kustomization
-      --interval duration         reconciliation interval (default 1m0s)
-      --path string               path to the directory containing a kustomization.yaml file (default "./")
-      --prune                     enable garbage collection
-      --source string             source name in format 'Kind/name' or 'Kind/name.namespace'
-      --source-kind string        source kind (GitRepository, OCIRepository, Bucket) (default "GitRepository")
-      --target-namespace string   overrides the namespace of all Kustomization objects
-      --wait                      enable health checking
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---
 
@@ -813,5 +864,8 @@ Flags:
       --show-managed-fields           If true, keep the managedFields when printing objects in JSON or YAML format.
       --template string               Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
       --timeout duration              The length of time to wait before giving up. Zero means check once and don't wait, negative means wait for a week. (default 30s)
+
+Global Flags:
+      --timing   Show per-activity timing output
 
 ---

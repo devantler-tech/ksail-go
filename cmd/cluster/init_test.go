@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	clusterpkg "github.com/devantler-tech/ksail-go/cmd/cluster"
 	ksailconfigmanager "github.com/devantler-tech/ksail-go/pkg/io/config-manager/ksail"
@@ -252,7 +251,6 @@ func newInitDeps(t *testing.T) clusterpkg.InitDeps {
 	tmr := timermocks.NewMockTimer(t)
 	tmr.EXPECT().Start().Return()
 	tmr.EXPECT().NewStage().Return()
-	tmr.EXPECT().GetTiming().Return(time.Millisecond, time.Millisecond)
 
 	return clusterpkg.InitDeps{Timer: tmr}
 }
