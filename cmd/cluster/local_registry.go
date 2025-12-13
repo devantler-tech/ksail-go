@@ -44,11 +44,11 @@ func newLocalRegistryDependencies(opts ...localRegistryOption) localRegistryDepe
 
 func localRegistryProvisionStageInfo() registryStageInfo {
 	return registryStageInfo{
-		title:         "Provision local registry...",
+		title:         "Create local registry...",
 		emoji:         "🗄️",
-		activity:      "provisioning local registry",
-		success:       "local registry provisioned",
-		failurePrefix: "failed to provision local registry",
+		activity:      "creating local registry",
+		success:       "local registry created",
+		failurePrefix: "failed to create local registry",
 	}
 }
 
@@ -64,11 +64,11 @@ func localRegistryConnectStageInfo() registryStageInfo {
 
 func localRegistryCleanupStageInfo() registryStageInfo {
 	return registryStageInfo{
-		title:         "Cleanup local registry...",
+		title:         "Delete local registry...",
 		emoji:         "🧹",
-		activity:      "cleaning up local registry",
-		success:       "local registry cleaned up",
-		failurePrefix: "failed to cleanup local registry",
+		activity:      "deleting local registry",
+		success:       "local registry deleted",
+		failurePrefix: "failed to delete local registry",
 	}
 }
 
