@@ -7,5 +7,3 @@ https://registry-1.docker.io/
 # GitHub repository paths used in kustomize (not web URLs)
 https://github.com/stefanprodan/podinfo//kustomize
 
-# Copilot instructions file uses repo-relative paths for Copilot understanding
-.github/copilot-instructions.md
