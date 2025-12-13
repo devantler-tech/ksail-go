@@ -24,20 +24,17 @@ report/
 # Exclude environment and log files
 .env*
 *.log*
-Dockerfile*
 .dockerignore
+
+# Exclude Dockerfile variants (keep main Dockerfile)
+Dockerfile.*
 
 # Exclude documentation specs from Docker context
 specs/
 docs/
 
-# Exclude generated KSail configs
-ksail
+# Exclude generated KSail config files (keep ksail binary for Docker build)
 ksail.yaml
 k3d.yaml
 kind.yaml
 k8s/
-
-# The Docker build expects these files to be present in the build context.
-!Dockerfile
-!ksail

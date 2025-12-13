@@ -85,27 +85,11 @@ func TestDefaultRunDoesNotPrintTimingOutput(t *testing.T) {
 
 	var out bytes.Buffer
 
-	root := cmd.NewRootCmd("test", "test", "test")
-	root.SetOut(&out)
-	root.SetErr(&out)
+	root := setupRootWithBuffer(&out)
 
 	probe := &cobra.Command{
-		Use: "timing-probe",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			tmr := timer.New()
-			tmr.Start()
-
-			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
-
-			notify.WriteMessage(notify.Message{
-				Type:    notify.SuccessType,
-				Content: "probe complete",
-				Timer:   outputTimer,
-				Writer:  cmd.OutOrStdout(),
-			})
-
-			return nil
-		},
+		Use:  "timing-probe",
+		RunE: timingProbeRunE(notify.SuccessType, "probe complete", false),
 	}
 
 	root.AddCommand(probe)
@@ -128,28 +112,12 @@ func TestTimingFlagEnablesTimingOutput(t *testing.T) {
 
 	var out bytes.Buffer
 
-	root := cmd.NewRootCmd("test", "test", "test")
-	root.SetOut(&out)
-	root.SetErr(&out)
+	root := setupRootWithBuffer(&out)
 
 	probe := &cobra.Command{
 		Use:          "timing-probe",
 		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			tmr := timer.New()
-			tmr.Start()
-
-			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
-
-			notify.WriteMessage(notify.Message{
-				Type:    notify.SuccessType,
-				Content: "probe complete",
-				Timer:   outputTimer,
-				Writer:  cmd.OutOrStdout(),
-			})
-
-			return nil
-		},
+		RunE:         timingProbeRunE(notify.SuccessType, "probe complete", true),
 	}
 
 	root.AddCommand(probe)
@@ -172,28 +140,12 @@ func TestTimingDoesNotPrintOnError(t *testing.T) {
 
 	var out bytes.Buffer
 
-	root := cmd.NewRootCmd("test", "test", "test")
-	root.SetOut(&out)
-	root.SetErr(&out)
+	root := setupRootWithBuffer(&out)
 
 	failing := &cobra.Command{
 		Use:          "timing-fail",
 		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			tmr := timer.New()
-			tmr.Start()
-
-			outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
-
-			notify.WriteMessage(notify.Message{
-				Type:    notify.ErrorType,
-				Content: "boom",
-				Timer:   outputTimer,
-				Writer:  cmd.OutOrStdout(),
-			})
-
-			return errRootTest
-		},
+		RunE:         timingProbeRunE(notify.ErrorType, "boom", false),
 	}
 
 	root.AddCommand(failing)
@@ -212,6 +164,45 @@ func newTestCommand(use string, runE func(*cobra.Command, []string) error) *cobr
 	return &cobra.Command{
 		Use:  use,
 		RunE: runE,
+	}
+}
+
+// setupRootWithBuffer creates a root command configured with the provided buffer for output.
+func setupRootWithBuffer(out *bytes.Buffer) *cobra.Command {
+	root := cmd.NewRootCmd("test", "test", "test")
+	root.SetOut(out)
+	root.SetErr(out)
+
+	return root
+}
+
+// timingProbeRunE creates a RunE function that simulates timing operations for testing.
+// It takes a message type, content, and multiStage flag, and returns a function that can be used as a Cobra RunE.
+// When msgType is notify.ErrorType, the returned function will return errRootTest.
+func timingProbeRunE(
+	msgType notify.MessageType,
+	content string,
+	multiStage bool,
+) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		tmr := timer.New()
+		tmr.Start()
+
+		outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
+
+		notify.WriteMessage(notify.Message{
+			Type:       msgType,
+			Content:    content,
+			Timer:      outputTimer,
+			MultiStage: multiStage,
+			Writer:     cmd.OutOrStdout(),
+		})
+
+		if msgType == notify.ErrorType {
+			return errRootTest
+		}
+
+		return nil
 	}
 }
 
