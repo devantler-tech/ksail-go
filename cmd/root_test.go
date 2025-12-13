@@ -89,7 +89,7 @@ func TestDefaultRunDoesNotPrintTimingOutput(t *testing.T) {
 
 	probe := &cobra.Command{
 		Use:  "timing-probe",
-		RunE: timingProbeRunE(notify.SuccessType, "probe complete", false),
+		RunE: timingProbeRunE(notify.SuccessType, "probe complete"),
 	}
 
 	root.AddCommand(probe)
@@ -117,7 +117,7 @@ func TestTimingFlagEnablesTimingOutput(t *testing.T) {
 	probe := &cobra.Command{
 		Use:          "timing-probe",
 		SilenceUsage: true,
-		RunE:         timingProbeRunE(notify.SuccessType, "probe complete", true),
+		RunE:         timingProbeRunE(notify.SuccessType, "probe complete"),
 	}
 
 	root.AddCommand(probe)
@@ -145,7 +145,7 @@ func TestTimingDoesNotPrintOnError(t *testing.T) {
 	failing := &cobra.Command{
 		Use:          "timing-fail",
 		SilenceUsage: true,
-		RunE:         timingProbeRunE(notify.ErrorType, "boom", false),
+		RunE:         timingProbeRunE(notify.ErrorType, "boom"),
 	}
 
 	root.AddCommand(failing)
@@ -177,12 +177,11 @@ func setupRootWithBuffer(out *bytes.Buffer) *cobra.Command {
 }
 
 // timingProbeRunE creates a RunE function that simulates timing operations for testing.
-// It takes a message type, content, and multiStage flag, and returns a function that can be used as a Cobra RunE.
+// It takes a message type and content, and returns a function that can be used as a Cobra RunE.
 // When msgType is notify.ErrorType, the returned function will return errRootTest.
 func timingProbeRunE(
 	msgType notify.MessageType,
 	content string,
-	multiStage bool,
 ) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		tmr := timer.New()
@@ -191,11 +190,10 @@ func timingProbeRunE(
 		outputTimer := pkgcmd.MaybeTimer(cmd, tmr)
 
 		notify.WriteMessage(notify.Message{
-			Type:       msgType,
-			Content:    content,
-			Timer:      outputTimer,
-			MultiStage: multiStage,
-			Writer:     cmd.OutOrStdout(),
+			Type:    msgType,
+			Content: content,
+			Timer:   outputTimer,
+			Writer:  cmd.OutOrStdout(),
 		})
 
 		if msgType == notify.ErrorType {
