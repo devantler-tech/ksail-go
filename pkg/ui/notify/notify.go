@@ -39,7 +39,7 @@ type Message struct {
 	Type MessageType
 	// Content is the main message text to display.
 	Content string
-	// Timer is optional. If provided, timing information will be appended to the message.
+	// Timer is optional. If provided and the message type is SuccessType, timing information will be printed in a separate block after the message.
 	Timer timer.Timer
 	// Emoji is used only for TitleType messages to customize the title icon.
 	Emoji string
